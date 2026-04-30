@@ -45,6 +45,9 @@ final class TableColumn
     /** @var list<string> */
     private array $summary = [];
 
+    /** @var (callable(mixed, array<string, mixed>): mixed)|null */
+    private $formatter = null;
+
     public static function make(string $name): self
     {
         $instance = new self;
@@ -148,6 +151,120 @@ final class TableColumn
         $this->presetMeta = $meta;
 
         return $this;
+    }
+
+    /**
+     * Shorthand for as('date', ['format' => $format]).
+     */
+    public function asDate(string $format = 'Y-m-d'): self
+    {
+        return $this->as('date', ['format' => $format]);
+    }
+
+    /**
+     * Shorthand for as('datetime', ['format' => $format]).
+     */
+    public function asDateTime(string $format = 'Y-m-d H:i:s'): self
+    {
+        return $this->as('datetime', ['format' => $format]);
+    }
+
+    /**
+     * Денежная сумма с currency-форматированием на UI.
+     */
+    public function asMoney(string $currency = 'RUB', int $decimals = 2): self
+    {
+        return $this->as('money', ['currency' => $currency, 'decimals' => $decimals]);
+    }
+
+    /**
+     * Boolean с иконкой/badge'ом true/false.
+     */
+    public function asBoolean(?string $trueLabel = null, ?string $falseLabel = null): self
+    {
+        return $this->as('boolean', [
+            'trueLabel' => $trueLabel,
+            'falseLabel' => $falseLabel,
+        ]);
+    }
+
+    /**
+     * Размер в байтах → human-readable (1.2 MB).
+     */
+    public function asBytes(): self
+    {
+        return $this->as('bytes');
+    }
+
+    /**
+     * Бэйдж с цветом по value (`map: ['active' => 'green', 'banned' => 'red']`).
+     *
+     * @param  array<string, string>  $colorMap  value => UI color name
+     */
+    public function asBadge(array $colorMap = []): self
+    {
+        return $this->as('badge', ['colors' => $colorMap]);
+    }
+
+    /**
+     * Превратить значение в clickable link.
+     *
+     * @param  string|callable(mixed, array<string, mixed>): string  $href
+     *                                                                      Строка-шаблон с `:value` либо callable($value, $row): string.
+     */
+    public function asLink(string|callable $href, ?string $target = null): self
+    {
+        $config = ['target' => $target];
+        if (is_string($href)) {
+            $config['template'] = $href;
+        } else {
+            $config['hrefFn'] = $href;
+        }
+
+        return $this->as('link', $config);
+    }
+
+    /**
+     * Изображение по URL. width/height — фиксированный размер превью.
+     */
+    public function asImage(?int $width = null, ?int $height = null): self
+    {
+        return $this->as('image', [
+            'width' => $width,
+            'height' => $height,
+        ]);
+    }
+
+    /**
+     * Custom formatter — server-side трансформация значения.
+     * Вызывается в `format($value, $row)` при сериализации row'ов.
+     *
+     * @param  callable(mixed, array<string, mixed>): mixed  $formatter
+     */
+    public function format(callable $formatter): self
+    {
+        $this->formatter = $formatter;
+
+        return $this;
+    }
+
+    public function hasFormatter(): bool
+    {
+        return $this->formatter !== null;
+    }
+
+    /**
+     * Применить formatter к значению.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public function applyFormatter(mixed $value, array $row): mixed
+    {
+        if ($this->formatter === null) {
+            return $value;
+        }
+
+        return ($this->formatter)($value, $row);
     }
 
     public function isSortable(): bool
