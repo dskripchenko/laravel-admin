@@ -63,6 +63,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->singleton(DelayedProcess\AllowlistRegistrar::class);
 
         $this->app->singleton(Theme\ThemeManager::class);
+        $this->app->singleton(Theme\LocaleResolver::class);
 
         $this->app->singleton(Import\ImportPreviewService::class);
 

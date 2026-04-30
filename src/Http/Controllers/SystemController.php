@@ -214,13 +214,46 @@ final class SystemController extends ApiController
      *
      * @response 200 {LocalesResponse}
      */
-    public function locales(Request $request): JsonResponse
+    public function locales(Request $request, \Dskripchenko\LaravelAdmin\Theme\LocaleResolver $resolver): JsonResponse
     {
         return $this->success([
-            'available' => (array) config('admin.ui.available_locales', ['ru', 'en']),
-            'current' => (string) ($request->header('X-Admin-Locale') ?? config('admin.ui.default_locale', 'ru')),
+            'available' => $resolver->available(),
+            'current' => $resolver->resolve($request),
+            'default' => $resolver->default(),
             'fallback' => (string) config('admin.ui.fallback_locale', 'en'),
         ]);
+    }
+
+    /**
+     * Установить локаль (user.locale + cookie).
+     *
+     * @input string $locale
+     *
+     * @output object $payload
+     *
+     * @security Public
+     *
+     * @response 200 {LocaleUpdatedResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function setLocale(Request $request, \Dskripchenko\LaravelAdmin\Theme\LocaleResolver $resolver): JsonResponse
+    {
+        $data = $request->validate(['locale' => ['required', 'string']]);
+
+        if (! $resolver->isAvailable($data['locale'])) {
+            return $this->error([
+                'errorKey' => 'unsupported_locale',
+                'message' => 'Locale `'.$data['locale'].'` is not in available list',
+            ], 422);
+        }
+
+        $cookie = $resolver->persist($data['locale']);
+        app()->setLocale($data['locale']);
+
+        $response = $this->success(['locale' => $data['locale']]);
+        $response->withCookie($cookie);
+
+        return $response;
     }
 
     /**
