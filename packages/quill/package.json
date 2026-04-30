@@ -1,0 +1,27 @@
+{
+    "name": "@dskripchenko/laravel-admin-quill",
+    "version": "0.1.0-dev",
+    "description": "Quill WYSIWYG plugin for @dskripchenko/laravel-admin.",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "files": ["dist", "README.md"],
+    "scripts": {
+        "build": "vite build && vue-tsc --emitDeclarationOnly"
+    },
+    "peerDependencies": {
+        "@dskripchenko/laravel-admin": "*",
+        "@vueup/vue-quill": "^1.2",
+        "quill": "^2",
+        "vue": "^3.4"
+    }
+}
