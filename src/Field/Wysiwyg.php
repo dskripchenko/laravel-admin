@@ -143,6 +143,23 @@ final class Wysiwyg extends Field
     }
 
     /**
+     * Включить/выключить server-side HTML-санитизацию через HtmlSanitizer.
+     *
+     * Default — true (защита от XSS). Disable только для trusted-content.
+     */
+    public function sanitize(bool $sanitize = true): static
+    {
+        $this->attributes['sanitize'] = $sanitize;
+
+        return $this;
+    }
+
+    public function shouldSanitize(): bool
+    {
+        return (bool) ($this->attributes['sanitize'] ?? true);
+    }
+
+    /**
      * Получить эффективный список extensions (с учётом дефолта если не задан).
      *
      * @return list<string>

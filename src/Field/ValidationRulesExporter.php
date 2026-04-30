@@ -99,6 +99,7 @@ final class ValidationRulesExporter
             'file' => self::fileRules($attrs),
             'select', 'combobox', 'checkbox', 'radio' => self::choiceRules($attrs),
             'color' => self::colorRules($attrs),
+            'wysiwyg', 'markdown', 'textarea', 'code' => ['nullable', 'string'],
             default => [],
         };
     }

@@ -298,6 +298,7 @@ final class ResourceController extends ApiController
     {
         $resource = $this->currentResource();
         $data = $request->validate($this->flattenRules($resource->validationRules('create')));
+        $data = $this->sanitizeWysiwyg($resource, $data);
 
         $modelClass = $resource::$model;
         /** @var \Illuminate\Database\Eloquent\Model $record */
@@ -340,6 +341,7 @@ final class ResourceController extends ApiController
         }
 
         $data = $request->validate($this->flattenRules($resource->validationRules('update')));
+        $data = $this->sanitizeWysiwyg($resource, $data);
         $record->forceFill($data);
         $record->save();
 
@@ -836,5 +838,33 @@ final class ResourceController extends ApiController
     private function flattenRules(array $rules): array
     {
         return $rules;
+    }
+
+    /**
+     * Прогоняет HTML через HtmlSanitizer для всех Wysiwyg-полей,
+     * у которых shouldSanitize() = true.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function sanitizeWysiwyg(Resource $resource, array $data): array
+    {
+        $sanitizer = null;
+        foreach ($resource->fields() as $field) {
+            if (! $field instanceof \Dskripchenko\LaravelAdmin\Field\Wysiwyg) {
+                continue;
+            }
+            if (! $field->shouldSanitize()) {
+                continue;
+            }
+            $name = $field->name();
+            if (! array_key_exists($name, $data) || ! is_string($data[$name])) {
+                continue;
+            }
+            $sanitizer ??= new \Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer;
+            $data[$name] = $sanitizer->sanitize($data[$name]);
+        }
+
+        return $data;
     }
 }
