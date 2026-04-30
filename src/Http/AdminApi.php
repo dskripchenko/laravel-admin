@@ -106,7 +106,19 @@ class AdminApi extends BaseApi
                     ],
                 ],
             ],
-            // 'profile' — фаза P2.4
+            'profile' => [
+                'controller' => \Dskripchenko\LaravelAdmin\Profile\Controllers\ProfileController::class,
+                'actions' => [
+                    'show' => ['method' => ['get']],
+                    'update' => ['method' => ['post']],
+                    'changePassword' => ['method' => ['post']],
+                    'twoFactorStatus' => ['method' => ['get']],
+                    'twoFactorEnable' => ['method' => ['post']],
+                    'twoFactorConfirm' => ['method' => ['post']],
+                    'twoFactorDisable' => ['method' => ['post']],
+                    'twoFactorRegenerateCodes' => ['method' => ['post']],
+                ],
+            ],
         ];
 
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.

@@ -248,7 +248,7 @@ trait AdminApiSystemSchemas
                 'payload' => '@TwoFactorSetupPayload',
             ],
             'TwoFactorSetupPayload' => [
-                'qr_code_svg' => 'string!',
+                'qr_code_svg' => 'string',                            // null если QR-encoder не подключён
                 'secret' => 'string!',
                 'qr_uri' => 'string!',
                 'recovery_codes' => 'array!',                         // string[8]
