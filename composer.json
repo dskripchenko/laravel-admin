@@ -29,6 +29,7 @@
     "require-dev": {
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
+        "mpdf/mpdf": "^8",
         "openspout/openspout": "^4",
         "orchestra/testbench": "^10.0",
         "pestphp/pest": "^3.0",

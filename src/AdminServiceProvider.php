@@ -69,6 +69,11 @@ final class AdminServiceProvider extends ServiceProvider
                 $registry->add(new Export\XlsxExporter);
             }
 
+            $renderer = $this->resolvePdfRenderer();
+            if ($renderer !== null) {
+                $registry->add(new Export\PdfExporter($renderer));
+            }
+
             return $registry;
         });
 
@@ -113,6 +118,36 @@ final class AdminServiceProvider extends ServiceProvider
         $this->registerExceptionHandlers();
         $this->registerAuditListeners();
         $this->bootPlugins();
+    }
+
+    /**
+     * Резолвит PDF-renderer на основе config + установленных пакетов.
+     *
+     * Driver приоритизация:
+     *   1. config('admin.exports.pdf.driver') = 'mpdf' / 'dompdf' — берём напрямую.
+     *   2. fallback: первый available из mpdf, dompdf.
+     *   3. ни одного — возвращаем null (PdfExporter не регистрируется).
+     */
+    private function resolvePdfRenderer(): ?Export\Pdf\PdfRenderer
+    {
+        $configured = (string) config('admin.exports.pdf.driver', 'mpdf');
+
+        if ($configured === 'mpdf' && class_exists(\Mpdf\Mpdf::class)) {
+            return new Export\Pdf\MpdfRenderer;
+        }
+        if ($configured === 'dompdf' && class_exists(\Dompdf\Dompdf::class)) {
+            return new Export\Pdf\DompdfRenderer;
+        }
+
+        // Fallback: что-то одно установлено, но не configured — берём что есть.
+        if (class_exists(\Mpdf\Mpdf::class)) {
+            return new Export\Pdf\MpdfRenderer;
+        }
+        if (class_exists(\Dompdf\Dompdf::class)) {
+            return new Export\Pdf\DompdfRenderer;
+        }
+
+        return null;
     }
 
     /**
