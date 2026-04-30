@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Resource;
 
 use Dskripchenko\LaravelAdmin\Filter\Filter;
+use Dskripchenko\LaravelAdmin\Filter\HttpFilterParser;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
@@ -131,7 +132,7 @@ final class ResourceController extends ApiController
         $query = $resource->indexQuery();
 
         // Filters: { filters: [{column, operator, value}] } либо { filters: { col: value } }
-        $filterInputs = $this->resolveFilterInputs($request);
+        $filterInputs = HttpFilterParser::parse($request);
         foreach ($resource->filters() as $filter) {
             /** @var Filter $filter */
             $value = $filterInputs[$filter->field()] ?? null;
@@ -141,7 +142,7 @@ final class ResourceController extends ApiController
         }
 
         // Free-text search by ?q=...
-        $q = (string) $request->input('q', '');
+        $q = HttpFilterParser::searchTerm($request);
         $searchable = $resource->searchableFields();
         if ($q !== '' && $searchable !== []) {
             $query = $query->where(function ($builder) use ($q, $searchable): void {
@@ -349,27 +350,5 @@ final class ResourceController extends ApiController
     private function flattenRules(array $rules): array
     {
         return $rules;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function resolveFilterInputs(Request $request): array
-    {
-        $raw = $request->input('filters', []);
-        if (! is_array($raw)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($raw as $key => $value) {
-            if (is_int($key) && is_array($value) && isset($value['column'])) {
-                $result[(string) $value['column']] = $value['value'] ?? null;
-            } else {
-                $result[(string) $key] = $value;
-            }
-        }
-
-        return $result;
     }
 }
