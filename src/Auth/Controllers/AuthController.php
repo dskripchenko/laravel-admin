@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Auth\Controllers;
 
+use Dskripchenko\LaravelAdmin\Auth\TwoFactor\RecoveryCodes;
+use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -35,8 +38,9 @@ final class AuthController extends ApiController
     /**
      * Аутентификация по email/паролю.
      *
-     * При включённой 2FA — следующий action `twoFactorChallenge` (фаза P2.3).
-     * На P2.2 — простой login без 2FA challenge'а.
+     * При включённой и подтверждённой 2FA вместо логина возвращается
+     * `two_factor_required` + `challenge_token` (Cache::5min) — следующий шаг:
+     * `auth/twoFactorChallenge` или `auth/twoFactorRecovery`.
      *
      * @input string(email) $email
      * @input string $password
@@ -49,7 +53,9 @@ final class AuthController extends ApiController
      * @security Public
      *
      * @response 200 {LoginResponse}
+     * @response 200 {TwoFactorRequiredResponse}
      * @response 401 {InvalidCredentialsResponse}
+     * @response 403 {AccountInactiveResponse}
      * @response 422 {ValidationErrorResponse}
      */
     public function login(Request $request): JsonResponse
@@ -65,7 +71,14 @@ final class AuthController extends ApiController
 
         $credentials = ['email' => $data['email'], 'password' => $data['password']];
 
-        if (! Auth::guard($guard)->attempt($credentials, $remember)) {
+        // Resolve user without logging in — to check 2FA before establishing session.
+        $provider = Auth::createUserProvider(
+            (string) config('admin.auth.provider', 'admin_users'),
+        );
+        $user = $provider?->retrieveByCredentials($credentials);
+
+        if (! $user instanceof Authenticatable
+            || ! $provider->validateCredentials($user, $credentials)) {
             Event::dispatch(new Failed($guard, null, $credentials));
 
             return $this->error([
@@ -74,20 +87,62 @@ final class AuthController extends ApiController
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        /** @var Authenticatable&Model $user */
-        $user = Auth::guard($guard)->user();
+        if (! $user instanceof Model) {
+            return $this->error([
+                'errorKey' => 'invalid_credentials',
+                'message' => 'Неверный email или пароль',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
 
-        // is_active — eloquent attribute, не PHP-property; используем getAttribute.
         if ($user->getAttribute('is_active') === false) {
-            Auth::guard($guard)->logout();
-
             return $this->error([
                 'errorKey' => 'account_inactive',
                 'message' => 'Учётная запись отключена',
             ], Response::HTTP_FORBIDDEN);
         }
 
-        // Touch last_login_*.
+        // 2FA gate: если включена, не логиним сразу — отдаём challenge_token.
+        if (method_exists($user, 'hasTwoFactorEnabled') && $user->hasTwoFactorEnabled()) {
+            $token = Str::random(64);
+            Cache::put(
+                "admin:2fa:challenge:{$token}",
+                ['user_id' => $user->getKey(), 'remember' => $remember],
+                now()->addMinutes(5),
+            );
+
+            return $this->error([
+                'errorKey' => 'two_factor_required',
+                'message' => 'Введите код из приложения-аутентификатора',
+                'challenge_token' => $token,
+            ], Response::HTTP_OK);
+        }
+
+        return $this->completeLogin($request, $user, $remember);
+    }
+
+    /**
+     * Найти AdminUser по ID через guard provider — возвращает Model+Authenticatable.
+     */
+    private function resolveChallengeUser(int|string $userId): (Authenticatable&Model)|null
+    {
+        $provider = Auth::createUserProvider(
+            (string) config('admin.auth.provider', 'admin_users'),
+        );
+        $user = $provider?->retrieveById($userId);
+
+        return $user instanceof Authenticatable && $user instanceof Model ? $user : null;
+    }
+
+    /**
+     * Сценарий после полной аутентификации (с 2FA или без): логинит, обновляет
+     * last_login, регенерирует session, отдаёт user + redirect_url.
+     */
+    private function completeLogin(Request $request, Authenticatable&Model $user, bool $remember): JsonResponse
+    {
+        $guard = (string) config('admin.auth.guard', 'admin');
+
+        Auth::guard($guard)->login($user, $remember);
+
         $user->forceFill([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
@@ -101,6 +156,121 @@ final class AuthController extends ApiController
             'user' => $this->serializeUser($user),
             'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
         ]);
+    }
+
+    /**
+     * Подтвердить TOTP-код после login, вернувшего two_factor_required.
+     *
+     * @input string $challenge_token
+     * @input string $code 6-значный TOTP.
+     *
+     * @output object $payload
+     *
+     * @security Public
+     *
+     * @response 200 {LoginResponse}
+     * @response 401 {InvalidTwoFactorResponse}
+     */
+    public function twoFactorChallenge(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'challenge_token' => ['required', 'string'],
+            'code' => ['required', 'string'],
+        ]);
+
+        $challenge = Cache::get("admin:2fa:challenge:{$data['challenge_token']}");
+        if ($challenge === null) {
+            return $this->error([
+                'errorKey' => 'challenge_expired',
+                'message' => 'Истёк срок challenge\'а, повторите вход',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user = $this->resolveChallengeUser($challenge['user_id']);
+
+        if ($user === null
+            || ! method_exists($user, 'hasTwoFactorEnabled')
+            || ! $user->hasTwoFactorEnabled()) {
+            return $this->error([
+                'errorKey' => 'invalid_two_factor_code',
+                'message' => 'Неверный код',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (! TotpGenerator::verify(
+            (string) $user->getAttribute('two_factor_secret'),
+            $data['code'],
+            (int) config('admin.auth.two_factor.window', 1),
+        )) {
+            return $this->error([
+                'errorKey' => 'invalid_two_factor_code',
+                'message' => 'Неверный код',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        Cache::forget("admin:2fa:challenge:{$data['challenge_token']}");
+
+        return $this->completeLogin($request, $user, (bool) ($challenge['remember'] ?? false));
+    }
+
+    /**
+     * Использовать одноразовый recovery-код вместо TOTP.
+     *
+     * @input string $challenge_token
+     * @input string $recovery_code
+     *
+     * @output object $payload
+     *
+     * @security Public
+     *
+     * @response 200 {RecoveryLoginResponse}
+     * @response 401 {InvalidRecoveryCodeResponse}
+     */
+    public function twoFactorRecovery(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'challenge_token' => ['required', 'string'],
+            'recovery_code' => ['required', 'string'],
+        ]);
+
+        $challenge = Cache::get("admin:2fa:challenge:{$data['challenge_token']}");
+        if ($challenge === null) {
+            return $this->error([
+                'errorKey' => 'challenge_expired',
+                'message' => 'Истёк срок challenge\'а',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user = $this->resolveChallengeUser($challenge['user_id']);
+
+        if ($user === null) {
+            return $this->error([
+                'errorKey' => 'invalid_recovery_code',
+                'message' => 'Неверный recovery-код',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $existing = (array) $user->getAttribute('two_factor_recovery_codes');
+        $remaining = RecoveryCodes::verify($existing, $data['recovery_code']);
+
+        if ($remaining === null) {
+            return $this->error([
+                'errorKey' => 'invalid_recovery_code',
+                'message' => 'Неверный recovery-код',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user->forceFill(['two_factor_recovery_codes' => $remaining])->save();
+        Cache::forget("admin:2fa:challenge:{$data['challenge_token']}");
+
+        $response = $this->completeLogin($request, $user, (bool) ($challenge['remember'] ?? false));
+
+        // Добавляем recovery_codes_remaining в payload.
+        /** @var array<string, mixed> $payload */
+        $payload = (array) $response->getData(true)['payload'];
+        $payload['recovery_codes_remaining'] = count($remaining);
+
+        return $this->success($payload);
     }
 
     /**

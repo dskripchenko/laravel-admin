@@ -163,6 +163,10 @@ trait AdminApiSystemSchemas
                 'success' => 'boolean!',
                 'payload' => '@SimpleErrorPayload',                   // errorKey=invalid_credentials
             ],
+            'AccountInactiveResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@SimpleErrorPayload',                   // errorKey=account_inactive
+            ],
             'InvalidTwoFactorResponse' => [
                 'success' => 'boolean!',
                 'payload' => '@SimpleErrorPayload',                   // errorKey=invalid_two_factor_code | challenge_expired

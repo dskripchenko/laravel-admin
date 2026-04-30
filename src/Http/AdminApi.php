@@ -96,6 +96,14 @@ class AdminApi extends BaseApi
                         'method' => ['post'],
                         'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':3,1'],
                     ],
+                    'twoFactorChallenge' => [
+                        'method' => ['post'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1'],
+                    ],
+                    'twoFactorRecovery' => [
+                        'method' => ['post'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1'],
+                    ],
                 ],
             ],
             // 'profile' — фаза P2.4
