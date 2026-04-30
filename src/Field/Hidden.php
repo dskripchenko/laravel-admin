@@ -11,7 +11,7 @@ namespace Dskripchenko\LaravelAdmin\Field;
  */
 final class Hidden extends Field
 {
-    public function type(): string
+    public function fieldType(): string
     {
         return 'hidden';
     }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin;
 
+use Dskripchenko\LaravelAdmin\Resource\Resource as ResourceBase;
+use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\Screen;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Illuminate\Contracts\Foundation\Application;
@@ -27,9 +29,6 @@ use Illuminate\Contracts\Foundation\Application;
 final class Admin
 {
     /** @var class-string[] */
-    private array $resources = [];
-
-    /** @var class-string[] */
     private array $widgets = [];
 
     /** @var class-string[] */
@@ -38,6 +37,7 @@ final class Admin
     public function __construct(
         private readonly Application $app,
         private readonly ScreenRegistry $screens,
+        private readonly ResourceRegistry $resourceRegistry,
     ) {}
 
     /**
@@ -83,21 +83,29 @@ final class Admin
     /**
      * Регистрирует список Resource-классов.
      *
-     * @param  class-string[]  $classes
+     * @param  list<class-string<ResourceBase>>  $classes
      */
     public function resources(array $classes): self
     {
-        $this->resources = array_unique([...$this->resources, ...$classes]);
+        $this->resourceRegistry->addMany($classes);
 
         return $this;
     }
 
     /**
-     * @return class-string[]
+     * @return array<string, class-string<ResourceBase>>
      */
     public function getResources(): array
     {
-        return $this->resources;
+        return $this->resourceRegistry->all();
+    }
+
+    /**
+     * Resolve Resource-instance по slug'у через контейнер.
+     */
+    public function resolveResource(string $slug): ?ResourceBase
+    {
+        return $this->resourceRegistry->resolve($slug);
     }
 
     /**

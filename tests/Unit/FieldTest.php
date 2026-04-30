@@ -9,7 +9,7 @@ use Dskripchenko\LaravelAdmin\Field\Label;
 it('Input::make stores name and exposes type', function (): void {
     $field = Input::make('email');
     expect($field->name())->toBe('email');
-    expect($field->type())->toBe('input');
+    expect($field->fieldType())->toBe('input');
 });
 
 it('fluent __call sets boolean attribute when called without args', function (): void {
@@ -90,11 +90,11 @@ it('onCreate/onUpdate/onView control visibility flags', function (): void {
 });
 
 it('Hidden has type=hidden', function (): void {
-    expect(Hidden::make('id')->type())->toBe('hidden');
+    expect(Hidden::make('id')->fieldType())->toBe('hidden');
 });
 
 it('Label has type=label', function (): void {
-    expect(Label::make('description')->type())->toBe('label');
+    expect(Label::make('description')->fieldType())->toBe('label');
 });
 
 it('withOptions merges options', function (): void {

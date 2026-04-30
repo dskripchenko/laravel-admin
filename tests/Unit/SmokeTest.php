@@ -19,15 +19,14 @@ it('loads default config', function (): void {
     expect(config('admin.bootstrap.strategy'))->toBe('inline');
 });
 
-it('registers resources and exposes them', function (): void {
-    AdminFacade::resources([
-        'App\\Admin\\Resources\\UserResource',
-        'App\\Admin\\Resources\\OrderResource',
-    ]);
+it('registers resources and exposes them by slug', function (): void {
+    /** @var Dskripchenko\LaravelAdmin\Resource\ResourceRegistry $registry */
+    $registry = app(Dskripchenko\LaravelAdmin\Resource\ResourceRegistry::class);
+    $registry->clear();
 
-    expect(AdminFacade::getResources())
-        ->toContain('App\\Admin\\Resources\\UserResource')
-        ->toContain('App\\Admin\\Resources\\OrderResource');
+    AdminFacade::resources([TestUserResource::class]);
+
+    expect(AdminFacade::getResources())->toHaveKey('test-users');
 });
 
 it('registers admin guard in dedicated strategy via ServiceProvider boot', function (): void {

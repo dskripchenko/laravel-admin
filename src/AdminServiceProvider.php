@@ -8,7 +8,9 @@ use Dskripchenko\LaravelAdmin\Auth\AdminGuardRegistrar;
 use Dskripchenko\LaravelAdmin\Console\InstallCommand;
 use Dskripchenko\LaravelAdmin\Console\LinkCommand;
 use Dskripchenko\LaravelAdmin\Console\MakeAdminCommand;
+use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
+use Dskripchenko\LaravelAdmin\Support\Manifest;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -33,11 +35,15 @@ final class AdminServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/admin.php', 'admin');
 
         $this->app->singleton(ScreenRegistry::class);
+        $this->app->singleton(ResourceRegistry::class);
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin(
             $app,
             $app->make(ScreenRegistry::class),
+            $app->make(ResourceRegistry::class),
         ));
         $this->app->alias(Admin::class, 'admin');
+
+        $this->app->singleton(Manifest::class);
     }
 
     public function boot(): void

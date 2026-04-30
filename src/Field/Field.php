@@ -56,8 +56,14 @@ abstract class Field implements Renderable
 
     protected ?bool $onView = null;
 
-    /** Type-имя для SPA-renderer'а (input/select/switch/...). */
-    abstract public function type(): string;
+    /**
+     * Type-имя для SPA-renderer'а (input/select/switch/...).
+     *
+     * Намеренно НЕ называется `type()` — у Field есть fluent-сеттер `->type('email')`
+     * для HTML input-type, который проходит через __call. Если бы абстракт назывался
+     * `type()`, getter и setter конфликтовали бы.
+     */
+    abstract public function fieldType(): string;
 
     /* -----------------------------------------------------------------
      * Создание
@@ -105,7 +111,11 @@ abstract class Field implements Renderable
         return $this;
     }
 
-    /** Тип-specific опции (например, options для select). */
+    /**
+     * Тип-specific опции (например, options для select).
+     *
+     * @param  array<string, mixed>  $options
+     */
     public function withOptions(array $options): static
     {
         $this->options = array_merge($this->options, $options);
@@ -171,6 +181,19 @@ abstract class Field implements Renderable
         return $this;
     }
 
+    /**
+     * Применяется ли field в указанном контексте (create/update/view).
+     */
+    public function appliesTo(string $context): bool
+    {
+        return match ($context) {
+            'create' => $this->onCreate ?? true,
+            'update' => $this->onUpdate ?? true,
+            'view' => $this->onView ?? true,
+            default => true,
+        };
+    }
+
     /* -----------------------------------------------------------------
      * Чтение
      * ----------------------------------------------------------------- */
@@ -196,6 +219,11 @@ abstract class Field implements Renderable
         return $this->rules;
     }
 
+    public function getDefaultValue(): mixed
+    {
+        return $this->defaultValue;
+    }
+
     /* -----------------------------------------------------------------
      * Сериализация
      * ----------------------------------------------------------------- */
@@ -208,7 +236,7 @@ abstract class Field implements Renderable
         return [
             'kind' => 'field',
             'name' => $this->name,
-            'type' => $this->type(),
+            'type' => $this->fieldType(),
             'label' => (string) ($this->attributes['title'] ?? ''),
             'placeholder' => $this->attributes['placeholder'] ?? null,
             'help' => $this->attributes['help'] ?? null,

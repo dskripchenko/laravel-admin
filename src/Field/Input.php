@@ -15,7 +15,7 @@ namespace Dskripchenko\LaravelAdmin\Field;
  */
 final class Input extends Field
 {
-    public function type(): string
+    public function fieldType(): string
     {
         return 'input';
     }
