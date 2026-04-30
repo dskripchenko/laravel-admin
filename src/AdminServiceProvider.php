@@ -124,6 +124,31 @@ final class AdminServiceProvider extends ServiceProvider
         $this->registerExceptionHandlers();
         $this->registerAuditListeners();
         $this->bootPlugins();
+        $this->registerScalarDoc();
+    }
+
+    /**
+     * Перехватывает laravel-api default `api/doc` роут — заменяет на Scalar UI.
+     *
+     * laravel-api регистрирует роут `api/doc` в своём boot()'е через
+     * `Route::get('doc', ApiDocumentationController@index)` под prefix `api`.
+     * Наш роут с тем же URI и более позднимрегистрацией — побеждает.
+     *
+     * Для отключения: `config('admin.openapi.ui') = 'swagger'` или null.
+     */
+    private function registerScalarDoc(): void
+    {
+        $ui = (string) config('admin.openapi.ui', 'scalar');
+        if ($ui !== 'scalar') {
+            return;
+        }
+
+        $prefix = (string) config('admin.api_path', 'api/admin');
+        $routePath = $prefix === '' ? 'doc' : "{$prefix}/doc";
+
+        Route::get($routePath, Http\Controllers\ScalarDocController::class)
+            ->name('admin.api-doc')
+            ->middleware(config('admin.middleware.shell', ['web']));
     }
 
     /**
