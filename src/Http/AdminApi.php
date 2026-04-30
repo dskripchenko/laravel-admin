@@ -11,6 +11,8 @@ use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiSystemSchemas;
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiUiSchemas;
 use Dskripchenko\LaravelAdmin\Resource\ResourceCompiler;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
+use Dskripchenko\LaravelAdmin\Settings\SettingsCompiler;
+use Dskripchenko\LaravelAdmin\Settings\SettingsRegistry;
 use Dskripchenko\LaravelApi\Components\BaseApi;
 
 /**
@@ -152,6 +154,10 @@ class AdminApi extends BaseApi
         // ResourceController — общий FQCN; per-Resource резолв идёт по ApiRequest::getApiControllerKey().
         $registry = app(ResourceRegistry::class);
         $controllers = array_merge($controllers, (new ResourceCompiler)->compile($registry));
+
+        // Settings: каждый SettingsResource = отдельный controller key 'settings.{slug}'.
+        $settingsRegistry = app(SettingsRegistry::class);
+        $controllers = array_merge($controllers, (new SettingsCompiler)->compile($settingsRegistry));
 
         return [
             'middleware' => [

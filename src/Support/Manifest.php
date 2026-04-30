@@ -8,6 +8,7 @@ use Dskripchenko\LaravelAdmin\Admin;
 use Dskripchenko\LaravelAdmin\Resource\ResourceManifest;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
+use Dskripchenko\LaravelAdmin\Settings\SettingsRegistry;
 
 /**
  * Сборщик JSON-манифеста admin для SPA.
@@ -28,6 +29,7 @@ final class Manifest
         private readonly ResourceRegistry $resources,
         private readonly ScreenRegistry $screens,
         private readonly Admin $admin,
+        private readonly SettingsRegistry $settings,
     ) {}
 
     /**
@@ -63,11 +65,20 @@ final class Manifest
             ];
         }
 
+        $settingsPayload = [];
+        foreach ($this->settings->all() as $slug => $class) {
+            $settings = $this->settings->resolve($slug);
+            if ($settings === null) {
+                continue;
+            }
+            $settingsPayload[] = $settings->meta();
+        }
+
         $payload = [
             'locale' => $locale,
             'resources' => $resourcesPayload,
             'screens' => $screensPayload,
-            'settings' => [],
+            'settings' => $settingsPayload,
             'dashboards' => [],
             'plugins' => $this->admin->getPlugins(),
             'permissions' => [],
