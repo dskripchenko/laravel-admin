@@ -28,7 +28,7 @@ beforeEach(function (): void {
 it('serves /api/admin/system/bootstrap', function (): void {
     // Pest default Accept-Language может быть 'en' — фиксируем явно ru.
     $response = $this->withoutExceptionHandling()->getJson('/api/admin/system/bootstrap', [
-        \Dskripchenko\LaravelAdmin\Theme\LocaleResolver::HEADER => 'ru',
+        Dskripchenko\LaravelAdmin\Theme\LocaleResolver::HEADER => 'ru',
     ]);
 
     $response->assertOk();
