@@ -206,36 +206,95 @@ actions:
 
 ## 4. Schema-templates для @response
 
-Чтобы не дублировать `@response` schema в каждом методе, выносим типичные ответы в named-templates:
+Каждый named template (`{XxxResponse}`) объявляется через **`getOpenApiTemplates(): array`** на классе версии API. На `AdminApi` (наследнике `BaseApi`) выставлено `public static bool $useResponseTemplates = true;` — laravel-api без этого флага шаблоны не считает.
 
-`src/Http/Schemas/`:
+Структура: метод возвращает map `'TemplateName' => ['field' => 'type-spec', ...]`. Type-spec поддерживает синтаксис:
+
+| Pattern | Значение |
+|---------|----------|
+| `'string!'` | required |
+| `'string'` | optional |
+| `'string(date-time)'` | с форматом (формат как у OpenAPI: `email`, `uuid`, `date-time`, `int64`, ...) |
+| `'@RefName'` | ссылка на другой template (через `components/schemas` в OpenAPI) |
+| `'@RefName[]'` | массив ссылок |
+
+Пример:
+
+```php
+public static function getOpenApiTemplates(): array
+{
+    return [
+        'AdminUserSummary' => [
+            'id'                => 'integer!',
+            'name'              => 'string!',
+            'email'             => 'string(email)!',
+            'avatar'            => 'string',
+            'twoFactorEnabled'  => 'boolean!',
+            'impersonator'      => '@ImpersonatorRef',
+        ],
+        'ImpersonatorRef' => [
+            'id'   => 'integer!',
+            'name' => 'string!',
+        ],
+        'LoginResponse' => [
+            'success' => 'boolean!',
+            'payload' => '@LoginPayload',
+        ],
+        'LoginPayload' => [
+            'user'         => '@AdminUserSummary',
+            'redirect_url' => 'string!',
+        ],
+    ];
+}
+```
+
+В контроллере ссылка на template — стандартным `@response`:
+
+```php
+/**
+ * @response 200 {LoginResponse}
+ * @response 401 {InvalidCredentialsResponse}
+ */
+```
+
+### Структура файлов в admin
+
+Все templates admin core живут в `src/Http/Schemas/` как traits, подключаемые в `AdminApi`:
 
 ```
-src/Http/Schemas/
-├── Common/
-│   ├── SuccessResponse.php           # { success: true, payload: null }
-│   ├── ValidationErrorResponse.php
-│   ├── UnauthenticatedErrorResponse.php
-│   ├── ForbiddenErrorResponse.php
-│   ├── NotFoundErrorResponse.php
-│   └── DelayedResponse.php
-├── Auth/
-│   ├── LoginResponse.php
-│   ├── TwoFactorRequiredResponse.php
-│   └── ImpersonationResponse.php
-├── Resource/
-│   ├── MetaResponse.php
-│   ├── SearchResponse.php
-│   ├── RecordResponse.php
-│   └── AuditEntry.php
-├── Profile/
-│   ├── ProfileResponse.php
-│   ├── TwoFactorSetupResponse.php
-│   └── ApiTokenResponse.php
-└── ...
+src/Http/
+├── AdminApi.php                              # extends BaseApi, use traits, $useResponseTemplates=true
+├── AdminApiModule.php                        # extends BaseModule, getApiVersionList()
+└── Schemas/
+    ├── AdminApiCommonSchemas.php             # envelope, errors, building blocks (AdminUserSummary, FieldSchema, ColumnSchema, ...)
+    ├── AdminApiSystemSchemas.php             # system + auth + profile templates
+    ├── AdminApiResourceSchemas.php           # resource controllers + actions + settings
+    ├── AdminApiUiSchemas.php                 # screens, dashboards, uploads, delayed, exports/imports
+    └── AdminApiSisterPackSchemas.php         # search, health (sister-packs могут перекрыть/дополнить через AdminPlugin)
 ```
 
-Каждая schema — PHP-класс с docblock-полями. `laravel-api` подбирает их по имени из `@response 200 {SearchResponse}`.
+`AdminApi::getOpenApiTemplates()` объединяет всё через `array_merge()` от пяти `provide*Schemas()` методов traits.
+
+Полный человекочитаемый список templates — в [schemas.md](schemas.md).
+
+### Sister-packs и templates
+
+Sister-pack может предоставить свои templates через `AdminPlugin`-контракт:
+
+```php
+final class AdminMediaPlugin implements AdminPlugin
+{
+    public function openApiTemplates(): array
+    {
+        return [
+            'MediaItemResponse' => [/* ... */],
+            // ...
+        ];
+    }
+}
+```
+
+`AdminApi::getOpenApiTemplates()` после своего `array_merge` дополнительно мерджит вклад от всех зарегистрированных plugin'ов.
 
 ---
 

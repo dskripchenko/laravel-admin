@@ -20,7 +20,8 @@ Default: /api/admin/{controller}/{action}
 | Файл | Содержимое |
 |---|---|
 | [conventions.md](conventions.md) | Общие конвенции: envelope, заголовки, ошибки, пагинация, фильтры, etag, idempotency, throttling, обязательные требования к docblock'ам |
-| [registration.md](registration.md) | Структура `AdminApi::getMethods()`, динамическая регистрация Resource/Screen-контроллеров, schema-templates, security schemes, middleware-каскад |
+| [registration.md](registration.md) | Структура `AdminApi::getMethods()`, динамическая регистрация Resource/Screen-контроллеров, schema-templates через `getOpenApiTemplates()`, security schemes, middleware-каскад |
+| [schemas.md](schemas.md) | Полный реестр всех ~140 named-templates (`{XxxResponse}`) с описанием структуры. Реализация — в `src/Http/AdminApi.php` + traits `src/Http/Schemas/`. |
 | [system.md](system.md) | controller `system`: bootstrap, manifest, me, menu, locales, permissions, plugins, notifications, audit |
 | [auth.md](auth.md) | controller `auth`: login, logout, password-reset, email-verify, 2FA-challenge, impersonation |
 | [profile.md](profile.md) | controller `profile`: профиль, смена пароля, 2FA-setup, recovery codes, API-токены |

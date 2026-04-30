@@ -171,16 +171,18 @@ Action может перечислить несколько `@security` — эт
 
 ### `@response` шаблоны
 
-Многократно используемые схемы ответов выносятся в named-templates:
+Многократно используемые схемы ответов выносятся в named-templates через `getOpenApiTemplates()` на `AdminApi` (механизм — [registration.md §4](registration.md), полный реестр — [schemas.md](schemas.md)):
 
-- `{Success}` — успех с пустым payload (`{ success: true, payload: null }`).
-- `{ValidationError}` — `422` с `errorKey: validation` + `messages`.
-- `{UnauthenticatedError}` — `401`.
-- `{ForbiddenError}` — `403`.
-- `{NotFoundError}` — `404`.
-- `{DelayedResponse}` — `202` с `payload.delayed`.
+- `{SuccessResponse}` — успех с пустым payload.
+- `{AffectedResponse}` — `{ affected: int }`.
+- `{GenericMessageResponse}` — `{ message: string }`.
+- `{DelayedResponse}` — 202 с `payload.delayed`.
+- `{NotModifiedResponse}` — 304, пустое тело.
+- `{ValidationErrorResponse}` — 422.
+- `{UnauthenticatedErrorResponse}` / `{ForbiddenErrorResponse}` / `{NotFoundErrorResponse}` / `{ThrottledResponse}` / `{ConflictResponse}` / `{MethodNotAllowedResponse}` / `{PayloadTooLargeResponse}` / `{UnsupportedMediaTypeResponse}`.
+- ... всего ~140 templates, см. [schemas.md](schemas.md).
 
-Шаблоны определяются в `src/Http/Schemas/` (см. registration.md §3).
+Реализация: `src/Http/AdminApi.php` + traits в `src/Http/Schemas/AdminApi{Common,System,Resource,Ui,SisterPack}Schemas.php`.
 
 ## 7. Регистрация actions в `getMethods()`
 
