@@ -171,6 +171,16 @@ class AdminApi extends BaseApi
                     'image' => ['method' => ['post']],
                 ],
             ],
+            'notifications' => [
+                'controller' => \Dskripchenko\LaravelAdmin\Notifications\NotificationController::class,
+                'actions' => [
+                    'list' => ['method' => ['get']],
+                    'unread' => ['method' => ['get']],
+                    'markAsRead' => ['method' => ['post']],
+                    'markAllAsRead' => ['method' => ['post']],
+                    'destroy' => ['method' => ['post']],
+                ],
+            ],
         ];
 
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.
