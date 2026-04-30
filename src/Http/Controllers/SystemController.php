@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Controllers;
 
 use Dskripchenko\LaravelAdmin\Admin;
+use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -119,10 +122,40 @@ final class SystemController extends ApiController
      *
      * @response 200 {AdminUserSummaryResponse}
      */
-    public function me(Request $request): JsonResponse
+    public function me(Request $request, ImpersonationManager $impersonation): JsonResponse
     {
-        // ApiResponseHelper::say требует array (не null) — иначе TypeError на Arr::pull.
-        return $this->success([]);
+        $guard = (string) config('admin.auth.guard', 'admin');
+        $user = Auth::guard($guard)->user();
+
+        if (! $user instanceof Model) {
+            return $this->success([]);
+        }
+
+        $impersonator = null;
+        if ($impersonation->isActive()) {
+            $provider = Auth::createUserProvider(
+                (string) config('admin.auth.provider', 'admin_users'),
+            );
+            $original = $provider?->retrieveById($impersonation->impersonatorId());
+            if ($original instanceof Model) {
+                $impersonator = [
+                    'id' => $original->getKey(),
+                    'name' => $original->getAttribute('name'),
+                ];
+            }
+        }
+
+        return $this->success([
+            'id' => $user->getKey(),
+            'name' => $user->getAttribute('name'),
+            'email' => $user->getAttribute('email'),
+            'locale' => $user->getAttribute('locale') ?? config('admin.ui.default_locale', 'ru'),
+            'theme' => $user->getAttribute('theme') ?? config('admin.ui.default_theme', 'light'),
+            'twoFactorEnabled' => method_exists($user, 'hasTwoFactorEnabled')
+                ? $user->hasTwoFactorEnabled()
+                : false,
+            'impersonator' => $impersonator,
+        ]);
     }
 
     /**

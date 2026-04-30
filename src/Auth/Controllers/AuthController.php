@@ -6,6 +6,7 @@ namespace Dskripchenko\LaravelAdmin\Auth\Controllers;
 
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\RecoveryCodes;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
+use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -497,6 +498,9 @@ final class AuthController extends ApiController
      */
     private function serializeUser(Authenticatable $user): array
     {
+        $twoFactorEnabled = method_exists($user, 'hasTwoFactorEnabled')
+            && $user->hasTwoFactorEnabled();
+
         return [
             'id' => $user->getAuthIdentifier(),
             'name' => $user->getAttribute('name'),
@@ -504,8 +508,135 @@ final class AuthController extends ApiController
             'avatar' => $user->getAttribute('avatar'),
             'locale' => $user->getAttribute('locale') ?? config('admin.ui.default_locale', 'ru'),
             'theme' => $user->getAttribute('theme') ?? config('admin.ui.default_theme', 'light'),
-            'twoFactorEnabled' => false,                                  // P2.3
-            'impersonator' => null,                                   // P2.5
+            'twoFactorEnabled' => $twoFactorEnabled,
+            'impersonator' => null,
         ];
+    }
+
+    /**
+     * Войти под другим админом.
+     *
+     * Требует permission `admin.impersonate`. Опция `block_higher_powered`
+     * блокирует impersonate юзеров с большим набором прав.
+     *
+     * @input integer $user_id
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ImpersonationResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
+     */
+    public function startImpersonation(Request $request, ImpersonationManager $manager): JsonResponse
+    {
+        if (! $manager->enabled()) {
+            return $this->error([
+                'errorKey' => 'impersonation_disabled',
+                'message' => 'Impersonation отключена в конфиге',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $data = $request->validate([
+            'user_id' => ['required', 'integer'],
+        ]);
+
+        $guard = (string) config('admin.auth.guard', 'admin');
+        $current = Auth::guard($guard)->user();
+
+        if (! $current instanceof Authenticatable) {
+            return $this->error([
+                'errorKey' => 'unauthenticated',
+                'message' => 'Unauthenticated',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Permission-check.
+        if (! method_exists($current, 'hasAccess')
+            || ! $current->hasAccess($manager->requiredPermission())) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => 'Нет права '.$manager->requiredPermission(),
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        // Защита от вложенной impersonation.
+        if ($manager->isActive()) {
+            return $this->error([
+                'errorKey' => 'already_impersonating',
+                'message' => 'Сначала остановите текущую impersonation',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $modelClass = (string) config('admin.auth.model');
+        $target = $modelClass::find($data['user_id']);
+
+        if (! $target instanceof Authenticatable || ! $target instanceof Model) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Пользователь не найден',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($target->getKey() === $current->getKey()) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => 'Нельзя impersonate самого себя',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($manager->isHigherPowered($current, $target)) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => 'Цель имеет больше прав, чем вы — impersonation запрещена',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $manager->start($current, $target);
+
+        return $this->success([
+            'user' => $this->serializeUser($target),
+            'impersonator' => [
+                'id' => $current->getKey(),
+                'name' => $current->getAttribute('name'),
+            ],
+            'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
+        ]);
+    }
+
+    /**
+     * Завершить impersonation.
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {LoginResponse}
+     * @response 400 {NoActiveImpersonationResponse}
+     */
+    public function stopImpersonation(ImpersonationManager $manager): JsonResponse
+    {
+        if (! $manager->isActive()) {
+            return $this->error([
+                'errorKey' => 'no_active_impersonation',
+                'message' => 'Нет активной impersonation',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $original = $manager->stop();
+
+        if (! $original instanceof Authenticatable || ! $original instanceof Model) {
+            return $this->error([
+                'errorKey' => 'impersonator_not_found',
+                'message' => 'Оригинальный пользователь не найден',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->success([
+            'user' => $this->serializeUser($original),
+            'impersonator' => null,
+            'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
+        ]);
     }
 }
