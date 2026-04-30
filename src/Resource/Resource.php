@@ -236,7 +236,7 @@ abstract class Resource
                 'replicable' => $this->replicable(),
                 'reorderable' => $this->reorderable(),
                 'reorderColumn' => $this->reorderable() ? $this->reorderColumn() : null,
-                'importable' => false,
+                'importable' => $this->importable(),
                 'exportable' => ['csv'],
                 'polling' => $this->polling(),
                 'warnOnUnsavedChanges' => true,
@@ -272,6 +272,14 @@ abstract class Resource
      * Можно ли менять порядок записей drag-n-drop'ом.
      */
     public function reorderable(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Можно ли импортировать данные через 4-step Import Wizard.
+     */
+    public function importable(): bool
     {
         return false;
     }

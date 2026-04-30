@@ -155,6 +155,15 @@ class AdminApi extends BaseApi
                     'status' => ['method' => ['get']],
                 ],
             ],
+            'import' => [
+                'controller' => \Dskripchenko\LaravelAdmin\Import\ImportController::class,
+                'actions' => [
+                    'upload' => ['method' => ['post']],
+                    'preview' => ['method' => ['post']],
+                    'start' => ['method' => ['post']],
+                    'status' => ['method' => ['get']],
+                ],
+            ],
         ];
 
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.
