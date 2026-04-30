@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Resource;
 
 use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
+use Dskripchenko\LaravelAdmin\Table\SavedViewsController;
 
 /**
  * Компилирует ResourceRegistry в массив `controllers` для AdminApi::getMethods().
@@ -32,9 +33,28 @@ final class ResourceCompiler
                 continue;
             }
             $controllers[$slug] = self::buildControllerEntry($resource::permission());
+            $controllers[$slug.'_views'] = self::buildSavedViewsEntry($resource::permission());
         }
 
         return $controllers;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function buildSavedViewsEntry(string $base): array
+    {
+        $view = AdminAccess::class.':'.$base.'.view';
+
+        return [
+            'controller' => SavedViewsController::class,
+            'actions' => [
+                'list' => ['method' => ['get'], 'middleware' => [$view]],
+                'create' => ['method' => ['post'], 'middleware' => [$view]],
+                'update' => ['method' => ['post'], 'middleware' => [$view]],
+                'delete' => ['method' => ['post'], 'middleware' => [$view]],
+            ],
+        ];
     }
 
     /**
