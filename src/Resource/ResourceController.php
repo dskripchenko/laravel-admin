@@ -438,6 +438,106 @@ final class ResourceController extends ApiController
     }
 
     /**
+     * Восстановить soft-deleted запись.
+     *
+     * @input integer $id
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceRestoredResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse} Resource не поддерживает SoftDeletes.
+     */
+    public function restore(Request $request): JsonResponse
+    {
+        $data = $request->validate(['id' => ['required']]);
+        $resource = $this->currentResource();
+
+        if (! $resource::supportsSoftDeletes()) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => 'Resource does not support soft-delete',
+            ], 422);
+        }
+
+        /** @var \Illuminate\Database\Eloquent\Model|null $record */
+        $record = $this->withTrashedQuery($resource)->find($data['id']);
+        if ($record === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+
+        $deletedAtColumn = method_exists($record, 'getDeletedAtColumn')
+            ? $record->getDeletedAtColumn()
+            : 'deleted_at';
+        $record->setAttribute($deletedAtColumn, null);
+        $record->save();
+
+        return $this->success([
+            'record' => $record->toArray(),
+            'message' => 'Restored',
+        ]);
+    }
+
+    /**
+     * Окончательное удаление soft-deleted записи.
+     *
+     * @input integer $id
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceForceDeletedResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function forceDelete(Request $request): JsonResponse
+    {
+        $data = $request->validate(['id' => ['required']]);
+        $resource = $this->currentResource();
+
+        if (! $resource::supportsSoftDeletes()) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => 'Resource does not support soft-delete',
+            ], 422);
+        }
+
+        $record = $this->withTrashedQuery($resource)->find($data['id']);
+        if ($record === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+
+        $record->forceDelete();
+
+        return $this->success([
+            'id' => $data['id'],
+            'message' => 'Force deleted',
+        ]);
+    }
+
+    /**
+     * Builder с включёнными trashed для restore/forceDelete.
+     *
+     * SoftDeletes trait добавляет SoftDeletingScope глобально; снимаем его,
+     * чтобы запрос видел и trashed-записи. Это эквивалент `->withTrashed()`,
+     * но не требует scope-magic methods на Builder'е.
+     */
+    private function withTrashedQuery(Resource $resource): \Illuminate\Database\Eloquent\Builder
+    {
+        return $resource->modelQuery()
+            ->withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class);
+    }
+
+    /**
      * Удалить запись (soft, если SoftDeletes; иначе hard).
      *
      * @input integer $id

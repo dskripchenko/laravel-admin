@@ -222,6 +222,8 @@ abstract class Resource
                 'delete' => $base.'.delete',
                 'restore' => $base.'.restore',
                 'force_delete' => $base.'.force-delete',
+                'replicate' => $base.'.replicate',
+                'reorder' => $base.'.reorder',
             ],
             'fields' => array_map(static fn (Field $f): array => $f->toArray(), $this->fields()),
             'columns' => array_map(static fn (TableColumn $c): array => $c->toArray(), $this->columns()),
@@ -230,15 +232,56 @@ abstract class Resource
             'searchable' => $this->searchableFields(),
             'with' => $this->with(),
             'features' => [
-                'softDeletes' => false,
-                'replicable' => false,
-                'reorderable' => false,
+                'softDeletes' => static::supportsSoftDeletes(),
+                'replicable' => $this->replicable(),
+                'reorderable' => $this->reorderable(),
+                'reorderColumn' => $this->reorderable() ? $this->reorderColumn() : null,
                 'importable' => false,
                 'exportable' => ['csv'],
                 'polling' => $this->polling(),
                 'warnOnUnsavedChanges' => true,
             ],
         ];
+    }
+
+    /**
+     * Поддерживает ли модель Eloquent SoftDeletes — детектится через trait_uses.
+     */
+    public static function supportsSoftDeletes(): bool
+    {
+        if (! isset(static::$model)) {
+            return false;
+        }
+
+        return in_array(
+            \Illuminate\Database\Eloquent\SoftDeletes::class,
+            class_uses_recursive(static::$model),
+            true,
+        );
+    }
+
+    /**
+     * Можно ли клонировать запись через ResourceController.replicate.
+     */
+    public function replicable(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Можно ли менять порядок записей drag-n-drop'ом.
+     */
+    public function reorderable(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Имя колонки, отвечающей за порядок (default `position`).
+     */
+    public function reorderColumn(): string
+    {
+        return 'position';
     }
 
     /**
