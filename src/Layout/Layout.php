@@ -126,6 +126,14 @@ abstract class Layout implements Renderable
         return Step::make($title, $children);
     }
 
+    /**
+     * @param  list<\Dskripchenko\LaravelAdmin\Infolist\Entry>  $entries
+     */
+    public static function infolist(array $entries = []): Infolist
+    {
+        return Infolist::make($entries);
+    }
+
     /* -----------------------------------------------------------------
      * Fluent API
      * ----------------------------------------------------------------- */
