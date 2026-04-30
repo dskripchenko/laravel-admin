@@ -53,6 +53,7 @@ final class AdminServiceProvider extends ServiceProvider
 
     private function registerRoutes(): void
     {
+        // SPA-shell под admin.path (например /admin/*).
         Route::group([
             'prefix'     => (string) config('admin.path'),
             'domain'     => config('admin.domain'),
@@ -60,6 +61,10 @@ final class AdminServiceProvider extends ServiceProvider
         ], function (): void {
             $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
         });
+
+        // API живёт отдельно, под admin.api_path (например /api/admin/*).
+        // Регистрация эндпоинтов через AdminApiModule + laravel-api делается на фазе P1.
+        // На фазе P0 — только префикс зарезервирован, роуты добавляются позже.
     }
 
     private function registerCommands(): void

@@ -43,7 +43,7 @@ final class ShellController
         return [
             'csrf'          => csrf_token(),
             'baseUrl'       => url((string) config('admin.path')),
-            'apiUrl'        => url((string) config('admin.path') . '/' . (string) config('admin.api_path')),
+            'apiUrl'        => url((string) config('admin.api_path')),
             'locale'        => app()->getLocale(),
             'theme'         => 'light',
             'brand'         => (array) config('admin.brand', []),

@@ -76,7 +76,7 @@ return [
     ],
 
     'image_upload' => [
-        'endpoint' => '/admin/api/v1/uploads',          // дефолтный UploadController
+        'endpoint' => '/api/admin/uploads',          // дефолтный UploadController
         'disk'     => 'public',
     ],
 ];

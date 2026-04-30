@@ -91,7 +91,7 @@ return [
     ],
 
     'ignore_routes' => [
-        '/admin/api/v1/pulse/*',                  // не сэмплировать самих себя
+        '/api/admin/pulse/*',                  // не сэмплировать самих себя
         '/health',
         '/_debugbar/*',
     ],
@@ -121,7 +121,7 @@ $schedule->command('admin:pulse:rotate')->daily();
 
 ## 8. Перформанс-соображения
 
-- Сэмплер пропускает `/admin/api/v1/pulse/*` (избегаем рекурсии).
+- Сэмплер пропускает `/api/admin/pulse/*` (избегаем рекурсии).
 - Запись samples — через job, не блокирует request.
 - При высокой нагрузке снизить `sample_rate.request` до 0.01 (1%).
 - Можно отключить per-environment через `ADMIN_PULSE_ENABLED=false` в `.env`.

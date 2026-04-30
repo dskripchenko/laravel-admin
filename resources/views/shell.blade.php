@@ -33,7 +33,7 @@
     <div id="admin-app"></div>
 
     @if($strategy === 'xhr')
-        {{-- SPA сама дёрнет /admin/api/v1/system/bootstrap при старте --}}
+        {{-- SPA сама дёрнет /api/admin/system/bootstrap при старте --}}
     @endif
 </body>
 </html>

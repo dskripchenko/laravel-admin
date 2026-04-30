@@ -73,7 +73,7 @@ return [
     ],
 
     'image_upload' => [
-        'endpoint' => '/admin/api/v1/uploads',
+        'endpoint' => '/api/admin/uploads',
         'disk'     => 'public',
     ],
 ];

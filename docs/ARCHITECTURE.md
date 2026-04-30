@@ -21,9 +21,9 @@
 | Frontend-state | Pinia. Сторы: `auth`, `manifest`, `permissions`, `menu`, `locale`, `theme`, `alerts` |
 | Translatable cache | Soft fallback: при отсутствии tag-aware кэша кэширование переводов отключается, `admin:doctor` показывает рекомендацию |
 | Тесты Resource | Без автогенерации фабрик. `ResourceTestCase` фокусируется на admin-специфике |
-| Версионирование API | Семвер admin = семвер API. `/admin/api/v1` — внутренний контракт core↔SPA, без обещаний обратной совместимости |
+| Версионирование API | Семвер admin = семвер API. `/api/admin/*` — внутренний контракт core↔SPA, без обещаний обратной совместимости |
 | Manifest-кэш | Etag + version (гибрид). Кэш-ключ `admin:manifest:{version}:{locale}` |
-| OpenAPI / docs | Встроенный Swagger UI на `/admin/api/docs` (lazy-loaded), пермишен `admin.system.api-docs` |
+| OpenAPI / docs | Встроенный Scalar UI на `/api/admin/doc` (lazy-loaded), пермишен `admin.system.api-docs` |
 | Bootstrap-стратегия | Конфиг `bootstrap.strategy`: `inline` (default, с CSP-nonce) или `xhr` |
 | Telemetry | Только Laravel-events (`Admin\Events\*`), без своего observer-API |
 
@@ -267,7 +267,7 @@ Admin::resources([
 
 1. Регистрирует пермишены в `PermissionRegistry`.
 2. Создаёт три виртуальных Screen-а (`{Resource}\ListScreen`, `EditScreen`, `CreateScreen`) — наследников собственных `BaseListScreen` / `BaseEditScreen` (см. `src/Screen/`).
-3. Регистрирует роуты в `AdminApiModule` через `laravel-api` (`/admin/api/v1/resources/{slug}/...`).
+3. Регистрирует роуты в `AdminApiModule` через `laravel-api` (`/api/admin/resources/{slug}/...`).
 4. Добавляет пункт меню (`menu` + `group`).
 5. Генерирует JSON-схему layout/fields/columns/filters → отдаёт SPA через `SystemController::manifest()`.
 
@@ -344,7 +344,7 @@ Action\Bulk::make('Удалить')->confirm('Удалить N записей?')
 Action\Async::make('Импорт')->process(ImportService::class, 'run'); // через delayed-process
 ```
 
-`Action::method(...)` маппится на метод Screen/Resource. На клиенте кнопка делает POST на `/api/v1/.../action/{name}` со сложенным state формы и параметрами.
+`Action::method(...)` маппится на метод Screen/Resource. На клиенте кнопка делает POST на `/api/admin/.../action/{name}` со сложенным state формы и параметрами.
 
 ### 5.6. Filter
 
@@ -389,7 +389,7 @@ Resource автоматически регистрирует свой permission
 
 1. Вызывает `ProcessFactoryInterface::make(ExportService::class, 'csv', ...$args)`.
 2. API возвращает `{success, payload: { delayed: { uuid, status: 'new' } } }`.
-3. `applyAxiosInterceptor` в SPA автоматически поллит `/admin/api/v1/system/delayed/status?uuid=...` до `done`/`failed`.
+3. `applyAxiosInterceptor` в SPA автоматически поллит `/api/admin/system/delayed/status?uuid=...` до `done`/`failed`.
 4. Виджет `<UiToast>` показывает прогресс; по завершении — финальный payload (например, ссылка на скачивание).
 
 Allowlist процессов (требование `delayed-process`) — наш ServiceProvider автоматически собирает все `Action\Async`-handlers и пушит их в `config/delayed-process.php` runtime-merge через `array_merge_deep` (php-array-helper).
@@ -428,7 +428,7 @@ Allowlist процессов (требование `delayed-process`) — наш
 **Notification center**:
 
 - Бэкенд: `Illuminate\Notifications\Notifiable` на `AdminUser`, своя миграция `admin_notifications` (или переиспользование стандартной `notifications` host-проекта — флаг в конфиге).
-- API: `/admin/api/v1/system/notifications` (list, mark-read, mark-all-read, delete).
+- API: `/api/admin/system/notifications` (list, mark-read, mark-all-read, delete).
 - UI: компонент `<NotificationBell>` в шапке с unread-счётчиком; drawer `<NotificationCenter>` с списком (тип, иконка, текст, время, ссылка `action_url`).
 - Эмитим стандартные Laravel-events на отправку — host-проект может слушать.
 - Toast-нотификации (транзиентные, через `payload.alerts`) — отдельный механизм, см. п.7.
@@ -436,7 +436,7 @@ Allowlist процессов (требование `delayed-process`) — наш
 **API-токены администратора** (вкладка в ProfileScreen, видна при установленном Sanctum):
 
 - Зависимость: `laravel/sanctum` — `composer suggest`. Если не установлен — вкладка не появляется, ошибок нет.
-- Бэкенд: `Auth\Controllers\TokenController` на `/admin/api/v1/profile/tokens` (list/create/revoke/regenerate). `AdminUser` подключает `HasApiTokens` trait при наличии Sanctum.
+- Бэкенд: `Auth\Controllers\TokenController` на `/api/admin/profile/tokens` (list/create/revoke/regenerate). `AdminUser` подключает `HasApiTokens` trait при наличии Sanctum.
 - UI: вкладка «API-токены» в `ProfileScreen`. Создание токена в модалке: name, abilities (subset из admin permissions либо `['*']`), `expires_at`. Секрет показывается **один раз** при создании, копируется в clipboard.
 - Список: name, abilities (chips), `last_used_at`, `created_at`, `expires_at`, actions Revoke / Regenerate.
 - Audit: события `token.created` / `token.revoked` / `token.first_used` / `token.expired` пишутся в audit-log с привязкой к user_id.
@@ -759,7 +759,7 @@ interface AdminPlugin
 - `AdminTinymcePlugin` — альтернативный WYSIWYG-движок.
 - `AdminStarterPlugin` — Users/Roles/AuditLog/Translations/Settings Resource'ы.
 
-Plugin'ы видны в `/admin/api/v1/system/plugins` (для отладки) и пишут версии в Swagger UI.
+Plugin'ы видны в `/api/admin/system/plugins` (для отладки) и пишут версии в Scalar UI.
 
 ---
 
@@ -1159,9 +1159,9 @@ dskripchenko/laravel-admin/
 
 1. **Bootstrap.** `routes/admin.php` отдаёт ровно один Blade `shell.blade.php` на любой URL с префиксом `/admin/*`. В `<head>` инжектится `window.__ADMIN_BOOTSTRAP__ = { csrf, baseUrl, locale, user, manifest }`.
 2. **Vue-router** на стороне клиента; роуты тривиально мапятся на манифест: `/admin/resources/{slug}` → `<ListScreen>`, `/admin/resources/{slug}/{id}` → `<EditScreen>`, `/admin/screens/{name}` → `<CustomScreen>`.
-3. **Манифест** (`/admin/api/v1/system/manifest`) — это JSON со всеми Resource/Screen/Field/Layout/Action/Permission. SPA получает его при логине и кэширует. Inval по `etag`.
+3. **Манифест** (`/api/admin/system/manifest`) — это JSON со всеми Resource/Screen/Field/Layout/Action/Permission. SPA получает его при логине и кэширует. Inval по `etag`.
 4. **Запросы.** Любая операция (получить запись, сохранить форму, применить bulk-action, открыть модалку) — это вызов `laravel-api`-эндпоинта. Конверт всегда одинаковый: `{success, payload}` для успеха, `{success: false, payload: { errorKey, message|messages }}` для ошибки.
-5. **Reactive layouts.** `Field` может декларативно зависеть от других полей: `Field\Select::make('region_id')->reactive()->reloadFor(['country_id'])`. SPA шлёт XHR на `/admin/api/v1/resources/{slug}/field/region_id?country_id=...` и подставляет новый список опций / новую схему.
+5. **Reactive layouts.** `Field` может декларативно зависеть от других полей: `Field\Select::make('region_id')->reactive()->reloadFor(['country_id'])`. SPA шлёт XHR на `/api/admin/resources/{slug}/field/region_id?country_id=...` и подставляет новый список опций / новую схему.
 6. **Долгие операции.** Любой response в формате `{payload: {delayed: {uuid}}}` автоматически перехватывается `applyAxiosInterceptor` из `laravel-delayed-process` — тостер показывает прогресс, по завершении промис возвращает финальный payload.
 7. **Алерты.** Сервер прикладывает `payload.alerts: [{type, message}]` — SPA рендерит через `<UiToast>`.
 8. **Без full reload.** Login/logout тоже идут через JSON-API; единственный full-reload — на `401` (повторная инициализация bootstrap).
@@ -1279,7 +1279,7 @@ return [
     // 11.2.1. Адрес панели
     'path'      => env('ADMIN_PATH', 'admin'),       // /admin
     'domain'    => env('ADMIN_DOMAIN'),              // null = тот же домен; иначе субдомен
-    'api_path'  => 'api/v1',                         // итог: /admin/api/v1/...
+    'api_path'  => 'api/admin',                      // абсолютный, не вложен в path → /api/admin/...
 
     // 11.2.2. Auth
     'auth' => [
@@ -1346,7 +1346,7 @@ class AdminUser extends Authenticatable
 
 ### 11.5. Login flow
 
-- Login-страница на Vue (часть SPA-shell, доступна без AdminAuth) — POST на `/admin/api/v1/auth/login` (контроллер из core).
+- Login-страница на Vue (часть SPA-shell, доступна без AdminAuth) — POST на `/api/admin/auth/login` (контроллер из core).
 - Поддержка remember-me, throttling, password reset, email verification (вкл/выкл флагами в конфиге).
 - 2FA (TOTP) — в core, см. п.5.11. Включается флагом `auth.two_factor.enabled` в `config/admin.php`.
 - API-токены: на той же модели через Sanctum-trait (опциональная зависимость) — для headless-сценариев и интеграций.
@@ -1393,7 +1393,7 @@ Roadmap пересчитан под полный объём (gap-анализ + 
 | **P14. WYSIWYG (Tiptap в core)** | Field\Wysiwyg + tiptap-обёртка, конфиг extensions, image-upload через UploadController | 1 нед |
 | **P15. Notifications + API tokens** | Notification center + bell + drawer + database channel + API endpoints, **API-tokens UI** в Profile (опц. через Sanctum) | 1 нед |
 | **P16. Theming + i18n** | Light/dark theme в core, ThemeSwitcher, persist (localStorage+cookie), CSS-vars overrides, LocaleResolver, TranslatableFieldBridge, soft-fallback по tag-aware кэшу | 1 нед |
-| **P17. Bootstrap + Swagger** | Стратегии bootstrap (inline+nonce / xhr), AdminCspNonce middleware, встроенный Swagger UI на /admin/api/docs (lazy) | 0.5 нед |
+| **P17. Bootstrap + Scalar UI** | Стратегии bootstrap (inline+nonce / xhr), AdminCspNonce middleware, встроенный Scalar UI на /api/admin/doc (lazy) | 0.5 нед |
 | **P18. Тесты + helpers** | ResourceTestCase, ScreenTestCase, ActsAsAdmin, smoke-coverage по всем Field/Layout/Action | 1.5 нед |
 | **P19. Документация + примеры** | docs/getting-started, docs/recipes, docs/sister-packs, demo-app | 2 нед |
 | **P20. Бета** | реальный проект-pilot, фикс багов, перф (manifest-кэш, polling, lazy-imports), CSP-проверка, security-аудит | 4 нед |
@@ -1453,13 +1453,13 @@ Roadmap пересчитан под полный объём (gap-анализ + 
 
 11. ✅ **Тестирование Resource без автогенерации фабрик.** Пользователь пишет штатные Laravel-фабрики сам. Наш `ResourceTestCase` сосредоточен на admin-специфике: `actingAsAdmin($admin, $permissions)`, `assertResourceList($resource, $expected)`, `assertResourceCreated`, `assertResourceUpdated`, `assertResourceDeleted`, `submitResourceForm($resource, $payload)`, `bulkAction($resource, $name, $ids)`.
 
-12. ✅ **Семвер admin-пакета = семвер API.** `/admin/api/v1` — внутренний контракт между core и SPA, breaking-changes допустимы в мажорных релизах admin (с миграционными нотами в CHANGELOG). Никаких параллельных v1/v2 ради обратной совместимости. Внешние потребители, которым нужен стабильный API, поднимают свой публичный слой поверх admin (через `laravel-api` это легко).
+12. ✅ **Семвер admin-пакета = семвер API.** `/api/admin/*` — внутренний контракт между core и SPA, breaking-changes допустимы в мажорных релизах admin (с миграционными нотами в CHANGELOG). Никаких параллельных версий ради обратной совместимости. Внешние потребители, которым нужен стабильный API, поднимают свой публичный слой поверх admin (через `laravel-api` это легко).
 
-13. ✅ **Manifest-кэш: etag + version (гибрид).** `/admin/api/v1/system/manifest` отдаёт `ETag: hash(resources, locale, user.permissions)` и поддерживает `If-None-Match` → 304. Параллельно `bootstrap` инжектит `manifest_version` (тот же хэш) — SPA сначала сверяет с `localStorage`, при совпадении вообще не дёргает эндпоинт. Хэш собирается из сериализованного `ResourceCompiler`-вывода + версии admin-пакета + локали + permissions пользователя. Кэш-ключ в `localStorage`: `admin:manifest:{version}:{locale}`.
+13. ✅ **Manifest-кэш: etag + version (гибрид).** `/api/admin/system/manifest` отдаёт `ETag: hash(resources, locale, user.permissions)` и поддерживает `If-None-Match` → 304. Параллельно `bootstrap` инжектит `manifest_version` (тот же хэш) — SPA сначала сверяет с `localStorage`, при совпадении вообще не дёргает эндпоинт. Хэш собирается из сериализованного `ResourceCompiler`-вывода + версии admin-пакета + локали + permissions пользователя. Кэш-ключ в `localStorage`: `admin:manifest:{version}:{locale}`.
 
-14. ✅ **Встроенный Swagger UI.** `/admin/api/docs` под admin-аутентификацией, lazy-loaded `swagger-ui-dist` (не входит в основной SPA-бандл). Спецификация на `/admin/api/openapi.json` через генератор `laravel-api`. Виден только пользователям с пермишеном `admin.system.api-docs` (по умолчанию суперюзер).
+14. ✅ **Встроенный Scalar UI.** `/api/admin/doc` под admin-аутентификацией (lazy-loaded, не входит в основной SPA-бандл). Спецификация на `/api/admin/openapi.json` через генератор `laravel-api`. Виден только пользователям с пермишеном `admin.system.api-docs` (по умолчанию суперюзер).
 
-15. ✅ **Конфигурируемая стратегия bootstrap.** `config/admin.php → bootstrap.strategy`: `inline` (default, inline `<script>` с поддержкой CSP-nonce через `Vite::useCspNonce()`) или `xhr` (пустая shell + первый запрос на `/admin/api/v1/system/bootstrap`). Никакого `'unsafe-inline'` по умолчанию: при `inline`-стратегии генерируем `nonce` и кладём в CSP-header через middleware `AdminCspNonce`.
+15. ✅ **Конфигурируемая стратегия bootstrap.** `config/admin.php → bootstrap.strategy`: `inline` (default, inline `<script>` с поддержкой CSP-nonce через `Vite::useCspNonce()`) или `xhr` (пустая shell + первый запрос на `/api/admin/system/bootstrap`). Никакого `'unsafe-inline'` по умолчанию: при `inline`-стратегии генерируем `nonce` и кладём в CSP-header через middleware `AdminCspNonce`.
 
 16. ✅ **Только Laravel-events.** Никакого собственного observer-DSL. Эмитим стандартные события: `Admin\Events\ActionDispatched`, `ActionCompleted`, `ActionFailed`, `ResourceQueried`, `ResourceSaved`, `ResourceDeleted`, `ValidationFailed`, `BulkActionStarted`, `DelayedActionDispatched`, `LoginSucceeded`, `LoginFailed`. Host-проект слушает их штатным `Event::listen()` или через сервис-провайдер APM-интеграции (Sentry/Telescope/OpenTelemetry — у всех есть listener'ы для Laravel-events). Resource-специфичную логику (per-resource hooks) пользователь выражает через `beforeSave`/`afterSave`/`beforeDelete` на самом Resource.
 

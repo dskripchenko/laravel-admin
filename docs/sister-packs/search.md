@@ -44,7 +44,7 @@ Driver выбирается в `config/admin-search.php → driver`.
 
 ### API
 
-`GET /admin/api/v1/system/search?q=...`:
+`GET /api/admin/system/search?q=...`:
 
 ```json
 {
