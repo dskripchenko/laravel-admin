@@ -86,6 +86,23 @@ final class AdminServiceProvider extends ServiceProvider
         $this->registerRoutes();
         $this->registerCommands();
         $this->registerExceptionHandlers();
+        $this->registerAuditListeners();
+    }
+
+    /**
+     * Регистрирует слушателей admin-auth событий для записи в audit-log.
+     */
+    private function registerAuditListeners(): void
+    {
+        if (! (bool) config('admin.audit.enabled', true)) {
+            return;
+        }
+        if (! (bool) config('admin.audit.log_auth_events', true)) {
+            return;
+        }
+        \Illuminate\Support\Facades\Event::subscribe(
+            Audit\AuthAuditListener::class,
+        );
     }
 
     /**
