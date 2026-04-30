@@ -60,27 +60,9 @@ final class SystemController extends ApiController
      * @response 200 {BootstrapResponse}
      * @response 401 {UnauthenticatedErrorResponse}
      */
-    public function bootstrap(Request $request): JsonResponse
+    public function bootstrap(Request $request, \Dskripchenko\LaravelAdmin\Support\BootstrapBuilder $builder): JsonResponse
     {
-        $locale = (string) ($request->header('X-Admin-Locale') ?? config('admin.ui.default_locale', 'ru'));
-
-        return $this->success([
-            'csrf' => csrf_token(),
-            'baseUrl' => url((string) config('admin.path', 'admin')),
-            'apiUrl' => url((string) config('admin.api_path', 'api/admin')),
-            'locale' => $locale,
-            'availableLocales' => (array) config('admin.ui.available_locales', ['ru', 'en']),
-            'theme' => (string) config('admin.ui.default_theme', 'light'),
-            'brand' => (array) config('admin.brand', []),
-            'user' => null,                         // будет заполнено в P2 после Auth
-            'permissions' => [],                            // P2
-            'manifestVersion' => $this->manifest->version($locale),
-            'pluginVersions' => [],
-            'config' => [
-                'manifest' => ['etag' => (bool) config('admin.manifest.etag', true)],
-                'bootstrap' => ['strategy' => (string) config('admin.bootstrap.strategy', 'inline')],
-            ],
-        ]);
+        return $this->success($builder->build($request));
     }
 
     /**

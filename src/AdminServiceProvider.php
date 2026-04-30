@@ -91,6 +91,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->alias(Admin::class, 'admin');
 
         $this->app->singleton(Manifest::class);
+        $this->app->singleton(Support\BootstrapBuilder::class);
 
         // Override laravel-api's `api_module` to our AdminApiModule.
         // Pre-condition: laravel-api's ApiServiceProvider already ran register()

@@ -26,7 +26,10 @@ beforeEach(function (): void {
 });
 
 it('serves /api/admin/system/bootstrap', function (): void {
-    $response = $this->withoutExceptionHandling()->getJson('/api/admin/system/bootstrap');
+    // Pest default Accept-Language может быть 'en' — фиксируем явно ru.
+    $response = $this->withoutExceptionHandling()->getJson('/api/admin/system/bootstrap', [
+        \Dskripchenko\LaravelAdmin\Theme\LocaleResolver::HEADER => 'ru',
+    ]);
 
     $response->assertOk();
     $response->assertJson(['success' => true]);

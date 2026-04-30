@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Http\Controllers;
 
+use Dskripchenko\LaravelAdmin\Support\BootstrapBuilder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -13,17 +14,19 @@ use Illuminate\Http\Request;
  * Возвращает один и тот же Blade на любой URL под /admin/* (кроме API).
  * Vue-router на клиенте сам обрабатывает routing.
  *
- * На фазе P0 отдаёт минимальный bootstrap. Полное наполнение
- * (manifest, user, permissions, menu, locales) — фазы P3 / P15.
+ * Стратегия 'inline' (default): bootstrap-payload инжектится в shell.blade
+ * через `<script>`-тег с CSP-nonce. Стратегия 'xhr': SPA сама запрашивает
+ * `/api/admin/system/bootstrap`. Контракт payload'а — единый, через
+ * BootstrapBuilder.
  */
 final class ShellController
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, BootstrapBuilder $builder): View
     {
         $strategy = (string) config('admin.bootstrap.strategy', 'inline');
 
         $bootstrap = $strategy === 'inline'
-            ? $this->buildBootstrap($request)
+            ? $builder->build($request)
             : ['strategy' => 'xhr'];
 
         /** @var view-string $view */
@@ -39,27 +42,10 @@ final class ShellController
     }
 
     /**
-     * @return array<string, mixed>
-     */
-    private function buildBootstrap(Request $request): array
-    {
-        return [
-            'csrf' => csrf_token(),
-            'baseUrl' => url((string) config('admin.path')),
-            'apiUrl' => url((string) config('admin.api_path')),
-            'locale' => app()->getLocale(),
-            'theme' => 'light',
-            'brand' => (array) config('admin.brand', []),
-            'manifestVersion' => null,
-            'user' => null,
-        ];
-    }
-
-    /**
-     * Заготовка резолвера ассетов. На фазе P0 возвращает пустые массивы;
-     * далее заменим на чтение Vite-manifest через AssetsService.
+     * Заготовка резолвера ассетов. Vite-manifest подключение появится в
+     * полноценной SPA-сборке (P19/P20).
      *
-     * @return array{css: array<int,string>, js: array<int,string>}
+     * @return array{css: list<string>, js: list<string>}
      */
     private function resolveAssets(): array
     {
