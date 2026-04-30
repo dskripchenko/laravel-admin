@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin;
 
+use Dskripchenko\LaravelAdmin\Permission\ItemPermission;
+use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\Resource as ResourceBase;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\Screen;
@@ -38,7 +40,29 @@ final class Admin
         private readonly Application $app,
         private readonly ScreenRegistry $screens,
         private readonly ResourceRegistry $resourceRegistry,
+        private readonly PermissionRegistry $permissions,
     ) {}
+
+    /**
+     * Регистрирует группы permissions.
+     *
+     * @param  ItemPermission|list<ItemPermission>  $items
+     */
+    public function permissions(ItemPermission|array $items): self
+    {
+        if ($items instanceof ItemPermission) {
+            $this->permissions->add($items);
+        } else {
+            $this->permissions->addMany($items);
+        }
+
+        return $this;
+    }
+
+    public function getPermissionRegistry(): PermissionRegistry
+    {
+        return $this->permissions;
+    }
 
     /**
      * Регистрирует Screen-класс. Можно передать массив — будут зарегистрированы все.

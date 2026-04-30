@@ -9,6 +9,7 @@ use Dskripchenko\LaravelAdmin\Console\InstallCommand;
 use Dskripchenko\LaravelAdmin\Console\LinkCommand;
 use Dskripchenko\LaravelAdmin\Console\MakeAdminCommand;
 use Dskripchenko\LaravelAdmin\Http\AdminApiModule;
+use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
@@ -45,10 +46,12 @@ final class AdminServiceProvider extends ServiceProvider
 
         $this->app->singleton(ScreenRegistry::class);
         $this->app->singleton(ResourceRegistry::class);
+        $this->app->singleton(PermissionRegistry::class);
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin(
             $app,
             $app->make(ScreenRegistry::class),
             $app->make(ResourceRegistry::class),
+            $app->make(PermissionRegistry::class),
         ));
         $this->app->alias(Admin::class, 'admin');
 

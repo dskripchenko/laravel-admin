@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Controllers;
 
 use Dskripchenko\LaravelAdmin\Admin;
+use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
@@ -28,6 +29,7 @@ final class SystemController extends ApiController
         // Сохраняем для будущих фаз (P1.10+) — в menu для Screen-разделов.
         // @phpstan-ignore property.onlyWritten
         private readonly ScreenRegistry $screens,
+        private readonly PermissionRegistry $permissions,
     ) {}
 
     /**
@@ -189,7 +191,7 @@ final class SystemController extends ApiController
      */
     public function permissions(Request $request): JsonResponse
     {
-        return $this->success(['groups' => []]);
+        return $this->success(['groups' => $this->permissions->toArray()]);
     }
 
     /**

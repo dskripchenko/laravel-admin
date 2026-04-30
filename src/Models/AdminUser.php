@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Models;
 
+use Dskripchenko\LaravelAdmin\Permission\Concerns\HasAdminAccess;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Auth\MustVerifyEmail;
 use Illuminate\Auth\Passwords\CanResetPassword;
@@ -45,6 +46,7 @@ class AdminUser extends Model implements AuthenticatableContract, CanResetPasswo
     use Authenticatable;
     use Authorizable;
     use CanResetPassword;
+    use HasAdminAccess;
     use HasFactory;
     use MustVerifyEmail;
     use Notifiable;
