@@ -11,7 +11,7 @@ namespace Dskripchenko\LaravelAdmin\Field;
  * и помещает в state {id, url, name, mime, size}. Backend получает либо id
  * uploaded record'а, либо raw file (multipart) — выбор за реализатором.
  */
-final class FileUpload extends Field
+class FileUpload extends Field
 {
     public function fieldType(): string
     {
