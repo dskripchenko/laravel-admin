@@ -52,6 +52,7 @@ final class AdminServiceProvider extends ServiceProvider
             Settings\Storage\SettingsStorage::class,
             Settings\Storage\KeyValueSettingsStorage::class,
         );
+        $this->app->singleton(Plugin\PluginRegistry::class);
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin(
             $app,
             $app->make(ScreenRegistry::class),
@@ -92,6 +93,28 @@ final class AdminServiceProvider extends ServiceProvider
         $this->registerCommands();
         $this->registerExceptionHandlers();
         $this->registerAuditListeners();
+        $this->bootPlugins();
+    }
+
+    /**
+     * Регистрирует и boot'ит плагины из config('admin.plugins').
+     */
+    private function bootPlugins(): void
+    {
+        $configured = (array) config('admin.plugins', []);
+        if ($configured === []) {
+            return;
+        }
+
+        /** @var Plugin\PluginRegistry $registry */
+        $registry = $this->app->make(Plugin\PluginRegistry::class);
+        /** @var list<class-string<Plugin\AdminPlugin>> $classes */
+        $classes = array_values(array_filter($configured, 'is_string'));
+        $registry->addMany($classes);
+
+        /** @var Admin $admin */
+        $admin = $this->app->make(Admin::class);
+        $registry->bootAll($admin);
     }
 
     /**
