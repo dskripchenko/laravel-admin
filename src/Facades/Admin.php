@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Dskripchenko\LaravelAdmin\Admin resources(array $classes)
  * @method static \Dskripchenko\LaravelAdmin\Admin widgets(array $classes)
  * @method static \Dskripchenko\LaravelAdmin\Admin plugin(string $class)
+ * @method static \Dskripchenko\LaravelAdmin\Admin screen(string|array $class)
  * @method static array getResources()
  * @method static array getWidgets()
  * @method static array getPlugins()
+ * @method static array getScreens()
+ * @method static \Dskripchenko\LaravelAdmin\Screen\Screen|null resolveScreen(string $slug)
  * @method static string version()
  *
  * @see AdminManager

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin;
 
+use Dskripchenko\LaravelAdmin\Screen\Screen;
+use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Illuminate\Contracts\Foundation\Application;
 
 /**
@@ -34,10 +36,49 @@ final class Admin
     private array $plugins = [];
 
     public function __construct(
-        // Сохраняем для будущих фаз (P1+) — резолвинг сервисов через контейнер.
-        // @phpstan-ignore property.onlyWritten
         private readonly Application $app,
+        private readonly ScreenRegistry $screens,
     ) {}
+
+    /**
+     * Регистрирует Screen-класс. Можно передать массив — будут зарегистрированы все.
+     *
+     * @param  class-string<Screen>|list<class-string<Screen>>  $class
+     */
+    public function screen(string|array $class): self
+    {
+        if (is_array($class)) {
+            $this->screens->addMany($class);
+        } else {
+            $this->screens->add($class);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, class-string<Screen>>
+     */
+    public function getScreens(): array
+    {
+        return $this->screens->all();
+    }
+
+    /**
+     * Resolve Screen-instance по slug'у через контейнер.
+     */
+    public function resolveScreen(string $slug): ?Screen
+    {
+        $class = $this->screens->get($slug);
+        if ($class === null) {
+            return null;
+        }
+
+        /** @var Screen $instance */
+        $instance = $this->app->make($class);
+
+        return $instance;
+    }
 
     /**
      * Регистрирует список Resource-классов.
