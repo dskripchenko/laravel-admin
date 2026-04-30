@@ -6,6 +6,7 @@ namespace Dskripchenko\LaravelAdmin\Resource;
 
 use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Field\Field;
+use Dskripchenko\LaravelAdmin\Field\ValidationRulesExporter;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -184,23 +185,14 @@ abstract class Resource
     /**
      * Validation rules для контекста create/update.
      *
-     * @return array<string, list<string|array<string, mixed>>>
+     * Берёт явные `Field::rules()`-декларации и дополняет их type-specific
+     * implicit-rules (numeric/email/file/array/...) через ValidationRulesExporter.
+     *
+     * @return array<string, list<string>>
      */
     public function validationRules(string $context = 'create'): array
     {
-        $rules = [];
-        foreach ($this->fields() as $field) {
-            if (! $field->appliesTo($context)) {
-                continue;
-            }
-            $fieldRules = $field->getRules();
-            if ($fieldRules === []) {
-                continue;
-            }
-            $rules[$field->name()] = $fieldRules;
-        }
-
-        return $rules;
+        return ValidationRulesExporter::export($this->fields(), $context);
     }
 
     /* -----------------------------------------------------------------
