@@ -70,13 +70,15 @@ class AdminApi extends BaseApi
             'system' => [
                 'controller' => Controllers\SystemController::class,
                 'actions' => [
-                    'bootstrap' => ['method' => ['get']],
+                    'bootstrap' => ['method' => ['get'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                     'manifest' => ['method' => ['get']],
                     'me' => ['method' => ['get']],
                     'menu' => ['method' => ['get']],
-                    'locales' => ['method' => ['get']],
+                    'locales' => ['method' => ['get'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                     'permissions' => ['method' => ['get']],
                     'plugins' => ['method' => ['get']],
+                    'theme' => ['method' => ['get'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
+                    'setTheme' => ['method' => ['post'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                 ],
             ],
             'auth' => [

@@ -261,4 +261,57 @@ final class SystemController extends ApiController
 
         return $this->success(['plugins' => $plugins]);
     }
+
+    /**
+     * Получить текущую тему + список доступных.
+     *
+     * @output object $payload
+     *
+     * @security Public
+     *
+     * @response 200 {ThemeStateResponse}
+     */
+    public function theme(Request $request, \Dskripchenko\LaravelAdmin\Theme\ThemeManager $themes): JsonResponse
+    {
+        return $this->success([
+            'current' => $themes->current($request),
+            'default' => $themes->default(),
+            'available' => $themes->available(),
+        ]);
+    }
+
+    /**
+     * Установить тему (cookie для anon + user.theme для залогиненных).
+     *
+     * @input string $theme
+     *
+     * @output object $payload
+     *
+     * @security Public
+     *
+     * @response 200 {ThemeUpdatedResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function setTheme(Request $request, \Dskripchenko\LaravelAdmin\Theme\ThemeManager $themes): JsonResponse
+    {
+        $data = $request->validate([
+            'theme' => ['required', 'string'],
+        ]);
+
+        if (! $themes->isAvailable($data['theme'])) {
+            return $this->error([
+                'errorKey' => 'unsupported_theme',
+                'message' => 'Theme `'.$data['theme'].'` is not in available list',
+            ], 422);
+        }
+
+        $cookie = $themes->persist($data['theme']);
+
+        $response = $this->success([
+            'theme' => $data['theme'],
+        ]);
+        $response->withCookie($cookie);
+
+        return $response;
+    }
 }
