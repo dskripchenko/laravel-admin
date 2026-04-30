@@ -131,6 +131,14 @@ class AdminApi extends BaseApi
                     'twoFactorRegenerateCodes' => ['method' => ['post']],
                 ],
             ],
+            'dashboard' => [
+                'controller' => \Dskripchenko\LaravelAdmin\Widget\DashboardController::class,
+                'actions' => [
+                    'get' => ['method' => ['get']],
+                    'save' => ['method' => ['post']],
+                    'reset' => ['method' => ['post']],
+                ],
+            ],
         ];
 
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.
