@@ -77,7 +77,28 @@ class AdminApi extends BaseApi
                     'plugins' => ['method' => ['get']],
                 ],
             ],
-            // 'auth' / 'profile' — фаза P2
+            'auth' => [
+                'controller' => \Dskripchenko\LaravelAdmin\Auth\Controllers\AuthController::class,
+                'exclude-middleware' => [Middleware\AdminAuth::class],
+                'actions' => [
+                    'login' => [
+                        'method' => ['post'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1'],
+                    ],
+                    'logout' => ['method' => ['post']],
+                    'forgotPassword' => [
+                        'method' => ['post'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':3,5'],
+                    ],
+                    'resetPassword' => ['method' => ['post']],
+                    'verifyEmail' => ['method' => ['post']],
+                    'resendEmailVerification' => [
+                        'method' => ['post'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':3,1'],
+                    ],
+                ],
+            ],
+            // 'profile' — фаза P2.4
         ];
 
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.

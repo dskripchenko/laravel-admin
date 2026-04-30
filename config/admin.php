@@ -79,7 +79,10 @@ return [
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminCspNonce::class,
         ],
         'api' => [
-            'api',
+            // admin-API сессионный (не stateless) — используем `web` middleware
+            // group для StartSession/EncryptCookies/CSRF. Headless Bearer-tokens
+            // через Sanctum — фаза P15 (опционально).
+            'web',
             Dskripchenko\LaravelAdmin\Http\Middleware\CaptureApiRequest::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
