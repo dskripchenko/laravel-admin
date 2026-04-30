@@ -169,6 +169,30 @@ final class ResourceController extends ApiController
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
+        // Group-by: если передан group_by — собираем counts по уникальным значениям.
+        // Pagination над group'ами не делаем — фронт получает все group'ы для текущего фильтра.
+        $groups = null;
+        $groupBy = (string) $request->input('group_by', '');
+        if ($groupBy !== '') {
+            $groupQuery = $resource->indexQuery();
+            $filterInputs = HttpFilterParser::parse($request);
+            foreach ($resource->filters() as $filter) {
+                $value = $filterInputs[$filter->field()] ?? null;
+                if ($value !== null) {
+                    $groupQuery = $filter->apply($groupQuery, $value);
+                }
+            }
+            $groups = $groupQuery
+                ->select($groupBy, \Illuminate\Support\Facades\DB::raw('COUNT(*) as aggregate_count'))
+                ->groupBy($groupBy)
+                ->get()
+                ->map(static fn ($row): array => [
+                    'value' => $row->getAttribute($groupBy),
+                    'count' => (int) $row->getAttribute('aggregate_count'),
+                ])
+                ->all();
+        }
+
         return $this->success([
             'data' => $paginator->items(),
             'meta' => [
@@ -179,7 +203,7 @@ final class ResourceController extends ApiController
                 'from' => $paginator->firstItem(),
                 'to' => $paginator->lastItem(),
                 'summary' => null,
-                'groups' => null,
+                'groups' => $groups,
             ],
         ]);
     }
@@ -290,6 +314,93 @@ final class ResourceController extends ApiController
             'state' => $record->toArray(),
             'message' => 'Updated',
         ]);
+    }
+
+    /**
+     * Потоковый CSV-экспорт списка с применением текущих filters.
+     *
+     * Использует встроенный fputcsv через StreamedResponse — без зависимостей.
+     * Для огромных датасетов рекомендуется delayed-process job (фаза P13).
+     *
+     * @input array ?$filters
+     * @input string ?$q
+     * @input array ?$columns Список имён колонок для выгрузки. Default: все
+     *                          из Resource::columns(), кроме defaultHidden.
+     *
+     * @output file CSV
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceCsvExportResponse}
+     */
+    public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $resource = $this->currentResource();
+        $query = $resource->indexQuery();
+
+        $filterInputs = HttpFilterParser::parse($request);
+        foreach ($resource->filters() as $filter) {
+            $value = $filterInputs[$filter->field()] ?? null;
+            if ($value !== null) {
+                $query = $filter->apply($query, $value);
+            }
+        }
+
+        $q = HttpFilterParser::searchTerm($request);
+        $searchable = $resource->searchableFields();
+        if ($q !== '' && $searchable !== []) {
+            $query = $query->where(function ($builder) use ($q, $searchable): void {
+                foreach ($searchable as $col) {
+                    $builder->orWhere($col, 'like', '%'.$q.'%');
+                }
+            });
+        }
+
+        // Колонки для экспорта.
+        $requested = (array) $request->input('columns', []);
+        $columns = [];
+        foreach ($resource->columns() as $col) {
+            $arr = $col->toArray();
+            if ($arr['defaultHidden'] && $requested === []) {
+                continue;
+            }
+            if ($requested !== [] && ! in_array($col->name(), $requested, true)) {
+                continue;
+            }
+            $columns[$col->name()] = (string) ($arr['label'] ?? $col->name());
+        }
+
+        $filename = $resource::slug().'-'.date('Y-m-d-His').'.csv';
+
+        return new \Symfony\Component\HttpFoundation\StreamedResponse(
+            function () use ($query, $columns): void {
+                $handle = fopen('php://output', 'w');
+                if ($handle === false) {
+                    return;
+                }
+                // BOM для Excel UTF-8 совместимости.
+                fwrite($handle, "\xEF\xBB\xBF");
+                fputcsv($handle, array_values($columns), ',', '"', '\\');
+
+                $query->chunkById(500, function ($rows) use ($handle, $columns): void {
+                    foreach ($rows as $row) {
+                        $line = [];
+                        foreach (array_keys($columns) as $col) {
+                            $value = data_get($row->toArray(), $col);
+                            $line[] = is_scalar($value) ? (string) $value : json_encode($value);
+                        }
+                        fputcsv($handle, $line, ',', '"', '\\');
+                    }
+                });
+
+                fclose($handle);
+            },
+            200,
+            [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            ],
+        );
     }
 
     /**

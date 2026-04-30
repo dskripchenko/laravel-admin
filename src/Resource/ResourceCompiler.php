@@ -77,6 +77,7 @@ final class ResourceCompiler
                 'create' => ['method' => ['post'], 'middleware' => [$create]],
                 'update' => ['method' => ['post'], 'middleware' => [$update]],
                 'inlineUpdate' => ['method' => ['post'], 'middleware' => [$update]],
+                'exportCsv' => ['method' => ['get', 'post'], 'middleware' => [$view]],
                 'delete' => ['method' => ['post'], 'middleware' => [$delete]],
                 'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
                 'createScreen' => ['method' => ['get'], 'middleware' => [$create]],

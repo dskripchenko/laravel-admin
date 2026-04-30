@@ -233,9 +233,18 @@ abstract class Resource
                 'reorderable' => false,
                 'importable' => false,
                 'exportable' => ['csv'],
-                'polling' => null,
+                'polling' => $this->polling(),
                 'warnOnUnsavedChanges' => true,
             ],
         ];
+    }
+
+    /**
+     * Интервал автообновления list-таблицы в секундах. null = не обновлять.
+     * Например, 30 — таблица ре-fetch'ит данные каждые 30 секунд.
+     */
+    public function polling(): ?int
+    {
+        return null;
     }
 }
