@@ -438,6 +438,55 @@ final class ResourceController extends ApiController
     }
 
     /**
+     * Drag-n-drop reorder: bulk update позиций нескольких записей в одной
+     * транзакции.
+     *
+     * Принимает `items: [{id, position}]`. Resource должен иметь
+     * `reorderable() === true` и `reorderColumn()` колонку.
+     *
+     * @input array $items
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceReorderedResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'items' => ['required', 'array'],
+            'items.*.id' => ['required'],
+            'items.*.position' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $resource = $this->currentResource();
+        if (! $resource->reorderable()) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => 'Resource is not reorderable',
+            ], 422);
+        }
+
+        $column = $resource->reorderColumn();
+        $modelClass = $resource::$model;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $modelClass, $column): void {
+            foreach ($data['items'] as $item) {
+                $modelClass::query()
+                    ->whereKey($item['id'])
+                    ->update([$column => (int) $item['position']]);
+            }
+        });
+
+        return $this->success([
+            'count' => count($data['items']),
+            'message' => 'Reordered',
+        ]);
+    }
+
+    /**
      * Клонировать запись.
      *
      * @input integer $id
