@@ -139,6 +139,13 @@ class AdminApi extends BaseApi
                     'reset' => ['method' => ['post']],
                 ],
             ],
+            'audit' => [
+                'controller' => \Dskripchenko\LaravelAdmin\Audit\AuditController::class,
+                'actions' => [
+                    'list' => ['method' => ['get']],
+                    'timeline' => ['method' => ['get']],
+                ],
+            ],
         ];
 
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.
