@@ -293,6 +293,153 @@ class ProfileController extends ApiController
     }
 
     /**
+     * Список Sanctum-токенов текущего пользователя.
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ApiTokenListResponse}
+     * @response 404 {NotFoundErrorResponse}  Sanctum не установлен.
+     */
+    public function tokensList(): JsonResponse
+    {
+        if (! $this->sanctumAvailable()) {
+            return $this->error([
+                'errorKey' => 'sanctum_unavailable',
+                'message' => 'Sanctum is not installed',
+            ], 404);
+        }
+
+        $user = $this->currentUser();
+        if (! method_exists($user, 'tokens')) {
+            return $this->error([
+                'errorKey' => 'sanctum_unavailable',
+                'message' => 'AdminUser does not have HasApiTokens trait',
+            ], 404);
+        }
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens */
+        $tokens = $user->{'tokens'}()->orderByDesc('created_at')->get();
+
+        return $this->success([
+            'data' => $tokens->map(static fn ($t): array => [
+                'id' => $t->getKey(),
+                'name' => $t->getAttribute('name'),
+                'abilities' => $t->getAttribute('abilities') ?? [],
+                'last_used_at' => $t->getAttribute('last_used_at')?->toIso8601String(),
+                'expires_at' => $t->getAttribute('expires_at')?->toIso8601String(),
+                'created_at' => $t->getAttribute('created_at')?->toIso8601String(),
+            ])->all(),
+        ]);
+    }
+
+    /**
+     * Создать новый Sanctum-токен. Plain-text возвращается ОДИН раз.
+     *
+     * @input string $name
+     * @input array ?$abilities
+     * @input integer ?$expires_in_days
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ApiTokenCreatedResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function tokenCreate(Request $request): JsonResponse
+    {
+        if (! $this->sanctumAvailable()) {
+            return $this->error([
+                'errorKey' => 'sanctum_unavailable',
+                'message' => 'Sanctum is not installed',
+            ], 404);
+        }
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'abilities' => ['nullable', 'array'],
+            'abilities.*' => ['string'],
+            'expires_in_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+        ]);
+
+        $user = $this->currentUser();
+        if (! method_exists($user, 'createToken')) {
+            return $this->error([
+                'errorKey' => 'sanctum_unavailable',
+                'message' => 'AdminUser does not have HasApiTokens trait',
+            ], 404);
+        }
+
+        $abilities = (array) ($data['abilities'] ?? ['*']);
+        $expires = isset($data['expires_in_days'])
+            ? now()->addDays((int) $data['expires_in_days'])
+            : null;
+
+        /** @var \Laravel\Sanctum\NewAccessToken $newToken */
+        $newToken = $user->createToken($data['name'], $abilities, $expires);
+
+        return $this->success([
+            'plain_text_token' => $newToken->plainTextToken,
+            'token' => [
+                'id' => $newToken->accessToken->getKey(),
+                'name' => $newToken->accessToken->getAttribute('name'),
+                'abilities' => $newToken->accessToken->getAttribute('abilities') ?? [],
+                'expires_at' => $newToken->accessToken->getAttribute('expires_at')?->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Удалить Sanctum-токен текущего пользователя.
+     *
+     * @input integer $id
+     *
+     * @output null $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {SuccessResponse}
+     * @response 404 {NotFoundErrorResponse}
+     */
+    public function tokenRevoke(Request $request): JsonResponse
+    {
+        if (! $this->sanctumAvailable()) {
+            return $this->error([
+                'errorKey' => 'sanctum_unavailable',
+                'message' => 'Sanctum is not installed',
+            ], 404);
+        }
+
+        $data = $request->validate(['id' => ['required', 'integer']]);
+        $user = $this->currentUser();
+        if (! method_exists($user, 'tokens')) {
+            return $this->error([
+                'errorKey' => 'sanctum_unavailable',
+                'message' => 'AdminUser does not have HasApiTokens trait',
+            ], 404);
+        }
+
+        $token = $user->{'tokens'}()->whereKey($data['id'])->first();
+        if ($token === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Token not found',
+            ], 404);
+        }
+        $token->delete();
+
+        return $this->success([]);
+    }
+
+    private function sanctumAvailable(): bool
+    {
+        return class_exists(\Laravel\Sanctum\Sanctum::class)
+            && (bool) config('admin.auth.api_tokens.enabled', true);
+    }
+
+    /**
      * Текущий пользователь admin-guard. Гарантирован AdminAuth middleware.
      */
     private function currentUser(): Authenticatable&Model

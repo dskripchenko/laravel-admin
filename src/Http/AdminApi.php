@@ -131,6 +131,9 @@ class AdminApi extends BaseApi
                     'twoFactorConfirm' => ['method' => ['post']],
                     'twoFactorDisable' => ['method' => ['post']],
                     'twoFactorRegenerateCodes' => ['method' => ['post']],
+                    'tokensList' => ['method' => ['get']],
+                    'tokenCreate' => ['method' => ['post']],
+                    'tokenRevoke' => ['method' => ['post']],
                 ],
             ],
             'dashboard' => [

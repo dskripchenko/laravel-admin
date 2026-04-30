@@ -145,11 +145,15 @@ final class SystemController extends ApiController
             }
         }
 
-        $unreadNotifications = \Illuminate\Notifications\DatabaseNotification::query()
-            ->where('notifiable_type', $user->getMorphClass())
-            ->where('notifiable_id', $user->getKey())
-            ->whereNull('read_at')
-            ->count();
+        // notifications-table может отсутствовать в host-проекте (default
+        // Laravel-миграция не запущена) — сводим к 0 чтобы shell не падал.
+        $unreadNotifications = \Illuminate\Support\Facades\Schema::hasTable('notifications')
+            ? \Illuminate\Notifications\DatabaseNotification::query()
+                ->where('notifiable_type', $user->getMorphClass())
+                ->where('notifiable_id', $user->getKey())
+                ->whereNull('read_at')
+                ->count()
+            : 0;
 
         return $this->success([
             'id' => $user->getKey(),
