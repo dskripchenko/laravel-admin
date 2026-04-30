@@ -145,6 +145,12 @@ final class SystemController extends ApiController
             }
         }
 
+        $unreadNotifications = \Illuminate\Notifications\DatabaseNotification::query()
+            ->where('notifiable_type', $user->getMorphClass())
+            ->where('notifiable_id', $user->getKey())
+            ->whereNull('read_at')
+            ->count();
+
         return $this->success([
             'id' => $user->getKey(),
             'name' => $user->getAttribute('name'),
@@ -155,6 +161,7 @@ final class SystemController extends ApiController
                 ? $user->hasTwoFactorEnabled()
                 : false,
             'impersonator' => $impersonator,
+            'unread_notifications_count' => $unreadNotifications,
         ]);
     }
 
