@@ -62,6 +62,16 @@ final class AdminServiceProvider extends ServiceProvider
 
         $this->app->singleton(DelayedProcess\AllowlistRegistrar::class);
 
+        $this->app->singleton(Export\ExporterRegistry::class, function (): Export\ExporterRegistry {
+            $registry = new Export\ExporterRegistry;
+            $registry->add(new Export\CsvExporter);
+            if (class_exists(\OpenSpout\Writer\XLSX\Writer::class)) {
+                $registry->add(new Export\XlsxExporter);
+            }
+
+            return $registry;
+        });
+
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin(
             $app,
             $app->make(ScreenRegistry::class),

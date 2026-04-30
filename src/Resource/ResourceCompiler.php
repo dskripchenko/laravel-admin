@@ -84,6 +84,7 @@ final class ResourceCompiler
                 'replicate' => ['method' => ['post'], 'middleware' => [$replicate]],
                 'reorder' => ['method' => ['post'], 'middleware' => [$reorder]],
                 'exportCsv' => ['method' => ['get', 'post'], 'middleware' => [$view]],
+                'export' => ['method' => ['get', 'post'], 'middleware' => [$view]],
                 'delete' => ['method' => ['post'], 'middleware' => [$delete]],
                 'restore' => ['method' => ['post'], 'middleware' => [$restore]],
                 'forceDelete' => ['method' => ['post'], 'middleware' => [$forceDelete]],

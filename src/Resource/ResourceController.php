@@ -353,13 +353,8 @@ final class ResourceController extends ApiController
     /**
      * Потоковый CSV-экспорт списка с применением текущих filters.
      *
-     * Использует встроенный fputcsv через StreamedResponse — без зависимостей.
-     * Для огромных датасетов рекомендуется delayed-process job (фаза P13).
-     *
-     * @input array ?$filters
-     * @input string ?$q
-     * @input array ?$columns Список имён колонок для выгрузки. Default: все
-     *                          из Resource::columns(), кроме defaultHidden.
+     * Backward-compat alias для `export(format=csv)`. Новый код должен
+     * использовать `export` action с явным форматом.
      *
      * @output file CSV
      *
@@ -369,7 +364,41 @@ final class ResourceController extends ApiController
      */
     public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
+        $request->merge(['format' => 'csv']);
+
+        return $this->export($request);
+    }
+
+    /**
+     * Универсальный потоковый экспорт списка в любой зарегистрированный формат.
+     *
+     * @input string ?$format  csv|xlsx|pdf — default csv. Должен быть
+     *                          зарегистрирован в ExporterRegistry.
+     * @input array ?$filters
+     * @input string ?$q
+     * @input array ?$columns
+     *
+     * @output file
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceExportResponse}
+     * @response 422 {ValidationErrorResponse} Format не поддержан.
+     */
+    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+    {
         $resource = $this->currentResource();
+        $format = (string) $request->input('format', 'csv');
+
+        /** @var \Dskripchenko\LaravelAdmin\Export\ExporterRegistry $registry */
+        $registry = app(\Dskripchenko\LaravelAdmin\Export\ExporterRegistry::class);
+        if (! $registry->has($format)) {
+            return $this->error([
+                'errorKey' => 'unsupported_format',
+                'message' => "Format `{$format}` is not registered. Available: ".implode(', ', $registry->formats()),
+            ], 422);
+        }
+
         $query = $resource->indexQuery();
 
         $filterInputs = HttpFilterParser::parse($request);
@@ -390,7 +419,6 @@ final class ResourceController extends ApiController
             });
         }
 
-        // Колонки для экспорта.
         $requested = (array) $request->input('columns', []);
         $columns = [];
         foreach ($resource->columns() as $col) {
@@ -404,36 +432,17 @@ final class ResourceController extends ApiController
             $columns[$col->name()] = (string) ($arr['label'] ?? $col->name());
         }
 
-        $filename = $resource::slug().'-'.date('Y-m-d-His').'.csv';
+        // Generator chunks для memory-friendly экспорта.
+        $rowGenerator = (function () use ($query): \Generator {
+            foreach ($query->cursor() as $model) {
+                yield $model->toArray();
+            }
+        })();
 
-        return new \Symfony\Component\HttpFoundation\StreamedResponse(
-            function () use ($query, $columns): void {
-                $handle = fopen('php://output', 'w');
-                if ($handle === false) {
-                    return;
-                }
-                // BOM для Excel UTF-8 совместимости.
-                fwrite($handle, "\xEF\xBB\xBF");
-                fputcsv($handle, array_values($columns), ',', '"', '\\');
-
-                $query->chunkById(500, function ($rows) use ($handle, $columns): void {
-                    foreach ($rows as $row) {
-                        $line = [];
-                        foreach (array_keys($columns) as $col) {
-                            $value = data_get($row->toArray(), $col);
-                            $line[] = is_scalar($value) ? (string) $value : json_encode($value);
-                        }
-                        fputcsv($handle, $line, ',', '"', '\\');
-                    }
-                });
-
-                fclose($handle);
-            },
-            200,
-            [
-                'Content-Type' => 'text/csv; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            ],
+        return $registry->get($format)->export(
+            $rowGenerator,
+            $columns,
+            $resource::slug().'-'.date('Y-m-d-His'),
         );
     }
 
