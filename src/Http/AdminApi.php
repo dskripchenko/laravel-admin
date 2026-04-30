@@ -148,6 +148,13 @@ class AdminApi extends BaseApi
                     'timeline' => ['method' => ['get']],
                 ],
             ],
+            'delayed' => [
+                'controller' => \Dskripchenko\LaravelAdmin\DelayedProcess\DelayedProcessController::class,
+                'actions' => [
+                    'run' => ['method' => ['post']],
+                    'status' => ['method' => ['get']],
+                ],
+            ],
         ];
 
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.

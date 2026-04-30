@@ -60,6 +60,8 @@ final class AdminServiceProvider extends ServiceProvider
         );
         $this->app->singleton(Tenancy\TenantContext::class);
 
+        $this->app->singleton(DelayedProcess\AllowlistRegistrar::class);
+
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin(
             $app,
             $app->make(ScreenRegistry::class),
