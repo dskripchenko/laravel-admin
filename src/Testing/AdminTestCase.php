@@ -8,6 +8,7 @@ use Dskripchenko\LaravelAdmin\Http\AdminApi;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Settings\SettingsRegistry;
 use Dskripchenko\LaravelAdmin\Testing\Concerns\ActsAsAdmin;
+use Dskripchenko\LaravelAdmin\Testing\Concerns\InteractsWithAdminResources;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as LaravelTestCase;
 
@@ -34,6 +35,7 @@ use Illuminate\Foundation\Testing\TestCase as LaravelTestCase;
 abstract class AdminTestCase extends LaravelTestCase
 {
     use ActsAsAdmin;
+    use InteractsWithAdminResources;
     use RefreshDatabase;
 
     protected function setUp(): void
