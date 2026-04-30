@@ -68,6 +68,8 @@ final class ResourceCompiler
         $delete = AdminAccess::class.':'.$base.'.delete';
         $restore = AdminAccess::class.':'.$base.'.restore';
         $forceDelete = AdminAccess::class.':'.$base.'.force-delete';
+        $replicate = AdminAccess::class.':'.$base.'.replicate';
+        $reorder = AdminAccess::class.':'.$base.'.reorder';
 
         return [
             'controller' => ResourceController::class,
@@ -79,6 +81,8 @@ final class ResourceCompiler
                 'create' => ['method' => ['post'], 'middleware' => [$create]],
                 'update' => ['method' => ['post'], 'middleware' => [$update]],
                 'inlineUpdate' => ['method' => ['post'], 'middleware' => [$update]],
+                'replicate' => ['method' => ['post'], 'middleware' => [$replicate]],
+                'reorder' => ['method' => ['post'], 'middleware' => [$reorder]],
                 'exportCsv' => ['method' => ['get', 'post'], 'middleware' => [$view]],
                 'delete' => ['method' => ['post'], 'middleware' => [$delete]],
                 'restore' => ['method' => ['post'], 'middleware' => [$restore]],

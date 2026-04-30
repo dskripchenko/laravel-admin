@@ -285,6 +285,29 @@ abstract class Resource
     }
 
     /**
+     * Hook для контроля копируемых полей при replicate.
+     *
+     * Default: Eloquent `Model::replicate()` (копирует все атрибуты кроме
+     * primary key и timestamps). Override в подклассе для regenerate'а
+     * уникальных полей (slug + ' (copy)', uuid и т.д.).
+     */
+    public function replicate(Model $original): Model
+    {
+        $copy = $original->replicate();
+
+        // Если есть title/name — добавим '(копия)' suffix чтобы избежать
+        // нарушения unique-индексов на демо-уровне. Hook decorate'тся в
+        // подклассах под конкретные поля.
+        foreach (['name', 'title', 'slug'] as $col) {
+            if ($copy->getAttribute($col) !== null) {
+                $copy->setAttribute($col, $copy->getAttribute($col).' (копия)');
+            }
+        }
+
+        return $copy;
+    }
+
+    /**
      * Интервал автообновления list-таблицы в секундах. null = не обновлять.
      * Например, 30 — таблица ре-fetch'ит данные каждые 30 секунд.
      */

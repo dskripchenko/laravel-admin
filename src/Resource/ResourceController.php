@@ -438,6 +438,49 @@ final class ResourceController extends ApiController
     }
 
     /**
+     * Клонировать запись.
+     *
+     * @input integer $id
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceReplicatedResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function replicate(Request $request): JsonResponse
+    {
+        $data = $request->validate(['id' => ['required']]);
+        $resource = $this->currentResource();
+
+        if (! $resource->replicable()) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => 'Resource is not replicable',
+            ], 422);
+        }
+
+        $original = $resource->modelQuery()->find($data['id']);
+        if ($original === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+
+        $copy = $resource->replicate($original);
+        $copy->save();
+
+        return $this->success([
+            'record' => $copy->toArray(),
+            'redirect_url' => '/admin/resources/'.$resource::slug().'/'.$copy->getKey().'/edit',
+            'message' => 'Replicated',
+        ]);
+    }
+
+    /**
      * Восстановить soft-deleted запись.
      *
      * @input integer $id
