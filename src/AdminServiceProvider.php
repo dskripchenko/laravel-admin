@@ -62,6 +62,8 @@ final class AdminServiceProvider extends ServiceProvider
 
         $this->app->singleton(DelayedProcess\AllowlistRegistrar::class);
 
+        $this->app->singleton(Import\ImportPreviewService::class);
+
         $this->app->singleton(Export\ExporterRegistry::class, function (): Export\ExporterRegistry {
             $registry = new Export\ExporterRegistry;
             $registry->add(new Export\CsvExporter);
