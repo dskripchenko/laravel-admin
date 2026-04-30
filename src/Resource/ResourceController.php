@@ -299,12 +299,17 @@ final class ResourceController extends ApiController
         $resource = $this->currentResource();
         $data = $request->validate($this->flattenRules($resource->validationRules('create')));
         $data = $this->sanitizeWysiwyg($resource, $data);
+        $translations = \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::extract(
+            $resource->fields(),
+            $data,
+        );
 
         $modelClass = $resource::$model;
         /** @var \Illuminate\Database\Eloquent\Model $record */
         $record = new $modelClass;
         $record->forceFill($data);
         $record->save();
+        \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
         return $this->created([
             'record' => $record->toArray(),
@@ -342,8 +347,13 @@ final class ResourceController extends ApiController
 
         $data = $request->validate($this->flattenRules($resource->validationRules('update')));
         $data = $this->sanitizeWysiwyg($resource, $data);
+        $translations = \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::extract(
+            $resource->fields(),
+            $data,
+        );
         $record->forceFill($data);
         $record->save();
+        \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
         return $this->success([
             'record' => $record->toArray(),

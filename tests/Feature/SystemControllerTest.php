@@ -93,7 +93,7 @@ it('serves /api/admin/system/menu listing registered resources', function (): vo
 it('serves /api/admin/system/locales', function (): void {
     // testing default Accept-Language даёт 'en' — фиксируем явно.
     $response = $this->getJson('/api/admin/system/locales', [
-        \Dskripchenko\LaravelAdmin\Theme\LocaleResolver::HEADER => 'ru',
+        Dskripchenko\LaravelAdmin\Theme\LocaleResolver::HEADER => 'ru',
     ]);
 
     $response->assertOk();

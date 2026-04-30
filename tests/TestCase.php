@@ -7,6 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Tests;
 use Dskripchenko\DelayedProcess\Providers\DelayedProcessServiceProvider;
 use Dskripchenko\LaravelAdmin\AdminServiceProvider;
 use Dskripchenko\LaravelApi\Providers\ApiServiceProvider;
+use Dskripchenko\LaravelTranslatable\Providers\TranslatableServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -19,6 +20,7 @@ abstract class TestCase extends Orchestra
         return [
             ApiServiceProvider::class,
             DelayedProcessServiceProvider::class,
+            TranslatableServiceProvider::class,
             AdminServiceProvider::class,
         ];
     }
