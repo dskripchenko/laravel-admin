@@ -31,28 +31,28 @@ trait AdminApiSisterPackSchemas
                 'payload' => '@SearchPayload',
             ],
             'SearchPayload' => [
-                'query'      => 'string!',
-                'groups'     => '@SearchGroup[]',
-                'total'      => 'integer!',
+                'query' => 'string!',
+                'groups' => '@SearchGroup[]',
+                'total' => 'integer!',
                 'elapsed_ms' => 'integer!',
             ],
             'SearchGroup' => [
                 'resource' => 'string!',
-                'label'    => 'string!',
-                'icon'     => 'string',
-                'count'    => 'integer!',
+                'label' => 'string!',
+                'icon' => 'string',
+                'count' => 'integer!',
                 'has_more' => 'boolean!',
                 'more_url' => 'string',
-                'items'    => '@SearchItem[]',
+                'items' => '@SearchItem[]',
             ],
             'SearchItem' => [
-                'id'       => 'string!',                                  // string|number — сводим к string
-                'title'    => 'string!',
+                'id' => 'string!',                                  // string|number — сводим к string
+                'title' => 'string!',
                 'subtitle' => 'string',
-                'icon'     => 'string',
-                'url'      => 'string!',
-                'meta'     => 'object',
-                'score'    => 'number',                                   // только для Scout
+                'icon' => 'string',
+                'url' => 'string!',
+                'meta' => 'object',
+                'score' => 'number',                                   // только для Scout
             ],
 
             'SearchUnavailableResponse' => [
@@ -69,19 +69,19 @@ trait AdminApiSisterPackSchemas
                 'payload' => '@HealthSummaryPayload',
             ],
             'HealthSummaryPayload' => [
-                'overall'         => 'string!',                           // ok|warning|failing
-                'counts'          => '@HealthCounts',
-                'last_run_at'     => 'string(date-time)!',
-                'failing_checks'  => '@HealthFailingItem[]',
+                'overall' => 'string!',                           // ok|warning|failing
+                'counts' => '@HealthCounts',
+                'last_run_at' => 'string(date-time)!',
+                'failing_checks' => '@HealthFailingItem[]',
             ],
             'HealthCounts' => [
-                'ok'      => 'integer!',
+                'ok' => 'integer!',
                 'warning' => 'integer!',
                 'failing' => 'integer!',
             ],
             'HealthFailingItem' => [
-                'id'      => 'string!',
-                'name'    => 'string!',
+                'id' => 'string!',
+                'name' => 'string!',
                 'message' => 'string!',
             ],
 
@@ -90,17 +90,17 @@ trait AdminApiSisterPackSchemas
                 'payload' => '@HealthChecksPayload',
             ],
             'HealthChecksPayload' => [
-                'checks'      => '@HealthCheckStatus[]',
+                'checks' => '@HealthCheckStatus[]',
                 'last_run_at' => 'string(date-time)!',
             ],
             'HealthCheckStatus' => [
-                'id'          => 'string!',
-                'name'        => 'string!',
-                'category'    => 'string!',                               // database|cache|queue|storage|custom
-                'status'      => 'string!',                               // ok|warning|failing
-                'message'     => 'string',
-                'meta'        => 'object!',
-                'frequency'   => 'string!',                               // 1m|5m|1h
+                'id' => 'string!',
+                'name' => 'string!',
+                'category' => 'string!',                               // database|cache|queue|storage|custom
+                'status' => 'string!',                               // ok|warning|failing
+                'message' => 'string',
+                'meta' => 'object!',
+                'frequency' => 'string!',                               // 1m|5m|1h
                 'last_run_at' => 'string(date-time)!',
                 'duration_ms' => 'integer!',
             ],
@@ -119,10 +119,10 @@ trait AdminApiSisterPackSchemas
                 'meta' => '@PaginationMeta',
             ],
             'HealthHistoryItem' => [
-                'ran_at'      => 'string(date-time)!',
-                'status'      => 'string!',
+                'ran_at' => 'string(date-time)!',
+                'status' => 'string!',
                 'duration_ms' => 'integer!',
-                'message'     => 'string',
+                'message' => 'string',
             ],
         ];
     }

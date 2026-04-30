@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http;
 
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiCommonSchemas;
-use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiSystemSchemas;
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiResourceSchemas;
-use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiUiSchemas;
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiSisterPackSchemas;
-use Dskripchenko\LaravelApi\BaseApi;
+use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiSystemSchemas;
+use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiUiSchemas;
+use Dskripchenko\LaravelApi\Components\BaseApi;
 
 /**
  * Admin API — описание всех endpoint'ов и shared response templates.
@@ -23,18 +23,24 @@ use Dskripchenko\LaravelApi\BaseApi;
 class AdminApi extends BaseApi
 {
     use AdminApiCommonSchemas;
-    use AdminApiSystemSchemas;
     use AdminApiResourceSchemas;
-    use AdminApiUiSchemas;
     use AdminApiSisterPackSchemas;
+    use AdminApiSystemSchemas;
+    use AdminApiUiSchemas;
 
     /**
      * Включить named-templates для @response.
+     *
+     * Тип не указан намеренно — родитель (OpenApiTrait в BaseApi) объявляет
+     * `public static $useResponseTemplates = false;` без типа. PHP требует
+     * совпадения сигнатур при наследовании.
+     *
+     * @var bool
      */
-    public static bool $useResponseTemplates = true;
+    public static $useResponseTemplates = true;
 
     /**
-     * @return array<string, array<string, mixed>>
+     * @return array<string, mixed>
      */
     public static function getMethods(): array
     {
@@ -43,7 +49,7 @@ class AdminApi extends BaseApi
         // P3 (resources), и т.д. — см. ARCHITECTURE.md п.12.
         return [
             'middleware' => [
-                \Illuminate\Routing\Middleware\ThrottleRequests::class . ':60,1',
+                \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
             ],
             'controllers' => [
                 // 'system' => [...],

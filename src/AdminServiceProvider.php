@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin;
 
+use Dskripchenko\LaravelAdmin\Auth\AdminGuardRegistrar;
+use Dskripchenko\LaravelAdmin\Console\InstallCommand;
+use Dskripchenko\LaravelAdmin\Console\LinkCommand;
+use Dskripchenko\LaravelAdmin\Console\MakeAdminCommand;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -24,7 +29,7 @@ final class AdminServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/admin.php', 'admin');
+        $this->mergeConfigFrom(__DIR__.'/../config/admin.php', 'admin');
 
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin($app));
         $this->app->alias(Admin::class, 'admin');
@@ -33,33 +38,41 @@ final class AdminServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__ . '/../config/admin.php' => config_path('admin.php'),
+            __DIR__.'/../config/admin.php' => config_path('admin.php'),
         ], 'admin-config');
 
         $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
+            __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'admin-migrations');
 
         $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/admin'),
+            __DIR__.'/../resources/views' => resource_path('views/vendor/admin'),
         ], 'admin-views');
 
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'admin');
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'admin');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
+        $this->registerAdminGuard();
         $this->registerRoutes();
         $this->registerCommands();
+    }
+
+    private function registerAdminGuard(): void
+    {
+        /** @var ConfigRepository $config */
+        $config = $this->app->make(ConfigRepository::class);
+        (new AdminGuardRegistrar($config))->register();
     }
 
     private function registerRoutes(): void
     {
         // SPA-shell под admin.path (например /admin/*).
         Route::group([
-            'prefix'     => (string) config('admin.path'),
-            'domain'     => config('admin.domain'),
-            'as'         => 'admin.',
+            'prefix' => (string) config('admin.path'),
+            'domain' => config('admin.domain'),
+            'as' => 'admin.',
         ], function (): void {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');
+            $this->loadRoutesFrom(__DIR__.'/../routes/admin.php');
         });
 
         // API живёт отдельно, под admin.api_path (например /api/admin/*).
@@ -73,12 +86,11 @@ final class AdminServiceProvider extends ServiceProvider
             return;
         }
 
-        // Регистрация artisan-команд по мере имплементации (P0/P2/...)
-        // $this->commands([
-        //     Console\InstallCommand::class,
-        //     Console\MakeResourceCommand::class,
-        //     Console\MakeAdminCommand::class,
-        //     Console\LinkCommand::class,
-        // ]);
+        $this->commands([
+            InstallCommand::class,
+            MakeAdminCommand::class,
+            LinkCommand::class,
+            // Make-команды для скаффолда (admin:make-resource / make-screen / ...) — фаза P3+.
+        ]);
     }
 }

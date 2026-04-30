@@ -26,13 +26,13 @@ trait AdminApiUiSchemas
                 'payload' => '@ScreenStatePayload',
             ],
             'ScreenStatePayload' => [
-                'state'       => 'object!',
-                'name'        => 'string!',
+                'state' => 'object!',
+                'name' => 'string!',
                 'description' => 'string',
-                'layout'      => '@LayoutSchema[]',
+                'layout' => '@LayoutSchema[]',
                 'command_bar' => '@ActionSchema[]',
                 'permissions' => 'array!',                              // string[]
-                'etag'        => 'string!',
+                'etag' => 'string!',
             ],
 
             'ScreenMethodResponse' => [
@@ -40,18 +40,18 @@ trait AdminApiUiSchemas
                 'payload' => '@ScreenMethodPayload',
             ],
             'ScreenMethodPayload' => [
-                'state'        => 'object!',
-                'layouts'      => 'object',                             // map id => LayoutSchema
-                'alerts'       => '@ScreenAlert[]',
+                'state' => 'object!',
+                'layouts' => 'object',                             // map id => LayoutSchema
+                'alerts' => '@ScreenAlert[]',
                 'redirect_url' => 'string',
-                'refresh'      => 'boolean!',
+                'refresh' => 'boolean!',
                 'download_url' => 'string',
-                'message'      => 'string!',
+                'message' => 'string!',
             ],
             'ScreenAlert' => [
-                'type'         => 'string!',                            // info|success|warning|danger
-                'message'      => 'string!',
-                'duration_ms'  => 'integer',
+                'type' => 'string!',                            // info|success|warning|danger
+                'message' => 'string!',
+                'duration_ms' => 'integer',
             ],
 
             'ScreenAsyncResponse' => [
@@ -59,7 +59,7 @@ trait AdminApiUiSchemas
                 'payload' => '@ScreenAsyncPayload',
             ],
             'ScreenAsyncPayload' => [
-                'layouts'     => 'object!',                             // map id => LayoutSchema
+                'layouts' => 'object!',                             // map id => LayoutSchema
                 'state_patch' => 'object',                              // частичный merge state
             ],
 
@@ -72,16 +72,16 @@ trait AdminApiUiSchemas
                 'payload' => '@DashboardsListPayload',
             ],
             'DashboardsListPayload' => [
-                'data'    => '@DashboardSummary[]',
+                'data' => '@DashboardSummary[]',
                 'default' => 'string',
             ],
             'DashboardSummary' => [
-                'slug'            => 'string!',
-                'title'           => 'string!',
-                'description'     => 'string',
-                'icon'            => 'string',
-                'url'             => 'string!',
-                'permission'      => 'string',
+                'slug' => 'string!',
+                'title' => 'string!',
+                'description' => 'string',
+                'icon' => 'string',
+                'url' => 'string!',
+                'permission' => 'string',
                 'is_customizable' => 'boolean!',
             ],
 
@@ -90,28 +90,28 @@ trait AdminApiUiSchemas
                 'payload' => '@DashboardShowPayload',
             ],
             'DashboardShowPayload' => [
-                'dashboard'             => '@DashboardSummary',
-                'widgets'               => '@WidgetInstance[]',
-                'layout'                => '@WidgetLayoutItem[]',
-                'user_layout_saved_at'  => 'string(date-time)',
+                'dashboard' => '@DashboardSummary',
+                'widgets' => '@WidgetInstance[]',
+                'layout' => '@WidgetLayoutItem[]',
+                'user_layout_saved_at' => 'string(date-time)',
             ],
             'WidgetInstance' => [
-                'id'           => 'string!',
-                'type'         => 'string!',
-                'label'        => 'string!',
-                'description'  => 'string',
-                'url'          => 'string!',
-                'poll'         => 'string',
-                'permission'   => 'string',
+                'id' => 'string!',
+                'type' => 'string!',
+                'label' => 'string!',
+                'description' => 'string',
+                'url' => 'string!',
+                'poll' => 'string',
+                'permission' => 'string',
                 'initial_data' => 'object',
-                'options'      => 'object!',
+                'options' => 'object!',
             ],
             'WidgetLayoutItem' => [
                 'widget_id' => 'string!',
-                'x'         => 'integer!',
-                'y'         => 'integer!',
-                'w'         => 'integer!',
-                'h'         => 'integer!',
+                'x' => 'integer!',
+                'y' => 'integer!',
+                'w' => 'integer!',
+                'h' => 'integer!',
             ],
 
             'WidgetDataResponse' => [
@@ -119,8 +119,8 @@ trait AdminApiUiSchemas
                 'payload' => '@WidgetDataPayload',
             ],
             'WidgetDataPayload' => [
-                'data'            => 'object!',                         // type-specific
-                'fetched_at'      => 'string(date-time)!',
+                'data' => 'object!',                         // type-specific
+                'fetched_at' => 'string(date-time)!',
                 'next_refresh_at' => 'string(date-time)',
             ],
 
@@ -137,7 +137,7 @@ trait AdminApiUiSchemas
                 'payload' => '@DashboardCreatedPayload',
             ],
             'DashboardCreatedPayload' => [
-                'dashboard'    => '@DashboardSummary',
+                'dashboard' => '@DashboardSummary',
                 'redirect_url' => 'string!',
             ],
 
@@ -153,16 +153,16 @@ trait AdminApiUiSchemas
                 'upload' => '@AdminUpload',
             ],
             'AdminUpload' => [
-                'id'            => 'string(uuid)!',
-                'url'           => 'string!',
-                'preview_url'   => 'string',
-                'mime'          => 'string!',
-                'size'          => 'integer!',
+                'id' => 'string(uuid)!',
+                'url' => 'string!',
+                'preview_url' => 'string',
+                'mime' => 'string!',
+                'size' => 'integer!',
                 'original_name' => 'string!',
-                'width'         => 'integer',
-                'height'        => 'integer',
-                'collection'    => 'string',
-                'created_at'    => 'string(date-time)!',
+                'width' => 'integer',
+                'height' => 'integer',
+                'collection' => 'string',
+                'created_at' => 'string(date-time)!',
             ],
 
             'UploadShowResponse' => [
@@ -175,10 +175,10 @@ trait AdminApiUiSchemas
                 'payload' => '@ChunkedStartPayload',
             ],
             'ChunkedStartPayload' => [
-                'upload_id'       => 'string(uuid)!',
-                'chunk_endpoint'  => 'string!',
+                'upload_id' => 'string(uuid)!',
+                'chunk_endpoint' => 'string!',
                 'finish_endpoint' => 'string!',
-                'expires_at'      => 'string(date-time)!',
+                'expires_at' => 'string(date-time)!',
             ],
 
             'ChunkAcceptedResponse' => [
@@ -186,8 +186,8 @@ trait AdminApiUiSchemas
                 'payload' => '@ChunkAcceptedPayload',
             ],
             'ChunkAcceptedPayload' => [
-                'received'   => 'integer!',
-                'total'      => 'integer!',
+                'received' => 'integer!',
+                'total' => 'integer!',
                 'next_index' => 'integer',
             ],
 
@@ -208,19 +208,19 @@ trait AdminApiUiSchemas
                 'processes' => '@DelayedProcessStatus[]',
             ],
             'DelayedProcessStatus' => [
-                'uuid'        => 'string(uuid)!',
-                'status'      => 'string!',                              // new|running|done|failed|cancelled|expired
-                'progress'    => 'integer!',
-                'message'     => 'string',
-                'started_at'  => 'string(date-time)',
+                'uuid' => 'string(uuid)!',
+                'status' => 'string!',                              // new|running|done|failed|cancelled|expired
+                'progress' => 'integer!',
+                'message' => 'string',
+                'started_at' => 'string(date-time)',
                 'finished_at' => 'string(date-time)',
                 'duration_ms' => 'integer',
-                'attempts'    => 'integer!',
-                'data'        => 'object',                               // финальный payload, когда status=done
-                'error'       => '@DelayedProcessError',
+                'attempts' => 'integer!',
+                'data' => 'object',                               // финальный payload, когда status=done
+                'error' => '@DelayedProcessError',
             ],
             'DelayedProcessError' => [
-                'class'   => 'string!',
+                'class' => 'string!',
                 'message' => 'string!',
             ],
 
@@ -256,8 +256,8 @@ trait AdminApiUiSchemas
             ],
             'MissingExportDriverPayload' => [
                 'errorKey' => 'string!',                                 // 'missing_export_driver'
-                'message'  => 'string!',
-                'command'  => 'string',                                  // composer require ...
+                'message' => 'string!',
+                'command' => 'string',                                  // composer require ...
             ],
 
             'InvalidImportFileResponse' => [
@@ -270,16 +270,16 @@ trait AdminApiUiSchemas
                 'payload' => '@ImportUploadPayload',
             ],
             'ImportUploadPayload' => [
-                'upload_id'           => 'string(uuid)!',
-                'columns_detected'    => 'array!',                       // string[]
-                'sample_rows'         => 'array!',                       // object[]
+                'upload_id' => 'string(uuid)!',
+                'columns_detected' => 'array!',                       // string[]
+                'sample_rows' => 'array!',                       // object[]
                 'total_rows_estimate' => 'integer!',
-                'target_fields'       => '@ImportTargetField[]',
-                'auto_mapping'        => 'object!',                      // file_column => resource_field|null
+                'target_fields' => '@ImportTargetField[]',
+                'auto_mapping' => 'object!',                      // file_column => resource_field|null
             ],
             'ImportTargetField' => [
-                'name'     => 'string!',
-                'label'    => 'string!',
+                'name' => 'string!',
+                'label' => 'string!',
                 'required' => 'boolean!',
             ],
 
@@ -293,16 +293,16 @@ trait AdminApiUiSchemas
             ],
             'ImportPreviewRow' => [
                 'row_number' => 'integer!',
-                'status'     => 'string!',                                // create|update|skip|fail
-                'data'       => 'object!',
-                'errors'     => 'object',                                 // field => string[]
+                'status' => 'string!',                                // create|update|skip|fail
+                'data' => 'object!',
+                'errors' => 'object',                                 // field => string[]
             ],
             'ImportPreviewSummary' => [
-                'total'        => 'integer!',
-                'will_create'  => 'integer!',
-                'will_update'  => 'integer!',
-                'will_skip'    => 'integer!',
-                'will_fail'    => 'integer!',
+                'total' => 'integer!',
+                'will_create' => 'integer!',
+                'will_update' => 'integer!',
+                'will_skip' => 'integer!',
+                'will_fail' => 'integer!',
             ],
         ];
     }

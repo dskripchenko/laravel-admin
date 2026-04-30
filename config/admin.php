@@ -11,8 +11,8 @@ return [
     */
 
     // SPA-shell живёт под `path` (например, /admin/*).
-    'path'     => env('ADMIN_PATH', 'admin'),
-    'domain'   => env('ADMIN_DOMAIN'),
+    'path' => env('ADMIN_PATH', 'admin'),
+    'domain' => env('ADMIN_DOMAIN'),
     // API живёт ОТДЕЛЬНО от SPA — на /api/admin/* (не нестится под path).
     'api_path' => env('ADMIN_API_PATH', 'api/admin'),
 
@@ -27,30 +27,30 @@ return [
     'auth' => [
         'strategy' => env('ADMIN_AUTH_STRATEGY', 'dedicated'),
 
-        'guard'    => env('ADMIN_GUARD', 'admin'),
+        'guard' => env('ADMIN_GUARD', 'admin'),
         'provider' => env('ADMIN_PROVIDER', 'admin_users'),
-        'model'    => \Dskripchenko\LaravelAdmin\Models\AdminUser::class,
-        'table'    => 'admin_users',
+        'model' => Dskripchenko\LaravelAdmin\Models\AdminUser::class,
+        'table' => 'admin_users',
         'password_broker' => 'admin_users',
 
         'login_throttle' => '5,1',
 
         'two_factor' => [
-            'enabled'        => true,
-            'enforce_for'    => [],
+            'enabled' => true,
+            'enforce_for' => [],
             'recovery_codes' => 8,
-            'window'         => 1,
+            'window' => 1,
         ],
 
         'impersonation' => [
-            'enabled'              => true,
-            'permission'           => 'admin.impersonate',
+            'enabled' => true,
+            'permission' => 'admin.impersonate',
             'block_higher_powered' => true,
         ],
 
         'api_tokens' => [
-            'enabled'        => true,
-            'rate_limit'     => '60,1',
+            'enabled' => true,
+            'rate_limit' => '60,1',
             'default_expiry' => null,
         ],
     ],
@@ -75,13 +75,13 @@ return [
     'middleware' => [
         'shell' => [
             'web',
-            \Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
-            \Dskripchenko\LaravelAdmin\Http\Middleware\AdminCspNonce::class,
+            Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
+            Dskripchenko\LaravelAdmin\Http\Middleware\AdminCspNonce::class,
         ],
         'api' => [
             'api',
-            \Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
-            \Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
+            Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
+            Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
         ],
         'public' => [
             'web',
@@ -105,13 +105,13 @@ return [
     */
 
     'brand' => [
-        'name'  => env('ADMIN_BRAND_NAME', 'Admin'),
-        'logo'  => null,
+        'name' => env('ADMIN_BRAND_NAME', 'Admin'),
+        'logo' => null,
         'favicon' => null,
     ],
 
     'ui' => [
-        'default_theme'  => 'light',
+        'default_theme' => 'light',
         'default_locale' => 'ru',
         'available_locales' => ['ru', 'en'],
     ],
@@ -134,8 +134,8 @@ return [
     */
 
     'audit' => [
-        'enabled'        => true,
-        'table'          => 'admin_audit_logs',
+        'enabled' => true,
+        'table' => 'admin_audit_logs',
         'log_auth_events' => true,
         'excluded_attributes' => ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'],
         'retention_days' => 365,
@@ -149,21 +149,21 @@ return [
 
     'exports' => [
         'pdf' => [
-            'driver'   => env('ADMIN_PDF_DRIVER', 'mpdf'),
+            'driver' => env('ADMIN_PDF_DRIVER', 'mpdf'),
             'fallback' => 'dompdf',
-            'options'  => [
-                'mpdf'   => ['mode' => 'utf-8', 'format' => 'A4'],
+            'options' => [
+                'mpdf' => ['mode' => 'utf-8', 'format' => 'A4'],
                 'dompdf' => ['paper' => 'a4', 'orientation' => 'portrait'],
             ],
         ],
         'xlsx' => [
-            'driver'  => 'openspout',
+            'driver' => 'openspout',
             'options' => ['memory_limit' => '512M'],
         ],
         'csv' => [
             'delimiter' => ';',
             'enclosure' => '"',
-            'bom'       => true,
+            'bom' => true,
         ],
     ],
 
@@ -175,7 +175,7 @@ return [
 
     'manifest' => [
         'cache_store' => null,
-        'etag'        => true,
+        'etag' => true,
     ],
 
     /*

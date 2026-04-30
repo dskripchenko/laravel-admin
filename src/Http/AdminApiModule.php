@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Http;
 
-use Dskripchenko\LaravelApi\BaseModule;
+use Dskripchenko\LaravelApi\Components\BaseModule;
 
 /**
  * Admin API module — точка входа для laravel-api.
@@ -16,7 +16,7 @@ use Dskripchenko\LaravelApi\BaseModule;
 final class AdminApiModule extends BaseModule
 {
     /**
-     * @return array<string, class-string<\Dskripchenko\LaravelApi\BaseApi>>
+     * @return array<string, class-string<\Dskripchenko\LaravelApi\Components\BaseApi>>
      */
     public function getApiVersionList(): array
     {

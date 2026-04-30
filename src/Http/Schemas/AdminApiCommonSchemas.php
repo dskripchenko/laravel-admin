@@ -56,10 +56,10 @@ trait AdminApiCommonSchemas
                 'delayed' => '@DelayedHandle',
             ],
             'DelayedHandle' => [
-                'uuid'     => 'string(uuid)!',
-                'status'   => 'string!',                             // new|running|done|failed|cancelled|expired
+                'uuid' => 'string(uuid)!',
+                'status' => 'string!',                             // new|running|done|failed|cancelled|expired
                 'progress' => 'integer',
-                'message'  => 'string',
+                'message' => 'string',
             ],
 
             // 304 Not Modified — без тела. Объявлено только для @response 304 {NotModifiedResponse}.
@@ -83,7 +83,7 @@ trait AdminApiCommonSchemas
             ],
             'ValidationErrorPayload' => [
                 'errorKey' => 'string!',                             // 'validation'
-                'message'  => 'string!',
+                'message' => 'string!',
                 'messages' => 'object!',                             // field => string[]
             ],
 
@@ -123,14 +123,14 @@ trait AdminApiCommonSchemas
             ],
             'ConflictPayload' => [
                 'errorKey' => 'string!',                             // 'conflict'
-                'message'  => 'string!',
-                'current'  => 'object',                              // свежее состояние записи
+                'message' => 'string!',
+                'current' => 'object',                              // свежее состояние записи
             ],
 
             // Универсальный shape простой ошибки.
             'SimpleErrorPayload' => [
                 'errorKey' => 'string!',
-                'message'  => 'string!',
+                'message' => 'string!',
             ],
 
             /* ------------------------------------------------------------------
@@ -140,148 +140,148 @@ trait AdminApiCommonSchemas
 
             // Сводный пользовательский summary, возвращается из system.me, auth.login и т.д.
             'AdminUserSummary' => [
-                'id'                => 'integer!',
-                'name'              => 'string!',
-                'email'             => 'string(email)!',
-                'avatar'            => 'string',
-                'locale'            => 'string!',
-                'theme'             => 'string!',                    // light|dark
-                'twoFactorEnabled'  => 'boolean!',
-                'impersonator'      => '@ImpersonatorRef',
+                'id' => 'integer!',
+                'name' => 'string!',
+                'email' => 'string(email)!',
+                'avatar' => 'string',
+                'locale' => 'string!',
+                'theme' => 'string!',                    // light|dark
+                'twoFactorEnabled' => 'boolean!',
+                'impersonator' => '@ImpersonatorRef',
             ],
             'ImpersonatorRef' => [
-                'id'   => 'integer!',
+                'id' => 'integer!',
                 'name' => 'string!',
             ],
 
             // Запись audit-журнала.
             'AuditLogEntry' => [
-                'id'           => 'integer!',
-                'user'         => '@AuditUserRef',
-                'event'        => 'string!',
+                'id' => 'integer!',
+                'user' => '@AuditUserRef',
+                'event' => 'string!',
                 'subject_type' => 'string',
-                'subject_id'   => 'string',                          // string|number — храним как строку для OpenAPI
-                'attributes'   => 'object',
-                'old'          => 'object',
-                'new'          => 'object',
-                'ip'           => 'string',
-                'user_agent'   => 'string',
-                'created_at'   => 'string(date-time)!',
+                'subject_id' => 'string',                          // string|number — храним как строку для OpenAPI
+                'attributes' => 'object',
+                'old' => 'object',
+                'new' => 'object',
+                'ip' => 'string',
+                'user_agent' => 'string',
+                'created_at' => 'string(date-time)!',
             ],
             'AuditUserRef' => [
-                'id'    => 'integer!',
-                'name'  => 'string!',
+                'id' => 'integer!',
+                'name' => 'string!',
                 'email' => 'string(email)!',
             ],
 
             // Описание поля (формы) — для manifest и для resource.meta.
             'FieldSchema' => [
-                'name'         => 'string!',
-                'type'         => 'string!',
-                'label'        => 'string!',
-                'placeholder'  => 'string',
-                'help'         => 'string',
-                'required'     => 'boolean!',
-                'rules'        => 'array!',                          // string[] либо object[]
-                'options'      => 'object!',                         // type-specific
-                'visibility'   => '@FieldVisibility',
-                'reactive'     => '@FieldReactive',
+                'name' => 'string!',
+                'type' => 'string!',
+                'label' => 'string!',
+                'placeholder' => 'string',
+                'help' => 'string',
+                'required' => 'boolean!',
+                'rules' => 'array!',                          // string[] либо object[]
+                'options' => 'object!',                         // type-specific
+                'visibility' => '@FieldVisibility',
+                'reactive' => '@FieldReactive',
                 'defaultValue' => 'object',
             ],
             'FieldVisibility' => [
                 'create' => 'boolean!',
                 'update' => 'boolean!',
-                'view'   => 'boolean!',
+                'view' => 'boolean!',
             ],
             'FieldReactive' => [
                 'reloadFor' => 'array!',                             // string[]
-                'endpoint'  => 'string!',
+                'endpoint' => 'string!',
             ],
 
             // Описание колонки таблицы.
             'ColumnSchema' => [
-                'name'          => 'string!',
-                'label'         => 'string!',
-                'type'          => 'string!',
-                'sortable'      => 'boolean!',
-                'searchable'    => 'boolean!',
-                'copyable'      => 'boolean!',
-                'width'         => 'string',
+                'name' => 'string!',
+                'label' => 'string!',
+                'type' => 'string!',
+                'sortable' => 'boolean!',
+                'searchable' => 'boolean!',
+                'copyable' => 'boolean!',
+                'width' => 'string',
                 'defaultHidden' => 'boolean!',
-                'cantHide'      => 'boolean!',
-                'align'         => 'string!',                        // left|center|right
-                'editable'      => '@ColumnEditable',
-                'summary'       => 'array',                          // string[]: sum|avg|count|range
-                'preset'        => 'string',
-                'meta'          => 'object',
+                'cantHide' => 'boolean!',
+                'align' => 'string!',                        // left|center|right
+                'editable' => '@ColumnEditable',
+                'summary' => 'array',                          // string[]: sum|avg|count|range
+                'preset' => 'string',
+                'meta' => 'object',
             ],
             'ColumnEditable' => [
-                'field'      => 'string!',
+                'field' => 'string!',
                 'validation' => 'array!',
             ],
 
             // Описание фильтра.
             'FilterSchema' => [
-                'name'     => 'string!',
-                'label'    => 'string!',
-                'type'     => 'string!',                             // input|switcher|date_range|select_from_*
-                'options'  => 'array',                               // {value,label}[]
-                'default'  => 'object',
+                'name' => 'string!',
+                'label' => 'string!',
+                'type' => 'string!',                             // input|switcher|date_range|select_from_*
+                'options' => 'array',                               // {value,label}[]
+                'default' => 'object',
                 'multiple' => 'boolean!',
             ],
 
             // Описание action'а.
             'ActionSchema' => [
-                'name'        => 'string!',
-                'label'       => 'string!',
-                'icon'        => 'string',
-                'type'        => 'string!',                          // button|link|modal|bulk|async|export|...
-                'confirm'     => '@ActionConfirm',
-                'permission'  => 'string',
-                'primary'     => 'boolean!',
+                'name' => 'string!',
+                'label' => 'string!',
+                'icon' => 'string',
+                'type' => 'string!',                          // button|link|modal|bulk|async|export|...
+                'confirm' => '@ActionConfirm',
+                'permission' => 'string',
+                'primary' => 'boolean!',
                 'destructive' => 'boolean!',
-                'position'    => 'array!',                           // string[] из command_bar|row|bulk|header
-                'endpoint'    => 'string',
-                'parameters'  => '@FieldSchema[]',
+                'position' => 'array!',                           // string[] из command_bar|row|bulk|header
+                'endpoint' => 'string',
+                'parameters' => '@FieldSchema[]',
             ],
             'ActionConfirm' => [
                 'message' => 'string!',
-                'title'   => 'string!',
+                'title' => 'string!',
             ],
 
             // Описание layout-слоя (рекурсивная структура).
             'LayoutSchema' => [
-                'id'       => 'string!',
-                'type'     => 'string!',                             // rows|columns|tabs|accordion|modal|drawer|block|table|metrics|chart|wizard|infolist|view|wrapper
-                'props'    => 'object!',
+                'id' => 'string!',
+                'type' => 'string!',                             // rows|columns|tabs|accordion|modal|drawer|block|table|metrics|chart|wizard|infolist|view|wrapper
+                'props' => 'object!',
                 'children' => '@LayoutSchema[]',                     // вложенные слои
             ],
 
             // Запись меню сайдбара.
             'MenuItem' => [
-                'key'      => 'string!',
-                'label'    => 'string!',
-                'icon'     => 'string',
-                'url'      => 'string',
-                'badge'    => 'string',
+                'key' => 'string!',
+                'label' => 'string!',
+                'icon' => 'string',
+                'url' => 'string',
+                'badge' => 'string',
                 'children' => '@MenuItem[]',
-                'order'    => 'integer!',
+                'order' => 'integer!',
             ],
 
             // Группа permissions.
             'PermissionGroup' => [
-                'name'  => 'string!',
+                'name' => 'string!',
                 'items' => '@PermissionItem[]',
             ],
             'PermissionItem' => [
-                'key'   => 'string!',
+                'key' => 'string!',
                 'label' => 'string!',
             ],
 
             // Описание зарегистрированного AdminPlugin.
             'PluginManifest' => [
-                'id'       => 'string!',
-                'version'  => 'string!',
+                'id' => 'string!',
+                'version' => 'string!',
                 'requires' => 'array!',                              // string[]
             ],
 
@@ -290,12 +290,12 @@ trait AdminApiCommonSchemas
              * ------------------------------------------------------------------ */
 
             'PaginationMeta' => [
-                'page'      => 'integer!',
-                'per_page'  => 'integer!',
-                'total'     => 'integer!',
+                'page' => 'integer!',
+                'per_page' => 'integer!',
+                'total' => 'integer!',
                 'last_page' => 'integer!',
-                'from'      => 'integer',
-                'to'        => 'integer',
+                'from' => 'integer',
+                'to' => 'integer',
             ],
         ];
     }

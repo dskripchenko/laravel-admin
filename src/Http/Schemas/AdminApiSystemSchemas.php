@@ -25,22 +25,22 @@ trait AdminApiSystemSchemas
                 'payload' => '@BootstrapPayload',
             ],
             'BootstrapPayload' => [
-                'csrf'            => 'string!',
-                'baseUrl'         => 'string!',
-                'apiUrl'          => 'string!',
-                'locale'          => 'string!',
+                'csrf' => 'string!',
+                'baseUrl' => 'string!',
+                'apiUrl' => 'string!',
+                'locale' => 'string!',
                 'availableLocales' => 'array!',                       // string[]
-                'theme'           => 'string!',
-                'brand'           => '@BrandConfig',
-                'user'            => '@AdminUserSummary',
-                'permissions'     => 'array!',                        // string[]
+                'theme' => 'string!',
+                'brand' => '@BrandConfig',
+                'user' => '@AdminUserSummary',
+                'permissions' => 'array!',                        // string[]
                 'manifestVersion' => 'string',
-                'pluginVersions'  => 'object!',                       // id => version
-                'config'          => 'object!',
+                'pluginVersions' => 'object!',                       // id => version
+                'config' => 'object!',
             ],
             'BrandConfig' => [
-                'name'    => 'string!',
-                'logo'    => 'string',
+                'name' => 'string!',
+                'logo' => 'string',
                 'favicon' => 'string',
             ],
 
@@ -49,13 +49,13 @@ trait AdminApiSystemSchemas
                 'payload' => '@ManifestPayload',
             ],
             'ManifestPayload' => [
-                'version'     => 'string!',
-                'locale'      => 'string!',
-                'resources'   => 'array!',                            // ResourceManifest[] — описано в schemas.md
-                'screens'     => 'array!',
-                'settings'    => 'array!',
-                'dashboards'  => 'array!',
-                'plugins'     => '@PluginManifest[]',
+                'version' => 'string!',
+                'locale' => 'string!',
+                'resources' => 'array!',                            // ResourceManifest[] — описано в schemas.md
+                'screens' => 'array!',
+                'settings' => 'array!',
+                'dashboards' => 'array!',
+                'plugins' => '@PluginManifest[]',
                 'permissions' => '@PermissionGroup[]',
             ],
 
@@ -78,8 +78,8 @@ trait AdminApiSystemSchemas
             ],
             'LocalesPayload' => [
                 'available' => 'array!',                              // string[]
-                'current'   => 'string!',
-                'fallback'  => 'string!',
+                'current' => 'string!',
+                'fallback' => 'string!',
             ],
 
             'PermissionsResponse' => [
@@ -103,23 +103,23 @@ trait AdminApiSystemSchemas
                 'payload' => '@NotificationsListPayload',
             ],
             'NotificationsListPayload' => [
-                'data'         => '@AdminNotification[]',
-                'meta'         => '@PaginationMeta',
+                'data' => '@AdminNotification[]',
+                'meta' => '@PaginationMeta',
                 'unread_count' => 'integer!',
             ],
             'AdminNotification' => [
-                'id'         => 'string(uuid)!',
-                'type'       => 'string!',
-                'data'       => '@AdminNotificationData',
-                'read_at'    => 'string(date-time)',
+                'id' => 'string(uuid)!',
+                'type' => 'string!',
+                'data' => '@AdminNotificationData',
+                'read_at' => 'string(date-time)',
                 'created_at' => 'string(date-time)!',
             ],
             'AdminNotificationData' => [
-                'title'        => 'string!',
-                'message'      => 'string!',
-                'icon'         => 'string',
-                'color'        => 'string',                            // info|success|warning|danger
-                'action_url'   => 'string',
+                'title' => 'string!',
+                'message' => 'string!',
+                'icon' => 'string',
+                'color' => 'string',                            // info|success|warning|danger
+                'action_url' => 'string',
                 'action_label' => 'string',
             ],
             'NotificationItemResponse' => [
@@ -145,7 +145,7 @@ trait AdminApiSystemSchemas
                 'payload' => '@LoginPayload',
             ],
             'LoginPayload' => [
-                'user'         => '@AdminUserSummary',
+                'user' => '@AdminUserSummary',
                 'redirect_url' => 'string!',
             ],
 
@@ -154,8 +154,8 @@ trait AdminApiSystemSchemas
                 'payload' => '@TwoFactorRequiredPayload',
             ],
             'TwoFactorRequiredPayload' => [
-                'errorKey'        => 'string!',                       // 'two_factor_required'
-                'message'         => 'string!',
+                'errorKey' => 'string!',                       // 'two_factor_required'
+                'message' => 'string!',
                 'challenge_token' => 'string!',
             ],
 
@@ -177,9 +177,9 @@ trait AdminApiSystemSchemas
                 'payload' => '@RecoveryLoginPayload',
             ],
             'RecoveryLoginPayload' => [
-                'user'                      => '@AdminUserSummary',
-                'redirect_url'              => 'string!',
-                'recovery_codes_remaining'  => 'integer!',
+                'user' => '@AdminUserSummary',
+                'redirect_url' => 'string!',
+                'recovery_codes_remaining' => 'integer!',
             ],
 
             'ImpersonationResponse' => [
@@ -187,7 +187,7 @@ trait AdminApiSystemSchemas
                 'payload' => '@ImpersonationPayload',
             ],
             'ImpersonationPayload' => [
-                'user'         => '@AdminUserSummary',
+                'user' => '@AdminUserSummary',
                 'impersonator' => '@ImpersonatorRef',
                 'redirect_url' => 'string!',
             ],
@@ -206,15 +206,15 @@ trait AdminApiSystemSchemas
                 'payload' => '@ProfilePayload',
             ],
             'ProfilePayload' => [
-                'user'             => '@AdminUserSummary',
+                'user' => '@AdminUserSummary',
                 'available_locales' => 'array!',                      // string[]
-                'available_themes'  => 'array!',                      // string[]
-                'two_factor'       => '@ProfileTwoFactor',
+                'available_themes' => 'array!',                      // string[]
+                'two_factor' => '@ProfileTwoFactor',
                 'api_tokens_enabled' => 'boolean!',
             ],
             'ProfileTwoFactor' => [
-                'enabled'                  => 'boolean!',
-                'confirmed_at'             => 'string(date-time)',
+                'enabled' => 'boolean!',
+                'confirmed_at' => 'string(date-time)',
                 'recovery_codes_remaining' => 'integer!',
             ],
 
@@ -231,12 +231,12 @@ trait AdminApiSystemSchemas
                 'payload' => '@TwoFactorStatusPayload',
             ],
             'TwoFactorStatusPayload' => [
-                'enabled'         => 'boolean!',
-                'confirmed_at'    => 'string(date-time)',
-                'qr_code_svg'     => 'string',
-                'secret'          => 'string',
-                'qr_uri'          => 'string',
-                'recovery_codes'  => 'array',                         // string[]
+                'enabled' => 'boolean!',
+                'confirmed_at' => 'string(date-time)',
+                'qr_code_svg' => 'string',
+                'secret' => 'string',
+                'qr_uri' => 'string',
+                'recovery_codes' => 'array',                         // string[]
             ],
 
             'TwoFactorSetupResponse' => [
@@ -244,9 +244,9 @@ trait AdminApiSystemSchemas
                 'payload' => '@TwoFactorSetupPayload',
             ],
             'TwoFactorSetupPayload' => [
-                'qr_code_svg'    => 'string!',
-                'secret'         => 'string!',
-                'qr_uri'         => 'string!',
+                'qr_code_svg' => 'string!',
+                'secret' => 'string!',
+                'qr_uri' => 'string!',
                 'recovery_codes' => 'array!',                         // string[8]
             ],
 
@@ -255,7 +255,7 @@ trait AdminApiSystemSchemas
                 'payload' => '@TwoFactorConfirmedPayload',
             ],
             'TwoFactorConfirmedPayload' => [
-                'enabled'      => 'boolean!',
+                'enabled' => 'boolean!',
                 'confirmed_at' => 'string(date-time)!',
             ],
 
@@ -275,12 +275,12 @@ trait AdminApiSystemSchemas
                 'data' => '@ApiToken[]',
             ],
             'ApiToken' => [
-                'id'           => 'integer!',
-                'name'         => 'string!',
-                'abilities'    => 'array!',                           // string[]
+                'id' => 'integer!',
+                'name' => 'string!',
+                'abilities' => 'array!',                           // string[]
                 'last_used_at' => 'string(date-time)',
-                'created_at'   => 'string(date-time)!',
-                'expires_at'   => 'string(date-time)',
+                'created_at' => 'string(date-time)!',
+                'expires_at' => 'string(date-time)',
             ],
 
             'ApiTokenCreatedResponse' => [
@@ -288,7 +288,7 @@ trait AdminApiSystemSchemas
                 'payload' => '@ApiTokenCreatedPayload',
             ],
             'ApiTokenCreatedPayload' => [
-                'token'            => '@ApiToken',
+                'token' => '@ApiToken',
                 'plain_text_token' => 'string!',                      // показывается ОДИН раз
             ],
         ];

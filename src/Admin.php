@@ -33,14 +33,16 @@ final class Admin
     /** @var class-string[] */
     private array $plugins = [];
 
-    public function __construct(private readonly Application $app)
-    {
-    }
+    public function __construct(
+        // Сохраняем для будущих фаз (P1+) — резолвинг сервисов через контейнер.
+        // @phpstan-ignore property.onlyWritten
+        private readonly Application $app,
+    ) {}
 
     /**
      * Регистрирует список Resource-классов.
      *
-     * @param  class-string[] $classes
+     * @param  class-string[]  $classes
      */
     public function resources(array $classes): self
     {
@@ -60,7 +62,7 @@ final class Admin
     /**
      * Регистрирует AdminPlugin.
      *
-     * @param  class-string $class
+     * @param  class-string  $class
      */
     public function plugin(string $class): self
     {
@@ -80,7 +82,7 @@ final class Admin
     /**
      * Регистрирует Widget-классы.
      *
-     * @param  class-string[] $classes
+     * @param  class-string[]  $classes
      */
     public function widgets(array $classes): self
     {

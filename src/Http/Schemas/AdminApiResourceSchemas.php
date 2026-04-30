@@ -25,20 +25,20 @@ trait AdminApiResourceSchemas
                 'payload' => '@ResourceMetaPayload',
             ],
             'ResourceMetaPayload' => [
-                'fields'      => '@FieldSchema[]',
-                'columns'     => '@ColumnSchema[]',
-                'filters'     => '@FilterSchema[]',
-                'actions'     => '@ActionSchema[]',
+                'fields' => '@FieldSchema[]',
+                'columns' => '@ColumnSchema[]',
+                'filters' => '@FilterSchema[]',
+                'actions' => '@ActionSchema[]',
                 'permissions' => 'object!',                            // map<string,bool>
-                'features'    => '@ResourceFeatures',
+                'features' => '@ResourceFeatures',
             ],
             'ResourceFeatures' => [
-                'softDeletes'          => 'boolean!',
-                'replicable'           => 'boolean!',
-                'reorderable'          => 'object',                    // {column} | false
-                'importable'           => 'boolean!',
-                'exportable'           => 'array!',                    // ('csv'|'xlsx'|'pdf')[]
-                'polling'              => 'string',
+                'softDeletes' => 'boolean!',
+                'replicable' => 'boolean!',
+                'reorderable' => 'object',                    // {column} | false
+                'importable' => 'boolean!',
+                'exportable' => 'array!',                    // ('csv'|'xlsx'|'pdf')[]
+                'polling' => 'string',
                 'warnOnUnsavedChanges' => 'boolean!',
             ],
 
@@ -51,14 +51,14 @@ trait AdminApiResourceSchemas
                 'meta' => '@ResourceSearchMeta',
             ],
             'ResourceSearchMeta' => [
-                'page'      => 'integer!',
-                'per_page'  => 'integer!',
-                'total'     => 'integer!',
+                'page' => 'integer!',
+                'per_page' => 'integer!',
+                'total' => 'integer!',
                 'last_page' => 'integer!',
-                'from'      => 'integer',
-                'to'        => 'integer',
-                'summary'   => 'object',                               // footer-агрегаты
-                'groups'    => 'array',                                // group-by markers
+                'from' => 'integer',
+                'to' => 'integer',
+                'summary' => 'object',                               // footer-агрегаты
+                'groups' => 'array',                                // group-by markers
             ],
 
             'ResourceReadResponse' => [
@@ -66,25 +66,25 @@ trait AdminApiResourceSchemas
                 'payload' => '@ResourceReadPayload',
             ],
             'ResourceReadPayload' => [
-                'record'         => 'object!',
-                'state'          => 'object!',
-                'permissions'    => '@ResourceRecordPermissions',
-                'audit_summary'  => '@ResourceAuditSummary',
-                'etag'           => 'string!',
+                'record' => 'object!',
+                'state' => 'object!',
+                'permissions' => '@ResourceRecordPermissions',
+                'audit_summary' => '@ResourceAuditSummary',
+                'etag' => 'string!',
             ],
             'ResourceRecordPermissions' => [
-                'update'       => 'boolean!',
-                'delete'       => 'boolean!',
+                'update' => 'boolean!',
+                'delete' => 'boolean!',
                 'force_delete' => 'boolean!',
-                'restore'      => 'boolean!',
-                'replicate'    => 'boolean!',
+                'restore' => 'boolean!',
+                'replicate' => 'boolean!',
             ],
             'ResourceAuditSummary' => [
-                'created_by'  => '@AuditUserRef',
-                'created_at'  => 'string(date-time)!',
-                'updated_by'  => '@AuditUserRef',
-                'updated_at'  => 'string(date-time)!',
-                'deleted_at'  => 'string(date-time)',
+                'created_by' => '@AuditUserRef',
+                'created_at' => 'string(date-time)!',
+                'updated_by' => '@AuditUserRef',
+                'updated_at' => 'string(date-time)!',
+                'deleted_at' => 'string(date-time)',
                 'audit_count' => 'integer!',
             ],
 
@@ -93,9 +93,9 @@ trait AdminApiResourceSchemas
                 'payload' => '@ResourceCreatedPayload',
             ],
             'ResourceCreatedPayload' => [
-                'record'       => 'object!',
+                'record' => 'object!',
                 'redirect_url' => 'string!',
-                'message'      => 'string!',
+                'message' => 'string!',
             ],
 
             'ResourceUpdatedResponse' => [
@@ -103,9 +103,9 @@ trait AdminApiResourceSchemas
                 'payload' => '@ResourceUpdatedPayload',
             ],
             'ResourceUpdatedPayload' => [
-                'record'  => 'object!',
-                'state'   => 'object!',
-                'etag'    => 'string!',
+                'record' => 'object!',
+                'state' => 'object!',
+                'etag' => 'string!',
                 'message' => 'string!',
             ],
 
@@ -114,7 +114,7 @@ trait AdminApiResourceSchemas
                 'payload' => '@ResourceDeletedPayload',
             ],
             'ResourceDeletedPayload' => [
-                'record'  => 'object',
+                'record' => 'object',
                 'message' => 'string!',
             ],
 
@@ -123,7 +123,7 @@ trait AdminApiResourceSchemas
                 'payload' => '@ResourceRestoredPayload',
             ],
             'ResourceRestoredPayload' => [
-                'record'  => 'object!',
+                'record' => 'object!',
                 'message' => 'string!',
             ],
 
@@ -132,7 +132,7 @@ trait AdminApiResourceSchemas
                 'payload' => '@InlineEditPayload',
             ],
             'InlineEditPayload' => [
-                'record'  => 'object!',                                // только id и обновлённое поле
+                'record' => 'object!',                                // только id и обновлённое поле
                 'message' => 'string',
             ],
 
@@ -147,7 +147,7 @@ trait AdminApiResourceSchemas
             'InfolistPayload' => [
                 'record' => 'object!',
                 'layout' => '@LayoutSchema[]',
-                'etag'   => 'string!',
+                'etag' => 'string!',
             ],
 
             'ReactiveFieldResponse' => [
@@ -155,11 +155,11 @@ trait AdminApiResourceSchemas
                 'payload' => '@ReactiveFieldPayload',
             ],
             'ReactiveFieldPayload' => [
-                'field'   => 'string!',
+                'field' => 'string!',
                 'options' => 'array',                                  // {value,label}[]
-                'value'   => 'object',
+                'value' => 'object',
                 'visible' => 'boolean',
-                'rules'   => 'array',
+                'rules' => 'array',
             ],
 
             /* ------------------------------------------------------------------
@@ -196,18 +196,18 @@ trait AdminApiResourceSchemas
                 'data' => '@SavedView[]',
             ],
             'SavedView' => [
-                'id'         => 'integer!',
-                'name'       => 'string!',
-                'payload'    => '@SavedViewPayloadData',
-                'is_shared'  => 'boolean!',
+                'id' => 'integer!',
+                'name' => 'string!',
+                'payload' => '@SavedViewPayloadData',
+                'is_shared' => 'boolean!',
                 'is_default' => 'boolean!',
-                'owner'      => '@AuditUserRef',
+                'owner' => '@AuditUserRef',
                 'created_at' => 'string(date-time)!',
             ],
             'SavedViewPayloadData' => [
-                'filter'   => 'object!',
-                'sort'     => 'string',
-                'columns'  => 'array',                                 // string[]
+                'filter' => 'object!',
+                'sort' => 'string',
+                'columns' => 'array',                                 // string[]
                 'group_by' => 'string',
                 'per_page' => 'integer',
             ],
@@ -228,13 +228,13 @@ trait AdminApiResourceSchemas
                 'preferences' => '@TablePreferences',
             ],
             'TablePreferences' => [
-                'columns'  => '@TablePreferencesColumn[]',
+                'columns' => '@TablePreferencesColumn[]',
                 'per_page' => 'integer',
             ],
             'TablePreferencesColumn' => [
-                'name'    => 'string!',
+                'name' => 'string!',
                 'visible' => 'boolean!',
-                'order'   => 'integer!',
+                'order' => 'integer!',
             ],
 
             /* ------------------------------------------------------------------
@@ -247,12 +247,12 @@ trait AdminApiResourceSchemas
             ],
             'BulkActionPayload' => [
                 'affected' => 'integer!',
-                'message'  => 'string!',
-                'refresh'  => 'boolean!',
-                'failed'   => '@BulkActionFailedItem[]',
+                'message' => 'string!',
+                'refresh' => 'boolean!',
+                'failed' => '@BulkActionFailedItem[]',
             ],
             'BulkActionFailedItem' => [
-                'id'    => 'string!',
+                'id' => 'string!',
                 'error' => 'string!',
             ],
 
@@ -261,10 +261,10 @@ trait AdminApiResourceSchemas
                 'payload' => '@SingleActionPayload',
             ],
             'SingleActionPayload' => [
-                'record'       => 'object',
-                'message'      => 'string!',
+                'record' => 'object',
+                'message' => 'string!',
                 'redirect_url' => 'string',
-                'refresh'      => 'boolean!',
+                'refresh' => 'boolean!',
                 'download_url' => 'string',
             ],
 
@@ -273,12 +273,12 @@ trait AdminApiResourceSchemas
                 'payload' => '@ActionParametersPayload',
             ],
             'ActionParametersPayload' => [
-                'title'        => 'string!',
-                'description'  => 'string',
-                'fields'       => '@FieldSchema[]',
+                'title' => 'string!',
+                'description' => 'string',
+                'fields' => '@FieldSchema[]',
                 'submit_label' => 'string!',
                 'cancel_label' => 'string!',
-                'confirm'      => '@ActionConfirm',
+                'confirm' => '@ActionConfirm',
             ],
 
             /* ------------------------------------------------------------------
@@ -290,8 +290,8 @@ trait AdminApiResourceSchemas
                 'payload' => '@SettingsMetaPayload',
             ],
             'SettingsMetaPayload' => [
-                'fields'      => '@FieldSchema[]',
-                'layout'      => '@LayoutSchema[]',
+                'fields' => '@FieldSchema[]',
+                'layout' => '@LayoutSchema[]',
                 'permissions' => '@SettingsPermissions',
             ],
             'SettingsPermissions' => [
@@ -303,11 +303,11 @@ trait AdminApiResourceSchemas
                 'payload' => '@SettingsShowPayload',
             ],
             'SettingsShowPayload' => [
-                'state'       => 'object!',
-                'layout'      => '@LayoutSchema[]',
-                'fields'      => '@FieldSchema[]',
+                'state' => 'object!',
+                'layout' => '@LayoutSchema[]',
+                'fields' => '@FieldSchema[]',
                 'permissions' => '@SettingsPermissions',
-                'etag'        => 'string!',
+                'etag' => 'string!',
             ],
 
             'SettingsUpdateResponse' => [
@@ -315,9 +315,9 @@ trait AdminApiResourceSchemas
                 'payload' => '@SettingsUpdatePayload',
             ],
             'SettingsUpdatePayload' => [
-                'state'         => 'object!',
-                'etag'          => 'string!',
-                'message'       => 'string!',
+                'state' => 'object!',
+                'etag' => 'string!',
+                'message' => 'string!',
                 'affected_keys' => 'array!',                           // string[]
             ],
         ];

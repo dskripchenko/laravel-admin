@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array getPlugins()
  * @method static string version()
  *
- * @see \Dskripchenko\LaravelAdmin\Admin
+ * @see AdminManager
  */
 final class Admin extends Facade
 {

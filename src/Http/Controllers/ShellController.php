@@ -26,12 +26,15 @@ final class ShellController
             ? $this->buildBootstrap($request)
             : ['strategy' => 'xhr'];
 
-        return view('admin::shell', [
+        /** @var view-string $view */
+        $view = 'admin::shell';
+
+        return view($view, [
             'bootstrap' => $bootstrap,
-            'strategy'  => $strategy,
-            'cspNonce'  => $request->attributes->get('admin.csp_nonce'),
-            'brand'     => (array) config('admin.brand', []),
-            'assets'    => $this->resolveAssets(),
+            'strategy' => $strategy,
+            'cspNonce' => $request->attributes->get('admin.csp_nonce'),
+            'brand' => (array) config('admin.brand', []),
+            'assets' => $this->resolveAssets(),
         ]);
     }
 
@@ -41,14 +44,14 @@ final class ShellController
     private function buildBootstrap(Request $request): array
     {
         return [
-            'csrf'          => csrf_token(),
-            'baseUrl'       => url((string) config('admin.path')),
-            'apiUrl'        => url((string) config('admin.api_path')),
-            'locale'        => app()->getLocale(),
-            'theme'         => 'light',
-            'brand'         => (array) config('admin.brand', []),
+            'csrf' => csrf_token(),
+            'baseUrl' => url((string) config('admin.path')),
+            'apiUrl' => url((string) config('admin.api_path')),
+            'locale' => app()->getLocale(),
+            'theme' => 'light',
+            'brand' => (array) config('admin.brand', []),
             'manifestVersion' => null,
-            'user'          => null,
+            'user' => null,
         ];
     }
 
@@ -62,7 +65,7 @@ final class ShellController
     {
         return [
             'css' => [],
-            'js'  => [],
+            'js' => [],
         ];
     }
 }
