@@ -12,11 +12,14 @@ use Dskripchenko\LaravelAdmin\Http\AdminApiModule;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
+use Dskripchenko\LaravelApi\Facades\ApiErrorHandler;
 use Dskripchenko\LaravelApi\Providers\ApiServiceProvider;
+use Dskripchenko\LaravelApi\Services\ApiResponseHelper;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Главный сервис-провайдер пакета.
@@ -79,6 +82,27 @@ final class AdminServiceProvider extends ServiceProvider
         $this->registerAdminGuard();
         $this->registerRoutes();
         $this->registerCommands();
+        $this->registerExceptionHandlers();
+    }
+
+    /**
+     * Регистрирует обработчики исключений в ApiErrorHandler из laravel-api.
+     *
+     * Без этого ValidationException возвращается как 500, потому что laravel-api
+     * не имеет встроенной поддержки Laravel'овского ValidationException.
+     */
+    private function registerExceptionHandlers(): void
+    {
+        ApiErrorHandler::addErrorHandler(
+            ValidationException::class,
+            static function (ValidationException $e) {
+                return ApiResponseHelper::sayError([
+                    'errorKey' => 'validation',
+                    'message' => $e->getMessage(),
+                    'messages' => $e->errors(),
+                ], 422);
+            },
+        );
     }
 
     private function registerAdminGuard(): void

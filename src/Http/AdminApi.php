@@ -9,6 +9,8 @@ use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiResourceSchemas;
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiSisterPackSchemas;
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiSystemSchemas;
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiUiSchemas;
+use Dskripchenko\LaravelAdmin\Resource\ResourceCompiler;
+use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelApi\Components\BaseApi;
 
 /**
@@ -29,6 +31,24 @@ class AdminApi extends BaseApi
     use AdminApiUiSchemas;
 
     /**
+     * Override BaseApi cache. AdminApi::getMethods() читает ResourceRegistry
+     * динамически — при добавлении/удалении Resource нужна инвалидация
+     * через `clearCache()` (особенно важно в тестах между сценариями).
+     *
+     * @var array<string, mixed>
+     */
+    protected static $preparedMethods = [];
+
+    /**
+     * Сбрасывает laravel-api кеш `getPreparedMethods` для AdminApi.
+     * Используется в тестах после Resources::add/clear.
+     */
+    public static function clearCache(): void
+    {
+        static::$preparedMethods = [];
+    }
+
+    /**
      * Включить named-templates для @response.
      *
      * Тип не указан намеренно — родитель (OpenApiTrait в BaseApi) объявляет
@@ -44,26 +64,32 @@ class AdminApi extends BaseApi
      */
     public static function getMethods(): array
     {
+        $controllers = [
+            'system' => [
+                'controller' => Controllers\SystemController::class,
+                'actions' => [
+                    'bootstrap' => ['method' => ['get']],
+                    'manifest' => ['method' => ['get']],
+                    'me' => ['method' => ['get']],
+                    'menu' => ['method' => ['get']],
+                    'locales' => ['method' => ['get']],
+                    'permissions' => ['method' => ['get']],
+                    'plugins' => ['method' => ['get']],
+                ],
+            ],
+            // 'auth' / 'profile' — фаза P2
+        ];
+
+        // Динамически добавляем по controller'у на каждый зарегистрированный Resource.
+        // ResourceController — общий FQCN; per-Resource резолв идёт по ApiRequest::getApiControllerKey().
+        $registry = app(ResourceRegistry::class);
+        $controllers = array_merge($controllers, (new ResourceCompiler)->compile($registry));
+
         return [
             'middleware' => [
                 \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
             ],
-            'controllers' => [
-                'system' => [
-                    'controller' => Controllers\SystemController::class,
-                    'actions' => [
-                        'bootstrap' => ['method' => ['get']],
-                        'manifest' => ['method' => ['get']],
-                        'me' => ['method' => ['get']],
-                        'menu' => ['method' => ['get']],
-                        'locales' => ['method' => ['get']],
-                        'permissions' => ['method' => ['get']],
-                        'plugins' => ['method' => ['get']],
-                    ],
-                ],
-                // 'auth' / 'profile' — фаза P2
-                // Resource/Screen/Settings controllers — динамическая регистрация (фаза P3+)
-            ],
+            'controllers' => $controllers,
         ];
     }
 
