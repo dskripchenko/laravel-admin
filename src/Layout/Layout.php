@@ -134,6 +134,14 @@ abstract class Layout implements Renderable
         return Infolist::make($entries);
     }
 
+    /**
+     * @param  list<\Dskripchenko\LaravelAdmin\Widget\Widget>  $widgets
+     */
+    public static function dashboard(array $widgets = []): Dashboard
+    {
+        return Dashboard::make($widgets);
+    }
+
     /* -----------------------------------------------------------------
      * Fluent API
      * ----------------------------------------------------------------- */
