@@ -82,6 +82,7 @@ final class ResourceCompiler
                 'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
                 'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
                 'editScreen' => ['method' => ['get'], 'middleware' => [$update]],
+                'viewScreen' => ['method' => ['get'], 'middleware' => [$view]],
             ],
         ];
     }

@@ -82,3 +82,28 @@ it('editScreen 422 when no id provided', function (): void {
 
     $response->assertStatus(422);
 });
+
+it('viewScreen action loads record by id', function (): void {
+    $record = TestResourceUserModel::create([
+        'name' => 'Viewed',
+        'email' => 'vw@example.com',
+        'password' => 'x',
+    ]);
+
+    $response = $this->getJson('/api/admin/test-users/viewScreen?id='.$record->id);
+
+    $response->assertOk();
+    expect($response->json('payload.type'))->toBe('generated.view');
+    expect($response->json('payload.state.record.name'))->toBe('Viewed');
+    expect($response->json('payload.layout.0.type'))->toBe('infolist');
+});
+
+it('viewScreen 404 when record missing', function (): void {
+    $response = $this->getJson('/api/admin/test-users/viewScreen?id=99999');
+    $response->assertStatus(404);
+});
+
+it('viewScreen 422 when no id provided', function (): void {
+    $response = $this->getJson('/api/admin/test-users/viewScreen');
+    $response->assertStatus(422);
+});

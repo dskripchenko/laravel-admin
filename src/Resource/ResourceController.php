@@ -9,6 +9,7 @@ use Dskripchenko\LaravelAdmin\Filter\HttpFilterParser;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedViewScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
 use Illuminate\Http\JsonResponse;
@@ -100,6 +101,39 @@ final class ResourceController extends ApiController
 
         $screen = new GeneratedEditScreen($this->currentResource());
 
+        try {
+            return $this->success($screen->compile($id));
+        } catch (NotFoundHttpException) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+    }
+
+    /**
+     * Compile GeneratedViewScreen — read-only display через Infolist.
+     *
+     * @input integer $id
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceViewScreenResponse}
+     * @response 404 {NotFoundErrorResponse}
+     */
+    public function viewScreen(Request $request): JsonResponse
+    {
+        $id = $request->input('id');
+        if ($id === null) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => 'id is required',
+            ], 422);
+        }
+
+        $screen = new GeneratedViewScreen($this->currentResource());
         try {
             return $this->success($screen->compile($id));
         } catch (NotFoundHttpException) {

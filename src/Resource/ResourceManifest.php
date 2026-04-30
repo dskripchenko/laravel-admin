@@ -7,6 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Resource;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedViewScreen;
 
 /**
  * Сериализация Resource'а в manifest-entry.
@@ -32,6 +33,7 @@ final class ResourceManifest
                 'list' => self::screenEntry(new GeneratedListScreen($resource)),
                 'create' => self::screenEntry(new GeneratedCreateScreen($resource)),
                 'edit' => self::screenEntry(new GeneratedEditScreen($resource)),
+                'view' => self::screenEntry(new GeneratedViewScreen($resource)),
             ],
         ];
     }

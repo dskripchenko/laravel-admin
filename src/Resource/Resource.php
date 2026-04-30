@@ -8,6 +8,8 @@ use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Field\Field;
 use Dskripchenko\LaravelAdmin\Field\ValidationRulesExporter;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
+use Dskripchenko\LaravelAdmin\Infolist\Entry;
+use Dskripchenko\LaravelAdmin\Infolist\TextEntry;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -246,5 +248,26 @@ abstract class Resource
     public function polling(): ?int
     {
         return null;
+    }
+
+    /**
+     * Read-only entries для GeneratedViewScreen.
+     *
+     * Default: TextEntry для каждого поля из fields() с тем же label. Override
+     * в подклассе если нужна кастомизация (BadgeEntry для статусов, ImageEntry
+     * для аватаров и т.д.).
+     *
+     * @return list<Entry>
+     */
+    public function infolist(): array
+    {
+        $entries = [];
+        foreach ($this->fields() as $field) {
+            $name = $field->name();
+            $label = (string) ($field->getAttributes()['title'] ?? $name);
+            $entries[] = TextEntry::make($name)->label($label);
+        }
+
+        return $entries;
     }
 }
