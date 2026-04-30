@@ -53,6 +53,13 @@ final class AdminServiceProvider extends ServiceProvider
             Settings\Storage\KeyValueSettingsStorage::class,
         );
         $this->app->singleton(Plugin\PluginRegistry::class);
+
+        $this->app->singleton(
+            Tenancy\TenantResolver::class,
+            Tenancy\SingleTenantResolver::class,
+        );
+        $this->app->singleton(Tenancy\TenantContext::class);
+
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin(
             $app,
             $app->make(ScreenRegistry::class),
