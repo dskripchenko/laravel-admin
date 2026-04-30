@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Dskripchenko\LaravelAdmin\Http\AdminApi;
 use Dskripchenko\LaravelAdmin\Models\AdminUser;
+use Dskripchenko\LaravelAdmin\Permission\Models\Role;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Hash;
@@ -40,13 +41,19 @@ beforeEach(function (): void {
         $table->timestamps();
     });
 
-    // Аутентификация.
+    // Аутентификация. Даём super-роль с `*`, чтобы пройти AdminAccess
+    // на всех Resource-actions (Permission gating проверяется отдельно).
     $admin = AdminUser::create([
         'name' => 'E2E Admin',
         'email' => 'e2e-admin-'.uniqid().'@example.com',
         'password' => 'secret',
     ]);
-    $this->actingAs($admin, 'admin');
+    $role = Role::create([
+        'name' => 'Super', 'slug' => 'e2e-super-'.uniqid(),
+        'permissions' => ['*'],
+    ]);
+    $admin->assignRole($role);
+    $this->actingAs($admin->refresh(), 'admin');
 });
 
 afterEach(function (): void {

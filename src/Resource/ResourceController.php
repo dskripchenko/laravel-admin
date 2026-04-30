@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Resource;
 
 use Dskripchenko\LaravelAdmin\Filter\Filter;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +45,68 @@ final class ResourceController extends ApiController
     public function meta(): JsonResponse
     {
         return $this->success($this->currentResource()->meta());
+    }
+
+    /**
+     * Compile GeneratedListScreen — описание list-страницы.
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceListScreenResponse}
+     */
+    public function listScreen(): JsonResponse
+    {
+        return $this->success((new GeneratedListScreen($this->currentResource()))->compile());
+    }
+
+    /**
+     * Compile GeneratedCreateScreen.
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceCreateScreenResponse}
+     */
+    public function createScreen(): JsonResponse
+    {
+        return $this->success((new GeneratedCreateScreen($this->currentResource()))->compile());
+    }
+
+    /**
+     * Compile GeneratedEditScreen с подгрузкой записи по id.
+     *
+     * @input integer $id
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceEditScreenResponse}
+     * @response 404 {NotFoundErrorResponse}
+     */
+    public function editScreen(Request $request): JsonResponse
+    {
+        $id = $request->input('id');
+        if ($id === null) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => 'id is required',
+            ], 422);
+        }
+
+        $screen = new GeneratedEditScreen($this->currentResource());
+
+        try {
+            return $this->success($screen->compile($id));
+        } catch (NotFoundHttpException) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
     }
 
     /**

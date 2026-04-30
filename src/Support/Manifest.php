@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Support;
 
 use Dskripchenko\LaravelAdmin\Admin;
+use Dskripchenko\LaravelAdmin\Resource\ResourceManifest;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 
@@ -45,7 +46,7 @@ final class Manifest
             if ($resource === null) {
                 continue;
             }
-            $resourcesPayload[] = $resource->meta();
+            $resourcesPayload[] = ResourceManifest::describe($resource);
         }
 
         $screensPayload = [];

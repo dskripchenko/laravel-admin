@@ -4,30 +4,19 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Resource;
 
+use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
+
 /**
  * Компилирует ResourceRegistry в массив `controllers` для AdminApi::getMethods().
  *
- * Каждый зарегистрированный Resource превращается в запись:
- *
- *     {slug} => [
- *         'controller' => ResourceController::class,
- *         'actions' => [
- *             'meta'   => ['method' => ['get']],
- *             'search' => ['method' => ['post']],
- *             'read'   => ['method' => ['get']],
- *             'create' => ['method' => ['post']],
- *             'update' => ['method' => ['post']],
- *             'delete' => ['method' => ['post']],
- *         ],
- *     ]
+ * Каждый зарегистрированный Resource превращается в controller-entry с
+ * actions: meta/search/read/create/update/delete + listScreen/createScreen/
+ * editScreen. Каждому action автоматически привязывается AdminAccess
+ * middleware с соответствующим permission'ом — `admin.{slug}.{action}`.
  *
  * Все Resource'ы используют ОДИН и тот же FQCN ResourceController. Внутри
  * controller через `ApiRequest::getApiControllerKey()` определяет, какой
  * именно Resource обслужить.
- *
- * Используется в AdminApi::getMethods() — на каждый запрос вызывается
- * заново (laravel-api кеширует через preparedMethods, так что overhead
- * минимальный после первого вызова).
  */
 final class ResourceCompiler
 {
@@ -38,7 +27,11 @@ final class ResourceCompiler
     {
         $controllers = [];
         foreach ($registry->all() as $slug => $class) {
-            $controllers[$slug] = self::buildControllerEntry();
+            $resource = $registry->resolve($slug);
+            if ($resource === null) {
+                continue;
+            }
+            $controllers[$slug] = self::buildControllerEntry($resource::permission());
         }
 
         return $controllers;
@@ -47,17 +40,25 @@ final class ResourceCompiler
     /**
      * @return array<string, mixed>
      */
-    private static function buildControllerEntry(): array
+    private static function buildControllerEntry(string $base): array
     {
+        $view = AdminAccess::class.':'.$base.'.view';
+        $create = AdminAccess::class.':'.$base.'.create';
+        $update = AdminAccess::class.':'.$base.'.update';
+        $delete = AdminAccess::class.':'.$base.'.delete';
+
         return [
             'controller' => ResourceController::class,
             'actions' => [
-                'meta' => ['method' => ['get']],
-                'search' => ['method' => ['post']],
-                'read' => ['method' => ['get']],
-                'create' => ['method' => ['post']],
-                'update' => ['method' => ['post']],
-                'delete' => ['method' => ['post']],
+                'meta' => ['method' => ['get'], 'middleware' => [$view]],
+                'search' => ['method' => ['post'], 'middleware' => [$view]],
+                'read' => ['method' => ['get'], 'middleware' => [$view]],
+                'create' => ['method' => ['post'], 'middleware' => [$create]],
+                'update' => ['method' => ['post'], 'middleware' => [$update]],
+                'delete' => ['method' => ['post'], 'middleware' => [$delete]],
+                'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
+                'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
+                'editScreen' => ['method' => ['get'], 'middleware' => [$update]],
             ],
         ];
     }

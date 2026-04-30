@@ -85,6 +85,7 @@ return [
             'web',
             Dskripchenko\LaravelAdmin\Http\Middleware\CaptureApiRequest::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
+            Dskripchenko\LaravelAdmin\Http\Middleware\RunActionMiddleware::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
         ],
         'public' => [
