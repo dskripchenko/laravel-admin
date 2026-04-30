@@ -52,9 +52,11 @@ final class ResourceCompiler
             'actions' => [
                 'meta' => ['method' => ['get'], 'middleware' => [$view]],
                 'search' => ['method' => ['post'], 'middleware' => [$view]],
+                'summary' => ['method' => ['post'], 'middleware' => [$view]],
                 'read' => ['method' => ['get'], 'middleware' => [$view]],
                 'create' => ['method' => ['post'], 'middleware' => [$create]],
                 'update' => ['method' => ['post'], 'middleware' => [$update]],
+                'inlineUpdate' => ['method' => ['post'], 'middleware' => [$update]],
                 'delete' => ['method' => ['post'], 'middleware' => [$delete]],
                 'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
                 'createScreen' => ['method' => ['get'], 'middleware' => [$create]],

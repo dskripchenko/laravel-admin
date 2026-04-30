@@ -326,6 +326,146 @@ final class ResourceController extends ApiController
         ]);
     }
 
+    /**
+     * Inline-edit одной ячейки в таблице.
+     *
+     * Принимает {id, column, value}; ищет column в Resource::columns(), берёт
+     * editable.validation rules, валидирует, обновляет одну колонку. Если
+     * column не editable — 422.
+     *
+     * @input integer $id
+     * @input string $column
+     * @input any $value
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceInlineUpdatedResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function inlineUpdate(Request $request): JsonResponse
+    {
+        $base = $request->validate([
+            'id' => ['required'],
+            'column' => ['required', 'string'],
+        ]);
+
+        $resource = $this->currentResource();
+        $columnName = (string) $base['column'];
+        $columnConfig = $this->findEditableColumn($resource, $columnName);
+
+        if ($columnConfig === null) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => "Column `{$columnName}` is not editable",
+            ], 422);
+        }
+
+        $rules = is_array($columnConfig['validation'] ?? null) ? $columnConfig['validation'] : [];
+        /** @var array<string, list<string|array<string, mixed>>> $rulesMap */
+        $rulesMap = ['value' => $rules];
+        $validated = $request->validate($rulesMap);
+
+        $record = $resource->modelQuery()->find($base['id']);
+        if ($record === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+
+        $record->forceFill([$columnName => $validated['value'] ?? null])->save();
+
+        return $this->success([
+            'record' => $record->toArray(),
+            'column' => $columnName,
+            'value' => $record->getAttribute($columnName),
+        ]);
+    }
+
+    /**
+     * Summary-агрегаты по текущему фильтру (sum/avg/count/min/max).
+     *
+     * Возвращает map column => {sum?, avg?, ...} по тем колонкам, у которых
+     * Resource::columns()->summary([...]) объявлен.
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceSummaryResponse}
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+        $query = $resource->indexQuery();
+
+        // Применяем те же filters, что и в search.
+        $filterInputs = HttpFilterParser::parse($request);
+        foreach ($resource->filters() as $filter) {
+            $value = $filterInputs[$filter->field()] ?? null;
+            if ($value !== null) {
+                $query = $filter->apply($query, $value);
+            }
+        }
+
+        $result = [];
+        foreach ($resource->columns() as $col) {
+            $aggregates = $col->toArray()['summary'] ?? null;
+            if (! is_array($aggregates) || $aggregates === []) {
+                continue;
+            }
+
+            $name = $col->name();
+            $values = [];
+            foreach ($aggregates as $agg) {
+                $values[(string) $agg] = $this->aggregate(clone $query, $name, (string) $agg);
+            }
+            $result[$name] = $values;
+        }
+
+        return $this->success(['summary' => $result]);
+    }
+
+    /**
+     * Найти конфиг editable для колонки. Возвращает null если колонки
+     * нет или она не editable.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function findEditableColumn(Resource $resource, string $name): ?array
+    {
+        foreach ($resource->columns() as $col) {
+            if ($col->name() !== $name) {
+                continue;
+            }
+            $config = $col->toArray()['editable'] ?? null;
+            if (is_array($config)) {
+                return $config;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return float|int|array{min: mixed, max: mixed}|null
+     */
+    private function aggregate(\Illuminate\Contracts\Database\Eloquent\Builder $query, string $column, string $agg): mixed
+    {
+        return match ($agg) {
+            'sum' => (float) $query->sum($column),
+            'avg' => (float) $query->avg($column),
+            'count' => $query->count($column),
+            'min' => $query->min($column),
+            'max' => $query->max($column),
+            'range' => ['min' => $query->min($column), 'max' => $query->max($column)],
+            default => null,
+        };
+    }
+
     /* -----------------------------------------------------------------
      * Internals
      * ----------------------------------------------------------------- */
