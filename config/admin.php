@@ -80,6 +80,7 @@ return [
         ],
         'api' => [
             'api',
+            Dskripchenko\LaravelAdmin\Http\Middleware\CaptureApiRequest::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
         ],

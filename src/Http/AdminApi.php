@@ -44,18 +44,25 @@ class AdminApi extends BaseApi
      */
     public static function getMethods(): array
     {
-        // На фазе P0 регистрация actions ещё пуста.
-        // Контроллеры подключаются на фазах P1 (system), P2 (auth/profile),
-        // P3 (resources), и т.д. — см. ARCHITECTURE.md п.12.
         return [
             'middleware' => [
                 \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
             ],
             'controllers' => [
-                // 'system' => [...],
-                // 'auth'   => [...],
-                // 'profile' => [...],
-                // ... + динамическая регистрация Resource/Screen/Settings/Plugin
+                'system' => [
+                    'controller' => Controllers\SystemController::class,
+                    'actions' => [
+                        'bootstrap' => ['method' => ['get']],
+                        'manifest' => ['method' => ['get']],
+                        'me' => ['method' => ['get']],
+                        'menu' => ['method' => ['get']],
+                        'locales' => ['method' => ['get']],
+                        'permissions' => ['method' => ['get']],
+                        'plugins' => ['method' => ['get']],
+                    ],
+                ],
+                // 'auth' / 'profile' — фаза P2
+                // Resource/Screen/Settings controllers — динамическая регистрация (фаза P3+)
             ],
         ];
     }

@@ -2,68 +2,11 @@
 
 declare(strict_types=1);
 
-use Dskripchenko\LaravelAdmin\Action\Button;
-use Dskripchenko\LaravelAdmin\Field\Input;
-use Dskripchenko\LaravelAdmin\Filter\InputFilter;
 use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
-use Dskripchenko\LaravelAdmin\Table\TableColumn;
-use Illuminate\Database\Eloquent\Model;
 
-/**
- * Минимальная Eloquent-модель для тестов Resource'а.
- */
-final class TestResourceUserModel extends Model
-{
-    protected $table = 'users';
-
-    protected $guarded = [];
-}
-
-/**
- * Demo Resource для unit-тестов.
- */
-final class TestUserResource extends Resource
-{
-    public static string $model = TestResourceUserModel::class;
-
-    public function fields(): array
-    {
-        return [
-            Input::make('name')->required()->title('Имя'),
-            Input::make('email')->type('email')->required()->title('Email'),
-            Input::make('password')->onCreate()->onUpdate(false)->required()->title('Пароль'),
-        ];
-    }
-
-    public function columns(): array
-    {
-        return [
-            TableColumn::make('id')->sort(),
-            TableColumn::make('name')->sort()->search(),
-            TableColumn::make('email')->copyable()->search(),
-        ];
-    }
-
-    public function filters(): array
-    {
-        return [
-            InputFilter::for('email'),
-        ];
-    }
-
-    public function actions(): array
-    {
-        return [
-            Button::make('Активировать')->method('activate'),
-        ];
-    }
-
-    public function with(): array
-    {
-        return ['profile', 'roles'];
-    }
-}
+// Фикстуры (TestUserResource, TestResourceUserModel) — в tests/Fixtures/
+// (autoload через composer classmap).
 
 it('Resource has slug pluralized from class name', function (): void {
     expect(TestUserResource::slug())->toBe('test-users');

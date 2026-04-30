@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Tests;
 
 use Dskripchenko\LaravelAdmin\AdminServiceProvider;
+use Dskripchenko\LaravelApi\Providers\ApiServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -15,6 +16,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            ApiServiceProvider::class,
             AdminServiceProvider::class,
         ];
     }

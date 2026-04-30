@@ -8,9 +8,11 @@ use Dskripchenko\LaravelAdmin\Auth\AdminGuardRegistrar;
 use Dskripchenko\LaravelAdmin\Console\InstallCommand;
 use Dskripchenko\LaravelAdmin\Console\LinkCommand;
 use Dskripchenko\LaravelAdmin\Console\MakeAdminCommand;
+use Dskripchenko\LaravelAdmin\Http\AdminApiModule;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
+use Dskripchenko\LaravelApi\Providers\ApiServiceProvider;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +36,10 @@ final class AdminServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/admin.php', 'admin');
 
+        // laravel-api не имеет auto-discovery — регистрируем явно.
+        // app->register() безопасно: повторная регистрация игнорируется.
+        $this->app->register(ApiServiceProvider::class);
+
         $this->app->singleton(ScreenRegistry::class);
         $this->app->singleton(ResourceRegistry::class);
         $this->app->singleton(Admin::class, fn (Application $app) => new Admin(
@@ -44,6 +50,13 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->alias(Admin::class, 'admin');
 
         $this->app->singleton(Manifest::class);
+
+        // Override laravel-api's `api_module` to our AdminApiModule.
+        // Pre-condition: laravel-api's ApiServiceProvider already ran register()
+        // (Laravel auto-discovers it earlier alphabetically). Our singleton
+        // replaces the default BaseModule binding so admin API is served by
+        // our module with prefix 'api/admin' and uri-pattern '{controller}/{action}'.
+        $this->app->singleton('api_module', AdminApiModule::class);
     }
 
     public function boot(): void
