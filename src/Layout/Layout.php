@@ -78,6 +78,54 @@ abstract class Layout implements Renderable
         return View::make($component, $props);
     }
 
+    /**
+     * @param  array<string, Renderable|list<Renderable>>  $sections
+     */
+    public static function accordion(array $sections = []): Accordion
+    {
+        return Accordion::make($sections);
+    }
+
+    /**
+     * @param  list<Renderable>  $children
+     */
+    public static function modal(string $title = '', array $children = []): Modal
+    {
+        return Modal::make($title, $children);
+    }
+
+    /**
+     * @param  list<Renderable>  $children
+     */
+    public static function drawer(string $title = '', array $children = []): Drawer
+    {
+        return Drawer::make($title, $children);
+    }
+
+    /**
+     * @param  list<Renderable>  $children
+     */
+    public static function wrapper(array $children = []): Wrapper
+    {
+        return Wrapper::make($children);
+    }
+
+    /**
+     * @param  list<Step>  $steps
+     */
+    public static function wizard(array $steps = []): Wizard
+    {
+        return Wizard::make($steps);
+    }
+
+    /**
+     * @param  list<Renderable>  $children
+     */
+    public static function step(string $title, array $children = []): Step
+    {
+        return Step::make($title, $children);
+    }
+
     /* -----------------------------------------------------------------
      * Fluent API
      * ----------------------------------------------------------------- */
