@@ -8,7 +8,6 @@ use Dskripchenko\LaravelAdmin\Admin;
 use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
-use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Database\Eloquent\Model;
@@ -29,9 +28,6 @@ final class SystemController extends ApiController
         private readonly Admin $admin,
         private readonly Manifest $manifest,
         private readonly ResourceRegistry $resources,
-        // Сохраняем для будущих фаз (P1.10+) — в menu для Screen-разделов.
-        // @phpstan-ignore property.onlyWritten
-        private readonly ScreenRegistry $screens,
         private readonly PermissionRegistry $permissions,
     ) {}
 

@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
  * immutable). UI рендерит inline diff old vs new (через core's
  * AuditTrail layout, не дублируется здесь).
  *
- * Permissions: admin.systems.audit.view.
+ * Permissions: admin.system.audit.view.
  */
 final class AuditLogResource extends Resource
 {
@@ -31,12 +31,12 @@ final class AuditLogResource extends Resource
 
     public static function slug(): string
     {
-        return 'systems-audit';
+        return 'system-audit';
     }
 
     public static function permission(): string
     {
-        return 'admin.systems.audit';
+        return 'admin.system.audit';
     }
 
     public static function label(): string

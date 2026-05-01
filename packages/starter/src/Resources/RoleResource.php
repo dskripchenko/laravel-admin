@@ -17,7 +17,7 @@ use Dskripchenko\LaravelAdmin\Table\TableColumn;
 /**
  * RoleResource — CRUD над `admin_roles`.
  *
- * Permissions: admin.systems.roles.{view,create,update,delete}.
+ * Permissions: admin.system.roles.{view,create,update,delete}.
  *
  * Системные роли (`is_system = true`, например Super Admin) защищены от
  * deletion в core'е (через Concerns\GuardsSystemRoles, отдельно от этого
@@ -33,12 +33,12 @@ final class RoleResource extends Resource
 
     public static function slug(): string
     {
-        return 'systems-roles';
+        return 'system-roles';
     }
 
     public static function permission(): string
     {
-        return 'admin.systems.roles';
+        return 'admin.system.roles';
     }
 
     public static function label(): string

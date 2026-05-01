@@ -71,14 +71,14 @@ final class AdminStarterPlugin implements AdminPlugin
     private function buildPermissions(): ItemPermission
     {
         return ItemPermission::group('Системные')
-            ->addPermission('admin.systems.users.view', 'Пользователи: просмотр')
-            ->addPermission('admin.systems.users.create', 'Пользователи: создание')
-            ->addPermission('admin.systems.users.update', 'Пользователи: редактирование')
-            ->addPermission('admin.systems.users.delete', 'Пользователи: удаление')
-            ->addPermission('admin.systems.roles.view', 'Роли: просмотр')
-            ->addPermission('admin.systems.roles.create', 'Роли: создание')
-            ->addPermission('admin.systems.roles.update', 'Роли: редактирование')
-            ->addPermission('admin.systems.roles.delete', 'Роли: удаление')
-            ->addPermission('admin.systems.audit.view', 'Журнал аудита: просмотр');
+            ->addPermission('admin.system.users.view', 'Пользователи: просмотр')
+            ->addPermission('admin.system.users.create', 'Пользователи: создание')
+            ->addPermission('admin.system.users.update', 'Пользователи: редактирование')
+            ->addPermission('admin.system.users.delete', 'Пользователи: удаление')
+            ->addPermission('admin.system.roles.view', 'Роли: просмотр')
+            ->addPermission('admin.system.roles.create', 'Роли: создание')
+            ->addPermission('admin.system.roles.update', 'Роли: редактирование')
+            ->addPermission('admin.system.roles.delete', 'Роли: удаление')
+            ->addPermission('admin.system.audit.view', 'Журнал аудита: просмотр');
     }
 }

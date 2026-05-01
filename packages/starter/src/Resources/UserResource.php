@@ -17,7 +17,7 @@ use Dskripchenko\LaravelAdmin\Table\TableColumn;
 /**
  * UserResource — CRUD над таблицей `admin_users` (core's AdminUser).
  *
- * Permissions: admin.systems.users.{view,create,update,delete}.
+ * Permissions: admin.system.users.{view,create,update,delete}.
  *
  * Поля в form: name / email / password (только при create) / locale /
  * theme / is_active.
@@ -32,12 +32,12 @@ final class UserResource extends Resource
 
     public static function slug(): string
     {
-        return 'systems-users';
+        return 'system-users';
     }
 
     public static function permission(): string
     {
-        return 'admin.systems.users';
+        return 'admin.system.users';
     }
 
     public static function label(): string

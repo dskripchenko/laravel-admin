@@ -14,13 +14,17 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  * методы `hasAccess()`, `assignRole()`, `revokeRole()`. Wildcard-permissions
  * (`*`, `admin.users.*`) обрабатываются на уровне `Role::hasPermission()`.
  *
+ * @mixin \Illuminate\Database\Eloquent\Model
+ *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Role> $roles
  */
 trait HasAdminAccess
 {
+    /**
+     * @return MorphToMany<Role, $this>
+     */
     public function roles(): MorphToMany
     {
-        /** @phpstan-ignore-next-line method.notFound */
         return $this->morphToMany(
             Role::class,
             'assignable',

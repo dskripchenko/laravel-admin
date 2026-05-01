@@ -37,12 +37,12 @@ final class PluginRegistrationTest extends TestCase
 
         foreach (
             [
-                'admin.systems.users.view',
-                'admin.systems.users.create',
-                'admin.systems.users.update',
-                'admin.systems.users.delete',
-                'admin.systems.roles.view',
-                'admin.systems.audit.view',
+                'admin.system.users.view',
+                'admin.system.users.create',
+                'admin.system.users.update',
+                'admin.system.users.delete',
+                'admin.system.roles.view',
+                'admin.system.audit.view',
             ] as $key
         ) {
             $this->assertTrue($registry->knows($key), "permission $key not registered");
