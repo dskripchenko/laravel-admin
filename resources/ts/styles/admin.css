@@ -1,19 +1,26 @@
 /**
  * @dskripchenko/laravel-admin — entry CSS.
  *
- * Подключает токены и стили UI-кита @dskripchenko/ui (`--uid-*` CSS-переменные,
- * data-theme=light|dark, data-density=comfortable|compact на <html>).
+ * Содержит ТОЛЬКО application-level admin-каркас, опирающийся на токены
+ * `--uid-*` из @dskripchenko/ui. Сам UI-кит (токены, темы, стили
+ * Uid*-компонентов) host подключает отдельно — мы не @import'им его сюда,
+ * потому что @dskripchenko/ui@1.0.1 декларирует в package.json `exports`
+ * пути `./styles/tokens.css|themes.css|reset.css|global.css`, которых
+ * physically нет в shipped dist (есть только `dist/styles/index.css`).
+ * Vite (как у host'а так и у нас) при @import резолвит CSS через `exports`
+ * map и падает с «Missing specifier».
  *
- * Дополнительно — application-level классы admin-каркаса, которые не входят в
- * UI-кит (impersonation banner, polling-индикатор, утилиты вёрстки страниц).
- * Все самописные стили опираются ТОЛЬКО на семантические токены `--uid-*`,
- * чтобы оставаться синхронными с темой.
+ * Order для host-проекта (рекомендуется в указанном порядке):
+ *   import '@dskripchenko/ui/dist/styles/index.css'    // (1) tokens + themes + Uid* стили
+ *   import '@dskripchenko/laravel-admin/style.css'     // (2) admin-каркас (этот файл)
  *
- * Host-проект импортирует этот файл один раз: `import '@dskripchenko/laravel-admin/style.css'`.
+ * После выпуска uid 1.0.2+ (фикс exports) host сможет писать просто
+ * `import '@dskripchenko/ui/styles/global.css'`.
+ *
+ * Все самописные стили ниже используют ТОЛЬКО семантические токены
+ * `--uid-*` (text/border/surface/accent/danger/success/warning/info/space/
+ * radius/shadow/duration/ease/z-*) — синхронны с темами и density.
  */
-
-/* UI-кит: тoкены + темы (light/dark) + стили всех Uid* компонентов. */
-@import '@dskripchenko/ui/dist/styles/index.css';
 
 /* ============================================================
    Density (data-density на <html>): два пресета как в design handoff.
