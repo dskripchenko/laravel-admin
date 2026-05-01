@@ -185,6 +185,116 @@
 }
 
 /* ============================================================
+   Auth screens (Login + 2FA) — каркас вне shell-grid'а.
+   Эталон — docs/design_handoff_laravel_admin/screens-secondary.jsx (Login/TwoFactor).
+   ============================================================ */
+.admin-auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--uid-space-xl);
+  background: var(--uid-surface-base);
+  position: relative;
+}
+.admin-auth-page__corner {
+  position: absolute;
+  top: var(--uid-space-md);
+  right: var(--uid-space-md);
+  display: flex;
+  gap: var(--uid-space-sm);
+}
+.admin-auth-card {
+  width: 400px;
+  max-width: 100%;
+}
+.admin-auth-card--wide { width: 440px; }
+.admin-auth-card__hd {
+  padding: var(--uid-space-lg) var(--uid-space-lg) var(--uid-space-md);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--uid-space-sm);
+}
+.admin-auth-card__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--uid-text-primary);
+  color: var(--uid-surface-raised);
+  display: grid;
+  place-items: center;
+  font-family: var(--uid-font-family-display);
+  font-weight: var(--uid-font-weight-bold);
+  font-size: var(--uid-font-size-lg);
+}
+.admin-auth-card__logo--accent {
+  background: var(--uid-accent);
+  color: var(--uid-text-on-accent);
+}
+.admin-auth-card__title {
+  font-size: var(--uid-font-size-lg);
+  font-weight: var(--uid-font-weight-semibold);
+  color: var(--uid-text-primary);
+  font-family: var(--uid-font-family-display);
+  letter-spacing: -0.01em;
+}
+.admin-auth-card__sub {
+  font-size: 13px;
+  color: var(--uid-text-secondary);
+}
+.admin-auth-card__bd {
+  padding: var(--uid-space-sm) var(--uid-space-lg) var(--uid-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.admin-auth-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uid-space-sm);
+}
+.admin-auth-card__link {
+  color: var(--uid-accent-text);
+  font-size: var(--uid-font-size-xs);
+  cursor: pointer;
+  text-decoration: none;
+}
+.admin-auth-card__link:hover { text-decoration: underline; }
+.admin-auth-card__alert { margin-bottom: 4px; }
+
+/* 6-cell mono code input для 2FA. */
+.admin-code-input {
+  display: flex;
+  gap: var(--uid-space-sm);
+  justify-content: center;
+}
+.admin-code-input input {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  font-family: var(--uid-font-family-mono);
+  font-size: 22px;
+  font-weight: var(--uid-font-weight-semibold);
+  border: 1px solid var(--uid-border-default);
+  background: var(--uid-surface-raised);
+  border-radius: var(--uid-radius-md);
+  color: var(--uid-text-primary);
+  outline: none;
+  caret-color: var(--uid-accent);
+}
+.admin-code-input input:focus {
+  border-color: var(--uid-accent);
+  outline: 2px solid color-mix(in srgb, var(--uid-accent) 18%, transparent);
+  outline-offset: 0;
+}
+.admin-code-input input--error,
+.admin-code-input input.is-error {
+  border-color: var(--uid-danger);
+}
+
+/* ============================================================
    Page-level utilities (используются Resource list/form/dashboard).
    ============================================================ */
 .admin-page {

@@ -1,34 +1,81 @@
 <script setup lang="ts">
 /**
- * 2FA-форма: ввод TOTP-кода либо переключение на recovery-код.
- * Cancel — отзывает pendingChallenge и возвращает на login-форму.
+ * 2FA-форма: 6-cell mono TOTP-input + alt recovery-code.
+ *
+ * Эталон — docs/design_handoff_laravel_admin/screens-secondary.jsx (TwoFactor):
+ * 6 input'ов 44×52, IBM Plex Mono 22px, при заполнении одного — фокус
+ * автопереходит на следующий, paste-event раскладывает 6 цифр сразу.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import { UidAlert, UidButton, UidInput } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { ApiError, NetworkError, ValidationError } from '../../api/errors'
 
 const emit = defineEmits<{
-  /** Login завершён — host перенаправит на main. */
   success: []
-  /** User отменил 2FA — host рендерит LoginForm. */
   cancel: []
 }>()
 
 const auth = useAuthStore()
 
 const mode = ref<'totp' | 'recovery'>('totp')
-const code = ref('')
+const cells = ref<string[]>(['', '', '', '', '', ''])
 const recoveryCode = ref('')
+const cellRefs = ref<HTMLInputElement[]>([])
 
 const submitting = ref(false)
 const generalError = ref<string | null>(null)
-
 const remaining = ref<number | null>(null)
 
+const totpCode = computed(() => cells.value.join(''))
 const isValid = computed(() => {
-  if (mode.value === 'totp') return code.value.trim().length > 0
+  if (mode.value === 'totp') return totpCode.value.length === 6
   return recoveryCode.value.trim().length > 0
 })
+
+function setCellRef(idx: number, el: Element | null): void {
+  if (el instanceof HTMLInputElement) cellRefs.value[idx] = el
+}
+
+function onCellInput(idx: number, event: Event): void {
+  const target = event.target as HTMLInputElement
+  // Только цифры; обрезаем до 1 символа.
+  const digit = target.value.replace(/\D/g, '').slice(-1)
+  cells.value[idx] = digit
+  target.value = digit
+  if (digit && idx < cells.value.length - 1) {
+    void nextTick(() => cellRefs.value[idx + 1]?.focus())
+  }
+  if (totpCode.value.length === cells.value.length) {
+    void submit()
+  }
+}
+
+function onCellKeydown(idx: number, event: KeyboardEvent): void {
+  if (event.key === 'Backspace' && !cells.value[idx] && idx > 0) {
+    void nextTick(() => cellRefs.value[idx - 1]?.focus())
+  } else if (event.key === 'ArrowLeft' && idx > 0) {
+    cellRefs.value[idx - 1]?.focus()
+    event.preventDefault()
+  } else if (event.key === 'ArrowRight' && idx < cells.value.length - 1) {
+    cellRefs.value[idx + 1]?.focus()
+    event.preventDefault()
+  }
+}
+
+function onPaste(event: ClipboardEvent): void {
+  const pasted = event.clipboardData?.getData('text') ?? ''
+  const digits = pasted.replace(/\D/g, '').slice(0, cells.value.length)
+  if (digits.length === 0) return
+  event.preventDefault()
+  for (let i = 0; i < cells.value.length; i++) {
+    cells.value[i] = digits[i] ?? ''
+  }
+  void nextTick(() => {
+    cellRefs.value[Math.min(digits.length, cells.value.length - 1)]?.focus()
+    if (digits.length === cells.value.length) void submit()
+  })
+}
 
 async function submit(): Promise<void> {
   if (submitting.value || !isValid.value) return
@@ -37,7 +84,7 @@ async function submit(): Promise<void> {
 
   try {
     if (mode.value === 'totp') {
-      await auth.twoFactorChallenge(code.value.trim())
+      await auth.twoFactorChallenge(totpCode.value)
     } else {
       const res = await auth.twoFactorRecovery(recoveryCode.value.trim())
       remaining.value = res.remaining
@@ -70,127 +117,69 @@ function switchMode(): void {
 </script>
 
 <template>
-  <form class="admin-2fa-form" novalidate @submit.prevent="submit">
-    <h1 class="admin-2fa-form__title">Двухфакторная аутентификация</h1>
-    <p class="admin-2fa-form__subtitle">
-      <template v-if="mode === 'totp'">Введите 6-значный код из приложения</template>
-      <template v-else>Введите recovery-код</template>
-    </p>
-
-    <div v-if="generalError" class="admin-2fa-form__alert" role="alert">
+  <form class="admin-auth-card__bd" novalidate @submit.prevent="submit">
+    <UidAlert
+      v-if="generalError"
+      variant="danger"
+      class="admin-auth-card__alert"
+      role="alert"
+    >
       {{ generalError }}
-    </div>
-    <div v-if="remaining !== null" class="admin-2fa-form__info" role="status">
+    </UidAlert>
+    <UidAlert
+      v-if="remaining !== null"
+      variant="info"
+      class="admin-auth-card__alert"
+      role="status"
+    >
       Использован recovery-код. Осталось: {{ remaining }}
-    </div>
+    </UidAlert>
 
-    <div v-if="mode === 'totp'" class="admin-field">
-      <label for="admin-2fa-code" class="admin-field__label">Код</label>
+    <div v-if="mode === 'totp'" class="admin-code-input" @paste="onPaste">
       <input
-        id="admin-2fa-code"
-        v-model="code"
+        v-for="(_, idx) in cells"
+        :key="idx"
+        :ref="(el) => setCellRef(idx, el as Element | null)"
+        :value="cells[idx]"
         type="text"
         inputmode="numeric"
         autocomplete="one-time-code"
-        autofocus
+        maxlength="1"
         :disabled="submitting"
-        class="admin-input"
-      />
-    </div>
-    <div v-else class="admin-field">
-      <label for="admin-2fa-recovery" class="admin-field__label">Recovery-код</label>
-      <input
-        id="admin-2fa-recovery"
-        v-model="recoveryCode"
-        type="text"
-        autocomplete="one-time-code"
-        autofocus
-        :disabled="submitting"
-        class="admin-input"
+        :aria-label="`Цифра ${idx + 1}`"
+        @input="onCellInput(idx, $event)"
+        @keydown="onCellKeydown(idx, $event)"
       />
     </div>
 
-    <button
+    <UidInput
+      v-else
+      v-model="recoveryCode"
+      type="text"
+      label="Recovery-код"
+      autocomplete="one-time-code"
+      :disabled="submitting"
+      name="recovery-code"
+    />
+
+    <UidButton
       type="submit"
-      class="admin-2fa-form__submit"
+      variant="primary"
+      size="lg"
+      :loading="submitting"
       :disabled="submitting || !isValid"
     >
       {{ submitting ? 'Проверка…' : 'Подтвердить' }}
-    </button>
+    </UidButton>
 
-    <div class="admin-2fa-form__links">
-      <button type="button" class="admin-2fa-form__link" @click="switchMode">
+    <div class="admin-auth-card__row">
+      <button type="button" class="admin-auth-card__link" @click="switchMode">
         <template v-if="mode === 'totp'">Использовать recovery-код</template>
         <template v-else>Вернуться к коду из приложения</template>
       </button>
-      <button type="button" class="admin-2fa-form__link" @click="cancel">
+      <button type="button" class="admin-auth-card__link" @click="cancel">
         Отмена
       </button>
     </div>
   </form>
 </template>
-
-<style>
-.admin-2fa-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 360px;
-  margin: 0 auto;
-  padding: 24px;
-}
-.admin-2fa-form__title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-}
-.admin-2fa-form__subtitle {
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--admin-muted, #6b7280);
-  text-align: center;
-}
-.admin-2fa-form__alert {
-  padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--admin-danger, #ef4444);
-  border: 1px solid var(--admin-danger, #ef4444);
-  border-radius: 6px;
-  font-size: 13px;
-}
-.admin-2fa-form__info {
-  padding: 8px 12px;
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--admin-accent, #3b82f6);
-  border: 1px solid var(--admin-accent, #3b82f6);
-  border-radius: 6px;
-  font-size: 13px;
-}
-.admin-2fa-form__submit {
-  margin-top: 4px;
-  padding: 8px 12px;
-  background: var(--admin-accent, #3b82f6);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.admin-2fa-form__submit:disabled { opacity: 0.6; cursor: not-allowed; }
-.admin-2fa-form__links {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-.admin-2fa-form__link {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 12px;
-  color: var(--admin-accent, #3b82f6);
-  cursor: pointer;
-}
-.admin-2fa-form__link:hover { text-decoration: underline; }
-</style>

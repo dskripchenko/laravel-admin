@@ -1,19 +1,29 @@
 <script setup lang="ts">
 /**
- * Email + password + remember форма. После успешного login emit'ит
- * 'success' (auth-store сам выставляет user/pendingChallenge).
- *
- * Обработка ошибок:
- *   - ValidationError → field-errors показываются под input'ами
- *   - ApiError (например, 'invalid_credentials') → general error-banner
- *   - NetworkError → general banner «Нет соединения»
+ * LoginForm — email/password/remember поверх UidInput/UidButton/UidCheckbox/
+ * UidAlert. Архитектура auth-card по docs/design_handoff_laravel_admin/
+ * screens-secondary.jsx (LoginScreen).
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { UidAlert, UidButton, UidCheckbox, UidInput } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { ApiError, NetworkError, ValidationError } from '../../api/errors'
 
+interface Props {
+  /** URL «Забыли пароль?» — если задан, показывается link справа от remember. */
+  forgotUrl?: string | null
+  /** Текст SSO-ссылки или null чтобы скрыть. */
+  ssoLinkLabel?: string | null
+  ssoUrl?: string | null
+}
+
+withDefaults(defineProps<Props>(), {
+  forgotUrl: null,
+  ssoLinkLabel: null,
+  ssoUrl: null,
+})
+
 const emit = defineEmits<{
-  /** Успешный login (либо `authenticated` либо `two_factor_required`). */
   success: [result: 'authenticated' | 'two_factor_required']
 }>()
 
@@ -26,6 +36,9 @@ const remember = ref(false)
 const submitting = ref(false)
 const generalError = ref<string | null>(null)
 const fieldErrors = ref<Record<string, string[]>>({})
+
+const emailError = computed<string | undefined>(() => fieldErrors.value.email?.[0])
+const passwordError = computed<string | undefined>(() => fieldErrors.value.password?.[0])
 
 async function submit(): Promise<void> {
   if (submitting.value) return
@@ -58,103 +71,64 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <form class="admin-login-form" novalidate @submit.prevent="submit">
-    <h1 class="admin-login-form__title">Вход в админ-панель</h1>
-
-    <div v-if="generalError" class="admin-login-form__alert" role="alert">
+  <form class="admin-auth-card__bd" novalidate @submit.prevent="submit">
+    <UidAlert
+      v-if="generalError"
+      variant="danger"
+      class="admin-auth-card__alert"
+      role="alert"
+    >
       {{ generalError }}
+    </UidAlert>
+
+    <UidInput
+      v-model="email"
+      type="email"
+      label="Email"
+      placeholder="you@company.com"
+      autocomplete="username"
+      :required="true"
+      :disabled="submitting"
+      :error="emailError"
+      name="email"
+    />
+
+    <UidInput
+      v-model="password"
+      type="password"
+      label="Пароль"
+      autocomplete="current-password"
+      :required="true"
+      :disabled="submitting"
+      :error="passwordError"
+      name="password"
+    />
+
+    <div class="admin-auth-card__row">
+      <UidCheckbox v-model="remember" :disabled="submitting">
+        Запомнить меня
+      </UidCheckbox>
+      <a v-if="forgotUrl" :href="forgotUrl" class="admin-auth-card__link">
+        Забыли пароль?
+      </a>
     </div>
 
-    <div :class="['admin-field', { 'admin-field--invalid': fieldErrors.email }]">
-      <label for="login-email" class="admin-field__label">Email</label>
-      <input
-        id="login-email"
-        v-model="email"
-        type="email"
-        autocomplete="username"
-        required
-        :disabled="submitting"
-        class="admin-input"
-      />
-      <p v-if="fieldErrors.email" class="admin-field__error">
-        {{ fieldErrors.email[0] }}
-      </p>
-    </div>
-
-    <div :class="['admin-field', { 'admin-field--invalid': fieldErrors.password }]">
-      <label for="login-password" class="admin-field__label">Пароль</label>
-      <input
-        id="login-password"
-        v-model="password"
-        type="password"
-        autocomplete="current-password"
-        required
-        :disabled="submitting"
-        class="admin-input"
-      />
-      <p v-if="fieldErrors.password" class="admin-field__error">
-        {{ fieldErrors.password[0] }}
-      </p>
-    </div>
-
-    <label class="admin-login-form__remember">
-      <input v-model="remember" type="checkbox" :disabled="submitting" />
-      <span>Запомнить меня</span>
-    </label>
-
-    <button
+    <UidButton
       type="submit"
-      class="admin-login-form__submit"
+      variant="primary"
+      size="lg"
+      :loading="submitting"
       :disabled="submitting"
     >
       {{ submitting ? 'Вход…' : 'Войти' }}
-    </button>
+    </UidButton>
+
+    <div
+      v-if="ssoLinkLabel && ssoUrl"
+      style="text-align: center; font-size: var(--uid-font-size-xs); color: var(--uid-text-secondary); padding-top: 4px;"
+    >
+      или войдите через
+      <a :href="ssoUrl" class="admin-auth-card__link">{{ ssoLinkLabel }}</a>
+    </div>
   </form>
 </template>
-
-<style>
-.admin-login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 360px;
-  margin: 0 auto;
-  padding: 24px;
-}
-.admin-login-form__title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-}
-.admin-login-form__alert {
-  padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--admin-danger, #ef4444);
-  border: 1px solid var(--admin-danger, #ef4444);
-  border-radius: 6px;
-  font-size: 13px;
-}
-.admin-login-form__remember {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  cursor: pointer;
-}
-.admin-login-form__submit {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: var(--admin-accent, #3b82f6);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.admin-login-form__submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

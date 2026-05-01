@@ -7,6 +7,13 @@ import { setAdminClient, clearAdminClient } from '../../stores/registry'
 import { createAdminClient } from '../../api/client'
 import { useAuthStore } from '../../stores/auth'
 
+async function fillCells(wrapper: ReturnType<typeof mount>, code: string): Promise<void> {
+  const inputs = wrapper.findAll('.admin-code-input input')
+  for (let i = 0; i < code.length && i < inputs.length; i++) {
+    await inputs[i].setValue(code[i])
+  }
+}
+
 describe('TwoFactorForm', () => {
   let mock: MockAdapter
 
@@ -15,9 +22,7 @@ describe('TwoFactorForm', () => {
     const client = createAdminClient({ baseURL: 'http://api.test' })
     setAdminClient(client)
     mock = new MockAdapter(client.raw)
-    // Pretend user already passed login form.
-    const auth = useAuthStore()
-    auth.pendingChallenge = { challengeToken: 'tok', remember: false }
+    useAuthStore().pendingChallenge = { challengeToken: 'tok', remember: false }
   })
 
   afterEach(() => {
@@ -25,29 +30,33 @@ describe('TwoFactorForm', () => {
     clearAdminClient()
   })
 
-  it('renders TOTP form by default', () => {
+  it('renders 6-cell mono code input by default', () => {
     const wrapper = mount(TwoFactorForm)
-    expect(wrapper.find('#admin-2fa-code').exists()).toBe(true)
-    expect(wrapper.find('#admin-2fa-recovery').exists()).toBe(false)
-    expect(wrapper.text()).toContain('6-значный код')
+    const cells = wrapper.findAll('.admin-code-input input')
+    expect(cells).toHaveLength(6)
   })
 
   it('switches to recovery-mode and back', async () => {
     const wrapper = mount(TwoFactorForm)
-    const switchBtn = wrapper.findAll('.admin-2fa-form__link')[0]
-    await switchBtn.trigger('click')
-    expect(wrapper.find('#admin-2fa-recovery').exists()).toBe(true)
-    expect(wrapper.find('#admin-2fa-code').exists()).toBe(false)
-    await switchBtn.trigger('click')
-    expect(wrapper.find('#admin-2fa-code').exists()).toBe(true)
+    const links = wrapper.findAll('.admin-auth-card__link')
+    // Первый link — switch mode, второй — cancel
+    await links[0].trigger('click')
+    expect(wrapper.find('.admin-code-input').exists()).toBe(false)
+    expect(wrapper.find('input[name="recovery-code"]').exists()).toBe(true)
+
+    const links2 = wrapper.findAll('.admin-auth-card__link')
+    await links2[0].trigger('click')
+    expect(wrapper.findAll('.admin-code-input input')).toHaveLength(6)
   })
 
-  it('disables submit until code entered', async () => {
+  it('disables submit until at least one digit entered', async () => {
     const wrapper = mount(TwoFactorForm)
-    const btn = wrapper.find('button[type="submit"]')
-    expect((btn.element as HTMLButtonElement).disabled).toBe(true)
-    await wrapper.find('#admin-2fa-code').setValue('123456')
-    expect((btn.element as HTMLButtonElement).disabled).toBe(false)
+    const submitBtn = wrapper.find('button[type="submit"]')
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
+    // 5 цифр — не валидно (need 6); кнопка остаётся disabled, auto-submit не
+    // срабатывает.
+    await fillCells(wrapper, '12345')
+    expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('emits success on correct TOTP', async () => {
@@ -61,8 +70,8 @@ describe('TwoFactorForm', () => {
       },
     })
     const wrapper = mount(TwoFactorForm)
-    await wrapper.find('#admin-2fa-code').setValue('123456')
-    await wrapper.find('form').trigger('submit')
+    await fillCells(wrapper, '123456')
+    // 6-я цифра автотриггерит submit (см. onCellInput).
     await flushPromises()
     expect(wrapper.emitted('success')).toBeTruthy()
   })
@@ -79,14 +88,14 @@ describe('TwoFactorForm', () => {
       },
     })
     const wrapper = mount(TwoFactorForm)
-    await wrapper.findAll('.admin-2fa-form__link')[0].trigger('click')
-    await wrapper.find('#admin-2fa-recovery').setValue('xxxxxx-yyyyyy')
+    await wrapper.findAll('.admin-auth-card__link')[0].trigger('click')
+    await wrapper.find('input[name="recovery-code"]').setValue('xxxxxx-yyyyyy')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
     expect(wrapper.emitted('success')).toBeTruthy()
   })
 
-  it('shows error message on bad code', async () => {
+  it('shows error message on bad TOTP', async () => {
     mock.onPost('/auth/twoFactorChallenge').reply(422, {
       success: false,
       payload: {
@@ -96,17 +105,36 @@ describe('TwoFactorForm', () => {
       },
     })
     const wrapper = mount(TwoFactorForm)
-    await wrapper.find('#admin-2fa-code').setValue('000000')
-    await wrapper.find('form').trigger('submit')
+    await fillCells(wrapper, '000000')
     await flushPromises()
-    expect(wrapper.find('.admin-2fa-form__alert').text()).toBe('Код неверный')
+    expect(wrapper.text()).toContain('Код неверный')
   })
 
   it('cancel emits and clears pendingChallenge', async () => {
     const wrapper = mount(TwoFactorForm)
-    const cancel = wrapper.findAll('.admin-2fa-form__link')[1]
-    await cancel.trigger('click')
+    const cancelBtn = wrapper.findAll('.admin-auth-card__link')[1]
+    await cancelBtn.trigger('click')
     expect(wrapper.emitted('cancel')).toBeTruthy()
     expect(useAuthStore().isChallengePending).toBe(false)
+  })
+
+  it('paste 6 digits across cells fills and submits', async () => {
+    mock.onPost('/auth/twoFactorChallenge').reply(200, {
+      success: true,
+      payload: { user: { id: 1, name: 'A', email: 'a@a', avatar: null, locale: null, theme: null, twoFactorEnabled: true } },
+    })
+    const wrapper = mount(TwoFactorForm)
+    const firstCell = wrapper.findAll('.admin-code-input input')[0]
+    const event = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        getData: (type: string) => (type === 'text' ? '123456' : ''),
+      },
+    })
+    firstCell.element.dispatchEvent(event)
+    await flushPromises()
+    // Все 6 ячеек заполнены.
+    const cells = wrapper.findAll('.admin-code-input input')
+    expect(cells.map((c) => (c.element as HTMLInputElement).value).join('')).toBe('123456')
   })
 })

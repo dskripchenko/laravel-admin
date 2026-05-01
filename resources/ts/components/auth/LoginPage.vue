@@ -1,32 +1,49 @@
 <script setup lang="ts">
 /**
- * Полноценная login-page admin'а. Переключает между LoginForm и TwoFactorForm
- * в зависимости от auth.isChallengePending. После успешного login
- * редиректит на ?redirect либо на admin-home.
+ * LoginPage поверх UID design handoff: centered auth-card 400/440 px на
+ * `--uid-surface-base`-фоне с corner-actions (theme + locale toggles).
  *
- * Brand-block — header с логотипом + названием. Берётся из props (host
- * передаёт из bootstrap.brand) либо дефолт.
+ * Композиция: LoginForm либо TwoFactorForm в зависимости от
+ * auth.isChallengePending. Редирект на main завязан на watch
+ * (auth.isAuthenticated) — это переживает unmount форм при смене ветки.
+ *
+ * `?redirect`-query учитывает только относительные пути (защита от
+ * open-redirect).
  */
 import { onMounted, watch } from 'vue'
-import { useAuthStore } from '../../stores/auth'
 import { useRouter, useRoute } from 'vue-router'
+import { UidCard } from '@dskripchenko/ui'
+import { useAuthStore } from '../../stores/auth'
 import LoginForm from './LoginForm.vue'
 import TwoFactorForm from './TwoFactorForm.vue'
+import ThemeToggle from '../shell/widgets/ThemeToggle.vue'
+import LocaleSwitcher from '../shell/widgets/LocaleSwitcher.vue'
 
 interface Props {
   brandName?: string
+  brandMark?: string
   brandLogo?: string | null
-  /** Имя роута для редиректа после login (default 'admin.home'). */
   homeRouteName?: string
-  /** Query-key из которого читать redirect-target. */
   redirectQueryKey?: string
+  /** URL «Забыли пароль?» — пробрасывается в LoginForm. */
+  forgotUrl?: string | null
+  /** SSO-link (label + url) — пробрасывается в LoginForm. */
+  ssoLinkLabel?: string | null
+  ssoUrl?: string | null
+  /** Показывать ли theme/locale toggle'ы в углу. */
+  showCornerActions?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  brandName: 'Admin',
+  brandName: 'Laravel Admin',
+  brandMark: 'L',
   brandLogo: null,
   homeRouteName: 'admin.home',
   redirectQueryKey: 'redirect',
+  forgotUrl: null,
+  ssoLinkLabel: null,
+  ssoUrl: null,
+  showCornerActions: true,
 })
 
 const auth = useAuthStore()
@@ -42,59 +59,60 @@ async function redirectToHome(): Promise<void> {
   await router.push({ name: props.homeRouteName })
 }
 
-// Единая точка редиректа: реактивно следим за auth.isAuthenticated.
-// Это покрывает оба сценария — LoginForm success и TwoFactorForm success;
-// при этом не зависит от порядка emit'ов и unmount'а форм (когда
-// pendingChallenge сбрасывается, Vue может unmount'ить TwoFactorForm
-// до доставки emit'а в parent — watch на store-state такого не страдает).
 watch(
   () => auth.isAuthenticated,
   (next) => {
-    if (next) {
-      void redirectToHome()
-    }
+    if (next) void redirectToHome()
   },
 )
-
 onMounted(() => {
-  if (auth.isAuthenticated) {
-    void redirectToHome()
-  }
+  if (auth.isAuthenticated) void redirectToHome()
 })
 </script>
 
 <template>
-  <div class="admin-login-page">
-    <div class="admin-login-page__brand">
-      <img v-if="brandLogo" :src="brandLogo" :alt="brandName" class="admin-login-page__logo" />
-      <span class="admin-login-page__name">{{ brandName }}</span>
+  <div class="admin-auth-page">
+    <div v-if="showCornerActions" class="admin-auth-page__corner">
+      <ThemeToggle />
+      <LocaleSwitcher />
     </div>
-    <TwoFactorForm
-      v-if="auth.isChallengePending"
-      @success="() => undefined"
-      @cancel="() => undefined"
-    />
-    <LoginForm v-else @success="() => undefined" />
+
+    <UidCard
+      :class="['admin-auth-card', auth.isChallengePending ? 'admin-auth-card--wide' : '']"
+      padding="none"
+    >
+      <div class="admin-auth-card__hd">
+        <div
+          :class="['admin-auth-card__logo', auth.isChallengePending ? 'admin-auth-card__logo--accent' : '']"
+        >
+          <img v-if="brandLogo && !auth.isChallengePending" :src="brandLogo" :alt="brandName" />
+          <span v-else-if="auth.isChallengePending" aria-hidden="true">🛡</span>
+          <span v-else>{{ brandMark }}</span>
+        </div>
+        <div class="admin-auth-card__title">
+          <template v-if="auth.isChallengePending">Двухфакторная проверка</template>
+          <template v-else>{{ brandName }}</template>
+        </div>
+        <div class="admin-auth-card__sub">
+          <template v-if="auth.isChallengePending">
+            Введите 6-значный код из приложения-аутентификатора
+          </template>
+          <template v-else>Войдите, чтобы продолжить работу</template>
+        </div>
+      </div>
+
+      <TwoFactorForm
+        v-if="auth.isChallengePending"
+        @success="() => undefined"
+        @cancel="() => undefined"
+      />
+      <LoginForm
+        v-else
+        :forgot-url="forgotUrl"
+        :sso-link-label="ssoLinkLabel"
+        :sso-url="ssoUrl"
+        @success="() => undefined"
+      />
+    </UidCard>
   </div>
 </template>
-
-<style>
-.admin-login-page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--admin-bg, #f9fafb);
-  padding: 24px;
-}
-.admin-login-page__brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  font-size: 20px;
-  font-weight: 600;
-}
-.admin-login-page__logo { height: 40px; width: auto; }
-</style>

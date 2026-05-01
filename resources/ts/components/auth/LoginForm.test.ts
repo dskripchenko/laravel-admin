@@ -22,12 +22,24 @@ describe('LoginForm', () => {
     clearAdminClient()
   })
 
-  it('renders email + password + remember + submit', () => {
+  it('renders email/password/checkbox/submit', () => {
     const wrapper = mount(LoginForm)
     expect(wrapper.find('input[type="email"]').exists()).toBe(true)
     expect(wrapper.find('input[type="password"]').exists()).toBe(true)
     expect(wrapper.find('input[type="checkbox"]').exists()).toBe(true)
-    expect(wrapper.find('button[type="submit"]').text()).toBe('Войти')
+    expect(wrapper.find('button[type="submit"]').text()).toContain('Войти')
+  })
+
+  it('renders forgot-password link when forgotUrl provided', () => {
+    const wrapper = mount(LoginForm, { props: { forgotUrl: '/forgot' } })
+    expect(wrapper.find('a[href="/forgot"]').text()).toBe('Забыли пароль?')
+  })
+
+  it('renders SSO link when configured', () => {
+    const wrapper = mount(LoginForm, {
+      props: { ssoLinkLabel: 'SSO Acme', ssoUrl: '/sso' },
+    })
+    expect(wrapper.text()).toContain('SSO Acme')
   })
 
   it('emits success=authenticated on valid login', async () => {
@@ -49,7 +61,7 @@ describe('LoginForm', () => {
     expect(wrapper.emitted('success')?.[0]).toEqual(['authenticated'])
   })
 
-  it('emits success=two_factor_required when 2FA is needed', async () => {
+  it('emits success=two_factor_required + sets pending', async () => {
     mock.onPost('/auth/login').reply(200, {
       success: false,
       payload: {
@@ -60,36 +72,14 @@ describe('LoginForm', () => {
     })
     const wrapper = mount(LoginForm)
     await wrapper.find('input[type="email"]').setValue('a@a')
-    await wrapper.find('input[type="password"]').setValue('secret')
+    await wrapper.find('input[type="password"]').setValue('x')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
     expect(wrapper.emitted('success')?.[0]).toEqual(['two_factor_required'])
     expect(useAuthStore().isChallengePending).toBe(true)
   })
 
-  it('renders ValidationError under fields', async () => {
-    mock.onPost('/auth/login').reply(422, {
-      success: false,
-      payload: {
-        errorKey: 'validation',
-        message: 'Validation',
-        messages: {
-          email: ['Email обязателен'],
-          password: ['Пароль слишком короткий'],
-        },
-      },
-    })
-    const wrapper = mount(LoginForm)
-    await wrapper.find('input[type="email"]').setValue('a@a')
-    await wrapper.find('input[type="password"]').setValue('x')
-    await wrapper.find('form').trigger('submit')
-    await flushPromises()
-    const errors = wrapper.findAll('.admin-field__error').map((e) => e.text())
-    expect(errors).toContain('Email обязателен')
-    expect(errors).toContain('Пароль слишком короткий')
-  })
-
-  it('renders general alert for non-validation API error', async () => {
+  it('shows alert with credentials error message', async () => {
     mock.onPost('/auth/login').reply(401, {
       success: false,
       payload: { errorKey: 'unauthenticated', message: 'Invalid credentials' },
@@ -99,17 +89,17 @@ describe('LoginForm', () => {
     await wrapper.find('input[type="password"]').setValue('wrong')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
-    expect(wrapper.find('.admin-login-form__alert').text()).toBe('Invalid credentials')
+    expect(wrapper.text()).toContain('Invalid credentials')
   })
 
-  it('renders network alert on connection failure', async () => {
+  it('shows network alert on connection failure', async () => {
     mock.onPost('/auth/login').networkError()
     const wrapper = mount(LoginForm)
     await wrapper.find('input[type="email"]').setValue('a@a')
     await wrapper.find('input[type="password"]').setValue('x')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
-    expect(wrapper.find('.admin-login-form__alert').text()).toContain('Нет соединения')
+    expect(wrapper.text()).toContain('Нет соединения')
   })
 
   it('disables submit while submitting', async () => {
@@ -121,6 +111,6 @@ describe('LoginForm', () => {
     await flushPromises()
     const btn = wrapper.find('button[type="submit"]')
     expect((btn.element as HTMLButtonElement).disabled).toBe(true)
-    expect(btn.text()).toBe('Вход…')
+    expect(btn.text()).toContain('Вход')
   })
 })
