@@ -206,6 +206,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SPA frontend assets
+    |--------------------------------------------------------------------------
+    |
+    | Host-проект собирает SPA-bundle через Vite и указывает его пути одним
+    | из двух способов:
+    |
+    | 1. Явный список (минимум):
+    |     'assets' => [
+    |         'css' => ['/build/admin.css'],
+    |         'js'  => ['/build/admin.js'],
+    |     ]
+    |
+    | 2. Vite manifest (автоматический resolve через `public/build/manifest.json`):
+    |     'assets' => [
+    |         'vite_manifest' => public_path('build/manifest.json'),
+    |         'vite_entry'    => 'resources/js/admin.js',
+    |         'vite_base_url' => '/build/',
+    |     ]
+    |
+    | ShellController сам определит режим по наличию `vite_manifest` ключа.
+    */
+
+    'assets' => [
+        'css' => [],
+        'js' => [],
+        'vite_manifest' => null,
+        'vite_entry' => null,
+        'vite_base_url' => '/build/',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Plugins
     |--------------------------------------------------------------------------
     */

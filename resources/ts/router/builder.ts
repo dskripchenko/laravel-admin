@@ -54,6 +54,7 @@ export interface RouteComponentResolver {
   resourceIndex: AdminRouteComponent
   resourceCreate: AdminRouteComponent
   resourceEdit: AdminRouteComponent
+  resourceView: AdminRouteComponent
   screen: AdminRouteComponent
   settings: AdminRouteComponent
   dashboard: AdminRouteComponent
@@ -126,6 +127,19 @@ function buildResourceRoutes(
         slug,
         title: `${resource.label}: редактирование`,
         permissions: pickResourcePermission(resource, 'update'),
+      },
+      props: true,
+    },
+    {
+      path: `${base}/:id`,
+      name: `admin.resource.${slug}.view`,
+      component: components.resourceView,
+      meta: {
+        requiresAuth: true,
+        kind: 'resource',
+        slug,
+        title: resource.label,
+        permissions: pickResourcePermission(resource, 'view'),
       },
       props: true,
     },

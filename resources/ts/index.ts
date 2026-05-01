@@ -7,18 +7,38 @@ import './styles/admin.css'
 /**
  * Точка входа SPA-бандла @dskripchenko/laravel-admin.
  *
- * Текущий публичный API:
- *   - createAdminClient() / AdminClient — axios-обёртка для admin API
- *     с автоматической обработкой envelope `{success, payload}`,
- *     CSRF-token'ов и подкласс'ов ApiError.
- *   - loadBootstrap() — резолв payload'а в обеих стратегиях (inline/xhr).
- *   - readInlineBootstrap() / readCsrfFromMeta() — низкоуровневые helpers.
- *   - ApiError + подклассы (Unauthenticated/Forbidden/NotFound/Validation/
- *     Network) для type-narrow'инга в потребителях.
+ * Минимальный host-mount:
  *
- * createAdmin() (mount Vue-приложения) — на следующих фазах после
- * api-stack'а: stores, router, renderers.
+ *     import { createAdminApp } from '@dskripchenko/laravel-admin'
+ *     import '@dskripchenko/laravel-admin/style.css'
+ *
+ *     const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
+ *     app.mount('#admin-app')
+ *
+ * Низкоуровневые экспорты (для расширений / партнёров):
+ *   - createAdminClient() / AdminClient — axios-обёртка для admin API.
+ *   - loadBootstrap() / readInlineBootstrap() / readCsrfFromMeta().
+ *   - createAdminRouter() — фабрика router'а с manifest-driven routes.
+ *   - useAuthStore() / useManifestStore() / ... — Pinia stores.
+ *   - registerField() / registerLayout() / registerWidget() / ... — registries.
+ *   - ApiError + подклассы (Unauthenticated/Forbidden/NotFound/Validation/Network).
  */
+
+// Главный helper для host-проектов
+export { createAdminApp } from './createAdminApp'
+export type {
+  CreateAdminAppOptions,
+  CreateAdminAppPages,
+  AdminAppHandle,
+} from './createAdminApp'
+
+// Default page-компоненты (host'ы могут заменить или переэкспортировать)
+export { default as AdminApp } from './components/AdminApp.vue'
+export { default as HomePage } from './components/HomePage.vue'
+export { default as ForbiddenPage } from './components/ForbiddenPage.vue'
+export { default as NotFoundPage } from './components/NotFoundPage.vue'
+export { default as SettingsPage } from './components/SettingsPage.vue'
+export { default as UnknownScreenPage } from './components/UnknownScreenPage.vue'
 
 export { createAdminClient } from './api/client'
 export type { AdminClient, ClientOptions } from './api/client'

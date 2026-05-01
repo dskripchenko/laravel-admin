@@ -36,6 +36,7 @@ const mkRouter = () =>
       resourceIndex: stub('RIndex'),
       resourceCreate: stub('RCreate'),
       resourceEdit: stub('REdit'),
+      resourceView: stub('RView'),
       screen: stub('Screen'),
       settings: stub('Settings'),
       dashboard: stub('Dashboard'),

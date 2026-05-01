@@ -9,6 +9,7 @@ const components: RouteComponentResolver = {
   resourceIndex: stub,
   resourceCreate: stub,
   resourceEdit: stub,
+  resourceView: stub,
   screen: stub,
   settings: stub,
   dashboard: stub,
@@ -53,14 +54,16 @@ describe('buildRoutesFromManifest', () => {
       ],
     }
     const routes = buildRoutesFromManifest(manifest, components)
-    expect(routes).toHaveLength(3)
+    expect(routes).toHaveLength(4)
     expect(routes.map((r) => r.path)).toEqual([
       '/r/users',
       '/r/users/create',
       '/r/users/:id/edit',
+      '/r/users/:id',
     ])
     expect(routes[0].name).toBe('admin.resource.users.index')
     expect(routes[2].name).toBe('admin.resource.users.edit')
+    expect(routes[3].name).toBe('admin.resource.users.view')
     expect(routes[0].meta?.requiresAuth).toBe(true)
     expect(routes[0].meta?.permissions).toEqual(['admin.users.view'])
     expect(routes[1].meta?.permissions).toEqual(['admin.users.create'])
