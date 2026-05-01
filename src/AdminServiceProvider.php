@@ -132,6 +132,13 @@ final class AdminServiceProvider extends ServiceProvider
         $this->bootPlugins();
         $this->registerRoutes();
         $this->registerScalarDoc();
+
+        // laravel-api кеширует AdminApi::getPreparedMethods() в static-property.
+        // Если кто-то (в т.ч. laravel-api ApiServiceProvider при boot — order
+        // providers'ов недетерминирован) вызвал getPreparedMethods ДО
+        // bootPlugins(), кеш содержит пустой registry. Сбрасываем чтобы первый
+        // request-time call re-compute fresh с зарегистрированными resources.
+        Http\AdminApi::clearCache();
     }
 
     /**
