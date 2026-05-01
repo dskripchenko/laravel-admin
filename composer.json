@@ -27,6 +27,7 @@
         "dskripchenko/php-array-helper": "^1.1"
     },
     "require-dev": {
+        "dskripchenko/laravel-admin-jobs": "@dev",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "laravel/sanctum": "^4",
@@ -51,7 +52,15 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Dskripchenko\\LaravelAdmin\\Tests\\": "tests/"
+            "Dskripchenko\\LaravelAdmin\\Tests\\": "tests/",
+            "Dskripchenko\\LaravelAdminJobs\\Tests\\": "packages/jobs/tests/",
+            "Dskripchenko\\LaravelAdminHealth\\Tests\\": "packages/health/tests/",
+            "Dskripchenko\\LaravelAdminStarter\\Tests\\": "packages/starter/tests/",
+            "Dskripchenko\\LaravelAdminPulse\\Tests\\": "packages/pulse/tests/",
+            "Dskripchenko\\LaravelAdminSearch\\Tests\\": "packages/search/tests/",
+            "Dskripchenko\\LaravelAdminMedia\\Tests\\": "packages/media/tests/",
+            "Dskripchenko\\LaravelAdminTinymce\\Tests\\": "packages/tinymce/tests/",
+            "Dskripchenko\\LaravelAdminQuill\\Tests\\": "packages/quill/tests/"
         },
         "classmap": [
             "tests/Fixtures/"
