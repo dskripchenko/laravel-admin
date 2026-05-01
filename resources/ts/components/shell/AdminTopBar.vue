@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
- * Топ-бар admin. Содержит:
- *   - бренд (название/логотип) — берётся из bootstrap.brand либо props
- *   - ThemeToggle (light/dark switcher)
- *   - LocaleSwitcher
- *   - NotificationBell с unread badge
- *   - UserMenu
+ * Admin top bar поверх UID-токенов. Структура из docs/design_handoff_laravel_admin/
+ * screens-shell.jsx (Topbar): collapse-toggle / breadcrumbs / spacer /
+ * search-pill / bell / theme / locale / avatar.
  *
- * Все widget'ы — sub-компоненты, которые сами читают своё состояние из stores.
- * Top-bar только компонует.
+ * Slots:
+ *   - actions — host может вставить дополнительные actions перед widget'ами
+ *   - search — кастомизация ⌘K command-palette pill (по умолчанию — статичный
+ *     placeholder; host сверху поднимет UidCommand или свой)
+ *   - breadcrumbs — переопределить хлебные крошки
  */
 import { computed } from 'vue'
 import ThemeToggle from './widgets/ThemeToggle.vue'
@@ -16,63 +16,71 @@ import LocaleSwitcher from './widgets/LocaleSwitcher.vue'
 import NotificationBell from './widgets/NotificationBell.vue'
 import UserMenu from './widgets/UserMenu.vue'
 
-interface Props {
-  brandName?: string
-  brandLogo?: string | null
+interface Crumb {
+  label: string
+  to?: string | Record<string, unknown> | null
 }
-const props = withDefaults(defineProps<Props>(), { brandName: 'Admin', brandLogo: null })
 
-const initial = computed(() => props.brandName.charAt(0).toUpperCase())
+interface Props {
+  /** Хлебные крошки. Последний элемент — текущая страница (без to). */
+  breadcrumbs?: Crumb[]
+  /** Показывать кнопку collapse сайдбара (только в shell-layout'е). */
+  showCollapseToggle?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  breadcrumbs: () => [],
+  showCollapseToggle: true,
+})
+
+const emit = defineEmits<{
+  'toggle-sidebar': []
+}>()
+
+const lastIdx = computed(() => props.breadcrumbs.length - 1)
 </script>
 
 <template>
-  <div class="admin-topbar">
-    <div class="admin-topbar__brand">
-      <img v-if="brandLogo" :src="brandLogo" :alt="brandName" class="admin-topbar__logo" />
-      <span v-else class="admin-topbar__logo-placeholder" aria-hidden="true">{{ initial }}</span>
-      <span class="admin-topbar__name">{{ brandName }}</span>
-    </div>
-    <nav class="admin-topbar__actions" aria-label="Admin top actions">
-      <slot name="actions" />
-      <ThemeToggle />
-      <LocaleSwitcher />
-      <NotificationBell />
-      <UserMenu />
-    </nav>
-  </div>
-</template>
+  <header class="admin-topbar">
+    <button
+      v-if="showCollapseToggle"
+      type="button"
+      class="admin-topbar__icon-btn"
+      aria-label="Свернуть меню"
+      @click="emit('toggle-sidebar')"
+    >
+      <span class="admin-topbar__icon" data-icon="panel-left" />
+    </button>
 
-<style>
-.admin-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  height: 56px;
-  border-bottom: 1px solid var(--admin-border, #e5e7eb);
-  background: var(--admin-topbar-bg, #fff);
-}
-.admin-topbar__brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-.admin-topbar__logo { height: 28px; width: auto; }
-.admin-topbar__logo-placeholder {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--admin-accent, #3b82f6);
-  color: #fff;
-  font-size: 14px;
-}
-.admin-topbar__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-</style>
+    <div class="admin-topbar__breadcrumbs">
+      <slot name="breadcrumbs">
+        <template v-for="(crumb, idx) in breadcrumbs" :key="idx">
+          <span v-if="idx > 0" class="sep">›</span>
+          <component
+            :is="crumb.to ? 'a' : 'span'"
+            :href="typeof crumb.to === 'string' ? crumb.to : undefined"
+            :class="idx === lastIdx ? 'cur' : ''"
+          >
+            {{ crumb.label }}
+          </component>
+        </template>
+      </slot>
+    </div>
+
+    <div class="admin-topbar__spacer" />
+
+    <slot name="search">
+      <div class="admin-topbar__search" role="button" tabindex="0">
+        <span class="admin-topbar__icon" data-icon="search" />
+        <span>Поиск везде…</span>
+        <kbd>⌘K</kbd>
+      </div>
+    </slot>
+
+    <slot name="actions" />
+    <NotificationBell />
+    <ThemeToggle />
+    <LocaleSwitcher />
+    <UserMenu />
+  </header>
+</template>

@@ -1,104 +1,178 @@
 <script setup lang="ts">
 /**
- * Sidebar — рендерит menu store. Группированные пункты, выделение active
- * через router. Filter по permissions делает store сам.
+ * Sidebar admin-каркаса поверх UidSidebar/UidSidebarGroup/UidSidebarItem.
  *
- * Item.routeName приоритетнее url'а — если задан, используем `<RouterLink :to="{name}">`,
- * иначе — обычный <a href>.
+ * Источник данных — useMenuStore (groupedItems, отфильтрованные по permission'ам
+ * через auth.hasAnyPermission). UidSidebarItem поддерживает вложенный icon-slot
+ * + active + badge — маппим прямо из MenuItem.
+ *
+ * Brand-row сверху + опциональный tenant-block + footer с версией/docs —
+ * по эталону docs/design_handoff_laravel_admin/screens-shell.jsx (Sidebar).
  */
-import { computed } from 'vue'
+import { computed, h, type Component } from 'vue'
 import { useRoute } from 'vue-router'
-import { useMenuStore } from '../../stores/menu'
+import { UidSidebar, UidSidebarGroup, UidSidebarItem } from '@dskripchenko/ui'
+import { useMenuStore, type MenuItem } from '../../stores/menu'
+
+interface Props {
+  collapsed?: boolean
+  /** Заголовок бренда. */
+  brandName?: string
+  /** Logo-mark (буква/инициалы) — отображается вместо логотипа. */
+  brandMark?: string
+  /** Тенант / workspace — опционально показывается под брендом. */
+  tenant?: { label: string; name: string } | null
+  /** Версия + ссылка на docs в footer'е. */
+  version?: string | null
+  docsUrl?: string | null
+}
+
+withDefaults(defineProps<Props>(), {
+  collapsed: false,
+  brandName: 'Laravel Admin',
+  brandMark: 'L',
+  tenant: null,
+  version: null,
+  docsUrl: null,
+})
 
 const menu = useMenuStore()
 const route = useRoute()
 
 const groups = computed(() => menu.groupedItems)
 
-function isActive(routeName?: string | null, url?: string | null): boolean {
-  if (routeName && route.name === routeName) return true
-  if (url && route.path === url) return true
+function isActive(item: MenuItem): boolean {
+  if (item.routeName && route.name === item.routeName) return true
+  if (item.url && route.path === item.url) return true
   return false
+}
+
+/**
+ * UidSidebarItem ожидает icon-slot. MenuItem.icon — строка (имя lucide-икoнки),
+ * host-проект может зарегистрировать свой icon-resolver. Здесь возвращаем
+ * простой <span data-icon> placeholder — host'у достаточно css-rule по
+ * `[data-icon='users']` чтобы подставить SVG.
+ */
+function iconSlot(name?: string | null): (() => unknown) | undefined {
+  if (!name) return undefined
+  return () => h('span', { class: 'admin-sidebar__icon', 'data-icon': name })
+}
+
+/** UidSidebarItem.to принимает string | object; routeName маппим через route-object. */
+function itemTarget(item: MenuItem): string | Record<string, unknown> | undefined {
+  if (item.routeName) return { name: item.routeName }
+  if (item.url) return item.url
+  return undefined
 }
 </script>
 
 <template>
-  <nav class="admin-sidebar" aria-label="Main navigation">
-    <ul v-for="(grp, idx) in groups" :key="`g-${idx}`" class="admin-sidebar__group">
-      <li v-if="grp.group" class="admin-sidebar__group-header">{{ grp.group }}</li>
-      <li
-        v-for="item in grp.items"
-        :key="item.key"
-        :class="[
-          'admin-sidebar__item',
-          { 'admin-sidebar__item--active': isActive(item.routeName, item.url) },
-        ]"
+  <UidSidebar :collapsed="collapsed">
+    <template #header>
+      <div class="admin-sidebar-brand">
+        <div class="admin-sidebar-brand__mark">{{ brandMark }}</div>
+        <div v-if="!collapsed" class="admin-sidebar-brand__name">{{ brandName }}</div>
+      </div>
+      <div v-if="tenant && !collapsed" class="admin-sidebar-tenant">
+        <span>{{ tenant.label }}</span>
+        <b>{{ tenant.name }}</b>
+      </div>
+    </template>
+
+    <template #nav>
+      <UidSidebarGroup
+        v-for="(grp, idx) in groups"
+        :key="`grp-${idx}`"
+        :title="grp.group ?? undefined"
       >
-        <component
-          :is="item.routeName ? 'RouterLink' : 'a'"
-          :to="item.routeName ? { name: item.routeName } : undefined"
-          :href="!item.routeName ? (item.url ?? '#') : undefined"
-          class="admin-sidebar__link"
+        <UidSidebarItem
+          v-for="item in grp.items"
+          :key="item.key"
+          :to="itemTarget(item)"
+          :active="isActive(item)"
+          :badge="item.badge ?? undefined"
         >
-          <span v-if="item.icon" class="admin-sidebar__icon" :data-icon="item.icon" />
-          <span class="admin-sidebar__label">{{ item.label }}</span>
-          <span v-if="item.badge !== null && item.badge !== undefined" class="admin-sidebar__badge">
-            {{ item.badge }}
-          </span>
-        </component>
-      </li>
-    </ul>
-  </nav>
+          <template v-if="item.icon" #icon>
+            <component :is="iconSlot(item.icon) as unknown as Component" />
+          </template>
+          {{ item.label }}
+        </UidSidebarItem>
+      </UidSidebarGroup>
+    </template>
+
+    <template v-if="version || docsUrl" #footer>
+      <div class="admin-sidebar-foot">
+        <span v-if="version" class="admin-sidebar-foot__text">{{ version }}</span>
+        <a v-if="docsUrl" :href="docsUrl" class="admin-sidebar-foot__text admin-sidebar-foot__link">
+          Docs
+        </a>
+      </div>
+    </template>
+  </UidSidebar>
 </template>
 
 <style>
-.admin-sidebar {
-  padding: 8px 0;
-  background: var(--admin-sidebar-bg, #f9fafb);
-  border-right: 1px solid var(--admin-border, #e5e7eb);
-  height: 100%;
-}
-.admin-sidebar__group {
-  list-style: none;
-  margin: 0;
-  padding: 8px 0;
-}
-.admin-sidebar__group + .admin-sidebar__group {
-  border-top: 1px solid var(--admin-border, #e5e7eb);
-}
-.admin-sidebar__group-header {
-  padding: 4px 16px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--admin-muted, #6b7280);
-}
-.admin-sidebar__link {
+.admin-sidebar-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 16px;
-  text-decoration: none;
-  color: var(--admin-text, #111827);
-  border-radius: 6px;
-  margin: 0 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--uid-border-subtle);
 }
-.admin-sidebar__link:hover {
-  background: var(--admin-hover, #e5e7eb);
+.admin-sidebar-brand__mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex: none;
+  background: var(--uid-text-primary);
+  color: var(--uid-surface-raised);
+  display: grid;
+  place-items: center;
+  font-family: var(--uid-font-family-display);
+  font-weight: var(--uid-font-weight-bold);
+  font-size: 14px;
+  letter-spacing: -0.02em;
 }
-.admin-sidebar__item--active .admin-sidebar__link {
-  background: var(--admin-accent-soft, #dbeafe);
-  font-weight: 600;
+.admin-sidebar-brand__name {
+  font-family: var(--uid-font-family-display);
+  font-size: 14px;
+  font-weight: var(--uid-font-weight-semibold);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--uid-text-primary);
 }
-.admin-sidebar__label { flex: 1; }
-.admin-sidebar__badge {
-  background: var(--admin-accent, #3b82f6);
-  color: #fff;
+.admin-sidebar-tenant {
+  margin: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-md);
+  font-size: var(--uid-font-size-xs);
+  color: var(--uid-text-secondary);
+  background: var(--uid-surface-base);
+}
+.admin-sidebar-tenant b { color: var(--uid-text-primary); font-weight: 500; }
+.admin-sidebar-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--uid-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 11px;
-  padding: 0 6px;
-  border-radius: 10px;
-  min-width: 18px;
-  text-align: center;
+  color: var(--uid-text-tertiary);
+}
+.admin-sidebar-foot__link { cursor: pointer; }
+.admin-sidebar-foot__link:hover { color: var(--uid-text-primary); }
+
+.admin-sidebar__icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  flex: none;
+  color: currentColor;
 }
 </style>

@@ -1,41 +1,34 @@
 <script setup lang="ts">
+/**
+ * Bell с unread-badge. По эталону handoff'а — badge `.admin-topbar__bell-badge`
+ * (округлая красная пилюля 14×14 + tabular-nums + max '99+').
+ */
+import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useNotificationsStore } from '../../../stores/notifications'
 
 const notifications = useNotificationsStore()
+
+const display = computed(() => {
+  const n = notifications.unreadCount
+  if (n <= 0) return null
+  return n > 99 ? '99+' : String(n)
+})
 </script>
 
 <template>
-  <RouterLink to="/notifications" class="admin-widget admin-notification-bell" aria-label="Уведомления">
-    <span class="admin-notification-bell__icon" aria-hidden="true">🔔</span>
+  <RouterLink
+    to="/notifications"
+    class="admin-topbar__icon-btn"
+    aria-label="Уведомления"
+  >
+    <span class="admin-topbar__icon" data-icon="bell" />
     <span
-      v-if="notifications.hasUnread"
-      class="admin-notification-bell__badge"
+      v-if="display !== null"
+      class="admin-topbar__bell-badge"
       :title="`Непрочитанных: ${notifications.unreadCount}`"
     >
-      {{ notifications.unreadCount > 99 ? '99+' : notifications.unreadCount }}
+      {{ display }}
     </span>
   </RouterLink>
 </template>
-
-<style>
-.admin-notification-bell {
-  position: relative;
-  text-decoration: none;
-}
-.admin-notification-bell__badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 9px;
-  background: var(--admin-danger, #ef4444);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-</style>

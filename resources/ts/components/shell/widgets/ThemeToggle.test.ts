@@ -22,29 +22,39 @@ describe('ThemeToggle', () => {
     clearAdminClient()
   })
 
-  it('shows sun in light, moon in dark', async () => {
+  it('shows moon icon in light theme', () => {
     const theme = useThemeStore()
     theme.applyLocal('light')
     const wrapper = mount(ThemeToggle)
-    expect(wrapper.text()).toContain('☀')
+    expect(wrapper.find('[data-icon="moon"]').exists()).toBe(true)
+  })
 
+  it('shows sun icon in dark theme', () => {
+    const theme = useThemeStore()
+    theme.available = ['light', 'dark']
     theme.applyLocal('dark')
-    await wrapper.vm.$nextTick()
-    expect(wrapper.text()).toContain('☾')
+    const wrapper = mount(ThemeToggle)
+    expect(wrapper.find('[data-icon="sun"]').exists()).toBe(true)
   })
 
   it('toggles theme on click', async () => {
     const theme = useThemeStore()
     theme.available = ['light', 'dark']
     theme.applyLocal('light')
-
     mock.onPost('/system/setTheme').reply(200, {
       success: true, payload: { theme: 'dark' },
     })
 
     const wrapper = mount(ThemeToggle)
     await wrapper.find('button').trigger('click')
-    await wrapper.vm.$nextTick()
+    await new Promise((r) => setTimeout(r, 10))
     expect(theme.current).toBe('dark')
+  })
+
+  it('aria-pressed reflects dark state', () => {
+    const theme = useThemeStore()
+    theme.applyLocal('dark')
+    const wrapper = mount(ThemeToggle)
+    expect(wrapper.find('button').attributes('aria-pressed')).toBe('true')
   })
 })
