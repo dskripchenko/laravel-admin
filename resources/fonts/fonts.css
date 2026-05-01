@@ -1,0 +1,69 @@
+/**
+ * UID design-system шрифты — @font-face declarations.
+ *
+ * Inter Variable — основной body-font (full weight axis 100..900 + italic
+ * companion). Inter Display — компактные heading'и (h1/h2 only) с tighter
+ * cut. IBM Plex Mono — fall back на Fira Code/ui-monospace (не bundled).
+ *
+ * Этот файл — **template для host'а** (не импортируется в `style.css`
+ * напрямую: Vite в lib-mode принудительно инлайнит assets через base64
+ * → CSS раздувается до ~1.4 MB и блокирует first paint).
+ *
+ * ## Варианты подключения шрифтов в host-приложении
+ *
+ * ### Вариант A — npm-пакет fontsource (рекомендуется)
+ *   npm install @fontsource-variable/inter @fontsource/inter-display
+ *   // в host entry:
+ *   import '@fontsource-variable/inter'
+ *   import '@fontsource/inter-display/600.css'
+ *   import '@fontsource/inter-display/700.css'
+ *
+ * ### Вариант B — Google Fonts CDN
+ *   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+ *
+ * ### Вариант C — self-hosted из этого пакета
+ * Шрифты лежат в `node_modules/@dskripchenko/laravel-admin/resources/fonts/`.
+ * Скопируйте `*.woff2` + этот `fonts.css` в свою `public/fonts/` (relative
+ * `./` URLs ниже работают при условии что этот файл лежит рядом с woff2).
+ * Подключите через `<link rel="stylesheet" href="/fonts/fonts.css">`.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./InterVariable.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./InterVariable-Italic.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./InterDisplay-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./InterDisplay-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./InterDisplay-ExtraBold.woff2') format('woff2');
+}

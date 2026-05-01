@@ -18,10 +18,13 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.cjs"
         },
-        "./style.css": "./dist/style.css"
+        "./style.css": "./dist/style.css",
+        "./fonts/*": "./resources/fonts/*",
+        "./fonts/fonts.css": "./resources/fonts/fonts.css"
     },
     "files": [
         "dist",
+        "resources/fonts",
         "README.md",
         "LICENSE"
     ],
