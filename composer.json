@@ -29,6 +29,7 @@
     "require-dev": {
         "dskripchenko/laravel-admin-health": "@dev",
         "dskripchenko/laravel-admin-jobs": "@dev",
+        "dskripchenko/laravel-admin-pulse": "@dev",
         "dskripchenko/laravel-admin-starter": "@dev",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
