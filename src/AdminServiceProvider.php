@@ -54,11 +54,15 @@ final class AdminServiceProvider extends ServiceProvider
         );
         $this->app->singleton(Plugin\PluginRegistry::class);
 
-        $this->app->singleton(
+        // Tenancy биндим как `scoped()` (per-request), а не singleton —
+        // иначе в long-running runtime'ах (Octane / queue workers) текущий
+        // tenant из одного request'а может протечь в следующий. Laravel
+        // автоматически сбрасывает scoped bindings между requests.
+        $this->app->scoped(
             Tenancy\TenantResolver::class,
             Tenancy\SingleTenantResolver::class,
         );
-        $this->app->singleton(Tenancy\TenantContext::class);
+        $this->app->scoped(Tenancy\TenantContext::class);
 
         $this->app->singleton(DelayedProcess\AllowlistRegistrar::class);
 
