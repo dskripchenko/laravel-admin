@@ -100,3 +100,41 @@ export {
   NotificationBell,
   UserMenu,
 } from './components/shell'
+
+// JSON-driven rendering: registry, renderers, builtin fields/layouts, form-state
+export {
+  FieldRenderer,
+  LayoutRenderer,
+  registerField,
+  registerLayout,
+  getField,
+  getLayout,
+  hasField,
+  hasLayout,
+  listFields,
+  listLayouts,
+  clearRegistry,
+  registerComponents,
+  registerBuiltinComponents,
+  provideFormState,
+  useFormState,
+  tryUseFormState,
+  FieldShell,
+  TextField,
+  TextAreaField,
+  NumberField,
+  SelectField,
+  CheckboxField,
+  DateField,
+  UnknownField,
+  RowsLayout,
+  ColumnsLayout,
+  SectionLayout,
+  TabsLayout,
+} from './components/render'
+export type {
+  FieldNode,
+  LayoutNode,
+  ComponentBundle,
+  FormStateContext,
+} from './components/render'
