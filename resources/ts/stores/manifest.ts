@@ -1,0 +1,131 @@
+/**
+ * Manifest store: lazy-load JSON-манифеста админки + кеширование по version.
+ *
+ * Manifest содержит описание всех Resource'ов, Screen'ов, Settings'ов,
+ * Plugin'ов. SPA загружает один раз на старте и переиспользует.
+ *
+ * ETag-based 304 Not Modified backend-side — фронт ничего особенного не
+ * делает (axios + browser handle If-None-Match). Свежий version записывается
+ * в lastVersion для cheap-сравнения.
+ */
+
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import { getAdminClient } from './registry'
+
+export interface ManifestResourceMeta {
+  slug: string
+  label: string
+  icon?: string
+  group?: string | null
+  permissions: Record<string, string>
+  fields: Array<Record<string, unknown>>
+  columns: Array<Record<string, unknown>>
+  filters: Array<Record<string, unknown>>
+  actions: Array<Record<string, unknown>>
+  searchable: string[]
+  with: string[]
+  features: Record<string, unknown>
+  screens?: Record<string, unknown>
+}
+
+export interface ManifestScreenMeta {
+  slug: string
+  name: string
+  description: string | null
+  permission: string[] | string | null
+}
+
+export interface ManifestSettingsMeta {
+  kind: 'settings'
+  slug: string
+  label: string
+  permissions: Record<string, string>
+  fields: Array<Record<string, unknown>>
+}
+
+export interface AdminManifest {
+  version: string
+  locale: string
+  resources: ManifestResourceMeta[]
+  screens: ManifestScreenMeta[]
+  settings: ManifestSettingsMeta[]
+  dashboards: unknown[]
+  plugins: string[]
+  permissions: unknown[]
+}
+
+export const useManifestStore = defineStore('admin-manifest', () => {
+  const manifest = ref<AdminManifest | null>(null)
+  const loading = ref(false)
+  const error = ref<Error | null>(null)
+
+  const isLoaded = computed(() => manifest.value !== null)
+  const version = computed(() => manifest.value?.version ?? null)
+  const resources = computed(() => manifest.value?.resources ?? [])
+  const screens = computed(() => manifest.value?.screens ?? [])
+  const settings = computed(() => manifest.value?.settings ?? [])
+  const plugins = computed(() => manifest.value?.plugins ?? [])
+
+  function getResource(slug: string): ManifestResourceMeta | null {
+    return resources.value.find((r) => r.slug === slug) ?? null
+  }
+
+  function getScreen(slug: string): ManifestScreenMeta | null {
+    return screens.value.find((s) => s.slug === slug) ?? null
+  }
+
+  function getSettings(slug: string): ManifestSettingsMeta | null {
+    return settings.value.find((s) => s.slug === slug) ?? null
+  }
+
+  /**
+   * Загрузить manifest. Если уже загружен — возвращает cached.
+   * Force=true принудительно обновит с сервера.
+   */
+  async function load(force = false): Promise<AdminManifest> {
+    if (manifest.value !== null && !force) {
+      return manifest.value
+    }
+
+    loading.value = true
+    error.value = null
+    try {
+      const client = getAdminClient()
+      const result = await client.get<AdminManifest>('/system/manifest')
+      manifest.value = result
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err : new Error(String(err))
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function reset(): void {
+    manifest.value = null
+    error.value = null
+    loading.value = false
+  }
+
+  return {
+    // state
+    manifest,
+    loading,
+    error,
+    // getters
+    isLoaded,
+    version,
+    resources,
+    screens,
+    settings,
+    plugins,
+    // actions
+    getResource,
+    getScreen,
+    getSettings,
+    load,
+    reset,
+  }
+})

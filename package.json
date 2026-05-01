@@ -52,10 +52,12 @@
         "eslint": "^9",
         "eslint-plugin-vue": "^9",
         "jsdom": "^25",
+        "pinia": "^3.0.4",
         "typescript": "^5.5",
         "vite": "^5",
         "vite-plugin-dts": "^4",
         "vitest": "^2",
+        "vue": "^3.5.33",
         "vue-tsc": "^2"
     }
 }

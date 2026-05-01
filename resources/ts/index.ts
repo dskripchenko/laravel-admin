@@ -45,3 +45,26 @@ export type {
   AdminBrand,
   AdminBootstrapConfig,
 } from './types/bootstrap'
+
+// Pinia stores
+export {
+  setAdminClient,
+  getAdminClient,
+  hasAdminClient,
+  clearAdminClient,
+  useAuthStore,
+  useManifestStore,
+  useThemeStore,
+  useLocaleStore,
+  useNotificationsStore,
+} from './stores'
+export type {
+  LoginPayload,
+  PendingChallenge,
+  AdminManifest,
+  ManifestResourceMeta,
+  ManifestScreenMeta,
+  ManifestSettingsMeta,
+  NotificationItem,
+  NotificationFilter,
+} from './stores'
