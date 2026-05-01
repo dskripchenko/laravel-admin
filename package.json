@@ -44,7 +44,7 @@
         "vue-router": "^4.3"
     },
     "devDependencies": {
-        "@dskripchenko/ui": "^1.0.1",
+        "@dskripchenko/ui": "^1.0.2",
         "@types/node": "^22",
         "@vitejs/plugin-vue": "^5.2.4",
         "@vue/test-utils": "^2.4.10",

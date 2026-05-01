@@ -1,21 +1,24 @@
 /**
  * @dskripchenko/laravel-admin — entry CSS.
  *
- * Содержит ТОЛЬКО application-level admin-каркас, опирающийся на токены
- * `--uid-*` из @dskripchenko/ui. Сам UI-кит (токены, темы, стили
- * Uid*-компонентов) host подключает отдельно — мы не @import'им его сюда,
- * потому что @dskripchenko/ui@1.0.1 декларирует в package.json `exports`
- * пути `./styles/tokens.css|themes.css|reset.css|global.css`, которых
- * physically нет в shipped dist (есть только `dist/styles/index.css`).
- * Vite (как у host'а так и у нас) при @import резолвит CSS через `exports`
- * map и падает с «Missing specifier».
+ * Содержит ТОЛЬКО application-level admin-каркасные классы поверх
+ * `--uid-*` токенов (impersonation banner, polling-indicator, topbar,
+ * page utilities, auth-card). Стили UI-кита host подключает отдельно
+ * чтобы не дублировать в библиотечном bundle'е.
  *
- * Order для host-проекта (рекомендуется в указанном порядке):
- *   import '@dskripchenko/ui/dist/styles/index.css'    // (1) tokens + themes + Uid* стили
- *   import '@dskripchenko/laravel-admin/style.css'     // (2) admin-каркас (этот файл)
+ * Host-проект импортирует в указанном порядке:
  *
- * После выпуска uid 1.0.2+ (фикс exports) host сможет писать просто
- * `import '@dskripchenko/ui/styles/global.css'`.
+ *   // (1) UI-кит: токены + темы + reset + global + Uid*-компоненты
+ *   import '@dskripchenko/ui/styles/all.css'
+ *   // либо гранулярно:
+ *   //   import '@dskripchenko/ui/styles/tokens.css'  — primitives
+ *   //   import '@dskripchenko/ui/styles/themes.css'  — light/dark
+ *   //   import '@dskripchenko/ui/styles/reset.css'   — base reset
+ *   //   import '@dskripchenko/ui/styles/global.css'  — body typography
+ *   //   import '@dskripchenko/ui/styles/index.css'   — all Uid* component styles
+ *
+ *   // (2) admin-каркас (этот файл, без uid-стилей)
+ *   import '@dskripchenko/laravel-admin/style.css'
  *
  * Все самописные стили ниже используют ТОЛЬКО семантические токены
  * `--uid-*` (text/border/surface/accent/danger/success/warning/info/space/
