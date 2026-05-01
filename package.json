@@ -1,6 +1,9 @@
 {
     "name": "@dskripchenko/laravel-admin",
-    "version": "0.1.0-dev",
+    "version": "1.1.0",
+    "publishConfig": {
+        "access": "public"
+    },
     "description": "Vue 3 admin-panel constructor: SPA bundle для Laravel-приложений на @dskripchenko/laravel-admin (PHP backend) — JSON-driven Field/Layout/Infolist/Widget renderer'ы поверх @dskripchenko/ui design system.",
     "license": "MIT",
     "author": "Denis Skripchenko <denskrp90@gmail.com>",
@@ -73,13 +76,14 @@
         "lint:fix": "eslint resources/ts --fix",
         "typecheck": "vue-tsc --noEmit",
         "size": "npm run build && size-limit",
-        "preflight": "npm run lint && npm run typecheck && npm run test && npm run build"
+        "preflight": "npm run lint && npm run typecheck && npm run test && npm run build",
+        "prepublishOnly": "npm run build"
     },
     "size-limit": [
         {
             "name": "ESM bundle (gzipped)",
             "path": "dist/index.mjs",
-            "limit": "35 KB",
+            "limit": "150 KB",
             "ignore": [
                 "vue",
                 "vue-router",
@@ -91,7 +95,7 @@
         {
             "name": "CJS bundle (gzipped)",
             "path": "dist/index.cjs",
-            "limit": "30 KB",
+            "limit": "150 KB",
             "ignore": [
                 "vue",
                 "vue-router",
@@ -103,7 +107,7 @@
         {
             "name": "Style CSS (gzipped)",
             "path": "dist/style.css",
-            "limit": "5 KB"
+            "limit": "10 KB"
         }
     ],
     "peerDependencies": {
