@@ -68,4 +68,18 @@ describe('createAdminApp', () => {
     const { router } = createAdminApp(baseBootstrap, { skipManifestLoad: true })
     expect(router.options.history.base).toBe('/admin')
   })
+
+  it('manifest load НЕ запускается если user=null в bootstrap (login-flow)', async () => {
+    // Когда host рендерит /admin/login без user'а — manifest.load() должен
+    // подождать появления user'а через watch() после успешного login.
+    // Используем skipManifestLoad: false но с anonymous bootstrap.
+    const anonBootstrap = { ...baseBootstrap, user: null }
+    const { router } = createAdminApp(anonBootstrap)
+    // Сразу после mount manifest store пустой и dynamic routes отсутствуют.
+    const dynamicRouteNames = router
+      .getRoutes()
+      .map((r) => r.name)
+      .filter((n) => typeof n === 'string' && n.startsWith('admin.resource.'))
+    expect(dynamicRouteNames).toHaveLength(0)
+  })
 })

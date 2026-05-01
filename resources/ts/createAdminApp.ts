@@ -21,7 +21,7 @@
  *     })
  */
 
-import { createApp, type App, type Component } from 'vue'
+import { createApp, watch, type App, type Component } from 'vue'
 import { createPinia } from 'pinia'
 import { createWebHistory } from 'vue-router'
 
@@ -170,21 +170,43 @@ export function createAdminApp(
   })
   app.use(router)
 
-  // 6. Manifest async-load + dynamic routes
+  // 6. Manifest async-load + dynamic routes (только если authenticated;
+  //    при появлении user после login — manifest подгружается автоматически).
   if (!options.skipManifestLoad) {
     const manifestStore = useManifestStore()
-    void manifestStore
-      .load()
-      .then((manifest) => {
-        router.replaceManifestRoutes(manifest)
-      })
-      .catch((error: unknown) => {
-        // Silent fail — пользователь увидит home без resource-роутов;
-        // host может перехватить ошибку через onAppCreated → app.config.errorHandler.
-        if (typeof console !== 'undefined') {
-          console.error('[laravel-admin] manifest load failed:', error)
+    const authStore = useAuthStore()
+
+    const loadAndApply = (): void => {
+      void manifestStore
+        .load()
+        .then((manifest) => {
+          router.replaceManifestRoutes(manifest)
+        })
+        .catch((error: unknown) => {
+          // Silent fail — host может перехватить через onAppCreated →
+          // app.config.errorHandler. Manifest перезагрузится при следующем
+          // появлении user (watch ниже).
+          if (typeof console !== 'undefined') {
+            console.error('[laravel-admin] manifest load failed:', error)
+          }
+        })
+    }
+
+    if (authStore.isAuthenticated) {
+      // Inline-bootstrap уже принёс user'а — грузим сразу.
+      loadAndApply()
+    }
+    // Если user'а ещё нет (login flow) либо появится позже —
+    // подписываемся и грузим когда появится. immediate: false чтобы не
+    // дублировать вызов при isAuthenticated=true выше.
+    watch(
+      () => authStore.user,
+      (newUser, oldUser) => {
+        if (newUser && !oldUser) {
+          loadAndApply()
         }
-      })
+      },
+    )
   }
 
   // 7. host hook
