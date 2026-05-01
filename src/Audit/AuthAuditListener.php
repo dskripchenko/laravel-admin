@@ -102,8 +102,8 @@ final class AuthAuditListener
             'event' => $event,
             'changes' => $payload === [] ? null : ['payload' => $payload],
             'ip' => request()->ip(),
-            'user_agent' => substr((string) request()->userAgent(), 0, 1024),
-            'url' => substr((string) request()->fullUrl(), 0, 2048),
+            'user_agent' => substr((string) request()->userAgent(), 0, (int) config('admin.audit.user_agent_max_length', 1024)),
+            'url' => substr((string) request()->fullUrl(), 0, (int) config('admin.audit.url_max_length', 2048)),
         ]);
     }
 }

@@ -197,8 +197,8 @@ final class ResourceController extends ApiController
         }
 
         // Pagination
-        $perPage = (int) $request->input('per_page', 25);
-        $perPage = max(1, min($perPage, 100));
+        $perPage = (int) $request->input('per_page', (int) config('admin.pagination.default_per_page', 25));
+        $perPage = max(1, min($perPage, (int) config('admin.pagination.max_per_page', 100)));
         $page = max(1, (int) $request->input('page', 1));
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);

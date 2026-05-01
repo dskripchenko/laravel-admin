@@ -42,8 +42,9 @@ final class ImportController extends ApiController
      */
     public function upload(Request $request): JsonResponse
     {
+        $maxKb = (int) config('admin.uploads.max_kilobytes', 51200);
         $request->validate([
-            'file' => ['required', 'file', 'max:51200'],
+            'file' => ['required', 'file', 'max:'.$maxKb],
             'resource' => ['required', 'string'],
         ]);
 

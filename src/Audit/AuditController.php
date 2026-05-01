@@ -57,7 +57,10 @@ final class AuditController extends ApiController
             $query->where('created_at', '<=', $to);
         }
 
-        $perPage = max(1, min((int) $request->input('per_page', 25), 100));
+        $perPage = max(1, min(
+            (int) $request->input('per_page', (int) config('admin.pagination.default_per_page', 25)),
+            (int) config('admin.pagination.max_per_page', 100),
+        ));
         $paginator = $query
             ->orderByDesc('created_at')
             ->orderByDesc('id')

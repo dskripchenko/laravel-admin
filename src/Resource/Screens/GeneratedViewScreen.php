@@ -7,7 +7,6 @@ namespace Dskripchenko\LaravelAdmin\Resource\Screens;
 use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Action\Link;
 use Dskripchenko\LaravelAdmin\Layout\Infolist;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Read-only страница записи через Resource::infolist().
@@ -32,17 +31,7 @@ final class GeneratedViewScreen extends GeneratedScreen
      */
     public function query(mixed ...$params): array
     {
-        $id = $params[0] ?? null;
-        if ($id === null) {
-            return ['record' => []];
-        }
-
-        $record = $this->resource->modelQuery()->find($id);
-        if ($record === null) {
-            throw new NotFoundHttpException("Record {$id} not found");
-        }
-
-        return ['record' => $record->toArray(), 'id' => $record->getKey()];
+        return $this->queryRecord($params[0] ?? null);
     }
 
     /**
@@ -60,14 +49,11 @@ final class GeneratedViewScreen extends GeneratedScreen
      */
     public function commandBar(): array
     {
-        $base = $this->resource::permission();
-
         return [
             Link::make('Редактировать')
                 ->href('/admin/resources/'.$this->resource::slug().'/{id}/edit')
-                ->permission($base.'.update'),
-            Link::make('Назад')
-                ->href('/admin/resources/'.$this->resource::slug()),
+                ->permission($this->resource::permission().'.update'),
+            $this->buildBackLink(),
         ];
     }
 }

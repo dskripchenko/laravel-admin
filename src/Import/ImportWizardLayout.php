@@ -31,7 +31,7 @@ final class ImportWizardLayout
                 FileUpload::make('file')
                     ->required()
                     ->accept(['.csv', '.tsv', '.xlsx'])
-                    ->maxSize(51200),
+                    ->maxSize((int) config('admin.uploads.max_kilobytes', 51200)),
             ])
                 ->description('Выберите CSV, TSV или XLSX файл для импорта')
                 ->icon('upload'),

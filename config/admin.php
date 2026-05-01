@@ -144,6 +144,27 @@ return [
         'log_auth_events' => true,
         'excluded_attributes' => ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'],
         'retention_days' => 365,
+        'user_agent_max_length' => 1024,
+        'url_max_length' => 2048,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination и uploads (defaults)
+    |--------------------------------------------------------------------------
+    */
+
+    'pagination' => [
+        'default_per_page' => 25,
+        'max_per_page' => 100,
+        'notifications_per_page' => 20,
+    ],
+
+    'uploads' => [
+        'disk' => env('ADMIN_UPLOADS_DISK', 'local'),
+        'directory' => 'uploads',
+        'max_kilobytes' => 51200,
+        'max_kilobytes_image' => 10240,
     ],
 
     /*

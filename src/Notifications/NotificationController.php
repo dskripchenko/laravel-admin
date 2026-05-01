@@ -43,7 +43,10 @@ final class NotificationController extends ApiController
         }
 
         $type = (string) $request->input('type', 'all');
-        $perPage = max(1, min((int) $request->input('per_page', 20), 100));
+        $perPage = max(1, min(
+            (int) $request->input('per_page', (int) config('admin.pagination.notifications_per_page', 20)),
+            (int) config('admin.pagination.max_per_page', 100),
+        ));
 
         $query = $this->baseQuery($user);
         if ($type === 'unread') {

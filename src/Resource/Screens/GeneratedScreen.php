@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Resource\Screens;
 
+use Dskripchenko\LaravelAdmin\Action\Link;
+use Dskripchenko\LaravelAdmin\Field\Field;
 use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Screen\Screen;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Базовый класс для авто-генерируемых Screen'ов поверх Resource (List/Create/Edit/View).
@@ -78,5 +81,46 @@ abstract class GeneratedScreen extends Screen
             'type' => 'generated.'.$this->kind(),
             'resource_slug' => $this->resource::slug(),
         ];
+    }
+
+    /**
+     * Загрузить запись по id или кинуть 404. Используется query() в
+     * Edit/View screen'ах. Возвращает payload в форме `query()` (record + id).
+     *
+     * @return array<string, mixed>
+     */
+    protected function queryRecord(mixed $id): array
+    {
+        if ($id === null) {
+            return ['record' => []];
+        }
+
+        $record = $this->resource->modelQuery()->find($id);
+        if ($record === null) {
+            throw new NotFoundHttpException("Record {$id} not found");
+        }
+
+        return ['record' => $record->toArray(), 'id' => $record->getKey()];
+    }
+
+    /**
+     * Link «Назад» на index-страницу resource'а.
+     */
+    protected function buildBackLink(string $label = 'Назад'): Link
+    {
+        return Link::make($label)->href('/admin/resources/'.$this->resource::slug());
+    }
+
+    /**
+     * Отфильтровать поля Resource'а по контексту (create|update).
+     *
+     * @return list<Field>
+     */
+    protected function filterFieldsBy(string $context): array
+    {
+        return array_values(array_filter(
+            $this->resource->fields(),
+            static fn (Field $f): bool => $f->appliesTo($context),
+        ));
     }
 }

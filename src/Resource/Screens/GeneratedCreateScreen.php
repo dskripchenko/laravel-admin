@@ -6,8 +6,6 @@ namespace Dskripchenko\LaravelAdmin\Resource\Screens;
 
 use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Action\Button;
-use Dskripchenko\LaravelAdmin\Action\Link;
-use Dskripchenko\LaravelAdmin\Field\Field;
 use Dskripchenko\LaravelAdmin\Layout\Rows;
 
 /**
@@ -34,10 +32,7 @@ final class GeneratedCreateScreen extends GeneratedScreen
     public function query(mixed ...$params): array
     {
         $defaults = [];
-        foreach ($this->resource->fields() as $field) {
-            if (! $field->appliesTo('create')) {
-                continue;
-            }
+        foreach ($this->filterFieldsBy('create') as $field) {
             $defaults[$field->name()] = null;
         }
 
@@ -49,12 +44,7 @@ final class GeneratedCreateScreen extends GeneratedScreen
      */
     public function layout(): array
     {
-        $createFields = array_values(array_filter(
-            $this->resource->fields(),
-            static fn (Field $f): bool => $f->appliesTo('create'),
-        ));
-
-        return [Rows::make($createFields)];
+        return [Rows::make($this->filterFieldsBy('create'))];
     }
 
     /**
@@ -67,8 +57,7 @@ final class GeneratedCreateScreen extends GeneratedScreen
                 ->withName('save')
                 ->method('create')
                 ->permission($this->resource::permission().'.create'),
-            Link::make('Отмена')
-                ->href('/admin/resources/'.$this->resource::slug()),
+            $this->buildBackLink('Отмена'),
         ];
     }
 }

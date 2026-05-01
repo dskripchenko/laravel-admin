@@ -6,10 +6,7 @@ namespace Dskripchenko\LaravelAdmin\Resource\Screens;
 
 use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Action\Button;
-use Dskripchenko\LaravelAdmin\Action\Link;
-use Dskripchenko\LaravelAdmin\Field\Field;
 use Dskripchenko\LaravelAdmin\Layout\Rows;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Форма редактирования существующей записи.
@@ -34,17 +31,7 @@ final class GeneratedEditScreen extends GeneratedScreen
      */
     public function query(mixed ...$params): array
     {
-        $id = $params[0] ?? null;
-        if ($id === null) {
-            return ['record' => []];
-        }
-
-        $record = $this->resource->modelQuery()->find($id);
-        if ($record === null) {
-            throw new NotFoundHttpException("Record {$id} not found");
-        }
-
-        return ['record' => $record->toArray(), 'id' => $record->getKey()];
+        return $this->queryRecord($params[0] ?? null);
     }
 
     /**
@@ -52,12 +39,7 @@ final class GeneratedEditScreen extends GeneratedScreen
      */
     public function layout(): array
     {
-        $updateFields = array_values(array_filter(
-            $this->resource->fields(),
-            static fn (Field $f): bool => $f->appliesTo('update'),
-        ));
-
-        return [Rows::make($updateFields)];
+        return [Rows::make($this->filterFieldsBy('update'))];
     }
 
     /**
@@ -77,8 +59,7 @@ final class GeneratedEditScreen extends GeneratedScreen
                 ->method('delete')
                 ->permission($base.'.delete')
                 ->confirm('Удалить запись?'),
-            Link::make('Назад')
-                ->href('/admin/resources/'.$this->resource::slug()),
+            $this->buildBackLink(),
         ];
     }
 }
