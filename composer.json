@@ -27,6 +27,7 @@
         "dskripchenko/php-array-helper": "^1.1"
     },
     "require-dev": {
+        "dskripchenko/laravel-admin-health": "@dev",
         "dskripchenko/laravel-admin-jobs": "@dev",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
