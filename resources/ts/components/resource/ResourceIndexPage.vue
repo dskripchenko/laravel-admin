@@ -178,7 +178,7 @@ async function retryLoad(): Promise<void> {
         class="admin-filter-bar__search"
         @keydown.enter="(e) => index.setSearch((e.target as HTMLInputElement).value)"
       />
-      <slot name="filters" :filters="index.filters" :setFilter="index.setFilter" />
+      <slot name="filters" :filters="index.filters" :set-filter="index.setFilter" />
       <span class="admin-filter-bar__spacer" />
       <UidButton
         v-if="Object.keys(index.filters).length > 0"

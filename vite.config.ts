@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import dts from 'vite-plugin-dts'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { resolve } from 'node:path'
 
@@ -8,22 +7,20 @@ import { resolve } from 'node:path'
  * Vite library config для @dskripchenko/laravel-admin.
  *
  * - vue() — SFC compiler
- * - dts()  — генерация .d.ts (вшито insertTypesEntry для автоматического
- *   `dist/index.d.ts` rolled-up entry)
  * - visualizer() — bundle stats-отчёт `dist/stats.html` (запускается только
  *   при `ANALYZE=1 npm run build`)
  *
- * `assetFileNames` фиксирует имя CSS-файла как `style.css` (Vite 7 по
+ * .d.ts-файлы генерируются отдельно через `vue-tsc --emitDeclarationOnly`
+ * в `npm run build` (это убирает зависимость от vite-plugin-dts →
+ * @microsoft/api-extractor → ajv@8 conflict с eslint).
+ *
+ * `cssFileName: 'style'` фиксирует имя CSS как `style.css` (Vite 7 по
  * умолчанию использует lib.name → `laravel-admin.css`, но host'ы уже
  * импортируют через `@dskripchenko/laravel-admin/style.css` через exports).
  */
 export default defineConfig({
   plugins: [
     vue(),
-    dts({
-      insertTypesEntry: true,
-      cleanVueFileName: true,
-    }),
     process.env.ANALYZE === '1' &&
       visualizer({
         filename: 'dist/stats.html',

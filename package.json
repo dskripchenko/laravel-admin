@@ -34,7 +34,8 @@
         "build:analyze": "ANALYZE=1 vite build && vue-tsc --emitDeclarationOnly",
         "test": "vitest run",
         "test:watch": "vitest",
-        "lint": "eslint resources/ts --ext .ts,.vue",
+        "lint": "eslint resources/ts",
+        "lint:fix": "eslint resources/ts --fix",
         "typecheck": "vue-tsc --noEmit"
     },
     "peerDependencies": {
@@ -49,25 +50,26 @@
     },
     "devDependencies": {
         "@dskripchenko/ui": "^1.0.2",
+        "@eslint/js": "^10.0.1",
         "@types/node": "^22",
         "@vitejs/plugin-vue": "^5.2.4",
         "@vue/test-utils": "^2.4.10",
         "axios": "^1.15.2",
         "axios-mock-adapter": "^2.1.0",
-        "eslint": "^9",
-        "eslint-plugin-vue": "^9",
+        "eslint": "^10.2.1",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-vue": "^10.9.0",
+        "globals": "^17.5.0",
         "jsdom": "^25",
         "pinia": "^3.0.4",
         "rollup-plugin-visualizer": "^7.0.1",
         "typescript": "^5.5",
+        "typescript-eslint": "^8.59.1",
         "vite": "^7.3.2",
-        "vite-plugin-dts": "^4.5.4",
         "vitest": "^2",
         "vue": "^3.5.33",
+        "vue-eslint-parser": "^10.4.0",
         "vue-router": "^5.0.6",
         "vue-tsc": "^2"
-    },
-    "overrides": {
-        "ajv": "^8.18.0"
     }
 }
