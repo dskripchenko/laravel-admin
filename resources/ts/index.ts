@@ -101,6 +101,9 @@ export {
   UserMenu,
 } from './components/shell'
 
+// Auth pages (login + 2FA)
+export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'
+
 // JSON-driven rendering: registry, renderers, builtin fields/layouts, form-state
 export {
   FieldRenderer,
