@@ -53,8 +53,10 @@ function isActive(item: MenuItem): boolean {
  * простой <span data-icon> placeholder — host'у достаточно css-rule по
  * `[data-icon='users']` чтобы подставить SVG.
  */
-function iconSlot(name?: string | null): (() => unknown) | undefined {
+function iconSlot(name?: string | null): Component | undefined {
   if (!name) return undefined
+  // Functional component возвращающий <span data-icon> placeholder.
+  // Host-проект может перебить через css-rule по `[data-icon='users']`.
   return () => h('span', { class: 'admin-sidebar__icon', 'data-icon': name })
 }
 
@@ -93,7 +95,7 @@ function itemTarget(item: MenuItem): string | Record<string, unknown> | undefine
           :badge="item.badge ?? undefined"
         >
           <template v-if="item.icon" #icon>
-            <component :is="iconSlot(item.icon) as unknown as Component" />
+            <component :is="iconSlot(item.icon)" />
           </template>
           {{ item.label }}
         </UidSidebarItem>

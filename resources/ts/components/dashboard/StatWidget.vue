@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { UidStat } from '@dskripchenko/ui'
+import type { StatTone } from '@dskripchenko/ui'
+
+type SemanticTone = 'neutral' | 'positive' | 'negative' | 'warning' | 'info'
 
 interface Props {
   title?: string
@@ -8,11 +12,11 @@ interface Props {
   suffix?: string
   trend?: number
   precision?: number
-  tone?: 'neutral' | 'positive' | 'negative' | 'warning' | 'info'
+  tone?: SemanticTone
   loading?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   title: '',
   value: 0,
   prefix: '',
@@ -22,6 +26,16 @@ withDefaults(defineProps<Props>(), {
   tone: 'neutral',
   loading: false,
 })
+
+const TONE_MAP: Record<SemanticTone, StatTone> = {
+  neutral: 'primary',
+  positive: 'success',
+  negative: 'danger',
+  warning: 'warning',
+  info: 'info',
+}
+
+const uidTone = computed<StatTone>(() => TONE_MAP[props.tone])
 </script>
 
 <template>
@@ -32,7 +46,7 @@ withDefaults(defineProps<Props>(), {
     :suffix="suffix"
     :trend="trend"
     :precision="precision"
-    :tone="tone as never"
+    :tone="uidTone"
     :loading="loading"
   />
 </template>

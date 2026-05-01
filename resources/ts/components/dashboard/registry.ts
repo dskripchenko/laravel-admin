@@ -18,31 +18,13 @@
  */
 
 import type { Component } from 'vue'
+import { createComponentRegistry } from '../createComponentRegistry'
 
-const widgetRegistry = new Map<string, Component>()
+const widgets = createComponentRegistry<Component>()
 
-export function registerWidget(type: string, component: Component): void {
-  widgetRegistry.set(type, component)
-}
-
-export function getWidget(type: string): Component | null {
-  return widgetRegistry.get(type) ?? null
-}
-
-export function hasWidget(type: string): boolean {
-  return widgetRegistry.has(type)
-}
-
-export function listWidgets(): string[] {
-  return [...widgetRegistry.keys()]
-}
-
-export function clearWidgetRegistry(): void {
-  widgetRegistry.clear()
-}
-
-export function registerWidgets(bundle: Record<string, Component>): void {
-  for (const [type, component] of Object.entries(bundle)) {
-    widgetRegistry.set(type, component)
-  }
-}
+export const registerWidget = widgets.register
+export const getWidget = widgets.get
+export const hasWidget = widgets.has
+export const listWidgets = widgets.list
+export const clearWidgetRegistry = widgets.clear
+export const registerWidgets = widgets.registerBundle

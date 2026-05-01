@@ -11,51 +11,25 @@
  */
 
 import type { Component } from 'vue'
+import { createComponentRegistry } from '../createComponentRegistry'
 
-const fieldRegistry = new Map<string, Component>()
-const layoutRegistry = new Map<string, Component>()
+const fields = createComponentRegistry<Component>()
+const layouts = createComponentRegistry<Component>()
 
-/** Зарегистрировать field-компонент. Перезаписывает, если уже есть. */
-export function registerField(type: string, component: Component): void {
-  fieldRegistry.set(type, component)
-}
+export const registerField = fields.register
+export const getField = fields.get
+export const hasField = fields.has
+export const listFields = fields.list
 
-/** Зарегистрировать layout-компонент. */
-export function registerLayout(type: string, component: Component): void {
-  layoutRegistry.set(type, component)
-}
-
-/** Резолвит field-компонент или null. */
-export function getField(type: string): Component | null {
-  return fieldRegistry.get(type) ?? null
-}
-
-/** Резолвит layout-компонент или null. */
-export function getLayout(type: string): Component | null {
-  return layoutRegistry.get(type) ?? null
-}
-
-export function hasField(type: string): boolean {
-  return fieldRegistry.has(type)
-}
-
-export function hasLayout(type: string): boolean {
-  return layoutRegistry.has(type)
-}
-
-/** Snapshot всех зарегистрированных field-типов. */
-export function listFields(): string[] {
-  return [...fieldRegistry.keys()]
-}
-
-export function listLayouts(): string[] {
-  return [...layoutRegistry.keys()]
-}
+export const registerLayout = layouts.register
+export const getLayout = layouts.get
+export const hasLayout = layouts.has
+export const listLayouts = layouts.list
 
 /** Очистить оба реестра. Используется в тестах. */
 export function clearRegistry(): void {
-  fieldRegistry.clear()
-  layoutRegistry.clear()
+  fields.clear()
+  layouts.clear()
 }
 
 /**
@@ -72,14 +46,6 @@ export interface ComponentBundle {
 }
 
 export function registerComponents(bundle: ComponentBundle): void {
-  if (bundle.fields) {
-    for (const [type, component] of Object.entries(bundle.fields)) {
-      registerField(type, component)
-    }
-  }
-  if (bundle.layouts) {
-    for (const [type, component] of Object.entries(bundle.layouts)) {
-      registerLayout(type, component)
-    }
-  }
+  if (bundle.fields) fields.registerBundle(bundle.fields)
+  if (bundle.layouts) layouts.registerBundle(bundle.layouts)
 }

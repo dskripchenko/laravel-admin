@@ -33,9 +33,9 @@ const seedManifest = (overrides: Record<string, unknown> = {}) => {
         permissions: { view: 'admin.articles.view' },
         fields: [],
         columns: [
-          { key: 'id', label: 'ID', sortable: true, width: '60px' },
-          { key: 'title', label: 'Заголовок', sortable: true },
-          { key: 'status', label: 'Status' },
+          { type: 'text', key: 'id', label: 'ID', sortable: true, width: '60px' },
+          { type: 'text', key: 'title', label: 'Заголовок', sortable: true },
+          { type: 'text', key: 'status', label: 'Status' },
         ],
         filters: [],
         actions: [],

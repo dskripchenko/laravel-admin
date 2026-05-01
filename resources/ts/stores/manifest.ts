@@ -13,16 +13,24 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
 
+/**
+ * Узел manifest'а с обязательным `type`. Совместим с LayoutNode/FieldNode/
+ * InfolistNode — позволяет передавать массив прямо в renderer без cast'а.
+ */
+export interface ManifestNode extends Record<string, unknown> {
+  type: string
+}
+
 export interface ManifestResourceMeta {
   slug: string
   label: string
   icon?: string
   group?: string | null
   permissions: Record<string, string>
-  fields: Array<Record<string, unknown>>
-  columns: Array<Record<string, unknown>>
-  filters: Array<Record<string, unknown>>
-  actions: Array<Record<string, unknown>>
+  fields: ManifestNode[]
+  columns: ManifestNode[]
+  filters: ManifestNode[]
+  actions: ManifestNode[]
   searchable: string[]
   with: string[]
   features: Record<string, unknown>
@@ -41,7 +49,7 @@ export interface ManifestSettingsMeta {
   slug: string
   label: string
   permissions: Record<string, string>
-  fields: Array<Record<string, unknown>>
+  fields: ManifestNode[]
 }
 
 export interface AdminManifest {

@@ -66,7 +66,7 @@ watch(
 const resourceMeta = computed(() => manifest.getResource(props.slug))
 
 const layoutNodes = computed<LayoutNode[]>(
-  () => (resourceMeta.value?.fields ?? []) as unknown as LayoutNode[],
+  () => resourceMeta.value?.fields ?? [],
 )
 
 const titleLabel = computed(() => {

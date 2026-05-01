@@ -1,11 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { UidCard, UidGauge } from '@dskripchenko/ui'
+import type { GaugeTone, GaugeRange } from '@dskripchenko/ui'
 
-interface GaugeRange {
-  from: number
-  to: number
-  color?: string
-}
+type SemanticTone = 'neutral' | 'positive' | 'warning' | 'negative'
 
 interface Props {
   title?: string
@@ -14,14 +12,14 @@ interface Props {
   max?: number
   size?: number
   ranges?: GaugeRange[]
-  tone?: 'neutral' | 'positive' | 'warning' | 'negative'
+  tone?: SemanticTone
   color?: string
   label?: string
   suffix?: string
   precision?: number
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   title: '',
   value: 0,
   min: 0,
@@ -34,6 +32,15 @@ withDefaults(defineProps<Props>(), {
   suffix: '',
   precision: 0,
 })
+
+const TONE_MAP: Record<SemanticTone, GaugeTone> = {
+  neutral: 'primary',
+  positive: 'success',
+  warning: 'warning',
+  negative: 'danger',
+}
+
+const uidTone = computed<GaugeTone>(() => TONE_MAP[props.tone])
 </script>
 
 <template>
@@ -47,8 +54,8 @@ withDefaults(defineProps<Props>(), {
         :min="min"
         :max="max"
         :size="size"
-        :ranges="ranges as never"
-        :tone="tone as never"
+        :ranges="ranges"
+        :tone="uidTone"
         :color="color"
         :label="label"
         :suffix="suffix"

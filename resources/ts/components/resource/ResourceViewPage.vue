@@ -45,7 +45,7 @@ provideRecord(form.state)
 
 const resourceMeta = computed(() => manifest.getResource(props.slug))
 const layoutNodes = computed<InfolistNode[]>(
-  () => (resourceMeta.value?.fields ?? []) as unknown as InfolistNode[],
+  () => resourceMeta.value?.fields ?? [],
 )
 const titleLabel = computed(
   () => `${resourceMeta.value?.label ?? props.slug}: запись #${props.id}`,

@@ -12,31 +12,13 @@
  */
 
 import type { Component } from 'vue'
+import { createComponentRegistry } from '../createComponentRegistry'
 
-const entryRegistry = new Map<string, Component>()
+const entries = createComponentRegistry<Component>()
 
-export function registerInfolistEntry(type: string, component: Component): void {
-  entryRegistry.set(type, component)
-}
-
-export function getInfolistEntry(type: string): Component | null {
-  return entryRegistry.get(type) ?? null
-}
-
-export function hasInfolistEntry(type: string): boolean {
-  return entryRegistry.has(type)
-}
-
-export function listInfolistEntries(): string[] {
-  return [...entryRegistry.keys()]
-}
-
-export function clearInfolistRegistry(): void {
-  entryRegistry.clear()
-}
-
-export function registerInfolistEntries(bundle: Record<string, Component>): void {
-  for (const [type, component] of Object.entries(bundle)) {
-    entryRegistry.set(type, component)
-  }
-}
+export const registerInfolistEntry = entries.register
+export const getInfolistEntry = entries.get
+export const hasInfolistEntry = entries.has
+export const listInfolistEntries = entries.list
+export const clearInfolistRegistry = entries.clear
+export const registerInfolistEntries = entries.registerBundle
