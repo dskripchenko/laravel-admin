@@ -5,9 +5,26 @@ parameters:
     level: 5
     paths:
         - src
+        - packages/jobs/src
+        - packages/health/src
+        - packages/starter/src
+        - packages/pulse/src
+        - packages/search/src
+        - packages/media/src
+        - packages/tinymce/src
+        - packages/quill/src
     excludePaths:
         - src/**/stubs/*
     ignoreErrors:
         # Filesystem::relativeLink() есть в Laravel 12, но larastan-stubs ещё устаревшие
         - identifier: method.notFound
           path: src/Console/LinkCommand.php
+        # Trait Searchable используется host-проектами, не нашим src/
+        - identifier: trait.unused
+          path: packages/search/src/Concerns/Searchable.php
+        # SearchService использует intersection-type Resource&Searchable — phpstan
+        # не resolve'ит trait через intersection в @var.
+        - identifier: varTag.unresolvableType
+          path: packages/search/src/SearchService.php
+        - identifier: argument.unresolvableType
+          path: packages/search/src/SearchService.php
