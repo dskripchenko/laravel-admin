@@ -6,6 +6,10 @@ import { resolve } from 'node:path'
 /**
  * Vite library config для @dskripchenko/laravel-admin.
  *
+ * Multi-entry: основной bundle + два subpath-bundle'а для опциональных
+ * WYSIWYG-полей (quill / tinymce). Host-проект устанавливает peer-deps
+ * только тех редакторов, которыми пользуется.
+ *
  * - vue() — SFC compiler
  * - visualizer() — bundle stats-отчёт `dist/stats.html` (запускается только
  *   при `ANALYZE=1 npm run build`)
@@ -36,10 +40,14 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: resolve(__dirname, 'resources/ts/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'resources/ts/index.ts'),
+        quill: resolve(__dirname, 'resources/ts/components/fields/wysiwyg/quill/index.ts'),
+        tinymce: resolve(__dirname, 'resources/ts/components/fields/wysiwyg/tinymce/index.ts'),
+      },
       name: 'LaravelAdmin',
       formats: ['es', 'cjs'],
-      fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
+      fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'mjs' : 'cjs'}`,
       cssFileName: 'style',
     },
     rollupOptions: {
@@ -53,6 +61,12 @@ export default defineConfig({
         /^@dskripchenko\/ui($|\/)/,
         /^@tiptap\//,
         'marked',
+        // WYSIWYG peer-deps: используются TinymceField/QuillField, поставляются
+        // host-проектом через peer-dep.
+        '@tinymce/tinymce-vue',
+        'tinymce',
+        '@vueup/vue-quill',
+        'quill',
       ],
       output: {
         globals: {

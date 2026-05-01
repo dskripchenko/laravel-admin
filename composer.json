@@ -27,14 +27,6 @@
         "dskripchenko/php-array-helper": "^1.1"
     },
     "require-dev": {
-        "dskripchenko/laravel-admin-health": "@dev",
-        "dskripchenko/laravel-admin-jobs": "@dev",
-        "dskripchenko/laravel-admin-media": "@dev",
-        "dskripchenko/laravel-admin-pulse": "@dev",
-        "dskripchenko/laravel-admin-quill": "@dev",
-        "dskripchenko/laravel-admin-search": "@dev",
-        "dskripchenko/laravel-admin-starter": "@dev",
-        "dskripchenko/laravel-admin-tinymce": "@dev",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "laravel/sanctum": "^4",
@@ -59,15 +51,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Dskripchenko\\LaravelAdmin\\Tests\\": "tests/",
-            "Dskripchenko\\LaravelAdminJobs\\Tests\\": "packages/jobs/tests/",
-            "Dskripchenko\\LaravelAdminHealth\\Tests\\": "packages/health/tests/",
-            "Dskripchenko\\LaravelAdminStarter\\Tests\\": "packages/starter/tests/",
-            "Dskripchenko\\LaravelAdminPulse\\Tests\\": "packages/pulse/tests/",
-            "Dskripchenko\\LaravelAdminSearch\\Tests\\": "packages/search/tests/",
-            "Dskripchenko\\LaravelAdminMedia\\Tests\\": "packages/media/tests/",
-            "Dskripchenko\\LaravelAdminTinymce\\Tests\\": "packages/tinymce/tests/",
-            "Dskripchenko\\LaravelAdminQuill\\Tests\\": "packages/quill/tests/"
+            "Dskripchenko\\LaravelAdmin\\Tests\\": "tests/"
         },
         "classmap": [
             "tests/Fixtures/"
@@ -91,25 +75,6 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "repositories": [
-        {
-            "type": "path",
-            "url": "packages/*",
-            "options": {
-                "symlink": true,
-                "versions": {
-                    "dskripchenko/laravel-admin-starter": "0.1.0-dev",
-                    "dskripchenko/laravel-admin-tinymce": "0.1.0-dev",
-                    "dskripchenko/laravel-admin-quill": "0.1.0-dev",
-                    "dskripchenko/laravel-admin-search": "0.1.0-dev",
-                    "dskripchenko/laravel-admin-media": "0.1.0-dev",
-                    "dskripchenko/laravel-admin-health": "0.1.0-dev",
-                    "dskripchenko/laravel-admin-pulse": "0.1.0-dev",
-                    "dskripchenko/laravel-admin-jobs": "0.1.0-dev"
-                }
-            }
-        }
-    ],
     "scripts": {
         "test": "pest",
         "test-coverage": "pest --coverage",

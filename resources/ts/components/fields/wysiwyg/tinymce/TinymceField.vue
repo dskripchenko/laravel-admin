@@ -6,7 +6,7 @@
  * Подключение в host-проекте:
  *
  *     import { registerField } from '@dskripchenko/laravel-admin'
- *     import { TinymceField } from '@dskripchenko/laravel-admin-tinymce'
+ *     import { TinymceField } from '@dskripchenko/laravel-admin/tinymce'
  *     registerField('wysiwyg', TinymceField)
  *
  * После этого manifest-узлы `{ type: 'wysiwyg', name: 'body', ... }`
@@ -16,7 +16,7 @@
  * TinyMCE-component, изменения через onInput → form.setField.
  */
 import { computed, h, defineComponent, type PropType } from 'vue'
-import { useFormState } from '@dskripchenko/laravel-admin'
+import { useFormState } from '../../../render/formState'
 
 interface Props {
   name: string

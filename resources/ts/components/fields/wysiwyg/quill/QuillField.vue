@@ -6,14 +6,14 @@
  * Подключение в host-проекте:
  *
  *     import { registerField } from '@dskripchenko/laravel-admin'
- *     import { QuillField } from '@dskripchenko/laravel-admin-quill'
+ *     import { QuillField } from '@dskripchenko/laravel-admin/quill'
  *     registerField('wysiwyg', QuillField)
  *
  * Для image upload'ов host регистрирует кастомный handler в Quill Toolbar
  * (наша обёртка предоставляет default — POST /api/admin/uploads).
  */
 import { computed, h, defineComponent } from 'vue'
-import { useFormState } from '@dskripchenko/laravel-admin'
+import { useFormState } from '../../../render/formState'
 
 interface Props {
   name: string
