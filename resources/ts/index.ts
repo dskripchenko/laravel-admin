@@ -1,71 +1,47 @@
 /**
  * Точка входа SPA-бандла @dskripchenko/laravel-admin.
  *
- * На фазе P0 экспортирует только createAdmin() — функцию инициализации
- * Vue-приложения. Регистрация роутера, store'ов, рендереров (LayoutRenderer,
- * FieldRenderer) — фаза P1.
+ * Текущий публичный API:
+ *   - createAdminClient() / AdminClient — axios-обёртка для admin API
+ *     с автоматической обработкой envelope `{success, payload}`,
+ *     CSRF-token'ов и подкласс'ов ApiError.
+ *   - loadBootstrap() — резолв payload'а в обеих стратегиях (inline/xhr).
+ *   - readInlineBootstrap() / readCsrfFromMeta() — низкоуровневые helpers.
+ *   - ApiError + подклассы (Unauthenticated/Forbidden/NotFound/Validation/
+ *     Network) для type-narrow'инга в потребителях.
+ *
+ * createAdmin() (mount Vue-приложения) — на следующих фазах после
+ * api-stack'а: stores, router, renderers.
  */
 
-import { createApp, type App } from 'vue'
-import { createPinia } from 'pinia'
-import { createRouter, createWebHistory, type Router } from 'vue-router'
+export { createAdminClient } from './api/client'
+export type { AdminClient, ClientOptions } from './api/client'
 
-export interface AdminBootstrap {
-  csrf: string
-  baseUrl: string
-  apiUrl: string
-  locale: string
-  theme: 'light' | 'dark'
-  brand: { name?: string; logo?: string | null; favicon?: string | null }
-  manifestVersion: string | null
-  user: unknown | null
-}
+export { loadBootstrap, readInlineBootstrap, readCsrfFromMeta } from './api/bootstrap'
 
-export interface AdminAppOptions {
-  bootstrap?: AdminBootstrap
-  rootSelector?: string
-}
+export {
+  isSuccess,
+  isError,
+} from './api/envelope'
+export type {
+  ApiEnvelope,
+  SuccessEnvelope,
+  ErrorEnvelope,
+} from './api/envelope'
 
-declare global {
-  interface Window {
-    __ADMIN_BOOTSTRAP__?: AdminBootstrap
-  }
-}
+export {
+  ApiError,
+  UnauthenticatedError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+  NetworkError,
+  toApiError,
+} from './api/errors'
 
-export function createAdmin(options: AdminAppOptions = {}): {
-  app: App
-  router: Router
-  mount: () => void
-} {
-  const bootstrap =
-    options.bootstrap ??
-    window.__ADMIN_BOOTSTRAP__ ??
-    null
-
-  if (!bootstrap) {
-    throw new Error(
-      '[admin] Bootstrap data not found. Set strategy to "inline" or fetch /system/bootstrap before mount.',
-    )
-  }
-
-  const app = createApp({
-    template: '<div>Admin SPA — P0 scaffold</div>',
-  })
-
-  const pinia = createPinia()
-  app.use(pinia)
-
-  const router = createRouter({
-    history: createWebHistory(bootstrap.baseUrl),
-    routes: [],
-  })
-  app.use(router)
-
-  return {
-    app,
-    router,
-    mount: () => app.mount(options.rootSelector ?? '#admin-app'),
-  }
-}
-
-export type { AdminBootstrap }
+export type {
+  AdminBootstrap,
+  AdminUser,
+  AdminBrand,
+  AdminBootstrapConfig,
+} from './types/bootstrap'
