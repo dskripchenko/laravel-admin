@@ -68,3 +68,20 @@ export type {
   NotificationItem,
   NotificationFilter,
 } from './stores'
+
+// Router
+export {
+  createAdminRouter,
+  buildRoutesFromManifest,
+  createAuthGuard,
+  createTitleGuard,
+} from './router'
+export type {
+  AdminRouter,
+  AdminRouterOptions,
+  RouteComponentResolver,
+  AdminRouteComponent,
+  RouteMeta,
+  AuthGuardOptions,
+  TitleGuardOptions,
+} from './router'
