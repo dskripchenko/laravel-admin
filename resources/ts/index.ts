@@ -111,13 +111,34 @@ export {
 export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'
 
 // Resource pages (index/form/view)
-export { ResourceIndexPage, ResourceFormPage } from './components/resource'
+export { ResourceIndexPage, ResourceFormPage, ResourceViewPage } from './components/resource'
 
 // Resource stores
 export { useResourceIndexStore } from './stores/resourceIndex'
 export type { IndexMeta, IndexParams } from './stores/resourceIndex'
 export { useResourceFormStore } from './stores/resourceForm'
 export type { FormMode } from './stores/resourceForm'
+
+// Infolist (read-only display)
+export {
+  InfolistRenderer,
+  TextEntry,
+  BadgeEntry,
+  IconEntry,
+  KeyValueEntry,
+  UnknownEntry,
+  registerInfolistEntry,
+  registerInfolistEntries,
+  getInfolistEntry,
+  hasInfolistEntry,
+  listInfolistEntries,
+  clearInfolistRegistry,
+  registerBuiltinInfolistEntries,
+  provideRecord,
+  useRecord,
+  tryUseRecord,
+} from './components/infolist'
+export type { InfolistNode } from './components/infolist'
 
 // JSON-driven rendering: registry, renderers, builtin fields/layouts, form-state
 export {

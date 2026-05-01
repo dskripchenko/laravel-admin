@@ -74,9 +74,15 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     return false
   })
 
+  /** In-place мутация reactive-объекта — сохраняет identity для provide/inject. */
+  function replaceObject(target: Record<string, unknown>, next: Record<string, unknown>): void {
+    for (const k of Object.keys(target)) delete target[k]
+    Object.assign(target, next)
+  }
+
   function reset(): void {
-    state.value = {}
-    initial.value = {}
+    replaceObject(state.value, {})
+    replaceObject(initial.value, {})
     errors.value = {}
     loading.value = false
     saving.value = false
@@ -90,8 +96,8 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     slug.value = resourceSlug
     mode.value = 'create'
     recordId.value = null
-    state.value = { ...defaults }
-    initial.value = { ...defaults }
+    replaceObject(state.value, defaults)
+    replaceObject(initial.value, defaults)
     errors.value = {}
     error.value = null
   }
@@ -114,8 +120,8 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
       const res = await client.get<ReadResponse>(`/resources/${resourceSlug}/read`, {
         params: { 'filter[id]': id },
       })
-      state.value = { ...res.data }
-      initial.value = { ...res.data }
+      replaceObject(state.value, res.data)
+      replaceObject(initial.value, res.data)
     } catch (err) {
       error.value = err instanceof Error ? err : new Error(String(err))
       throw err
@@ -171,7 +177,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
       const newId = res.id
       recordId.value = newId
       // После успешного save обновим initial = state, чтобы dirty=false.
-      initial.value = { ...state.value }
+      replaceObject(initial.value, { ...state.value })
       mode.value = 'edit'
       return newId
     } catch (err) {
