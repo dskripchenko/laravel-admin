@@ -122,6 +122,9 @@ export { ProfilePage } from './components/profile'
 // Import wizard
 export { ImportWizardPage } from './components/import'
 
+// Field gallery / docs page
+export { FieldGalleryPage } from './components/gallery'
+
 // Dashboard
 export {
   DashboardPage,
