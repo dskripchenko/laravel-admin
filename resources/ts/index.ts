@@ -113,6 +113,28 @@ export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'
 // Resource pages (index/form/view)
 export { ResourceIndexPage, ResourceFormPage, ResourceViewPage } from './components/resource'
 
+// Dashboard
+export {
+  DashboardPage,
+  WidgetRenderer,
+  StatWidget,
+  BarChartWidget,
+  DonutChartWidget,
+  RecentTableWidget,
+  HeatmapWidget,
+  GaugeWidget,
+  MarkdownWidget,
+  UnknownWidget,
+  registerWidget,
+  registerWidgets,
+  getWidget,
+  hasWidget,
+  listWidgets,
+  clearWidgetRegistry,
+  registerBuiltinWidgets,
+} from './components/dashboard'
+export type { WidgetNode } from './components/dashboard'
+
 // Resource stores
 export { useResourceIndexStore } from './stores/resourceIndex'
 export type { IndexMeta, IndexParams } from './stores/resourceIndex'
