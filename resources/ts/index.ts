@@ -116,6 +116,9 @@ export { ResourceIndexPage, ResourceFormPage, ResourceViewPage } from './compone
 // Notifications drawer
 export { NotificationsDrawer } from './components/notifications'
 
+// Profile page
+export { ProfilePage } from './components/profile'
+
 // Dashboard
 export {
   DashboardPage,
