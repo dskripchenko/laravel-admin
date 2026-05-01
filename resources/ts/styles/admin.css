@@ -1,0 +1,223 @@
+/**
+ * @dskripchenko/laravel-admin — entry CSS.
+ *
+ * Подключает токены и стили UI-кита @dskripchenko/ui (`--uid-*` CSS-переменные,
+ * data-theme=light|dark, data-density=comfortable|compact на <html>).
+ *
+ * Дополнительно — application-level классы admin-каркаса, которые не входят в
+ * UI-кит (impersonation banner, polling-индикатор, утилиты вёрстки страниц).
+ * Все самописные стили опираются ТОЛЬКО на семантические токены `--uid-*`,
+ * чтобы оставаться синхронными с темой.
+ *
+ * Host-проект импортирует этот файл один раз: `import '@dskripchenko/laravel-admin/style.css'`.
+ */
+
+/* UI-кит: тoкены + темы (light/dark) + стили всех Uid* компонентов. */
+@import '@dskripchenko/ui/dist/styles/index.css';
+
+/* ============================================================
+   Density (data-density на <html>): два пресета как в design handoff.
+   Comfortable — 40px row / 14px text, Compact — 32px / 13px (Linear/Supabase).
+   ============================================================ */
+:root[data-density='compact'] {
+  --admin-row-h: 32px;
+  --admin-row-fs: 13px;
+  --admin-page-pad: 16px;
+}
+:root[data-density='comfortable'],
+:root:not([data-density]) {
+  --admin-row-h: 40px;
+  --admin-row-fs: 14px;
+  --admin-page-pad: 24px;
+}
+
+/* ============================================================
+   Impersonation banner (32px amber bar над shell'ом).
+   ============================================================ */
+.admin-impersonation-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: var(--uid-z-sticky, 200);
+  background: var(--uid-warning);
+  color: var(--uid-color-amber-950, #4c2a02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--uid-font-size-xs);
+  font-weight: var(--uid-font-weight-medium);
+  gap: var(--uid-space-md);
+}
+:root[data-theme='dark'] .admin-impersonation-banner {
+  color: var(--uid-color-amber-50);
+  background: color-mix(in srgb, var(--uid-warning) 60%, var(--uid-surface-raised));
+}
+.admin-impersonation-banner__exit {
+  appearance: none;
+  background: rgba(0, 0, 0, 0.15);
+  color: inherit;
+  border: 0;
+  height: 22px;
+  padding: 0 var(--uid-space-sm);
+  border-radius: var(--uid-radius-sm);
+  font: inherit;
+  font-size: 11px;
+  font-weight: var(--uid-font-weight-semibold);
+  cursor: pointer;
+}
+
+/* ============================================================
+   Polling indicator (pulsing teal dot — «обновлено только что»).
+   ============================================================ */
+.admin-poll-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--uid-space-xs);
+  font-size: 11px;
+  color: var(--uid-text-tertiary);
+}
+.admin-poll-indicator__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--uid-radius-full);
+  background: var(--uid-success);
+  position: relative;
+}
+.admin-poll-indicator__dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--uid-radius-full);
+  background: var(--uid-success);
+  opacity: 0.5;
+  animation: admin-poll-pulse 1.6s ease-out infinite;
+}
+@keyframes admin-poll-pulse {
+  0% { transform: scale(0.6); opacity: 0.6; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+/* ============================================================
+   Top bar (custom — uid не покрывает).
+   Сетка на 56px, sticky, в нижней границе раздел.
+   ============================================================ */
+.admin-topbar {
+  height: 56px;
+  padding: 0 var(--uid-space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-md);
+  border-bottom: 1px solid var(--uid-border-subtle);
+  background: var(--uid-surface-raised);
+  position: sticky;
+  top: 0;
+  z-index: var(--uid-z-sticky, 200);
+}
+.admin-topbar__spacer { flex: 1; }
+.admin-topbar__breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-xs);
+  font-size: 13px;
+  color: var(--uid-text-secondary);
+}
+.admin-topbar__breadcrumbs .sep { color: var(--uid-text-tertiary); }
+.admin-topbar__breadcrumbs .cur { color: var(--uid-text-primary); font-weight: 500; }
+.admin-topbar__search {
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-sm);
+  height: 32px;
+  padding: 0 var(--uid-space-sm);
+  min-width: 220px;
+  border: 1px solid var(--uid-border-subtle);
+  background: var(--uid-surface-base);
+  border-radius: var(--uid-radius-md);
+  color: var(--uid-text-tertiary);
+  font-size: 13px;
+  cursor: pointer;
+}
+.admin-topbar__search kbd {
+  margin-left: auto;
+  font-family: var(--uid-font-family-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--uid-radius-sm);
+  border: 1px solid var(--uid-border-subtle);
+  background: var(--uid-surface-raised);
+  color: var(--uid-text-tertiary);
+}
+.admin-topbar__icon-btn {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--uid-radius-md);
+  display: grid;
+  place-items: center;
+  color: var(--uid-text-secondary);
+  cursor: pointer;
+}
+.admin-topbar__icon-btn:hover {
+  background: var(--uid-surface-base);
+  color: var(--uid-text-primary);
+}
+.admin-topbar__bell-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: var(--uid-radius-full);
+  background: var(--uid-danger);
+  color: var(--uid-color-white, #fff);
+  font-size: 9px;
+  font-weight: var(--uid-font-weight-semibold);
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--uid-surface-raised);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Page-level utilities (используются Resource list/form/dashboard).
+   ============================================================ */
+.admin-page {
+  padding: var(--admin-page-pad, 24px);
+}
+.admin-page__hd {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--uid-space-md);
+  margin-bottom: var(--uid-space-md);
+}
+.admin-page__title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-xs);
+}
+.admin-page__title {
+  font-family: var(--uid-font-family-display);
+  font-size: 22px;
+  font-weight: var(--uid-font-weight-semibold);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  margin: 0;
+  color: var(--uid-text-primary);
+}
+.admin-page__count {
+  font-size: var(--uid-font-size-xs);
+  color: var(--uid-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.admin-page__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-sm);
+}

@@ -1,0 +1,419 @@
+/* ============================================================
+   UID Design System — colors & type
+   ============================================================
+   Mirrors @dskripchenko/ui tokens + themes.
+   Three-layer model: primitives → semantics → component knobs.
+   ============================================================ */
+
+/* ---------- 0. FONT FACES (self-hosted) -------------------- */
+/* Inter Variable — full weight axis, 100→900 */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/InterVariable.woff2') format('woff2-variations');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/InterVariable-Italic.woff2') format('woff2-variations');
+}
+
+/* Inter Display — tighter cut, h1/h2 only */
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/InterDisplay-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/InterDisplay-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter Display';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./fonts/InterDisplay-ExtraBold.woff2') format('woff2');
+}
+
+/* IBM Plex Serif — editorial / display alternate, opt-in */
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/IBMPlexSerif-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/IBMPlexSerif-Italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/IBMPlexSerif-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/IBMPlexSerif-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/IBMPlexSerif-Bold.woff2') format('woff2');
+}
+/* Note: IBM Plex Mono (declared in --uid-font-family-mono) is not yet bundled.
+   Falls back to 'Fira Code' / ui-monospace until WOFF2 files are added. */
+
+/* ---------- 1. PRIMITIVES (theme-agnostic) ----------------- */
+:root {
+  /* Zinc — neutral base (warm grey, not sterile) */
+  --uid-color-zinc-50:   #fafafa;
+  --uid-color-zinc-100:  #f4f4f5;
+  --uid-color-zinc-200:  #e4e4e7;
+  --uid-color-zinc-300:  #d4d4d8;
+  --uid-color-zinc-400:  #a1a1aa;
+  --uid-color-zinc-500:  #71717a;
+  --uid-color-zinc-600:  #52525b;
+  --uid-color-zinc-700:  #3f3f46;
+  --uid-color-zinc-800:  #27272a;
+  --uid-color-zinc-900:  #18181b;
+  --uid-color-zinc-950:  #09090b;
+
+  /* Teal — quiet accent */
+  --uid-color-teal-50:   #f0fdfa;
+  --uid-color-teal-100:  #ccfbf1;
+  --uid-color-teal-300:  #5eead4;
+  --uid-color-teal-400:  #2dd4bf;
+  --uid-color-teal-500:  #14b8a6;
+  --uid-color-teal-600:  #0d9488;
+  --uid-color-teal-700:  #0f766e;
+  --uid-color-teal-900:  #134e4a;
+
+  /* Rose — danger */
+  --uid-color-rose-50:   #fff1f2;
+  --uid-color-rose-400:  #fb7185;
+  --uid-color-rose-500:  #f43f5e;
+  --uid-color-rose-600:  #e11d48;
+  --uid-color-rose-700:  #be123c;
+  --uid-color-rose-950:  #4c0519;
+
+  /* Emerald — success */
+  --uid-color-emerald-50:   #ecfdf5;
+  --uid-color-emerald-400:  #34d399;
+  --uid-color-emerald-600:  #059669;
+  --uid-color-emerald-950:  #022c22;
+
+  /* Amber — warning */
+  --uid-color-amber-50:   #fffbeb;
+  --uid-color-amber-400:  #fbbf24;
+  --uid-color-amber-600:  #d97706;
+  --uid-color-amber-950:  #451a03;
+
+  /* Blue — info */
+  --uid-color-blue-50:   #eff6ff;
+  --uid-color-blue-400:  #60a5fa;
+  --uid-color-blue-600:  #2563eb;
+  --uid-color-blue-950:  #172554;
+
+  --uid-color-white: #ffffff;
+
+  /* Typography primitives */
+  --uid-font-family-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --uid-font-family-display: 'Inter Display', 'Inter', system-ui, sans-serif;
+  --uid-font-family-serif:   'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  --uid-font-family-mono:    'IBM Plex Mono', 'Fira Code', ui-monospace, monospace;
+
+  --uid-font-size-xs:   12px;
+  --uid-font-size-sm:   14px;
+  --uid-font-size-md:   16px;
+  --uid-font-size-lg:   18px;
+  --uid-font-size-xl:   20px;
+  --uid-font-size-2xl:  24px;
+  --uid-font-size-3xl:  30px;
+  --uid-font-size-4xl:  36px;
+
+  --uid-font-weight-regular:   400;
+  --uid-font-weight-medium:    500;
+  --uid-font-weight-semibold:  600;
+  --uid-font-weight-bold:      700;
+
+  --uid-line-height-tight:   1.25;
+  --uid-line-height-snug:    1.375;
+  --uid-line-height-normal:  1.5;
+  --uid-line-height-relaxed: 1.625;
+
+  /* Spacing — 4px step, t-shirt naming */
+  --uid-space-0:    0;
+  --uid-space-2xs:  2px;
+  --uid-space-xs:   4px;
+  --uid-space-sm:   8px;
+  --uid-space-md:   16px;
+  --uid-space-lg:   24px;
+  --uid-space-xl:   32px;
+  --uid-space-2xl:  48px;
+  --uid-space-3xl:  64px;
+
+  /* Sizing — interactive heights */
+  --uid-size-sm:  32px;
+  --uid-size-md:  40px;
+  --uid-size-lg:  48px;
+
+  /* Radius */
+  --uid-radius-none:  0;
+  --uid-radius-sm:    3px;
+  --uid-radius-md:    6px;
+  --uid-radius-lg:    10px;
+  --uid-radius-full:  9999px;
+
+  /* Motion */
+  --uid-duration-fast:  100ms;
+  --uid-duration-base:  200ms;
+  --uid-duration-slow:  350ms;
+
+  --uid-ease-out:     cubic-bezier(0, 0, 0.2, 1);
+  --uid-ease-in:      cubic-bezier(0.4, 0, 1, 1);
+  --uid-ease-in-out:  cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index */
+  --uid-z-base:      0;
+  --uid-z-raised:    1;
+  --uid-z-dropdown:  100;
+  --uid-z-sticky:    200;
+  --uid-z-overlay:   300;
+  --uid-z-modal:     400;
+  --uid-z-toast:     500;
+  --uid-z-tooltip:   600;
+}
+
+/* ---------- 2. SEMANTIC TOKENS (per theme) ----------------- */
+:root,
+:root[data-theme='light'] {
+  --uid-surface-base:     var(--uid-color-zinc-50);
+  --uid-surface-raised:   var(--uid-color-white);
+  --uid-surface-overlay:  var(--uid-color-white);
+
+  --uid-text-primary:     var(--uid-color-zinc-900);
+  --uid-text-secondary:   var(--uid-color-zinc-500);
+  --uid-text-tertiary:    var(--uid-color-zinc-400);
+  --uid-text-on-accent:   var(--uid-color-white);
+
+  --uid-border-subtle:    var(--uid-color-zinc-200);
+  --uid-border-default:   var(--uid-color-zinc-300);
+  --uid-border-hover:     var(--uid-color-zinc-400);
+
+  --uid-accent:           var(--uid-color-teal-500);
+  --uid-accent-hover:     var(--uid-color-teal-600);
+  --uid-accent-subtle:    var(--uid-color-teal-50);
+  --uid-accent-text:      var(--uid-color-teal-700);
+
+  --uid-danger:           var(--uid-color-rose-600);
+  --uid-danger-hover:     var(--uid-color-rose-700);
+  --uid-danger-subtle:    var(--uid-color-rose-50);
+
+  --uid-success:          var(--uid-color-emerald-600);
+  --uid-success-subtle:   var(--uid-color-emerald-50);
+
+  --uid-warning:          var(--uid-color-amber-600);
+  --uid-warning-subtle:   var(--uid-color-amber-50);
+
+  --uid-info:             var(--uid-color-blue-600);
+  --uid-info-subtle:      var(--uid-color-blue-50);
+
+  --uid-shadow-sm:  0 1px 2px rgb(0 0 0 / 0.05);
+  --uid-shadow-md:  0 4px 12px rgb(0 0 0 / 0.08);
+  --uid-shadow-lg:  0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+:root[data-theme='dark'] {
+  --uid-surface-base:     #1c1c1e;
+  --uid-surface-raised:   #2c2c2e;
+  --uid-surface-overlay:  #3a3a3c;
+
+  --uid-text-primary:     var(--uid-color-zinc-100);
+  --uid-text-secondary:   var(--uid-color-zinc-400);
+  --uid-text-tertiary:    var(--uid-color-zinc-600);
+  --uid-text-on-accent:   var(--uid-color-white);
+
+  --uid-border-subtle:    var(--uid-color-zinc-700);
+  --uid-border-default:   var(--uid-color-zinc-600);
+  --uid-border-hover:     var(--uid-color-zinc-400);
+
+  --uid-accent:           var(--uid-color-teal-400);
+  --uid-accent-hover:     var(--uid-color-teal-300);
+  --uid-accent-subtle:    var(--uid-color-teal-900);
+  --uid-accent-text:      var(--uid-color-teal-300);
+
+  --uid-danger:           var(--uid-color-rose-400);
+  --uid-danger-hover:     var(--uid-color-rose-500);
+  --uid-danger-subtle:    var(--uid-color-rose-950);
+
+  --uid-success:          var(--uid-color-emerald-400);
+  --uid-success-subtle:   var(--uid-color-emerald-950);
+
+  --uid-warning:          var(--uid-color-amber-400);
+  --uid-warning-subtle:   var(--uid-color-amber-950);
+
+  --uid-info:             var(--uid-color-blue-400);
+  --uid-info-subtle:      var(--uid-color-blue-950);
+
+  --uid-shadow-sm:  0 1px 2px rgb(0 0 0 / 0.2);
+  --uid-shadow-md:  0 4px 12px rgb(0 0 0 / 0.4);
+  --uid-shadow-lg:  0 8px 24px rgb(0 0 0 / 0.6);
+}
+
+/* Aliases — components use these short names */
+:root {
+  --uid-color-bg:              var(--uid-surface-raised);
+  --uid-color-bg-subtle:       var(--uid-surface-base);
+  --uid-color-overlay:         var(--uid-surface-overlay);
+  --uid-color-surface:         var(--uid-surface-raised);
+  --uid-color-surface-raised:  var(--uid-surface-raised);
+  --uid-color-surface-hover:   var(--uid-surface-base);
+
+  --uid-color-text:            var(--uid-text-primary);
+  --uid-color-text-primary:    var(--uid-text-primary);
+  --uid-color-text-secondary:  var(--uid-text-secondary);
+  --uid-color-text-tertiary:   var(--uid-text-tertiary);
+
+  --uid-color-border:          var(--uid-border-default);
+  --uid-color-border-hover:    var(--uid-border-hover);
+
+  --uid-color-primary:         var(--uid-accent);
+  --uid-color-primary-hover:   var(--uid-accent-hover);
+  --uid-color-primary-subtle:  var(--uid-accent-subtle);
+  --uid-color-focus-ring:      var(--uid-accent);
+
+  --uid-color-danger:          var(--uid-danger);
+  --uid-color-danger-subtle:   var(--uid-danger-subtle);
+  --uid-color-success:         var(--uid-success);
+  --uid-color-success-subtle:  var(--uid-success-subtle);
+  --uid-color-warning:         var(--uid-warning);
+  --uid-color-warning-subtle:  var(--uid-warning-subtle);
+  --uid-color-info:            var(--uid-info);
+  --uid-color-info-subtle:     var(--uid-info-subtle);
+}
+
+/* ---------- 3. SEMANTIC TYPE STYLES ------------------------ */
+/* Use these in HTML; map to native tags or apply via class. */
+
+.uid-h1, h1.uid-h1 {
+  font-family: var(--uid-font-family-display);
+  font-size: var(--uid-font-size-4xl);
+  font-weight: var(--uid-font-weight-bold);
+  line-height: var(--uid-line-height-tight);
+  letter-spacing: -0.02em;
+  color: var(--uid-text-primary);
+}
+
+.uid-h2 {
+  font-family: var(--uid-font-family-display);
+  font-size: var(--uid-font-size-3xl);
+  font-weight: var(--uid-font-weight-semibold);
+  line-height: var(--uid-line-height-tight);
+  letter-spacing: -0.015em;
+  color: var(--uid-text-primary);
+}
+
+/* Editorial / display serif — opt-in */
+.uid-display-serif {
+  font-family: var(--uid-font-family-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.uid-h3 {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-2xl);
+  font-weight: var(--uid-font-weight-semibold);
+  line-height: var(--uid-line-height-snug);
+  color: var(--uid-text-primary);
+}
+
+.uid-h4 {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-xl);
+  font-weight: var(--uid-font-weight-semibold);
+  line-height: var(--uid-line-height-snug);
+  color: var(--uid-text-primary);
+}
+
+.uid-h5 {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-lg);
+  font-weight: var(--uid-font-weight-semibold);
+  line-height: var(--uid-line-height-snug);
+  color: var(--uid-text-primary);
+}
+
+.uid-body {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-md);
+  font-weight: var(--uid-font-weight-regular);
+  line-height: var(--uid-line-height-normal);
+  color: var(--uid-text-primary);
+}
+
+.uid-body-sm {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-sm);
+  line-height: var(--uid-line-height-normal);
+  color: var(--uid-text-secondary);
+}
+
+.uid-caption {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-xs);
+  font-weight: var(--uid-font-weight-medium);
+  line-height: var(--uid-line-height-snug);
+  color: var(--uid-text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+.uid-label {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-sm);
+  font-weight: var(--uid-font-weight-medium);
+  line-height: 1.4;
+  color: var(--uid-text-primary);
+}
+
+.uid-code {
+  font-family: var(--uid-font-family-mono);
+  font-size: 0.92em;
+  background: var(--uid-surface-base);
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-sm);
+  padding: 1px 5px;
+  color: var(--uid-text-primary);
+}
+
+/* Sensible base */
+body {
+  font-family: var(--uid-font-family-sans);
+  font-size: var(--uid-font-size-md);
+  line-height: var(--uid-line-height-normal);
+  color: var(--uid-text-primary);
+  background: var(--uid-surface-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

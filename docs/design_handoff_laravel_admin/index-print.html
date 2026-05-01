@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<title>Laravel Admin — Design Export</title>
+<link rel="stylesheet" href="uid/colors_and_type.css" />
+<link rel="stylesheet" href="app.css" />
+<style>
+  /* Print-page layout */
+  html, body { background: #f4f4f5 !important; }
+  body { padding: 24px; }
+  .page {
+    width: 1200px;
+    margin: 0 auto 24px;
+    background: var(--uid-surface-raised);
+    border: 1px solid var(--uid-border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    break-inside: avoid;
+    break-after: page;
+  }
+  .page:last-child { break-after: auto; }
+  .page__hd {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--uid-border-subtle);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--uid-text-tertiary);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    background: var(--uid-surface-base);
+  }
+  .page__hd b { color: var(--uid-text-primary); font-weight: 600; }
+  .page__bd { padding: 0; min-height: 720px; position: relative; }
+
+  /* Mini shell within a print page */
+  .ms { display: grid; grid-template-columns: 220px 1fr; min-height: 720px; }
+  .ms .sb { position: static; height: auto; min-height: 720px; }
+  .ms .tb { position: static; }
+
+  /* Two-up layouts */
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .row2 .frame { background: var(--uid-surface-raised); border: 1px solid var(--uid-border-subtle); border-radius: 8px; overflow: hidden; }
+  .row2 .frame__lbl { padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--uid-text-tertiary); background: var(--uid-surface-base); border-bottom: 1px solid var(--uid-border-subtle); }
+
+  .cover {
+    height: 720px;
+    display: flex; flex-direction: column; justify-content: center; padding: 64px;
+    background: var(--uid-surface-raised);
+  }
+  .cover h1 { font-family: var(--uid-font-family-display); font-size: 56px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 12px; }
+  .cover .sub { font-size: 18px; color: var(--uid-text-secondary); max-width: 720px; line-height: 1.5; }
+  .cover .meta { display: flex; gap: 24px; margin-top: 48px; font-size: 13px; color: var(--uid-text-tertiary); }
+  .cover .meta b { color: var(--uid-text-primary); display: block; font-weight: 600; margin-bottom: 2px; }
+
+  @page { size: A4 landscape; margin: 8mm; }
+  @media print {
+    body { padding: 0; background: white !important; }
+    .page { width: 100%; margin: 0 0 6mm; box-shadow: none; border: 0; border-radius: 0; }
+    .page__hd { background: white; }
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const TWEAK_DEFAULTS = {
+  view: 'prototype', screen: 'list', dark: false, density: 'comfortable',
+  sidebarCollapsed: false, brandColor: '#14b8a6', impersonation: false,
+  bulkMode: false, listState: 'ideal', sidebarVariant: 'grouped',
+  filterVariant: 'bar', polling: false
+};
+// Stub useTweaks/TweaksPanel so they don't show in print
+window.useTweaks = (d) => [d, () => {}];
+window.TweaksPanel = () => null;
+window.TweakSection = window.TweakRadio = window.TweakSelect = window.TweakToggle = window.TweakColor = window.TweakButton = window.TweakSlider = () => null;
+</script>
+
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="screens-shell.jsx"></script>
+<script type="text/babel" src="screens-secondary.jsx"></script>
+
+<script type="text/babel">
+const { useEffect } = React;
+
+function PrintCover() {
+  return (
+    <div className="page">
+      <div className="cover">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--uid-text-primary)', color: 'var(--uid-surface-raised)', display: 'grid', placeItems: 'center', fontFamily: 'var(--uid-font-family-display)', fontWeight: 700, fontSize: 22 }}>L</div>
+          <div style={{ fontFamily: 'var(--uid-font-family-display)', fontSize: 18, fontWeight: 600 }}>Laravel Admin</div>
+        </div>
+        <h1>Single-Page Admin SPA</h1>
+        <div className="sub">Дизайн-исследование на базе UID Design System: shell, ресурсы, формы, дашборд, аутентификация, импорт и галерея полей. Минималистичный визуальный язык в стиле Linear.</div>
+        <div className="meta">
+          <div><b>Дизайн-система</b>UID · Inter / Inter Display · Teal accent</div>
+          <div><b>Покрытие</b>16 экранов · 30+ типов полей</div>
+          <div><b>Дата</b>Май 2026</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrintPage({ label, children, padded }) {
+  return (
+    <div className="page">
+      <div className="page__hd"><b>{label}</b><span>UID · Light</span></div>
+      <div className="page__bd" style={padded ? { padding: 24 } : {}}>{children}</div>
+    </div>
+  );
+}
+
+function MiniShell({ active = 'articles', crumbs, children, variant = 'grouped' }) {
+  return (
+    <div className="ms shell" data-collapsed={false}>
+      <Sidebar active={active} collapsed={false} variant={variant} />
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <Topbar dark={false} crumbs={crumbs} onToggleSb={()=>{}} onOpenNotif={()=>{}} onToggleTheme={()=>{}} />
+        <div style={{ flex: 1 }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Print() {
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.setAttribute('data-density', 'comfortable');
+    if (window.lucide && window.lucide.createIcons) {
+      setTimeout(() => { try { window.lucide.createIcons(); } catch(e) {} }, 100);
+    }
+  });
+
+  return (
+    <>
+      <PrintCover />
+
+      <PrintPage label="01 · Login & 2FA">
+        <div className="row2" style={{ padding: 16 }}>
+          <div className="frame">
+            <div className="frame__lbl">Login</div>
+            <div style={{ height: 580 }}><LoginScreen /></div>
+          </div>
+          <div className="frame">
+            <div className="frame__lbl">Two-factor challenge</div>
+            <div style={{ height: 580 }}><TwoFactor /></div>
+          </div>
+        </div>
+      </PrintPage>
+
+      <PrintPage label="02 · Shell · Resource List (ideal state)">
+        <MiniShell active="articles" crumbs={['Контент','Articles']}>
+          <ResourceList density="comfortable" polling={true} listState="ideal" filterVariant="bar" bulkMode={false} onOpenForm={()=>{}} onOpenView={()=>{}} />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="03 · Resource List · Bulk-mode">
+        <MiniShell active="articles" crumbs={['Контент','Articles']}>
+          <ResourceList density="comfortable" polling={false} listState="ideal" filterVariant="bar" bulkMode={true} onOpenForm={()=>{}} onOpenView={()=>{}} />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="04 · Resource List · States">
+        <div className="row2" style={{ padding: 16 }}>
+          <div className="frame">
+            <div className="frame__lbl">Empty</div>
+            <EmptyState />
+          </div>
+          <div className="frame">
+            <div className="frame__lbl">Loading</div>
+            <LoadingState />
+          </div>
+        </div>
+        <div className="row2" style={{ padding: '0 16px 16px' }}>
+          <div className="frame" style={{ gridColumn: 'span 2' }}>
+            <div className="frame__lbl">Error</div>
+            <ErrorState />
+          </div>
+        </div>
+      </PrintPage>
+
+      <PrintPage label="05 · Filter variants">
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {['bar','chips','panel'].map(v => (
+            <div className="frame" key={v}>
+              <div className="frame__lbl">filter — {v}</div>
+              <FiltersBar variant={v} groupBy={false} onToggleGroupBy={()=>{}} />
+            </div>
+          ))}
+        </div>
+      </PrintPage>
+
+      <PrintPage label="06 · Sidebar variants">
+        <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          {['grouped','flat','zebra','iconish'].map(v => (
+            <div className="frame" key={v}>
+              <div className="frame__lbl">{v}</div>
+              <div style={{ height: 540 }}>
+                <Sidebar active="articles" collapsed={false} variant={v} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </PrintPage>
+
+      <PrintPage label="07 · Resource Form">
+        <MiniShell active="articles" crumbs={['Контент','Articles','Введение в Laravel 12']}>
+          <ResourceForm density="comfortable" />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="08 · Resource View (Infolist + Audit)">
+        <MiniShell active="articles" crumbs={['Контент','Articles','Введение в Laravel 12']}>
+          <ResourceView />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="09 · Dashboard">
+        <MiniShell active="dashboard" crumbs={['Аналитика','Dashboard']}>
+          <Dashboard />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="10 · Profile">
+        <MiniShell active="settings" crumbs={['Profile']}>
+          <Profile />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="11 · Import wizard">
+        <MiniShell active="articles" crumbs={['Контент','Articles','Импорт']}>
+          <ImportWizard />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="12 · Field gallery">
+        <MiniShell active="settings" crumbs={['Field gallery']}>
+          <FieldGallery />
+        </MiniShell>
+      </PrintPage>
+
+      <PrintPage label="13 · Notifications & Toasts" padded>
+        <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: 24, alignItems: 'flex-start' }}>
+          <div className="frame">
+            <div className="frame__lbl">Notification drawer</div>
+            <div style={{ position: 'relative', height: 600, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '100%' }}>
+                <NotificationDrawer onClose={()=>{}} />
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="frame__lbl" style={{ background: 'transparent', border: 0, padding: 0 }}>Toasts</div>
+            <Toast kind="info" title="Сохранено как черновик" body="Можно опубликовать в любой момент." />
+            <Toast kind="success" title="Импорт завершён" body="Загружено 247 статей. 3 ошибки — посмотреть отчёт." />
+            <Toast kind="warning" title="Запланированная публикация" body="Через 1 час будет опубликована статья «Vue 3»." />
+            <Toast kind="error" title="Не удалось опубликовать" body="A-1271 — отсутствует обложка." />
+          </div>
+        </div>
+      </PrintPage>
+
+      <PrintPage label="14 · Dark theme · Resource List">
+        <div data-theme="dark" style={{ background: '#1c1c1e' }}>
+          <DarkWrap>
+            <MiniShell active="articles" crumbs={['Контент','Articles']}>
+              <ResourceList density="comfortable" polling={false} listState="ideal" filterVariant="bar" bulkMode={false} onOpenForm={()=>{}} onOpenView={()=>{}} />
+            </MiniShell>
+          </DarkWrap>
+        </div>
+      </PrintPage>
+    </>
+  );
+}
+
+// Wrap children in a node that scopes data-theme=dark via inline style cascade override
+function DarkWrap({ children }) {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (ref.current) ref.current.setAttribute('data-theme', 'dark');
+  }, []);
+  return <div ref={ref} data-theme="dark" style={{ '--uid-surface-base': '#1c1c1e', '--uid-surface-raised': '#2c2c2e', '--uid-text-primary': '#f4f4f5', '--uid-text-secondary': '#a1a1aa', '--uid-text-tertiary': '#52525b', '--uid-border-subtle': '#3f3f46', '--uid-border-default': '#52525b', '--uid-accent': '#2dd4bf', '--uid-accent-hover': '#5eead4', '--uid-accent-subtle': '#134e4a', '--uid-accent-text': '#5eead4', background: '#1c1c1e', color: '#f4f4f5' }}>{children}</div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Print />);
+
+// Wait for fonts + Babel + lucide, then auto-print
+(async () => {
+  try { await document.fonts.ready; } catch(e) {}
+  // wait for React content to settle
+  await new Promise(r => setTimeout(r, 1500));
+  if (window.lucide && window.lucide.createIcons) {
+    try { window.lucide.createIcons(); } catch(e) {}
+  }
+  await new Promise(r => setTimeout(r, 600));
+  window.print();
+})();
+</script>
+</body>
+</html>

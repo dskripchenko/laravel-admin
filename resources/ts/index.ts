@@ -1,4 +1,10 @@
 /**
+ * Entry-CSS: токены + темы UI-кита @dskripchenko/ui + admin-каркасные классы.
+ * Импортируется через `import '@dskripchenko/laravel-admin/style.css'` в host'е.
+ */
+import './styles/admin.css'
+
+/**
  * Точка входа SPA-бандла @dskripchenko/laravel-admin.
  *
  * Текущий публичный API:
