@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdminHealth;
 
+use Dskripchenko\LaravelAdmin\Plugin\Concerns\RegistersAdminPlugin;
 use Dskripchenko\LaravelAdminHealth\Console\CleanupHealthResultsCommand;
 use Dskripchenko\LaravelAdminHealth\Console\RunHealthChecksCommand;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +21,8 @@ use Illuminate\Support\ServiceProvider;
  */
 final class AdminHealthServiceProvider extends ServiceProvider
 {
+    use RegistersAdminPlugin;
+
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/admin-health.php', 'admin-health');
@@ -27,7 +30,7 @@ final class AdminHealthServiceProvider extends ServiceProvider
         $this->app->singleton(HealthRegistry::class);
         $this->app->singleton(HealthRunner::class);
 
-        $this->registerPluginInConfig();
+        $this->registerAdminPlugin(AdminHealthPlugin::class);
     }
 
     public function boot(): void
@@ -46,15 +49,6 @@ final class AdminHealthServiceProvider extends ServiceProvider
         }
 
         $this->registerHealthChecks();
-    }
-
-    private function registerPluginInConfig(): void
-    {
-        $existing = (array) config('admin.plugins', []);
-        if (in_array(AdminHealthPlugin::class, $existing, true)) {
-            return;
-        }
-        config(['admin.plugins' => [...$existing, AdminHealthPlugin::class]]);
     }
 
     /**

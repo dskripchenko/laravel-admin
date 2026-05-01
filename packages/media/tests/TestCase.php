@@ -4,42 +4,19 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdminMedia\Tests;
 
-use Dskripchenko\DelayedProcess\Providers\DelayedProcessServiceProvider;
-use Dskripchenko\LaravelAdmin\AdminServiceProvider;
+use Dskripchenko\LaravelAdmin\Testing\PackageTestCase;
 use Dskripchenko\LaravelAdminMedia\AdminMediaServiceProvider;
-use Dskripchenko\LaravelApi\Providers\ApiServiceProvider;
-use Dskripchenko\LaravelTranslatable\Providers\TranslatableServiceProvider;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Orchestra\Testbench\TestCase as Orchestra;
 
-abstract class TestCase extends Orchestra
+abstract class TestCase extends PackageTestCase
 {
-    use RefreshDatabase;
-
-    protected function getPackageProviders($app): array
+    protected function additionalProviders(): array
     {
-        return [
-            ApiServiceProvider::class,
-            DelayedProcessServiceProvider::class,
-            TranslatableServiceProvider::class,
-            AdminServiceProvider::class,
-            AdminMediaServiceProvider::class,
-        ];
+        return [AdminMediaServiceProvider::class];
     }
 
-    protected function defineEnvironment($app): void
+    protected function defineAdditionalEnvironment($app): void
     {
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
-        $app['config']->set('app.debug', true);
-        $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-        ]);
-
-        // Fake disk для media uploads.
         $app['config']->set('filesystems.disks.media-test', [
             'driver' => 'local',
             'root' => sys_get_temp_dir().'/admin-media-test',

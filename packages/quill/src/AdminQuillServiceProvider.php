@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdminQuill;
 
+use Dskripchenko\LaravelAdmin\Plugin\Concerns\RegistersAdminPlugin;
 use Illuminate\Support\ServiceProvider;
 
 final class AdminQuillServiceProvider extends ServiceProvider
 {
+    use RegistersAdminPlugin;
+
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/admin-quill.php', 'admin-quill');
-        $this->registerPluginInConfig();
+        $this->registerAdminPlugin(AdminQuillPlugin::class);
     }
 
     public function boot(): void
@@ -19,14 +22,5 @@ final class AdminQuillServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/admin-quill.php' => config_path('admin-quill.php'),
         ], 'admin-quill-config');
-    }
-
-    private function registerPluginInConfig(): void
-    {
-        $existing = (array) config('admin.plugins', []);
-        if (in_array(AdminQuillPlugin::class, $existing, true)) {
-            return;
-        }
-        config(['admin.plugins' => [...$existing, AdminQuillPlugin::class]]);
     }
 }

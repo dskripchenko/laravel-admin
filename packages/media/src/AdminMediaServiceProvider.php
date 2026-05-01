@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdminMedia;
 
+use Dskripchenko\LaravelAdmin\Plugin\Concerns\RegistersAdminPlugin;
 use Dskripchenko\LaravelAdminMedia\Services\ImageProcessor;
 use Dskripchenko\LaravelAdminMedia\Services\MediaService;
 use Illuminate\Support\ServiceProvider;
 
 final class AdminMediaServiceProvider extends ServiceProvider
 {
+    use RegistersAdminPlugin;
+
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/admin-media.php', 'admin-media');
@@ -17,7 +20,7 @@ final class AdminMediaServiceProvider extends ServiceProvider
         $this->app->singleton(ImageProcessor::class);
         $this->app->singleton(MediaService::class);
 
-        $this->registerPluginInConfig();
+        $this->registerAdminPlugin(AdminMediaPlugin::class);
     }
 
     public function boot(): void
@@ -28,14 +31,5 @@ final class AdminMediaServiceProvider extends ServiceProvider
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadRoutesFrom(__DIR__.'/../routes/admin-media.php');
-    }
-
-    private function registerPluginInConfig(): void
-    {
-        $existing = (array) config('admin.plugins', []);
-        if (in_array(AdminMediaPlugin::class, $existing, true)) {
-            return;
-        }
-        config(['admin.plugins' => [...$existing, AdminMediaPlugin::class]]);
     }
 }

@@ -4,48 +4,24 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdminJobs\Tests;
 
-use Dskripchenko\DelayedProcess\Providers\DelayedProcessServiceProvider;
-use Dskripchenko\LaravelAdmin\AdminServiceProvider;
+use Dskripchenko\LaravelAdmin\Testing\PackageTestCase;
 use Dskripchenko\LaravelAdminJobs\AdminJobsServiceProvider;
-use Dskripchenko\LaravelApi\Providers\ApiServiceProvider;
-use Dskripchenko\LaravelTranslatable\Providers\TranslatableServiceProvider;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
-use Orchestra\Testbench\TestCase as Orchestra;
 
-abstract class TestCase extends Orchestra
+abstract class TestCase extends PackageTestCase
 {
-    use RefreshDatabase;
-
-    protected function getPackageProviders($app): array
+    protected function additionalProviders(): array
     {
-        return [
-            ApiServiceProvider::class,
-            DelayedProcessServiceProvider::class,
-            TranslatableServiceProvider::class,
-            AdminServiceProvider::class,
-            AdminJobsServiceProvider::class,
-        ];
+        return [AdminJobsServiceProvider::class];
     }
 
-    protected function defineEnvironment($app): void
+    protected function defineAdditionalEnvironment($app): void
     {
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
-        $app['config']->set('app.debug', true);
-        $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-        ]);
         $app['config']->set('queue.default', 'database');
     }
 
     protected function defineDatabaseMigrations(): void
     {
-        // Стандартные Laravel queue tables — нужны для запуска tests против
-        // FailedJob/JobBatch моделей. Через Artisan чтобы не дублировать
-        // schema-стек.
         Schema::create('failed_jobs', function ($table): void {
             $table->id();
             $table->string('uuid')->unique();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdminPulse;
 
+use Dskripchenko\LaravelAdmin\Plugin\Concerns\RegistersAdminPlugin;
 use Dskripchenko\LaravelAdminPulse\Console\AggregateCommand;
 use Dskripchenko\LaravelAdminPulse\Console\RotateCommand;
 use Dskripchenko\LaravelAdminPulse\Http\Middleware\PulseMiddleware;
@@ -14,6 +15,8 @@ use Illuminate\Support\ServiceProvider;
 
 final class AdminPulseServiceProvider extends ServiceProvider
 {
+    use RegistersAdminPlugin;
+
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/admin-pulse.php', 'admin-pulse');
@@ -21,7 +24,7 @@ final class AdminPulseServiceProvider extends ServiceProvider
         $this->app->singleton(Sampler::class);
         $this->app->singleton(Aggregator::class);
 
-        $this->registerPluginInConfig();
+        $this->registerAdminPlugin(AdminPulsePlugin::class);
     }
 
     public function boot(): void
@@ -40,15 +43,6 @@ final class AdminPulseServiceProvider extends ServiceProvider
         }
 
         $this->registerMiddlewareAlias();
-    }
-
-    private function registerPluginInConfig(): void
-    {
-        $existing = (array) config('admin.plugins', []);
-        if (in_array(AdminPulsePlugin::class, $existing, true)) {
-            return;
-        }
-        config(['admin.plugins' => [...$existing, AdminPulsePlugin::class]]);
     }
 
     /**
