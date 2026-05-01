@@ -60,10 +60,130 @@ npm run admin:build
 
 После этого админка доступна на `/admin`.
 
+## Frontend SPA (`@dskripchenko/laravel-admin` npm-пакет)
+
+Для host-проектов которые хотят встроить SPA в свой Vite-bundle вместо Blade-shell'а либо построить кастомный admin-фронт поверх готовых блоков.
+
+### Установка
+
+```bash
+npm install @dskripchenko/laravel-admin @dskripchenko/ui vue@^3.4 vue-router@^4.3 pinia axios
+```
+
+### Минимальный entry
+
+```ts
+// resources/admin-spa/main.ts
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+
+// (1) UI-кит: токены + темы + reset + global + Uid*-стили
+import '@dskripchenko/ui/styles/all.css'
+// (2) admin-каркас (impersonation banner, polling-dot, page utilities)
+import '@dskripchenko/laravel-admin/style.css'
+
+import {
+  createAdminClient,
+  setAdminClient,
+  loadBootstrap,
+  createAdminRouter,
+  registerBuiltinComponents,
+  registerBuiltinInfolistEntries,
+  registerBuiltinWidgets,
+  AdminShell,
+  ResourceIndexPage,
+  ResourceFormPage,
+  ResourceViewPage,
+  DashboardPage,
+} from '@dskripchenko/laravel-admin'
+
+// 1. HTTP-клиент с envelope/CSRF/error handling
+const client = createAdminClient({
+  baseURL: '/api/admin',
+  onUnauthenticated: () => router.push({ name: 'admin.login' }),
+})
+setAdminClient(client)
+
+// 2. Bootstrap (inline через <script> либо xhr через /system/bootstrap)
+const bootstrap = await loadBootstrap({ client })
+
+// 3. Pinia + hydrate stores
+const pinia = createPinia()
+const app = createApp(AdminShell)
+app.use(pinia)
+
+// 4. Регистрация builtin-компонентов в JSON-renderer'ы
+registerBuiltinComponents()        // Field/Layout (text/textarea/number/select/...)
+registerBuiltinInfolistEntries()   // Read-only display (text/badge/icon/keyvalue)
+registerBuiltinWidgets()           // Dashboard widgets (stat/charts/heatmap/gauge)
+
+// 5. Router с динамическими роутами из manifest'а
+const router = createAdminRouter({
+  base: '/admin',
+  components: {
+    login: () => import('./pages/Login.vue'),
+    home: () => import('./pages/Home.vue'),
+    forbidden: () => import('./pages/403.vue'),
+    notFound: () => import('./pages/404.vue'),
+    resourceIndex: ResourceIndexPage,
+    resourceCreate: ResourceFormPage,
+    resourceEdit: ResourceFormPage,
+    screen: () => import('./pages/Screen.vue'),
+    settings: () => import('./pages/Settings.vue'),
+    dashboard: DashboardPage,
+  },
+})
+app.use(router)
+app.mount('#admin')
+```
+
+### Готовые компоненты-страницы
+
+- `LoginPage` + `LoginForm` + `TwoFactorForm` — auth + TOTP/recovery
+- `ResourceIndexPage` — список с filter-bar / bulk toolbar / pagination
+- `ResourceFormPage` — create/edit unified с sticky save-bar
+- `ResourceViewPage` — read-only display через Infolist
+- `DashboardPage` — 12-col widget grid
+- `ProfilePage` — sidebar nav + cards
+- `ImportWizardPage` — 4-step wizard
+- `NotificationsDrawer` — UidDrawer right с tabs
+- `FieldGalleryPage` — каталог field-типов (docs/playground)
+
+### Расширение через registry
+
+```ts
+import { registerField, registerWidget, registerInfolistEntry } from '@dskripchenko/laravel-admin'
+import MyCustomField from './fields/MyCustomField.vue'
+
+registerField('my-custom', MyCustomField)
+// теперь manifest узел { type: 'my-custom', name: 'x', ... } рендерится через MyCustomField
+```
+
+### Шрифты (опционально)
+
+UID design system предполагает Inter Variable + Inter Display. Library не bundle'ит шрифты в style.css (Vite lib-mode инлайнит base64 → 1.4 MB). Варианты:
+
+- `npm i @fontsource-variable/inter @fontsource/inter-display` + `import` (рекомендуется)
+- Google Fonts CDN
+- Self-hosted — копировать `node_modules/@dskripchenko/laravel-admin/resources/fonts/*.woff2` в `public/fonts/` + подключить `fonts.css`
+
+### Скрипты разработки
+
+```bash
+npm run lint        # eslint flat config + vue-eslint-parser
+npm run typecheck   # vue-tsc --noEmit
+npm test            # vitest (jsdom)
+npm run build       # vite build + vue-tsc --emitDeclarationOnly
+npm run build:analyze  # с rollup-plugin-visualizer → dist/stats.html
+npm run size        # size-limit budgets (ESM/CJS gzipped + CSS)
+npm run preflight   # lint + typecheck + test + build (CI gate)
+```
+
 ## Документация
 
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — архитектура и решения.
 - [docs/sister-packs/](docs/sister-packs/) — спецификации опциональных расширений.
+- [docs/design_handoff_laravel_admin/](docs/design_handoff_laravel_admin/) — UID design handoff (эталон вёрстки SPA).
 
 ## Sister-packs
 

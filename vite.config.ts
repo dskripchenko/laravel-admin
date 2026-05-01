@@ -43,14 +43,15 @@ export default defineConfig({
       cssFileName: 'style',
     },
     rollupOptions: {
+      // Все peer-зависимости host'а — external. Regex-paths покрывают
+      // sub-imports (например `@tiptap/extension-image`).
       external: [
         'vue',
         'vue-router',
         'pinia',
         'axios',
-        '@dskripchenko/ui',
-        '@tiptap/vue-3',
-        '@tiptap/starter-kit',
+        /^@dskripchenko\/ui($|\/)/,
+        /^@tiptap\//,
         'marked',
       ],
       output: {

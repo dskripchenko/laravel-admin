@@ -1,10 +1,39 @@
 {
     "name": "@dskripchenko/laravel-admin",
     "version": "0.1.0-dev",
-    "description": "Vue 3 SPA bundle for dskripchenko/laravel-admin Laravel package.",
+    "description": "Vue 3 admin-panel constructor: SPA bundle для Laravel-приложений на @dskripchenko/laravel-admin (PHP backend) — JSON-driven Field/Layout/Infolist/Widget renderer'ы поверх @dskripchenko/ui design system.",
     "license": "MIT",
     "author": "Denis Skripchenko <denskrp90@gmail.com>",
+    "homepage": "https://github.com/dskripchenko/laravel-admin#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/dskripchenko/laravel-admin.git"
+    },
+    "bugs": {
+        "url": "https://github.com/dskripchenko/laravel-admin/issues"
+    },
+    "keywords": [
+        "laravel",
+        "admin",
+        "spa",
+        "vue3",
+        "typescript",
+        "pinia",
+        "filament",
+        "nova",
+        "manifest-driven",
+        "json-driven",
+        "uid",
+        "design-system"
+    ],
     "type": "module",
+    "engines": {
+        "node": ">=20"
+    },
+    "sideEffects": [
+        "**/*.css",
+        "./resources/ts/styles/admin.css"
+    ],
     "workspaces": [
         "packages/tinymce",
         "packages/quill"
@@ -36,21 +65,60 @@
         "test:watch": "vitest",
         "lint": "eslint resources/ts",
         "lint:fix": "eslint resources/ts --fix",
-        "typecheck": "vue-tsc --noEmit"
+        "typecheck": "vue-tsc --noEmit",
+        "size": "npm run build && size-limit",
+        "preflight": "npm run lint && npm run typecheck && npm run test && npm run build"
     },
+    "size-limit": [
+        {
+            "name": "ESM bundle (gzipped)",
+            "path": "dist/index.mjs",
+            "limit": "35 KB",
+            "ignore": [
+                "vue",
+                "vue-router",
+                "pinia",
+                "axios",
+                "@dskripchenko/ui"
+            ]
+        },
+        {
+            "name": "CJS bundle (gzipped)",
+            "path": "dist/index.cjs",
+            "limit": "30 KB",
+            "ignore": [
+                "vue",
+                "vue-router",
+                "pinia",
+                "axios",
+                "@dskripchenko/ui"
+            ]
+        },
+        {
+            "name": "Style CSS (gzipped)",
+            "path": "dist/style.css",
+            "limit": "5 KB"
+        }
+    ],
     "peerDependencies": {
-        "@dskripchenko/ui": "*",
+        "@dskripchenko/ui": "^1.0.2",
         "@tiptap/starter-kit": "^2.4",
         "@tiptap/vue-3": "^2.4",
         "axios": "^1.6",
         "marked": "^12.0",
-        "pinia": "^2.1",
+        "pinia": "^2.1 || ^3.0",
         "vue": "^3.4",
-        "vue-router": "^4.3"
+        "vue-router": "^4.3 || ^5.0"
+    },
+    "peerDependenciesMeta": {
+        "@tiptap/starter-kit": { "optional": true },
+        "@tiptap/vue-3": { "optional": true },
+        "marked": { "optional": true }
     },
     "devDependencies": {
         "@dskripchenko/ui": "^1.0.2",
         "@eslint/js": "^10.0.1",
+        "@size-limit/preset-small-lib": "^12.1.0",
         "@types/node": "^22",
         "@vitejs/plugin-vue": "^5.2.4",
         "@vue/test-utils": "^2.4.10",
@@ -63,6 +131,7 @@
         "jsdom": "^25",
         "pinia": "^3.0.4",
         "rollup-plugin-visualizer": "^7.0.1",
+        "size-limit": "^12.1.0",
         "typescript": "^5.5",
         "typescript-eslint": "^8.59.1",
         "vite": "^7.3.2",
