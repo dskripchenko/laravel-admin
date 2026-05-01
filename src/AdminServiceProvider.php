@@ -123,11 +123,14 @@ final class AdminServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         $this->registerAdminGuard();
-        $this->registerRoutes();
         $this->registerCommands();
         $this->registerExceptionHandlers();
         $this->registerAuditListeners();
+        // bootPlugins должен быть ДО registerRoutes — плагины регистрируют
+        // Resource'ы через Admin::resources(), и ResourceCompiler читает
+        // ResourceRegistry при компиляции admin-API маршрутов.
         $this->bootPlugins();
+        $this->registerRoutes();
         $this->registerScalarDoc();
     }
 
