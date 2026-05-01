@@ -1,57 +1,49 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { UidCheckbox, UidFormField } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import FieldShell from './FieldShell.vue'
 
 interface Props {
   name: string
   label?: string | null
   help?: string | null
   required?: boolean
-  /** Inline-текст рядом с чекбоксом (часто отличается от верхнего label). */
   inlineLabel?: string | null
   disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  label: null, help: null, inlineLabel: null,
-  required: false, disabled: false,
+  label: null,
+  help: null,
+  inlineLabel: null,
+  required: false,
+  disabled: false,
 })
 
 const form = useFormState()
 const checked = computed<boolean>(() => Boolean(form.getField(props.name)))
+const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
 
-function onChange(event: Event): void {
-  const t = event.target as HTMLInputElement
-  form.setField(props.name, t.checked)
+function onUpdate(next: boolean): void {
+  form.setField(props.name, next)
 }
 </script>
 
 <template>
-  <FieldShell :name="name" :label="label" :help="help" :required="required">
-    <template #default="{ id }">
-      <label class="admin-checkbox">
-        <input
-          :id="id"
-          type="checkbox"
-          :checked="checked"
-          :disabled="disabled"
-          :name="name"
-          @change="onChange"
-        />
-        <span v-if="inlineLabel" class="admin-checkbox__label">{{ inlineLabel }}</span>
-      </label>
-    </template>
-  </FieldShell>
+  <UidFormField
+    :label="label ?? undefined"
+    :hint="help ?? undefined"
+    :error="errorMsg"
+    :required="required"
+    :disabled="disabled"
+  >
+    <UidCheckbox
+      :model-value="checked"
+      :disabled="disabled"
+      :name="name"
+      @update:model-value="onUpdate"
+    >
+      <template v-if="inlineLabel">{{ inlineLabel }}</template>
+    </UidCheckbox>
+  </UidFormField>
 </template>
-
-<style>
-.admin-checkbox {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px;
-}
-.admin-checkbox input { width: 16px; height: 16px; cursor: pointer; }
-</style>

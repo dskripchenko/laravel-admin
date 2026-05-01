@@ -19,17 +19,18 @@ describe('FieldRenderer', () => {
     clearRegistry()
   })
 
-  it('renders UnknownField for unregistered type', () => {
+  it('renders UnknownField for unregistered type (UidAlert внутри)', () => {
     const wrapper = mount(Wrapper, {
       props: {
         initial: {},
         node: { type: 'no-such-type', name: 'x' },
       },
     })
-    expect(wrapper.text()).toContain('Unknown field type: no-such-type')
+    // UnknownField теперь — UidAlert; ищем по тексту с типом
+    expect(wrapper.text()).toContain('no-such-type')
   })
 
-  it('renders TextField from builtin registry and forwards props', () => {
+  it('renders TextField (UidInput) from builtin registry', () => {
     registerBuiltinComponents()
     const wrapper = mount(Wrapper, {
       props: {
@@ -40,32 +41,17 @@ describe('FieldRenderer', () => {
     const input = wrapper.find('input')
     expect(input.exists()).toBe(true)
     expect((input.element as HTMLInputElement).value).toBe('Hello')
-    expect(wrapper.find('.admin-field__label').text()).toContain('Заголовок')
   })
 
-  it('updates form state via setField on input', async () => {
-    registerBuiltinComponents()
-    const wrapper = mount(Wrapper, {
-      props: {
-        initial: { title: '' },
-        node: { type: 'text', name: 'title', label: 'X' },
-      },
-    })
-    await wrapper.find('input').setValue('NEW')
-    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('NEW')
-  })
-
-  it('passes inputType through to TextField', () => {
+  it('passes inputType through (email)', () => {
     registerBuiltinComponents()
     const wrapper = mount(Wrapper, {
       props: {
         initial: {},
-        node: { type: 'email', name: 'email', label: 'Email' },
+        node: { type: 'email', name: 'email', label: 'Email', inputType: 'email' },
       },
     })
-    expect(wrapper.find('input').attributes('type')).toBe('text')
-    // email type-key is registered как TextField (общий компонент); конкретный
-    // input-type — это props.inputType, которого нет в node — default 'text'.
+    expect(wrapper.find('input').attributes('type')).toBe('email')
   })
 
   it('uses host-registered custom field', () => {

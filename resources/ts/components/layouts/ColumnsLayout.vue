@@ -1,19 +1,25 @@
 <script setup lang="ts">
 /**
- * Columns: 12-колоночный grid. Каждый item.span (1..12) определяет ширину;
- * default — 12/items.length.
+ * Columns: 12-колоночный grid поверх UidGrid из @dskripchenko/ui.
+ * Каждый item.span (1..cols) задаёт ширину; default равные доли.
  */
 import { computed } from 'vue'
+import { UidGrid } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
 interface Props {
   items: LayoutNode[]
-  gap?: number | string
+  /** Зазор между ячейками (CSS, token или px). */
+  gap?: string
   /** Сколько колонок в гриде (default 12). */
   cols?: number
 }
-const props = withDefaults(defineProps<Props>(), { gap: 16, cols: 12 })
+
+const props = withDefaults(defineProps<Props>(), {
+  gap: 'var(--uid-space-md)',
+  cols: 12,
+})
 
 const defaultSpan = computed(() => {
   if (props.items.length === 0) return props.cols
@@ -28,26 +34,14 @@ function spanFor(item: LayoutNode): number {
 </script>
 
 <template>
-  <div
-    class="admin-layout-columns"
-    :style="{
-      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-      gap: typeof gap === 'number' ? `${gap}px` : gap,
-    }"
-  >
+  <UidGrid :cols="cols" :gap="gap">
     <div
       v-for="(child, idx) in items"
       :key="idx"
-      class="admin-layout-columns__item"
-      :style="{ gridColumn: `span ${spanFor(child)}` }"
+      class="admin-columns__item"
+      :style="{ gridColumn: `span ${spanFor(child)} / span ${spanFor(child)}` }"
     >
       <LayoutRenderer :node="child" />
     </div>
-  </div>
+  </UidGrid>
 </template>
-
-<style>
-.admin-layout-columns {
-  display: grid;
-}
-</style>

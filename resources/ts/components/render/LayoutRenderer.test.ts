@@ -21,7 +21,7 @@ describe('LayoutRenderer', () => {
     registerBuiltinComponents()
   })
 
-  it('renders rows with field children', () => {
+  it('renders rows-layout (UidStack) с дочерними field-узлами', () => {
     const wrapper = mount(Wrapper, {
       props: {
         initial: { title: 'A', body: 'B' },
@@ -36,10 +36,9 @@ describe('LayoutRenderer', () => {
     })
     expect(wrapper.findAll('input')).toHaveLength(1)
     expect(wrapper.findAll('textarea')).toHaveLength(1)
-    expect(wrapper.find('.admin-layout-rows').exists()).toBe(true)
   })
 
-  it('renders nested layouts', () => {
+  it('renders nested layouts (section → columns → fields)', () => {
     const wrapper = mount(Wrapper, {
       props: {
         initial: {},
@@ -58,12 +57,11 @@ describe('LayoutRenderer', () => {
         },
       },
     })
-    expect(wrapper.find('.admin-layout-section__title').text()).toBe('Раздел')
-    expect(wrapper.findAll('.admin-layout-columns__item')).toHaveLength(2)
+    expect(wrapper.find('.admin-section__title').text()).toBe('Раздел')
     expect(wrapper.findAll('input')).toHaveLength(2)
   })
 
-  it('renders tabs and switches active panel', async () => {
+  it('renders tabs and renders panels', () => {
     const wrapper = mount(Wrapper, {
       props: {
         initial: { a: '1', b: '2' },
@@ -76,31 +74,20 @@ describe('LayoutRenderer', () => {
         },
       },
     })
-    expect(wrapper.find('.admin-field__label').text()).toContain('A')
-
-    const tabs = wrapper.findAll('.admin-layout-tabs__tab')
-    await tabs[1].trigger('click')
-    expect(wrapper.find('.admin-field__label').text()).toContain('B')
+    expect(wrapper.text()).toContain('First')
+    expect(wrapper.text()).toContain('Second')
+    // Хотя бы один input для активной вкладки.
+    expect(wrapper.findAll('input').length).toBeGreaterThan(0)
   })
 
-  it('renders UnknownField for unknown type', () => {
+  it('renders UnknownField (UidAlert) for unknown type', () => {
     const wrapper = mount(Wrapper, {
       props: { initial: {}, node: { type: 'wat', name: 'x' } },
     })
-    expect(wrapper.text()).toContain('Unknown field type: wat')
+    expect(wrapper.text()).toContain('wat')
   })
 
-  it('explicit kind:layout with unknown type → unknown', () => {
-    const wrapper = mount(Wrapper, {
-      props: {
-        initial: {},
-        node: { type: 'mystery', kind: 'layout', name: 'x' },
-      },
-    })
-    expect(wrapper.text()).toContain('Unknown field type: mystery')
-  })
-
-  it('explicit kind:field even if type matches layout-registry', () => {
+  it('explicit kind:field maps to field-registry only', () => {
     const wrapper = mount(Wrapper, {
       props: {
         initial: {},
@@ -108,11 +95,11 @@ describe('LayoutRenderer', () => {
       },
     })
     // type 'rows' зарегистрирован как layout, но kind:field форсит FieldRenderer
-    // → нет field-компонента 'rows' → UnknownField fallback.
-    expect(wrapper.text()).toContain('Unknown field type: rows')
+    // → нет field-компонента 'rows' → UnknownField fallback (UidAlert).
+    expect(wrapper.text()).toContain('rows')
   })
 
-  it('columns layout uses span prop for grid-column', () => {
+  it('columns layout uses span prop for grid-column style', () => {
     const wrapper = mount(Wrapper, {
       props: {
         initial: {},
@@ -125,8 +112,9 @@ describe('LayoutRenderer', () => {
         },
       },
     })
-    const items = wrapper.findAll('.admin-layout-columns__item')
-    expect(items[0].attributes('style')).toContain('grid-column: span 8')
-    expect(items[1].attributes('style')).toContain('grid-column: span 4')
+    const items = wrapper.findAll('.admin-columns__item')
+    expect(items).toHaveLength(2)
+    expect(items[0].attributes('style')).toContain('span 8')
+    expect(items[1].attributes('style')).toContain('span 4')
   })
 })

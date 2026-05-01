@@ -31,7 +31,6 @@ export {
 export type { FormStateContext } from './formState'
 
 // Re-export builtin field/layout SFCs — host-проект может wrap'нуть/расширить.
-export { default as FieldShell } from '../fields/FieldShell.vue'
 export { default as TextField } from '../fields/TextField.vue'
 export { default as TextAreaField } from '../fields/TextAreaField.vue'
 export { default as NumberField } from '../fields/NumberField.vue'

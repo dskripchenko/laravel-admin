@@ -128,7 +128,6 @@ export {
   provideFormState,
   useFormState,
   tryUseFormState,
-  FieldShell,
   TextField,
   TextAreaField,
   NumberField,

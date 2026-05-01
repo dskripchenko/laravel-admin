@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { UidNumberInput, UidFormField } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import FieldShell from './FieldShell.vue'
 
 interface Props {
   name: string
@@ -17,47 +17,48 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  label: null, help: null, placeholder: null,
-  min: null, max: null, step: null,
-  required: false, disabled: false, readonly: false,
+  label: null,
+  help: null,
+  placeholder: null,
+  min: null,
+  max: null,
+  step: null,
+  required: false,
+  disabled: false,
+  readonly: false,
 })
 
 const form = useFormState()
-const value = computed<number | string>(() => {
+const value = computed<number | null>(() => {
   const v = form.getField(props.name)
-  if (v === null || v === undefined) return ''
-  return v as number
+  if (v === null || v === undefined || v === '') return null
+  return typeof v === 'number' ? v : Number(v)
 })
+const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
 
-function onInput(event: Event): void {
-  const t = event.target as HTMLInputElement
-  if (t.value === '') {
-    form.setField(props.name, null)
-    return
-  }
-  const num = Number(t.value)
-  form.setField(props.name, Number.isNaN(num) ? null : num)
+function onUpdate(next: number | null): void {
+  form.setField(props.name, next)
 }
 </script>
 
 <template>
-  <FieldShell :name="name" :label="label" :help="help" :required="required">
-    <template #default="{ id }">
-      <input
-        :id="id"
-        type="number"
-        :value="value"
-        :placeholder="placeholder ?? undefined"
-        :min="min ?? undefined"
-        :max="max ?? undefined"
-        :step="step ?? undefined"
-        :disabled="disabled"
-        :readonly="readonly"
-        :required="required"
-        :name="name"
-        class="admin-input"
-        @input="onInput"
-      />
-    </template>
-  </FieldShell>
+  <UidFormField
+    :label="label ?? undefined"
+    :hint="help ?? undefined"
+    :error="errorMsg"
+    :required="required"
+    :disabled="disabled"
+  >
+    <UidNumberInput
+      :model-value="value"
+      :min="min ?? undefined"
+      :max="max ?? undefined"
+      :step="step ?? undefined"
+      :placeholder="placeholder ?? undefined"
+      :disabled="disabled"
+      :readonly="readonly"
+      :name="name"
+      @update:model-value="onUpdate"
+    />
+  </UidFormField>
 </template>

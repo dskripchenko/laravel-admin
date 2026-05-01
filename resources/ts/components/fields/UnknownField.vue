@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * Fallback на случай, если в манифесте пришёл field-type, для которого нет
- * зарегистрированного компонента. Видимый предупреждающий блок вместо silent
- * fail'а — host-проект сразу заметит missing-registration в dev'е.
+ * Fallback на missing field-registration. Видимый dev-warn вместо silent fail —
+ * host-проект сразу замечает unregistered field-type.
  */
+import { UidAlert } from '@dskripchenko/ui'
+
 interface Props {
   type: string
   name?: string
@@ -12,19 +13,11 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="admin-field admin-field--unknown" role="alert">
-    <strong>Unknown field type: {{ type }}</strong>
-    <span v-if="name"> ({{ name }})</span>
-  </div>
+  <UidAlert variant="warning">
+    <template #title>Неизвестный тип поля: {{ type }}</template>
+    <template v-if="name">
+      <code>{{ name }}</code> — зарегистрируйте field-компонент через
+      <code>registerField('{{ type }}', YourComponent)</code>.
+    </template>
+  </UidAlert>
 </template>
-
-<style>
-.admin-field--unknown {
-  padding: 8px 12px;
-  border: 1px dashed var(--admin-danger, #ef4444);
-  border-radius: 6px;
-  background: rgba(239, 68, 68, 0.05);
-  color: var(--admin-danger, #ef4444);
-  font-size: 13px;
-}
-</style>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * Универсальный текстовый input. type выбирается props'ом ('text'|'email'|
- * 'url'|'password'|'tel') — для number-input'а есть отдельный NumberField.
+ * TextField — wrapper над UidInput из @dskripchenko/ui. Двусторонняя связь
+ * с form-state через provideFormState/useFormState. Тип input'а (text/email/
+ * url/password/tel/search) пробрасывается как `type`.
  */
 import { computed } from 'vue'
+import { UidInput } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import FieldShell from './FieldShell.vue'
 
 interface Props {
   name: string
@@ -16,55 +17,42 @@ interface Props {
   inputType?: 'text' | 'email' | 'url' | 'password' | 'tel' | 'search'
   disabled?: boolean
   readonly?: boolean
+  autocomplete?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  label: null, help: null, placeholder: null,
-  required: false, disabled: false, readonly: false,
+  label: null,
+  help: null,
+  placeholder: null,
   inputType: 'text',
+  required: false,
+  disabled: false,
+  readonly: false,
+  autocomplete: null,
 })
 
 const form = useFormState()
 const value = computed<string>(() => (form.getField(props.name) as string | null | undefined) ?? '')
+const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
 
-function onInput(event: Event): void {
-  const t = event.target as HTMLInputElement
-  form.setField(props.name, t.value)
+function onUpdate(next: string): void {
+  form.setField(props.name, next)
 }
 </script>
 
 <template>
-  <FieldShell :name="name" :label="label" :help="help" :required="required">
-    <template #default="{ id }">
-      <input
-        :id="id"
-        :type="inputType"
-        :value="value"
-        :placeholder="placeholder ?? undefined"
-        :disabled="disabled"
-        :readonly="readonly"
-        :required="required"
-        :name="name"
-        class="admin-input"
-        @input="onInput"
-      />
-    </template>
-  </FieldShell>
+  <UidInput
+    :model-value="value"
+    :type="inputType"
+    :label="label ?? undefined"
+    :hint="help ?? undefined"
+    :error="errorMsg"
+    :placeholder="placeholder ?? undefined"
+    :required="required"
+    :disabled="disabled"
+    :readonly="readonly"
+    :name="name"
+    :autocomplete="autocomplete ?? undefined"
+    @update:model-value="onUpdate"
+  />
 </template>
-
-<style>
-.admin-input {
-  width: 100%;
-  padding: 6px 10px;
-  height: 32px;
-  font-size: 13px;
-  border: 1px solid var(--admin-border, #d1d5db);
-  border-radius: 6px;
-  background: var(--admin-input-bg, #fff);
-  color: var(--admin-text, #111827);
-}
-.admin-input:focus {
-  outline: 2px solid var(--admin-accent, #3b82f6);
-  outline-offset: -1px;
-}
-</style>

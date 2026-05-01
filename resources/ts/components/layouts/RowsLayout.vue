@@ -1,26 +1,21 @@
 <script setup lang="ts">
 /**
- * Rows: вертикальный список items сверху-вниз.
+ * Rows-layout — UidStack column.
  */
+import { UidStack } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
 interface Props {
   items: LayoutNode[]
-  gap?: number | string
+  /** CSS-зазор между элементами (token либо px), по умолчанию --uid-space-md. */
+  gap?: string
 }
-withDefaults(defineProps<Props>(), { gap: 0 })
+withDefaults(defineProps<Props>(), { gap: 'var(--uid-space-md)' })
 </script>
 
 <template>
-  <div class="admin-layout-rows" :style="{ gap: typeof gap === 'number' ? `${gap}px` : gap }">
+  <UidStack direction="column" :gap="gap" align="stretch">
     <LayoutRenderer v-for="(child, idx) in items" :key="idx" :node="child" />
-  </div>
+  </UidStack>
 </template>
-
-<style>
-.admin-layout-rows {
-  display: flex;
-  flex-direction: column;
-}
-</style>
