@@ -113,6 +113,9 @@ export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'
 // Resource pages (index/form/view)
 export { ResourceIndexPage, ResourceFormPage, ResourceViewPage } from './components/resource'
 
+// Notifications drawer
+export { NotificationsDrawer } from './components/notifications'
+
 // Dashboard
 export {
   DashboardPage,
