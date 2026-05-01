@@ -85,3 +85,18 @@ export type {
   AuthGuardOptions,
   TitleGuardOptions,
 } from './router'
+
+// Menu store
+export { useMenuStore } from './stores/menu'
+export type { MenuItem, MenuGroup } from './stores/menu'
+
+// Shell components
+export {
+  AdminShell,
+  AdminTopBar,
+  AdminSidebar,
+  ThemeToggle,
+  LocaleSwitcher,
+  NotificationBell,
+  UserMenu,
+} from './components/shell'
