@@ -119,6 +119,9 @@ export { NotificationsDrawer } from './components/notifications'
 // Profile page
 export { ProfilePage } from './components/profile'
 
+// Import wizard
+export { ImportWizardPage } from './components/import'
+
 // Dashboard
 export {
   DashboardPage,
