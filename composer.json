@@ -1,6 +1,7 @@
 {
     "name": "dskripchenko/laravel-admin",
     "description": "Laravel admin constructor: Resource-first CRUD, Vue 3 SPA, JSON-API transport. Plug into any Laravel project without touching its routes/auth.",
+    "type": "library",
     "keywords": [
         "laravel",
         "admin",
@@ -9,14 +10,18 @@
         "vue",
         "spa"
     ],
+    "homepage": "https://github.com/dskripchenko/laravel-admin",
     "license": "MIT",
-    "type": "library",
     "authors": [
         {
             "name": "Denis Skripchenko",
             "email": "denskrp90@gmail.com"
         }
     ],
+    "support": {
+        "issues": "https://github.com/dskripchenko/laravel-admin/issues",
+        "source": "https://github.com/dskripchenko/laravel-admin"
+    },
     "require": {
         "php": "^8.5",
         "ext-json": "*",
@@ -57,6 +62,12 @@
             "tests/Fixtures/"
         ]
     },
+    "scripts": {
+        "test": "pest",
+        "test-coverage": "pest --coverage",
+        "lint": "pint",
+        "stan": "phpstan analyse"
+    },
     "extra": {
         "laravel": {
             "providers": [
@@ -65,6 +76,9 @@
             "aliases": {
                 "Admin": "Dskripchenko\\LaravelAdmin\\Facades\\Admin"
             }
+        },
+        "branch-alias": {
+            "dev-main": "1.x-dev"
         }
     },
     "config": {
@@ -74,11 +88,5 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "scripts": {
-        "test": "pest",
-        "test-coverage": "pest --coverage",
-        "lint": "pint",
-        "stan": "phpstan analyse"
-    }
+    "prefer-stable": true
 }
