@@ -155,6 +155,7 @@ final class AuthController extends ApiController
 
         return $this->success([
             'user' => $this->serializeUser($user),
+            'permissions' => $this->resolveUserPermissions($user),
             'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
         ]);
     }
@@ -511,6 +512,21 @@ final class AuthController extends ApiController
             'twoFactorEnabled' => $twoFactorEnabled,
             'impersonator' => null,
         ];
+    }
+
+    /**
+     * Плоский список permissions залогиненного user'а — для фронтового
+     * AuthGuard'а после `auth/login` / `auth/2fa/verify`.
+     *
+     * @return list<string>
+     */
+    private function resolveUserPermissions(Authenticatable $user): array
+    {
+        if (! method_exists($user, 'getAllPermissions')) {
+            return [];
+        }
+
+        return array_values((array) $user->getAllPermissions());
     }
 
     /**
