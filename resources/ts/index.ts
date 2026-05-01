@@ -110,6 +110,13 @@ export {
 // Auth pages (login + 2FA)
 export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'
 
+// Resource pages (index/form/view)
+export { ResourceIndexPage } from './components/resource'
+
+// Resource index store
+export { useResourceIndexStore } from './stores/resourceIndex'
+export type { IndexMeta, IndexParams } from './stores/resourceIndex'
+
 // JSON-driven rendering: registry, renderers, builtin fields/layouts, form-state
 export {
   FieldRenderer,
