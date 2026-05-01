@@ -111,11 +111,13 @@ export {
 export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'
 
 // Resource pages (index/form/view)
-export { ResourceIndexPage } from './components/resource'
+export { ResourceIndexPage, ResourceFormPage } from './components/resource'
 
-// Resource index store
+// Resource stores
 export { useResourceIndexStore } from './stores/resourceIndex'
 export type { IndexMeta, IndexParams } from './stores/resourceIndex'
+export { useResourceFormStore } from './stores/resourceForm'
+export type { FormMode } from './stores/resourceForm'
 
 // JSON-driven rendering: registry, renderers, builtin fields/layouts, form-state
 export {
