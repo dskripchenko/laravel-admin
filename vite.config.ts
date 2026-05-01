@@ -1,8 +1,22 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import dts from 'vite-plugin-dts'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { resolve } from 'node:path'
 
+/**
+ * Vite library config для @dskripchenko/laravel-admin.
+ *
+ * - vue() — SFC compiler
+ * - dts()  — генерация .d.ts (вшито insertTypesEntry для автоматического
+ *   `dist/index.d.ts` rolled-up entry)
+ * - visualizer() — bundle stats-отчёт `dist/stats.html` (запускается только
+ *   при `ANALYZE=1 npm run build`)
+ *
+ * `assetFileNames` фиксирует имя CSS-файла как `style.css` (Vite 7 по
+ * умолчанию использует lib.name → `laravel-admin.css`, но host'ы уже
+ * импортируют через `@dskripchenko/laravel-admin/style.css` через exports).
+ */
 export default defineConfig({
   plugins: [
     vue(),
@@ -10,6 +24,13 @@ export default defineConfig({
       insertTypesEntry: true,
       cleanVueFileName: true,
     }),
+    process.env.ANALYZE === '1' &&
+      visualizer({
+        filename: 'dist/stats.html',
+        title: '@dskripchenko/laravel-admin bundle',
+        gzipSize: true,
+        brotliSize: true,
+      }),
   ],
   resolve: {
     alias: {
@@ -22,6 +43,7 @@ export default defineConfig({
       name: 'LaravelAdmin',
       formats: ['es', 'cjs'],
       fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`,
+      cssFileName: 'style',
     },
     rollupOptions: {
       external: [
@@ -41,8 +63,6 @@ export default defineConfig({
           pinia: 'Pinia',
           axios: 'Axios',
         },
-        assetFileNames: (assetInfo) =>
-          assetInfo.name === 'style.css' ? 'style.css' : assetInfo.name!,
       },
     },
     sourcemap: true,
