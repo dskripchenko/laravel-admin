@@ -68,7 +68,12 @@ describe('buildRoutesFromManifest', () => {
     expect(routes[0].meta?.permissions).toEqual(['admin.users.view'])
     expect(routes[1].meta?.permissions).toEqual(['admin.users.create'])
     expect(routes[2].meta?.permissions).toEqual(['admin.users.update'])
-    expect(routes[2].props).toBe(true)
+    // resourceEdit/resourceView передают slug+id через function-mode props.
+    expect(typeof routes[2].props).toBe('function')
+    expect(typeof routes[3].props).toBe('function')
+    // resourceIndex/resourceCreate — slug запекается через object-mode.
+    expect(routes[0].props).toEqual({ slug: 'users' })
+    expect(routes[1].props).toEqual({ slug: 'users' })
   })
 
   it('omits permissions array when ability missing', () => {

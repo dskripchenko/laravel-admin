@@ -104,6 +104,10 @@ function buildResourceRoutes(
         title: resource.label,
         permissions: pickResourcePermission(resource, 'view'),
       },
+      // slug передаётся в page-component'ы как prop. Конкретный slug запекаем в
+      // function-mode, чтобы page видел его одинаково и через named-route, и через
+      // path-routing (без params).
+      props: { slug },
     },
     {
       path: `${base}/create`,
@@ -116,6 +120,7 @@ function buildResourceRoutes(
         title: `${resource.label}: создать`,
         permissions: pickResourcePermission(resource, 'create'),
       },
+      props: { slug },
     },
     {
       path: `${base}/:id/edit`,
@@ -128,7 +133,8 @@ function buildResourceRoutes(
         title: `${resource.label}: редактирование`,
         permissions: pickResourcePermission(resource, 'update'),
       },
-      props: true,
+      // slug запекаем, id из route-params.
+      props: (route) => ({ slug, id: route.params.id }),
     },
     {
       path: `${base}/:id`,
@@ -141,7 +147,7 @@ function buildResourceRoutes(
         title: resource.label,
         permissions: pickResourcePermission(resource, 'view'),
       },
-      props: true,
+      props: (route) => ({ slug, id: route.params.id }),
     },
   ]
 }
