@@ -34,8 +34,6 @@ interface SaveResponse {
   id?: string | number
   redirect_url?: string
   message?: string
-  data?: Record<string, unknown>
-  redirect_url?: string
 }
 
 export const useResourceFormStore = defineStore('admin-resource-form', () => {
