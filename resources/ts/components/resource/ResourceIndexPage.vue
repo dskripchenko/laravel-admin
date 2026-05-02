@@ -15,10 +15,13 @@
  * из route.params).
  */
 import { computed, nextTick, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { Eye, Pencil, Trash2 } from 'lucide-vue-next'
 import {
   UidButton,
   UidEmptyState,
   UidErrorState,
+  UidIcon,
   UidPagination,
   UidSkeleton,
   UidTable,
@@ -59,6 +62,7 @@ const emit = defineEmits<{
 const index = useResourceIndexStore()
 const manifest = useManifestStore()
 const nav = useNavigationStore()
+const router = useRouter()
 
 const resourceMeta = computed(() => manifest.getResource(props.slug))
 
@@ -66,9 +70,11 @@ const displayTitle = computed(
   () => props.title ?? resourceMeta.value?.label ?? props.slug,
 )
 
+const ACTIONS_KEY = '__row_actions__'
+
 const columns = computed<UidTableColumn[]>(() => {
   const cols = resourceMeta.value?.columns ?? []
-  return cols.map((c) => {
+  const mapped = cols.map((c) => {
     const col = c as Record<string, unknown>
     return {
       key: String(col.key ?? col.name ?? ''),
@@ -78,6 +84,17 @@ const columns = computed<UidTableColumn[]>(() => {
       width: typeof col.width === 'string' ? col.width : undefined,
     }
   }).filter((c) => c.key)
+  // Хвостовая колонка с per-row actions (Просмотр / Редактировать / Удалить).
+  // ResourceIndexPage добавляет её всегда — host может скрыть через
+  // useShowActions=false (TODO prop).
+  mapped.push({
+    key: ACTIONS_KEY,
+    label: '',
+    sortable: false,
+    align: 'right',
+    width: '120px',
+  })
+  return mapped
 })
 
 // Колоночная meta (preset / format / currency / etc.) из manifest'а.
@@ -191,8 +208,51 @@ async function onPageChange(page: number): Promise<void> {
   await index.setPage(page)
 }
 
+function rowId(row: Record<string, unknown>): string | number | null {
+  const v = row?.id ?? row?.key
+  return typeof v === 'string' || typeof v === 'number' ? v : null
+}
+
 function onRowClick(row: Record<string, unknown>): void {
   emit('row-click', row)
+  // По умолчанию click по строке открывает view-screen записи.
+  // Host может перехватить через @row-click и сделать e.preventDefault.
+  const id = rowId(row)
+  if (id !== null) {
+    void router.push({ name: `admin.resource.${props.slug}.view`, params: { id: String(id) } })
+  }
+}
+
+function onView(row: Record<string, unknown>, e?: MouseEvent): void {
+  e?.stopPropagation()
+  const id = rowId(row)
+  if (id !== null) {
+    void router.push({ name: `admin.resource.${props.slug}.view`, params: { id: String(id) } })
+  }
+}
+
+function onEdit(row: Record<string, unknown>, e?: MouseEvent): void {
+  e?.stopPropagation()
+  const id = rowId(row)
+  if (id !== null) {
+    void router.push({ name: `admin.resource.${props.slug}.edit`, params: { id: String(id) } })
+  }
+}
+
+async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<void> {
+  e?.stopPropagation()
+  const id = rowId(row)
+  if (id === null) return
+  if (!window.confirm('Удалить запись?')) return
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    await client.post(`/${props.slug}/delete`, { id })
+    await index.load().catch(() => undefined)
+  } finally {
+    nav.end()
+  }
 }
 
 function bulkAction(action: string): void {
@@ -327,7 +387,41 @@ async function retryLoad(): Promise<void> {
           #[col.key]="slotProps"
           :key="col.key"
         >
-          <slot :name="`cell-${col.key}`" :row="rowFromSlot(slotProps)">
+          <!-- Колонка row-actions (View / Edit / Delete) — рендерим всегда последней. -->
+          <div
+            v-if="col.key === ACTIONS_KEY"
+            class="admin-resource-index__row-actions"
+          >
+            <button
+              type="button"
+              class="admin-resource-index__row-action"
+              title="Просмотр"
+              @click.stop="onView(rowFromSlot(slotProps) ?? {}, $event)"
+            >
+              <UidIcon :icon="Eye" :size="16" />
+            </button>
+            <button
+              type="button"
+              class="admin-resource-index__row-action"
+              title="Редактировать"
+              @click.stop="onEdit(rowFromSlot(slotProps) ?? {}, $event)"
+            >
+              <UidIcon :icon="Pencil" :size="16" />
+            </button>
+            <button
+              type="button"
+              class="admin-resource-index__row-action admin-resource-index__row-action--danger"
+              title="Удалить"
+              @click.stop="onDelete(rowFromSlot(slotProps) ?? {}, $event)"
+            >
+              <UidIcon :icon="Trash2" :size="16" />
+            </button>
+          </div>
+          <slot
+            v-else
+            :name="`cell-${col.key}`"
+            :row="rowFromSlot(slotProps)"
+          >
             {{ renderCell(col.key, slotProps) }}
           </slot>
         </template>
@@ -358,6 +452,38 @@ async function retryLoad(): Promise<void> {
   /* min-height предотвращает layout-collapse при первом mount'е,
      когда slowLoading ещё false (быстрый запрос — placeholder пустой). */
   min-height: 320px;
+}
+
+/* Row actions: View / Edit / Delete иконки в последней колонке таблицы. */
+.admin-resource-index__row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--uid-space-2xs);
+}
+.admin-resource-index__row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--uid-radius-sm);
+  background: transparent;
+  color: var(--uid-text-secondary);
+  cursor: pointer;
+  transition: background var(--uid-duration-fast) var(--uid-ease-out),
+    color var(--uid-duration-fast) var(--uid-ease-out),
+    border-color var(--uid-duration-fast) var(--uid-ease-out);
+}
+.admin-resource-index__row-action:hover {
+  background: var(--uid-color-surface-hover);
+  color: var(--uid-text-primary);
+  border-color: var(--uid-border-subtle);
+}
+.admin-resource-index__row-action--danger:hover {
+  color: var(--uid-color-danger, #dc2626);
 }
 .admin-resource-index__state {
   margin-top: var(--uid-space-xl);
