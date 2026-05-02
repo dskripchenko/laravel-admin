@@ -173,8 +173,7 @@ export function createAdminApp(
   app.use(router)
 
   // 5.1 Top loading-bar hooks: pending++ при старте навигации, pending--
-  //     при её завершении. ResourceIndexPage/FormPage добавляют свой counter
-  //     поверх через onMounted+onBeforeUnmount → useNavigationStore.
+  //     при её завершении.
   const navStore = useNavigationStore()
   router.beforeEach((to, from, next) => {
     if (to.fullPath !== from.fullPath) navStore.start()
@@ -185,6 +184,33 @@ export function createAdminApp(
   })
   router.onError(() => {
     navStore.end()
+  })
+
+  // 5.2 Pre-fetch resource data ДО mount страницы. Это держит navigation в
+  //     pending'е — старая страница остаётся в DOM пока новая загружает данные.
+  //     После resolve hook'а Vue Router монтирует новую страницу с уже
+  //     наполненным store'ом, что устраняет flash "пустая страница →
+  //     данные приехали" (без необходимости в Suspense).
+  router.beforeResolve(async (to, _from, next) => {
+    // Только resource.index роуты предзагружают свой dataset.
+    const name = typeof to.name === 'string' ? to.name : null
+    if (name && name.startsWith('admin.resource.') && name.endsWith('.index')) {
+      const slug = (to.params.slug as string | undefined) ?? (to.meta.slug as string | undefined)
+      if (slug) {
+        try {
+          // Lazy-import чтобы избежать circular в createAdminApp init.
+          const { useResourceIndexStore } = await import('./stores/resourceIndex')
+          const indexStore = useResourceIndexStore()
+          if (indexStore.slug !== slug || indexStore.items.length === 0) {
+            indexStore.setSlug(slug)
+            await indexStore.load().catch(() => undefined)
+          }
+        } catch {
+          // silent — page mount упадёт в свой error-state.
+        }
+      }
+    }
+    next()
   })
 
   // 6. Manifest async-load + dynamic routes (только если authenticated;

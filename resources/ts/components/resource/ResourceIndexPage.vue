@@ -145,6 +145,14 @@ async function loadWithProgress(): Promise<void> {
   }
 }
 
+/**
+ * Mount-init: setSlug + load data.
+ *
+ * При SPA navigation от router.push первичный data-fetch также делается
+ * в router.beforeResolve (см. createAdminApp.ts) — он держит navigation
+ * в pending пока данные не пришли. Здесь load всё равно вызываем как
+ * resilient fallback (direct page mount, page reload, test).
+ */
 onMounted(async () => {
   index.setSlug(props.slug)
   if (manifest.manifest === null) {
