@@ -173,7 +173,13 @@ final class SystemController extends ApiController
                 'key' => $slug,
                 'label' => $resource::label(),
                 'icon' => $resource::$icon,
-                'url' => '/admin/resources/'.$slug,
+                // SPA frontend Vue Router использует path '/r/{slug}' (см.
+                // resources/ts/router/builder.ts buildResourceRoutes).
+                // Префикс admin-shell (config('admin.path')) добавляется
+                // SPA-router'ом автоматически.
+                'url' => '/r/'.$slug,
+                'routeName' => 'admin.resource.'.$slug.'.index',
+                'group' => $resource::$group,
                 'badge' => null,
                 'order' => 0,
             ];

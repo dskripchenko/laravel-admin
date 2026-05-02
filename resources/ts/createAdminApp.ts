@@ -181,6 +181,14 @@ export function createAdminApp(
         .load()
         .then((manifest) => {
           router.replaceManifestRoutes(manifest)
+          // Если текущий route был разрешён в catch-all notFound (deep-link
+          // на /r/articles/123/edit при первом mount, когда динамические
+          // роуты ещё не были добавлены) — перерезолвим его теперь, когда
+          // routes есть.
+          const current = router.currentRoute.value
+          if (current.name === 'admin.notFound' && current.fullPath !== '/') {
+            void router.replace(current.fullPath)
+          }
         })
         .catch((error: unknown) => {
           // Silent fail — host может перехватить через onAppCreated →

@@ -90,7 +90,8 @@ it('serves /api/admin/system/menu listing registered resources', function (): vo
     $items = $response->json('payload.items');
     expect($items)->toHaveCount(1);
     expect($items[0]['key'])->toBe('test-users');
-    expect($items[0]['url'])->toBe('/admin/resources/test-users');
+    expect($items[0]['url'])->toBe('/r/test-users');
+    expect($items[0]['routeName'])->toBe('admin.resource.test-users.index');
 });
 
 it('serves /api/admin/system/locales', function (): void {
