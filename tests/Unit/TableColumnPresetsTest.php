@@ -11,10 +11,10 @@ it('asDate stores preset=date with format', function (): void {
     expect($arr['meta']['format'])->toBe('d.m.Y');
 });
 
-it('asDateTime defaults format to Y-m-d H:i:s', function (): void {
+it('asDateTime defaults format to d.m.Y H:i:s', function (): void {
     $arr = TableColumn::make('updated_at')->asDateTime()->toArray();
     expect($arr['preset'])->toBe('datetime');
-    expect($arr['meta']['format'])->toBe('Y-m-d H:i:s');
+    expect($arr['meta']['format'])->toBe('d.m.Y H:i:s');
 });
 
 it('asMoney stores currency + decimals', function (): void {

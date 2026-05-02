@@ -156,7 +156,7 @@ final class TableColumn
     /**
      * Shorthand for as('date', ['format' => $format]).
      */
-    public function asDate(string $format = 'Y-m-d'): self
+    public function asDate(string $format = 'd.m.Y'): self
     {
         return $this->as('date', ['format' => $format]);
     }
@@ -164,7 +164,7 @@ final class TableColumn
     /**
      * Shorthand for as('datetime', ['format' => $format]).
      */
-    public function asDateTime(string $format = 'Y-m-d H:i:s'): self
+    public function asDateTime(string $format = 'd.m.Y H:i:s'): self
     {
         return $this->as('datetime', ['format' => $format]);
     }

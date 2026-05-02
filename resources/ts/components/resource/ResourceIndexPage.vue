@@ -26,6 +26,7 @@ import {
 } from '@dskripchenko/ui'
 import { useResourceIndexStore } from '../../stores/resourceIndex'
 import { useManifestStore } from '../../stores/manifest'
+import { formatCell, type CellMeta } from './cellFormat'
 
 interface Props {
   /** Slug ресурса (users/articles/etc). */
@@ -76,6 +77,35 @@ const columns = computed<UidTableColumn[]>(() => {
     }
   }).filter((c) => c.key)
 })
+
+// Колоночная meta (preset / format / currency / etc.) из manifest'а.
+// Используется для formatCell (datetime → 'd.m.Y H:i:s', money → '{val} {ccy}').
+const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta }>>(() => {
+  const cols = resourceMeta.value?.columns ?? []
+  const result: Record<string, { preset?: string; meta: CellMeta }> = {}
+  for (const c of cols) {
+    const col = c as Record<string, unknown>
+    const key = String(col.key ?? col.name ?? '')
+    if (!key) continue
+    result[key] = {
+      preset: typeof col.preset === 'string' ? col.preset : undefined,
+      meta: (col.meta as CellMeta) ?? {},
+    }
+  }
+  return result
+})
+
+function renderCell(key: string, slotProps: unknown): string {
+  // UidTable scoped-slot передаёт {row: actualRow}.
+  const row = (slotProps as { row?: Record<string, unknown> } | undefined)?.row
+  const value = row?.[key]
+  const m = columnMeta.value[key]
+  return formatCell(value, m?.preset, m?.meta ?? {})
+}
+
+function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
+  return (slotProps as { row?: Record<string, unknown> } | undefined)?.row
+}
 
 const totalLabel = computed(() => {
   const t = index.meta.total
@@ -242,10 +272,12 @@ async function retryLoad(): Promise<void> {
       >
         <template
           v-for="col in columns"
-          #[`cell-${col.key}`]="row"
+          #[col.key]="slotProps"
           :key="col.key"
         >
-          <slot :name="`cell-${col.key}`" :row="row">{{ row?.[col.key] }}</slot>
+          <slot :name="`cell-${col.key}`" :row="rowFromSlot(slotProps)">
+            {{ renderCell(col.key, slotProps) }}
+          </slot>
         </template>
       </UidTable>
     </div>
