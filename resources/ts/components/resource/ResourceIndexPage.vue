@@ -239,13 +239,20 @@ async function retryLoad(): Promise<void> {
     </div>
 
     <!-- States -->
-    <!-- Skeleton — только при slow-load (>200мс) + нет cached items.
-         Re-fetch с уже-имеющимися items не мерцает skeleton'ом. -->
+    <!-- Initial-loading стейт (между setSlug и первым успехом load).
+         Показываем placeholder вместо UidTable — иначе сама таблица
+         рендерит "Нет данных" empty state, что создаёт flicker
+         "Нет данных → реальные строки" при navigation. -->
     <div
-      v-if="index.slowLoading && index.items.length === 0"
+      v-if="index.loading && index.items.length === 0"
       class="admin-resource-index__loading"
     >
-      <UidSkeleton v-for="i in 8" :key="i" height="40px" />
+      <UidSkeleton
+        v-if="index.slowLoading"
+        v-for="i in 8"
+        :key="i"
+        height="40px"
+      />
     </div>
     <UidErrorState
       v-else-if="index.hasError"
@@ -322,6 +329,9 @@ async function retryLoad(): Promise<void> {
   flex-direction: column;
   gap: var(--uid-space-sm);
   margin-top: var(--uid-space-md);
+  /* min-height предотвращает layout-collapse при первом mount'е,
+     когда slowLoading ещё false (быстрый запрос — placeholder пустой). */
+  min-height: 320px;
 }
 .admin-resource-index__state {
   margin-top: var(--uid-space-xl);

@@ -87,11 +87,18 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     return (row.id ?? row.key ?? '') as string | number
   }
 
-  /** Сменить ресурс — сброс state'а. */
+  /**
+   * Сменить ресурс — сброс state'а.
+   *
+   * `loading=true` ставится сразу, чтобы в окне между setSlug() и load() не
+   * рендерилась EmptyState ("Нет данных") — это вызывало flicker при
+   * navigation между Resource'ами.
+   */
   function setSlug(next: string | null): void {
     if (slug.value === next) return
     slug.value = next
     reset()
+    loading.value = true
   }
 
   function reset(): void {
