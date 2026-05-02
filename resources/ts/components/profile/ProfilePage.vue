@@ -7,7 +7,7 @@
  * library рендерит общие "Основное" + "Безопасность" (на existing-данных
  * auth.user). Host подмешивает свои "API токены" и "Сессии" через slot'ы.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   UidAvatar,
   UidBadge,
@@ -77,6 +77,24 @@ const localeOptions = computed(() =>
 )
 const themeOptions = computed(() =>
   theme.available.map((t) => ({ value: t, label: t === 'dark' ? 'Тёмная' : t === 'light' ? 'Светлая' : t })),
+)
+
+// Locale / theme применяются мгновенно при изменении select'а — не требуют
+// клика "Сохранить". Это стандартный admin-UX (как в GitHub/Vercel/Linear).
+watch(
+  () => profile.value.locale,
+  (next, prev) => {
+    if (next === prev || !next) return
+    void locale.setLocale(next).catch(() => undefined)
+  },
+)
+
+watch(
+  () => profile.value.theme,
+  (next, prev) => {
+    if (next === prev || !next) return
+    void theme.setTheme(next).catch(() => undefined)
+  },
 )
 
 function onSave(): void {
