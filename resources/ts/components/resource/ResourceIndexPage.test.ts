@@ -98,9 +98,14 @@ describe('ResourceIndexPage', () => {
     expect(wrapper.find('.admin-page__title').text()).toBe('Свои статьи')
   })
 
-  it('shows loading skeletons while fetching', async () => {
+  it('shows loading skeletons after slow-loading delay (>200ms)', async () => {
     mock.onPost('/articles/search').reply(() => new Promise(() => {}))
     const wrapper = await mountPage()
+    await flushPromises()
+    // Initial 0-100мс — skeleton НЕ должен мерцать (быстрые ответы skip).
+    expect(wrapper.findAll('.admin-resource-index__loading > *').length).toBe(0)
+    // После 250мс slowLoading=true → skeleton отрисован.
+    await new Promise((r) => setTimeout(r, 250))
     await flushPromises()
     expect(wrapper.findAll('.admin-resource-index__loading > *').length).toBeGreaterThan(0)
   })

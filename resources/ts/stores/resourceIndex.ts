@@ -50,7 +50,16 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
   const meta = ref<IndexMeta>({ ...DEFAULT_META })
 
   const loading = ref(false)
+  /**
+   * `slowLoading` = true только если loading длится > SLOW_LOADING_DELAY мс.
+   * UI использует это для skeleton — чтобы быстрые ответы (<200мс) не
+   * мерцали 'data → skeleton → data'. Если запрос быстрый, skeleton
+   * никогда не показывается.
+   */
+  const slowLoading = ref(false)
   const error = ref<Error | null>(null)
+  let slowLoadingTimer: ReturnType<typeof setTimeout> | null = null
+  const SLOW_LOADING_DELAY = 200
 
   const search = ref<string>('')
   const filters = ref<Record<string, unknown>>({})
@@ -133,6 +142,11 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     }
     loading.value = true
     error.value = null
+    // Debounced flag для skeleton: true только если запрос длится > 200мс.
+    if (slowLoadingTimer !== null) clearTimeout(slowLoadingTimer)
+    slowLoadingTimer = setTimeout(() => {
+      slowLoading.value = true
+    }, SLOW_LOADING_DELAY)
     try {
       const client = getAdminClient()
       const body = buildParams(override)
@@ -147,6 +161,11 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
       throw err
     } finally {
       loading.value = false
+      slowLoading.value = false
+      if (slowLoadingTimer !== null) {
+        clearTimeout(slowLoadingTimer)
+        slowLoadingTimer = null
+      }
     }
   }
 
@@ -237,6 +256,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     items,
     meta,
     loading,
+    slowLoading,
     error,
     search,
     filters,

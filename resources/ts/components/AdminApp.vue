@@ -16,9 +16,7 @@ const route = useRoute()
 
 const useShell = computed<boolean>(() => {
   if (route.meta?.fullscreen === true) return false
-  // Auth-routes (login) рендерятся без shell.
   if (route.meta?.kind === 'auth') return false
-  // Catch-all 404 без shell — чтобы пользователь не "застрял" в shell для невалидных URL.
   if (route.name === 'admin.notFound') return false
   return true
 })
@@ -26,7 +24,27 @@ const useShell = computed<boolean>(() => {
 
 <template>
   <AdminShell v-if="useShell">
-    <router-view />
+    <router-view v-slot="{ Component }">
+      <Transition name="admin-page" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </router-view>
   </AdminShell>
-  <router-view v-else />
+  <router-view v-else v-slot="{ Component }">
+    <Transition name="admin-page" mode="out-in">
+      <component :is="Component" />
+    </Transition>
+  </router-view>
 </template>
+
+<style>
+/* Плавный page-transition: 120ms fade. Короткий — чтоб не казалось "медленно". */
+.admin-page-enter-active,
+.admin-page-leave-active {
+  transition: opacity 120ms ease-out;
+}
+.admin-page-enter-from,
+.admin-page-leave-to {
+  opacity: 0;
+}
+</style>

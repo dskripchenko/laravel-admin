@@ -239,7 +239,12 @@ async function retryLoad(): Promise<void> {
     </div>
 
     <!-- States -->
-    <div v-if="index.loading" class="admin-resource-index__loading">
+    <!-- Skeleton — только при slow-load (>200мс) + нет cached items.
+         Re-fetch с уже-имеющимися items не мерцает skeleton'ом. -->
+    <div
+      v-if="index.slowLoading && index.items.length === 0"
+      class="admin-resource-index__loading"
+    >
       <UidSkeleton v-for="i in 8" :key="i" height="40px" />
     </div>
     <UidErrorState
