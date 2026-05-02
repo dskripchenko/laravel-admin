@@ -54,6 +54,7 @@ export function registerBuiltinComponents(): void {
       cascader: SelectField,
       'tree-select': SelectField,
       checkbox: CheckboxField,
+      switch: CheckboxField,
       switcher: CheckboxField,
       boolean: CheckboxField,
       date: DateField,

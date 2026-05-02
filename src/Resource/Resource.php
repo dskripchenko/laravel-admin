@@ -227,6 +227,9 @@ abstract class Resource
             ],
             'fields' => array_map(static fn (Field $f): array => $f->toArray(), $this->fields()),
             'columns' => array_map(static fn (TableColumn $c): array => $c->toArray(), $this->columns()),
+            // infolist: используется ResourceViewPage для read-only display.
+            // Default — TextEntry per field (см. Resource::infolist).
+            'infolist' => array_map(static fn (\Dskripchenko\LaravelAdmin\Infolist\Entry $e): array => $e->toArray(), $this->infolist()),
             'filters' => array_map(static fn (Filter $f): array => $f->toArray(), $this->filters()),
             'actions' => array_map(static fn (Action $a): array => $a->toArray(), $this->actions()),
             'searchable' => $this->searchableFields(),

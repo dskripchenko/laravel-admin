@@ -28,6 +28,8 @@ export interface ManifestResourceMeta {
   group?: string | null
   permissions: Record<string, string>
   fields: ManifestNode[]
+  /** Read-only entries для view-page. Default — auto-generated из fields(). */
+  infolist?: ManifestNode[]
   columns: ManifestNode[]
   filters: ManifestNode[]
   actions: ManifestNode[]

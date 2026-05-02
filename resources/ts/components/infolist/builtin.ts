@@ -49,6 +49,7 @@ export function registerBuiltinInfolistEntries(): void {
     cascader: TextEntry,
     'tree-select': TextEntry,
     checkbox: TextEntry,
+    switch: TextEntry,
     switcher: TextEntry,
     boolean: TextEntry,
     date: TextEntry,

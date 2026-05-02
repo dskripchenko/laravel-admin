@@ -44,8 +44,11 @@ const router = useRouter()
 provideRecord(form.state)
 
 const resourceMeta = computed(() => manifest.getResource(props.slug))
+// View-page показывает infolist (read-only entries), не fields (form inputs).
+// Backend Resource.meta() кладёт оба массива; default infolist auto-generated
+// из fields, host-Resource может override методом infolist().
 const layoutNodes = computed<InfolistNode[]>(
-  () => resourceMeta.value?.fields ?? [],
+  () => (resourceMeta.value?.infolist ?? resourceMeta.value?.fields ?? []) as InfolistNode[],
 )
 const titleLabel = computed(
   () => `${resourceMeta.value?.label ?? props.slug}: запись #${props.id}`,

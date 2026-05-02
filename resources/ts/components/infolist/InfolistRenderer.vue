@@ -56,8 +56,19 @@ const resolved = computed<Resolved>(() => {
 })
 
 const entryProps = computed(() => {
-  const { type: _t, kind: _k, items: _i, ...rest } = props.node
-  return rest
+  const { type: _t, kind: _k, items: _i, attributes, ...rest } = props.node
+  // Backend кладёт preset/format/etc в `attributes` под-объект (см.
+  // Infolist\Entry::toArray). Flat'имся для удобства Vue v-bind:
+  // attributes.preset → preset prop, attributes.format → meta.format.
+  const attrs = (attributes as Record<string, unknown> | undefined) ?? {}
+  const { preset, format, currency, decimals, trueLabel, falseLabel, ...rest2 } = attrs
+  const meta: Record<string, unknown> = {}
+  if (format !== undefined) meta.format = format
+  if (currency !== undefined) meta.currency = currency
+  if (decimals !== undefined) meta.decimals = decimals
+  if (trueLabel !== undefined) meta.trueLabel = trueLabel
+  if (falseLabel !== undefined) meta.falseLabel = falseLabel
+  return { ...rest, ...rest2, preset, meta }
 })
 
 const items = computed<InfolistNode[]>(
