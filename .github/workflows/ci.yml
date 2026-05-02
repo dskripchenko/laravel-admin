@@ -51,13 +51,18 @@ jobs:
           node-version: '20'
 
       - name: Install
-        run: npm ci
+        # Library-пакет: package-lock.json не коммитится (см. .gitignore).
+        # Используем `npm install` вместо `npm ci` — генерирует lock на лету.
+        run: npm install --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build
