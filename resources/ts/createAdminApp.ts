@@ -47,6 +47,7 @@ import { useLocaleStore } from './stores/locale'
 import { useThemeStore } from './stores/theme'
 import { useNotificationsStore } from './stores/notifications'
 import { useManifestStore } from './stores/manifest'
+import { useMenuStore } from './stores/menu'
 
 import { createAdminRouter, type AdminRouter, type AdminRouterOptions } from './router'
 import { registerBuiltinComponents } from './components/render/builtin'
@@ -176,7 +177,12 @@ export function createAdminApp(
     const manifestStore = useManifestStore()
     const authStore = useAuthStore()
 
+    const menuStore = useMenuStore()
+
     const loadAndApply = (): void => {
+      // Параллельно с manifest'ом тянем sidebar-меню (от backend menu endpoint).
+      void menuStore.load().catch(() => undefined)
+
       void manifestStore
         .load()
         .then((manifest) => {
