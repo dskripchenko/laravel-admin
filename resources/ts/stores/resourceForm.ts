@@ -24,11 +24,16 @@ import { ApiError, ValidationError } from '../api/errors'
 export type FormMode = 'create' | 'edit' | 'view'
 
 interface ReadResponse {
-  data: Record<string, unknown>
+  // backend ResourceController::read возвращает payload {record}.
+  record: Record<string, unknown>
 }
 
 interface SaveResponse {
-  id: string | number
+  // backend create/update возвращает payload {record, redirect_url, message}.
+  record?: Record<string, unknown>
+  id?: string | number
+  redirect_url?: string
+  message?: string
   data?: Record<string, unknown>
   redirect_url?: string
 }
@@ -120,8 +125,8 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
       const res = await client.get<ReadResponse>(`/${resourceSlug}/read`, {
         params: { id },
       })
-      replaceObject(state.value, res.data)
-      replaceObject(initial.value, res.data)
+      replaceObject(state.value, res.record)
+      replaceObject(initial.value, res.record)
     } catch (err) {
       error.value = err instanceof Error ? err : new Error(String(err))
       throw err
@@ -174,7 +179,11 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
           : { id: recordId.value, ...state.value }
 
       const res = await client.post<SaveResponse>(url, payload)
-      const newId = res.id
+      // Backend отдаёт `record: {id, ...}`. Старый формат `{id}` тоже поддерживаем.
+      const newId = (res.record?.id ?? res.id) as string | number | undefined
+      if (newId === undefined) {
+        throw new Error('save: backend response does not contain record.id')
+      }
       recordId.value = newId
       // После успешного save обновим initial = state, чтобы dirty=false.
       replaceObject(initial.value, { ...state.value })

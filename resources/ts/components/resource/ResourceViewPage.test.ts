@@ -91,7 +91,7 @@ describe('ResourceViewPage', () => {
 
   it('renders title with resource label + id', async () => {
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 7, title: 'Old', status: 'published' } },
+      success: true, payload: { record: { id: 7, title: 'Old', status: 'published' } },
     })
     const wrapper = await mountPage()
     await flushPromises()
@@ -101,7 +101,7 @@ describe('ResourceViewPage', () => {
 
   it('renders Edit and Удалить buttons', async () => {
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 7 } },
+      success: true, payload: { record: { id: 7 } },
     })
     const wrapper = await mountPage()
     await flushPromises()
@@ -120,7 +120,7 @@ describe('ResourceViewPage', () => {
   it('renders infolist with text + badge entries from manifest', async () => {
     mock.onGet('/articles/read').reply(200, {
       success: true,
-      payload: { data: { id: 7, title: 'Hello', status: 'published' } },
+      payload: { record: { id: 7, title: 'Hello', status: 'published' } },
     })
     const wrapper = await mountPage()
     await flushPromises()

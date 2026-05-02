@@ -51,7 +51,7 @@ final class GeneratedViewScreen extends GeneratedScreen
     {
         return [
             Link::make('Редактировать')
-                ->href('/admin/resources/'.$this->resource::slug().'/{id}/edit')
+                ->href('/admin/r/'.$this->resource::slug().'/{id}/edit')
                 ->permission($this->resource::permission().'.update'),
             $this->buildBackLink(),
         ];

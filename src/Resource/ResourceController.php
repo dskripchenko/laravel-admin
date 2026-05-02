@@ -313,7 +313,7 @@ final class ResourceController extends ApiController
 
         return $this->created([
             'record' => $record->toArray(),
-            'redirect_url' => '/admin/resources/'.$resource::slug().'/'.$record->getKey(),
+            'redirect_url' => '/admin/r/'.$resource::slug().'/'.$record->getKey(),
             'message' => 'Created',
         ]);
     }
@@ -545,7 +545,7 @@ final class ResourceController extends ApiController
 
         return $this->success([
             'record' => $copy->toArray(),
-            'redirect_url' => '/admin/resources/'.$resource::slug().'/'.$copy->getKey().'/edit',
+            'redirect_url' => '/admin/r/'.$resource::slug().'/'.$copy->getKey().'/edit',
             'message' => 'Replicated',
         ]);
     }

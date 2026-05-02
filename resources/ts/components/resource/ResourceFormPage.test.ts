@@ -104,7 +104,7 @@ describe('ResourceFormPage', () => {
   it('edit-mode: loads record + renders Сохранить + Удалить', async () => {
     mock.onGet('/articles/read').reply(200, {
       success: true,
-      payload: { data: { id: 7, title: 'Old', body: 'B' } },
+      payload: { record: { id: 7, title: 'Old', body: 'B' } },
     })
     const wrapper = await mountPage({ id: 7 })
     await flushPromises()
@@ -156,7 +156,7 @@ describe('ResourceFormPage', () => {
   it('save in edit-mode POSTs id + state to /update', async () => {
     let captured: Record<string, unknown> | null = null
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 5, title: 'Old' } },
+      success: true, payload: { record: { id: 5, title: 'Old' } },
     })
     mock.onPost('/articles/update').reply((config) => {
       captured = JSON.parse(config.data)
@@ -178,7 +178,7 @@ describe('ResourceFormPage', () => {
   it('delete: confirm + redirect to index', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 5 } },
+      success: true, payload: { record: { id: 5 } },
     })
     mock.onPost('/articles/delete').reply(200, {
       success: true, payload: {},

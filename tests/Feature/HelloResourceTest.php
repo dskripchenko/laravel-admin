@@ -81,7 +81,7 @@ it('creates a record via /test-users/create', function (): void {
     $payload = $response->json('payload');
     expect($payload['record']['name'])->toBe('Иван Иванов');
     expect($payload['record']['email'])->toBe('ivan@example.com');
-    expect($payload['redirect_url'])->toContain('/admin/resources/test-users/');
+    expect($payload['redirect_url'])->toContain('/admin/r/test-users/');
 
     expect(TestResourceUserModel::where('email', 'ivan@example.com')->exists())->toBeTrue();
 });

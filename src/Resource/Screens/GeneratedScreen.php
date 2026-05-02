@@ -108,7 +108,7 @@ abstract class GeneratedScreen extends Screen
      */
     protected function buildBackLink(string $label = 'Назад'): Link
     {
-        return Link::make($label)->href('/admin/resources/'.$this->resource::slug());
+        return Link::make($label)->href('/admin/r/'.$this->resource::slug());
     }
 
     /**

@@ -40,7 +40,7 @@ describe('useResourceFormStore', () => {
   it('load fetches record into state + initial (mode=edit)', async () => {
     mock.onGet('/articles/read').reply(200, {
       success: true,
-      payload: { data: { id: 7, title: 'Old', status: 'published' } },
+      payload: { record: { id: 7, title: 'Old', status: 'published' } },
     })
     const s = useResourceFormStore()
     await s.load('articles', 7)
@@ -52,7 +52,7 @@ describe('useResourceFormStore', () => {
 
   it('load with mode=view sets isView', async () => {
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 1 } },
+      success: true, payload: { record: { id: 1 } },
     })
     const s = useResourceFormStore()
     await s.load('articles', 1, 'view')
@@ -84,7 +84,7 @@ describe('useResourceFormStore', () => {
   it('save in edit-mode POSTs id + state to /update', async () => {
     let captured: Record<string, unknown> | null = null
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 7, title: 'Old' } },
+      success: true, payload: { record: { id: 7, title: 'Old' } },
     })
     mock.onPost('/articles/update').reply((config) => {
       captured = JSON.parse(config.data)
@@ -135,7 +135,7 @@ describe('useResourceFormStore', () => {
   it('destroy POSTs to /destroy with id', async () => {
     let capturedBody: Record<string, unknown> | null = null
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 5 } },
+      success: true, payload: { record: { id: 5 } },
     })
     mock.onPost('/articles/delete').reply((config) => {
       capturedBody = JSON.parse(config.data)
@@ -154,7 +154,7 @@ describe('useResourceFormStore', () => {
 
   it('reset wipes everything', async () => {
     mock.onGet('/articles/read').reply(200, {
-      success: true, payload: { data: { id: 1, title: 'X' } },
+      success: true, payload: { record: { id: 1, title: 'X' } },
     })
     const s = useResourceFormStore()
     await s.load('articles', 1)
