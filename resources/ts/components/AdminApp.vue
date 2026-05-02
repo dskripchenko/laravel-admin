@@ -24,25 +24,48 @@ const useShell = computed<boolean>(() => {
 
 <template>
   <AdminShell v-if="useShell">
-    <router-view v-slot="{ Component }">
-      <Transition name="admin-page" mode="out-in">
-        <component :is="Component" />
-      </Transition>
-    </router-view>
+    <div class="admin-page-host">
+      <router-view v-slot="{ Component }">
+        <Transition name="admin-page">
+          <component :is="Component" />
+        </Transition>
+      </router-view>
+    </div>
   </AdminShell>
   <router-view v-else v-slot="{ Component }">
-    <Transition name="admin-page" mode="out-in">
+    <Transition name="admin-page">
       <component :is="Component" />
     </Transition>
   </router-view>
 </template>
 
 <style>
-/* Плавный page-transition: 120ms fade. Короткий — чтоб не казалось "медленно". */
+/*
+ * Page-host: relative контейнер чтобы старая и новая страницы могли
+ * перекрываться абсолютно во время transition'а. Без этого default
+ * mode (in-out) или out-in оставляют пустое место → layout shift,
+ * который виден как "дёргание" sidebar/header.
+ *
+ * Default Transition mode (одновременный enter+leave) + absolute
+ * leaving = плавное перекрытие без сдвига контента ниже.
+ */
+.admin-page-host {
+  position: relative;
+  min-height: 200px;
+}
+
+/* Leaving page absolute-positioned — не двигает layout. */
+.admin-page-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+}
+
 .admin-page-enter-active,
 .admin-page-leave-active {
   transition: opacity 120ms ease-out;
 }
+
 .admin-page-enter-from,
 .admin-page-leave-to {
   opacity: 0;
