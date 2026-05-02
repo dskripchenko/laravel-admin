@@ -1,6 +1,6 @@
 {
     "name": "@dskripchenko/laravel-admin",
-    "version": "1.1.11",
+    "version": "1.1.12",
     "publishConfig": {
         "access": "public"
     },
@@ -111,7 +111,7 @@
         }
     ],
     "peerDependencies": {
-        "@dskripchenko/ui": "^1.0.2",
+        "@dskripchenko/ui": "^1.1.0",
         "@tiptap/starter-kit": "^2.4",
         "@tiptap/vue-3": "^2.4",
         "@tinymce/tinymce-vue": "^5",
@@ -134,7 +134,7 @@
         "tinymce": { "optional": true }
     },
     "devDependencies": {
-        "@dskripchenko/ui": "^1.0.2",
+        "@dskripchenko/ui": "^1.1.0",
         "@eslint/js": "^10.0.1",
         "@size-limit/preset-small-lib": "^12.1.0",
         "@types/node": "^22",

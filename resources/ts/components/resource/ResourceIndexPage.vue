@@ -17,7 +17,6 @@
 import { computed, onMounted, watch } from 'vue'
 import {
   UidButton,
-  UidCheckbox,
   UidEmptyState,
   UidErrorState,
   UidPagination,
@@ -101,20 +100,21 @@ watch(
   },
 )
 
-async function onSortUpdate(key: string): Promise<void> {
+async function onSortUpdate(key: string | null): Promise<void> {
+  if (key === null) {
+    // Сброс сортировки — третий режим UidTable: column-key уходит в null.
+    await index.setSort(null, null)
+    return
+  }
   await index.toggleSort(key)
+}
+
+function onSelectionUpdate(next: Set<string | number>): void {
+  index.selection = next
 }
 
 async function onPageChange(page: number): Promise<void> {
   await index.setPage(page)
-}
-
-function onHeaderCheckbox(): void {
-  index.toggleAllOnPage()
-}
-
-function onRowCheckbox(id: string | number): void {
-  index.toggleRow(id)
 }
 
 function onRowClick(row: Record<string, unknown>): void {
@@ -221,23 +221,19 @@ async function retryLoad(): Promise<void> {
       </template>
     </UidEmptyState>
 
-    <!-- Таблица -->
+    <!-- Таблица — UidTable native selection (UidTable.selectable + selection prop). -->
     <div v-else class="admin-resource-index__table">
-      <!-- Custom checkbox-column перед UidTable (uid-table сам не умеет selection). -->
-      <div class="admin-resource-index__select-header">
-        <UidCheckbox
-          :model-value="index.selectionState === 'all'"
-          :indeterminate="index.selectionState === 'mixed'"
-          aria-label="Выделить всё"
-          @update:model-value="onHeaderCheckbox"
-        />
-      </div>
       <UidTable
         :columns="columns"
         :data="index.items"
-        :sort-key="index.sortKey ?? ''"
+        :sort-key="index.sortKey"
         :sort-direction="index.sortDirection"
+        selectable
+        :selection="index.selection"
+        :row-key="(row) => index.rowId(row)"
         @update:sort-key="onSortUpdate"
+        @update:selection="onSelectionUpdate"
+        @row-click="onRowClick"
       >
         <template
           v-for="col in columns"
@@ -247,26 +243,6 @@ async function retryLoad(): Promise<void> {
           <slot :name="`cell-${col.key}`" :row="row">{{ row?.[col.key] }}</slot>
         </template>
       </UidTable>
-
-      <!-- Per-row checkbox + click row-area: рендерится в overlay'е -->
-      <div class="admin-resource-index__select-overlay">
-        <div
-          v-for="row in index.items"
-          :key="String(index.rowId(row))"
-          :class="[
-            'admin-resource-index__row',
-            { 'admin-resource-index__row--selected': index.isSelected(index.rowId(row)) },
-          ]"
-          @click="onRowClick(row)"
-        >
-          <UidCheckbox
-            :model-value="index.isSelected(index.rowId(row))"
-            :aria-label="`Строка ${index.rowId(row)}`"
-            @update:model-value="onRowCheckbox(index.rowId(row))"
-            @click.stop
-          />
-        </div>
-      </div>
     </div>
 
     <!-- Pagination -->
@@ -295,28 +271,7 @@ async function retryLoad(): Promise<void> {
   margin-top: var(--uid-space-xl);
 }
 .admin-resource-index__table {
-  position: relative;
   margin-top: var(--uid-space-md);
-}
-.admin-resource-index__select-header {
-  position: absolute;
-  top: 8px;
-  left: 12px;
-  z-index: 1;
-  pointer-events: auto;
-}
-.admin-resource-index__select-overlay {
-  position: absolute;
-  top: 36px;
-  left: 12px;
-  pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-}
-.admin-resource-index__row {
-  height: var(--admin-row-h, 40px);
-  display: flex;
-  align-items: center;
 }
 .admin-resource-index__footer {
   display: flex;

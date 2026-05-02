@@ -24,11 +24,13 @@ export interface IndexMeta {
   last_page: number
 }
 
+export type SortDirection = 'asc' | 'desc' | null
+
 export interface IndexParams {
   page?: number
   per_page?: number
   sort?: string | null
-  direction?: 'asc' | 'desc' | null
+  direction?: SortDirection
   search?: string | null
   filters?: Record<string, unknown>
 }
@@ -53,7 +55,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
   const search = ref<string>('')
   const filters = ref<Record<string, unknown>>({})
   const sortKey = ref<string | null>(null)
-  const sortDirection = ref<'asc' | 'desc'>('asc')
+  const sortDirection = ref<SortDirection>(null)
 
   /** Set ID-шников выбранных строк (bulk-actions). */
   const selection = ref<Set<string | number>>(new Set())
@@ -91,7 +93,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     search.value = ''
     filters.value = {}
     sortKey.value = null
-    sortDirection.value = 'asc'
+    sortDirection.value = null
     selection.value = new Set()
   }
 
@@ -105,9 +107,11 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     if (ss) params.q = ss
 
     // Order: массив {column, direction}. Backend читает `order[]` через input('order').
+    // Если direction === null → не добавляем order (3-режимная sort: off).
     const sk = override.sort ?? sortKey.value
-    if (sk) {
-      params.order = [{ column: sk, direction: override.direction ?? sortDirection.value }]
+    const dir = override.direction ?? sortDirection.value
+    if (sk && dir !== null) {
+      params.order = [{ column: sk, direction: dir }]
     }
 
     // Filters: map-style {column: value} — HttpFilterParser auto-detect режим 1.
@@ -168,15 +172,26 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     await load()
   }
 
-  async function setSort(key: string, direction: 'asc' | 'desc' = 'asc'): Promise<void> {
+  async function setSort(key: string | null, direction: SortDirection = 'asc'): Promise<void> {
     sortKey.value = key
     sortDirection.value = direction
     await load()
   }
 
+  /**
+   * 3-режимная sort. Click по same key → asc → desc → off (sort=null).
+   * Click по другому key → asc.
+   */
   async function toggleSort(key: string): Promise<void> {
     if (sortKey.value === key) {
-      sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+      if (sortDirection.value === 'asc') {
+        sortDirection.value = 'desc'
+      } else if (sortDirection.value === 'desc') {
+        sortKey.value = null
+        sortDirection.value = null
+      } else {
+        sortDirection.value = 'asc'
+      }
     } else {
       sortKey.value = key
       sortDirection.value = 'asc'

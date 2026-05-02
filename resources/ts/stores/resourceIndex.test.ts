@@ -111,17 +111,28 @@ describe('useResourceIndexStore', () => {
     expect(s.filters.status).toBeUndefined()
   })
 
-  it('toggleSort cycles asc → desc → asc on same key', async () => {
+  it('toggleSort 3-режимный: asc → desc → off (null) → asc', async () => {
     mock.onPost('/articles/search').reply(200, {
       success: true, payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
     const s = useResourceIndexStore()
     s.setSlug('articles')
+
     await s.toggleSort('title')
+    expect(s.sortKey).toBe('title')
     expect(s.sortDirection).toBe('asc')
+
     await s.toggleSort('title')
     expect(s.sortDirection).toBe('desc')
+
+    // Третий режим: off — sortKey становится null, direction null.
     await s.toggleSort('title')
+    expect(s.sortKey).toBeNull()
+    expect(s.sortDirection).toBeNull()
+
+    // Четвёртый клик по тому же столбцу = новый sort, asc.
+    await s.toggleSort('title')
+    expect(s.sortKey).toBe('title')
     expect(s.sortDirection).toBe('asc')
   })
 
