@@ -62,8 +62,11 @@ function iconSlot(name?: string | null): Component | undefined {
 
 /** UidSidebarItem.to принимает string | object; routeName маппим через route-object. */
 function itemTarget(item: MenuItem): string | Record<string, unknown> | undefined {
-  if (item.routeName) return { name: item.routeName }
+  // URL приоритетнее routeName — vue-router бросает "no match for {name}" если
+  // route'а ещё нет (dynamic-routes добавляются async после manifest.load).
+  // URL-based navigation матчится в любой момент через path.
   if (item.url) return item.url
+  if (item.routeName) return { name: item.routeName }
   return undefined
 }
 </script>
