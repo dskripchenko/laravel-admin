@@ -100,20 +100,24 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
       page: override.page ?? meta.value.page,
       per_page: override.per_page ?? meta.value.per_page,
     }
+    // Free-text: backend ждёт `q`. См. HttpFilterParser::searchTerm.
     const ss = override.search ?? search.value
-    if (ss) params.search = ss
+    if (ss) params.q = ss
 
+    // Order: массив {column, direction}. Backend читает `order[]` через input('order').
     const sk = override.sort ?? sortKey.value
     if (sk) {
-      params.sort = sk
-      params.direction = override.direction ?? sortDirection.value
+      params.order = [{ column: sk, direction: override.direction ?? sortDirection.value }]
     }
 
+    // Filters: map-style {column: value} — HttpFilterParser auto-detect режим 1.
     const f = override.filters ?? filters.value
+    const filtersMap: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(f)) {
       if (v === null || v === undefined || v === '') continue
-      params[`filter[${k}]`] = Array.isArray(v) ? v.join(',') : String(v)
+      filtersMap[k] = Array.isArray(v) ? v.join(',') : v
     }
+    if (Object.keys(filtersMap).length > 0) params.filters = filtersMap
 
     return params
   }
@@ -127,8 +131,11 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     error.value = null
     try {
       const client = getAdminClient()
-      const params = buildParams(override)
-      const res = await client.get<ListResponse>(`/resources/${slug.value}/list`, { params })
+      const body = buildParams(override)
+      // Backend ResourceController.search: POST /{slug}/search.
+      // Тело — параметры (фильтры/сортировка/пагинация). Возвращает
+      // {data, meta:{page,per_page,total,last_page,...}}.
+      const res = await client.post<ListResponse>(`/${slug.value}/search`, body)
       items.value = res.data
       meta.value = res.meta
     } catch (err) {

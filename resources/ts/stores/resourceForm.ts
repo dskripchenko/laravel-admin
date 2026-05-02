@@ -10,10 +10,10 @@
  *   - dirty (computed) — есть ли несохранённые изменения
  *
  * Endpoints (laravel-admin contract):
- *   GET    /resources/{slug}/read        — fetch one (id в filter[id])
- *   POST   /resources/{slug}/create
- *   POST   /resources/{slug}/update
- *   POST   /resources/{slug}/destroy
+ *   GET    /{slug}/read         — fetch one (id в query)
+ *   POST   /{slug}/create
+ *   POST   /{slug}/update
+ *   POST   /{slug}/delete
  */
 
 import { defineStore } from 'pinia'
@@ -117,8 +117,8 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
 
     try {
       const client = getAdminClient()
-      const res = await client.get<ReadResponse>(`/resources/${resourceSlug}/read`, {
-        params: { 'filter[id]': id },
+      const res = await client.get<ReadResponse>(`/${resourceSlug}/read`, {
+        params: { id },
       })
       replaceObject(state.value, res.data)
       replaceObject(initial.value, res.data)
@@ -165,8 +165,8 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
       const client = getAdminClient()
       const url =
         mode.value === 'create'
-          ? `/resources/${slug.value}/create`
-          : `/resources/${slug.value}/update`
+          ? `/${slug.value}/create`
+          : `/${slug.value}/update`
 
       const payload =
         mode.value === 'create'
@@ -205,7 +205,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     error.value = null
     try {
       const client = getAdminClient()
-      await client.post(`/resources/${slug.value}/destroy`, { id: recordId.value })
+      await client.post(`/${slug.value}/delete`, { id: recordId.value })
     } catch (err) {
       if (err instanceof Error) error.value = err
       throw err

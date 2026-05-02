@@ -26,7 +26,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('load fetches list + meta', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: {
         data: [{ id: 1, title: 'A' }, { id: 2, title: 'B' }],
@@ -43,7 +43,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('isEmpty after load returns no items', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
@@ -54,7 +54,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('captures error on network failure', async () => {
-    mock.onGet('/resources/articles/list').networkError()
+    mock.onPost('/articles/search').networkError()
     const s = useResourceIndexStore()
     s.setSlug('articles')
     await expect(s.load()).rejects.toThrow()
@@ -63,7 +63,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('setSlug resets state when changing resources', async () => {
-    mock.onGet('/resources/a/list').reply(200, {
+    mock.onPost('/a/search').reply(200, {
       success: true, payload: { data: [{ id: 1 }], meta: { page: 1, per_page: 20, total: 1, last_page: 1 } },
     })
     const s = useResourceIndexStore()
@@ -76,13 +76,15 @@ describe('useResourceIndexStore', () => {
     expect(s.meta.total).toBe(0)
   })
 
-  it('setSearch resets to page 1 + reloads', async () => {
-    mock.onGet('/resources/articles/list').reply((config) => {
+  it('setSearch resets to page 1 + reloads with q in body', async () => {
+    let capturedBody: Record<string, unknown> | null = null
+    mock.onPost('/articles/search').reply((config) => {
+      capturedBody = JSON.parse(config.data ?? '{}')
       return [200, {
         success: true,
         payload: {
-          data: [{ id: 1, q: config.params.search }],
-          meta: { page: config.params.page ?? 1, per_page: 20, total: 1, last_page: 1 },
+          data: [{ id: 1 }],
+          meta: { page: 1, per_page: 20, total: 1, last_page: 1 },
         },
       }]
     })
@@ -93,10 +95,11 @@ describe('useResourceIndexStore', () => {
     await s.setSearch('hello')
     expect(s.search).toBe('hello')
     expect(s.meta.page).toBe(1)
+    expect(capturedBody).toMatchObject({ q: 'hello', page: 1 })
   })
 
   it('setFilter adds + clears + reloads', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true, payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
     const s = useResourceIndexStore()
@@ -109,7 +112,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('toggleSort cycles asc → desc → asc on same key', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true, payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
     const s = useResourceIndexStore()
@@ -123,7 +126,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('toggleSort on different key resets to asc', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true, payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
     const s = useResourceIndexStore()
@@ -136,7 +139,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('selection: toggleRow + selectionState', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true, payload: { data: [{ id: 1 }, { id: 2 }, { id: 3 }], meta: { page: 1, per_page: 20, total: 3, last_page: 1 } },
     })
     const s = useResourceIndexStore()
@@ -152,7 +155,7 @@ describe('useResourceIndexStore', () => {
   })
 
   it('toggleAllOnPage selects all then clears', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true, payload: { data: [{ id: 1 }, { id: 2 }], meta: { page: 1, per_page: 20, total: 2, last_page: 1 } },
     })
     const s = useResourceIndexStore()
@@ -172,10 +175,10 @@ describe('useResourceIndexStore', () => {
     expect(s.selectedCount).toBe(0)
   })
 
-  it('passes filters as filter[key]= query params', async () => {
-    let capturedParams: Record<string, unknown> | null = null
-    mock.onGet('/resources/articles/list').reply((config) => {
-      capturedParams = config.params
+  it('passes filters as map under `filters` body key', async () => {
+    let capturedBody: Record<string, unknown> | null = null
+    mock.onPost('/articles/search').reply((config) => {
+      capturedBody = JSON.parse(config.data ?? '{}')
       return [200, {
         success: true, payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
       }]
@@ -183,15 +186,15 @@ describe('useResourceIndexStore', () => {
     const s = useResourceIndexStore()
     s.setSlug('articles')
     await s.setFilter('status', 'published')
-    expect(capturedParams).toMatchObject({
-      'filter[status]': 'published',
+    expect(capturedBody).toMatchObject({
+      filters: { status: 'published' },
     })
   })
 
   it('array filter values joined by comma', async () => {
-    let capturedParams: Record<string, unknown> | null = null
-    mock.onGet('/resources/articles/list').reply((config) => {
-      capturedParams = config.params
+    let capturedBody: Record<string, unknown> | null = null
+    mock.onPost('/articles/search').reply((config) => {
+      capturedBody = JSON.parse(config.data ?? '{}')
       return [200, {
         success: true, payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
       }]
@@ -199,8 +202,24 @@ describe('useResourceIndexStore', () => {
     const s = useResourceIndexStore()
     s.setSlug('articles')
     await s.setFilter('cat', ['Backend', 'Frontend'])
-    expect(capturedParams).toMatchObject({
-      'filter[cat]': 'Backend,Frontend',
+    expect(capturedBody).toMatchObject({
+      filters: { cat: 'Backend,Frontend' },
+    })
+  })
+
+  it('passes order array with column+direction to backend', async () => {
+    let capturedBody: Record<string, unknown> | null = null
+    mock.onPost('/articles/search').reply((config) => {
+      capturedBody = JSON.parse(config.data ?? '{}')
+      return [200, {
+        success: true, payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
+      }]
+    })
+    const s = useResourceIndexStore()
+    s.setSlug('articles')
+    await s.toggleSort('title')
+    expect(capturedBody).toMatchObject({
+      order: [{ column: 'title', direction: 'asc' }],
     })
   })
 

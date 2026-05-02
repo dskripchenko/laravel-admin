@@ -90,7 +90,7 @@ describe('ResourceViewPage', () => {
   })
 
   it('renders title with resource label + id', async () => {
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 7, title: 'Old', status: 'published' } },
     })
     const wrapper = await mountPage()
@@ -100,7 +100,7 @@ describe('ResourceViewPage', () => {
   })
 
   it('renders Edit and Удалить buttons', async () => {
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 7 } },
     })
     const wrapper = await mountPage()
@@ -111,14 +111,14 @@ describe('ResourceViewPage', () => {
   })
 
   it('shows skeleton during load', async () => {
-    mock.onGet('/resources/articles/read').reply(() => new Promise(() => {}))
+    mock.onGet('/articles/read').reply(() => new Promise(() => {}))
     const wrapper = await mountPage()
     await flushPromises()
     expect(wrapper.findAll('.admin-resource-view__loading > *').length).toBeGreaterThan(0)
   })
 
   it('renders infolist with text + badge entries from manifest', async () => {
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true,
       payload: { data: { id: 7, title: 'Hello', status: 'published' } },
     })
@@ -129,7 +129,7 @@ describe('ResourceViewPage', () => {
   })
 
   it('shows error alert on load failure', async () => {
-    mock.onGet('/resources/articles/read').networkError()
+    mock.onGet('/articles/read').networkError()
     const wrapper = await mountPage()
     await flushPromises()
     // form.error.message либо 'Network Error' либо fallback из шаблона

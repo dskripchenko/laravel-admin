@@ -102,7 +102,7 @@ describe('ResourceFormPage', () => {
   })
 
   it('edit-mode: loads record + renders Сохранить + Удалить', async () => {
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true,
       payload: { data: { id: 7, title: 'Old', body: 'B' } },
     })
@@ -137,7 +137,7 @@ describe('ResourceFormPage', () => {
   })
 
   it('save POSTs to /create + redirects on create', async () => {
-    mock.onPost('/resources/articles/create').reply(200, {
+    mock.onPost('/articles/create').reply(200, {
       success: true,
       payload: { id: 99 },
     })
@@ -155,10 +155,10 @@ describe('ResourceFormPage', () => {
 
   it('save in edit-mode POSTs id + state to /update', async () => {
     let captured: Record<string, unknown> | null = null
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 5, title: 'Old' } },
     })
-    mock.onPost('/resources/articles/update').reply((config) => {
+    mock.onPost('/articles/update').reply((config) => {
       captured = JSON.parse(config.data)
       return [200, { success: true, payload: { id: 5 } }]
     })
@@ -177,10 +177,10 @@ describe('ResourceFormPage', () => {
 
   it('delete: confirm + redirect to index', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 5 } },
     })
-    mock.onPost('/resources/articles/destroy').reply(200, {
+    mock.onPost('/articles/delete').reply(200, {
       success: true, payload: {},
     })
     const wrapper = await mountPage({
@@ -196,7 +196,7 @@ describe('ResourceFormPage', () => {
   })
 
   it('shows ValidationError messages on save failure', async () => {
-    mock.onPost('/resources/articles/create').reply(422, {
+    mock.onPost('/articles/create').reply(422, {
       success: false,
       payload: {
         errorKey: 'validation',

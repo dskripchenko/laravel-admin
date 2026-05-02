@@ -38,7 +38,7 @@ describe('useResourceFormStore', () => {
   })
 
   it('load fetches record into state + initial (mode=edit)', async () => {
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true,
       payload: { data: { id: 7, title: 'Old', status: 'published' } },
     })
@@ -51,7 +51,7 @@ describe('useResourceFormStore', () => {
   })
 
   it('load with mode=view sets isView', async () => {
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 1 } },
     })
     const s = useResourceFormStore()
@@ -60,14 +60,14 @@ describe('useResourceFormStore', () => {
   })
 
   it('captures error on load failure', async () => {
-    mock.onGet('/resources/articles/read').networkError()
+    mock.onGet('/articles/read').networkError()
     const s = useResourceFormStore()
     await expect(s.load('articles', 1)).rejects.toThrow()
     expect(s.hasError).toBe(true)
   })
 
   it('save in create-mode POSTs to /create + transitions to edit', async () => {
-    mock.onPost('/resources/articles/create').reply(200, {
+    mock.onPost('/articles/create').reply(200, {
       success: true,
       payload: { id: 42, redirect_url: '/admin/r/articles/42/edit' },
     })
@@ -83,10 +83,10 @@ describe('useResourceFormStore', () => {
 
   it('save in edit-mode POSTs id + state to /update', async () => {
     let captured: Record<string, unknown> | null = null
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 7, title: 'Old' } },
     })
-    mock.onPost('/resources/articles/update').reply((config) => {
+    mock.onPost('/articles/update').reply((config) => {
       captured = JSON.parse(config.data)
       return [200, { success: true, payload: { id: 7 } }]
     })
@@ -98,7 +98,7 @@ describe('useResourceFormStore', () => {
   })
 
   it('save converts ValidationError into errors map', async () => {
-    mock.onPost('/resources/articles/create').reply(422, {
+    mock.onPost('/articles/create').reply(422, {
       success: false,
       payload: {
         errorKey: 'validation',
@@ -117,7 +117,7 @@ describe('useResourceFormStore', () => {
   })
 
   it('setField clears error for that field', async () => {
-    mock.onPost('/resources/articles/create').reply(422, {
+    mock.onPost('/articles/create').reply(422, {
       success: false,
       payload: {
         errorKey: 'validation', message: 'V',
@@ -134,10 +134,10 @@ describe('useResourceFormStore', () => {
 
   it('destroy POSTs to /destroy with id', async () => {
     let capturedBody: Record<string, unknown> | null = null
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 5 } },
     })
-    mock.onPost('/resources/articles/destroy').reply((config) => {
+    mock.onPost('/articles/delete').reply((config) => {
       capturedBody = JSON.parse(config.data)
       return [200, { success: true, payload: {} }]
     })
@@ -153,7 +153,7 @@ describe('useResourceFormStore', () => {
   })
 
   it('reset wipes everything', async () => {
-    mock.onGet('/resources/articles/read').reply(200, {
+    mock.onGet('/articles/read').reply(200, {
       success: true, payload: { data: { id: 1, title: 'X' } },
     })
     const s = useResourceFormStore()

@@ -80,7 +80,7 @@ describe('ResourceIndexPage', () => {
   })
 
   it('renders page header with manifest label as default title', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
@@ -90,7 +90,7 @@ describe('ResourceIndexPage', () => {
   })
 
   it('renders custom title when prop provided', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
@@ -99,14 +99,14 @@ describe('ResourceIndexPage', () => {
   })
 
   it('shows loading skeletons while fetching', async () => {
-    mock.onGet('/resources/articles/list').reply(() => new Promise(() => {}))
+    mock.onPost('/articles/search').reply(() => new Promise(() => {}))
     const wrapper = await mountPage()
     await flushPromises()
     expect(wrapper.findAll('.admin-resource-index__loading > *').length).toBeGreaterThan(0)
   })
 
   it('shows EmptyState when no items', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
@@ -116,14 +116,14 @@ describe('ResourceIndexPage', () => {
   })
 
   it('shows ErrorState on API error', async () => {
-    mock.onGet('/resources/articles/list').networkError()
+    mock.onPost('/articles/search').networkError()
     const wrapper = await mountPage()
     await flushPromises()
     expect(wrapper.text()).toContain('Не удалось загрузить')
   })
 
   it('renders bulk toolbar when items selected', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: {
         data: [
@@ -152,7 +152,7 @@ describe('ResourceIndexPage', () => {
   })
 
   it('emits bulk-action with selected ids', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: {
         data: [{ id: 1 }, { id: 2 }],
@@ -178,7 +178,7 @@ describe('ResourceIndexPage', () => {
   })
 
   it('shows pagination footer when items present', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: {
         data: [{ id: 1 }],
@@ -191,7 +191,7 @@ describe('ResourceIndexPage', () => {
   })
 
   it('renders Создать button if createRouteName provided', async () => {
-    mock.onGet('/resources/articles/list').reply(200, {
+    mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
     })
