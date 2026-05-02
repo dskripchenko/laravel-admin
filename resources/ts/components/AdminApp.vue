@@ -61,13 +61,46 @@ const useShell = computed<boolean>(() => {
   width: 100%;
 }
 
-.admin-page-enter-active,
-.admin-page-leave-active {
-  transition: opacity 120ms ease-out;
+/*
+ * Animation: fade + лёгкий slide-up для входящей страницы (8px).
+ * Уходящая страница только fade'ится — это даёт ощущение "новая въехала
+ * снизу-вверх и заняла место старой" без агрессивного движения.
+ *
+ * Длительность 220ms — достаточно для плавности без потери responsive feel.
+ * Easing cubic-bezier — material-style ease-out (быстро в начале, медленно в конце).
+ */
+.admin-page-enter-active {
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.admin-page-enter-from,
+.admin-page-leave-active {
+  transition: opacity 180ms ease-out;
+}
+
+.admin-page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.admin-page-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .admin-page-leave-to {
   opacity: 0;
+}
+
+/* Уважаем prefers-reduced-motion — отключаем slide, fade длительностью 80ms. */
+@media (prefers-reduced-motion: reduce) {
+  .admin-page-enter-active,
+  .admin-page-leave-active {
+    transition: opacity 80ms ease-out;
+  }
+  .admin-page-enter-from {
+    transform: none;
+  }
 }
 </style>
