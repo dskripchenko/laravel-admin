@@ -107,6 +107,20 @@ function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
   return (slotProps as { row?: Record<string, unknown> } | undefined)?.row
 }
 
+/**
+ * Показывать ли filter-bar:
+ *   - если есть данные → всегда (search + фильтры внутри);
+ *   - если данных нет, но есть активный search/filter → ДА (чтобы пользователь
+ *     мог сбросить и снова увидеть items);
+ *   - если данных нет и фильтры/поиск пустые → НЕТ (initial empty state).
+ */
+const hasActiveFilters = computed<boolean>(
+  () => index.search !== '' || Object.keys(index.filters).length > 0,
+)
+const showFilterBar = computed<boolean>(
+  () => !index.isEmpty || hasActiveFilters.value,
+)
+
 const totalLabel = computed(() => {
   const t = index.meta.total
   if (t === 0) return ''
@@ -204,7 +218,7 @@ async function retryLoad(): Promise<void> {
       </UidButton>
     </div>
 
-    <div v-else class="admin-filter-bar">
+    <div v-else-if="showFilterBar" class="admin-filter-bar">
       <input
         :value="index.search"
         type="search"
