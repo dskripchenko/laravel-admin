@@ -14,7 +14,7 @@
  * Host рендерит page через router. resource-slug приходит из props (либо
  * из route.params).
  */
-import { computed, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import {
   UidButton,
   UidEmptyState,
@@ -100,13 +100,17 @@ watch(
   },
 )
 
-async function onSortUpdate(key: string | null): Promise<void> {
-  if (key === null) {
-    // Сброс сортировки — третий режим UidTable: column-key уходит в null.
-    await index.setSort(null, null)
-    return
-  }
-  await index.toggleSort(key)
+async function onSortKeyUpdate(key: string | null): Promise<void> {
+  // UidTable управляет своим 3-режимным cycle; здесь только применяем итог.
+  // sortDirection приходит отдельным событием — apply через setSort одним
+  // вызовом (после nextTick — Vue batches событий).
+  await nextTick()
+  await index.setSort(key, index.sortDirection)
+}
+
+async function onSortDirUpdate(dir: 'asc' | 'desc' | null): Promise<void> {
+  await nextTick()
+  await index.setSort(index.sortKey, dir)
 }
 
 function onSelectionUpdate(next: Set<string | number>): void {
@@ -231,7 +235,8 @@ async function retryLoad(): Promise<void> {
         selectable
         :selection="index.selection"
         :row-key="(row) => index.rowId(row)"
-        @update:sort-key="onSortUpdate"
+        @update:sort-key="onSortKeyUpdate"
+        @update:sort-direction="onSortDirUpdate"
         @update:selection="onSelectionUpdate"
         @row-click="onRowClick"
       >
@@ -271,7 +276,14 @@ async function retryLoad(): Promise<void> {
   margin-top: var(--uid-space-xl);
 }
 .admin-resource-index__table {
-  margin-top: var(--uid-space-md);
+  /* table визуально приклеена к filter-bar / bulk-toolbar сверху —
+     убираем gap, скругляем только нижние углы у table-wrap'а. */
+  margin-top: 0;
+}
+.admin-resource-index__table .uid-table-wrap {
+  border: 1px solid var(--uid-border-subtle);
+  border-top: 0;
+  border-radius: 0 0 var(--uid-radius-lg) var(--uid-radius-lg);
 }
 .admin-resource-index__footer {
   display: flex;
