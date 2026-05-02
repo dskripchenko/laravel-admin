@@ -48,6 +48,7 @@ import { useThemeStore } from './stores/theme'
 import { useNotificationsStore } from './stores/notifications'
 import { useManifestStore } from './stores/manifest'
 import { useMenuStore } from './stores/menu'
+import { useNavigationStore } from './stores/navigation'
 
 import { createAdminRouter, type AdminRouter, type AdminRouterOptions } from './router'
 import { registerBuiltinComponents } from './components/render/builtin'
@@ -170,6 +171,21 @@ export function createAdminApp(
     titleGuard: options.router?.titleGuard,
   })
   app.use(router)
+
+  // 5.1 Top loading-bar hooks: pending++ при старте навигации, pending--
+  //     при её завершении. ResourceIndexPage/FormPage добавляют свой counter
+  //     поверх через onMounted+onBeforeUnmount → useNavigationStore.
+  const navStore = useNavigationStore()
+  router.beforeEach((to, from, next) => {
+    if (to.fullPath !== from.fullPath) navStore.start()
+    next()
+  })
+  router.afterEach(() => {
+    navStore.end()
+  })
+  router.onError(() => {
+    navStore.end()
+  })
 
   // 6. Manifest async-load + dynamic routes (только если authenticated;
   //    при появлении user после login — manifest подгружается автоматически).

@@ -26,6 +26,7 @@ import {
 } from '@dskripchenko/ui'
 import { useResourceIndexStore } from '../../stores/resourceIndex'
 import { useManifestStore } from '../../stores/manifest'
+import { useNavigationStore } from '../../stores/navigation'
 import { formatCell, type CellMeta } from './cellFormat'
 
 interface Props {
@@ -57,6 +58,7 @@ const emit = defineEmits<{
 
 const index = useResourceIndexStore()
 const manifest = useManifestStore()
+const nav = useNavigationStore()
 
 const resourceMeta = computed(() => manifest.getResource(props.slug))
 
@@ -127,12 +129,28 @@ const totalLabel = computed(() => {
   return `${index.items.length} из ${t}`
 })
 
+/**
+ * Обёртка над index.load — увеличивает navigation pending counter
+ * (top loading-bar) на время запроса. router.beforeEach уже инкрементирует
+ * counter при start navigation; этот wrap держит bar до конца data-fetch'а.
+ */
+async function loadWithProgress(): Promise<void> {
+  nav.start()
+  try {
+    await index.load()
+  } catch {
+    // silent; ошибка отображается в hasError state
+  } finally {
+    nav.end()
+  }
+}
+
 onMounted(async () => {
   index.setSlug(props.slug)
   if (manifest.manifest === null) {
     await manifest.load().catch(() => undefined)
   }
-  await index.load().catch(() => undefined)
+  await loadWithProgress()
 })
 
 watch(
@@ -140,7 +158,7 @@ watch(
   async (next, prev) => {
     if (next === prev) return
     index.setSlug(next)
-    await index.load().catch(() => undefined)
+    await loadWithProgress()
   },
 )
 

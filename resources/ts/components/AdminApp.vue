@@ -11,6 +11,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AdminShell from './shell/AdminShell.vue'
+import AdminLoadingBar from './AdminLoadingBar.vue'
 
 const route = useRoute()
 
@@ -23,6 +24,9 @@ const useShell = computed<boolean>(() => {
 </script>
 
 <template>
+  <!-- Top loading-bar: показывается пока nav/data не закончили (см. useNavigationStore). -->
+  <AdminLoadingBar />
+
   <AdminShell v-if="useShell">
     <div class="admin-page-host">
       <router-view v-slot="{ Component }">
@@ -41,59 +45,52 @@ const useShell = computed<boolean>(() => {
 
 <style>
 /*
- * Page-host: relative контейнер чтобы старая и новая страницы могли
- * перекрываться абсолютно во время transition'а. Без этого default
- * mode (in-out) или out-in оставляют пустое место → layout shift,
- * который виден как "дёргание" sidebar/header.
+ * Page-host: relative контейнер. Старая страница leaving делается absolute
+ * (overlay поверх новой), entering в нормальном flow с slide-from-right.
  *
- * Default Transition mode (одновременный enter+leave) + absolute
- * leaving = плавное перекрытие без сдвига контента ниже.
+ * Тайминги (по запросу):
+ *   - leaving fade-out: 140ms ease-out (быстро уходит).
+ *   - entering slide-from-right + fade-in: 320ms cubic-bezier easing,
+ *     с 60ms delay чтобы старая успела "пропасть до того как новая
+ *     доберётся до позиции".
+ *
+ * overflow:hidden на host — slide справа не вылезает за viewport.
  */
 .admin-page-host {
   position: relative;
   min-height: 200px;
+  overflow: hidden;
 }
 
-/* Leaving page absolute-positioned — не двигает layout. */
+/* Leaving page absolute — не двигает layout, остаётся на месте пока fade'ится. */
 .admin-page-leave-active {
   position: absolute;
   inset: 0;
   width: 100%;
-}
-
-/*
- * Animation: fade + лёгкий slide-up для входящей страницы (8px).
- * Уходящая страница только fade'ится — это даёт ощущение "новая въехала
- * снизу-вверх и заняла место старой" без агрессивного движения.
- *
- * Длительность 220ms — достаточно для плавности без потери responsive feel.
- * Easing cubic-bezier — material-style ease-out (быстро в начале, медленно в конце).
- */
-.admin-page-enter-active {
-  transition:
-    opacity 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.admin-page-leave-active {
-  transition: opacity 180ms ease-out;
-}
-
-.admin-page-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.admin-page-enter-to {
-  opacity: 1;
-  transform: translateY(0);
+  transition: opacity 140ms ease-out;
 }
 
 .admin-page-leave-to {
   opacity: 0;
 }
 
-/* Уважаем prefers-reduced-motion — отключаем slide, fade длительностью 80ms. */
+/* Entering page: slide-in справа + fade-in. Delay 60ms — старая уже почти ушла. */
+.admin-page-enter-active {
+  transition:
+    opacity 320ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms,
+    transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms;
+}
+
+.admin-page-enter-from {
+  opacity: 0;
+  transform: translateX(28px);
+}
+
+.admin-page-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-page-enter-active,
   .admin-page-leave-active {
