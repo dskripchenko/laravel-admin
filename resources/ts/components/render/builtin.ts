@@ -16,6 +16,7 @@ import CheckboxField from '../fields/CheckboxField.vue'
 import DateField from '../fields/DateField.vue'
 import TagsField from '../fields/TagsField.vue'
 import TranslatableField from '../fields/TranslatableField.vue'
+import WysiwygField from '../fields/WysiwygField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -37,11 +38,11 @@ export function registerBuiltinComponents(): void {
       hidden: TextField,
       label: TextField,
       textarea: TextAreaField,
-      // Fallback для wysiwyg/markdown/code — обычный TextAreaField.
-      // Реальный rich-editor host подключает через subpath:
+      // WYSIWYG default — собственный @dskripchenko/wysiwyg (zero-dep,
+      // ~7 KB gzip). Host может перебить:
       //   import { QuillField } from '@dskripchenko/laravel-admin/quill'
       //   registerField('wysiwyg', QuillField)
-      wysiwyg: TextAreaField,
+      wysiwyg: WysiwygField,
       markdown: TextAreaField,
       code: TextAreaField,
       number: NumberField,

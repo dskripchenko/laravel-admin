@@ -59,6 +59,7 @@ export default defineConfig({
         'pinia',
         'axios',
         /^@dskripchenko\/ui($|\/)/,
+        /^@dskripchenko\/wysiwyg($|\/)/,
         /^@tiptap\//,
         'marked',
         // WYSIWYG peer-deps: используются TinymceField/QuillField, поставляются

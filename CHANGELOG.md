@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2026-05-07
+
+### Added
+
+- **`@dskripchenko/wysiwyg` как default WYSIWYG** — собственный zero-dep
+  редактор (~7 KB gzip). Заменил TextAreaField fallback в `wysiwyg`-field
+  registry. `WysiwygField.vue` — тонкая обёртка над `DskWysiwyg`. Host
+  может перебить через `registerField('wysiwyg', …)` (Quill/Tinymce
+  subpath остались для совместимости).
+
 ## [1.2.2] - 2026-05-07
 
 ### Added
