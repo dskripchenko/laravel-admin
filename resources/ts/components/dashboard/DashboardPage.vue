@@ -32,6 +32,7 @@ import {
   UidMenuItem,
 } from '@dskripchenko/ui'
 import { useManifestStore } from '../../stores/manifest'
+import { useI18nStore } from '../../stores/i18n'
 import { useDashboardStore, type WidgetLayoutItem } from '../../stores/dashboard'
 import WidgetRenderer, { type WidgetNode } from './WidgetRenderer.vue'
 import WidgetActionsOverlay from './WidgetActionsOverlay.vue'
@@ -65,6 +66,12 @@ const emit = defineEmits<{
 
 const manifest = useManifestStore()
 const dashboardStore = useDashboardStore()
+const i18n = useI18nStore()
+const t = (key: string, fallback: string): string => {
+  // Если backend lang-bag прислал нужный ключ — используем; иначе ru-fallback.
+  // Это позволяет постепенно мигрировать без breaking changes.
+  return i18n.has(key) ? i18n.t(key) : fallback
+}
 
 const dashboard = computed<DashboardManifest | null>(() => {
   if (!props.slug || !manifest.manifest) return null
@@ -150,12 +157,12 @@ function spanFor(w: WidgetNode): number {
 }
 
 // === Toolbar period ===
-const periods = [
-  { key: '7d', label: 'За 7 дней' },
-  { key: '30d', label: 'За 30 дней' },
-  { key: '90d', label: 'За 90 дней' },
-  { key: 'all', label: 'Всё время' },
-]
+const periods = computed(() => [
+  { key: '7d', label: t('admin.dashboard.period.7d', 'За 7 дней') },
+  { key: '30d', label: t('admin.dashboard.period.30d', 'За 30 дней') },
+  { key: '90d', label: t('admin.dashboard.period.90d', 'За 90 дней') },
+  { key: 'all', label: t('admin.dashboard.period.all', 'Всё время') },
+])
 const selectedPeriod = ref<string>('30d')
 /** Свежие widget data полученные через /dashboard/widgets?period=. */
 const refreshedWidgets = ref<WidgetNode[] | null>(null)
@@ -182,7 +189,7 @@ async function refetchPeriod(): Promise<void> {
 }
 
 const periodLabel = computed(
-  () => periods.find((p) => p.key === selectedPeriod.value)?.label ?? 'Период',
+  () => periods.value.find((p) => p.key === selectedPeriod.value)?.label ?? t('admin.dashboard.period.label', 'Период'),
 )
 
 // === Edit-mode actions ===

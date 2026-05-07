@@ -74,6 +74,8 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->singleton(Export\ExporterRegistry::class, function (): Export\ExporterRegistry {
             $registry = new Export\ExporterRegistry;
             $registry->add(new Export\CsvExporter);
+            // JSON exporter — без deps, всегда доступен.
+            $registry->add(new Export\JsonExporter);
             if (class_exists(\OpenSpout\Writer\XLSX\Writer::class)) {
                 $registry->add(new Export\XlsxExporter);
             }

@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-05-07
+
+### Added
+
+- **F1: Reorder-row UI** — drag-handle column для resource'ов с `reorderable=true`, HTML5 drag, persistence через `POST /{slug}/reorder`.
+- **F2: Bootstrap translations** — `BootstrapBuilder` кладёт lang-bag из admin::*-namespace в payload (пара ключ/перевод), frontend `useI18nStore` гидрирует.
+- **F4: QR slot** в TwoFactorSetup — host подключает любой QR-генератор через `<template #qr-code>`. Demo: `qrcode-svg`.
+- **F5: JSON exporter** — без зависимостей, поддержка `lines` режима (NDJSON). `Export CSV/JSON/XLSX/PDF` пункты в more-menu.
+- **F3: i18n migration scaffolding** — `t(key, fallback)`-обёртки на DashboardPage с graceful ru-fallback. Прогон остальных компонентов — следующий спринт.
+
 ## [1.2.0] - 2026-05-07
 
 ### Added

@@ -59,11 +59,55 @@ final class BootstrapBuilder
             'manifestVersion' => $this->manifest->version($locale),
             'plugins' => $this->admin->getPlugins(),
             'unread_notifications_count' => $this->unreadNotificationsCount(),
+            'translations' => $this->loadTranslations($locale),
             'config' => [
                 'manifest' => ['etag' => (bool) config('admin.manifest.etag', true)],
                 'bootstrap' => ['strategy' => (string) config('admin.bootstrap.strategy', 'inline')],
             ],
         ];
+    }
+
+    /**
+     * Lang-bag для SPA: flat-объект `{key: translation}` из admin::* lang-files.
+     * Frontend useI18nStore использует через `t('admin.dashboard.add_widget')`.
+     *
+     * Источники:
+     *   1. resources/lang/{locale}/admin/*.php — host-проект.
+     *   2. config('admin.translations.namespace') — кастомный namespace.
+     *
+     * Чтобы избежать раздувания payload'а — фильтруем только префиксы из
+     * config('admin.translations.prefixes', ['admin']).
+     *
+     * @return array<string, string>
+     */
+    private function loadTranslations(string $locale): array
+    {
+        $prefixes = (array) config('admin.translations.prefixes', ['admin']);
+        $result = [];
+
+        $loader = app('translator')->getLoader();
+        foreach ($prefixes as $prefix) {
+            // Сканируем admin::* (если registered как namespace) и dot.notation.
+            // Для caсhe-aware loader'а зовём через trans() — он знает где искать.
+            $namespace = is_string($prefix) ? $prefix : 'admin';
+            // Пробуем как namespace (admin::menu.users), иначе как dot-prefix.
+            $messages = [];
+            try {
+                $messages = (array) $loader->load($locale, $namespace, '*');
+            } catch (\Throwable) {
+                $messages = [];
+            }
+            foreach ($messages as $group => $bag) {
+                if (! is_array($bag)) continue;
+                foreach (\Illuminate\Support\Arr::dot($bag) as $key => $value) {
+                    if (is_string($value)) {
+                        $result["{$namespace}.{$group}.{$key}"] = $value;
+                    }
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**

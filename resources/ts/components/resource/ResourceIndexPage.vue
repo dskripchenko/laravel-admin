@@ -20,6 +20,7 @@ import {
   Bookmark,
   ChevronDown,
   Eye,
+  GripVertical,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -156,10 +157,15 @@ async function onCustomAction(action: HeaderAction): Promise<void> {
 }
 
 /**
- * Export — POST /{slug}/export, ответ blob (CSV/JSON), скачиваем через
- * <a download>. Backend сам решает формат через Accept-header или query.
+ * Export — POST /{slug}/export?format=csv|json|xlsx|pdf. Backend
+ * ExporterRegistry резолвит format. Ответ blob, скачиваем через <a download>.
+ *
+ * Доступные форматы зависят от установленных composer-пакетов:
+ *   - csv / json — всегда (без deps)
+ *   - xlsx       — openspout/openspout
+ *   - pdf        — mpdf/mpdf или dompdf/dompdf
  */
-async function onExport(): Promise<void> {
+async function onExport(format: 'csv' | 'json' | 'xlsx' | 'pdf' = 'csv'): Promise<void> {
   emit('header-action', 'export')
   try {
     nav.start()
@@ -167,20 +173,20 @@ async function onExport(): Promise<void> {
     const client = getAdminClient()
     const blob = await client.post<Blob>(
       `/${props.slug}/export`,
-      { filters: index.filters, search: index.search },
+      { format, filters: index.filters, search: index.search },
       { responseType: 'blob' as const },
     )
     const url = URL.createObjectURL(blob as unknown as Blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${props.slug}-${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `${props.slug}-${new Date().toISOString().slice(0, 10)}.${format}`
     document.body.appendChild(a)
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] export failed:', err)
-    adminToast.error('Не удалось экспортировать данные. Backend может не поддерживать /export для этого ресурса.')
+    adminToast.error(`Не удалось экспортировать данные в формате ${format.toUpperCase()}.`)
   } finally {
     nav.end()
   }
@@ -283,6 +289,13 @@ async function pollImportStatus(
 }
 
 const ACTIONS_KEY = '__row_actions__'
+const REORDER_KEY = '__row_reorder__'
+
+/** Resource поддерживает reorder если features.reorderable=true. */
+const isReorderable = computed<boolean>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  return features.reorderable === true
+})
 
 const columns = computed<UidTableColumn[]>(() => {
   const cols = resourceMeta.value?.columns ?? []
@@ -300,17 +313,30 @@ const columns = computed<UidTableColumn[]>(() => {
     // Применяем visibility-state из toolbar'а (Колонки): если явно false —
     // колонку не рендерим. По умолчанию (отсутствует в map) считаем visible.
     .filter((c) => columnVisibility.value[c.key] !== false)
+  // Если Resource reorderable — впереди колонка с drag-handle.
+  const head: UidTableColumn[] = isReorderable.value
+    ? [{
+        key: REORDER_KEY,
+        label: '',
+        sortable: false,
+        align: 'center',
+        width: '32px',
+      }]
+    : []
   // Хвостовая колонка с per-row actions (Просмотр / Редактировать / Удалить).
   // ResourceIndexPage добавляет её всегда — host может скрыть через
   // useShowActions=false (TODO prop).
-  mapped.push({
-    key: ACTIONS_KEY,
-    label: '',
-    sortable: false,
-    align: 'right',
-    width: '120px',
-  })
-  return mapped
+  return [
+    ...head,
+    ...mapped,
+    {
+      key: ACTIONS_KEY,
+      label: '',
+      sortable: false,
+      align: 'right',
+      width: '120px',
+    },
+  ]
 })
 
 // Колоночная meta (preset / format / currency / editable / etc.) из manifest'а.
@@ -730,6 +756,51 @@ async function onRestore(row: Record<string, unknown>, e?: MouseEvent): Promise<
   }
 }
 
+// === Row reorder (HTML5 drag) ===
+const dragRowIdx = ref<number | null>(null)
+function onRowDragStart(idx: number, e: DragEvent): void {
+  if (!isReorderable.value || !e.dataTransfer) return
+  // Drag только если начался с reorder-handle.
+  const t = e.target as HTMLElement | null
+  if (!t?.closest('[data-row-drag-handle="true"]')) {
+    e.preventDefault()
+    return
+  }
+  dragRowIdx.value = idx
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', String(idx))
+}
+function onRowDragOver(e: DragEvent): void {
+  if (isReorderable.value && dragRowIdx.value !== null) e.preventDefault()
+}
+async function onRowDrop(toIdx: number, e: DragEvent): Promise<void> {
+  e.preventDefault()
+  if (!isReorderable.value || dragRowIdx.value === null) return
+  const fromIdx = dragRowIdx.value
+  dragRowIdx.value = null
+  if (fromIdx === toIdx) return
+  // Локальный reorder для мгновенного отклика.
+  const items = [...index.items]
+  const [moved] = items.splice(fromIdx, 1)
+  items.splice(toIdx, 0, moved)
+  index.items = items
+  // Backend persistence: POST /{slug}/reorder body {ids: [orderedIds]}.
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    const ids = items.map((r) => index.rowId(r))
+    await client.post(`/${props.slug}/reorder`, { ids })
+    adminToast.success('Порядок сохранён.')
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] reorder failed:', err)
+    adminToast.error('Не удалось сохранить порядок.')
+    await index.load().catch(() => undefined)
+  } finally {
+    nav.end()
+  }
+}
+
 async function onForceDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<void> {
   e?.stopPropagation()
   const id = rowId(row)
@@ -821,7 +892,10 @@ async function retryLoad(): Promise<void> {
             </UidButton>
           </template>
           <UidMenuItem @click="retryLoad">Обновить</UidMenuItem>
-          <UidMenuItem @click="onExport">Экспорт</UidMenuItem>
+          <UidMenuItem @click="onExport('csv')">Экспорт CSV</UidMenuItem>
+          <UidMenuItem @click="onExport('json')">Экспорт JSON</UidMenuItem>
+          <UidMenuItem @click="onExport('xlsx')">Экспорт XLSX</UidMenuItem>
+          <UidMenuItem @click="onExport('pdf')">Экспорт PDF</UidMenuItem>
           <!-- Кастомные действия от backend Resource->actions(). -->
           <UidMenuItem
             v-for="action in headerActions"
@@ -955,9 +1029,29 @@ async function retryLoad(): Promise<void> {
           #[col.key]="slotProps"
           :key="col.key"
         >
+          <!-- Колонка drag-handle для reorderable resource'а -->
+          <span
+            v-if="col.key === REORDER_KEY"
+            class="admin-resource-index__row-drag"
+            data-row-drag-handle="true"
+            :draggable="isReorderable"
+            title="Перетащить"
+            @dragstart="(e: DragEvent) => onRowDragStart(
+              index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
+              e,
+            )"
+            @dragover="onRowDragOver"
+            @drop="(e: DragEvent) => onRowDrop(
+              index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
+              e,
+            )"
+          >
+            <UidIcon :icon="GripVertical" :size="14" />
+          </span>
+
           <!-- Колонка row-actions (View / Edit / Delete) — рендерим всегда последней. -->
           <div
-            v-if="col.key === ACTIONS_KEY"
+            v-else-if="col.key === ACTIONS_KEY"
             class="admin-resource-index__row-actions"
           >
             <button
@@ -1066,6 +1160,23 @@ async function retryLoad(): Promise<void> {
      когда slowLoading ещё false (быстрый запрос — placeholder пустой). */
   min-height: 320px;
 }
+
+/* Drag-handle для reorderable resource'а — первая колонка. */
+.admin-resource-index__row-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  cursor: grab;
+  color: var(--uid-text-tertiary);
+  border-radius: var(--uid-radius-sm);
+}
+.admin-resource-index__row-drag:hover {
+  background: var(--uid-color-surface-hover, var(--uid-border-subtle));
+  color: var(--uid-text-primary);
+}
+.admin-resource-index__row-drag:active { cursor: grabbing; }
 
 /* Row actions: View / Edit / Delete иконки в последней колонке таблицы. */
 .admin-resource-index__row-actions {
