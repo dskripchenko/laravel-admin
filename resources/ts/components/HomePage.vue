@@ -1,16 +1,26 @@
 <script setup lang="ts">
 /**
- * Default home-страница admin'а. Host'ы перебивают через
- * createAdminApp({ pages: { home: MyHome } }).
+ * Default home-страница admin'а — показывает первый зарегистрированный
+ * Dashboard (host регистрирует через `Admin::screens([DashboardScreen])`),
+ * иначе fallback на welcome-карточку со списком Resource'ов.
  *
- * Показывает welcome-карточку + список зарегистрированных Resource'ов из
- * manifest store (быстрая навигация для свежепоставленной админки).
+ * Host может полностью переопределить через
+ * `createAdminApp({ pages: { home: MyHome } })`.
  */
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { UidCard } from '@dskripchenko/ui'
 import { useManifestStore } from '../stores/manifest'
 import { useAuthStore } from '../stores/auth'
+import { useDashboardStore } from '../stores/dashboard'
+import DashboardPage from './dashboard/DashboardPage.vue'
+
+interface DashboardManifest {
+  slug: string
+  label?: string
+  description?: string | null
+  widgets: unknown[]
+}
 
 const manifest = useManifestStore()
 const auth = useAuthStore()
@@ -18,14 +28,37 @@ const router = useRouter()
 
 const userName = computed(() => auth.user?.name ?? '')
 const resources = computed(() => manifest.manifest?.resources ?? [])
+
+const dashboards = computed<DashboardManifest[]>(
+  () => (manifest.manifest?.dashboards ?? []) as DashboardManifest[],
+)
+const primaryDashboardSlug = computed<string | null>(
+  () => dashboards.value[0]?.slug ?? null,
+)
+
+// Загружаем persisted layout из dashboard store на mount/смену slug.
+const dashboardStore = useDashboardStore()
+watch(
+  primaryDashboardSlug,
+  (slug) => {
+    if (slug) void dashboardStore.openDashboard(slug)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
-  <div class="admin-home">
+  <DashboardPage
+    v-if="primaryDashboardSlug"
+    :slug="primaryDashboardSlug"
+  />
+
+  <div v-else class="admin-home">
     <UidCard padding="lg" class="admin-home__hero">
       <h1 class="admin-home__title">Добро пожаловать{{ userName ? ', ' + userName : '' }}</h1>
       <p class="admin-home__lead">
-        Админ-панель готова. Воспользуйтесь сайдбаром или переходите к ресурсам ниже.
+        Админ-панель готова. Зарегистрируйте DashboardScreen чтобы увидеть widget-grid здесь,
+        либо переходите к ресурсам ниже.
       </p>
     </UidCard>
 

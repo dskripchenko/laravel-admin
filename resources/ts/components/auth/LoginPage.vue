@@ -18,10 +18,15 @@ import LoginForm from './LoginForm.vue'
 import TwoFactorForm from './TwoFactorForm.vue'
 import ThemeToggle from '../shell/widgets/ThemeToggle.vue'
 import LocaleSwitcher from '../shell/widgets/LocaleSwitcher.vue'
+import BrandLogo from '../shell/BrandLogo.vue'
 
 interface Props {
   brandName?: string
-  brandMark?: string
+  /**
+   * Custom mark (если задан — рендерится вместо BrandLogo). Полезно
+   * host'у с собственным брендом.
+   */
+  brandMark?: string | null
   brandLogo?: string | null
   homeRouteName?: string
   redirectQueryKey?: string
@@ -36,7 +41,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   brandName: 'Laravel Admin',
-  brandMark: 'L',
+  brandMark: null,
   brandLogo: null,
   homeRouteName: 'admin.home',
   redirectQueryKey: 'redirect',
@@ -87,7 +92,8 @@ onMounted(() => {
         >
           <img v-if="brandLogo && !auth.isChallengePending" :src="brandLogo" :alt="brandName" />
           <span v-else-if="auth.isChallengePending" aria-hidden="true">🛡</span>
-          <span v-else>{{ brandMark }}</span>
+          <span v-else-if="brandMark">{{ brandMark }}</span>
+          <BrandLogo v-else :size="40" />
         </div>
         <div class="admin-auth-card__title">
           <template v-if="auth.isChallengePending">Двухфакторная проверка</template>

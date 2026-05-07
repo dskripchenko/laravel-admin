@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Widget;
 
+use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
  * URL: `/api/admin/dashboard/{action}`. Привязки к конкретному dashboard'у
  * нет — `dashboard_key` приходит в payload.
  */
-final class DashboardController extends ApiController
+class DashboardController extends ApiController
 {
     /**
      * Получить сохранённый layout текущего пользователя для конкретного dashboard'а.
@@ -71,6 +72,14 @@ final class DashboardController extends ApiController
             'widgets.*.size' => ['nullable', 'integer', 'min:1', 'max:12'],
             'widgets.*.position' => ['nullable', 'integer', 'min:0'],
             'widgets.*.hidden' => ['nullable', 'boolean'],
+            // Тип widget'а — нужен для user-added (custom-key, не из manifest).
+            // Backend-Widget не использует это поле для declared widgets,
+            // но frontend-renderer применяет его для рендера.
+            'widgets.*.type' => ['nullable', 'string'],
+            // Per-widget конфиг (title, content для markdown, value для gauge, ...).
+            // Frontend-Renderer кладёт это в `data` widget'а; для backend-widgets
+            // используется как override (например, новый title).
+            'widgets.*.config' => ['nullable', 'array'],
         ]);
 
         $user = $this->user();
@@ -107,6 +116,62 @@ final class DashboardController extends ApiController
      *
      * @response 200 {SuccessResponse}
      */
+    /**
+     * Свежие widget data для dashboard'а с применением фильтров (period, …).
+     * Frontend вызывает при смене date-range, чтобы виджеты пересчитались
+     * без полного reload manifest'а.
+     *
+     * @input string $key
+     * @input string ?$period 7d/30d/90d/all (default 30d)
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {DashboardWidgetsResponse}
+     */
+    public function widgets(Request $request, ScreenRegistry $screens): JsonResponse
+    {
+        $data = $request->validate([
+            'key' => ['required', 'string'],
+            'period' => ['nullable', 'string'],
+        ]);
+
+        $screenClass = $screens->get($data['key']);
+        if ($screenClass === null || ! is_subclass_of($screenClass, DashboardScreen::class)) {
+            return $this->error([
+                'errorKey' => 'unknown_dashboard',
+                'message' => "Dashboard `{$data['key']}` not registered",
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        /** @var DashboardScreen $screen */
+        $screen = app($screenClass);
+        // Прокидываем period в screen-context — DashboardScreen может
+        // использовать его в `widgets()` для условной агрегации (см.
+        // Screen::query()/$this->context()). Если screen не учитывает —
+        // получим тот же набор виджетов.
+        if (method_exists($screen, 'withPeriod')) {
+            $screen->withPeriod($data['period'] ?? '30d');
+        }
+
+        $widgets = [];
+        foreach ($screen->widgets() as $widget) {
+            if (! $widget instanceof Widget) {
+                continue;
+            }
+            if (! $widget->isVisible()) {
+                continue;
+            }
+            $widgets[] = $widget->toArray();
+        }
+
+        return $this->success([
+            'widgets' => $widgets,
+            'period' => $data['period'] ?? '30d',
+        ]);
+    }
+
     public function reset(Request $request): JsonResponse
     {
         $request->validate(['key' => ['required', 'string']]);

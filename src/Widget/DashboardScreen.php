@@ -25,11 +25,43 @@ use Illuminate\Support\Facades\Auth;
 abstract class DashboardScreen extends Screen
 {
     /**
+     * Текущий period (7d/30d/90d/all). Передаётся через withPeriod()
+     * на /dashboard/widgets endpoint'е. По умолчанию 30d.
+     */
+    protected string $period = '30d';
+
+    /**
      * Уникальный ключ — используется как `dashboard_key` в DashboardLayout.
      */
     public function key(): string
     {
         return static::slug();
+    }
+
+    public function withPeriod(string $period): static
+    {
+        $this->period = $period;
+
+        return $this;
+    }
+
+    public function period(): string
+    {
+        return $this->period;
+    }
+
+    /**
+     * Конвертирует period в количество дней. Для 'all' возвращает большое
+     * число (10 лет), чтобы всё попало в окно.
+     */
+    public function periodDays(): int
+    {
+        return match ($this->period) {
+            '7d' => 7,
+            '90d' => 90,
+            'all' => 365 * 10,
+            default => 30,
+        };
     }
 
     /**

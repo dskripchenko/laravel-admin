@@ -45,6 +45,10 @@ export interface AdminRouterOptions {
     profile?: AdminRouteComponent
     /** Страница уведомлений. */
     notifications?: AdminRouteComponent
+    /** Forgot password. */
+    forgotPassword?: AdminRouteComponent
+    /** Reset password (по token + email из query). */
+    resetPassword?: AdminRouteComponent
   }
   /** Дополнительные руты сверху динамики. */
   extraRoutes?: RouteRecordRaw[]
@@ -121,6 +125,23 @@ export function createAdminRouter(opts: AdminRouterOptions): AdminRouter {
       name: 'admin.notifications',
       component: opts.components.notifications,
       meta: { requiresAuth: true, kind: 'system', title: 'Уведомления' },
+    })
+  }
+
+  if (opts.components.forgotPassword) {
+    staticRoutes.push({
+      path: '/forgot-password',
+      name: 'admin.forgotPassword',
+      component: opts.components.forgotPassword,
+      meta: { kind: 'auth', title: 'Восстановление пароля' },
+    })
+  }
+  if (opts.components.resetPassword) {
+    staticRoutes.push({
+      path: '/reset-password',
+      name: 'admin.resetPassword',
+      component: opts.components.resetPassword,
+      meta: { kind: 'auth', title: 'Новый пароль' },
     })
   }
 

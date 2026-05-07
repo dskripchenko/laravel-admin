@@ -32,6 +32,8 @@ import NotFoundPage from './components/NotFoundPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
 import UnknownScreenPage from './components/UnknownScreenPage.vue'
 import { LoginPage } from './components/auth'
+import ForgotPasswordPage from './components/auth/ForgotPasswordPage.vue'
+import ResetPasswordPage from './components/auth/ResetPasswordPage.vue'
 import {
   ResourceIndexPage,
   ResourceFormPage,
@@ -44,6 +46,7 @@ import { createAdminClient, type AdminClient } from './api/client'
 import { setAdminClient } from './stores'
 import { useAuthStore } from './stores/auth'
 import { useLocaleStore } from './stores/locale'
+import { useI18nStore } from './stores/i18n'
 import { useThemeStore } from './stores/theme'
 import { useNotificationsStore } from './stores/notifications'
 import { useManifestStore } from './stores/manifest'
@@ -68,6 +71,9 @@ export interface CreateAdminAppPages {
   notFound?: Component
   /** Профиль. По умолчанию ProfilePage. */
   profile?: Component
+  /** Auth: forgot/reset password. По умолчанию core'овские. */
+  forgotPassword?: Component
+  resetPassword?: Component
   /** Resource index/form/view. По умолчанию core'овские. */
   resourceIndex?: Component
   resourceCreate?: Component
@@ -142,6 +148,7 @@ export function createAdminApp(
   useLocaleStore().hydrate(bootstrap)
   useThemeStore().hydrate(bootstrap)
   useNotificationsStore().hydrate(bootstrap)
+  useI18nStore().hydrate(bootstrap)
 
   // 4. Builtin field/layout/widget/infolist registries
   registerBuiltinComponents()
@@ -158,6 +165,8 @@ export function createAdminApp(
       forbidden: pages.forbidden ?? ForbiddenPage,
       notFound: pages.notFound ?? NotFoundPage,
       profile: pages.profile ?? ProfilePage,
+      forgotPassword: pages.forgotPassword ?? ForgotPasswordPage,
+      resetPassword: pages.resetPassword ?? ResetPasswordPage,
       resourceIndex: pages.resourceIndex ?? ResourceIndexPage,
       resourceCreate: pages.resourceCreate ?? ResourceFormPage,
       resourceEdit: pages.resourceEdit ?? ResourceFormPage,
@@ -221,36 +230,44 @@ export function createAdminApp(
 
     const menuStore = useMenuStore()
 
-    const loadAndApply = (): void => {
+    const loadAndApply = async (): Promise<void> => {
       // Параллельно с manifest'ом тянем sidebar-меню (от backend menu endpoint).
       void menuStore.load().catch(() => undefined)
 
-      void manifestStore
-        .load()
-        .then((manifest) => {
-          router.replaceManifestRoutes(manifest)
-          // Если текущий route был разрешён в catch-all notFound (deep-link
-          // на /r/articles/123/edit при первом mount, когда динамические
-          // роуты ещё не были добавлены) — перерезолвим его теперь, когда
-          // routes есть.
-          const current = router.currentRoute.value
-          if (current.name === 'admin.notFound' && current.fullPath !== '/') {
-            void router.replace(current.fullPath)
-          }
-        })
-        .catch((error: unknown) => {
-          // Silent fail — host может перехватить через onAppCreated →
-          // app.config.errorHandler. Manifest перезагрузится при следующем
-          // появлении user (watch ниже).
-          if (typeof console !== 'undefined') {
-            console.error('[laravel-admin] manifest load failed:', error)
-          }
-        })
+      try {
+        const manifest = await manifestStore.load()
+        router.replaceManifestRoutes(manifest)
+        // Если текущий route был разрешён в catch-all notFound (deep-link
+        // на /r/articles/123/edit при первом mount, когда динамические
+        // роуты ещё не были добавлены) — перерезолвим его теперь, когда
+        // routes есть. Дожидаемся router.replace ДО того как выставим
+        // bootResolved — иначе AdminApp на одном кадре увидит
+        // (manifest !== null, route.name === 'admin.notFound') и сверкнёт 404.
+        const current = router.currentRoute.value
+        if (current.name === 'admin.notFound' && current.fullPath !== '/') {
+          await router.replace(current.fullPath).catch(() => undefined)
+        }
+      } catch (error) {
+        // Silent fail — host может перехватить через onAppCreated →
+        // app.config.errorHandler. Manifest перезагрузится при следующем
+        // появлении user (watch ниже).
+        if (typeof console !== 'undefined') {
+          console.error('[laravel-admin] manifest load failed:', error)
+        }
+      } finally {
+        // Открываем гейт NotFoundPage. После этой точки реальный 404
+        // (несуществующий URL) уже корректно отрисуется без вспышки.
+        manifestStore.bootResolved = true
+      }
     }
 
     if (authStore.isAuthenticated) {
       // Inline-bootstrap уже принёс user'а — грузим сразу.
-      loadAndApply()
+      void loadAndApply()
+    } else {
+      // Login flow — manifest не нужен прямо сейчас; гейт открыт сразу,
+      // чтобы LoginPage / NotFoundPage отрисовались штатно.
+      manifestStore.bootResolved = true
     }
     // Если user'а ещё нет (login flow) либо появится позже —
     // подписываемся и грузим когда появится. immediate: false чтобы не
@@ -259,10 +276,15 @@ export function createAdminApp(
       () => authStore.user,
       (newUser, oldUser) => {
         if (newUser && !oldUser) {
-          loadAndApply()
+          // Новый login → требуется свежий manifest, гейт сбрасываем.
+          manifestStore.bootResolved = false
+          void loadAndApply()
         }
       },
     )
+  } else {
+    // Host явно отключил manifest — гейт открыт сразу.
+    useManifestStore().bootResolved = true
   }
 
   // 7. host hook

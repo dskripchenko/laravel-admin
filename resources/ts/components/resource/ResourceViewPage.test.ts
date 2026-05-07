@@ -89,25 +89,37 @@ describe('ResourceViewPage', () => {
     clearInfolistRegistry()
   })
 
-  it('renders title with resource label + id', async () => {
+  it('renders title from record + UID label', async () => {
     mock.onGet('/articles/read').reply(200, {
       success: true, payload: { record: { id: 7, title: 'Old', status: 'published' } },
     })
     const wrapper = await mountPage()
     await flushPromises()
-    expect(wrapper.find('.admin-page__title').text()).toContain('#7')
-    expect(wrapper.find('.admin-page__title').text()).toContain('Статьи')
+    // Заголовок берётся из record.title (приоритет над "Resource: #id").
+    expect(wrapper.find('.admin-page__title').text()).toBe('Old')
+    // UID-метка рядом со статусом.
+    expect(wrapper.find('.admin-resource-view__uid').text()).toContain('7')
+    // Back-link на index с лейблом ресурса.
+    expect(wrapper.find('.admin-resource-view__back').text()).toContain('Статьи')
   })
 
-  it('renders Edit and Удалить buttons', async () => {
+  it('renders Edit button и more-menu (Удалить открывается через триггер)', async () => {
     mock.onGet('/articles/read').reply(200, {
       success: true, payload: { record: { id: 7 } },
     })
     const wrapper = await mountPage()
     await flushPromises()
-    const buttons = wrapper.findAll('button').map((b) => b.text())
-    expect(buttons).toContain('Редактировать')
-    expect(buttons).toContain('Удалить')
+    // Edit — основная кнопка.
+    expect(
+      wrapper.findAll('button').map((b) => b.text()),
+    ).toContain('Редактировать')
+    // Trigger more-menu существует.
+    const triggers = wrapper.findAll('[aria-label="Действия"]')
+    expect(triggers.length).toBe(1)
+    // Открываем menu — UidMenu делает Teleport в body, ищем через document.
+    await triggers[0].trigger('click')
+    await flushPromises()
+    expect(document.body.textContent ?? '').toContain('Удалить')
   })
 
   it('shows skeleton during load', async () => {

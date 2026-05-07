@@ -10,7 +10,7 @@ namespace Dskripchenko\LaravelAdmin\Widget;
  * Подходит для distribution-визуализаций: активность по дням недели/часам,
  * load-distribution и т.п.
  */
-final class HeatmapWidget extends Widget
+class HeatmapWidget extends Widget
 {
     /** @var list<string> */
     private array $rows = [];

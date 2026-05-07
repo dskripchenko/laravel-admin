@@ -141,7 +141,7 @@ describe('ResourceIndexPage', () => {
     const wrapper = await mountPage()
     await flushPromises()
     // Изначально filter-bar
-    expect(wrapper.find('.admin-filter-bar').exists()).toBe(true)
+    expect(wrapper.find('.admin-toolbar').exists()).toBe(true)
     expect(wrapper.find('.admin-bulk-toolbar').exists()).toBe(false)
 
     // Эмулируем выбор через store напрямую (UidCheckbox в jsdom может не
@@ -152,7 +152,7 @@ describe('ResourceIndexPage', () => {
     await flushPromises()
 
     expect(wrapper.find('.admin-bulk-toolbar').exists()).toBe(true)
-    expect(wrapper.find('.admin-filter-bar').exists()).toBe(false)
+    expect(wrapper.find('.admin-toolbar').exists()).toBe(false)
     expect(wrapper.find('.admin-bulk-toolbar').text()).toContain('Выбрано')
   })
 

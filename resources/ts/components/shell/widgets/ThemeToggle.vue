@@ -5,11 +5,14 @@
  * с остальными widget'ами в баре.
  */
 import { computed } from 'vue'
+import { Moon, Sun } from 'lucide-vue-next'
+import { UidIcon } from '@dskripchenko/ui'
 import { useThemeStore } from '../../../stores/theme'
 
 const theme = useThemeStore()
 
 const isDark = computed(() => theme.current === 'dark')
+const icon = computed(() => (isDark.value ? Sun : Moon))
 const iconName = computed(() => (isDark.value ? 'sun' : 'moon'))
 const ariaLabel = computed(() =>
   isDark.value ? 'Переключить на светлую тему' : 'Переключить на тёмную тему',
@@ -29,6 +32,6 @@ async function toggle(): Promise<void> {
     :aria-pressed="isDark"
     @click="toggle"
   >
-    <span class="admin-topbar__icon" :data-icon="iconName" />
+    <UidIcon :icon="icon" :size="18" :data-icon="iconName" />
   </button>
 </template>

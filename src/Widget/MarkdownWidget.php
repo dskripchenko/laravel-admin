@@ -10,7 +10,7 @@ namespace Dskripchenko\LaravelAdmin\Widget;
  * Контент задаётся либо строкой, либо callable (для динамической генерации).
  * SPA рендерит markdown в HTML.
  */
-final class MarkdownWidget extends Widget
+class MarkdownWidget extends Widget
 {
     /** @var string|(callable(): string) */
     private $content = '';

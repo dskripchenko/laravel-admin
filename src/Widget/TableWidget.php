@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * что и в Resource list-режиме. Подходит для встраивания «summary table»
  * на dashboard.
  */
-final class TableWidget extends Widget
+class TableWidget extends Widget
 {
     /** @var class-string<Model>|null */
     private ?string $modelClass = null;

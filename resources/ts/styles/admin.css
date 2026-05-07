@@ -29,16 +29,28 @@
    Density (data-density на <html>): два пресета как в design handoff.
    Comfortable — 40px row / 14px text, Compact — 32px / 13px (Linear/Supabase).
    ============================================================ */
-:root[data-density='compact'] {
+/*
+ * Density default = compact (32px row / 13px text). По умолчанию table
+ * рендерится плотно — это соответствует эталонному дизайну.
+ * Comfortable остаётся опцией для host'ов через `data-density="comfortable"`.
+ */
+:root[data-density='compact'],
+:root:not([data-density]) {
   --admin-row-h: 32px;
   --admin-row-fs: 13px;
   --admin-page-pad: 16px;
 }
-:root[data-density='comfortable'],
-:root:not([data-density]) {
+:root[data-density='comfortable'] {
   --admin-row-h: 40px;
   --admin-row-fs: 14px;
   --admin-page-pad: 24px;
+}
+/*
+ * Общая высота нижней полосы — sidebar footer и main footer используют
+ * её, чтобы их border-top'ы совпали по Y.
+ */
+:root {
+  --admin-foot-height: 32px;
 }
 
 /* ============================================================
@@ -121,9 +133,15 @@
   gap: var(--uid-space-md);
   border-bottom: 1px solid var(--uid-border-subtle);
   background: var(--uid-surface-raised);
+  /*
+   * AdminShell layout уже даёт topbar'у роль flex none сверху main column'а,
+   * поэтому он всегда виден без sticky. Sticky оставлен на случай рендера
+   * вне shell'а (например, host'овая страница без AdminShell wrapper'а).
+   */
   position: sticky;
   top: 0;
   z-index: var(--uid-z-sticky, 200);
+  flex: none;
 }
 .admin-topbar__spacer { flex: 1; }
 .admin-topbar__breadcrumbs {
@@ -327,7 +345,13 @@
   font-size: 22px;
   font-weight: var(--uid-font-weight-semibold);
   letter-spacing: -0.015em;
-  line-height: 1.2;
+  /*
+   * line-height: 1 (вместо 1.2) — line-box ровно по font-size, без верхнего/
+   * нижнего паддинга, чтобы flex-center в .admin-page__title-row совмещал
+   * cap-height title и live-row по одной Y. С 1.2 над cap-height висит лишний
+   * 2.2px, и live-text (line-height: 1) визуально болтался выше центра.
+   */
+  line-height: 1;
   margin: 0;
   color: var(--uid-text-primary);
 }
@@ -340,4 +364,112 @@
   display: flex;
   align-items: center;
   gap: var(--uid-space-sm);
+}
+
+/*
+ * Title-row: заголовок + live-status выровнены по middle-линии (центрам
+ * cap-height). Это работает только когда оба ребёнка имеют line-height: 1 —
+ * тогда line-box у каждого = font-size, без асимметричного top/bottom
+ * паддинга, и flex-center совпадает с оптическим центром текста.
+ */
+.admin-page__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-sm);
+}
+.admin-page__live {
+  display: inline-flex;
+  /*
+   * Внутри сам live-row остаётся center'ом, чтобы dot и текст не разъезжались.
+   * Сам контейнер выравнен по baseline текста (см. parent).
+   */
+  align-items: center;
+  /*
+   * gap: xs (4px) — стандартный inline icon-to-text spacing по design system
+   * (см. dskripchenko-ui/src/tokens/spacing.css). 2xs (2px) был слишком впритык,
+   * sm (8px) — слишком воздушно для статуса.
+   */
+  gap: var(--uid-space-xs);
+  font-size: var(--uid-font-size-xs);
+  color: var(--uid-text-tertiary);
+  font-weight: var(--uid-font-weight-medium);
+  line-height: 1;
+}
+.admin-page__live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--uid-color-success, #10b981);
+  flex: none;
+  /* Анимация pulse: ring расходится 0 → 6px и затухает каждые 2с. */
+  animation: admin-page-pulse 2s ease-out infinite;
+}
+@keyframes admin-page-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--uid-color-success, #10b981) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--uid-color-success, #10b981) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--uid-color-success, #10b981) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-page__live-dot {
+    animation: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--uid-color-success, #10b981) 18%, transparent);
+  }
+}
+
+/* Scope-bookmark и more-menu в actions row */
+.admin-page__scope {
+  font-weight: var(--uid-font-weight-medium);
+}
+.admin-page__more {
+  width: var(--uid-size-md);
+  padding: 0;
+  justify-content: center;
+}
+.admin-page__import-input {
+  display: none;
+}
+
+/* Saved-view row inside scope dropdown — name + опц. delete-button. */
+.admin-page__view-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uid-space-sm);
+  width: 100%;
+}
+.admin-page__view-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--uid-space-2xs);
+}
+.admin-page__view-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: var(--uid-radius-sm);
+  background: color-mix(in srgb, var(--uid-accent) 15%, transparent);
+  color: var(--uid-accent);
+}
+.admin-page__view-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--uid-radius-sm);
+  color: var(--uid-text-tertiary);
+  cursor: pointer;
+}
+.admin-page__view-delete:hover {
+  background: color-mix(in srgb, var(--uid-color-danger, #dc2626) 12%, transparent);
+  color: var(--uid-color-danger, #dc2626);
 }

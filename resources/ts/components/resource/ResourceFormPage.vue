@@ -34,13 +34,16 @@ interface Props {
   slug: string
   /** ID записи. null/undefined → create-mode; число/строка → edit. */
   id?: string | number | null
-  /** Имя router-route на index page (для back-redirect после save/delete). */
-  indexRouteName?: string
+  /**
+   * Override имени router-route для back-redirect после save/delete.
+   * По умолчанию выводится из slug: `admin.resource.{slug}.index`.
+   */
+  indexRouteName?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   id: null,
-  indexRouteName: 'admin.home',
+  indexRouteName: null,
 })
 
 const form = useResourceFormStore()
@@ -127,11 +130,20 @@ async function onSave(): Promise<void> {
   }
 }
 
+/**
+ * Auto-derive index route name из slug (`admin.resource.{slug}.index`),
+ * если host не передал indexRouteName явно. Это нужно чтобы back/cancel
+ * вели на список ресурса, а не на главную админки.
+ */
+const resolvedIndexRouteName = computed<string>(
+  () => props.indexRouteName ?? `admin.resource.${props.slug}.index`,
+)
+
 async function onDelete(): Promise<void> {
   if (!confirm('Удалить запись?')) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
-    void router.push({ name: props.indexRouteName }).catch(() => undefined)
+    void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
   }
 }
 
@@ -139,7 +151,7 @@ function onCancel(): void {
   if (form.isDirty && !confirm('Несохранённые изменения будут потеряны. Продолжить?')) {
     return
   }
-  void router.push({ name: props.indexRouteName }).catch(() => undefined)
+  void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
 }
 </script>
 

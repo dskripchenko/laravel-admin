@@ -14,6 +14,8 @@ import NumberField from '../fields/NumberField.vue'
 import SelectField from '../fields/SelectField.vue'
 import CheckboxField from '../fields/CheckboxField.vue'
 import DateField from '../fields/DateField.vue'
+import TagsField from '../fields/TagsField.vue'
+import TranslatableField from '../fields/TranslatableField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -48,7 +50,11 @@ export function registerBuiltinComponents(): void {
       select: SelectField,
       combobox: SelectField,
       radio: SelectField,
-      tags: SelectField,
+      tags: TagsField,
+      // Translatable: backend Field\TranslatableInput → fieldType()='translatable'.
+      // Хранит value как Record<locale, string>; UI показывает табы по локалям.
+      translatable: TranslatableField,
+      'translatable-text': TranslatableField,
       'morph-switcher': SelectField,
       relation: SelectField,
       cascader: SelectField,

@@ -12,7 +12,7 @@ use InvalidArgumentException;
  * Конкретный chart-engine (Chart.js/ApexCharts/...) выбирается на стороне SPA.
  * Backend шлёт нормализованную структуру: labels[], datasets[].
  */
-final class ChartWidget extends Widget
+class ChartWidget extends Widget
 {
     private const ALLOWED_TYPES = ['line', 'bar', 'pie', 'doughnut', 'area', 'radar'];
 

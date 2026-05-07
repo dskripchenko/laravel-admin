@@ -27,8 +27,23 @@ export const useNotificationsStore = defineStore('admin-notifications', () => {
   const loading = ref(false)
   const lastFilter = ref<NotificationFilter>('all')
   const meta = ref<{ page: number; per_page: number; total: number; last_page: number } | null>(null)
+  /**
+   * Slide-in drawer state. Bell-кнопка в топбаре toggle'ит этот флаг,
+   * NotificationsDrawer (mounted в AdminApp root) реагирует на него.
+   */
+  const isOpen = ref<boolean>(false)
 
   const hasUnread = computed(() => unreadCount.value > 0)
+
+  function openDrawer(): void {
+    isOpen.value = true
+  }
+  function closeDrawer(): void {
+    isOpen.value = false
+  }
+  function toggleDrawer(): void {
+    isOpen.value = !isOpen.value
+  }
 
   function hydrate(bootstrap: AdminBootstrap): void {
     unreadCount.value = bootstrap.unread_notifications_count
@@ -112,6 +127,7 @@ export const useNotificationsStore = defineStore('admin-notifications', () => {
     loading,
     meta,
     lastFilter,
+    isOpen,
     hasUnread,
     hydrate,
     load,
@@ -119,5 +135,8 @@ export const useNotificationsStore = defineStore('admin-notifications', () => {
     markAsRead,
     markAllAsRead,
     destroy,
+    openDrawer,
+    closeDrawer,
+    toggleDrawer,
   }
 })

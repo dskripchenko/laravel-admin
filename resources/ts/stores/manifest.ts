@@ -26,6 +26,11 @@ export interface ManifestResourceMeta {
   label: string
   icon?: string
   group?: string | null
+  /**
+   * Eloquent morph-class либо FQCN модели — нужен AuditTimeline'у как
+   * `subject_type` параметр для /audit/timeline endpoint'а.
+   */
+  subject_type?: string | null
   permissions: Record<string, string>
   fields: ManifestNode[]
   /** Read-only entries для view-page. Default — auto-generated из fields(). */
@@ -69,6 +74,19 @@ export const useManifestStore = defineStore('admin-manifest', () => {
   const manifest = ref<AdminManifest | null>(null)
   const loading = ref(false)
   const error = ref<Error | null>(null)
+  /**
+   * Boot-resolution gate. true как только начальный flow "load manifest →
+   * replaceManifestRoutes → router.replace(currentFullPath)" завершён,
+   * либо если manifest заведомо не нужен (login flow / skipManifestLoad).
+   *
+   * AdminApp.vue использует этот флаг чтобы скрыть NotFoundPage пока не
+   * закончился initial re-resolve — иначе deep-link reload даёт вспышку
+   * 404 между первым match'ем catch-all и последующим router.replace.
+   *
+   * Проставляется createAdminApp.loadAndApply() в finally — точное место,
+   * где route уже re-resolved, а manifest либо загружен, либо упал ошибкой.
+   */
+  const bootResolved = ref(false)
 
   const isLoaded = computed(() => manifest.value !== null)
   const version = computed(() => manifest.value?.version ?? null)
@@ -117,6 +135,7 @@ export const useManifestStore = defineStore('admin-manifest', () => {
     manifest.value = null
     error.value = null
     loading.value = false
+    bootResolved.value = false
   }
 
   return {
@@ -124,6 +143,7 @@ export const useManifestStore = defineStore('admin-manifest', () => {
     manifest,
     loading,
     error,
+    bootResolved,
     // getters
     isLoaded,
     version,

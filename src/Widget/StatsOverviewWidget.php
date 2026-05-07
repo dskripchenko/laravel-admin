@@ -10,7 +10,7 @@ namespace Dskripchenko\LaravelAdmin\Widget;
  * Каждая карточка — `{label, value, change?, color?, icon?}`. SPA рендерит
  * как горизонтальный grid из stat-cards.
  */
-final class StatsOverviewWidget extends Widget
+class StatsOverviewWidget extends Widget
 {
     /** @var list<array<string, mixed>> */
     private array $stats = [];

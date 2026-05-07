@@ -14,14 +14,26 @@
  * Host рендерит page через router. resource-slug приходит из props (либо
  * из route.params).
  */
-import { computed, nextTick, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Eye, Pencil, Trash2 } from 'lucide-vue-next'
+import {
+  Bookmark,
+  ChevronDown,
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Upload,
+} from 'lucide-vue-next'
 import {
   UidButton,
   UidEmptyState,
   UidErrorState,
   UidIcon,
+  UidMenu,
+  UidMenuItem,
   UidPagination,
   UidSkeleton,
   UidTable,
@@ -31,6 +43,9 @@ import { useResourceIndexStore } from '../../stores/resourceIndex'
 import { useManifestStore } from '../../stores/manifest'
 import { useNavigationStore } from '../../stores/navigation'
 import { formatCell, type CellMeta } from './cellFormat'
+import AdminFilterToolbar from './AdminFilterToolbar.vue'
+import InlineEditCell from './InlineEditCell.vue'
+import { adminToast } from '../../stores/toast'
 
 interface Props {
   /** Slug ресурса (users/articles/etc). */
@@ -57,6 +72,10 @@ const emit = defineEmits<{
   'bulk-action': [action: string, ids: Array<string | number>]
   /** Click на row — host решает (push edit / open view). */
   'row-click': [row: Record<string, unknown>]
+  /** Header-action: import — host вешает обработчик загрузки CSV/JSON. */
+  'import': []
+  /** Header more-menu action — произвольный ключ из additional-items. */
+  'header-action': [action: string]
 }>()
 
 const index = useResourceIndexStore()
@@ -69,6 +88,199 @@ const resourceMeta = computed(() => manifest.getResource(props.slug))
 const displayTitle = computed(
   () => props.title ?? resourceMeta.value?.label ?? props.slug,
 )
+
+/**
+ * Auto-derive create route name. Резервный вариант — стандартный pattern
+ * из router/builder.ts (`admin.resource.{slug}.create`). Кнопка "Создать"
+ * рендерится если route действительно зарегистрирован — у read-only
+ * Resource'а его не будет (backend не отдаст create permission).
+ */
+const resolvedCreateRouteName = computed<string | null>(() => {
+  if (props.createRouteName !== null) {
+    return router.hasRoute(props.createRouteName) ? props.createRouteName : null
+  }
+  const candidate = `admin.resource.${props.slug}.create`
+  return router.hasRoute(candidate) ? candidate : null
+})
+
+/**
+ * Header actions из manifest.actions — Resource->actions() в backend.
+ * Каждый node имеет {key, label, icon?, confirm?, ...}. Рендерятся в
+ * more-menu (...). По клику вызываем onCustomAction → POST на
+ * /{slug}/action/{key}.
+ */
+interface HeaderAction {
+  key: string
+  label: string
+  confirm?: string
+  icon?: string
+}
+const headerActions = computed<HeaderAction[]>(() => {
+  const raw = (resourceMeta.value?.actions ?? []) as Array<Record<string, unknown>>
+  return raw
+    .map((a) => ({
+      key: String(a.key ?? a.name ?? ''),
+      label: String(a.label ?? a.name ?? a.key ?? ''),
+      confirm: typeof a.confirm === 'string' ? a.confirm : undefined,
+      icon: typeof a.icon === 'string' ? a.icon : undefined,
+    }))
+    .filter((a) => a.key !== '' && a.label !== '')
+})
+
+async function onCustomAction(action: HeaderAction): Promise<void> {
+  if (action.confirm && !window.confirm(action.confirm)) return
+  emit('header-action', action.key)
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    // Backend контракт: POST /{slug}/action body {key, ids[], payload?}.
+    // Action резолвится через Resource->actions() по name.
+    const result = await client.post<{ affected?: number; message?: string }>(
+      `/${props.slug}/action`,
+      {
+        key: action.key,
+        ids: [...index.selection],
+      },
+    )
+    await index.load().catch(() => undefined)
+    adminToast.success(
+      result?.message ?? `Action «${action.label}» применён к ${result?.affected ?? 0} записям.`,
+    )
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] header-action failed:', err)
+    adminToast.error(`Не удалось выполнить action «${action.label}».`)
+  } finally {
+    nav.end()
+  }
+}
+
+/**
+ * Export — POST /{slug}/export, ответ blob (CSV/JSON), скачиваем через
+ * <a download>. Backend сам решает формат через Accept-header или query.
+ */
+async function onExport(): Promise<void> {
+  emit('header-action', 'export')
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    const blob = await client.post<Blob>(
+      `/${props.slug}/export`,
+      { filters: index.filters, search: index.search },
+      { responseType: 'blob' as const },
+    )
+    const url = URL.createObjectURL(blob as unknown as Blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${props.slug}-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] export failed:', err)
+    adminToast.error('Не удалось экспортировать данные. Backend может не поддерживать /export для этого ресурса.')
+  } finally {
+    nav.end()
+  }
+}
+
+/**
+ * Import — file picker → POST multipart на /{slug}/import. После успеха
+ * перезагружаем list. Если backend не поддерживает — alert.
+ */
+const importInput = ref<HTMLInputElement | null>(null)
+function onImportClick(): void {
+  emit('import')
+  importInput.value?.click()
+}
+/**
+ * Default import flow поверх Dskripchenko\LaravelAdmin\Import\ImportController:
+ *   1. POST /import/upload (file + resource=slug) → uploadId
+ *   2. POST /import/preview → auto-mapping (headers ↔ fields)
+ *   3. POST /import/start (uploadId + mapping) → processId
+ *   4. polling /import/status?processId=… до status === 'done' | 'failed'
+ *
+ * Auto-mapping автоматически связывает имена колонок CSV/JSON со своими
+ * Resource-полями. Host может перехватить @import до этого flow и открыть
+ * собственный wizard.
+ */
+async function onImportFileChange(e: Event): Promise<void> {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+
+    // 1. Upload
+    const uploadForm = new FormData()
+    uploadForm.append('file', file)
+    uploadForm.append('resource', props.slug)
+    const uploaded = await client.post<{ upload_id: string }>(
+      '/import/upload',
+      uploadForm,
+    )
+
+    // 2. Preview (для auto-mapping)
+    const preview = await client.post<{ mapping: Record<string, string> }>(
+      '/import/preview',
+      { resource: props.slug, upload_id: uploaded.upload_id },
+    )
+
+    // 3. Start
+    const started = await client.post<{ process_id: string }>(
+      '/import/start',
+      {
+        resource: props.slug,
+        upload_id: uploaded.upload_id,
+        mapping: preview.mapping,
+      },
+    )
+
+    // 4. Poll status
+    const finalStatus = await pollImportStatus(client, started.process_id)
+    const imported = finalStatus.imported ?? 0
+    const failed = finalStatus.failed ?? 0
+    if (failed > 0) {
+      adminToast.warning(`Импорт завершён с ошибками: ${imported} записей, ${failed} ошибок.`)
+    } else {
+      adminToast.success(`Импортировано записей: ${imported}.`)
+    }
+    await index.load().catch(() => undefined)
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] import failed:', err)
+    adminToast.error(
+      'Импорт не удался. Проверьте формат файла и поля ресурса либо обратитесь к администратору.',
+    )
+  } finally {
+    input.value = ''
+    nav.end()
+  }
+}
+
+interface ImportStatus {
+  status: 'pending' | 'running' | 'done' | 'failed'
+  imported?: number
+  failed?: number
+}
+async function pollImportStatus(
+  client: { get<T>(url: string): Promise<T> },
+  processId: string,
+): Promise<ImportStatus> {
+  // Polling каждые 800ms, но не дольше 90 секунд (сырая защита от вечного loop'а).
+  const deadline = Date.now() + 90_000
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    const status = await client.get<ImportStatus>(
+      `/import/status?process_id=${encodeURIComponent(processId)}`,
+    )
+    if (status.status === 'done' || status.status === 'failed') return status
+  }
+  return { status: 'failed', failed: 1 }
+}
 
 const ACTIONS_KEY = '__row_actions__'
 
@@ -83,7 +295,11 @@ const columns = computed<UidTableColumn[]>(() => {
       align: (col.align as 'left' | 'center' | 'right' | undefined) ?? 'left',
       width: typeof col.width === 'string' ? col.width : undefined,
     }
-  }).filter((c) => c.key)
+  })
+    .filter((c) => c.key)
+    // Применяем visibility-state из toolbar'а (Колонки): если явно false —
+    // колонку не рендерим. По умолчанию (отсутствует в map) считаем visible.
+    .filter((c) => columnVisibility.value[c.key] !== false)
   // Хвостовая колонка с per-row actions (Просмотр / Редактировать / Удалить).
   // ResourceIndexPage добавляет её всегда — host может скрыть через
   // useShowActions=false (TODO prop).
@@ -97,8 +313,21 @@ const columns = computed<UidTableColumn[]>(() => {
   return mapped
 })
 
-// Колоночная meta (preset / format / currency / etc.) из manifest'а.
-// Используется для formatCell (datetime → 'd.m.Y H:i:s', money → '{val} {ccy}').
+// Колоночная meta (preset / format / currency / editable / etc.) из manifest'а.
+// Используется для formatCell (datetime → 'd.m.Y H:i:s', money → '{val} {ccy}')
+// + InlineEditCell проверяет editable.
+function columnIsEditable(key: string): boolean {
+  const cols = resourceMeta.value?.columns ?? []
+  for (const c of cols) {
+    const col = c as Record<string, unknown>
+    const k = String(col.key ?? col.name ?? '')
+    if (k === key) {
+      // Backend кладёт editable как объект {rules:...} или null.
+      return col.editable !== null && col.editable !== undefined
+    }
+  }
+  return false
+}
 const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta }>>(() => {
   const cols = resourceMeta.value?.columns ?? []
   const result: Record<string, { preset?: string; meta: CellMeta }> = {}
@@ -127,7 +356,7 @@ function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
 }
 
 /**
- * Показывать ли filter-bar:
+ * Показывать ли filter-toolbar:
  *   - если есть данные → всегда (search + фильтры внутри);
  *   - если данных нет, но есть активный search/filter → ДА (чтобы пользователь
  *     мог сбросить и снова увидеть items);
@@ -140,10 +369,225 @@ const showFilterBar = computed<boolean>(
   () => !index.isEmpty || hasActiveFilters.value,
 )
 
+// Filter / column / view state — toolbar делегирует это сюда.
+const manifestFilters = computed(
+  () => (resourceMeta.value?.filters ?? []) as unknown as Array<Record<string, unknown>>,
+)
+const manifestColumns = computed(
+  () => (resourceMeta.value?.columns ?? []) as unknown as Array<Record<string, unknown>>,
+)
+const searchPlaceholder = computed(() => {
+  const label = (resourceMeta.value?.label ?? props.slug).toLowerCase()
+  return `Поиск по ${label}…`
+})
+
+const groupByCol = ref<string | null>(null)
+const columnVisibility = ref<Record<string, boolean>>({})
+
+async function onFilterApply(name: string, value: unknown): Promise<void> {
+  await index.setFilter(name, value)
+}
+async function onSearchUpdate(v: string): Promise<void> {
+  await index.setSearch(v)
+}
+async function onResetFilters(): Promise<void> {
+  index.search = ''
+  await index.clearFilters()
+}
+async function onGroupBy(col: string | null): Promise<void> {
+  groupByCol.value = col
+  // Backend может или не может поддерживать group-by — пробрасываем
+  // в search payload как `group_by`. Если не поддерживается — просто
+  // игнорируется. Cast через unknown-bridge т.к. IndexParams strict.
+  await index.load({ group_by: col } as unknown as Parameters<typeof index.load>[0])
+}
+function onColumnsVisibility(next: Record<string, boolean>): void {
+  columnVisibility.value = next
+}
+/**
+ * Saved views: state + load + apply/delete. Backend — SavedViewsController,
+ * URL pattern /{slug}_views/{action}. Active view хранится локально и
+ * подсвечивается в scope-dropdown'е.
+ */
+interface SavedViewItem {
+  id: number
+  name: string
+  state: Record<string, unknown>
+  is_default: boolean
+  owned: boolean
+}
+const savedViews = ref<SavedViewItem[]>([])
+const activeViewId = ref<number | null>(null)
+
+async function loadSavedViews(): Promise<void> {
+  try {
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    const result = await client.get<{ data: SavedViewItem[] }>(`/${props.slug}_views/list`)
+    savedViews.value = result.data ?? []
+  } catch {
+    // Тихо — endpoint опционален. Возможно ресурс без permission или backend
+    // не зарегистрировал views.
+    savedViews.value = []
+  }
+}
+
+async function onApplyView(view: SavedViewItem): Promise<void> {
+  activeViewId.value = view.id
+  const s = view.state as {
+    search?: string
+    filters?: Record<string, unknown>
+    sort?: { key?: string | null; direction?: 'asc' | 'desc' | null }
+    group_by?: string | null
+    columns?: Record<string, boolean>
+  }
+  index.search = s.search ?? ''
+  index.filters = { ...(s.filters ?? {}) }
+  index.sortKey = s.sort?.key ?? null
+  index.sortDirection = s.sort?.direction ?? null
+  groupByCol.value = s.group_by ?? null
+  columnVisibility.value = { ...(s.columns ?? {}) }
+  index.meta.page = 1
+  await loadWithProgress()
+}
+
+async function onResetView(): Promise<void> {
+  activeViewId.value = null
+  index.search = ''
+  index.filters = {}
+  index.sortKey = null
+  index.sortDirection = null
+  groupByCol.value = null
+  columnVisibility.value = {}
+  index.meta.page = 1
+  await loadWithProgress()
+}
+
+async function onDeleteView(view: SavedViewItem, e?: MouseEvent): Promise<void> {
+  e?.stopPropagation()
+  if (!view.owned) return
+  if (!window.confirm(`Удалить view «${view.name}»?`)) return
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    await client.post(`/${props.slug}_views/delete`, { id: view.id })
+    if (activeViewId.value === view.id) activeViewId.value = null
+    await loadSavedViews()
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] delete-view failed:', err)
+  } finally {
+    nav.end()
+  }
+}
+
+async function onSaveView(label: string): Promise<void> {
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    // Backend: ResourceCompiler регистрирует controller key `{slug}_views`,
+    // SavedViewsController::create — POST /{slug}_views/create.
+    // Validation: {name: required string, state: required array, is_default?}
+    const result = await client.post<{ view: SavedViewItem }>(
+      `/${props.slug}_views/create`,
+      {
+        name: label,
+        state: {
+          search: index.search,
+          filters: index.filters,
+          sort: { key: index.sortKey, direction: index.sortDirection },
+          group_by: groupByCol.value,
+          columns: columnVisibility.value,
+        },
+      },
+    )
+    // Сразу актуализируем локальный список и помечаем view активным.
+    if (result?.view) {
+      activeViewId.value = result.view.id
+    }
+    await loadSavedViews()
+    adminToast.success('Представление сохранено.')
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] save-view failed:', err)
+    adminToast.error(
+      'Не удалось сохранить view. Возможно, недостаточно прав либо ресурс не зарегистрирован.',
+    )
+  } finally {
+    nav.end()
+  }
+}
+
 const totalLabel = computed(() => {
   const t = index.meta.total
   if (t === 0) return ''
-  return `${index.items.length} из ${t}`
+  return `${index.items.length} из ${t} ${pluralRecords(t)}`
+})
+
+/**
+ * Русская плюрализация для "записей". Backend локаль RU; для других локалей
+ * host может пропатчить через slot `subtitle`.
+ */
+function pluralRecords(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'запись'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'записи'
+  return 'записей'
+}
+
+/**
+ * Live-status: timestamp последнего успешного load + "tick" каждые 30s,
+ * чтобы текст "обновлено 1 мин назад" реально обновлялся без re-load.
+ *
+ * lastLoadedAt = null до первой удачи; после успешного store.load() ставим
+ * Date.now(). Используем watch на index.loading: переход true → false без
+ * error = успех.
+ */
+const lastLoadedAt = ref<number | null>(null)
+const tick = ref<number>(0)
+let tickTimer: ReturnType<typeof setInterval> | null = null
+
+watch(
+  () => index.loading,
+  (isLoading, wasLoading) => {
+    if (wasLoading && !isLoading && index.error === null) {
+      lastLoadedAt.value = Date.now()
+    }
+  },
+)
+
+onMounted(() => {
+  tickTimer = setInterval(() => {
+    tick.value += 1
+  }, 30_000)
+})
+onUnmounted(() => {
+  if (tickTimer !== null) clearInterval(tickTimer)
+})
+
+const liveStatus = computed<string | null>(() => {
+  // tick — dependency для re-compute. Без него computed замёрзнет на initial value.
+  void tick.value
+  if (lastLoadedAt.value === null) return null
+  const diffSec = Math.floor((Date.now() - lastLoadedAt.value) / 1000)
+  if (diffSec < 5) return 'обновлено только что'
+  if (diffSec < 60) return `обновлено ${diffSec} сек назад`
+  const min = Math.floor(diffSec / 60)
+  if (min < 60) return `обновлено ${min} мин назад`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `обновлено ${hr} ч назад`
+  return 'обновлено более суток назад'
+})
+
+const scopeLabel = computed<string>(() => {
+  // Активный view → его имя; иначе "Все {ресурс в lowercase}".
+  if (activeViewId.value !== null) {
+    const v = savedViews.value.find((x) => x.id === activeViewId.value)
+    if (v) return v.name
+  }
+  const label = resourceMeta.value?.label ?? props.slug
+  return `Все ${label.toLowerCase()}`
 })
 
 /**
@@ -175,6 +619,7 @@ onMounted(async () => {
   if (manifest.manifest === null) {
     await manifest.load().catch(() => undefined)
   }
+  void loadSavedViews()
   await loadWithProgress()
 })
 
@@ -183,6 +628,8 @@ watch(
   async (next, prev) => {
     if (next === prev) return
     index.setSlug(next)
+    activeViewId.value = null
+    void loadSavedViews()
     await loadWithProgress()
   },
 )
@@ -250,6 +697,54 @@ async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<v
     const client = getAdminClient()
     await client.post(`/${props.slug}/delete`, { id })
     await index.load().catch(() => undefined)
+    adminToast.success('Запись удалена.')
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] delete failed:', err)
+    adminToast.error('Не удалось удалить запись.')
+  } finally {
+    nav.end()
+  }
+}
+
+/** Soft-deleted rows имеют непустой `deleted_at`. */
+function isTrashed(row: Record<string, unknown>): boolean {
+  return row.deleted_at !== null && row.deleted_at !== undefined
+}
+
+async function onRestore(row: Record<string, unknown>, e?: MouseEvent): Promise<void> {
+  e?.stopPropagation()
+  const id = rowId(row)
+  if (id === null) return
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    await client.post(`/${props.slug}/restore`, { id })
+    await index.load().catch(() => undefined)
+    adminToast.success('Запись восстановлена.')
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] restore failed:', err)
+    adminToast.error('Не удалось восстановить запись.')
+  } finally {
+    nav.end()
+  }
+}
+
+async function onForceDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<void> {
+  e?.stopPropagation()
+  const id = rowId(row)
+  if (id === null) return
+  if (!window.confirm('Удалить запись НАВСЕГДА? Действие необратимо.')) return
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    await client.post(`/${props.slug}/forceDelete`, { id })
+    await index.load().catch(() => undefined)
+    adminToast.success('Запись удалена навсегда.')
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] force-delete failed:', err)
+    adminToast.error('Не удалось удалить запись навсегда.')
   } finally {
     nav.end()
   }
@@ -266,10 +761,18 @@ async function retryLoad(): Promise<void> {
 
 <template>
   <section class="admin-page admin-resource-index">
-    <!-- Header -->
+    <!-- Header — следует docs/design_handoff_laravel_admin/screens-resource.jsx
+         (Resource Index): title-row с live-status, под ним counter,
+         справа — scope dropdown / more-menu / Import / Создать. -->
     <header class="admin-page__hd">
       <div class="admin-page__title-wrap">
-        <h1 class="admin-page__title">{{ displayTitle }}</h1>
+        <div class="admin-page__title-row">
+          <h1 class="admin-page__title">{{ displayTitle }}</h1>
+          <span v-if="liveStatus" class="admin-page__live" role="status">
+            <span class="admin-page__live-dot" aria-hidden="true" />
+            {{ liveStatus }}
+          </span>
+        </div>
         <div v-if="subtitle || totalLabel" class="admin-page__count">
           <template v-if="subtitle">{{ subtitle }}</template>
           <template v-if="subtitle && totalLabel"> · </template>
@@ -278,11 +781,75 @@ async function retryLoad(): Promise<void> {
       </div>
       <div class="admin-page__actions">
         <slot name="actions" />
+        <UidMenu>
+          <template #trigger>
+            <UidButton variant="ghost" size="md" class="admin-page__scope">
+              <template #prepend><UidIcon :icon="Bookmark" :size="14" /></template>
+              {{ scopeLabel }}
+              <template #append><UidIcon :icon="ChevronDown" :size="14" /></template>
+            </UidButton>
+          </template>
+          <UidMenuItem @click="onResetView">
+            Все {{ (resourceMeta?.label ?? slug).toLowerCase() }}
+          </UidMenuItem>
+          <UidMenuItem
+            v-for="v in savedViews"
+            :key="v.id"
+            @click="onApplyView(v)"
+          >
+            <span class="admin-page__view-row">
+              <span class="admin-page__view-name">
+                {{ v.name }}
+                <span v-if="v.is_default" class="admin-page__view-badge">default</span>
+              </span>
+              <button
+                v-if="v.owned"
+                type="button"
+                class="admin-page__view-delete"
+                aria-label="Удалить view"
+                @click.stop="onDeleteView(v, $event)"
+              >
+                <UidIcon :icon="Trash2" :size="12" />
+              </button>
+            </span>
+          </UidMenuItem>
+        </UidMenu>
+        <UidMenu>
+          <template #trigger>
+            <UidButton variant="ghost" size="md" aria-label="Действия" class="admin-page__more">
+              <UidIcon :icon="MoreHorizontal" :size="16" />
+            </UidButton>
+          </template>
+          <UidMenuItem @click="retryLoad">Обновить</UidMenuItem>
+          <UidMenuItem @click="onExport">Экспорт</UidMenuItem>
+          <!-- Кастомные действия от backend Resource->actions(). -->
+          <UidMenuItem
+            v-for="action in headerActions"
+            :key="action.key"
+            @click="onCustomAction(action)"
+          >
+            {{ action.label }}
+          </UidMenuItem>
+          <slot name="header-menu" />
+        </UidMenu>
+        <UidButton variant="secondary" size="md" @click="onImportClick">
+          <template #prepend><UidIcon :icon="Upload" :size="14" /></template>
+          Import
+        </UidButton>
+        <input
+          ref="importInput"
+          type="file"
+          class="admin-page__import-input"
+          accept=".csv,.json,.xlsx,.xls,application/json,text/csv"
+          @change="onImportFileChange"
+        />
         <UidButton
-          v-if="createRouteName"
+          v-if="resolvedCreateRouteName"
           variant="primary"
-          @click="$router.push({ name: createRouteName })"
+          size="md"
+          @click="$router.push({ name: resolvedCreateRouteName })"
         >
+          <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
           {{ createLabel }}
         </UidButton>
       </div>
@@ -304,25 +871,26 @@ async function retryLoad(): Promise<void> {
       </UidButton>
     </div>
 
-    <div v-else-if="showFilterBar" class="admin-filter-bar">
-      <input
-        :value="index.search"
-        type="search"
-        placeholder="Поиск…"
-        class="admin-filter-bar__search"
-        @keydown.enter="(e) => index.setSearch((e.target as HTMLInputElement).value)"
-      />
-      <slot name="filters" :filters="index.filters" :set-filter="index.setFilter" />
-      <span class="admin-filter-bar__spacer" />
-      <UidButton
-        v-if="Object.keys(index.filters).length > 0"
-        size="sm"
-        variant="ghost"
-        @click="index.clearFilters"
-      >
-        Сброс
-      </UidButton>
-    </div>
+    <AdminFilterToolbar
+      v-else-if="showFilterBar"
+      :search="index.search"
+      :search-placeholder="searchPlaceholder"
+      :filters="(manifestFilters as never)"
+      :values="index.filters"
+      :columns="(manifestColumns as never)"
+      :group-by="groupByCol"
+      :column-visibility="columnVisibility"
+      @update:search="onSearchUpdate"
+      @apply-filter="onFilterApply"
+      @reset="onResetFilters"
+      @group-by="onGroupBy"
+      @columns-visibility="onColumnsVisibility"
+      @save-view="onSaveView"
+    >
+      <template #extra>
+        <slot name="filters" :filters="index.filters" :set-filter="index.setFilter" />
+      </template>
+    </AdminFilterToolbar>
 
     <!-- States -->
     <!-- Initial-loading стейт (между setSlug и первым успехом load).
@@ -400,29 +968,74 @@ async function retryLoad(): Promise<void> {
             >
               <UidIcon :icon="Eye" :size="16" />
             </button>
-            <button
-              type="button"
-              class="admin-resource-index__row-action"
-              title="Редактировать"
-              @click.stop="onEdit(rowFromSlot(slotProps) ?? {}, $event)"
-            >
-              <UidIcon :icon="Pencil" :size="16" />
-            </button>
-            <button
-              type="button"
-              class="admin-resource-index__row-action admin-resource-index__row-action--danger"
-              title="Удалить"
-              @click.stop="onDelete(rowFromSlot(slotProps) ?? {}, $event)"
-            >
-              <UidIcon :icon="Trash2" :size="16" />
-            </button>
+            <template v-if="!isTrashed(rowFromSlot(slotProps) ?? {})">
+              <button
+                type="button"
+                class="admin-resource-index__row-action"
+                title="Редактировать"
+                @click.stop="onEdit(rowFromSlot(slotProps) ?? {}, $event)"
+              >
+                <UidIcon :icon="Pencil" :size="16" />
+              </button>
+              <button
+                type="button"
+                class="admin-resource-index__row-action admin-resource-index__row-action--danger"
+                title="Удалить"
+                @click.stop="onDelete(rowFromSlot(slotProps) ?? {}, $event)"
+              >
+                <UidIcon :icon="Trash2" :size="16" />
+              </button>
+            </template>
+            <template v-else>
+              <button
+                type="button"
+                class="admin-resource-index__row-action"
+                title="Восстановить"
+                @click.stop="onRestore(rowFromSlot(slotProps) ?? {}, $event)"
+              >
+                <UidIcon :icon="RotateCcw" :size="16" />
+              </button>
+              <button
+                type="button"
+                class="admin-resource-index__row-action admin-resource-index__row-action--danger"
+                title="Удалить навсегда"
+                @click.stop="onForceDelete(rowFromSlot(slotProps) ?? {}, $event)"
+              >
+                <UidIcon :icon="Trash2" :size="16" />
+              </button>
+            </template>
           </div>
           <slot
             v-else
             :name="`cell-${col.key}`"
             :row="rowFromSlot(slotProps)"
           >
-            {{ renderCell(col.key, slotProps) }}
+            <!--
+              Default cell renderer: значение в одну строку с ellipsis при
+              переполнении. max-width задаёт «адекватную» ширину колонки
+              через CSS-var --admin-cell-max-width (по умолчанию 320px).
+              Полный текст доступен через native browser tooltip (title=).
+              Для editable-колонок double-click открывает inline editor.
+            -->
+            <InlineEditCell
+              v-if="columnIsEditable(col.key)"
+              :resource-slug="slug"
+              :row-id="(rowId(rowFromSlot(slotProps) ?? {}) ?? '') as string | number"
+              :column="col.key"
+              :value="(rowFromSlot(slotProps) ?? {})[col.key]"
+              :editable="true"
+              @saved="(v) => {
+                const r = rowFromSlot(slotProps)
+                if (r) r[col.key] = v
+              }"
+            >
+              <span class="admin-cell-truncate">{{ renderCell(col.key, slotProps) }}</span>
+            </InlineEditCell>
+            <span
+              v-else
+              class="admin-cell-truncate"
+              :title="renderCell(col.key, slotProps)"
+            >{{ renderCell(col.key, slotProps) }}</span>
           </slot>
         </template>
       </UidTable>
@@ -497,6 +1110,44 @@ async function retryLoad(): Promise<void> {
   border: 1px solid var(--uid-border-subtle);
   border-top: 0;
   border-radius: 0 0 var(--uid-radius-lg) var(--uid-radius-lg);
+}
+
+/*
+ * Compact-mode table: уменьшаем padding td/th под --admin-row-h:32px и
+ * font-size 13px. Оригинальный UidTable ставит padding:12px — для compact
+ * это много. Переопределяем точечно внутри admin-resource-index'а чтобы
+ * не задеть UidTable в других контекстах (storybook, custom widgets).
+ */
+.admin-resource-index__table .uid-table__td,
+.admin-resource-index__table .uid-table__th {
+  padding: 6px var(--uid-space-md);
+  font-size: var(--admin-row-fs, 13px);
+  height: var(--admin-row-h, 32px);
+  line-height: 1.3;
+}
+
+/*
+ * Cell truncate — 1 строка с ellipsis, max-width адекватный (320px по
+ * умолчанию). Long-words переносятся внутри ограничения макс. до 3 строк
+ * (line-clamp) на случай когда host переопределит white-space через slot.
+ *
+ * Tooltip с полным значением — нативный browser-tooltip через title=
+ * атрибут (см. ResourceIndexPage.vue cell renderer).
+ */
+.admin-cell-truncate {
+  display: inline-block;
+  max-width: var(--admin-cell-max-width, 320px);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-cell-truncate--multi {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
 }
 .admin-resource-index__footer {
   display: flex;

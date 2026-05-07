@@ -13,7 +13,7 @@ use InvalidArgumentException;
  * SPA не пускал произвольные URL'ы (XSS via clickjacking). Если allowedHosts
  * пуст — пропускает любые URL'ы (decision реализатора).
  */
-final class IframeWidget extends Widget
+class IframeWidget extends Widget
 {
     private string $src = '';
 

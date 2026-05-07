@@ -169,6 +169,15 @@ final class SystemController extends ApiController
             if ($resource === null) {
                 continue;
             }
+            // Permission'ы для view-доступа к разделу. Frontend
+            // useMenuStore.visibleItems фильтрует пункт через
+            // auth.hasAnyPermission(item.permissions). Если у resource'а
+            // нет permission()-base — пункт виден всем (legacy).
+            $base = method_exists($resource, 'permission') || (new \ReflectionClass($resource))->hasMethod('permission')
+                ? $resource::permission()
+                : null;
+            $viewPermission = $base !== null ? $base.'.view' : null;
+
             $items[] = [
                 'key' => $slug,
                 'label' => $resource::label(),
@@ -182,6 +191,7 @@ final class SystemController extends ApiController
                 'group' => $resource::$group,
                 'badge' => null,
                 'order' => 0,
+                'permissions' => $viewPermission !== null ? [$viewPermission] : [],
             ];
         }
 

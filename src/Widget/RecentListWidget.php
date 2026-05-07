@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * Конфиг: модель, количество, колонки для отображения, optional link на view.
  */
-final class RecentListWidget extends Widget
+class RecentListWidget extends Widget
 {
     /** @var class-string<Model>|null */
     private ?string $modelClass = null;

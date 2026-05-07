@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
- * Bell с unread-badge. По эталону handoff'а — badge `.admin-topbar__bell-badge`
- * (округлая красная пилюля 14×14 + tabular-nums + max '99+').
+ * Bell с unread-badge — toggle'ит slide-in drawer NotificationsDrawer.
+ * Сам drawer mounted один раз в AdminApp.vue (Teleport to body).
  */
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { Bell } from 'lucide-vue-next'
+import { UidIcon } from '@dskripchenko/ui'
 import { useNotificationsStore } from '../../../stores/notifications'
 
 const notifications = useNotificationsStore()
@@ -14,15 +15,22 @@ const display = computed(() => {
   if (n <= 0) return null
   return n > 99 ? '99+' : String(n)
 })
+
+function onClick(): void {
+  notifications.toggleDrawer()
+}
 </script>
 
 <template>
-  <RouterLink
-    to="/notifications"
+  <button
+    type="button"
     class="admin-topbar__icon-btn"
     aria-label="Уведомления"
+    aria-haspopup="dialog"
+    :aria-expanded="notifications.isOpen"
+    @click="onClick"
   >
-    <span class="admin-topbar__icon" data-icon="bell" />
+    <UidIcon :icon="Bell" :size="18" data-icon="bell" />
     <span
       v-if="display !== null"
       class="admin-topbar__bell-badge"
@@ -30,5 +38,5 @@ const display = computed(() => {
     >
       {{ display }}
     </span>
-  </RouterLink>
+  </button>
 </template>

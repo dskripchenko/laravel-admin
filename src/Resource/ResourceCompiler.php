@@ -88,6 +88,9 @@ final class ResourceCompiler
                 'delete' => ['method' => ['post'], 'middleware' => [$delete]],
                 'restore' => ['method' => ['post'], 'middleware' => [$restore]],
                 'forceDelete' => ['method' => ['post'], 'middleware' => [$forceDelete]],
+                // Generic bulk-action dispatcher: POST /{slug}/action body
+                // {key, ids[], payload?}. Резолвит Action из Resource->actions().
+                'action' => ['method' => ['post'], 'middleware' => [$view]],
                 'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
                 'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
                 'editScreen' => ['method' => ['get'], 'middleware' => [$update]],

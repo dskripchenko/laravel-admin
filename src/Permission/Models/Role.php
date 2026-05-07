@@ -50,7 +50,15 @@ class Role extends Model
     }
 
     /**
-     * Имеет ли роль конкретный permission. Поддерживает wildcard-ы (`*`).
+     * Имеет ли роль конкретный permission. Поддерживает glob-wildcard'ы:
+     *
+     *   `*`                      — все permissions
+     *   `admin.users.*`          — все sub-keys раздела
+     *   `admin.content.*.view`   — view-доступ к любому контентному ресурсу
+     *   `admin.*.view`           — view ко всему
+     *
+     * Реализация — через `fnmatch()`: `*` совпадает с любым содержимым
+     * (включая точки), как POSIX glob без `FNM_PATHNAME`.
      */
     public function hasPermission(string $key): bool
     {
@@ -64,13 +72,12 @@ class Role extends Model
             return true;
         }
 
-        // Wildcard `admin.users.*` matches `admin.users.view`
         foreach ($permissions as $granted) {
-            if (str_ends_with($granted, '*')) {
-                $prefix = substr($granted, 0, -1);
-                if (str_starts_with($key, $prefix)) {
-                    return true;
-                }
+            if (! is_string($granted) || $granted === '') {
+                continue;
+            }
+            if (str_contains($granted, '*') && fnmatch($granted, $key)) {
+                return true;
             }
         }
 

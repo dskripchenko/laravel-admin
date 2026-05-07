@@ -74,12 +74,47 @@ final class Manifest
             $settingsPayload[] = $settings->meta();
         }
 
+        // Dashboards: каждый DashboardScreen экспортируется как
+        // { slug, label, description, widgets[] } для frontend
+        // DashboardPage (slug в manifest.dashboards). widgets — выход
+        // Widget::toArray() — `{kind, slug, type, title, size, ...}`,
+        // фронт-renderer резолвит через registry по полю `type`.
+        $dashboardsPayload = [];
+        foreach ($this->screens->all() as $slug => $class) {
+            // ScreenRegistry хранит class-strings; resolve через container,
+            // чтобы DI инжектил зависимости (если у конкретного DashboardScreen
+            // есть конструктор с типизированными аргументами).
+            if (! is_subclass_of($class, \Dskripchenko\LaravelAdmin\Widget\DashboardScreen::class)) {
+                continue;
+            }
+            $screen = app($class);
+            if (! $screen instanceof \Dskripchenko\LaravelAdmin\Widget\DashboardScreen) {
+                continue;
+            }
+            $widgets = [];
+            foreach ($screen->widgets() as $widget) {
+                if (! $widget instanceof \Dskripchenko\LaravelAdmin\Widget\Widget) {
+                    continue;
+                }
+                if (! $widget->isVisible()) {
+                    continue;
+                }
+                $widgets[] = $widget->toArray();
+            }
+            $dashboardsPayload[] = [
+                'slug' => $slug,
+                'label' => $screen->name() ?? $slug,
+                'description' => $screen->description(),
+                'widgets' => $widgets,
+            ];
+        }
+
         $payload = [
             'locale' => $locale,
             'resources' => $resourcesPayload,
             'screens' => $screensPayload,
             'settings' => $settingsPayload,
-            'dashboards' => [],
+            'dashboards' => $dashboardsPayload,
             'plugins' => $this->admin->getPlugins(),
             'permissions' => [],
         ];

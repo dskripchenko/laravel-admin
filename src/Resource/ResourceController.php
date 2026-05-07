@@ -474,6 +474,58 @@ final class ResourceController extends ApiController
      * @response 200 {ResourceReorderedResponse}
      * @response 422 {ValidationErrorResponse}
      */
+    public function action(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required'],
+            'key' => ['required', 'string'],
+            'payload' => ['nullable', 'array'],
+        ]);
+
+        $resource = $this->currentResource();
+        $actionKey = $data['key'];
+
+        // Ищем Action с name == $actionKey среди Resource->actions().
+        $action = null;
+        foreach ($resource->actions() as $a) {
+            if ($a->name() === $actionKey) {
+                $action = $a;
+                break;
+            }
+        }
+        if ($action === null) {
+            return $this->error([
+                'errorKey' => 'unknown_action',
+                'message' => "Action `{$actionKey}` not declared on resource",
+            ], 404);
+        }
+
+        // Resolve method'а на самом resource'е (BulkAction->method('archive')).
+        $methodName = $action->toArray()['attributes']['method'] ?? null;
+        if (! is_string($methodName) || ! method_exists($resource, $methodName)) {
+            return $this->error([
+                'errorKey' => 'action_not_implemented',
+                'message' => "Method `{$methodName}` not found on resource",
+            ], 501);
+        }
+
+        // Вызов: $resource->{method}(array $ids, array $payload).
+        try {
+            $result = $resource->{$methodName}($data['ids'], (array) ($data['payload'] ?? []));
+        } catch (\Throwable $e) {
+            return $this->error([
+                'errorKey' => 'action_failed',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+
+        return $this->success([
+            'affected' => is_int($result) ? $result : count($data['ids']),
+            'message' => 'Action `'.$actionKey.'` applied',
+        ]);
+    }
+
     public function reorder(Request $request): JsonResponse
     {
         $data = $request->validate([

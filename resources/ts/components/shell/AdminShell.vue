@@ -14,7 +14,7 @@
  * (.imp-banner). На <html> ставим data-impersonating='true' чтобы корректно
  * сместить sticky-элементы вниз.
  */
-import { onBeforeUnmount, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { UidSidebarLayout } from '@dskripchenko/ui'
 import AdminTopBar from './AdminTopBar.vue'
 import AdminSidebar from './AdminSidebar.vue'
@@ -25,13 +25,17 @@ interface ImpersonationData {
 }
 
 interface Props {
-  /** Сворачивание сайдбара. */
+  /**
+   * v-model:collapsed — состояние сворачивания. Опционально: если host
+   * не передаёт, AdminShell использует internal ref'ом, чтобы collapse
+   * toggle работал out-of-the-box.
+   */
   collapsed?: boolean
   /** Если задано — показывает amber-banner и сдвигает контент. */
   impersonation?: ImpersonationData | null
 }
 const props = withDefaults(defineProps<Props>(), {
-  collapsed: false,
+  collapsed: undefined,
   impersonation: null,
 })
 
@@ -40,7 +44,15 @@ const emit = defineEmits<{
   'exit-impersonation': []
 }>()
 
+// Internal fallback state — используется когда host не передал v-model.
+const internalCollapsed = ref<boolean>(false)
+const isExternallyControlled = computed<boolean>(() => props.collapsed !== undefined)
+const collapsed = computed<boolean>(
+  () => (isExternallyControlled.value ? (props.collapsed as boolean) : internalCollapsed.value),
+)
+
 function onCollapseChange(value: boolean): void {
+  if (!isExternallyControlled.value) internalCollapsed.value = value
   emit('update:collapsed', value)
 }
 
@@ -84,6 +96,7 @@ onBeforeUnmount(() => {
     </div>
     <UidSidebarLayout
       :model-value="collapsed"
+      class="admin-shell"
       @update:model-value="onCollapseChange"
     >
       <template #sidebar>
@@ -97,6 +110,16 @@ onBeforeUnmount(() => {
         </slot>
       </template>
       <slot />
+      <template #footer>
+        <slot name="footer">
+          <!--
+            Default footer-bar: горизонталь снизу контентной части, совпадает
+            по Y с footer'ом sidebar'а — общая высота через --admin-foot-height.
+            Host может переопределить полностью через slot=footer.
+          -->
+          <div class="admin-main-footer" />
+        </slot>
+      </template>
     </UidSidebarLayout>
   </div>
 </template>
@@ -108,5 +131,78 @@ onBeforeUnmount(() => {
 }
 :root[data-admin-impersonating='true'] {
   scroll-padding-top: 32px;
+}
+
+/*
+ * Full-viewport layout: sidebar и main каждый имеют own scroll контейнер.
+ * Window сам не прокручивается (overflow:hidden на корне), вся прокрутка
+ * локализована внутри:
+ *   - sidebar __nav (свой scroll в списке пунктов когда их больше высоты)
+ *   - main-content (правая контентная часть)
+ *
+ * Топбар внутри main всегда виден (flex none / position:sticky top:0).
+ *
+ * Все правила скоупированы в `.admin-shell` чтобы не задеть UidSidebarLayout
+ * в других контекстах (storybook UI-kit'а, тесты).
+ */
+.admin-shell.uid-layout-sidebar {
+  height: 100vh;
+  min-height: 0;
+  max-height: 100vh;
+  overflow: hidden;
+}
+.admin-shell .uid-layout-sidebar__sidebar {
+  height: 100vh;
+}
+.admin-shell .uid-pattern-sidebar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.admin-shell .uid-pattern-sidebar__nav {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.admin-shell .uid-pattern-sidebar__footer {
+  flex: none;
+}
+.admin-shell .uid-layout-sidebar__main {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.admin-shell .uid-layout-sidebar__main-header {
+  flex: none;
+}
+.admin-shell .uid-layout-sidebar__main-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* impersonation banner добавляет 32px над shell — корректируем высоту. */
+.admin-shell-root[data-admin-impersonating='true'] .admin-shell.uid-layout-sidebar,
+.admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__sidebar,
+.admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__main {
+  height: calc(100vh - 32px);
+  max-height: calc(100vh - 32px);
+}
+
+/*
+ * Main-footer — пустая горизонтальная полоса под content-area. Высоту
+ * держит --admin-foot-height (см. styles/admin.css), такую же как у
+ * sidebar footer'а — тогда обе нижние линии (border-top main + border-top
+ * sidebar) проходят по одной Y, образуя единую горизонталь через весь экран.
+ */
+.admin-main-footer {
+  height: var(--admin-foot-height, 32px);
+  border-top: 1px solid var(--uid-border-subtle);
+  background: var(--uid-surface-base);
+  flex: none;
 }
 </style>

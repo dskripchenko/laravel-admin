@@ -11,6 +11,8 @@
  *   - breadcrumbs — переопределить хлебные крошки
  */
 import { computed } from 'vue'
+import { PanelLeft, Search } from 'lucide-vue-next'
+import { UidIcon } from '@dskripchenko/ui'
 import ThemeToggle from './widgets/ThemeToggle.vue'
 import LocaleSwitcher from './widgets/LocaleSwitcher.vue'
 import NotificationBell from './widgets/NotificationBell.vue'
@@ -49,7 +51,7 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
       aria-label="Свернуть меню"
       @click="emit('toggle-sidebar')"
     >
-      <span class="admin-topbar__icon" data-icon="panel-left" />
+      <UidIcon :icon="PanelLeft" :size="18" data-icon="panel-left" />
     </button>
 
     <div class="admin-topbar__breadcrumbs">
@@ -71,7 +73,7 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
 
     <slot name="search">
       <div class="admin-topbar__search" role="button" tabindex="0">
-        <span class="admin-topbar__icon" data-icon="search" />
+        <UidIcon :icon="Search" :size="14" data-icon="search" />
         <span>Поиск везде…</span>
         <kbd>⌘K</kbd>
       </div>

@@ -10,7 +10,7 @@ use InvalidArgumentException;
  * Gauge (полу-круг или donut) — индикатор одного значения в диапазоне min..max
  * с цветовыми зонами (например, низкий/средний/высокий).
  */
-final class GaugeWidget extends Widget
+class GaugeWidget extends Widget
 {
     private float $value = 0;
 

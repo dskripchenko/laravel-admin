@@ -27,6 +27,20 @@ final class TagsInput extends Field
         return $this;
     }
 
+    /**
+     * Группированные подсказки для dropdown'а: каждая группа имеет label
+     * и список items. Frontend TagsField рендерит заголовки групп, если
+     * это поле непустое (имеет приоритет над flat `suggestions`).
+     *
+     * @param  list<array{label: string, items: list<string>}>  $groups
+     */
+    public function suggestionsByGroup(array $groups): static
+    {
+        $this->attributes['suggestionsByGroup'] = $groups;
+
+        return $this;
+    }
+
     public function maxItems(int $max): static
     {
         $this->attributes['maxItems'] = $max;

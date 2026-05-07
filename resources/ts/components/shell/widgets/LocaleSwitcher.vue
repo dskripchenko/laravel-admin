@@ -3,7 +3,8 @@
  * Переключение локали через UidMenu. В topbar показываем компактно
  * (icon + uppercase-код), под ним выпадает список доступных локалей.
  */
-import { UidMenu, UidMenuItem } from '@dskripchenko/ui'
+import { Globe } from 'lucide-vue-next'
+import { UidIcon, UidMenu, UidMenuItem } from '@dskripchenko/ui'
 import { useLocaleStore } from '../../../stores/locale'
 
 const locale = useLocaleStore()
@@ -23,7 +24,7 @@ async function pick(loc: string): Promise<void> {
         style="width: auto; padding: 0 8px; gap: 4px; font-size: 12px;"
         aria-label="Сменить локаль"
       >
-        <span class="admin-topbar__icon" data-icon="globe" />
+        <UidIcon :icon="Globe" :size="14" data-icon="globe" />
         <span>{{ (locale.current ?? '').toUpperCase() }}</span>
       </button>
     </template>

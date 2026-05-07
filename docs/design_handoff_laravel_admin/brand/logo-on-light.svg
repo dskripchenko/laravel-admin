@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64" role="img" aria-label="LAdmin">
+  <rect width="64" height="64" rx="14" fill="#18181b"></rect>
+  <path d="M14 16 L26 28 L14 40" stroke="#2dd4bf" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter" fill="none"></path>
+  <rect x="13" y="42" width="20" height="5" fill="#2dd4bf"></rect>
+  <rect x="42" y="22" width="6" height="20" fill="#2dd4bf"></rect>
+  <text x="80" y="42" font-family="&#39;Inter Display&#39;, Inter, system-ui, sans-serif" font-weight="600" font-size="26" fill="#18181b" letter-spacing="-0.5">LAdmin</text>
+</svg>

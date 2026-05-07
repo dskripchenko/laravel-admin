@@ -26,8 +26,12 @@ interface Props {
 const props = defineProps<Props>()
 const component = computed(() => getField(props.node.type))
 const fieldProps = computed(() => {
-  const { type: _type, ...rest } = props.node
-  return rest
+  // Backend Field::toArray() кладёт type-specific опции в `attributes`
+  // (suggestions, options, multiple, currency и т.п.). Разворачиваем их
+  // на верхний уровень — Field-компоненты ожидают props без обёртки.
+  const { type: _type, attributes, ...rest } = props.node
+  const attrs = (attributes as Record<string, unknown> | undefined) ?? {}
+  return { ...rest, ...attrs }
 })
 </script>
 

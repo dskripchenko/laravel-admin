@@ -215,6 +215,16 @@ abstract class Resource
             'label' => static::label(),
             'icon' => static::$icon,
             'group' => static::$group,
+            // Eloquent morph-class модели — нужен фронту для AuditTimeline
+            // (subject_type в /audit/timeline endpoint'е). Если modelClass
+            // зарегистрирован в morphMap — отдаём alias, иначе FQCN.
+            'subject_type' => isset(static::$model)
+                ? (array_search(
+                    static::$model,
+                    \Illuminate\Database\Eloquent\Relations\Relation::morphMap(),
+                    true,
+                ) ?: static::$model)
+                : null,
             'permissions' => [
                 'view' => $base.'.view',
                 'create' => $base.'.create',
@@ -230,7 +240,7 @@ abstract class Resource
             // infolist: используется ResourceViewPage для read-only display.
             // Default — TextEntry per field (см. Resource::infolist).
             'infolist' => array_map(static fn (\Dskripchenko\LaravelAdmin\Infolist\Entry $e): array => $e->toArray(), $this->infolist()),
-            'filters' => array_map(static fn (Filter $f): array => $f->toArray(), $this->filters()),
+            'filters' => $this->compiledFilters(),
             'actions' => array_map(static fn (Action $a): array => $a->toArray(), $this->actions()),
             'searchable' => $this->searchableFields(),
             'with' => $this->with(),
@@ -245,6 +255,31 @@ abstract class Resource
                 'warnOnUnsavedChanges' => true,
             ],
         ];
+    }
+
+    /**
+     * Сериализованные фильтры с автоматическим добавлением TrashedFilter
+     * для SoftDeletes-моделей. Host может явно прописать `TrashedFilter::for(...)`
+     * в filters() — тогда auto-inject не дублирует.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function compiledFilters(): array
+    {
+        $declared = $this->filters();
+        $hasTrashed = false;
+        foreach ($declared as $f) {
+            if ($f instanceof \Dskripchenko\LaravelAdmin\Filter\TrashedFilter) {
+                $hasTrashed = true;
+                break;
+            }
+        }
+        if (! $hasTrashed && static::supportsSoftDeletes()) {
+            $declared[] = \Dskripchenko\LaravelAdmin\Filter\TrashedFilter::for('trashed')
+                ->label('Удалённые');
+        }
+
+        return array_map(static fn (Filter $f): array => $f->toArray(), $declared);
     }
 
     /**
