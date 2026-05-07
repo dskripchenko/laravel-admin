@@ -68,41 +68,40 @@ final class BootstrapBuilder
     }
 
     /**
-     * Lang-bag для SPA: flat-объект `{key: translation}` из admin::* lang-files.
+     * Lang-bag для SPA: flat-объект `{key: translation}` из admin namespace.
      * Frontend useI18nStore использует через `t('admin.dashboard.add_widget')`.
      *
-     * Источники:
-     *   1. resources/lang/{locale}/admin/*.php — host-проект.
-     *   2. config('admin.translations.namespace') — кастомный namespace.
-     *
-     * Чтобы избежать раздувания payload'а — фильтруем только префиксы из
-     * config('admin.translations.prefixes', ['admin']).
+     * Загружает `resources/lang/{locale}/admin.php` (через `loadTranslationsFrom`
+     * в AdminServiceProvider зарегистрирован namespace `admin`) и сплющивает
+     * вложенные массивы в dot.notation. Host может публиковать override через
+     * `php artisan vendor:publish --tag=admin-lang`.
      *
      * @return array<string, string>
      */
     private function loadTranslations(string $locale): array
     {
-        $prefixes = (array) config('admin.translations.prefixes', ['admin']);
+        $namespaces = (array) config('admin.translations.namespaces', ['admin']);
         $result = [];
 
-        $loader = app('translator')->getLoader();
-        foreach ($prefixes as $prefix) {
-            // Сканируем admin::* (если registered как namespace) и dot.notation.
-            // Для caсhe-aware loader'а зовём через trans() — он знает где искать.
-            $namespace = is_string($prefix) ? $prefix : 'admin';
-            // Пробуем как namespace (admin::menu.users), иначе как dot-prefix.
-            $messages = [];
-            try {
-                $messages = (array) $loader->load($locale, $namespace, '*');
-            } catch (\Throwable) {
-                $messages = [];
+        foreach ($namespaces as $ns) {
+            if (! is_string($ns) || $ns === '') {
+                continue;
             }
-            foreach ($messages as $group => $bag) {
-                if (! is_array($bag)) continue;
-                foreach (\Illuminate\Support\Arr::dot($bag) as $key => $value) {
-                    if (is_string($value)) {
-                        $result["{$namespace}.{$group}.{$key}"] = $value;
-                    }
+            // trans('admin::*') → массив ключей или fallback. Используем
+            // Lang::get('admin::admin.dashboard.title') и т.п.
+            try {
+                $bag = trans($ns.'::admin', [], $locale);
+            } catch (\Throwable) {
+                continue;
+            }
+            if (! is_array($bag)) {
+                continue;
+            }
+            foreach (\Illuminate\Support\Arr::dot($bag) as $key => $value) {
+                if (is_string($value)) {
+                    // Префикс с namespace + 'admin.' даёт ключи вида
+                    // 'admin.dashboard.title', что соответствует frontend t()-call'ам.
+                    $result["{$ns}.{$key}"] = $value;
                 }
             }
         }

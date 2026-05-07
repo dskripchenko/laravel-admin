@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-05-07
+
+### Added
+
+- **G1: i18n full migration** — `resources/lang/{ru,en}/admin.php` для core, `BootstrapBuilder.loadTranslations()` flatten в bootstrap.translations, `loadTranslationsFrom` в AdminServiceProvider. Frontend `tt(key, fallback)` обёртки в `ResourceIndexPage`. Host публикует override через `vendor:publish`.
+- **G2: Built-in QR-encoder** — `lean-qr` (~3KB, MIT, без peer-dep) рендерит QR прямо в TwoFactorSetup. Slot `qr-code` остаётся для override.
+- **G3: Drop-indicator при reorder** — `dragOverRowIdx` + `dragOverSide` управляют горизонтальной линией перед/после строки. Ghost-style на исходной строке (opacity:0.4).
+- **G4: Backend tests** — 4 новых теста на `/{slug}/action` endpoint (success / 404 / 422 / second-action). Total 783 (+4).
+
+### Notes
+
+- **G5**: sister-pack repos локально не клонированы — host'у нужно вручную тегнуть `v1.2.0` на каждом из 8 пакетов (starter/jobs/health/media/pulse/search/quill/tinymce). Core 1.2.x не делает breaking changes для них.
+
 ## [1.2.1] - 2026-05-07
 
 ### Added

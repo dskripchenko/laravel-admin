@@ -47,6 +47,17 @@ import { formatCell, type CellMeta } from './cellFormat'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
 import { adminToast } from '../../stores/toast'
+import { useI18nStore } from '../../stores/i18n'
+
+const i18n = useI18nStore()
+/**
+ * Локальная обёртка над t() с graceful fallback на ru-string.
+ * Это позволяет постепенный sweep: пока bootstrap.translations не наполнен,
+ * UI показывает ru-defaults; когда host публикует lang-bag — подменяется
+ * на переводы.
+ */
+const tt = (key: string, fallback: string, replace?: Record<string, string | number>): string =>
+  i18n.has(key) ? i18n.t(key, replace) : fallback
 
 interface Props {
   /** Slug ресурса (users/articles/etc). */
@@ -533,7 +544,7 @@ async function onSaveView(label: string): Promise<void> {
       activeViewId.value = result.view.id
     }
     await loadSavedViews()
-    adminToast.success('Представление сохранено.')
+    adminToast.success(tt('admin.resource.view_saved', 'Представление сохранено.'))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] save-view failed:', err)
     adminToast.error(
@@ -716,17 +727,17 @@ async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<v
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!window.confirm('Удалить запись?')) return
+  if (!window.confirm(tt('admin.resource.delete_confirm', 'Удалить запись?'))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     await client.post(`/${props.slug}/delete`, { id })
     await index.load().catch(() => undefined)
-    adminToast.success('Запись удалена.')
+    adminToast.success(tt('admin.resource.deleted', 'Запись удалена.'))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] delete failed:', err)
-    adminToast.error('Не удалось удалить запись.')
+    adminToast.error(tt('admin.resource.delete_failed', 'Не удалось удалить запись.'))
   } finally {
     nav.end()
   }
@@ -747,20 +758,22 @@ async function onRestore(row: Record<string, unknown>, e?: MouseEvent): Promise<
     const client = getAdminClient()
     await client.post(`/${props.slug}/restore`, { id })
     await index.load().catch(() => undefined)
-    adminToast.success('Запись восстановлена.')
+    adminToast.success(tt('admin.resource.restored', 'Запись восстановлена.'))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] restore failed:', err)
-    adminToast.error('Не удалось восстановить запись.')
+    adminToast.error(tt('admin.resource.restore_failed', 'Не удалось восстановить запись.'))
   } finally {
     nav.end()
   }
 }
 
-// === Row reorder (HTML5 drag) ===
+// === Row reorder (HTML5 drag + visual indicator) ===
 const dragRowIdx = ref<number | null>(null)
+const dragOverRowIdx = ref<number | null>(null)
+const dragOverSide = ref<'before' | 'after'>('before')
+
 function onRowDragStart(idx: number, e: DragEvent): void {
   if (!isReorderable.value || !e.dataTransfer) return
-  // Drag только если начался с reorder-handle.
   const t = e.target as HTMLElement | null
   if (!t?.closest('[data-row-drag-handle="true"]')) {
     e.preventDefault()
@@ -770,19 +783,36 @@ function onRowDragStart(idx: number, e: DragEvent): void {
   e.dataTransfer.effectAllowed = 'move'
   e.dataTransfer.setData('text/plain', String(idx))
 }
-function onRowDragOver(e: DragEvent): void {
-  if (isReorderable.value && dragRowIdx.value !== null) e.preventDefault()
+function onRowDragOver(idx: number, e: DragEvent): void {
+  if (!isReorderable.value || dragRowIdx.value === null) return
+  e.preventDefault()
+  // Определяем сторону по mid-Y current cell'а — drop-line будет либо
+  // выше, либо ниже текущей строки.
+  const target = e.currentTarget as HTMLElement | null
+  if (target) {
+    const rect = target.getBoundingClientRect()
+    dragOverSide.value = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+  }
+  dragOverRowIdx.value = idx
+}
+function onRowDragEnd(): void {
+  dragRowIdx.value = null
+  dragOverRowIdx.value = null
 }
 async function onRowDrop(toIdx: number, e: DragEvent): Promise<void> {
   e.preventDefault()
   if (!isReorderable.value || dragRowIdx.value === null) return
   const fromIdx = dragRowIdx.value
+  // adjusted = вставка после строки (insertion-index в уже-удалённом array).
+  const adjusted = dragOverSide.value === 'after' ? toIdx + 1 : toIdx
+  const finalIdx = adjusted > fromIdx ? adjusted - 1 : adjusted
   dragRowIdx.value = null
-  if (fromIdx === toIdx) return
+  dragOverRowIdx.value = null
+  if (fromIdx === finalIdx) return
   // Локальный reorder для мгновенного отклика.
   const items = [...index.items]
   const [moved] = items.splice(fromIdx, 1)
-  items.splice(toIdx, 0, moved)
+  items.splice(finalIdx, 0, moved)
   index.items = items
   // Backend persistence: POST /{slug}/reorder body {ids: [orderedIds]}.
   try {
@@ -791,10 +821,10 @@ async function onRowDrop(toIdx: number, e: DragEvent): Promise<void> {
     const client = getAdminClient()
     const ids = items.map((r) => index.rowId(r))
     await client.post(`/${props.slug}/reorder`, { ids })
-    adminToast.success('Порядок сохранён.')
+    adminToast.success(tt('admin.resource.reorder_saved', 'Порядок сохранён.'))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] reorder failed:', err)
-    adminToast.error('Не удалось сохранить порядок.')
+    adminToast.error(tt('admin.resource.reorder_failed', 'Не удалось сохранить порядок.'))
     await index.load().catch(() => undefined)
   } finally {
     nav.end()
@@ -805,17 +835,17 @@ async function onForceDelete(row: Record<string, unknown>, e?: MouseEvent): Prom
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!window.confirm('Удалить запись НАВСЕГДА? Действие необратимо.')) return
+  if (!window.confirm(tt('admin.resource.force_delete_confirm', 'Удалить запись НАВСЕГДА? Действие необратимо.'))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     await client.post(`/${props.slug}/forceDelete`, { id })
     await index.load().catch(() => undefined)
-    adminToast.success('Запись удалена навсегда.')
+    adminToast.success(tt('admin.resource.force_deleted', 'Запись удалена навсегда.'))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] force-delete failed:', err)
-    adminToast.error('Не удалось удалить запись навсегда.')
+    adminToast.error(tt('admin.resource.force_delete_failed', 'Не удалось удалить запись навсегда.'))
   } finally {
     nav.end()
   }
@@ -1032,7 +1062,22 @@ async function retryLoad(): Promise<void> {
           <!-- Колонка drag-handle для reorderable resource'а -->
           <span
             v-if="col.key === REORDER_KEY"
-            class="admin-resource-index__row-drag"
+            :class="[
+              'admin-resource-index__row-drag',
+              {
+                'admin-resource-index__row-drag--drop-before':
+                  dragOverRowIdx !== null
+                  && dragOverRowIdx === index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>)
+                  && dragOverSide === 'before',
+                'admin-resource-index__row-drag--drop-after':
+                  dragOverRowIdx !== null
+                  && dragOverRowIdx === index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>)
+                  && dragOverSide === 'after',
+                'admin-resource-index__row-drag--ghost':
+                  dragRowIdx !== null
+                  && dragRowIdx === index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
+              },
+            ]"
             data-row-drag-handle="true"
             :draggable="isReorderable"
             title="Перетащить"
@@ -1040,7 +1085,11 @@ async function retryLoad(): Promise<void> {
               index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
               e,
             )"
-            @dragover="onRowDragOver"
+            @dragover="(e: DragEvent) => onRowDragOver(
+              index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
+              e,
+            )"
+            @dragend="onRowDragEnd"
             @drop="(e: DragEvent) => onRowDrop(
               index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
               e,
@@ -1163,6 +1212,7 @@ async function retryLoad(): Promise<void> {
 
 /* Drag-handle для reorderable resource'а — первая колонка. */
 .admin-resource-index__row-drag {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1177,6 +1227,24 @@ async function retryLoad(): Promise<void> {
   color: var(--uid-text-primary);
 }
 .admin-resource-index__row-drag:active { cursor: grabbing; }
+/* Полупрозрачная исходная строка во время drag (приём из Notion/Linear). */
+.admin-resource-index__row-drag--ghost { opacity: 0.4; }
+/* Линия-индикатор drop'а — extends на всю ширину строки через ::before
+   (положение absolute относительно td.admin-resource-index__row-drag,
+   left:-9999 чтобы перекрыть ширину таблицы). */
+.admin-resource-index__row-drag--drop-before::before,
+.admin-resource-index__row-drag--drop-after::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: -9999px;
+  height: 2px;
+  background: var(--uid-accent);
+  pointer-events: none;
+  z-index: 5;
+}
+.admin-resource-index__row-drag--drop-before::before { top: -1px; }
+.admin-resource-index__row-drag--drop-after::before { bottom: -1px; }
 
 /* Row actions: View / Edit / Delete иконки в последней колонке таблицы. */
 .admin-resource-index__row-actions {

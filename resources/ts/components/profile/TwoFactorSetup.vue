@@ -4,19 +4,20 @@
  *
  * State-machine:
  *   idle      — 2FA выключена; кнопка «Включить 2FA».
- *   setup     — backend выдал secret + qr_uri; показываем secret для ввода
- *               в Authenticator app + поле для подтверждающего 6-значного кода.
+ *   setup     — backend выдал secret + qr_uri; показываем QR + поле для
+ *               подтверждающего 6-значного кода.
  *   confirmed — после успешного twoFactorConfirm: показываем recovery-коды.
  *   enabled   — 2FA уже включена; кнопки «Перегенерировать коды» / «Отключить».
  *
- * QR-рендер не делаем — выводим otpauth:// secret как монаспейс-блок;
- * у современных authenticator-app есть «ввод вручную» либо камера может
- * считать с другого экрана. Для встроенного QR host подключает свой
- * QR-плагин (например `qrcode-svg`) и заменяет slot `qr-code`.
+ * QR рендерится встроенным lean-qr (~3KB, без peer-dep). Host может
+ * переопределить через slot `qr-code` (например для брендированной
+ * картинки или canvas-варианта).
  */
 import { computed, ref } from 'vue'
 import { Copy, ShieldCheck, ShieldOff, RefreshCw } from 'lucide-vue-next'
 import { UidButton, UidIcon, UidInput } from '@dskripchenko/ui'
+import { generate, correction } from 'lean-qr'
+import { toSvgSource } from 'lean-qr/extras/svg'
 import { adminToast } from '../../stores/toast'
 
 interface Props {
@@ -147,6 +148,21 @@ async function copyCodes(): Promise<void> {
 }
 
 const formattedSecret = computed(() => secret.value.match(/.{1,4}/g)?.join(' ') ?? secret.value)
+
+/**
+ * Генерируем QR из otpauth-URI через lean-qr. Возвращаем SVG-string,
+ * который вставляется через v-html. ECC=M (15%) — оптимум: достаточно
+ * для пятен на экране, но без больших data-блоков.
+ */
+const qrSvg = computed<string>(() => {
+  if (qrUri.value === '') return ''
+  try {
+    const code = generate(qrUri.value, { minCorrectionLevel: correction.M })
+    return toSvgSource(code, { on: '#18181b', off: 'transparent', padX: 1, padY: 1 })
+  } catch {
+    return ''
+  }
+})
 </script>
 
 <template>
@@ -178,7 +194,8 @@ const formattedSecret = computed(() => secret.value.match(/.{1,4}/g)?.join(' ') 
             </button>
           </div>
           <slot name="qr-code" :uri="qrUri">
-            <p class="admin-2fa__hint">
+            <div v-if="qrSvg" class="admin-2fa__qr" v-html="qrSvg" />
+            <p v-else class="admin-2fa__hint">
               Либо отсканируйте QR с другого устройства — поделитесь URI:
               <code class="admin-2fa__uri">{{ qrUri }}</code>
             </p>
@@ -308,6 +325,15 @@ const formattedSecret = computed(() => secret.value.match(/.{1,4}/g)?.join(' ') 
   word-break: break-all;
 }
 .admin-2fa__hint { margin: 6px 0 0; font-size: 12px; color: var(--uid-text-tertiary); }
+.admin-2fa__qr {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-md);
+}
+.admin-2fa__qr svg { display: block; width: 200px; height: 200px; }
 .admin-2fa__code-row {
   display: inline-flex;
   align-items: center;
