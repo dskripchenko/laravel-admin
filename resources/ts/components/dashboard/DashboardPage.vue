@@ -385,6 +385,8 @@ function onSaveConfig(patch: Partial<WidgetLayoutItem>): void {
 
 // === Drag-reorder (нативный HTML5) ===
 const dragSourceIdx = ref<number | null>(null)
+/** Idx, на который указывает drop-indicator при hover'е во время drag. */
+const dragOverIdx = ref<number | null>(null)
 /**
  * При нативном HTML5 drag e.target в `dragstart` равен ELEMENT'у с draggable=true
  * (в нашем случае — admin-dashboard__cell), а НЕ внутренней кнопке drag-handle.
@@ -417,12 +419,15 @@ function onDragStart(idx: number, e: DragEvent): void {
   e.dataTransfer.setData('text/plain', String(idx))
 }
 function onDragEnd(): void {
-  // Сбрасываем флаг — независимо от исхода drag'а.
+  // Сбрасываем флаги — независимо от исхода drag'а.
   dragInitiated.value = false
+  dragSourceIdx.value = null
+  dragOverIdx.value = null
 }
-function onDragOver(e: DragEvent): void {
+function onDragOver(toIdx: number, e: DragEvent): void {
   if (dashboardStore.editMode && dragSourceIdx.value !== null) {
     e.preventDefault()
+    if (dragOverIdx.value !== toIdx) dragOverIdx.value = toIdx
   }
 }
 function onDrop(toIdx: number, e: DragEvent): void {
@@ -434,6 +439,7 @@ function onDrop(toIdx: number, e: DragEvent): void {
   ensureDraftReflectsRendered()
   dashboardStore.moveWidget(sourceIdx, toIdx)
   dragSourceIdx.value = null
+  dragOverIdx.value = null
 }
 
 /**
@@ -600,7 +606,11 @@ function onExport(): void {
         v-for="(item, idx) in renderedWidgets"
         :key="item.layoutSlug"
         class="admin-dashboard__cell"
-        :class="{ 'admin-dashboard__cell--editing': dashboardStore.editMode }"
+        :class="{
+          'admin-dashboard__cell--editing': dashboardStore.editMode,
+          'admin-dashboard__cell--dragging': dragSourceIdx === idx,
+          'admin-dashboard__cell--drop-target': dragOverIdx === idx && dragSourceIdx !== idx && dragSourceIdx !== null,
+        }"
         :draggable="dashboardStore.editMode"
         :style="{
           gridColumn: `span ${spanFor(item.node)} / span ${spanFor(item.node)}`,
@@ -608,7 +618,7 @@ function onExport(): void {
         }"
         @pointerdown="onPointerDown"
         @dragstart="onDragStart(idx, $event)"
-        @dragover="onDragOver"
+        @dragover="onDragOver(idx, $event)"
         @drop="onDrop(idx, $event)"
         @dragend="onDragEnd"
       >
@@ -653,10 +663,20 @@ function onExport(): void {
 }
 .admin-dashboard__grid--editing .admin-dashboard__cell {
   outline: 1px dashed transparent;
-  transition: outline-color 120ms ease;
+  transition: outline-color 120ms ease, opacity 120ms ease;
 }
 .admin-dashboard__grid--editing .admin-dashboard__cell:hover {
   outline-color: var(--uid-accent);
+}
+/* Источник drag — полупрозрачный, чтобы было видно куда уйдёт. */
+.admin-dashboard__cell--dragging {
+  opacity: 0.45;
+}
+/* Cell под курсором при drag — подсвечен accent-полосой как drop-target. */
+.admin-dashboard__cell--drop-target {
+  outline: 2px solid var(--uid-color-primary, var(--uid-accent, #14b8a6)) !important;
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--uid-color-primary, #14b8a6) 6%, transparent);
 }
 .admin-dashboard__cell {
   position: relative;
