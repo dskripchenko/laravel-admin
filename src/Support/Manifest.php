@@ -51,8 +51,17 @@ final class Manifest
             $resourcesPayload[] = ResourceManifest::describe($resource);
         }
 
+        // В `screens` попадают только custom Screen-ы. GeneratedScreen
+        // (внутри Resource) и DashboardScreen имеют отдельные controllers
+        // и собственные секции в манифесте (`resources` / `dashboards`).
         $screensPayload = [];
         foreach ($this->screens->all() as $slug => $class) {
+            if (is_subclass_of($class, \Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen::class)) {
+                continue;
+            }
+            if (is_subclass_of($class, \Dskripchenko\LaravelAdmin\Widget\DashboardScreen::class)) {
+                continue;
+            }
             $screen = $this->admin->resolveScreen($slug);
             if ($screen === null) {
                 continue;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin;
 
+use Dskripchenko\LaravelAdmin\Menu\MenuRegistry;
 use Dskripchenko\LaravelAdmin\Permission\ItemPermission;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\Resource as ResourceBase;
@@ -175,5 +176,16 @@ final class Admin
     public function version(): string
     {
         return '0.1.0-dev';
+    }
+
+    /**
+     * Доступ к MenuRegistry — fluent API для построения иерархического меню.
+     *
+     *   $admin->menu()->add(MenuNode::make('shop', 'Магазин')->children([...]));
+     *   $admin->menu()->under('shop', [MenuNode::resource('products')]);
+     */
+    public function menu(): MenuRegistry
+    {
+        return $this->app->make(MenuRegistry::class);
     }
 }

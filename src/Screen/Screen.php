@@ -138,7 +138,8 @@ abstract class Screen
      *     description: ?string,
      *     layout: list<array<string, mixed>>,
      *     command_bar: list<array<string, mixed>>,
-     *     permissions: list<string>
+     *     permissions: list<string>,
+     *     etag: string
      * }
      */
     public function compile(mixed ...$params): array
@@ -146,7 +147,7 @@ abstract class Screen
         $stateRepo = $this->query(...$params);
         $state = $stateRepo instanceof Repository ? $stateRepo->toArray() : $stateRepo;
 
-        return [
+        $payload = [
             'state' => $state,
             'name' => $this->name(),
             'description' => $this->description(),
@@ -160,6 +161,32 @@ abstract class Screen
             ),
             'permissions' => self::normalizePermissions($this->permission()),
         ];
+
+        $payload['etag'] = self::buildEtag([
+            'state' => $payload['state'],
+            'name' => $payload['name'],
+            'description' => $payload['description'],
+            'permissions' => $payload['permissions'],
+        ]);
+
+        return $payload;
+    }
+
+    /**
+     * Считает etag только от state-level данных (state/name/description/permissions).
+     *
+     * Layout/command_bar НЕ включаются в etag — они содержат не-детерминированные
+     * id (random_bytes), но и меняются только при изменении кода Screen'а
+     * (отслеживается через Manifest::version()). На стороне клиента etag
+     * сравнивается для понимания «state изменился, пере-fetch'ить».
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private static function buildEtag(array $payload): string
+    {
+        $serialized = (string) json_encode($payload, JSON_UNESCAPED_UNICODE);
+
+        return substr(hash('sha256', $serialized), 0, 16);
     }
 
     /**

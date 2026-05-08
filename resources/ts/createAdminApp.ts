@@ -30,7 +30,7 @@ import HomePage from './components/HomePage.vue'
 import ForbiddenPage from './components/ForbiddenPage.vue'
 import NotFoundPage from './components/NotFoundPage.vue'
 import SettingsPage from './components/SettingsPage.vue'
-import UnknownScreenPage from './components/UnknownScreenPage.vue'
+import ScreenPage from './components/ScreenPage.vue'
 import { LoginPage } from './components/auth'
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage.vue'
 import ResetPasswordPage from './components/auth/ResetPasswordPage.vue'
@@ -173,7 +173,7 @@ export function createAdminApp(
       resourceView: pages.resourceView ?? ResourceViewPage,
       dashboard: pages.dashboard ?? DashboardPage,
       settings: pages.settings ?? SettingsPage,
-      screen: pages.screen ?? UnknownScreenPage,
+      screen: pages.screen ?? ScreenPage,
     },
     extraRoutes: options.router?.extraRoutes,
     authGuard: options.router?.authGuard,

@@ -6,9 +6,13 @@ namespace Dskripchenko\LaravelAdmin\Http\Controllers;
 
 use Dskripchenko\LaravelAdmin\Admin;
 use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
+use Dskripchenko\LaravelAdmin\Menu\MenuRegistry;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
+use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
+use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +32,8 @@ final class SystemController extends ApiController
         private readonly Admin $admin,
         private readonly Manifest $manifest,
         private readonly ResourceRegistry $resources,
+        private readonly ScreenRegistry $screens,
+        private readonly MenuRegistry $menuRegistry,
         private readonly PermissionRegistry $permissions,
     ) {}
 
@@ -163,16 +169,76 @@ final class SystemController extends ApiController
      */
     public function menu(Request $request): JsonResponse
     {
+        // Кастомное иерархическое меню (если host зарегистрировал через
+        // Admin::menu()->add(...)). Узлы могут быть произвольно вложены и
+        // содержать MenuNode::resource()/screen() с auto-resolve label/url/permissions.
+        $custom = [];
+        $usedKeys = [];
+        foreach ($this->menuRegistry->roots() as $node) {
+            $serialized = $node->toArray($this->resources, $this->screens);
+            $custom[] = $serialized;
+            self::collectUsedSlugs($serialized, $usedKeys);
+        }
+
+        // Auto-fill: добавляем недостающие Resources/custom Screens, если они
+        // ещё не упомянуты в кастомном дереве. По default включено — пользователю
+        // не нужно дублировать каждую Resource в menu()->add().
+        $auto = [];
+        if ($this->menuRegistry->autoFillEnabled()) {
+            $auto = $this->buildAutoItems($usedKeys);
+        }
+
+        return $this->success(['items' => array_merge($custom, $auto)]);
+    }
+
+    /**
+     * Собрать все slug'и Resources/Screens, упомянутые в дереве (рекурсивно).
+     * Используется чтобы auto-fill не дублировал custom-узлы.
+     *
+     * @param  array<string, mixed>  $node
+     * @param  array<string, true>  &$used
+     */
+    private static function collectUsedSlugs(array $node, array &$used): void
+    {
+        $key = $node['key'] ?? null;
+        if (is_string($key)) {
+            $used[$key] = true;
+            // Дополнительно: автоматический ключ MenuNode::resource('users') = 'resource.users'
+            // и url '/r/users' — пометим slug отдельно для матчинга с auto-resources.
+            if (str_starts_with($key, 'resource.')) {
+                $used[substr($key, strlen('resource.'))] = true;
+            } elseif (str_starts_with($key, 'screen.')) {
+                $used['screen.'.substr($key, strlen('screen.'))] = true;
+            }
+        }
+        if (is_array($node['children'] ?? null)) {
+            foreach ($node['children'] as $child) {
+                if (is_array($child)) {
+                    self::collectUsedSlugs($child, $used);
+                }
+            }
+        }
+    }
+
+    /**
+     * Старая auto-логика — генерит flat-items для всех Resource + Screen,
+     * которые не были упомянуты в кастомном меню. Сохраняет default-поведение.
+     *
+     * @param  array<string, true>  $used
+     * @return list<array<string, mixed>>
+     */
+    private function buildAutoItems(array $used): array
+    {
         $items = [];
+
         foreach ($this->resources->all() as $slug => $class) {
+            if (isset($used[$slug])) {
+                continue;
+            }
             $resource = $this->resources->resolve($slug);
             if ($resource === null) {
                 continue;
             }
-            // Permission'ы для view-доступа к разделу. Frontend
-            // useMenuStore.visibleItems фильтрует пункт через
-            // auth.hasAnyPermission(item.permissions). Если у resource'а
-            // нет permission()-base — пункт виден всем (legacy).
             $base = method_exists($resource, 'permission') || (new \ReflectionClass($resource))->hasMethod('permission')
                 ? $resource::permission()
                 : null;
@@ -182,20 +248,51 @@ final class SystemController extends ApiController
                 'key' => $slug,
                 'label' => $resource::label(),
                 'icon' => $resource::$icon,
-                // SPA frontend Vue Router использует path '/r/{slug}' (см.
-                // resources/ts/router/builder.ts buildResourceRoutes).
-                // Префикс admin-shell (config('admin.path')) добавляется
-                // SPA-router'ом автоматически.
                 'url' => '/r/'.$slug,
                 'routeName' => 'admin.resource.'.$slug.'.index',
                 'group' => $resource::$group,
                 'badge' => null,
                 'order' => 0,
                 'permissions' => $viewPermission !== null ? [$viewPermission] : [],
+                'children' => [],
             ];
         }
 
-        return $this->success(['items' => $items]);
+        foreach ($this->screens->all() as $slug => $class) {
+            if (isset($used['screen.'.$slug])) {
+                continue;
+            }
+            if (is_subclass_of($class, GeneratedScreen::class)) {
+                continue;
+            }
+            if (is_subclass_of($class, DashboardScreen::class)) {
+                continue;
+            }
+            $screen = $this->admin->resolveScreen($slug);
+            if ($screen === null) {
+                continue;
+            }
+            $permission = $screen->permission();
+            $permissions = match (true) {
+                $permission === null => [],
+                is_string($permission) => [$permission],
+                default => $permission,
+            };
+            $items[] = [
+                'key' => 'screen.'.$slug,
+                'label' => $screen->name(),
+                'icon' => null,
+                'url' => '/screens/'.$slug,
+                'routeName' => 'admin.screen.'.$slug,
+                'group' => 'Инструменты',
+                'badge' => null,
+                'order' => 100,
+                'permissions' => $permissions,
+                'children' => [],
+            ];
+        }
+
+        return $items;
     }
 
     /**

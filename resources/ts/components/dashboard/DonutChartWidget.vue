@@ -32,6 +32,9 @@ const PALETTE = [
   'var(--uid-color-blue-400, #60a5fa)',
 ]
 
+const isEmpty = computed(
+  () => props.data.length === 0 || props.data.every((s) => !s.value),
+)
 const total = computed(() => props.data.reduce((s, x) => s + x.value, 0) || 1)
 
 const slices = computed(() => {
@@ -71,7 +74,8 @@ const slices = computed(() => {
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <div class="admin-donut-widget__row">
+    <div v-if="isEmpty" class="admin-widget__empty">Нет данных</div>
+    <div v-else class="admin-donut-widget__row">
       <svg viewBox="0 0 120 120" class="admin-donut-widget__svg" role="img" :aria-label="title">
         <path
           v-for="(s, idx) in slices"
@@ -99,6 +103,16 @@ const slices = computed(() => {
   display: flex;
   align-items: center;
   gap: var(--uid-space-md);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.admin-widget__empty {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--uid-text-tertiary, #9ca3af);
+  font-size: var(--uid-font-size-sm);
 }
 .admin-donut-widget__svg {
   width: 120px;

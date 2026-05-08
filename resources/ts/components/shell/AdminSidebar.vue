@@ -9,13 +9,11 @@
  * Brand-row сверху + опциональный tenant-block + footer с версией/docs —
  * по эталону docs/design_handoff_laravel_admin/screens-shell.jsx (Sidebar).
  */
-import { computed, h, type Component } from 'vue'
-import { useRoute } from 'vue-router'
-import { Box } from 'lucide-vue-next'
-import { UidIcon, UidSidebar, UidSidebarGroup, UidSidebarItem } from '@dskripchenko/ui'
-import { useMenuStore, type MenuItem } from '../../stores/menu'
+import { computed } from 'vue'
+import { UidSidebar, UidSidebarGroup } from '@dskripchenko/ui'
+import { useMenuStore } from '../../stores/menu'
+import AdminSidebarNode from './AdminSidebarNode.vue'
 import BrandLogo from './BrandLogo.vue'
-import { resolveIcon } from './iconRegistry'
 
 interface Props {
   collapsed?: boolean
@@ -46,38 +44,8 @@ withDefaults(defineProps<Props>(), {
 })
 
 const menu = useMenuStore()
-const route = useRoute()
 
 const groups = computed(() => menu.groupedItems)
-
-function isActive(item: MenuItem): boolean {
-  if (item.routeName && route.name === item.routeName) return true
-  if (item.url && route.path === item.url) return true
-  return false
-}
-
-/**
- * UidSidebarItem ожидает icon-slot. MenuItem.icon — строка (имя lucide-иконки
- * в kebab-case). Резолвим через iconRegistry; если имя не зарегистрировано —
- * fallback на Box, чтобы каждый item всегда имел иконку (иначе collapsed
- * mode превращается в бесполезные пустые квадраты).
- *
- * Host-проект может расширить registry через registerIcon(name, comp).
- */
-function iconSlot(name?: string | null): Component {
-  const resolved = resolveIcon(name) ?? Box
-  return () => h(UidIcon, { icon: resolved, size: 16 })
-}
-
-/** UidSidebarItem.to принимает string | object; routeName маппим через route-object. */
-function itemTarget(item: MenuItem): string | Record<string, unknown> | undefined {
-  // URL приоритетнее routeName — vue-router бросает "no match for {name}" если
-  // route'а ещё нет (dynamic-routes добавляются async после manifest.load).
-  // URL-based navigation матчится в любой момент через path.
-  if (item.url) return item.url
-  if (item.routeName) return { name: item.routeName }
-  return undefined
-}
 </script>
 
 <template>
@@ -105,19 +73,12 @@ function itemTarget(item: MenuItem): string | Record<string, unknown> | undefine
         :key="`grp-${idx}`"
         :title="grp.group ?? undefined"
       >
-        <UidSidebarItem
+        <AdminSidebarNode
           v-for="item in grp.items"
           :key="item.key"
-          :to="itemTarget(item)"
-          :active="isActive(item)"
-          :badge="item.badge ?? undefined"
-          :title="collapsed ? item.label : undefined"
-        >
-          <template #icon>
-            <component :is="iconSlot(item.icon)" />
-          </template>
-          {{ item.label }}
-        </UidSidebarItem>
+          :item="item"
+          :collapsed="collapsed"
+        />
       </UidSidebarGroup>
     </template>
 

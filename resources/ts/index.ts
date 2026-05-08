@@ -39,6 +39,7 @@ export { default as ForbiddenPage } from './components/ForbiddenPage.vue'
 export { default as NotFoundPage } from './components/NotFoundPage.vue'
 export { default as SettingsPage } from './components/SettingsPage.vue'
 export { default as UnknownScreenPage } from './components/UnknownScreenPage.vue'
+export { default as ScreenPage } from './components/ScreenPage.vue'
 
 export { createAdminClient } from './api/client'
 export type { AdminClient, ClientOptions } from './api/client'

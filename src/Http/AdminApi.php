@@ -11,6 +11,8 @@ use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiSystemSchemas;
 use Dskripchenko\LaravelAdmin\Http\Schemas\AdminApiUiSchemas;
 use Dskripchenko\LaravelAdmin\Resource\ResourceCompiler;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
+use Dskripchenko\LaravelAdmin\Screen\ScreenCompiler;
+use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Settings\SettingsCompiler;
 use Dskripchenko\LaravelAdmin\Settings\SettingsRegistry;
 use Dskripchenko\LaravelApi\Components\BaseApi;
@@ -198,6 +200,11 @@ class AdminApi extends BaseApi
         // Settings: каждый SettingsResource = отдельный controller key 'settings.{slug}'.
         $settingsRegistry = app(SettingsRegistry::class);
         $controllers = array_merge($controllers, (new SettingsCompiler)->compile($settingsRegistry));
+
+        // Screens: произвольные Screen-классы (custom forms / pages / dashboards вне CRUD).
+        // GeneratedScreen и DashboardScreen subclasses исключаются (у них свои controllers).
+        $screenRegistry = app(ScreenRegistry::class);
+        $controllers = array_merge($controllers, (new ScreenCompiler)->compile($screenRegistry));
 
         return [
             'middleware' => [

@@ -16,7 +16,8 @@
  *   4. + Add widget → AddWidgetDialog → store.addWidget.
  *   5. «Сохранить» → POST /dashboard/save с draft. «Отменить» → restore.
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   Calendar,
   ChevronDown,
@@ -67,6 +68,23 @@ const emit = defineEmits<{
 const manifest = useManifestStore()
 const dashboardStore = useDashboardStore()
 const i18n = useI18nStore()
+// Router в standalone-тестах может отсутствовать — useRoute() в этом случае
+// возвращает undefined (без RouterPlugin). Делаем фоллбэк на пустой объект.
+const route = useRoute() as ReturnType<typeof useRoute> | undefined
+
+/**
+ * Slug резолвится в три шага: props → route.meta.slug → route.params.slug.
+ * route.meta — основной источник для default-host'а (см. router/builder.ts
+ * buildDashboardRoute), который не передаёт props в компонент.
+ */
+const resolvedSlug = computed<string | undefined>(() => {
+  if (props.slug) return props.slug
+  const metaSlug = route?.meta?.slug
+  if (typeof metaSlug === 'string' && metaSlug.length > 0) return metaSlug
+  const paramSlug = route?.params?.slug
+  if (typeof paramSlug === 'string' && paramSlug.length > 0) return paramSlug
+  return undefined
+})
 const t = (key: string, fallback: string): string => {
   // Если backend lang-bag прислал нужный ключ — используем; иначе ru-fallback.
   // Это позволяет постепенно мигрировать без breaking changes.
@@ -74,9 +92,10 @@ const t = (key: string, fallback: string): string => {
 }
 
 const dashboard = computed<DashboardManifest | null>(() => {
-  if (!props.slug || !manifest.manifest) return null
+  const slug = resolvedSlug.value
+  if (!slug || !manifest.manifest) return null
   const dashboards = manifest.manifest.dashboards as DashboardManifest[] | undefined
-  return dashboards?.find((d) => d.slug === props.slug) ?? null
+  return dashboards?.find((d) => d.slug === slug) ?? null
 })
 
 const manifestWidgets = computed<WidgetNode[]>(() => {
@@ -113,16 +132,19 @@ const renderedWidgets = computed<Array<{ node: WidgetNode; layoutSlug: string }>
 
   if (draft.length > 0) {
     for (const item of draft) {
+      // ВАЖНО: помечаем slug как «обработан» в bySlug ДО проверки hidden.
+      // Иначе hidden-override на manifest-widget'е не сработает: skip-continue
+      // оставит slug в bySlug, и второй проход добавит manifest-widget назад.
+      const baseManifest = bySlug.get(item.slug) ?? null
+      bySlug.delete(item.slug)
       if (item.hidden) continue
       let node: WidgetNode | null = null
-      if (bySlug.has(item.slug)) {
+      if (baseManifest !== null) {
         // Manifest-widget с per-user override size.
-        const base = bySlug.get(item.slug) as WidgetNode
         node = {
-          ...base,
-          size: item.size ?? (base as Record<string, unknown>).size ?? 12,
+          ...baseManifest,
+          size: item.size ?? (baseManifest as Record<string, unknown>).size ?? 12,
         } as WidgetNode
-        bySlug.delete(item.slug)
       } else if (item.type) {
         // User-added widget — рендерится по type + config.
         const cfg = (item.config ?? {}) as Record<string, unknown>
@@ -156,6 +178,31 @@ function spanFor(w: WidgetNode): number {
   return Math.max(1, Math.min(12, s))
 }
 
+/**
+ * Высота виджета в grid-rows (1..6). Источник:
+ *   1. draft-item.config.rowSpan (per-user override)
+ *   2. node.rowSpan / node.row_span (manifest default)
+ *   3. fallback по типу: chart/heatmap/recent_list/markdown = 2, stat/gauge = 1
+ *
+ * Высота в px = grid-auto-rows (140) × rowSpan + gap × (rowSpan - 1).
+ */
+function rowSpanFor(layoutSlug: string, w: WidgetNode): number {
+  const draftItem = dashboardStore.draft.find((it) => it.slug === layoutSlug)
+  const fromDraft = (draftItem?.config as Record<string, unknown> | undefined)?.rowSpan
+  if (typeof fromDraft === 'number') return Math.max(1, Math.min(6, fromDraft))
+  const fromNode = (w as Record<string, unknown>).rowSpan
+    ?? (w as Record<string, unknown>).row_span
+  if (typeof fromNode === 'number') return Math.max(1, Math.min(6, fromNode))
+  // Default по типу — крупные визуализации шире, stat'ы компактные.
+  const type = String((w as Record<string, unknown>).type ?? '')
+  if (type === 'stats' || type === 'stat') return 1
+  if (type === 'gauge') return 2
+  if (type === 'chart' || type === 'bar-chart' || type === 'donut-chart') return 2
+  if (type === 'heatmap' || type === 'recent_list' || type === 'recent-list' || type === 'recent-table') return 2
+  if (type === 'markdown' || type === 'iframe' || type === 'table') return 2
+  return 1
+}
+
 // === Toolbar period ===
 const periods = computed(() => [
   { key: '7d', label: t('admin.dashboard.period.7d', 'За 7 дней') },
@@ -175,18 +222,44 @@ async function setPeriod(key: string, close: () => void): Promise<void> {
 }
 
 async function refetchPeriod(): Promise<void> {
-  if (!props.slug) return
+  const slug = resolvedSlug.value
+  if (!slug) return
   try {
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     const result = await client.get<{ widgets: WidgetNode[]; period: string }>(
-      `/dashboard/widgets?key=${encodeURIComponent(props.slug)}&period=${encodeURIComponent(selectedPeriod.value)}`,
+      `/dashboard/widgets?key=${encodeURIComponent(slug)}&period=${encodeURIComponent(selectedPeriod.value)}`,
     )
     refreshedWidgets.value = result.widgets
   } catch {
     // silent — оставляем manifest-данные.
   }
 }
+
+// Lifecycle: загрузить manifest (если ещё нет) + открыть dashboard в store
+// для подтягивания persisted layout'а. Watch на изменения slug — для
+// корректной работы при навигации между разными dashboards в SPA.
+onMounted(async () => {
+  if (manifest.manifest === null) {
+    await manifest.load().catch(() => undefined)
+  }
+  const slug = resolvedSlug.value
+  if (slug) {
+    await dashboardStore.openDashboard(slug).catch(() => undefined)
+  }
+})
+
+watch(
+  () => resolvedSlug.value,
+  async (next, prev) => {
+    if (next === prev) return
+    if (next) {
+      await dashboardStore.openDashboard(next).catch(() => undefined)
+    } else {
+      dashboardStore.reset()
+    }
+  },
+)
 
 const periodLabel = computed(
   () => periods.value.find((p) => p.key === selectedPeriod.value)?.label ?? t('admin.dashboard.period.label', 'Период'),
@@ -270,20 +343,40 @@ function onSaveConfig(patch: Partial<WidgetLayoutItem>): void {
 
 // === Drag-reorder (нативный HTML5) ===
 const dragSourceIdx = ref<number | null>(null)
+/**
+ * При нативном HTML5 drag e.target в `dragstart` равен ELEMENT'у с draggable=true
+ * (в нашем случае — admin-dashboard__cell), а НЕ внутренней кнопке drag-handle.
+ * Поэтому проверка closest('[data-drag-handle]') в самом dragstart всегда null.
+ *
+ * Решение: pointerdown срабатывает ДО dragstart и его e.target — innermost
+ * element (svg/button). Сохраняем флаг — был ли pointerdown на drag-handle.
+ * dragstart смотрит на этот флаг.
+ */
+const dragInitiated = ref<boolean>(false)
+function onPointerDown(e: PointerEvent): void {
+  if (!dashboardStore.editMode) {
+    dragInitiated.value = false
+    return
+  }
+  const target = e.target as HTMLElement | null
+  dragInitiated.value = !!target?.closest('[data-drag-handle="true"]')
+}
 function onDragStart(idx: number, e: DragEvent): void {
   if (!dashboardStore.editMode) return
   if (e.dataTransfer === null) return
-  // Разрешаем drag только если он начался с [data-drag-handle] —
-  // иначе пользователь не сможет кликать по контенту виджета (selectable
-  // text, ссылки, кнопки) без случайного перетаскивания всей карточки.
-  const target = e.target as HTMLElement | null
-  if (!target?.closest('[data-drag-handle="true"]')) {
+  if (!dragInitiated.value) {
+    // pointerdown был не на drag-handle (например, на самом виджете) —
+    // запрещаем drag, иначе любой клик в edit-mode тащил бы карточку.
     e.preventDefault()
     return
   }
   dragSourceIdx.value = idx
   e.dataTransfer.effectAllowed = 'move'
   e.dataTransfer.setData('text/plain', String(idx))
+}
+function onDragEnd(): void {
+  // Сбрасываем флаг — независимо от исхода drag'а.
+  dragInitiated.value = false
 }
 function onDragOver(e: DragEvent): void {
   if (dashboardStore.editMode && dragSourceIdx.value !== null) {
@@ -319,18 +412,39 @@ function ensureDraftReflectsRendered(): void {
       config: existing?.config,
     }
   })
-  dashboardStore.draft = items
+  dashboardStore.setDraft(items)
 }
 
-// === Resize via mouse ===
-const resizing = ref<{ slug: string; startX: number; startSpan: number } | null>(null)
+// === Resize via mouse (по двум осям: ширина-cols и высота-rows) ===
+const ROW_HEIGHT_PX = 140
+const ROW_GAP_PX = 16 // совпадает с --uid-space-md (по grid gap)
+
+interface Resizing {
+  slug: string
+  startX: number
+  startY: number
+  startSpan: number
+  startRowSpan: number
+}
+const resizing = ref<Resizing | null>(null)
 let resizeContainerWidth = 0
-function onResizeStart(e: MouseEvent, layoutSlug: string, currentSpan: number): void {
+function onResizeStart(
+  e: MouseEvent,
+  layoutSlug: string,
+  currentSpan: number,
+  currentRowSpan: number,
+): void {
   if (!dashboardStore.editMode) return
   e.preventDefault()
   e.stopPropagation()
   ensureDraftReflectsRendered()
-  resizing.value = { slug: layoutSlug, startX: e.clientX, startSpan: currentSpan }
+  resizing.value = {
+    slug: layoutSlug,
+    startX: e.clientX,
+    startY: e.clientY,
+    startSpan: currentSpan,
+    startRowSpan: currentRowSpan,
+  }
   const grid = (e.target as HTMLElement).closest('.admin-dashboard__grid') as HTMLElement | null
   resizeContainerWidth = grid?.getBoundingClientRect().width ?? 1200
   window.addEventListener('mousemove', onResizeMove)
@@ -338,12 +452,26 @@ function onResizeStart(e: MouseEvent, layoutSlug: string, currentSpan: number): 
 }
 function onResizeMove(e: MouseEvent): void {
   if (!resizing.value) return
+  // X-axis → cols span (1..12)
   const colWidth = resizeContainerWidth / 12
-  const delta = Math.round((e.clientX - resizing.value.startX) / colWidth)
-  const nextSpan = Math.max(1, Math.min(12, resizing.value.startSpan + delta))
+  const dx = Math.round((e.clientX - resizing.value.startX) / colWidth)
+  const nextSpan = Math.max(1, Math.min(12, resizing.value.startSpan + dx))
+
+  // Y-axis → rows span (1..6). Шаг = ROW_HEIGHT_PX + ROW_GAP_PX.
+  const rowStep = ROW_HEIGHT_PX + ROW_GAP_PX
+  const dy = Math.round((e.clientY - resizing.value.startY) / rowStep)
+  const nextRowSpan = Math.max(1, Math.min(6, resizing.value.startRowSpan + dy))
+
   const item = dashboardStore.draft.find((it) => it.slug === resizing.value!.slug)
-  if (item && item.size !== nextSpan) {
-    dashboardStore.updateWidget(resizing.value.slug, { size: nextSpan })
+  if (!item) return
+  const currentRowSpan = (item.config as Record<string, unknown> | undefined)?.rowSpan
+  const patch: Partial<WidgetLayoutItem> = {}
+  if (item.size !== nextSpan) patch.size = nextSpan
+  if (currentRowSpan !== nextRowSpan) {
+    patch.config = { ...(item.config ?? {}), rowSpan: nextRowSpan }
+  }
+  if (Object.keys(patch).length > 0) {
+    dashboardStore.updateWidget(resizing.value.slug, patch)
   }
 }
 function onResizeEnd(): void {
@@ -432,10 +560,15 @@ function onExport(): void {
         class="admin-dashboard__cell"
         :class="{ 'admin-dashboard__cell--editing': dashboardStore.editMode }"
         :draggable="dashboardStore.editMode"
-        :style="{ gridColumn: `span ${spanFor(item.node)} / span ${spanFor(item.node)}` }"
+        :style="{
+          gridColumn: `span ${spanFor(item.node)} / span ${spanFor(item.node)}`,
+          gridRow: `span ${rowSpanFor(item.layoutSlug, item.node)} / span ${rowSpanFor(item.layoutSlug, item.node)}`,
+        }"
+        @pointerdown="onPointerDown"
         @dragstart="onDragStart(idx, $event)"
         @dragover="onDragOver"
         @drop="onDrop(idx, $event)"
+        @dragend="onDragEnd"
       >
         <WidgetRenderer :node="item.node" />
         <WidgetActionsOverlay
@@ -447,7 +580,7 @@ function onExport(): void {
           v-if="dashboardStore.editMode"
           class="admin-dashboard__resize"
           aria-label="Изменить размер"
-          @mousedown="onResizeStart($event, item.layoutSlug, spanFor(item.node))"
+          @mousedown="onResizeStart($event, item.layoutSlug, spanFor(item.node), rowSpanFor(item.layoutSlug, item.node))"
         />
       </div>
     </div>
@@ -468,6 +601,12 @@ function onExport(): void {
 .admin-dashboard__grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  /*
+   * grid-auto-rows фиксированный — иначе rowSpan не имеет смысла.
+   * Шаг 140px подобран чтобы 1 row помещал минимальный stat-card,
+   * 2 rows — chart/table, 3+ — расширенные виджеты.
+   */
+  grid-auto-rows: 140px;
   gap: var(--uid-space-md);
 }
 .admin-dashboard__grid--editing .admin-dashboard__cell {
@@ -480,6 +619,39 @@ function onExport(): void {
 .admin-dashboard__cell {
   position: relative;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/*
+ * Внутренний WidgetRenderer + любой content виджета должны заполнить
+ * полную высоту cell'а. Все потомки flex-стретчатся; UidCard внутри
+ * виджет-компонентов получает height:100% через `.admin-widget`-класс
+ * (используется во всех широко-распространённых виджетах) ИЛИ напрямую
+ * через `.uid-card`/`.uid-stat` flex-fallback.
+ */
+.admin-dashboard__cell > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.admin-dashboard__cell .admin-widget,
+.admin-dashboard__cell > .uid-card,
+.admin-dashboard__cell > .uid-stat,
+.admin-dashboard__cell .admin-widget > .uid-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+/*
+ * UidCard's __body — основной контент карточки. Растягиваем чтобы
+ * chart/markdown/table заполняли вертикально доступное пространство.
+ */
+.admin-dashboard__cell .uid-card__body,
+.admin-dashboard__cell .admin-widget__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 /*
  * cursor: default на cell — дёргать карточку можно только за [☰]-handle
@@ -490,11 +662,19 @@ function onExport(): void {
   position: absolute;
   bottom: 4px;
   right: 4px;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   cursor: nwse-resize;
   background:
     linear-gradient(135deg, transparent 0 50%, var(--uid-text-tertiary) 50% 60%, transparent 60% 70%, var(--uid-text-tertiary) 70% 80%, transparent 80%);
   z-index: 4;
+  border-radius: 2px;
+  /*
+   * Прозрачная зона hit-test'а слегка больше, чтобы было удобнее ловить.
+   */
+}
+.admin-dashboard__resize:hover {
+  background:
+    linear-gradient(135deg, transparent 0 45%, var(--uid-color-primary, var(--uid-text-primary)) 45% 60%, transparent 60% 70%, var(--uid-color-primary, var(--uid-text-primary)) 70% 85%, transparent 85%);
 }
 </style>

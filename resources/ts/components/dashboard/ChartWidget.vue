@@ -17,6 +17,11 @@ interface ChartDataset {
   color?: string
 }
 interface ChartData {
+  /**
+   * Backend ChartWidget::data() отдаёт `chartType`. Историческая обёртка
+   * читала `type` — оставляем как fallback для совместимости.
+   */
+  chartType?: string
   type?: string
   labels?: string[]
   datasets?: ChartDataset[]
@@ -30,7 +35,9 @@ interface Props {
 }
 const props = defineProps<Props>()
 
-const chartType = computed<string>(() => props.data?.type ?? 'bar')
+const chartType = computed<string>(
+  () => props.data?.chartType ?? props.data?.type ?? 'bar',
+)
 
 /**
  * Палитра по умолчанию для donut/pie. Берём из --uid-* токенов, fallback —

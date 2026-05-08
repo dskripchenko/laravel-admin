@@ -1,17 +1,42 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
+
+/**
+ * Backend RecentListWidget::data() отдаёт columns как `[{column, label}]`,
+ * но UidTable ожидает `{key, label}`. Конвертируем here.
+ */
+interface BackendColumn {
+  column?: string
+  key?: string
+  label: string
+  align?: 'left' | 'center' | 'right'
+}
 
 interface Props {
   title?: string
-  columns: UidTableColumn[]
-  rows: Record<string, unknown>[]
+  columns?: Array<BackendColumn | UidTableColumn>
+  rows?: Record<string, unknown>[]
   emptyText?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   title: '',
+  columns: () => [],
+  rows: () => [],
   emptyText: 'Нет данных',
 })
+
+const normalizedColumns = computed<UidTableColumn[]>(() =>
+  props.columns.map((c) => {
+    const key = (c as BackendColumn).column ?? (c as UidTableColumn).key
+    return {
+      key: String(key ?? ''),
+      label: c.label,
+      align: c.align,
+    } as UidTableColumn
+  }),
+)
 </script>
 
 <template>
@@ -19,6 +44,6 @@ withDefaults(defineProps<Props>(), {
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <UidTable :columns="columns" :data="rows" :empty-text="emptyText" />
+    <UidTable :columns="normalizedColumns" :data="rows" :empty-text="emptyText" />
   </UidCard>
 </template>

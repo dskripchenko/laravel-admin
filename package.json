@@ -150,7 +150,7 @@
     },
     "devDependencies": {
         "@dskripchenko/ui": "^1.1.0",
-        "@dskripchenko/wysiwyg": "^0.2.0",
+        "@dskripchenko/wysiwyg": "^0.2.3",
         "@eslint/js": "^10.0.1",
         "@size-limit/preset-small-lib": "^12.1.0",
         "@types/node": "^22",

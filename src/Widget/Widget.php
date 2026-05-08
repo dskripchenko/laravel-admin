@@ -28,6 +28,11 @@ abstract class Widget implements Renderable
      */
     protected int $size = 6;
 
+    /**
+     * Высота на dashboard-сетке (1..6 строк). null = frontend подберёт по type.
+     */
+    protected ?int $rowSpan = null;
+
     protected ?string $title = null;
 
     protected ?int $refreshSeconds = null;
@@ -85,6 +90,17 @@ abstract class Widget implements Renderable
         return $this;
     }
 
+    /**
+     * Высота на dashboard-сетке: 1..6 (1 = ~140px, 2 = ~296px и т.д.).
+     * Если не задано — frontend подберёт default по типу (chart=2, stat=1).
+     */
+    public function rowSpan(int $rows): static
+    {
+        $this->rowSpan = max(1, min($rows, 6));
+
+        return $this;
+    }
+
     public function refresh(int $seconds): static
     {
         $this->refreshSeconds = $seconds;
@@ -138,6 +154,7 @@ abstract class Widget implements Renderable
             'type' => $this->widgetType(),
             'title' => $this->title,
             'size' => $this->size,
+            'rowSpan' => $this->rowSpan,
             'refresh' => $this->refreshSeconds,
             'permission' => $this->permission,
             'data' => $this->data(),

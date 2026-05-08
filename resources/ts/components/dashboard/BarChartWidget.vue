@@ -30,6 +30,9 @@ const props = withDefaults(defineProps<Props>(), {
   height: 200,
 })
 
+const isEmpty = computed(
+  () => props.data.length === 0 || props.data.every((d) => !d.value),
+)
 const maxValue = computed(() => Math.max(1, ...props.data.map((d) => d.value)))
 
 const bars = computed(() => {
@@ -51,7 +54,9 @@ const bars = computed(() => {
       <h3 v-if="title" class="admin-widget__title">{{ title }}</h3>
       <p v-if="description" class="admin-widget__desc">{{ description }}</p>
     </header>
+    <div v-if="isEmpty" class="admin-widget__empty">Нет данных за период</div>
     <svg
+      v-else
       class="admin-widget-bar-chart"
       :viewBox="`0 0 100 ${height}`"
       preserveAspectRatio="none"
@@ -94,5 +99,16 @@ const bars = computed(() => {
 .admin-widget-bar-chart {
   display: block;
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+}
+.admin-widget__empty {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--uid-text-tertiary, #9ca3af);
+  font-size: var(--uid-font-size-sm);
 }
 </style>

@@ -139,6 +139,14 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     draft.value = next
   }
 
+  /**
+   * Полностью заменить draft (используется DashboardPage.ensureDraftReflectsRendered
+   * для инициализации draft'а из текущего rendered-состояния перед drag/resize).
+   */
+  function setDraft(items: WidgetLayoutItem[]): void {
+    draft.value = items
+  }
+
   function reset(): void {
     slug.value = null
     editMode.value = false
@@ -163,6 +171,7 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     removeWidget,
     updateWidget,
     moveWidget,
+    setDraft,
     reset,
   }
 })

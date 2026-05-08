@@ -47,6 +47,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->singleton(ScreenRegistry::class);
         $this->app->singleton(ResourceRegistry::class);
         $this->app->singleton(PermissionRegistry::class);
+        $this->app->singleton(Menu\MenuRegistry::class);
         $this->app->singleton(Settings\SettingsRegistry::class);
         $this->app->singleton(
             Settings\Storage\SettingsStorage::class,
