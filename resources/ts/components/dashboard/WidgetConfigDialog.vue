@@ -218,7 +218,9 @@ function close(): void {
           <div class="admin-dialog__body">
             <!-- Type selector — только в add-mode. -->
             <div v-if="mode === 'add'" class="admin-dialog__field">
-              <label class="admin-dialog__label">Тип виджета</label>
+              <label class="admin-dialog__label">
+                Тип виджета <span class="admin-dialog__required">*</span>
+              </label>
               <div class="admin-dialog__type-grid">
                 <button
                   v-for="t in types"
@@ -241,7 +243,9 @@ function close(): void {
             </div>
 
             <div class="admin-dialog__field">
-              <label class="admin-dialog__label">Заголовок</label>
+              <label class="admin-dialog__label">
+                Заголовок <span class="admin-dialog__required">*</span>
+              </label>
               <UidInput v-model="title" placeholder="Название виджета" />
             </div>
 
@@ -300,8 +304,16 @@ function close(): void {
           </div>
 
           <footer class="admin-dialog__ft">
+            <span v-if="!canSubmit" class="admin-dialog__hint">
+              Заполните <span class="admin-dialog__required">*</span>-поля
+            </span>
             <UidButton variant="ghost" @click="close">Отмена</UidButton>
-            <UidButton variant="primary" :disabled="!canSubmit" @click="onSubmit">
+            <UidButton
+              variant="primary"
+              :disabled="!canSubmit"
+              :title="!canSubmit ? 'Заполните обязательные поля' : undefined"
+              @click="onSubmit"
+            >
               {{ mode === 'add' ? 'Добавить' : 'Сохранить' }}
             </UidButton>
           </footer>
@@ -320,5 +332,15 @@ function close(): void {
   font-family: var(--uid-font-family-mono, ui-monospace, monospace);
   font-size: 13px;
   color: var(--uid-text-secondary);
+}
+.admin-dialog__required {
+  color: var(--uid-color-danger, #dc2626);
+  font-weight: var(--uid-font-weight-semibold);
+  margin-inline-start: 2px;
+}
+.admin-dialog__hint {
+  flex: 1;
+  font-size: var(--uid-font-size-xs, 11px);
+  color: var(--uid-text-tertiary, #9ca3af);
 }
 </style>
