@@ -1,226 +1,135 @@
 # dskripchenko/laravel-admin
 
-Конструктор админок для Laravel: Resource-first CRUD, Vue 3 SPA, JSON-API транспорт. Подключается в любой существующий Laravel-проект без вмешательства в его routes/auth.
+> 🌐 **English** · [Русский](README.ru.md) · [Deutsch](README.de.md) · [中文](README.zh.md)
 
-> **Статус:** in development. Архитектура зафиксирована, идёт реализация. См. `docs/ARCHITECTURE.md`.
+A Laravel admin-panel constructor inspired by Orchid, with a Vue 3 SPA frontend.
 
-## Tldr
-
-```php
-class UserResource extends Resource
-{
-    public static string $model = \App\Models\User::class;
-    public static string $icon  = 'user';
-
-    public function fields(): array
-    {
-        return [
-            Field\Input::make('name')->required(),
-            Field\Input::make('email')->type('email')->required()->unique(),
-            Field\Switch::make('is_active'),
-        ];
-    }
-
-    public function columns(): array
-    {
-        return [
-            TC::make('id')->sort(),
-            TC::make('name')->sort()->search(),
-            TC::make('email')->copyable(),
-            TC::make('is_active')->as('badge'),
-        ];
-    }
-}
-```
+[![npm](https://img.shields.io/npm/v/@dskripchenko/laravel-admin?label=%40dskripchenko%2Flaravel-admin)](https://www.npmjs.com/package/@dskripchenko/laravel-admin)
+[![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
+[![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](LICENSE)
 
 ```php
-// AppServiceProvider
-Admin::resources([UserResource::class]);
+Admin::resources([UserResource::class, ArticleResource::class]);
+Admin::screen([ContactScreen::class, SystemStatusScreen::class]);
+Admin::menu()->add(
+    MenuNode::make('content', 'Content')->icon('book')->children([
+        MenuNode::resource('articles'),
+        MenuNode::dashboard('analytics'),
+    ]),
+);
 ```
 
-Готово: SPA с list/create/edit/view/audit/permissions.
+## What's inside
 
-## Требования
+- **CRUD pipeline** — declare an Eloquent model as a `Resource`, get
+  list/create/edit/view screens for free.
+- **Custom Screens** — non-CRUD pages (forms, dashboards, reports) with
+  `Admin::screen()`. Handles state, layout, command-bar, validation,
+  permissions.
+- **Hierarchical menu** — fluent `Admin::menu()->add(MenuNode::...)`,
+  any depth, auto-resolve `resource()`/`screen()`/`dashboard()`.
+- **30+ field types** — Input/Number/Select/Combobox/DatePicker/
+  ColorPicker/FileUpload/Wysiwyg/Markdown/TranslatableInput/Repeater/
+  RelationSelect/Cascader/TreeSelect/Slug/KeyValue/TagsInput/...
+- **15+ layouts** — Rows/Columns/Tabs/Wizard+Step/Block/Modal/Drawer/
+  Wrapper/Infolist/Dashboard/Accordion/View/...
+- **Tables** — sortable columns, presets, filters (input/date/switcher/
+  options/select-from-model), inline-edit, summary, saved views,
+  group-by, polling, exports (CSV/XLSX/PDF).
+- **Dashboard** — 8 widget types (Stats/Chart/RecentList/Markdown/
+  Iframe/Table/Heatmap/Gauge), per-user layout overrides, drag/resize,
+  polling.
+- **Auth & RBAC** — multi-guard, AdminUser, Roles, 2FA TOTP, profile,
+  impersonation, password reset, email verification.
+- **Audit** — append-only log of admin actions (`AuditLog` + `Loggable`
+  trait).
+- **Settings** — singleton-style configuration screens.
+- **Notifications** — bell badge + drawer (Database notifications).
+- **API tokens** — Sanctum integration in Profile (conditional).
+- **Theming** — light/dark + per-user preference, `@dskripchenko/ui`
+  design tokens.
+- **i18n** — locale resolver (5-step priority), `TranslatableField`
+  bridge for `dskripchenko/laravel-translatable`.
+- **Tenancy** — `TenantResolver` / `TenantContext` / `TenantScoped`
+  trait. Strategy is host-side; we provide the contract.
+- **Plugins** — `AdminPlugin` interface; sister-packs use the same hook.
+- **Testing** — `ResourceTestCase`, `ScreenTestCase`, `ActsAsAdmin` trait.
+- **OpenAPI 3.0** — generated from docblock `@input`/`@output` tags.
 
-- PHP `^8.5`
-- Laravel `^12`
-- Redis или Memcached (для tag-aware кэша переводов; иначе soft-fallback)
-- Vue 3.4+, TypeScript, Vite (для frontend-сборки)
-
-## Установка
+## Install
 
 ```bash
 composer require dskripchenko/laravel-admin
-php artisan admin:install
+php artisan vendor:publish --tag=admin-config
 php artisan migrate
-php artisan admin:user "Admin" admin@example.com secret
-npm install
-npm run admin:build
 ```
 
-После этого админка доступна на `/admin`.
-
-## Frontend SPA (`@dskripchenko/laravel-admin` npm-пакет)
-
-Для host-проектов которые хотят встроить SPA в свой Vite-bundle вместо Blade-shell'а либо построить кастомный admin-фронт поверх готовых блоков.
-
-### Установка
-
-```bash
-npm install @dskripchenko/laravel-admin @dskripchenko/ui vue@^3.4 vue-router@^4.3 pinia axios
-```
-
-### Минимальный entry
-
-```ts
-// resources/admin-spa/main.ts
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-
-// (1) UI-кит: токены + темы + reset + global + Uid*-стили
+```js
+// resources/js/admin.js
+import { createAdminApp } from '@dskripchenko/laravel-admin'
 import '@dskripchenko/ui/styles/all.css'
-// (2) admin-каркас (impersonation banner, polling-dot, page utilities)
 import '@dskripchenko/laravel-admin/style.css'
 
-import {
-  createAdminClient,
-  setAdminClient,
-  loadBootstrap,
-  createAdminRouter,
-  registerBuiltinComponents,
-  registerBuiltinInfolistEntries,
-  registerBuiltinWidgets,
-  AdminShell,
-  ResourceIndexPage,
-  ResourceFormPage,
-  ResourceViewPage,
-  DashboardPage,
-} from '@dskripchenko/laravel-admin'
-
-// 1. HTTP-клиент с envelope/CSRF/error handling
-const client = createAdminClient({
-  baseURL: '/api/admin',
-  onUnauthenticated: () => router.push({ name: 'admin.login' }),
-})
-setAdminClient(client)
-
-// 2. Bootstrap (inline через <script> либо xhr через /system/bootstrap)
-const bootstrap = await loadBootstrap({ client })
-
-// 3. Pinia + hydrate stores
-const pinia = createPinia()
-const app = createApp(AdminShell)
-app.use(pinia)
-
-// 4. Регистрация builtin-компонентов в JSON-renderer'ы
-registerBuiltinComponents()        // Field/Layout (text/textarea/number/select/...)
-registerBuiltinInfolistEntries()   // Read-only display (text/badge/icon/keyvalue)
-registerBuiltinWidgets()           // Dashboard widgets (stat/charts/heatmap/gauge)
-
-// 5. Router с динамическими роутами из manifest'а
-const router = createAdminRouter({
-  base: '/admin',
-  components: {
-    login: () => import('./pages/Login.vue'),
-    home: () => import('./pages/Home.vue'),
-    forbidden: () => import('./pages/403.vue'),
-    notFound: () => import('./pages/404.vue'),
-    resourceIndex: ResourceIndexPage,
-    resourceCreate: ResourceFormPage,
-    resourceEdit: ResourceFormPage,
-    screen: () => import('./pages/Screen.vue'),
-    settings: () => import('./pages/Settings.vue'),
-    dashboard: DashboardPage,
-  },
-})
-app.use(router)
-app.mount('#admin')
+const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
+app.mount('#admin-app')
 ```
-
-### Готовые компоненты-страницы
-
-- `LoginPage` + `LoginForm` + `TwoFactorForm` — auth + TOTP/recovery
-- `ResourceIndexPage` — список с filter-bar / bulk toolbar / pagination
-- `ResourceFormPage` — create/edit unified с sticky save-bar
-- `ResourceViewPage` — read-only display через Infolist
-- `DashboardPage` — 12-col widget grid
-- `ProfilePage` — sidebar nav + cards
-- `ImportWizardPage` — 4-step wizard
-- `NotificationsDrawer` — UidDrawer right с tabs
-- `FieldGalleryPage` — каталог field-типов (docs/playground)
-
-### Расширение через registry
-
-```ts
-import { registerField, registerWidget, registerInfolistEntry } from '@dskripchenko/laravel-admin'
-import MyCustomField from './fields/MyCustomField.vue'
-
-registerField('my-custom', MyCustomField)
-// теперь manifest узел { type: 'my-custom', name: 'x', ... } рендерится через MyCustomField
-```
-
-### Шрифты (опционально)
-
-UID design system предполагает Inter Variable + Inter Display. Library не bundle'ит шрифты в style.css (Vite lib-mode инлайнит base64 → 1.4 MB). Варианты:
-
-- `npm i @fontsource-variable/inter @fontsource/inter-display` + `import` (рекомендуется)
-- Google Fonts CDN
-- Self-hosted — копировать `node_modules/@dskripchenko/laravel-admin/resources/fonts/*.woff2` в `public/fonts/` + подключить `fonts.css`
-
-### Скрипты разработки
 
 ```bash
-npm run lint        # eslint flat config + vue-eslint-parser
-npm run typecheck   # vue-tsc --noEmit
-npm test            # vitest (jsdom)
-npm run build       # vite build + vue-tsc --emitDeclarationOnly
-npm run build:analyze  # с rollup-plugin-visualizer → dist/stats.html
-npm run size        # size-limit budgets (ESM/CJS gzipped + CSS)
-npm run preflight   # lint + typecheck + test + build (CI gate)
+npm i @dskripchenko/laravel-admin @dskripchenko/ui
+npm run build
 ```
 
-## Документация
+Visit `/admin/login`. See [getting-started.md](docs/en/getting-started.md)
+for the first resource.
 
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — архитектура и решения.
-- [docs/sister-packs/](docs/sister-packs/) — спецификации опциональных расширений.
-- [docs/design_handoff_laravel_admin/](docs/design_handoff_laravel_admin/) — UID design handoff (эталон вёрстки SPA).
+## Documentation
+
+- [Getting started](docs/en/getting-started.md)
+- [Architecture](docs/en/architecture.md)
+- Concepts: [Resources](docs/en/concepts/resources.md) ·
+  [Screens](docs/en/concepts/screens.md) ·
+  [Widgets & Dashboards](docs/en/concepts/widgets-and-dashboards.md) ·
+  [Menu](docs/en/concepts/menu.md) ·
+  [Actions](docs/en/concepts/actions.md) ·
+  [Permissions](docs/en/concepts/permissions.md) ·
+  [i18n](docs/en/concepts/i18n.md) ·
+  [Tenancy](docs/en/concepts/tenancy.md)
+- [Fields reference](docs/en/fields-reference.md)
+- [Layouts reference](docs/en/layouts-reference.md)
+- [API reference](docs/en/api-reference.md)
+- [Frontend extension](docs/en/frontend-extension.md)
+- [Testing](docs/en/testing.md)
+- [Migration guide](docs/en/migration-guide.md)
+- [Glossary](docs/en/glossary.md)
+
+## Stack
+
+- **PHP** ^8.5
+- **Laravel** ^12
+- **Vue** ^3.4 + TypeScript + Pinia + Vue Router
+- **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
+- **No vendor lock-in** for editor/charts — bring your own
+  (sister-pack adapters: `quill`, `tinymce`)
 
 ## Sister-packs
 
-| Пакет | Назначение |
+Optional extensions, install only what you need:
+
+| Package | Purpose |
 |---|---|
-| `dskripchenko/laravel-admin-starter` | Готовые системные Resource'ы |
-| `dskripchenko/laravel-admin-tinymce` / `*-quill` | Альтернативные WYSIWYG |
-| `dskripchenko/laravel-admin-search` | Глобальный поиск |
-| `dskripchenko/laravel-admin-media` | Медиа-библиотека |
-| `dskripchenko/laravel-admin-health` | Health-checks |
-| `dskripchenko/laravel-admin-pulse` | Лёгкая телеметрия |
-| `dskripchenko/laravel-admin-jobs` | Failed jobs viewer |
+| `dskripchenko/laravel-admin-starter` | User/Role/Audit/Settings/Translations/Blocks resources |
+| `dskripchenko/laravel-admin-tinymce` | TinyMCE WYSIWYG adapter |
+| `dskripchenko/laravel-admin-quill` | Quill WYSIWYG adapter |
+| `dskripchenko/laravel-admin-search` | ⌘K command palette + Scout suggest |
+| `dskripchenko/laravel-admin-media` | Media library (no Spatie/medialibrary dependency) |
+| `dskripchenko/laravel-admin-health` | Health checks (no Spatie/laravel-health dependency) |
+| `dskripchenko/laravel-admin-pulse` | Telemetry sampler (no laravel/pulse dependency) |
+| `dskripchenko/laravel-admin-jobs` | Failed jobs / batches viewer |
 
-## Структура репозитория (dev)
+## Contributing
 
-На время разработки до первого релиза проект ведётся как **монорепо**:
-
-```
-laravel-admin/
-├── src/                      # основной пакет dskripchenko/laravel-admin
-├── resources/ts/             # SPA-бандл @dskripchenko/laravel-admin
-├── packages/                 # sister-packs, локально
-│   ├── starter/
-│   ├── tinymce/
-│   ├── quill/
-│   ├── search/
-│   ├── media/
-│   ├── health/
-│   ├── pulse/
-│   └── jobs/
-└── docs/
-```
-
-- Composer: корневой `composer.json` содержит `repositories: [{ type: path, url: packages/* }]` — sister-packs резолвятся локально через симлинки. Это позволяет менять core и sister-packs одновременно без публикации dev-версий.
-- NPM: workspaces для `packages/tinymce` и `packages/quill` (только им нужны npm-зависимости). `npm install` из корня устанавливает зависимости всем сразу.
-- **Перед первым стабильным релизом** sister-packs выносятся в отдельные репозитории на github.com/dskripchenko и публикуются на packagist/npm независимо. На этот момент `repositories` в корневом `composer.json` удаляются, sister-packs ставятся обычным `composer require`.
+See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome.
 
 ## License
 
-MIT. См. [LICENSE](LICENSE).
+[MIT](LICENSE) © Denis Skripchenko
