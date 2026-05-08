@@ -8,6 +8,10 @@ use Dskripchenko\LaravelAdmin\Auth\AdminGuardRegistrar;
 use Dskripchenko\LaravelAdmin\Console\InstallCommand;
 use Dskripchenko\LaravelAdmin\Console\LinkCommand;
 use Dskripchenko\LaravelAdmin\Console\MakeAdminCommand;
+use Dskripchenko\LaravelAdmin\Console\MakeResourceCommand;
+use Dskripchenko\LaravelAdmin\Console\MakeScreenCommand;
+use Dskripchenko\LaravelAdmin\Console\MakeSectionCommand;
+use Dskripchenko\LaravelAdmin\Console\MakeWidgetCommand;
 use Dskripchenko\LaravelAdmin\Http\AdminApiModule;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
@@ -121,6 +125,10 @@ final class AdminServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../resources/views' => resource_path('views/vendor/admin'),
         ], 'admin-views');
+
+        $this->publishes([
+            __DIR__.'/../resources/stubs/admin' => resource_path('stubs/admin'),
+        ], 'admin-stubs');
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'admin');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
@@ -289,7 +297,10 @@ final class AdminServiceProvider extends ServiceProvider
             InstallCommand::class,
             MakeAdminCommand::class,
             LinkCommand::class,
-            // Make-команды для скаффолда (admin:make-resource / make-screen / ...) — фаза P3+.
+            MakeSectionCommand::class,
+            MakeResourceCommand::class,
+            MakeScreenCommand::class,
+            MakeWidgetCommand::class,
         ]);
     }
 }
