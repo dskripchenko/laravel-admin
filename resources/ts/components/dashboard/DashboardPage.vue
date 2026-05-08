@@ -16,7 +16,7 @@
  *   4. + Add widget → AddWidgetDialog → store.addWidget.
  *   5. «Сохранить» → POST /dashboard/save с draft. «Отменить» → restore.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   Calendar,
@@ -236,6 +236,43 @@ async function refetchPeriod(): Promise<void> {
   }
 }
 
+// === Auto-refresh polling ===
+// Каждый Widget может иметь refresh: number в секундах (Widget::refresh()).
+// Запускаем единый setInterval с минимальным refresh-ом из widgets;
+// каждый tick дергает /dashboard/widgets и обновляет refreshedWidgets.
+let pollingTimer: ReturnType<typeof setInterval> | null = null
+
+const minRefreshSec = computed<number>(() => {
+  let min = 0
+  for (const w of manifestWidgets.value) {
+    const r = (w as Record<string, unknown>).refresh
+    if (typeof r === 'number' && r > 0) {
+      if (min === 0 || r < min) min = r
+    }
+  }
+  return min
+})
+
+function startPolling(): void {
+  stopPolling()
+  const sec = minRefreshSec.value
+  if (sec <= 0) return
+  pollingTimer = setInterval(() => {
+    void refetchPeriod()
+  }, sec * 1000)
+}
+function stopPolling(): void {
+  if (pollingTimer !== null) {
+    clearInterval(pollingTimer)
+    pollingTimer = null
+  }
+}
+// Перезапускаем polling если minRefreshSec изменился (новые виджеты).
+watch(
+  () => minRefreshSec.value,
+  () => startPolling(),
+)
+
 // Lifecycle: загрузить manifest (если ещё нет) + открыть dashboard в store
 // для подтягивания persisted layout'а. Watch на изменения slug — для
 // корректной работы при навигации между разными dashboards в SPA.
@@ -247,6 +284,11 @@ onMounted(async () => {
   if (slug) {
     await dashboardStore.openDashboard(slug).catch(() => undefined)
   }
+  startPolling()
+})
+
+onUnmounted(() => {
+  stopPolling()
 })
 
 watch(
