@@ -17,6 +17,11 @@ interface Props {
   required?: boolean
   placeholder?: string | null
   disabled?: boolean
+  /**
+   * Read-only — бэкенд может пометить Select через `->readonly()`. UidSelect
+   * не различает readonly/disabled — мапим в disabled (визуально совпадает).
+   */
+  readonly?: boolean
   searchable?: boolean
   clearable?: boolean
   size?: 'sm' | 'md' | 'lg'
@@ -28,10 +33,13 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: null,
   required: false,
   disabled: false,
+  readonly: false,
   searchable: false,
   clearable: false,
   size: 'md',
 })
+
+const isLocked = computed<boolean>(() => props.disabled || props.readonly)
 
 const form = useFormState()
 const value = computed<string | number | null>(() => {
@@ -52,13 +60,13 @@ function onUpdate(next: string | number | null): void {
     :hint="help ?? undefined"
     :error="errorMsg"
     :required="required"
-    :disabled="disabled"
+    :disabled="isLocked"
   >
     <UidSelect
       :model-value="value"
       :options="options"
       :placeholder="placeholder ?? undefined"
-      :disabled="disabled"
+      :disabled="isLocked"
       :searchable="searchable"
       :clearable="clearable"
       :size="size"
