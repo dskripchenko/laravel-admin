@@ -5,6 +5,77 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-08
+
+### Added
+
+- **Custom Screens API** (`Admin::screen([...])`) — generic non-CRUD screens.
+  - `Screen::compile()` отдаёт `{state, layout, command_bar, permissions, etag}`.
+  - Backend `ScreenCompiler` + `ScreenController` (state GET + runMethod POST).
+  - Frontend `useScreenStore` + `ScreenPage.vue` (двойной provide
+    FormState+Record — Screen работает и как форма, и как Infolist).
+- **Hierarchical menu** (`Admin::menu()`) — fluent API любой глубины.
+  - `MenuNode::make/resource/screen/dashboard`, `->children([...])`,
+    `MenuRegistry::under(parent, [...])`.
+  - Frontend `AdminSidebarNode` рекурсивный: indent depth 0..2, после
+    — stripe-mode (left-border с fading alpha по depth).
+- **Widget polling** — `Widget::refresh(int $sec)` запускает auto-refetch
+  на dashboard'е (один интервал на минимальный refresh из видимых widgets).
+- **Widget vertical resize** — `Widget::rowSpan(int 1..6)` + dual-axis
+  resize-handle на dashboard'е (drag по X = cols span, по Y = rows span).
+- **Drag drop-indicator** на dashboard'е — accent-outline на cell-target
+  + opacity 0.45 на источнике (без sortablejs deps).
+- **E2E full-flow smoke** (`demo/e2e-full-flow.mjs`) — 10 шагов: login
+  → menu → resources → dashboard edit → custom screen → notifications
+  → profile → logout.
+
+### Fixed
+
+- **DashboardPage** — slug читается из `route.meta` (роутер строит
+  /dashboard/{slug} как static path без props), `manifest.load()` и
+  `dashboardStore.openDashboard()` вызываются в onMounted.
+- **MenuNode::dashboard()** — auto-detect DashboardScreen → /dashboard/{slug},
+  custom screens → /screens/{slug}.
+- **WidgetRenderer** — фильтрует dashboard-meta поля (`size`/`span`/`rowSpan`/
+  `kind`/`refresh`/`permission`/`slug`) из widgetProps. Backend Widget.size
+  это grid-column-span, а UidGauge.size — pixels: ранее конфликтовало.
+- **HeatmapWidget** — переписан с UidHeatmap (календарной) на CSS-grid
+  для матричного rows×cols формата (соответствует backend HeatmapWidget).
+- **ChartWidget** — читает `data.chartType` (backend) с fallback на `type`.
+- **RecentTableWidget** — нормализует backend `column={column,label}` →
+  UidTable `{key,label}`.
+- **GaugeWidget** — принимает `thresholds` (backend) как alias к UidGauge
+  `ranges`; `unit → suffix`; flex-центрирование внутри cell.
+- **StatWidget** — читает backend `stats[]` массив (раньше ждал scalar
+  `value` → отображал 0 при заполненной БД).
+- **Bar/Donut empty-state** — «Нет данных за период» вместо пустого SVG.
+- **DashboardPage render** — hidden-override корректно убирает manifest-widget
+  (раньше hidden-item не удалялся из `bySlug` Map'а до skip-continue).
+- **Drag** — pointerdown listener сохраняет `dragInitiated` (e.target в
+  dragstart = cell, не handle, поэтому closest всегда был null).
+- **NotificationController** — guard `Schema::hasTable('notifications')`,
+  если default Laravel migration не запущен — возвращает empty result
+  вместо 500.
+- **SelectField** — `readonly` маппится в `disabled` для UidSelect
+  (визуально согласовано с TextField/NumberField).
+- **WidgetConfigDialog UX** — required-поля помечены * + footer hint
+  «Заполните *-поля» при disabled save.
+
+### Changed
+
+- `grid-auto-rows: 140px` на dashboard-grid'е (раньше autoflow).
+- Default rowSpan по типу widget'а: stat=1, chart/heatmap/markdown=2..3.
+- Sister-packs (starter/health/jobs/media/pulse/search/quill/tinymce)
+  без изменений — auto-fill старого flat-menu сохранён, integration с
+  MenuNode/Screen API опциональна.
+
+## [1.3.0] - 2026-05-08
+
+### Added
+
+- Custom Screens (P21+P22) и Hierarchical menu (M1+M2) — initial drop
+  (см. v1.4.0 для consolidated changes).
+
 ## [1.2.4] - 2026-05-02
 
 ### Changed
