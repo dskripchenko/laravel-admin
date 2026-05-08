@@ -215,8 +215,22 @@ final class NotificationController extends ApiController
     /**
      * Возвращает текущего notifiable Eloquent-юзера. Проверяет Notifiable trait.
      */
+    /**
+     * Проверяет существование notifications-таблицы. Default Laravel
+     * migration `2014_10_12_100000_create_notifications_table` может быть
+     * не запущен в host-проекте — не валим 500-ой, отвечаем как «у юзера
+     * нет нотификаций».
+     */
+    private function tableExists(): bool
+    {
+        return \Illuminate\Support\Facades\Schema::hasTable('notifications');
+    }
+
     private function user(): ?Model
     {
+        if (! $this->tableExists()) {
+            return null;
+        }
         $guard = (string) config('admin.auth.guard', 'admin');
         $user = Auth::guard($guard)->user();
         if (! $user instanceof Model) {
