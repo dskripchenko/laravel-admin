@@ -305,6 +305,8 @@ abstract class Resource
                 'exportable' => ['csv'],
                 'polling' => $this->polling(),
                 'warnOnUnsavedChanges' => true,
+                'creatable' => $this->fields() !== [],
+                'editable' => $this->fields() !== [],
             ],
         ];
     }

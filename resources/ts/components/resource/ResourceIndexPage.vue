@@ -308,6 +308,18 @@ const isReorderable = computed<boolean>(() => {
   return features.reorderable === true
 })
 
+/** Resource поддерживает create если features.creatable !== false (default true). */
+const isCreatable = computed<boolean>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  return features.creatable !== false
+})
+
+/** Resource поддерживает edit если features.editable !== false. Если false — скрываем edit/delete actions. */
+const isEditable = computed<boolean>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  return features.editable !== false
+})
+
 const columns = computed<UidTableColumn[]>(() => {
   const cols = resourceMeta.value?.columns ?? []
   const mapped = cols.map((c) => {
@@ -948,7 +960,7 @@ async function retryLoad(): Promise<void> {
           @change="onImportFileChange"
         />
         <UidButton
-          v-if="resolvedCreateRouteName"
+          v-if="resolvedCreateRouteName && isCreatable"
           variant="primary"
           size="md"
           @click="$router.push({ name: resolvedCreateRouteName })"
@@ -1030,7 +1042,7 @@ async function retryLoad(): Promise<void> {
     >
       <template #actions>
         <UidButton
-          v-if="createRouteName"
+          v-if="createRouteName && isCreatable"
           variant="primary"
           @click="$router.push({ name: createRouteName })"
         >
@@ -1113,6 +1125,7 @@ async function retryLoad(): Promise<void> {
             </button>
             <template v-if="!isTrashed(rowFromSlot(slotProps) ?? {})">
               <button
+                v-if="isEditable"
                 type="button"
                 class="admin-resource-index__row-action"
                 title="Редактировать"
@@ -1121,6 +1134,7 @@ async function retryLoad(): Promise<void> {
                 <UidIcon :icon="Pencil" :size="16" />
               </button>
               <button
+                v-if="isEditable"
                 type="button"
                 class="admin-resource-index__row-action admin-resource-index__row-action--danger"
                 title="Удалить"
