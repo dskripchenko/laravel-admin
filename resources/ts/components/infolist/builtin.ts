@@ -21,6 +21,7 @@ export function registerBuiltinInfolistEntries(): void {
     badge: BadgeEntry,
     icon: IconEntry,
     keyvalue: KeyValueEntry,
+    key_value: KeyValueEntry,
     'key-value': KeyValueEntry,
     // Маппинг от backend Field::fieldType() → TextEntry для view-режима.
     // Host'ы могут перебить registerInfolistEntry('wysiwyg', WysiwygEntry).

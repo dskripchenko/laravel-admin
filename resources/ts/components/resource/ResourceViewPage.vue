@@ -71,6 +71,10 @@ const router = useRouter()
 provideRecord(form.state)
 
 const resourceMeta = computed(() => manifest.getResource(props.slug))
+const isEditable = computed<boolean>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  return features.editable !== false
+})
 const layoutNodes = computed<InfolistNode[]>(
   () => (resourceMeta.value?.infolist ?? resourceMeta.value?.fields ?? []) as InfolistNode[],
 )
@@ -275,7 +279,7 @@ async function onDelete(): Promise<void> {
         </div>
       </div>
       <div class="admin-resource-view__hd-right">
-        <UidButton variant="secondary" size="md" @click="onEdit">
+        <UidButton v-if="isEditable" variant="secondary" size="md" @click="onEdit">
           <template #prepend><UidIcon :icon="Pencil" :size="14" /></template>
           Редактировать
         </UidButton>

@@ -32,8 +32,16 @@ const hasChildren = computed(
 const open = ref(false)
 
 function isActive(item: MenuItem): boolean {
+  // Точный match
   if (item.routeName && route.name === item.routeName) return true
   if (item.url && route.path === item.url) return true
+  // Prefix match: list-route активна на детальных страницах ресурса
+  // (resource.{slug}.list → .create / .{id}.edit / .{id}.view).
+  if (item.routeName && typeof route.name === 'string') {
+    const base = String(item.routeName).replace(/\.(list|index)$/, '')
+    if (route.name.startsWith(base + '.')) return true
+  }
+  if (item.url && route.path.startsWith(item.url + '/')) return true
   return false
 }
 
