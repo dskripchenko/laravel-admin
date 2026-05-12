@@ -12,6 +12,7 @@ use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedViewScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -307,8 +308,12 @@ final class ResourceController extends ApiController
         $modelClass = $resource::$model;
         /** @var \Illuminate\Database\Eloquent\Model $record */
         $record = new $modelClass;
-        $resource->fillModel($record, $data);
-        $record->save();
+        try {
+            $resource->fillModel($record, $data);
+            $record->save();
+        } catch (QueryException $e) {
+            return $this->error($this->dbExceptionToValidation($e), 422);
+        }
         \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
         return $this->created([
@@ -351,8 +356,12 @@ final class ResourceController extends ApiController
             $resource->fields(),
             $data,
         );
-        $resource->fillModel($record, $data);
-        $record->save();
+        try {
+            $resource->fillModel($record, $data);
+            $record->save();
+        } catch (QueryException $e) {
+            return $this->error($this->dbExceptionToValidation($e), 422);
+        }
         \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
         return $this->success([
@@ -891,6 +900,78 @@ final class ResourceController extends ApiController
         }
 
         return $resource;
+    }
+
+    /**
+     * Маппит SQL-exception в human-friendly validation-payload.
+     * Покрывает: 23505 (unique), 23502 (not-null), 23503 (FK). По умолчанию
+     * — generic «Не удалось сохранить запись».
+     *
+     * @return array<string, mixed>
+     */
+    private function dbExceptionToValidation(QueryException $e): array
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $message = (string) ($e->errorInfo[2] ?? $e->getMessage());
+
+        $errors = [];
+
+        // 23505 — duplicate key
+        if ($sqlState === '23505') {
+            // Postgres: "Key (group_id, key)=(7, foo) already exists"
+            // MySQL:    "Duplicate entry 'foo' for key 'table.field_unique'"
+            if (preg_match('/Key \(([^)]+)\)=\(([^)]+)\)/', $message, $m)) {
+                $cols = array_map('trim', explode(',', $m[1]));
+                foreach ($cols as $col) {
+                    $errors[$col] = ['Уже существует запись с таким значением'];
+                }
+            } elseif (preg_match("/for key '[^']*\\.([^_']+)/", $message, $m)) {
+                $errors[$m[1]] = ['Уже существует запись с таким значением'];
+            }
+
+            return [
+                'errorKey' => 'unique_violation',
+                'message' => 'Запись с такими данными уже существует',
+                'errors' => $errors !== [] ? $errors : (object) [],
+            ];
+        }
+
+        // 23502 — not null violation
+        if ($sqlState === '23502') {
+            if (preg_match('/column "([^"]+)"/', $message, $m)) {
+                $errors[$m[1]] = ['Поле обязательно для заполнения'];
+            }
+
+            return [
+                'errorKey' => 'not_null_violation',
+                'message' => 'Не заполнено обязательное поле',
+                'errors' => $errors !== [] ? $errors : (object) [],
+            ];
+        }
+
+        // 23503 — foreign key violation
+        if ($sqlState === '23503') {
+            if (preg_match('/foreign key constraint.*"([^"]+)"/i', $message, $m)) {
+                $errors['_'] = ["FK constraint violation: {$m[1]}"];
+            }
+
+            return [
+                'errorKey' => 'foreign_key_violation',
+                'message' => 'Нарушена связь с другой записью (запись используется или ссылка некорректна)',
+                'errors' => $errors !== [] ? $errors : (object) [],
+            ];
+        }
+
+        // Fallback: не показываем raw SQL в prod-mode
+        $userMessage = config('app.debug')
+            ? "DB error [{$sqlState}]: {$message}"
+            : 'Не удалось сохранить запись. Обратитесь к администратору.';
+
+        return [
+            'errorKey' => 'db_error',
+            'message' => $userMessage,
+            'errors' => (object) [],
+        ];
     }
 
     /**
