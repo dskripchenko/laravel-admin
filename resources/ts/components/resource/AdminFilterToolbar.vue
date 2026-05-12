@@ -369,13 +369,14 @@ function iconFor(name: string | null | undefined) {
         <template #prepend><UidIcon :icon="RotateCcw" :size="14" /></template>
         Сбросить
       </UidButton>
-    </div>
 
-    <!-- Row 2: actions (группировать / колонки / сохранить) -->
-    <div
-      v-if="groupableColumns.length > 0 || columns.length > 0 || enableSavedViews"
-      class="admin-toolbar__row admin-toolbar__row--actions"
-    >
+      <!-- Спейсер: отодвигает actions вправо в этой же строке -->
+      <span
+        v-if="groupableColumns.length > 0 || columns.length > 0 || enableSavedViews"
+        class="admin-toolbar__spacer admin-toolbar__spacer--actions"
+      />
+
+      <!-- Inline-actions (группировать / колонки / сохранить) -->
       <!-- Группировать -->
       <UidMenu v-if="groupableColumns.length > 0">
         <template #trigger>

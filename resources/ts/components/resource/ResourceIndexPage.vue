@@ -620,8 +620,8 @@ const liveStatus = computed<string | null>(() => {
   void tick.value
   if (lastLoadedAt.value === null) return null
   const diffSec = Math.floor((Date.now() - lastLoadedAt.value) / 1000)
-  if (diffSec < 5) return 'обновлено только что'
-  if (diffSec < 60) return `обновлено ${diffSec} сек назад`
+  // Меньше минуты — данные «свежие», не отвлекаем индикатором.
+  if (diffSec < 60) return null
   const min = Math.floor(diffSec / 60)
   if (min < 60) return `обновлено ${min} мин назад`
   const hr = Math.floor(min / 60)
