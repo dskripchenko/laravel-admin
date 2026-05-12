@@ -54,8 +54,21 @@ export function formatCell(
       return formatBoolean(value, meta.trueLabel ?? 'Да', meta.falseLabel ?? 'Нет')
     case 'bytes':
       return formatBytes(value)
+    case 'json':
+      return safeJson(value)
     default:
+      if (Array.isArray(value) || (value !== null && typeof value === 'object')) {
+        return safeJson(value)
+      }
       return String(value)
+  }
+}
+
+function safeJson(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
   }
 }
 

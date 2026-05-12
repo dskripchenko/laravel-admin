@@ -23,6 +23,9 @@ export function registerBuiltinInfolistEntries(): void {
     keyvalue: KeyValueEntry,
     key_value: KeyValueEntry,
     'key-value': KeyValueEntry,
+    // Repeatable: fallback на TextEntry с json-preset
+    // (полная реализация с nested-entries — на будущее).
+    repeatable: TextEntry,
     // Маппинг от backend Field::fieldType() → TextEntry для view-режима.
     // Host'ы могут перебить registerInfolistEntry('wysiwyg', WysiwygEntry).
     input: TextEntry,
