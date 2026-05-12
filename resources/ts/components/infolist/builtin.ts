@@ -13,6 +13,7 @@ import TextEntry from './TextEntry.vue'
 import BadgeEntry from './BadgeEntry.vue'
 import IconEntry from './IconEntry.vue'
 import KeyValueEntry from './KeyValueEntry.vue'
+import RepeatableEntry from './RepeatableEntry.vue'
 
 export function registerBuiltinInfolistEntries(): void {
   registerInfolistEntries({
@@ -23,9 +24,8 @@ export function registerBuiltinInfolistEntries(): void {
     keyvalue: KeyValueEntry,
     key_value: KeyValueEntry,
     'key-value': KeyValueEntry,
-    // Repeatable: fallback на TextEntry с json-preset
-    // (полная реализация с nested-entries — на будущее).
-    repeatable: TextEntry,
+    // Repeatable: коллекция объектов с nested-entries (таблица/cards/inline).
+    repeatable: RepeatableEntry,
     // Маппинг от backend Field::fieldType() → TextEntry для view-режима.
     // Host'ы могут перебить registerInfolistEntry('wysiwyg', WysiwygEntry).
     input: TextEntry,
