@@ -197,6 +197,58 @@ abstract class Resource
         return ValidationRulesExporter::export($this->fields(), $context);
     }
 
+    /**
+     * Hook для маппинга валидированных данных формы в модель.
+     *
+     * Default: forceFill всё что пришло. Override в Resource'ах, которые
+     * имеют производные поля (например JSON-блок `config` собирается из
+     * плоских `config_*` инпутов; см. StorageDiskResource).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function fillModel(Model $model, array $data): void
+    {
+        $model->forceFill($data);
+    }
+
+    /**
+     * Кастомная структура формы для контекста create/update.
+     *
+     * Возвращает список Renderable (Field или Layout), который заменит
+     * дефолтный flat-Rows layout в Generated*Screen. Если возвращает
+     * пустой массив — используется дефолт (Rows из filterFieldsBy).
+     *
+     * Все Field-объекты, упомянутые в этом дереве, должны быть теми же
+     * instance'ами, что и в `fields()` — иначе validation/persistence
+     * их не увидит.
+     *
+     * @return list<\Dskripchenko\LaravelAdmin\Contracts\Renderable>
+     */
+    public function formLayout(string $context): array
+    {
+        return [];
+    }
+
+    /**
+     * Serializes form-fields для manifest. Если `formLayout('update')`
+     * возвращает дерево Renderable — сериализуем его (Tabs/Rows/...);
+     * иначе — плоский список Field'ов.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function serializeFormFields(): array
+    {
+        $layout = $this->formLayout('update');
+        if ($layout !== []) {
+            return array_map(
+                static fn (\Dskripchenko\LaravelAdmin\Contracts\Renderable $r): array => $r->toArray(),
+                $layout,
+            );
+        }
+
+        return array_map(static fn (Field $f): array => $f->toArray(), $this->fields());
+    }
+
     /* -----------------------------------------------------------------
      * Сериализация для манифеста
      * ----------------------------------------------------------------- */
@@ -235,7 +287,7 @@ abstract class Resource
                 'replicate' => $base.'.replicate',
                 'reorder' => $base.'.reorder',
             ],
-            'fields' => array_map(static fn (Field $f): array => $f->toArray(), $this->fields()),
+            'fields' => $this->serializeFormFields(),
             'columns' => array_map(static fn (TableColumn $c): array => $c->toArray(), $this->columns()),
             // infolist: используется ResourceViewPage для read-only display.
             // Default — TextEntry per field (см. Resource::infolist).

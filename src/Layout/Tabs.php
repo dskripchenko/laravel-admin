@@ -42,4 +42,31 @@ final class Tabs extends Layout
 
         return $this;
     }
+
+    /**
+     * Frontend TabsLayout ожидает items в форме `[{label, items}]` —
+     * собираем из props.labels + children один-в-один.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $base = parent::toArray();
+
+        $labels = (array) ($this->props['labels'] ?? []);
+        $childArrays = $base['children'] ?? [];
+
+        $tabs = [];
+        foreach ($childArrays as $idx => $child) {
+            $tabs[] = [
+                'label' => (string) ($labels[$idx] ?? ('Tab '.($idx + 1))),
+                // child уже сериализован Layout::toArray() — внутри есть items.
+                'items' => $child['items'] ?? ($child['children'] ?? [$child]),
+            ];
+        }
+
+        $base['items'] = $tabs;
+
+        return $base;
+    }
 }

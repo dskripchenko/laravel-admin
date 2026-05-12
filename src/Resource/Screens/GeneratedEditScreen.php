@@ -39,6 +39,11 @@ final class GeneratedEditScreen extends GeneratedScreen
      */
     public function layout(): array
     {
+        $custom = $this->resource->formLayout('update');
+        if ($custom !== []) {
+            return [Rows::make($custom)];
+        }
+
         return [Rows::make($this->filterFieldsBy('update'))];
     }
 

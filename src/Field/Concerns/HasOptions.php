@@ -12,7 +12,7 @@ use UnitEnum;
 /**
  * Опции выбора для Select/Combobox/Radio/Checkbox/Switch.
  *
- * Внутри хранится `attributes['choices']` как list<{value, label, disabled?}>.
+ * Внутри хранится `attributes['options']` как list<{value, label, disabled?}>.
  * Источники: ассоциативный массив, BackedEnum, Eloquent-модель (через Model::all()).
  */
 trait HasOptions
@@ -22,7 +22,7 @@ trait HasOptions
      */
     public function options(array $items): static
     {
-        $this->attributes['choices'] = self::normalizeOptions($items);
+        $this->attributes['options'] = self::normalizeOptions($items);
 
         return $this;
     }
@@ -50,7 +50,7 @@ trait HasOptions
             $value = $case instanceof BackedEnum ? $case->value : $case->name;
             $items[] = ['value' => $value, 'label' => $case->name];
         }
-        $this->attributes['choices'] = $items;
+        $this->attributes['options'] = $items;
 
         return $this;
     }
@@ -70,7 +70,7 @@ trait HasOptions
             ])
             ->all();
 
-        $this->attributes['choices'] = $items;
+        $this->attributes['options'] = $items;
 
         return $this;
     }

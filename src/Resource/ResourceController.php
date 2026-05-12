@@ -307,7 +307,7 @@ final class ResourceController extends ApiController
         $modelClass = $resource::$model;
         /** @var \Illuminate\Database\Eloquent\Model $record */
         $record = new $modelClass;
-        $record->forceFill($data);
+        $resource->fillModel($record, $data);
         $record->save();
         \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
@@ -351,7 +351,7 @@ final class ResourceController extends ApiController
             $resource->fields(),
             $data,
         );
-        $record->forceFill($data);
+        $resource->fillModel($record, $data);
         $record->save();
         \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 

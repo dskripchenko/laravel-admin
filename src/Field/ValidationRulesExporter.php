@@ -37,7 +37,10 @@ final class ValidationRulesExporter
             }
             $rules = self::rulesFor($field);
             if ($rules === []) {
-                continue;
+                // Поле должно попасть в validate(), иначе Laravel срежет
+                // его из $data — даже если бэкенд хочет получить значение
+                // как-есть. Default — `nullable` (без явных ограничений).
+                $rules = ['nullable'];
             }
             $result[$field->name()] = $rules;
         }
@@ -100,7 +103,9 @@ final class ValidationRulesExporter
             'select', 'combobox', 'checkbox', 'radio' => self::choiceRules($attrs),
             'color' => self::colorRules($attrs),
             'wysiwyg', 'markdown', 'textarea', 'code' => ['nullable', 'string'],
-            default => [],
+            'switch', 'switcher', 'boolean' => ['nullable', 'boolean'],
+            'repeater', 'key-value', 'tags' => ['nullable', 'array'],
+            default => ['nullable'],
         };
     }
 
@@ -200,10 +205,10 @@ final class ValidationRulesExporter
     private static function choiceRules(array $attrs): array
     {
         if (($attrs['multiple'] ?? false) === true) {
-            return ['array'];
+            return ['nullable', 'array'];
         }
 
-        return [];
+        return ['nullable'];
     }
 
     /**

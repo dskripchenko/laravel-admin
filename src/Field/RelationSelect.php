@@ -88,7 +88,7 @@ final class RelationSelect extends Field
             'label' => (string) $m->getAttribute($displayColumn),
         ])->all();
 
-        $this->attributes['choices'] = $items;
+        $this->attributes['options'] = $items;
 
         return $this;
     }

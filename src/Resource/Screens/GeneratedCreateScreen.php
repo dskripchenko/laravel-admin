@@ -44,6 +44,11 @@ final class GeneratedCreateScreen extends GeneratedScreen
      */
     public function layout(): array
     {
+        $custom = $this->resource->formLayout('create');
+        if ($custom !== []) {
+            return [Rows::make($custom)];
+        }
+
         return [Rows::make($this->filterFieldsBy('create'))];
     }
 

@@ -196,9 +196,17 @@ abstract class Layout implements Renderable
             $children[] = $child->toArray();
         }
 
+        // Frontend layout-компоненты (Rows/Columns/Section/Tabs) ожидают
+        // `items` + type-specific props на верхнем уровне (Vue v-bind=).
+        // Splat'им `props` и алиасим `children → items`. Legacy ключи
+        // `props` / `children` сохраняем для уже-нормализующих consumer'ов
+        // (screen-store).
         return [
             'id' => $this->id(),
+            'kind' => 'layout',
             'type' => $this->type(),
+            ...$this->props,
+            'items' => $children,
             'props' => $this->props,
             'children' => $children,
         ];

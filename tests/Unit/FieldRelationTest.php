@@ -43,7 +43,7 @@ it('RelationSelect::eager preloads choices from DB', function (): void {
         ->relation(TestResourceUserModel::class, 'name', 'id')
         ->eager();
 
-    $choices = $f->getAttribute('choices');
+    $choices = $f->getAttribute('options');
     expect($choices)->toHaveCount(2);
     expect(array_column($choices, 'label'))->toContain('Alice', 'Bob');
 });
@@ -61,12 +61,12 @@ it('RelationSelect::eager respects limit', function (): void {
         ->relation(TestResourceUserModel::class, 'name', 'id')
         ->eager(3);
 
-    expect($f->getAttribute('choices'))->toHaveCount(3);
+    expect($f->getAttribute('options'))->toHaveCount(3);
 });
 
 it('RelationSelect::eager без relation() — no-op', function (): void {
     $f = RelationSelect::make('foo')->eager();
-    expect($f->getAttribute('choices'))->toBeNull();
+    expect($f->getAttribute('options'))->toBeNull();
 });
 
 it('RelationTable has type=relation_table and config', function (): void {

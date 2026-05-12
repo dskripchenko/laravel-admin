@@ -17,7 +17,7 @@ enum Priority: string
 
 it('Select::options accepts assoc array and normalizes to {value,label}', function (): void {
     $f = Select::make('country')->options(['ru' => 'Россия', 'en' => 'England']);
-    expect($f->getAttribute('choices'))->toBe([
+    expect($f->getAttribute('options'))->toBe([
         ['value' => 'ru', 'label' => 'Россия'],
         ['value' => 'en', 'label' => 'England'],
     ]);
@@ -28,7 +28,7 @@ it('Select::options accepts already-normalized list and passes through', functio
         ['value' => 1, 'label' => 'One', 'disabled' => true],
         ['value' => 2, 'label' => 'Two'],
     ]);
-    expect($f->getAttribute('choices'))->toBe([
+    expect($f->getAttribute('options'))->toBe([
         ['value' => 1, 'label' => 'One', 'disabled' => true],
         ['value' => 2, 'label' => 'Two'],
     ]);
@@ -36,7 +36,7 @@ it('Select::options accepts already-normalized list and passes through', functio
 
 it('Select::fromEnum reads BackedEnum cases', function (): void {
     $f = Select::make('p')->fromEnum(Priority::class);
-    $choices = $f->getAttribute('choices');
+    $choices = $f->getAttribute('options');
     expect($choices)->toHaveCount(3);
     expect($choices[0])->toBe(['value' => 'low', 'label' => 'Low']);
     expect($choices[2])->toBe(['value' => 'high', 'label' => 'High']);
@@ -62,16 +62,16 @@ it('Radio::inline + options', function (): void {
     $f = Radio::make('r')->options(['a' => 'A', 'b' => 'B'])->inline();
     expect($f->fieldType())->toBe('radio');
     expect($f->getAttribute('inline'))->toBeTrue();
-    expect($f->getAttribute('choices'))->toHaveCount(2);
+    expect($f->getAttribute('options'))->toHaveCount(2);
 });
 
 it('Checkbox can work as boolean (no options) or as group (options)', function (): void {
     $bool = Checkbox::make('agreed');
     expect($bool->fieldType())->toBe('checkbox');
-    expect($bool->getAttribute('choices'))->toBeNull();
+    expect($bool->getAttribute('options'))->toBeNull();
 
     $group = Checkbox::make('tags')->options(['php', 'js'])->inline();
-    expect($group->getAttribute('choices'))->toHaveCount(2);
+    expect($group->getAttribute('options'))->toHaveCount(2);
     expect($group->getAttribute('inline'))->toBeTrue();
 });
 
