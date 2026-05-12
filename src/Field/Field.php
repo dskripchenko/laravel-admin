@@ -103,6 +103,27 @@ abstract class Field implements Renderable
         return $this;
     }
 
+    /**
+     * Поле видимо только когда другое поле формы имеет указанное значение.
+     * Несколько вызовов — условия объединяются по «И». Значение может быть
+     * скаляром (строгий ===) либо list (any-of).
+     *
+     * Использование:
+     *   Input::make('config_root')->visibleWhen('driver', 'local')
+     *   Input::make('s3_endpoint')->visibleWhen('driver', ['s3', 'minio'])
+     *
+     * @param  mixed  $expected
+     */
+    public function visibleWhen(string $field, mixed $expected): static
+    {
+        /** @var array<string, mixed> $reactive */
+        $reactive = $this->attributes['reactive'] ?? [];
+        $reactive[$field] = $expected;
+        $this->attributes['reactive'] = $reactive;
+
+        return $this;
+    }
+
     /** Установить значение field (initial state формы). */
     public function default(mixed $value): static
     {
