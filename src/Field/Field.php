@@ -104,6 +104,20 @@ abstract class Field implements Renderable
     }
 
     /**
+     * Ширина поля в 12-колоночной сетке RowsLayout.
+     *
+     * По умолчанию (без вызова) поле занимает полную ширину строки.
+     * Если хотя бы один Field в RowsLayout имеет span — RowsLayout
+     * переключается в grid-12 mode (UidGrid).
+     */
+    public function span(int $cols): static
+    {
+        $this->attributes['span'] = max(1, min(12, $cols));
+
+        return $this;
+    }
+
+    /**
      * Поле видимо только когда другое поле формы имеет указанное значение.
      * Несколько вызовов — условия объединяются по «И». Значение может быть
      * скаляром (строгий ===) либо list (any-of).

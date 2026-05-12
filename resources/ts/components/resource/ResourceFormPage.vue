@@ -26,7 +26,7 @@ import {
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { useManifestStore } from '../../stores/manifest'
 import { provideFormState } from '../render/formState'
-import LayoutRenderer from '../render/LayoutRenderer.vue'
+import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
 interface Props {
@@ -207,13 +207,10 @@ function onCancel(): void {
       <UidSkeleton v-for="i in 6" :key="i" height="40px" />
     </div>
 
-    <!-- Body: layout из manifest -->
+    <!-- Body: layout из manifest, обёрнут в Rows-layout чтобы поддержать
+         field.span (12-grid layout). -->
     <UidCard v-else padding="md" class="admin-resource-form__body">
-      <LayoutRenderer
-        v-for="(node, idx) in layoutNodes"
-        :key="idx"
-        :node="node"
-      />
+      <RowsLayout :items="layoutNodes" />
     </UidCard>
 
     <!-- Sticky save-bar — показывается при unsaved-changes -->
