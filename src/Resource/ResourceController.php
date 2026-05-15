@@ -187,12 +187,21 @@ final class ResourceController extends ApiController
             });
         }
 
-        // Order
+        // Order. When the request carries no explicit order, fall back to
+        // either the reorder column (for resources that support drag-n-drop
+        // reordering — keeps the manual sequence stable) or the resource's
+        // defaultOrder() — typically PK DESC so newest rows surface first.
         $orders = (array) $request->input('order', []);
+        $orders = array_values(array_filter(
+            $orders,
+            static fn ($o): bool => is_array($o) && isset($o['column']),
+        ));
+        if ($orders === []) {
+            $orders = $resource->reorderable()
+                ? [['column' => $resource->reorderColumn(), 'direction' => 'asc']]
+                : $resource->defaultOrder();
+        }
         foreach ($orders as $order) {
-            if (! is_array($order) || ! isset($order['column'])) {
-                continue;
-            }
             $direction = ($order['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
             $query = $query->orderBy((string) $order['column'], $direction);
         }

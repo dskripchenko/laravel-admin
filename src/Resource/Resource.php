@@ -361,6 +361,28 @@ abstract class Resource
     }
 
     /**
+     * Default ordering applied by the index endpoint when the request
+     * carries no explicit `order[]`. Returns a list of {column, direction}
+     * tuples; multiple entries become chained orderBy calls.
+     *
+     * Default: newest-first by the model's primary key (works on every
+     * table and matches the typical "last touched at the top" expectation
+     * of admin lists). Resources that need positional / chronological /
+     * custom defaults can override.
+     *
+     * Reorderable resources still use their reorder column ASC — that
+     * branch is special-cased in ResourceController.
+     *
+     * @return list<array{column: string, direction: 'asc'|'desc'}>
+     */
+    public function defaultOrder(): array
+    {
+        $key = (new (static::$model))->getKeyName();
+
+        return [['column' => $key, 'direction' => 'desc']];
+    }
+
+    /**
      * Можно ли менять порядок записей drag-n-drop'ом.
      */
     public function reorderable(): bool
