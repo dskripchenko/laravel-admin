@@ -95,10 +95,20 @@ const tabsList = computed<InfolistTab[]>(() => {
 </script>
 
 <template>
-  <!-- Entry -->
+  <!-- Entry: wrapped in a label-above-value row when the node carries a label.
+       Bypass the wrapper when label is empty (e.g. entries nested inside
+       layout-supplied labels). TextEntry historically rendered its own label,
+       but a single source of truth here keeps every entry type aligned. -->
+  <div
+    v-if="resolved.kind === 'entry' && (node.label as string | undefined)"
+    class="admin-infolist-entry"
+  >
+    <span class="admin-infolist-entry__label">{{ node.label }}</span>
+    <component :is="resolved.component" v-bind="entryProps" />
+  </div>
   <component
     :is="resolved.component"
-    v-if="resolved.kind === 'entry'"
+    v-else-if="resolved.kind === 'entry'"
     v-bind="entryProps"
   />
 
@@ -185,6 +195,22 @@ const tabsList = computed<InfolistTab[]>(() => {
 </template>
 
 <style>
+.admin-infolist-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-2xs);
+  padding: var(--uid-space-sm) 0;
+}
+.admin-infolist-entry + .admin-infolist-entry {
+  border-top: 1px solid var(--uid-border-subtle);
+}
+.admin-infolist-entry__label {
+  font-size: var(--uid-font-size-xs);
+  color: var(--uid-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: var(--uid-font-weight-medium);
+}
 .admin-infolist-rows {
   display: flex;
   flex-direction: column;
