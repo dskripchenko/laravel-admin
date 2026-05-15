@@ -33,7 +33,8 @@ const hasSpan = computed(() => props.items.some((c) => spanOf(c) > 0))
   <UidGrid
     v-if="hasSpan"
     :cols="12"
-    :gap="gap"
+    :col-gap="gap"
+    row-gap="var(--uid-space-lg)"
   >
     <div
       v-for="(child, idx) in items"
