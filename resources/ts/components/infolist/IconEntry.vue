@@ -1,20 +1,29 @@
 <script setup lang="ts">
 /**
- * IconEntry — boolean-флаг как иконка (true → check, false → x).
- * Опционально labels: '{ true: "Опубликовано", false: "Черновик" }'.
+ * IconEntry — boolean flag rendered as a coloured icon + optional label.
+ *
+ * Looks up the lucide-vue-next icon by name (kebab-case → PascalCase
+ * conversion to match the library's exports), so PHP-side
+ *   IconEntry::make('flag')
+ *       ->trueIcon('check-circle-2')
+ *       ->falseIcon('x-circle')
+ *       ->trueLabel('Активно')
+ *       ->falseLabel('Отключено')
+ * surfaces as an actual ✓ / ✗ instead of a blank placeholder.
  */
 import { computed } from 'vue'
+import * as LucideIcons from 'lucide-vue-next'
+import { UidIcon } from '@dskripchenko/ui'
 import { tryUseRecord } from './recordContext'
 
 interface Props {
   name?: string
   label?: string
   value?: boolean | null
-  /** Имя icon'и для true (lucide-key, например 'check-circle-2'). */
+  /** lucide-vue-next icon name, e.g. 'check-circle-2'. */
   trueIcon?: string
-  /** Имя icon'и для false. */
+  /** lucide-vue-next icon name, e.g. 'x-circle'. */
   falseIcon?: string
-  /** Текстовые подписи. */
   trueLabel?: string
   falseLabel?: string
 }
@@ -37,13 +46,30 @@ const flag = computed<boolean>(() => {
   }
   return Boolean(v)
 })
+
+function toPascal(name: string): string {
+  return name
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+}
+
+const iconComponent = computed(() => {
+  const key = toPascal(flag.value ? props.trueIcon : props.falseIcon)
+  return (LucideIcons as Record<string, unknown>)[key]
+})
+
 const displayLabel = computed(() => (flag.value ? props.trueLabel : props.falseLabel))
-const iconName = computed(() => (flag.value ? props.trueIcon : props.falseIcon))
 </script>
 
 <template>
   <span :class="['admin-infolist-icon', flag ? 'admin-infolist-icon--on' : 'admin-infolist-icon--off']">
-    <span class="admin-infolist-icon__glyph" :data-icon="iconName" />
+    <UidIcon
+      v-if="iconComponent"
+      :icon="iconComponent as any"
+      :size="14"
+      class="admin-infolist-icon__glyph"
+    />
     <span v-if="displayLabel">{{ displayLabel }}</span>
   </span>
 </template>
@@ -58,8 +84,6 @@ const iconName = computed(() => (flag.value ? props.trueIcon : props.falseIcon))
 .admin-infolist-icon--on { color: var(--uid-success); }
 .admin-infolist-icon--off { color: var(--uid-text-tertiary); }
 .admin-infolist-icon__glyph {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
+  flex: none;
 }
 </style>

@@ -61,13 +61,13 @@ const entryProps = computed(() => {
   // Infolist\Entry::toArray). Flat'имся для удобства Vue v-bind:
   // attributes.preset → preset prop, attributes.format → meta.format.
   const attrs = (attributes as Record<string, unknown> | undefined) ?? {}
-  const { preset, format, currency, decimals, trueLabel, falseLabel, ...rest2 } = attrs
+  const { preset, format, currency, decimals, ...rest2 } = attrs
   const meta: Record<string, unknown> = {}
   if (format !== undefined) meta.format = format
   if (currency !== undefined) meta.currency = currency
   if (decimals !== undefined) meta.decimals = decimals
-  if (trueLabel !== undefined) meta.trueLabel = trueLabel
-  if (falseLabel !== undefined) meta.falseLabel = falseLabel
+  // trueLabel / falseLabel / trueIcon / falseIcon stay in rest2 so IconEntry
+  // (and any other boolean-style entry) receives them as direct props.
   return { ...rest, ...rest2, preset, meta }
 })
 

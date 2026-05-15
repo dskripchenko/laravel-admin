@@ -111,20 +111,31 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString('ru-RU')
 }
 
+function hasDiff(entry: AuditEntry): boolean {
+  return !!entry.diff && entry.diff.length > 0
+}
+
 function diffSummary(entry: AuditEntry): string {
-  if (entry.summary) return entry.summary
-  if (!entry.diff || entry.diff.length === 0) return ''
-  if (entry.diff.length === 1) {
-    const d = entry.diff[0]
-    return `Поле ${d.field}: ${formatVal(d.before)} → ${formatVal(d.after)}`
-  }
-  const fields = entry.diff.slice(0, 4).map((d) => d.field).join(', ')
-  return `Изменены ${entry.diff.length} поля: ${fields}`
+  // Fall back to the projector's `summary` only when we have no diff details
+  // to render — otherwise the generic "Изменено" hides the actual change set.
+  if (hasDiff(entry)) return ''
+  return entry.summary ?? ''
 }
 
 function formatVal(v: unknown): string {
   if (v === null || v === undefined) return '∅'
-  if (typeof v === 'string') return v.length > 20 ? `${v.slice(0, 20)}…` : v
+  if (typeof v === 'boolean') return v ? 'Да' : 'Нет'
+  // 0/1 are stored as int but typically reflect booleans in MySQL/Postgres.
+  if (v === 0) return 'Нет'
+  if (v === 1) return 'Да'
+  if (typeof v === 'string') return v.length > 40 ? `${v.slice(0, 40)}…` : v
+  if (typeof v === 'object') {
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return '[object]'
+    }
+  }
   return String(v)
 }
 </script>
@@ -171,7 +182,22 @@ function formatVal(v: unknown): string {
               {{ relativeTime(entry.created_at) }}
             </span>
           </div>
-          <div v-if="diffSummary(entry)" class="admin-audit-timeline__detail">
+          <ul
+            v-if="hasDiff(entry)"
+            class="admin-audit-timeline__diff"
+          >
+            <li
+              v-for="d in entry.diff"
+              :key="d.field"
+              class="admin-audit-timeline__diff-row"
+            >
+              <span class="admin-audit-timeline__diff-field">{{ d.field }}</span>
+              <span class="admin-audit-timeline__diff-before">{{ formatVal(d.before) }}</span>
+              <span class="admin-audit-timeline__diff-arrow" aria-hidden="true">→</span>
+              <span class="admin-audit-timeline__diff-after">{{ formatVal(d.after) }}</span>
+            </li>
+          </ul>
+          <div v-else-if="diffSummary(entry)" class="admin-audit-timeline__detail">
             {{ diffSummary(entry) }}
           </div>
         </div>
@@ -262,6 +288,37 @@ function formatVal(v: unknown): string {
 .admin-audit-timeline__detail {
   font-size: 12px;
   color: var(--uid-text-tertiary);
+}
+.admin-audit-timeline__diff {
+  list-style: none;
+  margin: var(--uid-space-2xs) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-audit-timeline__diff-row {
+  display: grid;
+  grid-template-columns: minmax(100px, max-content) 1fr auto 1fr;
+  gap: var(--uid-space-xs);
+  align-items: baseline;
+  font-size: 12px;
+}
+.admin-audit-timeline__diff-field {
+  font-weight: var(--uid-font-weight-medium);
+  color: var(--uid-text-secondary);
+}
+.admin-audit-timeline__diff-before {
+  color: var(--uid-text-tertiary);
+  text-decoration: line-through;
+  word-break: break-word;
+}
+.admin-audit-timeline__diff-arrow {
+  color: var(--uid-text-tertiary);
+}
+.admin-audit-timeline__diff-after {
+  color: var(--uid-text-primary);
+  word-break: break-word;
 }
 .admin-audit-timeline__empty,
 .admin-audit-timeline__error {
