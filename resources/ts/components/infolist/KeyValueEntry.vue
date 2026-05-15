@@ -32,6 +32,12 @@ const items = computed<Array<[string, unknown]>>(() => {
 
 function formatValue(v: unknown): string {
   if (v === null || v === undefined) return '—'
+  // Booleans (and 0/1 placeholders for them) read as "Да" / "Нет" so a
+  // permission-style {slug: true} map renders as a clean list of
+  // allowed items, not literal "true" tokens.
+  if (typeof v === 'boolean') return v ? 'Да' : 'Нет'
+  if (v === 0) return 'Нет'
+  if (v === 1) return 'Да'
   if (typeof v === 'object') return JSON.stringify(v)
   return String(v)
 }
