@@ -142,7 +142,23 @@ return [
         'enabled' => true,
         'table' => 'admin_audit_logs',
         'log_auth_events' => true,
-        'excluded_attributes' => ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'],
+        // Attributes whose changes are stripped from the diff snapshot.
+        // Default: credentials/secrets + bookkeeping timestamps that fire on
+        // every save and would clutter the timeline ("Изменено: updated_at
+        // 12:00:01 → 12:00:02"). Hosts can override this list via env or
+        // per-model by overriding getAuditExcluded(): array.
+        'excluded_attributes' => [
+            // Secrets / tokens.
+            'password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes',
+            // Auto-managed timestamps.
+            'created_at', 'updated_at', 'deleted_at',
+            // Auth bookkeeping written by login / impersonation flows.
+            'last_login_at', 'last_seen_at', 'current_team_id',
+        ],
+        // When an update event survives `excluded_attributes` with nothing
+        // left to record, skip writing the audit row entirely instead of
+        // leaving an empty "Изменено" entry in the timeline.
+        'skip_empty_updates' => true,
         'retention_days' => 365,
         'user_agent_max_length' => 1024,
         'url_max_length' => 2048,

@@ -102,6 +102,19 @@ trait Loggable
             $changes['after'] = self::filterExcluded($after, $excluded);
         }
 
+        // For update / restore events, skip the AuditLog row entirely when
+        // every changed attribute has been filtered out — otherwise the
+        // timeline shows an empty "Изменено" entry that hides the actual
+        // change history (e.g. only updated_at / last_login_at touched).
+        if (
+            (bool) config('admin.audit.skip_empty_updates', true)
+            && in_array($event, ['updated', 'restored'], true)
+            && empty($changes['before'] ?? [])
+            && empty($changes['after'] ?? [])
+        ) {
+            return;
+        }
+
         AuditLog::create([
             'actor_type' => self::actorMorph(),
             'actor_id' => self::actorKey(),
