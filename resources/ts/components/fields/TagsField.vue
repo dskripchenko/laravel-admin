@@ -16,7 +16,7 @@
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
-import { UidIcon } from '@dskripchenko/ui'
+import { UidIcon, usePopover } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 
 interface SuggestionGroup {
@@ -74,6 +74,26 @@ const query = ref<string>('')
 const focused = ref<boolean>(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
+const dropdownRef = ref<HTMLElement | null>(null)
+
+// Dropdown teleport'ируется в body и позиционируется через usePopover —
+// иначе любой ancestor с overflow: hidden обрезает выпадающий список (видно
+// в формах: правый край подсказок уезжает за карточку).
+const { floatingStyle, update: updatePopover } = usePopover(containerRef, dropdownRef, {
+  placement: 'bottom-start',
+  offset: 4,
+})
+
+const containerWidth = ref<number>(0)
+function syncContainerWidth(): void {
+  containerWidth.value = containerRef.value?.getBoundingClientRect().width ?? 0
+}
+
+const dropdownStyle = computed(() => ({
+  ...floatingStyle.value,
+  // Ширину dropdown'а привязываем к ширине chip-инпута — стандартный combobox-UX.
+  minWidth: containerWidth.value > 0 ? `${containerWidth.value}px` : 'auto',
+}))
 
 function setTags(next: string[]): void {
   // Дедуплицируем + лимит.
@@ -205,6 +225,25 @@ function onBlur(): void {
     }
   }, 120)
 }
+
+// При открытии dropdown'а (focus + есть подсказки) — пересчитываем позицию
+// и подписываемся на scroll/resize; при закрытии — отписываемся.
+watch(
+  () => focused.value && filteredFlat.value.length > 0,
+  async (isOpen) => {
+    if (isOpen) {
+      syncContainerWidth()
+      await nextTick()
+      updatePopover()
+      requestAnimationFrame(() => updatePopover())
+      window.addEventListener('resize', updatePopover)
+      window.addEventListener('scroll', updatePopover, true)
+    } else {
+      window.removeEventListener('resize', updatePopover)
+      window.removeEventListener('scroll', updatePopover, true)
+    }
+  },
+)
 </script>
 
 <template>
@@ -253,10 +292,13 @@ function onBlur(): void {
         @blur="onBlur"
       />
 
+      <Teleport to="body">
       <div
         v-if="focused && filteredFlat.length > 0"
+        ref="dropdownRef"
         class="admin-tags__dropdown"
         role="listbox"
+        :style="dropdownStyle"
       >
         <!-- Grouped рендер: заголовок группы + items внутри -->
         <template v-if="grouped">
@@ -303,6 +345,7 @@ function onBlur(): void {
           </button>
         </template>
       </div>
+      </Teleport>
     </div>
     <p v-if="errorMsg" class="admin-field__error">{{ errorMsg }}</p>
     <p v-else-if="help" class="admin-field__help">{{ help }}</p>
@@ -371,11 +414,9 @@ function onBlur(): void {
   color: var(--uid-text-primary);
 }
 .admin-tags__dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 10;
+  /* Position берём из usePopover (Teleport в body) — top/left/transform
+     приходят inline через :style. Здесь только визуальный стиль. */
+  z-index: var(--uid-z-popover, 1000);
   margin: 0;
   padding: 4px;
   display: flex;

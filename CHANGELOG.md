@@ -5,6 +5,42 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] - 2026-05-25
+
+### Fixed
+
+- **AuditTimeline** — diff-строки больше не показывают зачёркнутый `∅` как
+  «было» на событиях `created`/`restored` и как «стало» на
+  `deleted`/`destroyed`: бессмысленная колонка скрыта. Колонки имени поля
+  и значения теперь выровнены через единый `display: grid` с
+  `display: contents` на строке — раскладка одинакова в пределах всего
+  diff'а независимо от длины имени поля.
+- **AuditTimeline** — вертикальная линия timeline'а больше не уходит ниже
+  иконки последнего события. Перерисована как per-item `::after`-коннектор
+  (`:not(:last-child)`), который наследует `padding-left` от элемента —
+  пропало 2px-смещение от центра иконки.
+- **TagsField** — выпадающий список подсказок больше не обрезается
+  ancestor'ами с `overflow`. Dropdown перенесён в `<Teleport to="body">`,
+  позиция считается через `usePopover` (то же поведение, что и в
+  `UidSelect`). Ширина dropdown'а синхронизирована с шириной chip-инпута,
+  позиция пересчитывается на scroll/resize.
+- **AdminAuth** — exclude-middleware (public-эндпоинты вроде `auth/login`)
+  теперь читается у фактической API-версии текущего запроса через
+  `ApiModule::getApi()` с фолбэком на `AdminApi`. Раньше бралось из
+  фиксированного `AdminApi`, из-за чего host, сшивший admin API с другими
+  версиями (external-v1) в одном laravel-api модуле, ломал определение
+  public-роутов.
+
+### Changed
+
+- **Resource::infolist() default** — `switch`-поля (Switcher) теперь
+  автоматически рендерятся как `IconEntry` с локализованными Да/Нет
+  (`admin.common.yes`/`admin.common.no`, иконки `check-circle-2`/`x-circle`)
+  вместо сырого `TextEntry`. Раньше view-страница без override'а показывала
+  boolean-флаги как «true»/«false»; теперь оформление выровнено с тем, что
+  даёт явный IconEntry в кастомном infolist'е. Override в подклассе
+  по-прежнему имеет приоритет.
+
 ## [1.4.0] - 2026-05-08
 
 ### Added

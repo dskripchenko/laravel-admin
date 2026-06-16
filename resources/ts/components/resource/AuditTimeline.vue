@@ -122,13 +122,23 @@ function diffSummary(entry: AuditEntry): string {
   return entry.summary ?? ''
 }
 
+// ISO 8601 datetime (e.g. "2026-05-25T11:09:31.000000Z" или "...+03:00").
+// Бэкенд для `before` отдаёт raw-значение из БД (часто ISO с микросекундами),
+// а для `after` — уже отформатированную строку через Carbon (`Y-m-d H:i:s`).
+// Нормализуем оба вида к одному формату, чтобы дифф читался единообразно.
+const ISO_DATETIME_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/
+
 function formatVal(v: unknown): string {
   if (v === null || v === undefined) return '∅'
   if (typeof v === 'boolean') return v ? 'Да' : 'Нет'
   // 0/1 are stored as int but typically reflect booleans in MySQL/Postgres.
   if (v === 0) return 'Нет'
   if (v === 1) return 'Да'
-  if (typeof v === 'string') return v.length > 40 ? `${v.slice(0, 40)}…` : v
+  if (typeof v === 'string') {
+    const m = v.match(ISO_DATETIME_RE)
+    if (m) return `${m[1]} ${m[2]}`
+    return v.length > 40 ? `${v.slice(0, 40)}…` : v
+  }
   if (typeof v === 'object') {
     try {
       return JSON.stringify(v)
@@ -190,11 +200,23 @@ function formatVal(v: unknown): string {
               v-for="d in entry.diff"
               :key="d.field"
               class="admin-audit-timeline__diff-row"
+              :class="`admin-audit-timeline__diff-row--${entry.event}`"
             >
               <span class="admin-audit-timeline__diff-field">{{ d.field }}</span>
-              <span class="admin-audit-timeline__diff-before">{{ formatVal(d.before) }}</span>
-              <span class="admin-audit-timeline__diff-arrow" aria-hidden="true">→</span>
-              <span class="admin-audit-timeline__diff-after">{{ formatVal(d.after) }}</span>
+              <span class="admin-audit-timeline__diff-values">
+                <template v-if="entry.event === 'created' || entry.event === 'restored'">
+                  <span class="admin-audit-timeline__diff-arrow" aria-hidden="true">→</span>
+                  <span class="admin-audit-timeline__diff-after">{{ formatVal(d.after) }}</span>
+                </template>
+                <template v-else-if="entry.event === 'deleted' || entry.event === 'destroyed'">
+                  <span class="admin-audit-timeline__diff-before">{{ formatVal(d.before) }}</span>
+                </template>
+                <template v-else>
+                  <span class="admin-audit-timeline__diff-before">{{ formatVal(d.before) }}</span>
+                  <span class="admin-audit-timeline__diff-arrow" aria-hidden="true">→</span>
+                  <span class="admin-audit-timeline__diff-after">{{ formatVal(d.after) }}</span>
+                </template>
+              </span>
             </li>
           </ul>
           <div v-else-if="diffSummary(entry)" class="admin-audit-timeline__detail">
@@ -226,22 +248,20 @@ function formatVal(v: unknown): string {
   display: flex;
   flex-direction: column;
   gap: var(--uid-space-md);
-  position: relative;
-}
-.admin-audit-timeline__list::before {
-  content: '';
-  position: absolute;
-  left: 11px;
-  top: 12px;
-  bottom: 12px;
-  width: 2px;
-  background: var(--uid-border-subtle);
 }
 .admin-audit-timeline__item {
   position: relative;
   display: flex;
   gap: var(--uid-space-sm);
-  padding-left: 2px;
+}
+.admin-audit-timeline__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: calc(-1 * var(--uid-space-md));
+  width: 2px;
+  background: var(--uid-border-subtle);
 }
 .admin-audit-timeline__icon {
   position: relative;
@@ -293,20 +313,27 @@ function formatVal(v: unknown): string {
   list-style: none;
   margin: var(--uid-space-2xs) 0 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--uid-space-md);
+  row-gap: 2px;
 }
 .admin-audit-timeline__diff-row {
-  display: grid;
-  grid-template-columns: minmax(100px, max-content) 1fr auto 1fr;
-  gap: var(--uid-space-xs);
-  align-items: baseline;
+  display: contents;
   font-size: 12px;
 }
 .admin-audit-timeline__diff-field {
   font-weight: var(--uid-font-weight-medium);
   color: var(--uid-text-secondary);
+  align-self: baseline;
+}
+.admin-audit-timeline__diff-values {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--uid-space-xs);
+  min-width: 0;
+  align-self: baseline;
 }
 .admin-audit-timeline__diff-before {
   color: var(--uid-text-tertiary);

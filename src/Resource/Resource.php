@@ -9,6 +9,7 @@ use Dskripchenko\LaravelAdmin\Field\Field;
 use Dskripchenko\LaravelAdmin\Field\ValidationRulesExporter;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
 use Dskripchenko\LaravelAdmin\Infolist\Entry;
+use Dskripchenko\LaravelAdmin\Infolist\IconEntry;
 use Dskripchenko\LaravelAdmin\Infolist\TextEntry;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -441,9 +442,11 @@ abstract class Resource
     /**
      * Read-only entries для GeneratedViewScreen.
      *
-     * Default: TextEntry для каждого поля из fields() с тем же label. Override
-     * в подклассе если нужна кастомизация (BadgeEntry для статусов, ImageEntry
-     * для аватаров и т.д.).
+     * Default: TextEntry для каждого поля из fields() с тем же label, кроме
+     * `switch`-полей (Switcher) — те рендерятся как IconEntry с
+     * локализованными Да/Нет, чтобы view-страница не показывала «true»/«false»
+     * для boolean-флагов. Override в подклассе если нужна кастомизация
+     * (BadgeEntry для статусов, ImageEntry для аватаров и т.д.).
      *
      * @return list<Entry>
      */
@@ -453,7 +456,15 @@ abstract class Resource
         foreach ($this->fields() as $field) {
             $name = $field->name();
             $label = (string) ($field->getAttributes()['title'] ?? $name);
-            $entries[] = TextEntry::make($name)->label($label);
+            $entries[] = match ($field->fieldType()) {
+                'switch' => IconEntry::make($name)
+                    ->label($label)
+                    ->trueLabel((string) __('admin.common.yes'))
+                    ->falseLabel((string) __('admin.common.no'))
+                    ->trueIcon('check-circle-2')
+                    ->falseIcon('x-circle'),
+                default => TextEntry::make($name)->label($label),
+            };
         }
 
         return $entries;
