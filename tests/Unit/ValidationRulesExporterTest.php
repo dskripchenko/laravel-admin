@@ -101,8 +101,10 @@ it('Select single (no multiple) does not add array', function (): void {
         Select::make('country')->options(['ru', 'en']),
     ]);
 
-    // Без явных rules() и без required — поле может вообще не попасть в payload.
-    expect($rules)->not->toHaveKey('country');
+    // Single-select без явных rules получает дефолтный nullable (чтобы
+    // validate() не срезал поле), но НЕ array — array только для multiple.
+    expect($rules['country'])->toBe(['nullable']);
+    expect($rules['country'])->not->toContain('array');
 });
 
 it('ColorPicker adds hex regex by default', function (): void {
@@ -148,10 +150,13 @@ it('does not duplicate min/max from explicit and implicit', function (): void {
     expect($rules['age'])->not->toContain('max:120');
 });
 
-it('skips fields with no rules and no implicit type rules', function (): void {
+it('fields with no rules get a nullable default so validate() keeps them', function (): void {
     $rules = ValidationRulesExporter::export([
         Input::make('comment'), // Input без type, без required, без rules
     ]);
 
-    expect($rules)->toBeEmpty();
+    // Дефолтный nullable — иначе Laravel validate() срежет поле из $data,
+    // даже если бэкенд хочет получить значение как-есть.
+    expect($rules)->toHaveKey('comment');
+    expect($rules['comment'])->toBe(['nullable']);
 });
