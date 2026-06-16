@@ -6,6 +6,8 @@ namespace Dskripchenko\LaravelAdmin\Http\Middleware;
 
 use Closure;
 use Dskripchenko\LaravelAdmin\Http\AdminApi;
+use Dskripchenko\LaravelApi\Components\BaseApi;
+use Dskripchenko\LaravelApi\Facades\ApiModule;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -52,10 +54,14 @@ final class AdminAuth
 
     /**
      * Проверяет, объявлен ли AdminAuth::class в exclude-middleware для текущего
-     * `controller`/`action` запроса в `AdminApi::getMethods()`.
+     * `controller`/`action` запроса.
      *
      * Используется для public-эндпоинтов типа `auth/login`, чтобы они работали
      * без аутентификации даже когда AdminAuth — часть глобальной api-группы.
+     *
+     * Если host-проект сшил admin API c другими версиями (например external-v1)
+     * в одном laravel-api модуле, exclude читается у фактической API-версии
+     * текущего запроса (через ApiModule), а не у фиксированного AdminApi.
      */
     private function isExcludedForCurrentAction(): bool
     {
@@ -68,7 +74,9 @@ final class AdminAuth
             return false;
         }
 
-        $methods = AdminApi::getPreparedMethods();
+        /** @var class-string<BaseApi> $apiClass */
+        $apiClass = ApiModule::getApi() ?? AdminApi::class;
+        $methods = $apiClass::getPreparedMethods();
 
         $excludeController = (array) Arr::get(
             $methods,
