@@ -65,4 +65,5 @@ final class {{ class }} extends Resource
     {
         return [{{ searchable }}];
     }
+{{ hierarchyMethod }}
 }

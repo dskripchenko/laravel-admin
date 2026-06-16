@@ -24,6 +24,9 @@ final class MenuRegistry
 
     private bool $autoFill = true;
 
+    /** @var list<string> */
+    private array $autoHidden = [];
+
     public function add(MenuNode $node): self
     {
         $this->roots[] = $node;
@@ -69,6 +72,26 @@ final class MenuRegistry
         return $this->autoFill;
     }
 
+    /**
+     * Исключить конкретный resource/screen slug из auto-fill (если withAuto = true).
+     * Используется, когда Resource зарегистрирован для API/CRUD, но не должен
+     * показываться в sidebar (например, ребёнок встраивается в parent'а).
+     */
+    public function hideAuto(string $slug): self
+    {
+        if (! in_array($slug, $this->autoHidden, true)) {
+            $this->autoHidden[] = $slug;
+        }
+
+        return $this;
+    }
+
+    /** @return list<string> */
+    public function autoHiddenSlugs(): array
+    {
+        return $this->autoHidden;
+    }
+
     /** @return list<MenuNode> */
     public function roots(): array
     {
@@ -84,6 +107,7 @@ final class MenuRegistry
     {
         $this->roots = [];
         $this->autoFill = true;
+        $this->autoHidden = [];
 
         return $this;
     }

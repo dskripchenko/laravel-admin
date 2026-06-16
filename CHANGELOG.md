@@ -5,6 +5,43 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-06-16
+
+### Added
+
+- **Tree-view для иерархических ресурсов.** Resource с self-reference
+  `parent()`/`children()` relation (или явным `hierarchyParentKey()`)
+  компилируется в `GeneratedTreeScreen` вместо list-таблицы. Новые
+  endpoint'ы `{resource}.treeScreen` (GET) и `{resource}.tree` (POST,
+  отдаёт свёрнутое дерево с применением filters + `?q=`). Hook'и
+  `treeNodeActions()` (per-node toolbar), `treeAdditionalRowIds()` и
+  `treeExtraLeaves()` (cross-resource leaves — например шаблоны под своей
+  группой), `parentSlug()` (back-link на чужой index). Фронт —
+  `ResourceTreePage.vue` (search/expand/collapse/select/navigate).
+  `make:section --tree` авто-детектит иерархию и генерирует
+  `hierarchyParentKey()`.
+- **Embedded resource table** — layout `Layout\ResourceTable` (тип
+  `admin.resource-table`) для встраивания таблицы дочернего ресурса в
+  форму родителя по FK. Поддерживает `hideColumns()`, `parentField()`,
+  features create/delete/bulkDelete. Фронт — `EmbeddedResourceTable.vue`
+  (inline-edit, quick-add, per-row + bulk delete).
+- **Per-row inline edit** — `Resource::editableForRow($row, $column)`
+  даёт точечный контроль редактируемости ячейки конкретной строки;
+  ResourceController отдаёт `_editable` map в данных строки.
+  `TableColumn::editable()` принимает `$as`
+  (`text|number|select|date|textarea|switcher`) и `$options` для select.
+- **File / Image поля** — `FileField.vue` (drop-zone, image-режим) и
+  `ImageCropperField.vue` (canvas-кроппер с aspect-lock). Новый endpoint
+  `uploads.serve` (GET) стримит файлы с whitelist-дисков
+  (`config admin.uploads.servable_disks`) — preview для private-дисков
+  без `storage:link`.
+- **WysiwygField** — загрузка/ресайз (aspect-lock) и drag-n-drop
+  переупорядочивание картинок прямо в редакторе.
+- **ResourceFormPage** — pre-fill полей формы из query-параметров URL
+  (`defaultsFromQuery`) при создании записи.
+- **MenuRegistry::hideAuto($slug)** — исключение resource/screen из
+  auto-fill sidebar (для ресурсов, встроенных в родителя).
+
 ## [1.5.6] - 2026-05-25
 
 ### Fixed

@@ -105,3 +105,20 @@ it('ImageCropper inherits image() helper from FileUpload', function (): void {
     $f = ImageCropper::make('a')->image();
     expect($f->getAttribute('accept'))->toBe('image/*');
 });
+
+it('ImageCropper toArray() exposes attributes to manifest', function (): void {
+    $f = ImageCropper::make('avatar')
+        ->aspectRatio(2.0)
+        ->outputSize(600, 300)
+        ->quality(0.85)
+        ->required();
+
+    $arr = $f->toArray();
+    expect($arr['type'])->toBe('image_cropper');
+    expect($arr['name'])->toBe('avatar');
+    expect($arr['required'])->toBeTrue();
+    expect($arr['attributes']['aspectRatio'])->toBe(2.0);
+    expect($arr['attributes']['outputWidth'])->toBe(600);
+    expect($arr['attributes']['outputHeight'])->toBe(300);
+    expect($arr['attributes']['quality'])->toBe(0.85);
+});

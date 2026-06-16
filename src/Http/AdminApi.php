@@ -178,6 +178,7 @@ class AdminApi extends BaseApi
                 'actions' => [
                     'upload' => ['method' => ['post']],
                     'image' => ['method' => ['post']],
+                    'serve' => ['method' => ['get']],
                 ],
             ],
             'notifications' => [

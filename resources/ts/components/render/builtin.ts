@@ -17,10 +17,13 @@ import DateField from '../fields/DateField.vue'
 import TagsField from '../fields/TagsField.vue'
 import TranslatableField from '../fields/TranslatableField.vue'
 import WysiwygField from '../fields/WysiwygField.vue'
+import FileField from '../fields/FileField.vue'
+import ImageCropperField from '../fields/ImageCropperField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
 import TabsLayout from '../layouts/TabsLayout.vue'
+import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
 
 export function registerBuiltinComponents(): void {
   registerComponents({
@@ -71,6 +74,9 @@ export function registerBuiltinComponents(): void {
       time: DateField,
       'time-picker': DateField,
       'color-picker': TextField,
+      file: FileField,
+      image: FileField,
+      image_cropper: ImageCropperField,
     },
     layouts: {
       rows: RowsLayout,
@@ -82,6 +88,7 @@ export function registerBuiltinComponents(): void {
       group: RowsLayout,
       step: SectionLayout,
       wizard: SectionLayout,
+      'admin.resource-table': EmbeddedResourceTable,
     },
   })
 }

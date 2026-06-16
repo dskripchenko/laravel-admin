@@ -92,6 +92,8 @@ final class ResourceCompiler
                 // {key, ids[], payload?}. Резолвит Action из Resource->actions().
                 'action' => ['method' => ['post'], 'middleware' => [$view]],
                 'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
+                'treeScreen' => ['method' => ['get'], 'middleware' => [$view]],
+                'tree' => ['method' => ['post'], 'middleware' => [$view]],
                 'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
                 'editScreen' => ['method' => ['get'], 'middleware' => [$update]],
                 'viewScreen' => ['method' => ['get'], 'middleware' => [$view]],

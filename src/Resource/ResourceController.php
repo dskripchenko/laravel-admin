@@ -9,6 +9,7 @@ use Dskripchenko\LaravelAdmin\Filter\HttpFilterParser;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedTreeScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedViewScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
@@ -62,6 +63,210 @@ final class ResourceController extends ApiController
     public function listScreen(): JsonResponse
     {
         return $this->success((new GeneratedListScreen($this->currentResource()))->compile());
+    }
+
+    /**
+     * Compile GeneratedTreeScreen — описание tree-страницы для иерархических
+     * ресурсов (с self-ref parent_id). Данные подгружаются SPA через
+     * {@see tree()} action.
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceTreeScreenResponse}
+     */
+    public function treeScreen(): JsonResponse
+    {
+        return $this->success((new GeneratedTreeScreen($this->currentResource()))->compile());
+    }
+
+    /**
+     * Иерархическое дерево записей ресурса (self-ref parent_id).
+     *
+     * Возвращает уже свёрнутое дерево `data: TreeNode[]`. Применяет filters
+     * и `?q=` поиск как `search()`, но без пагинации — для UI-tree-навигации
+     * нужны все ветки сразу (eager-load всего адъяцентного списка одним
+     * SELECT). На моделях с десятками тысяч узлов host должен либо разбивать
+     * Resource на под-деревья, либо переопределить tree() в подклассе.
+     *
+     * @input array $filters
+     * @input string $q
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceTreeResponse}
+     * @response 409 {ConflictErrorResponse}
+     */
+    public function tree(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+        $parentKey = $resource->hierarchyParentKey();
+        if ($parentKey === null) {
+            return $this->error([
+                'errorKey' => 'not_hierarchical',
+                'message' => 'Resource is not hierarchical (hierarchyParentKey() returned null)',
+            ], 409);
+        }
+
+        $labelColumn = $this->resolveLabelColumn($resource);
+
+        $query = $resource->indexQuery();
+
+        $filterInputs = HttpFilterParser::parse($request);
+        foreach ($resource->filters() as $filter) {
+            /** @var Filter $filter */
+            $value = $filterInputs[$filter->field()] ?? null;
+            if ($value !== null) {
+                $query = $filter->apply($query, $value);
+            }
+        }
+
+        $q = HttpFilterParser::searchTerm($request);
+        $searchTerm = $q !== '' ? $q : null;
+        $searchable = $resource->searchableFields();
+        if ($searchTerm !== null && $searchable !== []) {
+            $query = $query->where(function ($builder) use ($searchTerm, $searchable): void {
+                foreach ($searchable as $col) {
+                    $builder->orWhere($col, 'like', '%'.$searchTerm.'%');
+                }
+            });
+        }
+
+        $rows = $query
+            ->orderBy($parentKey)
+            ->orderBy($labelColumn)
+            ->get()
+            ->all();
+
+        // Pre-tree hook: ресурс может потребовать дополнительные id основной
+        // модели (например, предков matching leaf'ов из treeExtraLeaves —
+        // см. GroupResource::treeAdditionalRowIds). Подмешиваем их в выборку
+        // одним дополнительным SELECT, чтобы tree сохранял parent-цепочку.
+        if ($searchTerm !== null) {
+            $extraIds = $resource->treeAdditionalRowIds($searchTerm);
+            if ($extraIds !== []) {
+                $loadedIds = array_map(static fn ($r) => $r->getKey(), $rows);
+                $missingIds = array_values(array_diff($extraIds, $loadedIds));
+                if ($missingIds !== []) {
+                    $keyName = $resource->indexQuery()->getModel()->getKeyName();
+                    $extraRows = $resource->indexQuery()
+                        ->whereIn($keyName, $missingIds)
+                        ->get()
+                        ->all();
+                    $rows = array_merge($rows, $extraRows);
+                }
+            }
+        }
+
+        $extraLeaves = $resource->treeExtraLeaves($rows, $searchTerm);
+
+        // Per-node actions (см. Resource::treeNodeActions) — собираем мапу
+        // row-id → actions[]. В buildTree её цепляем к node.actions.
+        $actionsByRowId = [];
+        foreach ($rows as $row) {
+            $actions = $resource->treeNodeActions($row);
+            if ($actions !== []) {
+                $actionsByRowId[$row->getKey()] = $actions;
+            }
+        }
+
+        $tree = $this->buildTree($rows, $parentKey, $labelColumn, $extraLeaves, $actionsByRowId);
+
+        return $this->success([
+            'data' => $tree['nodes'],
+            'meta' => [
+                'total' => count($rows),
+                'max_depth' => $tree['max_depth'],
+                'parent_key' => $parentKey,
+                'label_column' => $labelColumn,
+            ],
+        ]);
+    }
+
+    private function resolveLabelColumn(Resource $resource): string
+    {
+        foreach ($resource->columns() as $column) {
+            $arr = $column->toArray();
+            if (! empty($arr['searchable'])) {
+                return (string) ($arr['name'] ?? 'name');
+            }
+        }
+
+        return 'name';
+    }
+
+    /**
+     * Свернуть плоский набор Eloquent-моделей в TreeNode[] по адъяцентному
+     * списку. Узлы, чей parent отфильтрован (например, поиском по дочернему
+     * лейблу), всплывают в корень — иначе матчи скрылись бы под недоступным
+     * предком.
+     *
+     * @param  list<\Illuminate\Database\Eloquent\Model>  $rows
+     * @param  array<int|string, list<array<string, mixed>>>  $extraLeaves  parent_id → leaves
+     * @param  array<int|string, list<array<string, mixed>>>  $actionsByRowId  row_id → actions
+     * @return array{nodes: list<array<string, mixed>>, max_depth: int}
+     */
+    private function buildTree(array $rows, string $parentKey, string $labelColumn, array $extraLeaves = [], array $actionsByRowId = []): array
+    {
+        $byId = [];
+        foreach ($rows as $row) {
+            $id = $row->getKey();
+            $byId[$id] = [
+                'key' => $id,
+                'label' => (string) ($row->getAttribute($labelColumn) ?? ''),
+                'record' => $row->toArray(),
+                'children' => [],
+            ];
+            if (isset($actionsByRowId[$id])) {
+                $byId[$id]['actions'] = $actionsByRowId[$id];
+            }
+        }
+
+        $roots = [];
+        $maxDepth = 0;
+        foreach ($rows as $row) {
+            $id = $row->getKey();
+            $pid = $row->getAttribute($parentKey);
+            if ($pid !== null && isset($byId[$pid])) {
+                $byId[$pid]['children'][] = &$byId[$id];
+            } else {
+                $roots[] = &$byId[$id];
+            }
+        }
+
+        // Дополнительные leaf-узлы из treeExtraLeaves (например шаблоны под
+        // группами). Добавляем после основных children, чтобы группы шли первыми.
+        if ($extraLeaves !== []) {
+            foreach ($byId as $id => &$node) {
+                if (isset($extraLeaves[$id])) {
+                    foreach ($extraLeaves[$id] as $leaf) {
+                        $node['children'][] = $leaf;
+                    }
+                }
+            }
+            unset($node);
+        }
+
+        $assignDepth = function (array &$node, int $depth) use (&$assignDepth, &$maxDepth): void {
+            $maxDepth = max($maxDepth, $depth);
+            if (empty($node['children'])) {
+                unset($node['children']);
+
+                return;
+            }
+            foreach ($node['children'] as &$child) {
+                $assignDepth($child, $depth + 1);
+            }
+        };
+        foreach ($roots as &$root) {
+            $assignDepth($root, 0);
+        }
+        unset($root);
+
+        return ['nodes' => $roots, 'max_depth' => $maxDepth];
     }
 
     /**
@@ -237,8 +442,10 @@ final class ResourceController extends ApiController
                 ->all();
         }
 
+        $items = $this->withPerRowEditable($resource, $paginator->items());
+
         return $this->success([
-            'data' => $paginator->items(),
+            'data' => $items,
             'meta' => [
                 'page' => $paginator->currentPage(),
                 'per_page' => $paginator->perPage(),
@@ -250,6 +457,45 @@ final class ResourceController extends ApiController
                 'groups' => $groups,
             ],
         ]);
+    }
+
+    /**
+     * Для каждой row + каждой editable-колонки спрашивает Resource::editableForRow.
+     * Если хоть один override === false — добавляет `_editable` map в данные row.
+     * Row без override-флагов остаётся как есть.
+     *
+     * @param  list<\Illuminate\Database\Eloquent\Model>  $items
+     * @return list<array<string, mixed>>
+     */
+    private function withPerRowEditable(Resource $resource, array $items): array
+    {
+        $editableColumns = [];
+        foreach ($resource->columns() as $column) {
+            $arr = $column->toArray();
+            if (! empty($arr['editable'])) {
+                $editableColumns[] = (string) $arr['name'];
+            }
+        }
+        if ($editableColumns === []) {
+            return array_map(static fn ($m) => $m->toArray(), $items);
+        }
+
+        $out = [];
+        foreach ($items as $model) {
+            $row = $model->toArray();
+            $overrides = [];
+            foreach ($editableColumns as $col) {
+                if (! $resource->editableForRow($model, $col)) {
+                    $overrides[$col] = false;
+                }
+            }
+            if ($overrides !== []) {
+                $row['_editable'] = $overrides;
+            }
+            $out[] = $row;
+        }
+
+        return $out;
     }
 
     /**

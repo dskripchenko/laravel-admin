@@ -230,9 +230,10 @@ final class SystemController extends ApiController
     private function buildAutoItems(array $used): array
     {
         $items = [];
+        $hidden = array_fill_keys($this->menuRegistry->autoHiddenSlugs(), true);
 
         foreach ($this->resources->all() as $slug => $class) {
-            if (isset($used[$slug])) {
+            if (isset($used[$slug]) || isset($hidden[$slug])) {
                 continue;
             }
             $resource = $this->resources->resolve($slug);

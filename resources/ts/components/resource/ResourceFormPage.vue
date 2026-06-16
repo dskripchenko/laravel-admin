@@ -15,7 +15,7 @@
  * FieldRenderer'ы внутри форм автоматически подхватывают через useFormState.
  */
 import { computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   UidAlert,
   UidBadge,
@@ -49,6 +49,35 @@ const props = withDefaults(defineProps<Props>(), {
 const form = useResourceFormStore()
 const manifest = useManifestStore()
 const router = useRouter()
+const route = useRoute()
+
+/**
+ * Defaults для prepareCreate берём из ?query — это позволяет внешним вызывающим
+ * (например tree-view "Создать подгруппу") передавать pre-fill значения через
+ * URL (`?parent_id=23` → state.parent_id=23). Безопасно — все значения проходят
+ * через стандартную валидацию поля при save.
+ *
+ * Числовые query-строки коэрсим к числу: PHP-бэкенд автоматически делает int
+ * из numeric-keys в assoc-массивах (Select::options и т.п.), а UidSelect
+ * сравнивает option.value === modelValue строго. Без коэрсии '23' !== 23
+ * и Select не подсветит pre-fill'нутую опцию.
+ */
+function defaultsFromQuery(): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(route.query)) {
+    if (v === null || v === undefined) continue
+    if (Array.isArray(v)) {
+      out[k] = v
+      continue
+    }
+    if (/^-?\d+$/.test(v)) {
+      out[k] = parseInt(v, 10)
+    } else {
+      out[k] = v
+    }
+  }
+  return out
+}
 
 // provideFormState ОБЯЗАН вызываться в setup() — связываем со store.state.
 // Сам form-context форвардит setField → store.setField (с auto-clear errors).
@@ -99,7 +128,7 @@ onMounted(async () => {
   if (props.id !== null && props.id !== undefined) {
     await form.load(props.slug, props.id, 'edit').catch(() => undefined)
   } else {
-    form.prepareCreate(props.slug)
+    form.prepareCreate(props.slug, defaultsFromQuery())
   }
 })
 
@@ -109,7 +138,7 @@ watch(
     if (nextId !== null && nextId !== undefined) {
       await form.load(nextSlug, nextId, 'edit').catch(() => undefined)
     } else {
-      form.prepareCreate(nextSlug)
+      form.prepareCreate(nextSlug, defaultsFromQuery())
     }
   },
 )
@@ -132,12 +161,16 @@ async function onSave(): Promise<void> {
 
 /**
  * Auto-derive index route name из slug (`admin.resource.{slug}.index`),
- * если host не передал indexRouteName явно. Это нужно чтобы back/cancel
- * вели на список ресурса, а не на главную админки.
+ * если host не передал indexRouteName явно. Manifest может задать
+ * `parent_slug` (см. Resource::parentSlug) — тогда back ведёт на index
+ * другого ресурса (например TemplateResource → groups для tree-view).
  */
-const resolvedIndexRouteName = computed<string>(
-  () => props.indexRouteName ?? `admin.resource.${props.slug}.index`,
-)
+const resolvedIndexRouteName = computed<string>(() => {
+  if (props.indexRouteName) return props.indexRouteName
+  const parent = manifest.getResource(props.slug)?.parent_slug
+  if (parent) return `admin.resource.${parent}.index`
+  return `admin.resource.${props.slug}.index`
+})
 
 async function onDelete(): Promise<void> {
   if (!confirm('Удалить запись?')) return

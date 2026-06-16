@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Универсальный uploads endpoint для Wysiwyg image-upload, FileUpload field и
@@ -89,15 +90,75 @@ final class UploadController extends ApiController
         }
 
         $path = $file->store($directory, $diskName);
-        $disk = Storage::disk($diskName);
 
         return [
             'disk' => $diskName,
             'path' => $path,
-            'url' => $disk->url($path),
+            'url' => self::serveUrl($diskName, $path),
             'name' => $file->getClientOriginalName(),
             'size' => $file->getSize(),
             'mime' => $file->getMimeType(),
         ];
+    }
+
+    /**
+     * Стримит файл с заданного disk через admin-API. Решает проблему
+     * private-дисков (без storage:link) и обеспечивает permission-gate
+     * через стандартный AdminAuth middleware.
+     *
+     * Disk должен быть в `admin.uploads.servable_disks` whitelist.
+     *
+     * @input string $disk
+     * @input string $path
+     *
+     * @security AdminSession
+     *
+     * @response 200 binary file
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function serve(Request $request): StreamedResponse|JsonResponse
+    {
+        $diskName = (string) $request->query('disk', '');
+        $path = (string) $request->query('path', '');
+
+        if ($diskName === '' || $path === '') {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => 'disk and path are required',
+            ], 422);
+        }
+
+        $servable = (array) config('admin.uploads.servable_disks', [
+            (string) config('admin.uploads.disk', 'local'),
+        ]);
+        if (! in_array($diskName, $servable, true)) {
+            return $this->error([
+                'errorKey' => 'forbidden_disk',
+                'message' => "Disk `{$diskName}` is not in admin.uploads.servable_disks whitelist",
+            ], 422);
+        }
+
+        $disk = Storage::disk($diskName);
+        if (! $disk->exists($path)) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'File not found',
+            ], 404);
+        }
+
+        return $disk->response($path);
+    }
+
+    /**
+     * Сформировать admin-streaming URL для произвольного disk/path.
+     * Используется при сохранении upload-record'ов и в Model accessors
+     * (когда host хочет показать preview).
+     */
+    public static function serveUrl(string $disk, string $path): string
+    {
+        $prefix = (string) config('admin.api_path', 'api/admin');
+
+        return '/'.trim($prefix, '/').'/uploads/serve?disk='.urlencode($disk).'&path='.urlencode($path);
     }
 }

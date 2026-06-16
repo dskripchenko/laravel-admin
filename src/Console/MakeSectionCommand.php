@@ -47,7 +47,8 @@ use function Laravel\Prompts\warning;
 final class MakeSectionCommand extends Command
 {
     protected $signature = 'admin:make-section
-                            {--force : Перезаписать существующий Resource}';
+                            {--force : Перезаписать существующий Resource}
+                            {--tree : Принудительно tree-режим (генерирует hierarchyParentKey()=parent_id)}';
 
     protected $description = 'Мастер создания раздела админки на основе таблицы или Eloquent-модели';
 
@@ -210,6 +211,20 @@ final class MakeSectionCommand extends Command
 
         $extraImports = $this->buildExtraImports($columns, $relations);
 
+        // Hierarchy autodetect: BelongsTo на ту же модель (parent_id self-ref).
+        // --tree принудительно включает tree-режим даже если детект промахнулся.
+        $hierarchyKey = $this->detectHierarchyKey($relations, $modelClass);
+        $treeMode = $hierarchyKey !== null || (bool) $this->option('tree');
+        if ($treeMode && $hierarchyKey === null) {
+            $hierarchyKey = 'parent_id';
+        }
+        if ($treeMode) {
+            info("🌳 Tree-режим: иерархия через `{$hierarchyKey}` self-reference.");
+        }
+        $hierarchyMethod = $treeMode
+            ? "\n    public function hierarchyParentKey(): ?string\n    {\n        return '{$hierarchyKey}';\n    }\n"
+            : '';
+
         $vars = [
             'namespace' => $namespace,
             'class' => $className,
@@ -226,6 +241,7 @@ final class MakeSectionCommand extends Command
             'columns' => $columnsBlock,
             'filters' => $filtersBlock,
             'searchable' => $searchableNames,
+            'hierarchyMethod' => $hierarchyMethod,
             'date' => date('Y-m-d'),
         ];
 
@@ -364,7 +380,7 @@ final class MakeSectionCommand extends Command
 
     /**
      * @param  list<array{name: string, type: string, nullable: bool, default: mixed, comment: ?string, is_primary: bool, is_unique: bool, is_indexed: bool, enum_values: ?list<string>}>  $columns
-     * @param  list<array{name: string, type: string, related: ?class-string, foreign_key: ?string}>  $relations
+     * @param  list<array{name: string, type: string, related: ?class-string, foreign_key: ?string, owner_key: ?string}>  $relations
      * @param  list<string>  $selected
      */
     private function buildFieldsBlock(array $columns, array $relations, FieldTypeInferrer $inferrer, array $selected): string
@@ -537,6 +553,26 @@ final class MakeSectionCommand extends Command
             ['slug' => Str::slug($name)],
             ['name' => $name, 'permissions' => $permissions],
         );
+    }
+
+    /**
+     * Ищет BelongsTo-relation на ту же модель (self-ref → иерархия).
+     * Возвращает имя FK-колонки (`parent_id` и т.п.) или null.
+     *
+     * @param  list<array{name: string, type: string, related: ?class-string, foreign_key: ?string}>  $relations
+     */
+    private function detectHierarchyKey(array $relations, ?string $modelClass): ?string
+    {
+        if ($modelClass === null) {
+            return null;
+        }
+        foreach ($relations as $rel) {
+            if ($rel['type'] === 'BelongsTo' && $rel['related'] === $modelClass && ! empty($rel['foreign_key'])) {
+                return (string) $rel['foreign_key'];
+            }
+        }
+
+        return null;
     }
 
     private function guessIcon(string $label): string

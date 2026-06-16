@@ -181,6 +181,10 @@ return [
         'directory' => 'uploads',
         'max_kilobytes' => 51200,
         'max_kilobytes_image' => 10240,
+        // Whitelist дисков, которые admin может стримить через
+        // /api/admin/uploads/serve. Решает проблему preview для private-дисков
+        // (без storage:link). Host добавляет свои disk'и сюда явно.
+        'servable_disks' => [env('ADMIN_UPLOADS_DISK', 'local'), 'public'],
     ],
 
     /*

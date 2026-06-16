@@ -14,6 +14,8 @@ use Dskripchenko\LaravelAdmin\Infolist\TextEntry;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -161,6 +163,19 @@ abstract class Resource
     }
 
     /**
+     * Per-row override для inline-edit. Возвращает false если конкретную
+     * ячейку конкретной строки нельзя редактировать (например, "свой email
+     * можно, чужой нет"). Default — true, что эквивалентно column-wide
+     * `editable()` без дополнительных правил.
+     *
+     * Вызывается ResourceController::search() для каждой editable-колонки.
+     */
+    public function editableForRow(Model $row, string $column): bool
+    {
+        return true;
+    }
+
+    /**
      * Базовый query для list-экрана (без фильтров — те применяются ResourceCompiler'ом).
      */
     public function indexQuery(): Builder
@@ -297,6 +312,9 @@ abstract class Resource
             'actions' => array_map(static fn (Action $a): array => $a->toArray(), $this->actions()),
             'searchable' => $this->searchableFields(),
             'with' => $this->with(),
+            'view_mode' => $this->viewMode(),
+            'hierarchy_parent_key' => $this->hierarchyParentKey(),
+            'parent_slug' => $this->parentSlug(),
             'features' => [
                 'softDeletes' => static::supportsSoftDeletes(),
                 'replicable' => $this->replicable(),
@@ -405,6 +423,155 @@ abstract class Resource
     public function reorderColumn(): string
     {
         return 'position';
+    }
+
+    /**
+     * FK-колонка self-references для иерархического ресурса (default `parent_id`
+     * через автодетект по Eloquent relations). null — ресурс плоский.
+     *
+     * Override в подклассе чтобы силой включить tree-режим (`return 'parent_id'`)
+     * или отключить его при наличии relations (`return null`).
+     */
+    public function hierarchyParentKey(): ?string
+    {
+        return self::detectHierarchyParentKey(static::$model ?? null);
+    }
+
+    /**
+     * `'tree'` если ресурс иерархический, иначе `'list'`. Определяет какой
+     * Generated*Screen компилирует ResourceController на `/r/{slug}` маршруте.
+     */
+    public function viewMode(): string
+    {
+        return $this->hierarchyParentKey() !== null ? 'tree' : 'list';
+    }
+
+    /**
+     * Slug ресурса, чей index используется как "родительский" контекст —
+     * куда возвращает кнопка «Назад» с form/view-страниц. Default null
+     * (back ведёт на собственный index). Применяется когда ресурс показан
+     * как leaf другого tree-view: например TemplateResource живёт под
+     * GroupResource'ом в дереве, и back должен возвращать к дереву групп.
+     */
+    public function parentSlug(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Контекстные actions, прикрепляемые к каждой ноде tree-view. Возвращает
+     * массив deskriptor'ов — frontend (ResourceTreePage) рендерит их в
+     * toolbar выбранного узла. Default — пусто.
+     *
+     * Каждый descriptor:
+     *   - `id` (string)            — уникальный id внутри узла
+     *   - `label` (string)         — отображаемый текст
+     *   - `icon` (?string)         — lucide-имя иконки (kebab-case)
+     *   - `variant` (?string)      — primary|secondary|ghost (default secondary)
+     *   - `kind` ('navigate')      — пока единственный поддерживаемый
+     *   - `to` (array)             — `{ slug, screen, params }`, params
+     *                                подставляются как query при переходе.
+     *                                `{id}` плейсхолдер заменяется на id
+     *                                текущей записи.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function treeNodeActions(Model $row): array
+    {
+        return [];
+    }
+
+    /**
+     * Pre-tree hook: дополнительные id основной модели, которые надо
+     * подмешать в выборку tree-view. Применяется когда tree-search должен
+     * учитывать вложенные leaf-узлы из другого Resource'а — например,
+     * GroupResource при поиске возвращает id групп, в которые попали
+     * matching templates (вместе с их предками), чтобы шаблон-leaf
+     * визуально оказался под своей группой.
+     *
+     * Default — пустой массив.
+     *
+     * @return list<int|string>
+     */
+    public function treeAdditionalRowIds(?string $searchTerm): array
+    {
+        return [];
+    }
+
+    /**
+     * Дополнительные leaf-узлы для tree-view, привязанные по parent_id
+     * к узлам основного ресурса. Используется для отображения записей
+     * другого Resource'а внутри текущего дерева — например шаблоны
+     * под своей группой в дереве групп.
+     *
+     * `$searchTerm` (если не null) — текущий tree-search; leaves следует
+     * отфильтровать по нему, чтобы поиск находил вложенные записи.
+     *
+     * Каждый leaf — массив с теми же полями что node (`key`, `label`,
+     * `record`) плюс опционально:
+     *   - `slug` — slug чужого Resource'а для cross-navigation
+     *     (ResourceTreePage будет вести на `/admin/r/{slug}/{id}/edit`).
+     *   - `kind` — свободный маркер для frontend-логики.
+     *
+     * Default — пустой массив (нет дополнительных leaf'ов).
+     *
+     * @param  list<Model>  $rows  Записи основного ресурса, попавшие в tree
+     * @param  ?string  $searchTerm  Текущий поисковой запрос (null если нет)
+     * @return array<int|string, list<array<string, mixed>>> parent_id → leaves
+     */
+    public function treeExtraLeaves(array $rows, ?string $searchTerm = null): array
+    {
+        return [];
+    }
+
+    /**
+     * @var array<class-string<Model>, string|null>
+     */
+    private static array $hierarchyDetectCache = [];
+
+    /**
+     * Автодетект FK self-reference по конвенции:
+     *  - метод `parent()` возвращает BelongsTo на ту же модель → берём foreignKey
+     *  - метод `children()` возвращает HasMany на ту же модель → берём foreignKey
+     *
+     * @param  class-string<Model>|null  $model
+     */
+    private static function detectHierarchyParentKey(?string $model): ?string
+    {
+        if ($model === null || ! is_subclass_of($model, Model::class)) {
+            return null;
+        }
+
+        if (array_key_exists($model, self::$hierarchyDetectCache)) {
+            return self::$hierarchyDetectCache[$model];
+        }
+
+        $key = null;
+        $instance = new $model;
+
+        if (method_exists($instance, 'parent')) {
+            try {
+                $rel = $instance->parent();
+                if ($rel instanceof BelongsTo && $rel->getRelated()::class === $model) {
+                    $key = $rel->getForeignKeyName();
+                }
+            } catch (\Throwable) {
+                // Метод parent() с другой сигнатурой — игнорируем.
+            }
+        }
+
+        if ($key === null && method_exists($instance, 'children')) {
+            try {
+                $rel = $instance->children();
+                if ($rel instanceof HasMany && $rel->getRelated()::class === $model) {
+                    $key = $rel->getForeignKeyName();
+                }
+            } catch (\Throwable) {
+                // children() не Eloquent-relation — игнорируем.
+            }
+        }
+
+        return self::$hierarchyDetectCache[$model] = $key;
     }
 
     /**

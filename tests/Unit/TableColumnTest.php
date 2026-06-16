@@ -49,7 +49,23 @@ it('as() preset with meta', function (): void {
 it('editable() enables inline-edit with rules', function (): void {
     $col = TableColumn::make('is_active')->editable(['boolean']);
     $arr = $col->toArray();
-    expect($arr['editable'])->toBe(['field' => 'is_active', 'validation' => ['boolean']]);
+    expect($arr['editable'])->toBe([
+        'field' => 'is_active',
+        'validation' => ['boolean'],
+        'as' => 'text',
+        'options' => [],
+    ]);
+});
+
+it('editable() preserves input type and options', function (): void {
+    $col = TableColumn::make('status')->editable(
+        ['required', 'string'],
+        as: 'select',
+        options: ['active' => 'Активен', 'blocked' => 'Заблокирован'],
+    );
+    $arr = $col->toArray();
+    expect($arr['editable']['as'])->toBe('select');
+    expect($arr['editable']['options'])->toBe(['active' => 'Активен', 'blocked' => 'Заблокирован']);
 });
 
 it('summary() lists aggregates', function (): void {

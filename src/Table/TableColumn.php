@@ -124,10 +124,17 @@ final class TableColumn
      * Включает inline-edit ячейки.
      *
      * @param  list<string|array<string, mixed>>  $rules  Validation rules для inline-edit.
+     * @param  'text'|'number'|'select'|'date'|'textarea'|'switcher'  $as  Тип инпута.
+     * @param  array<int|string, string>  $options  Для as='select' — мапа value→label.
      */
-    public function editable(array $rules = []): self
+    public function editable(array $rules = [], string $as = 'text', array $options = []): self
     {
-        $this->editable = ['field' => $this->name, 'validation' => $rules];
+        $this->editable = [
+            'field' => $this->name,
+            'validation' => $rules,
+            'as' => $as,
+            'options' => $options,
+        ];
 
         return $this;
     }

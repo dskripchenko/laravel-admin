@@ -222,11 +222,16 @@ watch(
 /**
  * Имя index-роута для back-link и redirect после delete. Default —
  * `admin.resource.{slug}.index` (зарегистрирован buildResourceRoutes).
- * Host может override через prop indexRouteName.
+ * Manifest может задать `parent_slug` (см. Resource::parentSlug) — тогда
+ * back ведёт на index другого ресурса. Prop indexRouteName имеет
+ * максимальный приоритет.
  */
-const resolvedIndexRouteName = computed<string>(
-  () => props.indexRouteName ?? `admin.resource.${props.slug}.index`,
-)
+const resolvedIndexRouteName = computed<string>(() => {
+  if (props.indexRouteName) return props.indexRouteName
+  const parent = manifest.getResource(props.slug)?.parent_slug
+  if (parent) return `admin.resource.${parent}.index`
+  return `admin.resource.${props.slug}.index`
+})
 
 function onBack(): void {
   router.push({ name: resolvedIndexRouteName.value }).catch(() => {

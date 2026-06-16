@@ -46,6 +46,7 @@ import { useNavigationStore } from '../../stores/navigation'
 import { formatCell, type CellMeta } from './cellFormat'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
+import ResourceTreePage from './ResourceTreePage.vue'
 import { adminToast } from '../../stores/toast'
 import { useI18nStore } from '../../stores/i18n'
 
@@ -376,6 +377,27 @@ function columnIsEditable(key: string): boolean {
     }
   }
   return false
+}
+
+interface EditableMeta {
+  as: 'text' | 'number' | 'select' | 'date' | 'textarea' | 'switcher'
+  options: Record<string | number, string>
+}
+
+function columnEditableMeta(key: string): EditableMeta {
+  const cols = resourceMeta.value?.columns ?? []
+  for (const c of cols) {
+    const col = c as Record<string, unknown>
+    const k = String(col.key ?? col.name ?? '')
+    if (k === key) {
+      const editable = (col.editable ?? {}) as Record<string, unknown>
+      return {
+        as: ((editable.as as EditableMeta['as']) ?? 'text'),
+        options: (editable.options as Record<string | number, string> | undefined) ?? {},
+      }
+    }
+  }
+  return { as: 'text', options: {} }
 }
 const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta }>>(() => {
   const cols = resourceMeta.value?.columns ?? []
@@ -873,7 +895,13 @@ async function retryLoad(): Promise<void> {
 </script>
 
 <template>
-  <section class="admin-page admin-resource-index">
+  <ResourceTreePage
+    v-if="resourceMeta?.view_mode === 'tree'"
+    :slug="slug"
+    :title="title"
+    :subtitle="subtitle"
+  />
+  <section v-else class="admin-page admin-resource-index">
     <!-- Header — следует docs/design_handoff_laravel_admin/screens-resource.jsx
          (Resource Index): title-row с live-status, под ним counter,
          справа — scope dropdown / more-menu / Import / Создать. -->
@@ -1181,6 +1209,9 @@ async function retryLoad(): Promise<void> {
               :column="col.key"
               :value="(rowFromSlot(slotProps) ?? {})[col.key]"
               :editable="true"
+              :input-type="columnEditableMeta(col.key).as"
+              :options="columnEditableMeta(col.key).options"
+              :row-override="((rowFromSlot(slotProps) ?? {})._editable as Record<string, boolean> | undefined) ?? {}"
               @saved="(v) => {
                 const r = rowFromSlot(slotProps)
                 if (r) r[col.key] = v

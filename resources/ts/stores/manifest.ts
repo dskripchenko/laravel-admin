@@ -40,6 +40,14 @@ export interface ManifestResourceMeta {
   actions: ManifestNode[]
   searchable: string[]
   with: string[]
+  view_mode?: 'list' | 'tree'
+  hierarchy_parent_key?: string | null
+  /**
+   * Slug ресурса, чей index используется как "back" контекст для form/view
+   * страниц. Default null (back ведёт на собственный index). См.
+   * Resource::parentSlug() на бэкенде.
+   */
+  parent_slug?: string | null
   features: Record<string, unknown>
   screens?: Record<string, unknown>
 }
