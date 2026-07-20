@@ -151,15 +151,10 @@ class DashboardController extends ApiController
         // использовать его в `widgets()` для условной агрегации (см.
         // Screen::query()/$this->context()). Если screen не учитывает —
         // получим тот же набор виджетов.
-        if (method_exists($screen, 'withPeriod')) {
-            $screen->withPeriod($data['period'] ?? '30d');
-        }
+        $screen->withPeriod($data['period'] ?? '30d');
 
         $widgets = [];
         foreach ($screen->widgets() as $widget) {
-            if (! $widget instanceof Widget) {
-                continue;
-            }
             if (! $widget->isVisible()) {
                 continue;
             }

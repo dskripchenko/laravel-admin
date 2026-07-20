@@ -73,7 +73,7 @@ class Role extends Model
         }
 
         foreach ($permissions as $granted) {
-            if (! is_string($granted) || $granted === '') {
+            if ($granted === '') {
                 continue;
             }
             if (str_contains($granted, '*') && fnmatch($granted, $key)) {

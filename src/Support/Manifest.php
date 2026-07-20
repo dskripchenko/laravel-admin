@@ -102,9 +102,6 @@ final class Manifest
             }
             $widgets = [];
             foreach ($screen->widgets() as $widget) {
-                if (! $widget instanceof \Dskripchenko\LaravelAdmin\Widget\Widget) {
-                    continue;
-                }
                 if (! $widget->isVisible()) {
                     continue;
                 }

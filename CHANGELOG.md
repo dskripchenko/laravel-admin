@@ -5,6 +5,22 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-07-20
+
+### Changed
+
+- **Расширена матрица поддержки:** PHP 8.2–8.5 (было только 8.5) и Laravel
+  11/12/13 (было только 12). Зависимость `dskripchenko/laravel-api` поднята
+  до `^5.0`. CI гоняет всю матрицу (с карв-аутом для EOL Laravel 11).
+
+### Fixed
+
+- `SchemaIntrospector::relationType()` определял `MorphTo`/`MorphToMany` как
+  `BelongsTo`/`BelongsToMany` (подкласс проверялся после родителя) — порядок
+  исправлен.
+- Дополнена PHPDoc-схема `$col` в `FieldTypeInferrer::inferColumnCode()`
+  (`enum_values`).
+
 ## [1.6.0] - 2026-06-16
 
 ### Added

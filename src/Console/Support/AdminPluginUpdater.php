@@ -84,7 +84,7 @@ final class AdminPluginUpdater
         }
         $contents = preg_replace_callback(
             '/(\nuse [^;]+;\n)(?!\nuse )/u',
-            fn (array $m): string => $m[1]."\n".$useLine.($useLine === '' ? '' : "\n"),
+            fn (array $m): string => $m[1]."\n".$useLine."\n",
             $contents,
             1,
         ) ?? $contents;
@@ -242,11 +242,9 @@ PHP;
         // Найдём последний use в начале файла.
         if (preg_match_all('/^use [^;]+;/m', $contents, $matches, PREG_OFFSET_CAPTURE)) {
             $last = end($matches[0]);
-            if ($last !== false) {
-                $pos = $last[1] + strlen($last[0]);
+            $pos = $last[1] + strlen($last[0]);
 
-                return substr($contents, 0, $pos)."\n".$useLine.substr($contents, $pos);
-            }
+            return substr($contents, 0, $pos)."\n".$useLine.substr($contents, $pos);
         }
 
         // Иначе после namespace.

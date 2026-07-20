@@ -207,7 +207,7 @@ final class SchemaIntrospector
             'guarded' => $instance->getGuarded(),
             'hidden' => $instance->getHidden(),
             'casts' => $instance->getCasts(),
-            'dates' => method_exists($instance, 'getDates') ? $instance->getDates() : [],
+            'dates' => $instance->getDates(),
             'relations' => $relations,
             'soft_deletes' => $usesSoftDeletes,
         ];
@@ -274,15 +274,18 @@ final class SchemaIntrospector
 
     private function relationType(Relation $relation): string
     {
+        // Subclasses before parents: MorphTo extends BelongsTo and
+        // MorphToMany extends BelongsToMany, so they must be checked first,
+        // otherwise morph relations get mislabelled as their parent type.
         return match (true) {
+            $relation instanceof MorphTo => 'MorphTo',
             $relation instanceof BelongsTo => 'BelongsTo',
+            $relation instanceof MorphToMany => 'MorphToMany',
             $relation instanceof BelongsToMany => 'BelongsToMany',
             $relation instanceof HasMany => 'HasMany',
             $relation instanceof HasOne => 'HasOne',
-            $relation instanceof MorphTo => 'MorphTo',
             $relation instanceof MorphOne => 'MorphOne',
             $relation instanceof MorphMany => 'MorphMany',
-            $relation instanceof MorphToMany => 'MorphToMany',
             default => class_basename($relation),
         };
     }

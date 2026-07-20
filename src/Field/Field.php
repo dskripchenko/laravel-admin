@@ -125,8 +125,6 @@ abstract class Field implements Renderable
      * Использование:
      *   Input::make('config_root')->visibleWhen('driver', 'local')
      *   Input::make('s3_endpoint')->visibleWhen('driver', ['s3', 'minio'])
-     *
-     * @param  mixed  $expected
      */
     public function visibleWhen(string $field, mixed $expected): static
     {

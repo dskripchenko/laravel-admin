@@ -23,10 +23,10 @@
         "source": "https://github.com/dskripchenko/laravel-admin"
     },
     "require": {
-        "php": "^8.5",
+        "php": "^8.2",
         "ext-json": "*",
-        "laravel/framework": "^12.0",
-        "dskripchenko/laravel-api": "^4.2",
+        "laravel/framework": "^11.0 || ^12.0 || ^13.0",
+        "dskripchenko/laravel-api": "^5.0",
         "dskripchenko/laravel-translatable": "^2.0",
         "dskripchenko/laravel-delayed-process": "^2.0",
         "dskripchenko/php-array-helper": "^1.1"
@@ -37,11 +37,11 @@
         "laravel/sanctum": "^4",
         "mpdf/mpdf": "^8",
         "openspout/openspout": "^4",
-        "orchestra/testbench": "^10.0",
-        "pestphp/pest": "^3.0",
-        "pestphp/pest-plugin-laravel": "^3.0",
+        "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
+        "pestphp/pest": "^3.0 || ^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0 || ^4.0",
         "phpstan/phpstan": "^2.0",
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^11.0 || ^12.0"
     },
     "suggest": {
         "laravel/sanctum": "Для API-токенов администраторов в ProfileScreen",

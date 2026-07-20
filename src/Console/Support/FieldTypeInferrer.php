@@ -75,7 +75,7 @@ final class FieldTypeInferrer
     /**
      * Возвращает кодовую строку для TableColumn (для columns()).
      *
-     * @param  array{name: string, type: string, is_indexed: bool}  $col
+     * @param  array{name: string, type: string, is_indexed: bool, enum_values: ?list<string>}  $col
      */
     public function inferColumnCode(array $col): ?string
     {
