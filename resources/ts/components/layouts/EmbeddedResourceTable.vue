@@ -169,7 +169,7 @@ async function deleteRow(row: Record<string, unknown>): Promise<void> {
     items.value = items.value.filter((r) => rowId(r) !== id)
     selection.value.delete(id)
     selection.value = new Set(selection.value)
-  } catch (err) {
+  } catch {
     adminToast.error('Не удалось удалить строку.')
   }
 }
@@ -183,7 +183,7 @@ async function bulkDelete(): Promise<void> {
     await Promise.all(ids.map((id) => getAdminClient().post(`/${props.resource}/delete`, { id })))
     selection.value = new Set()
     await load()
-  } catch (err) {
+  } catch {
     adminToast.error('Не удалось удалить часть строк.')
     await load()
   }
@@ -206,7 +206,7 @@ async function commitDraft(): Promise<void> {
     await getAdminClient().post(`/${props.resource}/create`, draft.value)
     draft.value = null
     await load()
-  } catch (err) {
+  } catch {
     adminToast.error('Не удалось создать запись.')
   }
 }

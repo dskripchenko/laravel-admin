@@ -731,6 +731,10 @@ function rowId(row: Record<string, unknown>): string | number | null {
   return typeof v === 'string' || typeof v === 'number' ? v : null
 }
 
+function inlineRowId(slotProps: unknown): string | number {
+  return rowId(rowFromSlot(slotProps) ?? {}) ?? ''
+}
+
 function onRowClick(row: Record<string, unknown>): void {
   emit('row-click', row)
   // По умолчанию click по строке открывает view-screen записи.
@@ -1045,12 +1049,9 @@ async function retryLoad(): Promise<void> {
       v-if="index.loading && index.items.length === 0"
       class="admin-resource-index__loading"
     >
-      <UidSkeleton
-        v-if="index.slowLoading"
-        v-for="i in 8"
-        :key="i"
-        height="40px"
-      />
+      <template v-if="index.slowLoading">
+        <UidSkeleton v-for="i in 8" :key="i" height="40px" />
+      </template>
     </div>
     <UidErrorState
       v-else-if="index.hasError"
@@ -1205,7 +1206,7 @@ async function retryLoad(): Promise<void> {
             <InlineEditCell
               v-if="columnIsEditable(col.key)"
               :resource-slug="slug"
-              :row-id="(rowId(rowFromSlot(slotProps) ?? {}) ?? '') as string | number"
+              :row-id="inlineRowId(slotProps)"
               :column="col.key"
               :value="(rowFromSlot(slotProps) ?? {})[col.key]"
               :editable="true"

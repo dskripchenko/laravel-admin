@@ -5,6 +5,15 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-07-20
+
+### Fixed
+
+- Frontend lint/type errors: drop unused `catch` bindings, split `v-if`/`v-for`
+  on the loading skeleton into a `<template>` wrapper, and extract a typed
+  `inlineRowId()` helper (removing a template type-cast that ESLint mis-read as
+  a deprecated Vue filter).
+
 ## [1.7.0] - 2026-07-20
 
 ### Changed
