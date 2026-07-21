@@ -31,11 +31,18 @@ use Illuminate\Contracts\Foundation\Application;
  */
 final class Admin
 {
-    /** @var class-string[] */
+    /** @var array<string, class-string[]> panel id => widget classes */
     private array $widgets = [];
 
     /** @var class-string[] */
     private array $plugins = [];
+
+    /**
+     * Панель, в которую пишут registration-методы. PluginRegistry ставит её
+     * перед boot'ом плагинов каждой панели; для однопанельных хостов всегда
+     * 'admin' (BC).
+     */
+    private string $registrationPanel = 'admin';
 
     public function __construct(
         private readonly Application $app,
@@ -52,12 +59,30 @@ final class Admin
     public function permissions(ItemPermission|array $items): self
     {
         if ($items instanceof ItemPermission) {
-            $this->permissions->add($items);
+            $this->permissions->add($items, $this->registrationPanel);
         } else {
-            $this->permissions->addMany($items);
+            $this->permissions->addMany($items, $this->registrationPanel);
         }
 
         return $this;
+    }
+
+    /**
+     * Панельный контекст регистрации (v1.8 Panels). Все последующие
+     * registration-вызовы (resources/screen/menu/widgets/permissions)
+     * тегируются этой панелью.
+     */
+    public function setRegistrationPanel(string $panel): self
+    {
+        $this->registrationPanel = $panel;
+        $this->app->make(MenuRegistry::class)->setActivePanel($panel);
+
+        return $this;
+    }
+
+    public function registrationPanel(): string
+    {
+        return $this->registrationPanel;
     }
 
     public function getPermissionRegistry(): PermissionRegistry
@@ -73,9 +98,9 @@ final class Admin
     public function screen(string|array $class): self
     {
         if (is_array($class)) {
-            $this->screens->addMany($class);
+            $this->screens->addMany($class, $this->registrationPanel);
         } else {
-            $this->screens->add($class);
+            $this->screens->add($class, $this->registrationPanel);
         }
 
         return $this;
@@ -112,7 +137,7 @@ final class Admin
      */
     public function resources(array $classes): self
     {
-        $this->resourceRegistry->addMany($classes);
+        $this->resourceRegistry->addMany($classes, $this->registrationPanel);
 
         return $this;
     }
@@ -160,17 +185,24 @@ final class Admin
      */
     public function widgets(array $classes): self
     {
-        $this->widgets = array_unique([...$this->widgets, ...$classes]);
+        $panel = $this->registrationPanel;
+        $this->widgets[$panel] = array_unique([...($this->widgets[$panel] ?? []), ...$classes]);
 
         return $this;
     }
 
     /**
+     * Без аргумента — виджеты всех панелей (BC); с панелью — только её.
+     *
      * @return class-string[]
      */
-    public function getWidgets(): array
+    public function getWidgets(?string $panel = null): array
     {
-        return $this->widgets;
+        if ($panel !== null) {
+            return $this->widgets[$panel] ?? [];
+        }
+
+        return array_values(array_unique(array_merge(...array_values($this->widgets) ?: [[]])));
     }
 
     public function version(): string

@@ -53,6 +53,15 @@ class AdminApi extends BaseApi
     }
 
     /**
+     * Панель, которую обслуживает эта API-версия (v1.8 Panels).
+     * Subclasses для дополнительных панелей переопределяют (см. PanelApi).
+     */
+    public static function panelId(): string
+    {
+        return 'admin';
+    }
+
+    /**
      * Включить named-templates для @response.
      *
      * Тип не указан намеренно — родитель (OpenApiTrait в BaseApi) объявляет
@@ -196,16 +205,16 @@ class AdminApi extends BaseApi
         // Динамически добавляем по controller'у на каждый зарегистрированный Resource.
         // ResourceController — общий FQCN; per-Resource резолв идёт по ApiRequest::getApiControllerKey().
         $registry = app(ResourceRegistry::class);
-        $controllers = array_merge($controllers, (new ResourceCompiler)->compile($registry));
+        $controllers = array_merge($controllers, (new ResourceCompiler)->compile($registry, static::panelId()));
 
         // Settings: каждый SettingsResource = отдельный controller key 'settings.{slug}'.
         $settingsRegistry = app(SettingsRegistry::class);
-        $controllers = array_merge($controllers, (new SettingsCompiler)->compile($settingsRegistry));
+        $controllers = array_merge($controllers, (new SettingsCompiler)->compile($settingsRegistry, static::panelId()));
 
         // Screens: произвольные Screen-классы (custom forms / pages / dashboards вне CRUD).
         // GeneratedScreen и DashboardScreen subclasses исключаются (у них свои controllers).
         $screenRegistry = app(ScreenRegistry::class);
-        $controllers = array_merge($controllers, (new ScreenCompiler)->compile($screenRegistry));
+        $controllers = array_merge($controllers, (new ScreenCompiler)->compile($screenRegistry, static::panelId()));
 
         return [
             'middleware' => [

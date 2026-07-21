@@ -37,7 +37,7 @@ final class AdminAuth
             return $response;
         }
 
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
 
         if (! Auth::guard($guard)->check()) {
             return response()->json([

@@ -18,10 +18,13 @@ final class ScreenRegistry
     /** @var array<string, class-string<Screen>> slug => FQCN */
     private array $screens = [];
 
+    /** @var array<string, string> slug => panel id */
+    private array $panels = [];
+
     /**
      * @param  class-string<Screen>  $class
      */
-    public function add(string $class): void
+    public function add(string $class, string $panel = 'admin'): void
     {
         if (! is_subclass_of($class, Screen::class)) {
             throw new InvalidArgumentException(
@@ -38,15 +41,16 @@ final class ScreenRegistry
         }
 
         $this->screens[$slug] = $class;
+        $this->panels[$slug] = $panel;
     }
 
     /**
      * @param  list<class-string<Screen>>  $classes
      */
-    public function addMany(array $classes): void
+    public function addMany(array $classes, string $panel = 'admin'): void
     {
         foreach ($classes as $class) {
-            $this->add($class);
+            $this->add($class, $panel);
         }
     }
 
@@ -64,11 +68,26 @@ final class ScreenRegistry
     }
 
     /**
+     * Без аргумента — все экраны (BC); с панелью — только её скоуп.
+     *
      * @return array<string, class-string<Screen>>
      */
-    public function all(): array
+    public function all(?string $panel = null): array
     {
-        return $this->screens;
+        if ($panel === null) {
+            return $this->screens;
+        }
+
+        return array_filter(
+            $this->screens,
+            fn (string $slug): bool => ($this->panels[$slug] ?? 'admin') === $panel,
+            ARRAY_FILTER_USE_KEY,
+        );
+    }
+
+    public function panelOf(string $slug): ?string
+    {
+        return isset($this->screens[$slug]) ? ($this->panels[$slug] ?? 'admin') : null;
     }
 
     /**
@@ -82,5 +101,6 @@ final class ScreenRegistry
     public function clear(): void
     {
         $this->screens = [];
+        $this->panels = [];
     }
 }

@@ -23,6 +23,12 @@ final class ShellController
 {
     public function __invoke(Request $request, BootstrapBuilder $builder): View
     {
+        // v1.8 Panels: shell-роут каждой панели несёт её id в route-defaults.
+        $panelId = $request->route('adminPanel');
+        if (is_string($panelId)) {
+            $request->attributes->set('admin.panel', $panelId);
+        }
+
         $strategy = (string) config('admin.bootstrap.strategy', 'inline');
 
         $bootstrap = $strategy === 'inline'

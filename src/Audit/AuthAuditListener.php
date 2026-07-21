@@ -71,7 +71,7 @@ final class AuthAuditListener
     public function onPasswordReset(PasswordReset $event): void
     {
         $this->record('password.reset', $event->user instanceof Model ? $event->user : null, [
-            'guard' => (string) config('admin.auth.guard', 'admin'),
+            'guard' => \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard(),
         ]);
     }
 
@@ -83,7 +83,7 @@ final class AuthAuditListener
         if (! (bool) config('admin.audit.log_auth_events', true)) {
             return false;
         }
-        $expected = (string) config('admin.auth.guard', 'admin');
+        $expected = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
 
         // Failed/Login/Logout: $guard != null. Если guard'а нет — не наш event.
         return $guard === null || $guard === $expected;

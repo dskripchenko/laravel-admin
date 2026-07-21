@@ -93,7 +93,7 @@ final class SettingsController extends ApiController
             throw new NotFoundHttpException("Settings key `{$key}` malformed");
         }
         $slug = substr($key, strlen('settings_'));
-        $resource = $this->registry->resolve($slug);
+        $resource = $this->registry->resolve($slug, \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id);
         if ($resource === null) {
             throw new NotFoundHttpException("Settings `{$slug}` is not registered");
         }

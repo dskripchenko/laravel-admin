@@ -132,6 +132,6 @@ final class ImpersonationManager
 
     private function guard(): string
     {
-        return (string) config('admin.auth.guard', 'admin');
+        return \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
     }
 }

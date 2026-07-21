@@ -1149,7 +1149,7 @@ final class ResourceController extends ApiController
         /** @var string|null $key */
         $key = ApiRequest::getApiControllerKey();
         $slug = (string) ($key ?? '');
-        $resource = $this->registry->resolve($slug);
+        $resource = $this->registry->resolve($slug, \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id);
         if ($resource === null) {
             throw new NotFoundHttpException("Resource `{$slug}` is not registered");
         }

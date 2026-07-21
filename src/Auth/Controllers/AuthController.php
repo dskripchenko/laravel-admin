@@ -67,7 +67,7 @@ final class AuthController extends ApiController
             'remember' => ['nullable', 'boolean'],
         ]);
 
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $remember = (bool) ($data['remember'] ?? false);
 
         $credentials = ['email' => $data['email'], 'password' => $data['password']];
@@ -140,7 +140,7 @@ final class AuthController extends ApiController
      */
     private function completeLogin(Request $request, Authenticatable&Model $user, bool $remember): JsonResponse
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
 
         Auth::guard($guard)->login($user, $remember);
 
@@ -287,7 +287,7 @@ final class AuthController extends ApiController
      */
     public function logout(Request $request): JsonResponse
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
 
         Auth::guard($guard)->logout();
@@ -359,7 +359,7 @@ final class AuthController extends ApiController
         ]);
 
         $broker = (string) config('admin.auth.password_broker', 'admin_users');
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
 
         $status = Password::broker($broker)->reset(
             $data,
@@ -472,7 +472,7 @@ final class AuthController extends ApiController
      */
     public function resendEmailVerification(Request $request): JsonResponse
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
 
         if (! $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail) {
@@ -558,7 +558,7 @@ final class AuthController extends ApiController
             'user_id' => ['required', 'integer'],
         ]);
 
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $current = Auth::guard($guard)->user();
 
         if (! $current instanceof Authenticatable) {

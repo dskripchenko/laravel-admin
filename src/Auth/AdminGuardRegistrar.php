@@ -30,11 +30,45 @@ final class AdminGuardRegistrar
             return;
         }
 
-        $guard = (string) $this->config->get('admin.auth.guard', 'admin');
-        $provider = (string) $this->config->get('admin.auth.provider', 'admin_users');
-        $passwordBroker = (string) $this->config->get('admin.auth.password_broker', 'admin_users');
-        $model = (string) $this->config->get('admin.auth.model', \Dskripchenko\LaravelAdmin\Models\AdminUser::class);
-        $table = (string) $this->config->get('admin.auth.table', 'admin_users');
+        $this->apply(
+            guard: (string) $this->config->get('admin.auth.guard', 'admin'),
+            provider: (string) $this->config->get('admin.auth.provider', 'admin_users'),
+            passwordBroker: (string) $this->config->get('admin.auth.password_broker', 'admin_users'),
+            model: (string) $this->config->get('admin.auth.model', \Dskripchenko\LaravelAdmin\Models\AdminUser::class),
+            table: (string) $this->config->get('admin.auth.table', 'admin_users'),
+            resetTable: 'admin_password_resets',
+        );
+    }
+
+    /**
+     * Guard/provider/broker дополнительной панели (v1.8 Panels) из её
+     * auth-блока: admin.panels.{id}.auth.{strategy,guard,provider,model,…}.
+     */
+    public function registerFor(\Dskripchenko\LaravelAdmin\Panel\Panel $panel): void
+    {
+        $auth = $panel->auth;
+        if ((string) ($auth['strategy'] ?? 'dedicated') !== 'dedicated') {
+            return;
+        }
+
+        $this->apply(
+            guard: $panel->guard,
+            provider: (string) ($auth['provider'] ?? $panel->id.'_users'),
+            passwordBroker: (string) ($auth['password_broker'] ?? $panel->id.'_users'),
+            model: (string) ($auth['model'] ?? ''),
+            table: (string) ($auth['table'] ?? $panel->id.'_users'),
+            resetTable: (string) ($auth['password_reset_table'] ?? 'admin_password_resets'),
+        );
+    }
+
+    private function apply(
+        string $guard,
+        string $provider,
+        string $passwordBroker,
+        string $model,
+        string $table,
+        string $resetTable,
+    ): void {
 
         // Guard
         if ($this->config->get("auth.guards.{$guard}") === null) {
@@ -57,7 +91,7 @@ final class AdminGuardRegistrar
         if ($this->config->get("auth.passwords.{$passwordBroker}") === null) {
             $this->config->set("auth.passwords.{$passwordBroker}", [
                 'provider' => $provider,
-                'table' => 'admin_password_resets',
+                'table' => $resetTable,
                 'expire' => 60,
                 'throttle' => 60,
             ]);

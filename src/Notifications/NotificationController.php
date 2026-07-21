@@ -231,7 +231,7 @@ final class NotificationController extends ApiController
         if (! $this->tableExists()) {
             return null;
         }
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if (! $user instanceof Model) {
             return null;

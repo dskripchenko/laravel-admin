@@ -28,7 +28,7 @@ final class ThemeManager
     {
         $request ??= request();
 
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if ($user instanceof Model) {
             $stored = $user->getAttribute('theme');
@@ -77,7 +77,7 @@ final class ThemeManager
      */
     public function persist(string $theme): \Symfony\Component\HttpFoundation\Cookie
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if ($user instanceof Model) {
             $user->forceFill(['theme' => $theme])->save();

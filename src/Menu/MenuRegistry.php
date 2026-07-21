@@ -19,17 +19,37 @@ namespace Dskripchenko\LaravelAdmin\Menu;
  */
 final class MenuRegistry
 {
-    /** @var list<MenuNode> */
+    /** @var array<string, list<MenuNode>> panel id => корневые узлы */
     private array $roots = [];
 
-    private bool $autoFill = true;
+    /** @var array<string, bool> */
+    private array $autoFill = [];
 
-    /** @var list<string> */
+    /** @var array<string, list<string>> */
     private array $autoHidden = [];
+
+    /**
+     * Панель, в которую пишут registration-методы (ставится Admin/PluginRegistry
+     * на время boot'а плагинов панели). Read-методы без аргумента читают её же —
+     * для однопанельных хостов это неизменно 'admin' (BC).
+     */
+    private string $activePanel = 'admin';
+
+    public function setActivePanel(string $panel): self
+    {
+        $this->activePanel = $panel;
+
+        return $this;
+    }
+
+    public function activePanel(): string
+    {
+        return $this->activePanel;
+    }
 
     public function add(MenuNode $node): self
     {
-        $this->roots[] = $node;
+        $this->roots[$this->activePanel][] = $node;
 
         return $this;
     }
@@ -42,11 +62,11 @@ final class MenuRegistry
     public function under(string $parentKey, array|MenuNode $children): self
     {
         $list = is_array($children) ? $children : [$children];
-        $parent = self::findByKey($this->roots, $parentKey);
+        $parent = self::findByKey($this->roots[$this->activePanel] ?? [], $parentKey);
         if ($parent === null) {
             // Создаём stub-родителя (chain-friendly) — host может потом дополнить.
             $parent = MenuNode::make($parentKey, $parentKey);
-            $this->roots[] = $parent;
+            $this->roots[$this->activePanel][] = $parent;
         }
         foreach ($list as $child) {
             $parent->add($child);
@@ -62,14 +82,14 @@ final class MenuRegistry
      */
     public function withAuto(bool $enabled = true): self
     {
-        $this->autoFill = $enabled;
+        $this->autoFill[$this->activePanel] = $enabled;
 
         return $this;
     }
 
-    public function autoFillEnabled(): bool
+    public function autoFillEnabled(?string $panel = null): bool
     {
-        return $this->autoFill;
+        return $this->autoFill[$panel ?? $this->activePanel] ?? true;
     }
 
     /**
@@ -79,35 +99,37 @@ final class MenuRegistry
      */
     public function hideAuto(string $slug): self
     {
-        if (! in_array($slug, $this->autoHidden, true)) {
-            $this->autoHidden[] = $slug;
+        $panel = $this->activePanel;
+        if (! in_array($slug, $this->autoHidden[$panel] ?? [], true)) {
+            $this->autoHidden[$panel][] = $slug;
         }
 
         return $this;
     }
 
     /** @return list<string> */
-    public function autoHiddenSlugs(): array
+    public function autoHiddenSlugs(?string $panel = null): array
     {
-        return $this->autoHidden;
+        return $this->autoHidden[$panel ?? $this->activePanel] ?? [];
     }
 
     /** @return list<MenuNode> */
-    public function roots(): array
+    public function roots(?string $panel = null): array
     {
-        return $this->roots;
+        return $this->roots[$panel ?? $this->activePanel] ?? [];
     }
 
-    public function isEmpty(): bool
+    public function isEmpty(?string $panel = null): bool
     {
-        return $this->roots === [];
+        return $this->roots($panel) === [];
     }
 
     public function clear(): self
     {
         $this->roots = [];
-        $this->autoFill = true;
+        $this->autoFill = [];
         $this->autoHidden = [];
+        $this->activePanel = 'admin';
 
         return $this;
     }

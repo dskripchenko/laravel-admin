@@ -5,6 +5,43 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-07-21
+
+### Added — Panels
+
+Multiple independent admin surfaces on one core (Filament-Panels parity):
+
+- **`Panel` / `PanelRegistry`** — each panel is a full vertical: its own mount
+  path (including `''` — the site root), auth guard (+provider/model/password
+  broker, registered at runtime like the default one), laravel-api version
+  (`/api/{panel}/{controller}/{action}`), shell middleware stack and plugin
+  set. Top-level config keys form the implicit default `admin` panel —
+  single-panel hosts change nothing.
+- **Registry scoping** — resources, screens, settings, widgets, menu trees and
+  permission groups registered from a panel's plugins are tagged with the
+  panel id; manifests, menus, auto-fill and the permissions endpoint are built
+  per panel. Cross-panel resource access via another panel's API returns 404.
+- **`Panel\PanelApi`** — base Api class for extra panels: inherits the whole
+  system surface (bootstrap/auth/profile/uploads/notifications/resources),
+  compiles only its panel's resources and does not inherit the parent
+  version's method merge. Panel `middleware.api` entries are additions to the
+  shared base stack (which is panel-aware via `Panels::currentGuard()`).
+- **Root mount** — a panel with `path: ''` registers a catch-all that skips
+  configured `exclude_prefixes` (`api`, `admin`, host routes) via a negative
+  lookahead, and panels register from the most specific prefix down.
+- **`Panels::currentGuard()`** — all core guard reads (24 call sites) now
+  resolve through the current panel; bootstrap payload carries `panel`,
+  per-panel `baseUrl`/`apiUrl` (frontend already derives its router base from
+  them — the same SPA bundle serves every panel).
+
+### Fixed
+- `RunActionMiddleware` read per-action middleware from a hardcoded
+  `AdminApi` — now resolves the current request's Api version, so per-action
+  guards apply to panel APIs as well.
+
+### Dependencies
+- `dskripchenko/laravel-api` ^5.1.1 (protected `getNormalizedMethods`).
+
 ## [1.7.2] - 2026-07-21
 
 ### Fixed

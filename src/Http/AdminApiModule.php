@@ -25,9 +25,20 @@ final class AdminApiModule extends BaseModule
      */
     public function getApiVersionList(): array
     {
-        return [
-            'admin' => AdminApi::class,
-        ];
+        $versions = ['admin' => AdminApi::class];
+
+        /** @var \Dskripchenko\LaravelAdmin\Panel\PanelRegistry $panels */
+        $panels = app(\Dskripchenko\LaravelAdmin\Panel\PanelRegistry::class);
+        foreach ($panels->all() as $panel) {
+            if ($panel->id === 'admin') {
+                continue;
+            }
+            /** @var class-string<BaseApi> $apiClass */
+            $apiClass = $panel->apiClass;
+            $versions[$panel->id] = $apiClass;
+        }
+
+        return $versions;
     }
 
     /**
@@ -77,6 +88,11 @@ final class AdminApiModule extends BaseModule
      */
     public function getApiMiddleware(): array
     {
+        // laravel-api регистрирует middleware-ГРУППУ один раз на boot'е —
+        // это общий базовый стек для всех панелей (config admin.middleware.api;
+        // его мидлвары panel-aware через Panels::currentGuard()). Панельные
+        // ДОПОЛНЕНИЯ объявляются в admin.panels.{id}.middleware.api и
+        // мержатся в global-middleware методов PanelApi::getMethods().
         /** @var array<int, mixed> $middleware */
         $middleware = (array) config('admin.middleware.api', []);
 

@@ -39,6 +39,8 @@ export interface AdminBootstrap {
   user: AdminUser | null
   permissions: string[]
   manifestVersion: string | null
+  /** id панели (v1.8 Panels); отсутствует в bootstrap'ах старых бэкендов */
+  panel?: string
   plugins: string[]
   unread_notifications_count: number
   config: AdminBootstrapConfig

@@ -192,7 +192,7 @@ final class SavedViewsController extends ApiController
 
     private function user(): ?Model
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
 
         return $user instanceof Model ? $user : null;

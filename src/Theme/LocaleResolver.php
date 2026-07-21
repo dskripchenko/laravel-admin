@@ -79,7 +79,7 @@ final class LocaleResolver
      */
     public function persist(string $locale): \Symfony\Component\HttpFoundation\Cookie
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if ($user instanceof Model) {
             $user->forceFill(['locale' => $locale])->save();
@@ -90,7 +90,7 @@ final class LocaleResolver
 
     private function userLocale(): string
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if (! $user instanceof Model) {
             return '';

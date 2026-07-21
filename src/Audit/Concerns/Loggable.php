@@ -140,7 +140,7 @@ trait Loggable
 
     private static function actorMorph(): ?string
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
 
         return $user instanceof Model ? $user->getMorphClass() : null;
@@ -148,7 +148,7 @@ trait Loggable
 
     private static function actorKey(): null|int|string
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if (! $user instanceof Model) {
             return null;

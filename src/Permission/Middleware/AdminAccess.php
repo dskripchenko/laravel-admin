@@ -35,7 +35,7 @@ final class AdminAccess
             return $response;
         }
 
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
 
         if ($user === null) {

@@ -29,10 +29,10 @@ final class ScreenCompiler
     /**
      * @return array<string, array<string, mixed>>
      */
-    public function compile(ScreenRegistry $registry): array
+    public function compile(ScreenRegistry $registry, ?string $panel = null): array
     {
         $controllers = [];
-        foreach ($registry->all() as $slug => $class) {
+        foreach ($registry->all($panel) as $slug => $class) {
             if ($this->shouldSkip($class)) {
                 continue;
             }

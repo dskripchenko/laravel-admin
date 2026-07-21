@@ -58,6 +58,7 @@ final class AdminServiceProvider extends ServiceProvider
             Settings\Storage\KeyValueSettingsStorage::class,
         );
         $this->app->singleton(Plugin\PluginRegistry::class);
+        $this->app->singleton(Panel\PanelRegistry::class);
 
         // Tenancy биндим как `scoped()` (per-request), а не singleton —
         // иначе в long-running runtime'ах (Octane / queue workers) текущий
@@ -134,7 +135,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'admin');
 
-        $this->registerAdminGuard();
+        $this->registerAdminGuards();
         $this->registerCommands();
         $this->registerExceptionHandlers();
         $this->registerAuditListeners();
@@ -212,16 +213,25 @@ final class AdminServiceProvider extends ServiceProvider
      */
     private function bootPlugins(): void
     {
-        $configured = (array) config('admin.plugins', []);
-        if ($configured === []) {
-            return;
-        }
+        /** @var Panel\PanelRegistry $panels */
+        $panels = $this->app->make(Panel\PanelRegistry::class);
 
         /** @var Plugin\PluginRegistry $registry */
         $registry = $this->app->make(Plugin\PluginRegistry::class);
-        /** @var list<class-string<Plugin\AdminPlugin>> $classes */
-        $classes = array_values(array_filter($configured, 'is_string'));
-        $registry->addMany($classes);
+
+        $any = false;
+        foreach ($panels->all() as $panel) {
+            if ($panel->plugins === []) {
+                continue;
+            }
+            /** @var list<class-string<Plugin\AdminPlugin>> $classes */
+            $classes = $panel->plugins;
+            $registry->addMany($classes, $panel->id);
+            $any = true;
+        }
+        if (! $any) {
+            return;
+        }
 
         /** @var Admin $admin */
         $admin = $this->app->make(Admin::class);
@@ -264,27 +274,61 @@ final class AdminServiceProvider extends ServiceProvider
         );
     }
 
-    private function registerAdminGuard(): void
+    private function registerAdminGuards(): void
     {
         /** @var ConfigRepository $config */
         $config = $this->app->make(ConfigRepository::class);
-        (new AdminGuardRegistrar($config))->register();
+        /** @var Panel\PanelRegistry $panels */
+        $panels = $this->app->make(Panel\PanelRegistry::class);
+
+        $registrar = new AdminGuardRegistrar($config);
+        foreach ($panels->all() as $panel) {
+            // Дефолтная панель читает легаси admin.auth.* (BC),
+            // остальные — свой auth-блок из admin.panels.{id}.auth.
+            $panel->id === 'admin'
+                ? $registrar->register()
+                : $registrar->registerFor($panel);
+        }
     }
 
     private function registerRoutes(): void
     {
-        // SPA-shell под admin.path (например /admin/*).
-        Route::group([
-            'prefix' => (string) config('admin.path'),
-            'domain' => config('admin.domain'),
-            'as' => 'admin.',
-        ], function (): void {
-            $this->loadRoutesFrom(__DIR__.'/../routes/admin.php');
-        });
+        /** @var Panel\PanelRegistry $panels */
+        $panels = $this->app->make(Panel\PanelRegistry::class);
 
-        // API живёт отдельно, под admin.api_path (например /api/admin/*).
-        // Регистрация эндпоинтов через AdminApiModule + laravel-api делается на фазе P1.
-        // На фазе P0 — только префикс зарезервирован, роуты добавляются позже.
+        // Shell-роуты панелей: от специфичного префикса к корню, чтобы
+        // root-mount панель (path '') не перехватила чужие пути раньше времени.
+        $ordered = $panels->all();
+        uasort($ordered, static fn (Panel\Panel $a, Panel\Panel $b): int => strlen($b->path) <=> strlen($a->path));
+
+        foreach ($ordered as $panel) {
+            $anyPattern = '.*';
+            if ($panel->excludePrefixes !== []) {
+                // Catch-all, не проглатывающий чужие префиксы (api/, draft/, …).
+                $quoted = array_map(
+                    static fn (string $prefix): string => preg_quote(trim($prefix, '/'), '#'),
+                    $panel->excludePrefixes,
+                );
+                $anyPattern = '(?!(?:'.implode('|', $quoted).')(?:/|$)).*';
+            }
+
+            Route::group([
+                'prefix' => $panel->path,
+                'domain' => config('admin.domain'),
+                'as' => $panel->id.'.',
+            ], function () use ($panel, $anyPattern): void {
+                Route::get('{any?}', Http\Controllers\ShellController::class)
+                    ->where('any', $anyPattern)
+                    ->middleware($panel->id === 'admin'
+                        ? (array) config('admin.middleware.shell', [])
+                        : $panel->shellMiddleware())
+                    ->defaults('adminPanel', $panel->id)
+                    ->name('shell');
+            });
+        }
+
+        // API живёт отдельно: /api/{panel}/{controller}/{action} через
+        // AdminApiModule (версия laravel-api == id панели).
     }
 
     private function registerCommands(): void

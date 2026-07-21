@@ -19,8 +19,13 @@ final class PermissionRegistry
     /** @var array<string, ItemPermission> group_name => ItemPermission */
     private array $groups = [];
 
-    public function add(ItemPermission $item): void
+    /** @var array<string, string> group_name => panel id */
+    private array $panels = [];
+
+    public function add(ItemPermission $item, string $panel = 'admin'): void
     {
+        $this->panels[$item->group] ??= $panel;
+
         if (isset($this->groups[$item->group])) {
             // Merge items в существующую группу
             foreach ($item->items() as $key => $label) {
@@ -36,19 +41,28 @@ final class PermissionRegistry
     /**
      * @param  list<ItemPermission>  $items
      */
-    public function addMany(array $items): void
+    public function addMany(array $items, string $panel = 'admin'): void
     {
         foreach ($items as $item) {
-            $this->add($item);
+            $this->add($item, $panel);
         }
     }
 
     /**
+     * Без аргумента — все группы (BC); с панелью — только её скоуп.
+     *
      * @return list<ItemPermission>
      */
-    public function groups(): array
+    public function groups(?string $panel = null): array
     {
-        return array_values($this->groups);
+        if ($panel === null) {
+            return array_values($this->groups);
+        }
+
+        return array_values(array_filter(
+            $this->groups,
+            fn (ItemPermission $g): bool => ($this->panels[$g->group] ?? 'admin') === $panel,
+        ));
     }
 
     /**
@@ -89,5 +103,6 @@ final class PermissionRegistry
     public function clear(): void
     {
         $this->groups = [];
+        $this->panels = [];
     }
 }

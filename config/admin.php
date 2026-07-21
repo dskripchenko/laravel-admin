@@ -262,6 +262,40 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Panels (v1.8) — дополнительные панели
+    |--------------------------------------------------------------------------
+    | Каждая панель — независимая поверхность: свой mount-путь (включая ''
+    | — корень сайта), свой guard/provider, своя API-версия laravel-api
+    | (/api/{id}/...), свои middleware-стеки и набор плагинов. Top-level
+    | ключи этого конфига образуют неявную дефолтную панель `admin`.
+    |
+    | 'panels' => [
+    |     'client' => [
+    |         'path' => '',                       // mount-префикс ('' = корень)
+    |         'exclude_prefixes' => ['api', 'admin'], // не проглатывать чужие пути
+    |         'auth' => [
+    |             'strategy' => 'dedicated',
+    |             'guard' => 'client',
+    |             'provider' => 'client_users',
+    |             'model' => App\Models\ClientUser::class,
+    |             'table' => 'client_users',
+    |             'password_broker' => 'client_users',
+    |         ],
+    |         'api' => App\Admin\ClientApi::class, // extends Panel\PanelApi
+    |         'middleware' => [
+    |             'shell' => ['web', AdminLocale::class, AdminCspNonce::class],
+    |             // api — ДОПОЛНЕНИЯ к общему базовому стеку admin.middleware.api
+    |             // (он panel-aware: guard резолвится от панели запроса)
+    |             'api' => [SomePanelMiddleware::class],
+    |         ],
+    |         'plugins' => [App\Admin\ClientPanelPlugin::class],
+    |     ],
+    | ],
+    */
+    'panels' => [],
+
     'plugins' => [
         // \Dskripchenko\LaravelAdminStarter\AdminStarterPlugin::class,
         // \Dskripchenko\LaravelAdminMedia\AdminMediaPlugin::class,

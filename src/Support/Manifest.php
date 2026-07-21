@@ -40,10 +40,13 @@ final class Manifest
      *
      * @return array<string, mixed>
      */
-    public function build(string $locale = 'ru'): array
+    public function build(string $locale = 'ru', ?string $panel = null): array
     {
+        // v1.8 Panels: null — манифест дефолтной панели (BC).
+        $panel ??= 'admin';
+
         $resourcesPayload = [];
-        foreach ($this->resources->all() as $slug => $class) {
+        foreach ($this->resources->all($panel) as $slug => $class) {
             $resource = $this->resources->resolve($slug);
             if ($resource === null) {
                 continue;
@@ -55,7 +58,7 @@ final class Manifest
         // (внутри Resource) и DashboardScreen имеют отдельные controllers
         // и собственные секции в манифесте (`resources` / `dashboards`).
         $screensPayload = [];
-        foreach ($this->screens->all() as $slug => $class) {
+        foreach ($this->screens->all($panel) as $slug => $class) {
             if (is_subclass_of($class, \Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen::class)) {
                 continue;
             }
@@ -75,7 +78,7 @@ final class Manifest
         }
 
         $settingsPayload = [];
-        foreach ($this->settings->all() as $slug => $class) {
+        foreach ($this->settings->all($panel) as $slug => $class) {
             $settings = $this->settings->resolve($slug);
             if ($settings === null) {
                 continue;
@@ -89,7 +92,7 @@ final class Manifest
         // Widget::toArray() — `{kind, slug, type, title, size, ...}`,
         // фронт-renderer резолвит через registry по полю `type`.
         $dashboardsPayload = [];
-        foreach ($this->screens->all() as $slug => $class) {
+        foreach ($this->screens->all($panel) as $slug => $class) {
             // ScreenRegistry хранит class-strings; resolve через container,
             // чтобы DI инжектил зависимости (если у конкретного DashboardScreen
             // есть конструктор с типизированными аргументами).
@@ -117,6 +120,7 @@ final class Manifest
 
         $payload = [
             'locale' => $locale,
+            'panel' => $panel,
             'resources' => $resourcesPayload,
             'screens' => $screensPayload,
             'settings' => $settingsPayload,
@@ -146,8 +150,8 @@ final class Manifest
     /**
      * Текущая версия манифеста (без полной сборки) — для cheap ETag-сравнения.
      */
-    public function version(string $locale = 'ru'): string
+    public function version(string $locale = 'ru', ?string $panel = null): string
     {
-        return $this->build($locale)['version'];
+        return $this->build($locale, $panel)['version'];
     }
 }

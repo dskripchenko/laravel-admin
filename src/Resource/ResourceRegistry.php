@@ -25,12 +25,15 @@ final class ResourceRegistry
     /** @var array<string, class-string<ResourceBase>> slug => FQCN */
     private array $resources = [];
 
+    /** @var array<string, string> slug => panel id */
+    private array $panels = [];
+
     public function __construct(private readonly Application $app) {}
 
     /**
      * @param  class-string<ResourceBase>  $class
      */
-    public function add(string $class): void
+    public function add(string $class, string $panel = 'admin'): void
     {
         if (! is_subclass_of($class, ResourceBase::class)) {
             throw new InvalidArgumentException(
@@ -47,15 +50,16 @@ final class ResourceRegistry
         }
 
         $this->resources[$slug] = $class;
+        $this->panels[$slug] = $panel;
     }
 
     /**
      * @param  list<class-string<ResourceBase>>  $classes
      */
-    public function addMany(array $classes): void
+    public function addMany(array $classes, string $panel = 'admin'): void
     {
         foreach ($classes as $class) {
-            $this->add($class);
+            $this->add($class, $panel);
         }
     }
 
@@ -75,10 +79,13 @@ final class ResourceRegistry
     /**
      * Resolve Resource-instance через DI.
      */
-    public function resolve(string $slug): ?ResourceBase
+    public function resolve(string $slug, ?string $panel = null): ?ResourceBase
     {
         $class = $this->get($slug);
         if ($class === null) {
+            return null;
+        }
+        if ($panel !== null && ($this->panels[$slug] ?? 'admin') !== $panel) {
             return null;
         }
 
@@ -89,11 +96,26 @@ final class ResourceRegistry
     }
 
     /**
+     * Без аргумента — все ресурсы (BC); с панелью — только её скоуп.
+     *
      * @return array<string, class-string<ResourceBase>>
      */
-    public function all(): array
+    public function all(?string $panel = null): array
     {
-        return $this->resources;
+        if ($panel === null) {
+            return $this->resources;
+        }
+
+        return array_filter(
+            $this->resources,
+            fn (string $slug): bool => ($this->panels[$slug] ?? 'admin') === $panel,
+            ARRAY_FILTER_USE_KEY,
+        );
+    }
+
+    public function panelOf(string $slug): ?string
+    {
+        return isset($this->resources[$slug]) ? ($this->panels[$slug] ?? 'admin') : null;
     }
 
     /**
@@ -107,5 +129,6 @@ final class ResourceRegistry
     public function clear(): void
     {
         $this->resources = [];
+        $this->panels = [];
     }
 }

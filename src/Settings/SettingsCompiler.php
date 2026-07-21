@@ -18,10 +18,10 @@ final class SettingsCompiler
     /**
      * @return array<string, array<string, mixed>>
      */
-    public function compile(SettingsRegistry $registry): array
+    public function compile(SettingsRegistry $registry, ?string $panel = null): array
     {
         $controllers = [];
-        foreach ($registry->all() as $slug => $class) {
+        foreach ($registry->all($panel) as $slug => $class) {
             $resource = $registry->resolve($slug);
             if ($resource === null) {
                 continue;

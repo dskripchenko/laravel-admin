@@ -43,13 +43,15 @@ final class BootstrapBuilder
     {
         $request ??= request();
 
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current();
         $locale = $this->locales->resolve($request);
         $user = $this->serializeUser();
 
         return [
             'csrf' => csrf_token(),
-            'baseUrl' => url((string) config('admin.path', 'admin')),
-            'apiUrl' => url((string) config('admin.api_path', 'api/admin')),
+            'panel' => $panel->id,
+            'baseUrl' => url($panel->path),
+            'apiUrl' => url($panel->apiPath),
             'locale' => $locale,
             'availableLocales' => $this->locales->available(),
             'theme' => $this->theme->current($request),
@@ -60,7 +62,7 @@ final class BootstrapBuilder
             // Гостю манифест не считаем: login-странице он не нужен, а его
             // сборка выполняет resource-код хоста (options-запросы к данным,
             // которые до аутентификации могут быть недоступны/не тот контекст).
-            'manifestVersion' => $user === null ? null : $this->manifest->version($locale),
+            'manifestVersion' => $user === null ? null : $this->manifest->version($locale, $panel->id),
             'plugins' => $this->admin->getPlugins(),
             'unread_notifications_count' => $this->unreadNotificationsCount(),
             'translations' => $this->loadTranslations($locale),
@@ -118,7 +120,7 @@ final class BootstrapBuilder
      */
     private function serializeUser(): ?array
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if (! $user instanceof Model) {
             return null;
@@ -142,7 +144,7 @@ final class BootstrapBuilder
      */
     private function userPermissions(): array
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if (! $user instanceof Model) {
             return [];
@@ -163,7 +165,7 @@ final class BootstrapBuilder
             return 0;
         }
 
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
         if (! $user instanceof Model) {
             return 0;

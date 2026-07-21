@@ -42,7 +42,12 @@ final class RunActionMiddleware
             return $response;
         }
 
-        $methods = AdminApi::getPreparedMethods();
+        // v1.8 Panels: методы читаем у Api-класса ТЕКУЩЕЙ версии (панели),
+        // а не жёстко у AdminApi — иначе панельные per-action middleware
+        // (AdminAccess ресурсов панели) никогда бы не применялись.
+        /** @var class-string<\Dskripchenko\LaravelApi\Components\BaseApi> $apiClass */
+        $apiClass = \Dskripchenko\LaravelApi\Facades\ApiModule::getApi() ?? AdminApi::class;
+        $methods = $apiClass::getPreparedMethods();
         $controllerMiddleware = (array) Arr::get(
             $methods,
             "controllers.{$controllerKey}.middleware",

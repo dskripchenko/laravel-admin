@@ -83,7 +83,8 @@ final class SystemController extends ApiController
     public function manifest(Request $request): JsonResponse
     {
         $locale = (string) ($request->header('X-Admin-Locale') ?? config('admin.ui.default_locale', 'ru'));
-        $payload = $this->manifest->build($locale);
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current();
+        $payload = $this->manifest->build($locale, $panel->id);
         $etag = '"'.$payload['version'].'"';
 
         $ifNoneMatch = $request->header('If-None-Match');
@@ -108,7 +109,7 @@ final class SystemController extends ApiController
      */
     public function me(Request $request, ImpersonationManager $impersonation): JsonResponse
     {
-        $guard = (string) config('admin.auth.guard', 'admin');
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
 
         if (! $user instanceof Model) {
@@ -172,9 +173,11 @@ final class SystemController extends ApiController
         // Кастомное иерархическое меню (если host зарегистрировал через
         // Admin::menu()->add(...)). Узлы могут быть произвольно вложены и
         // содержать MenuNode::resource()/screen() с auto-resolve label/url/permissions.
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+
         $custom = [];
         $usedKeys = [];
-        foreach ($this->menuRegistry->roots() as $node) {
+        foreach ($this->menuRegistry->roots($panel) as $node) {
             $serialized = $node->toArray($this->resources, $this->screens);
             $custom[] = $serialized;
             self::collectUsedSlugs($serialized, $usedKeys);
@@ -184,8 +187,8 @@ final class SystemController extends ApiController
         // ещё не упомянуты в кастомном дереве. По default включено — пользователю
         // не нужно дублировать каждую Resource в menu()->add().
         $auto = [];
-        if ($this->menuRegistry->autoFillEnabled()) {
-            $auto = $this->buildAutoItems($usedKeys);
+        if ($this->menuRegistry->autoFillEnabled($panel)) {
+            $auto = $this->buildAutoItems($usedKeys, $panel);
         }
 
         return $this->success(['items' => array_merge($custom, $auto)]);
@@ -227,12 +230,12 @@ final class SystemController extends ApiController
      * @param  array<string, true>  $used
      * @return list<array<string, mixed>>
      */
-    private function buildAutoItems(array $used): array
+    private function buildAutoItems(array $used, string $panel = 'admin'): array
     {
         $items = [];
-        $hidden = array_fill_keys($this->menuRegistry->autoHiddenSlugs(), true);
+        $hidden = array_fill_keys($this->menuRegistry->autoHiddenSlugs($panel), true);
 
-        foreach ($this->resources->all() as $slug => $class) {
+        foreach ($this->resources->all($panel) as $slug => $class) {
             if (isset($used[$slug]) || isset($hidden[$slug])) {
                 continue;
             }
@@ -256,7 +259,7 @@ final class SystemController extends ApiController
             ];
         }
 
-        foreach ($this->screens->all() as $slug => $class) {
+        foreach ($this->screens->all($panel) as $slug => $class) {
             if (isset($used['screen.'.$slug])) {
                 continue;
             }
@@ -357,7 +360,13 @@ final class SystemController extends ApiController
      */
     public function permissions(Request $request): JsonResponse
     {
-        return $this->success(['groups' => $this->permissions->toArray()]);
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        $groups = array_map(
+            static fn ($g): array => $g->toArray(),
+            $this->permissions->groups($panel),
+        );
+
+        return $this->success(['groups' => $groups]);
     }
 
     /**
