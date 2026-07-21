@@ -9,8 +9,6 @@ use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
 use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Auth\Events\Failed;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -156,8 +154,6 @@ final class AuthController extends ApiController
 
         $request->session()->regenerate();
 
-        Event::dispatch(new Login($guard, $user, $remember));
-
         return $this->success([
             'user' => $this->serializeUser($user),
             'permissions' => $this->resolveUserPermissions($user),
@@ -302,10 +298,6 @@ final class AuthController extends ApiController
             $request->session()->regenerateToken();
         }
 
-        if ($user !== null) {
-            Event::dispatch(new Logout($guard, $user));
-        }
-
         return $this->success([]);
     }
 
@@ -397,7 +389,6 @@ final class AuthController extends ApiController
         $user = $provider?->retrieveByCredentials(['email' => $data['email']]);
         if ($user instanceof Authenticatable && $user instanceof Model) {
             Auth::guard($guard)->login($user);
-            Event::dispatch(new Login($guard, $user, false));
         }
 
         return $this->success([

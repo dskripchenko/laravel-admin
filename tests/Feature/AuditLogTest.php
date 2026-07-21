@@ -146,3 +146,22 @@ it('login auth event respects log_auth_events=false', function (): void {
 
     expect(AuditLog::count())->toBe(0);
 });
+
+it('records exactly one login and one logout row per real auth cycle', function (): void {
+    config()->set('admin.audit.enabled', true);
+    config()->set('admin.audit.log_auth_events', true);
+    AuditLog::query()->delete();
+
+    // SessionGuard сам диспатчит Login/Logout — контроллер не должен
+    // дублировать события (дубли давали по две audit-строки на вход/выход).
+    $this->postJson('/api/admin/auth/login', [
+        'email' => $this->admin->email,
+        'password' => 'secret',
+    ])->assertOk();
+
+    expect(AuditLog::query()->where('event', 'login')->count())->toBe(1);
+
+    $this->postJson('/api/admin/auth/logout')->assertOk();
+
+    expect(AuditLog::query()->where('event', 'logout')->count())->toBe(1);
+});
