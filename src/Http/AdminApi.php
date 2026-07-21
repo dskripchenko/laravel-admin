@@ -98,13 +98,17 @@ class AdminApi extends BaseApi
                 'actions' => [
                     'login' => [
                         'method' => ['post'],
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1'],
+                        // Третий параметр — prefix: у безымянных throttle'ов ключ
+                        // = sha1(domain|ip); без префикса счётчик делился бы с
+                        // глобальным ':60,1' (и любыми другими throttle'ами роута)
+                        // и сгорал от обычных API-запросов.
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1,auth'],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'logout' => ['method' => ['post']],
                     'forgotPassword' => [
                         'method' => ['post'],
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':3,5'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':3,5,forgot'],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'resetPassword' => [
@@ -117,17 +121,17 @@ class AdminApi extends BaseApi
                     ],
                     'resendEmailVerification' => [
                         'method' => ['post'],
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':3,1'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':3,1,verify'],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'twoFactorChallenge' => [
                         'method' => ['post'],
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1,auth'],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'twoFactorRecovery' => [
                         'method' => ['post'],
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1'],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1,auth'],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'startImpersonation' => ['method' => ['post']],

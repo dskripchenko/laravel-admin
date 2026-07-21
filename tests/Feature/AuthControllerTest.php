@@ -172,3 +172,28 @@ it('resetPassword fails on invalid token with 422 + token error', function (): v
     $response->assertStatus(422);
     expect($response->json('payload.messages'))->toHaveKey('token');
 });
+
+it('does not burn the login throttle with ordinary api traffic', function (): void {
+    AdminUser::create([
+        'name' => 'Throttle User',
+        'email' => 'throttle@example.com',
+        'password' => 'super-secret',
+    ]);
+
+    // Общий api-throttle (:60,1) инкрементит свой счётчик на каждый запрос;
+    // до фикса он делил ключ с логинным ':5,1' и логин 429-ил после
+    // нескольких ЛЮБЫХ api-запросов с того же IP.
+    for ($i = 0; $i < 6; $i++) {
+        $this->getJson('/api/admin/system/locales')->assertOk();
+    }
+
+    $this->postJson('/api/admin/auth/login', [
+        'email' => 'throttle@example.com',
+        'password' => 'wrong-password',
+    ])->assertStatus(401);
+
+    $this->postJson('/api/admin/auth/login', [
+        'email' => 'throttle@example.com',
+        'password' => 'super-secret',
+    ])->assertOk();
+});
