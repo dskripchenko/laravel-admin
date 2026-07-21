@@ -69,6 +69,29 @@ it('RelationSelect::eager без relation() — no-op', function (): void {
     expect($f->getAttribute('options'))->toBeNull();
 });
 
+it('RelationSelect::toArray auto-eager-загружает options когда они не заданы', function (): void {
+    TestResourceUserModel::create(['name' => 'Alice', 'email' => 'a@example.com', 'password' => 'x']);
+
+    $arr = RelationSelect::make('user_id')
+        ->relation(TestResourceUserModel::class, 'name', 'id')
+        ->toArray();
+
+    expect($arr['attributes']['options'])->toHaveCount(1);
+    expect($arr['attributes']['options'][0]['label'])->toBe('Alice');
+});
+
+it('RelationSelect::toArray не перетирает явно заданные options', function (): void {
+    TestResourceUserModel::create(['name' => 'Alice', 'email' => 'a@example.com', 'password' => 'x']);
+
+    $arr = RelationSelect::make('user_id')
+        ->relation(TestResourceUserModel::class, 'name', 'id')
+        ->options([7 => 'Manual'])
+        ->toArray();
+
+    expect($arr['attributes']['options'])->toHaveCount(1);
+    expect($arr['attributes']['options'][0]['label'])->toBe('Manual');
+});
+
 it('RelationTable has type=relation_table and config', function (): void {
     $f = RelationTable::make('comments')
         ->relation('comments')

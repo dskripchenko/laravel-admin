@@ -59,9 +59,14 @@ export function registerBuiltinComponents(): void {
       // Хранит value как Record<locale, string>; UI показывает табы по локалям.
       translatable: TranslatableField,
       'translatable-text': TranslatableField,
+      // Backend fieldType() отдаёт snake_case — регистрируем именно его;
+      // dash-варианты оставлены как исторические алиасы для host-кода.
+      morph_switcher: SelectField,
       'morph-switcher': SelectField,
+      relation_select: SelectField,
       relation: SelectField,
       cascader: SelectField,
+      tree_select: SelectField,
       'tree-select': SelectField,
       checkbox: CheckboxField,
       switch: CheckboxField,
@@ -70,9 +75,11 @@ export function registerBuiltinComponents(): void {
       date: DateField,
       datetime: DateField,
       datepicker: DateField,
+      date_range: DateField,
       'date-range': DateField,
       time: DateField,
       'time-picker': DateField,
+      color: TextField,
       'color-picker': TextField,
       file: FileField,
       image: FileField,

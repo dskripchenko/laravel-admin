@@ -62,6 +62,20 @@ final class RelationSelect extends Field
     }
 
     /**
+     * Options обязательны для рендера (SPA-компонент — обычный select, async
+     * search не реализован): если host не задал их явно (options()/eager()),
+     * подгружаем из relatedModel в момент сериализации.
+     */
+    public function toArray(): array
+    {
+        if (($this->attributes['options'] ?? []) === []) {
+            $this->eager();
+        }
+
+        return parent::toArray();
+    }
+
+    /**
      * Подгрузить options сразу (для small datasets — справочники).
      * Use with caution: для больших таблиц предпочесть SPA-запрос options.
      */

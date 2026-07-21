@@ -74,4 +74,15 @@ describe('component registry', () => {
       expect(hasLayout(t)).toBe(true)
     }
   })
+
+  it('builtin bundle covers backend snake_case fieldType() strings', async () => {
+    const { registerBuiltinComponents } = await import('./builtin')
+    registerBuiltinComponents()
+    // Backend Field::fieldType() — snake_case (см. core/src/Field/*.php);
+    // регрессия: были зарегистрированы только dash-алиасы и relation_select
+    // рендерился UnknownField-заглушкой.
+    for (const t of ['relation_select', 'morph_switcher', 'tree_select', 'date_range', 'color']) {
+      expect(hasField(t)).toBe(true)
+    }
+  })
 })
