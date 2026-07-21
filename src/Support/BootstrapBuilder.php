@@ -44,6 +44,7 @@ final class BootstrapBuilder
         $request ??= request();
 
         $locale = $this->locales->resolve($request);
+        $user = $this->serializeUser();
 
         return [
             'csrf' => csrf_token(),
@@ -54,9 +55,12 @@ final class BootstrapBuilder
             'theme' => $this->theme->current($request),
             'availableThemes' => $this->theme->available(),
             'brand' => (array) config('admin.brand', []),
-            'user' => $this->serializeUser(),
+            'user' => $user,
             'permissions' => $this->userPermissions(),
-            'manifestVersion' => $this->manifest->version($locale),
+            // Гостю манифест не считаем: login-странице он не нужен, а его
+            // сборка выполняет resource-код хоста (options-запросы к данным,
+            // которые до аутентификации могут быть недоступны/не тот контекст).
+            'manifestVersion' => $user === null ? null : $this->manifest->version($locale),
             'plugins' => $this->admin->getPlugins(),
             'unread_notifications_count' => $this->unreadNotificationsCount(),
             'translations' => $this->loadTranslations($locale),

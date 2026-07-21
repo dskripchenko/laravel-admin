@@ -28,6 +28,22 @@ it('build returns full payload for guest', function (): void {
     expect($payload['unread_notifications_count'])->toBe(0);
     expect($payload['baseUrl'])->toContain('/admin');
     expect($payload['apiUrl'])->toContain('/api/admin');
+    // Гостю манифест не собирается (login-странице не нужен; сборка манифеста
+    // исполняет resource-код хоста до аутентификации).
+    expect($payload['manifestVersion'])->toBeNull();
+});
+
+it('build computes manifestVersion only for authenticated admin', function (): void {
+    $admin = AdminUser::create([
+        'name' => 'Admin Name',
+        'email' => 'mv-'.uniqid().'@example.com',
+        'password' => 'secret',
+    ]);
+    $this->actingAs($admin, 'admin');
+
+    $payload = app(BootstrapBuilder::class)->build(Request::create('/'));
+
+    expect($payload['manifestVersion'])->toBeString()->not->toBe('');
 });
 
 it('build serializes logged-in user', function (): void {
