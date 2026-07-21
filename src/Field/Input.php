@@ -9,6 +9,7 @@ namespace Dskripchenko\LaravelAdmin\Field;
  *
  * `type` (HTML) — text по умолчанию, переопределяется через `->type('email')`.
  *
+ * @method $this type(string $type)
  * @method $this mask(string $mask)
  * @method $this prefix(string $prefix)
  * @method $this suffix(string $suffix)
