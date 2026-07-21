@@ -14,6 +14,8 @@ import { inject, provide, reactive, type InjectionKey } from 'vue'
 export interface FormStateContext {
   state: Record<string, unknown>
   errors: Record<string, string[]>
+  /** Контекст формы: FieldRenderer скрывает поля с visibility[mode]=false. */
+  mode?: 'create' | 'update' | 'view'
   setField: (name: string, value: unknown) => void
   getField: (name: string) => unknown
   setError: (name: string, messages: string[] | null) => void
@@ -36,6 +38,7 @@ const FormStateKey: InjectionKey<FormStateContext> = Symbol('admin.form-state')
 export function provideFormState(
   initial: Record<string, unknown> = {},
   initialErrors: Record<string, string[]> = {},
+  mode?: 'create' | 'update' | 'view',
 ): FormStateContext {
   const state = reactive(initial)
   const errors = reactive<Record<string, string[]>>({ ...initialErrors })
@@ -43,6 +46,7 @@ export function provideFormState(
   const ctx: FormStateContext = {
     state,
     errors,
+    mode,
     setField(name, value) {
       ;(state as Record<string, unknown>)[name] = value
       // Очистить ошибки этого поля при изменении — стандартный UX.

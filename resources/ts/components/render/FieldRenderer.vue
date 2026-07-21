@@ -23,6 +23,7 @@ export interface FieldNode extends Record<string, unknown> {
   type: string
   name: string
   reactive?: Record<string, unknown>
+  visibility?: { create?: boolean; update?: boolean; view?: boolean }
 }
 
 interface Props {
@@ -36,6 +37,15 @@ const component = computed(() => getField(props.node.type))
 // например, в Repeater'е c локальным state'ом). В таком случае visibility
 // всегда true — reactive не имеет смысла.
 const form = tryUseFormState()
+
+// Контекстная видимость: backend Field::onCreate(false)/onUpdate(false)
+// сериализуется в node.visibility — скрываем поле, если оно не предназначено
+// для текущего режима формы (mode отсутствует = рендерим всё, BC).
+const isContextVisible = computed<boolean>(() => {
+  const mode = form?.mode
+  if (!mode) return true
+  return props.node.visibility?.[mode] !== false
+})
 
 const isReactiveVisible = computed<boolean>(() => {
   const reactive = props.node.reactive
@@ -63,7 +73,7 @@ const fieldProps = computed(() => {
 </script>
 
 <template>
-  <template v-if="isReactiveVisible">
+  <template v-if="isContextVisible && isReactiveVisible">
     <component :is="component" v-if="component" v-bind="fieldProps" />
     <UnknownField v-else :type="node.type" :name="node.name" />
   </template>

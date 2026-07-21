@@ -69,3 +69,52 @@ describe('FieldRenderer', () => {
     expect(wrapper.find('.custom-field').text()).toBe('Custom!')
   })
 })
+
+describe('FieldRenderer visibility by form mode', () => {
+  beforeEach(() => {
+    clearRegistry()
+  })
+
+  const ModeWrapper = defineComponent({
+    props: {
+      node: { type: Object, required: true },
+      mode: { type: String, default: undefined },
+    },
+    setup(props) {
+      provideFormState({}, {}, props.mode as 'create' | 'update' | undefined)
+      return () => h(FieldRenderer, { node: props.node as { type: string; name: string } })
+    },
+  })
+
+  it('hides a field with visibility.update=false in update mode', () => {
+    registerBuiltinComponents()
+    const wrapper = mount(ModeWrapper, {
+      props: {
+        mode: 'update',
+        node: { type: 'text', name: 'password', visibility: { create: true, update: false } },
+      },
+    })
+    expect(wrapper.find('input').exists()).toBe(false)
+  })
+
+  it('shows the same field in create mode', () => {
+    registerBuiltinComponents()
+    const wrapper = mount(ModeWrapper, {
+      props: {
+        mode: 'create',
+        node: { type: 'text', name: 'password', visibility: { create: true, update: false } },
+      },
+    })
+    expect(wrapper.find('input').exists()).toBe(true)
+  })
+
+  it('renders everything when mode is not provided (BC)', () => {
+    registerBuiltinComponents()
+    const wrapper = mount(ModeWrapper, {
+      props: {
+        node: { type: 'text', name: 'password', visibility: { create: true, update: false } },
+      },
+    })
+    expect(wrapper.find('input').exists()).toBe(true)
+  })
+})

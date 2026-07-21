@@ -21,7 +21,8 @@ final class TestUserResource extends Resource
     {
         return [
             Input::make('name')->required()->title('Имя'),
-            Input::make('email')->type('email')->required()->title('Email'),
+            Input::make('email')->type('email')->required()->title('Email')
+                ->rules(['unique:users,email']),
             Input::make('password')->onCreate()->onUpdate(false)->required()->title('Пароль'),
         ];
     }

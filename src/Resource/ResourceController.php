@@ -605,7 +605,10 @@ final class ResourceController extends ApiController
             return $this->error(['errorKey' => 'not_found', 'message' => 'Record not found'], 404);
         }
 
-        $data = $request->validate($this->flattenRules($resource->validationRules('update')));
+        $data = $request->validate($this->withUniqueIgnore(
+            $this->flattenRules($resource->validationRules('update')),
+            $record->getKey(),
+        ));
         $data = $this->sanitizeWysiwyg($resource, $data);
         $translations = \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::extract(
             $resource->fields(),
@@ -1187,7 +1190,7 @@ final class ResourceController extends ApiController
             return [
                 'errorKey' => 'unique_violation',
                 'message' => 'Запись с такими данными уже существует',
-                'errors' => $errors !== [] ? $errors : (object) [],
+                'messages' => $errors !== [] ? $errors : (object) [],
             ];
         }
 
@@ -1200,7 +1203,7 @@ final class ResourceController extends ApiController
             return [
                 'errorKey' => 'not_null_violation',
                 'message' => 'Не заполнено обязательное поле',
-                'errors' => $errors !== [] ? $errors : (object) [],
+                'messages' => $errors !== [] ? $errors : (object) [],
             ];
         }
 
@@ -1213,7 +1216,7 @@ final class ResourceController extends ApiController
             return [
                 'errorKey' => 'foreign_key_violation',
                 'message' => 'Нарушена связь с другой записью (запись используется или ссылка некорректна)',
-                'errors' => $errors !== [] ? $errors : (object) [],
+                'messages' => $errors !== [] ? $errors : (object) [],
             ];
         }
 
@@ -1225,7 +1228,7 @@ final class ResourceController extends ApiController
         return [
             'errorKey' => 'db_error',
             'message' => $userMessage,
-            'errors' => (object) [],
+            'messages' => (object) [],
         ];
     }
 
@@ -1236,6 +1239,37 @@ final class ResourceController extends ApiController
     private function flattenRules(array $rules): array
     {
         return $rules;
+    }
+
+    /**
+     * На update unique-правила без явного except исключают текущую запись —
+     * иначе запись конфликтует сама с собой. Поддержаны строковая форма
+     * (`unique:table,column`) и Rule::unique() объекты.
+     *
+     * @param  array<string, list<mixed>>  $rulesByField
+     * @return array<string, list<mixed>>
+     */
+    private function withUniqueIgnore(array $rulesByField, mixed $id): array
+    {
+        foreach ($rulesByField as $field => $rules) {
+            foreach ($rules as $i => $rule) {
+                if ($rule instanceof \Illuminate\Validation\Rules\Unique) {
+                    $rulesByField[$field][$i] = (clone $rule)->ignore($id);
+
+                    continue;
+                }
+                if (is_string($rule) && str_starts_with($rule, 'unique:')) {
+                    $parts = explode(',', substr($rule, strlen('unique:')));
+                    if (count($parts) < 3) {
+                        $target = $parts[0];
+                        $column = $parts[1] ?? (string) $field;
+                        $rulesByField[$field][$i] = "unique:{$target},{$column},{$id}";
+                    }
+                }
+            }
+        }
+
+        return $rulesByField;
     }
 
     /**

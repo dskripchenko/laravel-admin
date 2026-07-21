@@ -81,7 +81,14 @@ function defaultsFromQuery(): Record<string, unknown> {
 
 // provideFormState ОБЯЗАН вызываться в setup() — связываем со store.state.
 // Сам form-context форвардит setField → store.setField (с auto-clear errors).
-const ctx = provideFormState(form.state, form.errors)
+// mode статичен для инстанса страницы: id в route → update, иначе create
+// (страница пересоздаётся при смене роута). FieldRenderer по нему скрывает
+// поля с visibility[mode]=false (Field::onCreate(false)/onUpdate(false)).
+const ctx = provideFormState(
+  form.state,
+  form.errors,
+  props.id !== null && props.id !== undefined ? 'update' : 'create',
+)
 
 // Watcher: при изменениях через ctx.setField (обёртка которой) — синхронизируем
 // в store, чтобы isDirty работало. Поскольку state.value === ctx.state (тот же

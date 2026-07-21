@@ -180,6 +180,39 @@ it('updates a record via /test-users/update', function (): void {
     expect($record->fresh()->name)->toBe('New Name');
 });
 
+it('rejects create with duplicate unique value — 422 with field message', function (): void {
+    TestResourceUserModel::create([
+        'name' => 'A', 'email' => 'taken@example.com', 'password' => Hash::make('x'),
+    ]);
+
+    $response = $this->postJson('/api/admin/test-users/create', [
+        'name' => 'B',
+        'email' => 'taken@example.com',
+        'password' => 'secret',
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.messages.email'))->not->toBeNull();
+});
+
+it('rejects update stealing another record unique value', function (): void {
+    TestResourceUserModel::create([
+        'name' => 'A', 'email' => 'first@example.com', 'password' => Hash::make('x'),
+    ]);
+    $second = TestResourceUserModel::create([
+        'name' => 'B', 'email' => 'second@example.com', 'password' => Hash::make('x'),
+    ]);
+
+    $response = $this->postJson('/api/admin/test-users/update', [
+        'id' => $second->id,
+        'name' => 'B',
+        'email' => 'first@example.com',
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.messages.email'))->not->toBeNull();
+});
+
 it('deletes a record via /test-users/delete', function (): void {
     $record = TestResourceUserModel::create([
         'name' => 'Delete Me',
