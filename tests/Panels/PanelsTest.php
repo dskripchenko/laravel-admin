@@ -156,3 +156,21 @@ it('client bootstrap serializes the client user and panel menu', function (): vo
     expect($keys)->toContain('resource.test-panel-projects')
         ->and($keys)->not->toContain('test-users');
 });
+
+it('logs a client user in through the panel login endpoint', function (): void {
+    TestPanelClientUser::create([
+        'name' => 'Login User',
+        'email' => 'login@example.com',
+        'password' => bcrypt('secret-password'),
+    ]);
+
+    $login = $this->postJson('/api/client/auth/login', [
+        'email' => 'login@example.com',
+        'password' => 'secret-password',
+    ]);
+
+    $login->assertOk();
+    $this->getJson('/api/client/system/me')->assertOk();
+    // Логин в client-панель не даёт admin-сессии.
+    $this->getJson('/api/admin/system/me')->assertStatus(401);
+});

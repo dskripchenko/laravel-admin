@@ -88,7 +88,7 @@ final class ImpersonationManager
         }
 
         $provider = Auth::createUserProvider(
-            (string) config('admin.auth.provider', 'admin_users'),
+            \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
         );
         $user = $provider?->retrieveById($impersonatorId);
 

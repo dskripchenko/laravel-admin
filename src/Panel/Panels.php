@@ -27,4 +27,19 @@ final class Panels
     {
         return self::current()->guard;
     }
+
+    public static function currentProvider(): string
+    {
+        return self::current()->authProvider();
+    }
+
+    public static function currentPasswordBroker(): string
+    {
+        return self::current()->passwordBroker();
+    }
+
+    public static function currentAuthModel(): string
+    {
+        return self::current()->authModel();
+    }
 }

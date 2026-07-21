@@ -119,7 +119,7 @@ final class SystemController extends ApiController
         $impersonator = null;
         if ($impersonation->isActive()) {
             $provider = Auth::createUserProvider(
-                (string) config('admin.auth.provider', 'admin_users'),
+                \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
             );
             $original = $provider?->retrieveById($impersonation->impersonatorId());
             if ($original instanceof Model) {

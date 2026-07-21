@@ -98,4 +98,34 @@ final class Panel
     {
         return $this->path === '';
     }
+
+    public function authProvider(): string
+    {
+        if ($this->id === 'admin') {
+            return (string) config('admin.auth.provider', 'admin_users');
+        }
+
+        return (string) ($this->auth['provider'] ?? $this->id.'_users');
+    }
+
+    public function passwordBroker(): string
+    {
+        if ($this->id === 'admin') {
+            return (string) config('admin.auth.password_broker', 'admin_users');
+        }
+
+        return (string) ($this->auth['password_broker'] ?? $this->id.'_users');
+    }
+
+    /**
+     * @return class-string|string
+     */
+    public function authModel(): string
+    {
+        if ($this->id === 'admin') {
+            return (string) config('admin.auth.model', \Dskripchenko\LaravelAdmin\Models\AdminUser::class);
+        }
+
+        return (string) ($this->auth['model'] ?? '');
+    }
 }

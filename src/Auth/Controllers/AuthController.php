@@ -74,7 +74,7 @@ final class AuthController extends ApiController
 
         // Resolve user without logging in — to check 2FA before establishing session.
         $provider = Auth::createUserProvider(
-            (string) config('admin.auth.provider', 'admin_users'),
+            \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
         );
         $user = $provider?->retrieveByCredentials($credentials);
 
@@ -127,7 +127,7 @@ final class AuthController extends ApiController
     private function resolveChallengeUser(int|string $userId): (Authenticatable&Model)|null
     {
         $provider = Auth::createUserProvider(
-            (string) config('admin.auth.provider', 'admin_users'),
+            \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
         );
         $user = $provider?->retrieveById($userId);
 
@@ -144,10 +144,15 @@ final class AuthController extends ApiController
 
         Auth::guard($guard)->login($user, $remember);
 
-        $user->forceFill([
-            'last_login_at' => now(),
-            'last_login_ip' => $request->ip(),
-        ])->save();
+        // Панельные user-модели (v1.8) не обязаны иметь last_login-колонки —
+        // пишем только когда они есть у таблицы.
+        if (\Illuminate\Support\Facades\Schema::connection($user->getConnectionName())
+            ->hasColumn($user->getTable(), 'last_login_at')) {
+            $user->forceFill([
+                'last_login_at' => now(),
+                'last_login_ip' => $request->ip(),
+            ])->save();
+        }
 
         $request->session()->regenerate();
 
@@ -324,7 +329,7 @@ final class AuthController extends ApiController
     {
         $request->validate(['email' => ['required', 'email']]);
 
-        $broker = (string) config('admin.auth.password_broker', 'admin_users');
+        $broker = \Dskripchenko\LaravelAdmin\Panel\Panels::currentPasswordBroker();
         Password::broker($broker)->sendResetLink($request->only('email'));
 
         return $this->success([
@@ -358,7 +363,7 @@ final class AuthController extends ApiController
             'password_confirmation' => ['required', 'string'],
         ]);
 
-        $broker = (string) config('admin.auth.password_broker', 'admin_users');
+        $broker = \Dskripchenko\LaravelAdmin\Panel\Panels::currentPasswordBroker();
         $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
 
         $status = Password::broker($broker)->reset(
@@ -387,7 +392,7 @@ final class AuthController extends ApiController
 
         // Авто-логин после успешного reset.
         $provider = Auth::createUserProvider(
-            (string) config('admin.auth.provider', 'admin_users'),
+            \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
         );
         $user = $provider?->retrieveByCredentials(['email' => $data['email']]);
         if ($user instanceof Authenticatable && $user instanceof Model) {
@@ -427,7 +432,7 @@ final class AuthController extends ApiController
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $modelClass = (string) config('admin.auth.model');
+        $modelClass = \Dskripchenko\LaravelAdmin\Panel\Panels::currentAuthModel();
         $user = $modelClass::find($request->input('id'));
 
         if (! $user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail
@@ -585,7 +590,7 @@ final class AuthController extends ApiController
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $modelClass = (string) config('admin.auth.model');
+        $modelClass = \Dskripchenko\LaravelAdmin\Panel\Panels::currentAuthModel();
         $target = $modelClass::find($data['user_id']);
 
         if (! $target instanceof Authenticatable || ! $target instanceof Model) {
