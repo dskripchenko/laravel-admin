@@ -16,9 +16,11 @@ use Dskripchenko\LaravelApi\Components\BaseModule;
  *   - имел собственный middleware-стек (config: admin.middleware.api).
  *
  * Версия одна — `admin` — и не экспонируется в URL (внутренний контракт
- * core↔SPA, см. ARCHITECTURE.md п.13.12).
+ * core↔SPA, см. ARCHITECTURE.md п.13.12). v1.8.1: класс открыт для
+ * наследования — host-модули, сшивающие admin с собственными версиями,
+ * мержат `parent::getApiVersionList()` (панели приходят автоматически).
  */
-final class AdminApiModule extends BaseModule
+class AdminApiModule extends BaseModule
 {
     /**
      * @return array<string, class-string<BaseApi>>

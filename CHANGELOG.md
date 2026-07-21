@@ -5,6 +5,14 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-07-21
+
+### Changed
+- `AdminApiModule` is no longer `final`: host modules that stitch the admin
+  API together with their own laravel-api versions now extend it and merge
+  `parent::getApiVersionList()` — panel versions arrive automatically instead
+  of being re-declared by hand.
+
 ## [1.8.0] - 2026-07-21
 
 ### Added — Panels
