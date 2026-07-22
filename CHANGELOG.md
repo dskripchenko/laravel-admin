@@ -5,6 +5,90 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-07-22
+
+Stable cut of the 1.8.x series: Panels are production-proven on the pilot
+project (printable — two independent surfaces, full E2E scenario run of both
+panels on staging). No code changes on top of 1.8.9 — this release pins the
+stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
+
+## [1.8.9] - 2026-07-22
+
+### Fixed
+- Panel user models implementing only the `hasAccess()` contract received an
+  empty permissions list in the SPA (login payload / bootstrap) — frontend
+  route guards redirected them to /forbidden while the backend authorized the
+  same requests. The shared `Permission\UserPermissions` resolver now hands
+  such models a `['*']` wildcard (authorization stays server-side); models
+  with `getAllPermissions()` are unchanged.
+
+## [1.8.8] - 2026-07-22
+
+### Fixed
+- Per-action middleware executed twice (route registration + a second
+  Pipeline pass in `RunActionMiddleware`) — every login burned 2+ throttle
+  hits, so 429 arrived on the 3rd attempt instead of the 6th.
+- Auth throttle buckets are per-panel now (`auth-{panelId}`): failed logins
+  into one panel no longer lock the other for the whole IP.
+- `Field::default()` now prefills create forms (npm 1.6.3): manifest defaults
+  are seeded into state+initial (no false isDirty; query-prefill wins) — a
+  required select with a default no longer fails validation out of the box.
+- A throttled login shows a human message instead of the raw axios error.
+
+## [1.8.7] - 2026-07-21
+
+### Added
+- Form-mode field visibility: `FieldRenderer` hides fields with
+  `visibility[mode]=false` — `Field::onCreate(false)/onUpdate(false)` now
+  affects rendering, not just validation (enables the create-password /
+  rotate-password split pattern).
+- `unique` rules on update automatically ignore the current record (string
+  rules and `Rule::unique` objects).
+
+### Fixed
+- `dbExceptionToValidation()` put field messages under `errors`, but the SPA
+  reads `payload.messages` — DB-level violations (unique/not-null/FK) never
+  highlighted the offending fields.
+
+## [1.8.6] - 2026-07-21
+
+### Fixed
+- The builtin frontend bundle registered only dash-cased component keys while
+  `Field::fieldType()` emits snake_case — `relation_select`,
+  `morph_switcher`, `tree_select`, `date_range`, `color` all rendered the
+  UnknownField placeholder. Snake_case keys are registered now (npm 1.6.2);
+  dash variants remain as aliases.
+- `RelationSelect::toArray()` auto-eager-loads options from the related model
+  when the host didn't set them — the SPA select has no async search, so an
+  option-less relation select was unusable.
+
+## [1.8.5] - 2026-07-21
+
+### Fixed
+- `SessionGuard` fires `Login`/`Logout` itself; the auth controller
+  dispatched the same events again (completeLogin, logout, password-reset
+  auto-login) — listeners such as the audit log received every auth event
+  twice.
+
+## [1.8.4] - 2026-07-21
+
+### Fixed
+- Unnamed `ThrottleRequests` middleware share one per-IP counter: the global
+  `:60,1` api throttle burned the `:5,1` login limit — a handful of ordinary
+  API requests produced 429 on login. Auth endpoints now pass explicit
+  throttle prefixes.
+
+## [1.8.3] - 2026-07-21
+
+### Fixed
+- Panel-aware auth: `AuthController`/`SystemController`/
+  `ImpersonationManager` resolved the user provider from
+  `config('admin.auth.provider')` regardless of the current panel — logins
+  into secondary panels always failed with invalid_credentials. Added
+  `Panel::authProvider()/passwordBroker()/authModel()` +
+  `Panels::current*()`; last_login columns are written only when the panel's
+  user table has them.
+
 ## [1.8.2] - 2026-07-21
 
 ### Fixed
