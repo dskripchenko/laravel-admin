@@ -20,6 +20,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
 import { ApiError, ValidationError } from '../api/errors'
+import { useManifestStore } from './manifest'
 
 export type FormMode = 'create' | 'edit' | 'view'
 
@@ -200,6 +201,10 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
       // После успешного save обновим initial = state, чтобы dirty=false.
       replaceObject(initial.value, { ...state.value })
       mode.value = 'edit'
+      // DB-driven options полей сериализованы в манифест — после мутации
+      // сбрасываем его кэш, иначе селекты (родитель группы и т.п.)
+      // протухают до полной перезагрузки страницы.
+      useManifestStore().invalidate()
       return newId
     } catch (err) {
       if (err instanceof ValidationError) {
@@ -227,6 +232,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     try {
       const client = getAdminClient()
       await client.post(`/${slug.value}/delete`, { id: recordId.value })
+      useManifestStore().invalidate()
     } catch (err) {
       if (err instanceof Error) error.value = err
       throw err

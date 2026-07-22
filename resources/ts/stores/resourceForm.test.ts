@@ -194,3 +194,38 @@ describe('seedDefaults', () => {
     expect(form.state.status).toBe('active')
   })
 })
+
+describe('manifest invalidation after mutations', () => {
+  let mock: MockAdapter
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    const c = createAdminClient({ baseURL: 'http://api.test' })
+    setAdminClient(c)
+    mock = new MockAdapter(c.raw)
+  })
+
+  afterEach(() => {
+    mock.reset()
+    clearAdminClient()
+  })
+
+  it('save busts the cached manifest so DB-driven options refresh', async () => {
+    const { useManifestStore } = await import('./manifest')
+    const manifest = useManifestStore()
+    // @ts-expect-error — прямое наполнение кэша для теста
+    manifest.manifest = { version: 'v1', resources: [], screens: [], settings: [], plugins: [] }
+
+    const form = useResourceFormStore()
+    form.prepareCreate('groups', {})
+    form.setField('name', 'G')
+
+    mock.onPost('/groups/create').reply(200, {
+      success: true,
+      payload: { record: { id: 42, name: 'G' } },
+    })
+
+    await form.save()
+    expect(manifest.manifest).toBeNull()
+  })
+})

@@ -5,6 +5,15 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [npm 1.9.2] - 2026-07-22
+
+### Fixed
+- DB-driven select options (model-backed `options()` serialized into the
+  manifest) went stale within an SPA session: creating a group didn't add it
+  to «Родитель»-selects until a full page reload. The resource form store now
+  invalidates the cached manifest after successful save/delete; the next
+  page mount refetches it.
+
 ## [npm 1.9.1] - 2026-07-22
 
 ### Fixed

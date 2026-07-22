@@ -119,6 +119,15 @@ export const useManifestStore = defineStore('admin-manifest', () => {
    * Загрузить manifest. Если уже загружен — возвращает cached.
    * Force=true принудительно обновит с сервера.
    */
+  /**
+   * Сбросить кэш манифеста. Вызывается после мутаций ресурсов: DB-driven
+   * options полей (selects из моделей) сериализуются в манифест и без
+   * сброса протухают до полной перезагрузки страницы.
+   */
+  function invalidate(): void {
+    manifest.value = null
+  }
+
   async function load(force = false): Promise<AdminManifest> {
     if (manifest.value !== null && !force) {
       return manifest.value
@@ -164,6 +173,7 @@ export const useManifestStore = defineStore('admin-manifest', () => {
     getScreen,
     getSettings,
     load,
+    invalidate,
     reset,
   }
 })
