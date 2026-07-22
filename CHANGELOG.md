@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [npm 1.8.0] - 2026-07-22
+
+### Added — F10 Dashboard complete
+- `TableWidget` — full resource-format table on dashboards (backend
+  `TableWidget` columns via `TableColumn::toArray()`; cells rendered with the
+  same `formatCell` presets as the resource list: date/money/boolean/…).
+- `IframeWidget` — sandboxed embed (`{src, height, sandbox}` from backend
+  `IframeWidget::data()`).
+- The builtin widget bundle now covers every backend `Widget::widgetType()`
+  string — `table` and `iframe` previously rendered the UnknownWidget
+  placeholder. New types automatically appear in AddWidgetDialog.
+
 ## [1.9.0] - 2026-07-22
 
 Stable cut of the 1.8.x series: Panels are production-proven on the pilot

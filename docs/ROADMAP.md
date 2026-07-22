@@ -41,7 +41,7 @@
 |---|---|---|
 | F1–F9 + F-refactor.0 | ✅ | на @dskripchenko/ui |
 | P22 ScreenPage, M1 AdminSidebarNode | ✅ | n-уровневое меню |
-| F10. Dashboard | ⏳ next | кастомные layout'ы виджетов per user |
+| F10. Dashboard | ✅ | npm 1.8.0 (2026-07-22): DashboardPage — 12-col grid, edit-mode (drag-reorder / resize-span / hide / remove), AddWidgetDialog из реестра, per-user персистенция (/dashboard/get|save|reset, DashboardLayout); полный набор widget-компонентов под backend-типы: stats/chart(+bar/donut)/recent_list/heatmap/gauge/markdown/**table** (resource-колонки + formatCell)/**iframe** (sandbox) |
 
 ## Sister-packs
 

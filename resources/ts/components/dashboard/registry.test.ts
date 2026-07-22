@@ -40,3 +40,16 @@ describe('dashboard widget registry', () => {
     }
   })
 })
+
+describe('builtin widget bundle covers backend widgetType() strings', () => {
+  beforeEach(() => clearWidgetRegistry())
+
+  it('registers every backend widget type', () => {
+    registerBuiltinWidgets()
+    // Backend Widget::widgetType() (см. core/src/Widget/*Widget.php).
+    // Регрессия: table и iframe рендерились UnknownWidget-заглушкой.
+    for (const t of ['stats', 'chart', 'recent_list', 'heatmap', 'gauge', 'markdown', 'table', 'iframe']) {
+      expect(hasWidget(t)).toBe(true)
+    }
+  })
+})

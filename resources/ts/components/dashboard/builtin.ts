@@ -11,6 +11,8 @@ import RecentTableWidget from './RecentTableWidget.vue'
 import HeatmapWidget from './HeatmapWidget.vue'
 import GaugeWidget from './GaugeWidget.vue'
 import MarkdownWidget from './MarkdownWidget.vue'
+import TableWidget from './TableWidget.vue'
+import IframeWidget from './IframeWidget.vue'
 
 /**
  * Регистрирует встроенные widget-компоненты + backend-aliases. Имена
@@ -34,5 +36,8 @@ export function registerBuiltinWidgets(): void {
     heatmap: HeatmapWidget,
     gauge: GaugeWidget,
     markdown: MarkdownWidget,
+    // Полнофункциональная таблица (resource-колонки) и iframe-встройка
+    table: TableWidget,
+    iframe: IframeWidget,
   })
 }
