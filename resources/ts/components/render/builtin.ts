@@ -19,6 +19,10 @@ import TranslatableField from '../fields/TranslatableField.vue'
 import WysiwygField from '../fields/WysiwygField.vue'
 import FileField from '../fields/FileField.vue'
 import ImageCropperField from '../fields/ImageCropperField.vue'
+import KeyValueField from '../fields/KeyValueField.vue'
+import RepeaterField from '../fields/RepeaterField.vue'
+import BuilderField from '../fields/BuilderField.vue'
+import RelationTableField from '../fields/RelationTableField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -84,6 +88,11 @@ export function registerBuiltinComponents(): void {
       file: FileField,
       image: FileField,
       image_cropper: ImageCropperField,
+      // Составные поля (backlog ROADMAP): рендерились UnknownField.
+      key_value: KeyValueField,
+      repeater: RepeaterField,
+      builder: BuilderField,
+      relation_table: RelationTableField,
     },
     layouts: {
       rows: RowsLayout,

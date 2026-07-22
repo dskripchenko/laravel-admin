@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [npm 1.9.0] - 2026-07-22
+
+### Added — complex field components (roadmap backlog closed)
+- `KeyValueField` (`key_value`) — object editor with key/value rows,
+  addable/removable, `allowedKeys` datalist.
+- `RepeaterField` (`repeater`) — list of sub-field groups with add/remove/
+  reorder, `minItems`/`maxItems`/`defaultItem`; each item edits in a nested
+  form state (`NestedFieldsGroup`).
+- `BuilderField` (`builder`) — typed content blocks from `Builder::block()`
+  definitions: add-from-catalog, remove, reorder, per-block nested sub-form.
+- `RelationTableField` (`relation_table`) — read-only related-records table
+  with resource-format columns and `formatCell` presets.
+
 ## [1.9.2] - 2026-07-22
 
 ### Added

@@ -49,12 +49,15 @@
 |---|---|
 | starter, search, media, health, pulse, jobs, tinymce, quill | ✅ v1.0 |
 
-## Backlog (не блокирует stable)
+## Backlog — закрыт 2026-07-22 (core v1.9.2 + npm 1.9.0)
 
-- SPA-компоненты сложных полей: `builder`, `repeater`, `key_value`,
-  `relation_table` (бэкенд-поля есть, фронт рендерит UnknownField).
-- `admin:user --super` консольная команда (создание супер-админа без tinker).
-- CSRF §3.1 (printable-пилот), rate-limit ключи с client-контекстом.
-- Session invalidation при смене пароля/выключении пользователя.
-- Composite-unique подсветка до submit (сейчас — DB-уровень → per-field 422
-  после submit).
+- ✅ SPA-компоненты сложных полей: `key_value`, `repeater`, `builder`,
+  `relation_table` (npm 1.9.0; вложенные под-формы через NestedFieldsGroup).
+- ✅ `admin:user --super` — назначает системную роль Super Admin (v1.9.2).
+- ✅ Session invalidation: смена пароля гасит остальные сессии
+  (AuthenticateSession-семантика в AdminAuth, 401 session_expired);
+  выключенная учётка теряет доступ на следующем запросе (v1.9.2).
+- ✅ Object-rules доезжают до валидатора (ValidationRulesExporter, v1.9.2) —
+  включило composite-unique per-field 422 до DB в printable (ScopedUniqueRule).
+- ✅ printable: CSRF-исключение сужено до stateless-поверхностей (§3.1);
+  rate-limit внешнего API ключуется credential-token'ом, internal — ip+client.
