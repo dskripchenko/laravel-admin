@@ -52,10 +52,16 @@ export const useAuthStore = defineStore('admin-auth', () => {
   function hasPermission(key: string): boolean {
     if (permissions.value.includes('*')) return true
     if (permissions.value.includes(key)) return true
+    // Glob-маски зеркалят backend Role::hasPermission (fnmatch): '*'
+    // матчит любые символы, включая точки — поддерживаются и хвостовые
+    // ('admin.users.*'), и серединные ('printable.*.view') шаблоны.
     return permissions.value.some((permission) => {
-      if (!permission.endsWith('.*')) return false
-      const prefix = permission.slice(0, -1) // 'admin.users.'
-      return key.startsWith(prefix)
+      if (!permission.includes('*')) return false
+      const pattern = permission
+        .split('*')
+        .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('.*')
+      return new RegExp(`^${pattern}$`).test(key)
     })
   }
 

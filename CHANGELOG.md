@@ -5,6 +5,14 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [npm 1.9.3] - 2026-07-22
+
+### Fixed
+- SPA permission matching now mirrors backend `Role::hasPermission`
+  (fnmatch): mid-pattern globs (`printable.*.view`) work in route guards
+  and menu filtering — previously only trailing `.*` masks matched, so
+  glob-роли locked users out of allowed sections.
+
 ## [npm 1.9.2] - 2026-07-22
 
 ### Fixed

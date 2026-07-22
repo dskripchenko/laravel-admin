@@ -239,3 +239,19 @@ describe('auth store', () => {
     })
   })
 })
+
+describe('glob permission matching mirrors backend fnmatch', () => {
+  it('supports mid-pattern globs like printable.*.view', async () => {
+    setActivePinia(createPinia())
+    const auth = useAuthStore()
+    auth.permissions = ['printable.*.view']
+
+    expect(auth.hasPermission('printable.sections.view')).toBe(true)
+    expect(auth.hasPermission('printable.storage.manage.view')).toBe(true)
+    expect(auth.hasPermission('printable.sections.create')).toBe(false)
+
+    auth.permissions = ['printable.templates.*']
+    expect(auth.hasPermission('printable.templates.update')).toBe(true)
+    expect(auth.hasPermission('printable.sections.update')).toBe(false)
+  })
+})
