@@ -86,3 +86,17 @@ describe('component registry', () => {
     }
   })
 })
+
+describe('host registrations are not clobbered by builtins', () => {
+  beforeEach(() => clearRegistry())
+
+  it('registerBuiltinComponents keeps a pre-registered host field', async () => {
+    const HostStub = defineComponent({ name: 'HostRepeater', template: '<i/>' })
+    registerField('repeater', HostStub)
+    const { registerBuiltinComponents } = await import('./builtin')
+    registerBuiltinComponents()
+    expect(getField('repeater')).toBe(HostStub)
+    // не-переопределённые типы регистрируются как обычно
+    expect(hasField('text')).toBe(true)
+  })
+})

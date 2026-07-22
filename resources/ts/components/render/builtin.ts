@@ -7,7 +7,7 @@
  *     registerBuiltinComponents()
  */
 
-import { registerComponents } from './registry'
+import { hasField, hasLayout, registerField, registerLayout } from './registry'
 import TextField from '../fields/TextField.vue'
 import TextAreaField from '../fields/TextAreaField.vue'
 import NumberField from '../fields/NumberField.vue'
@@ -29,8 +29,23 @@ import SectionLayout from '../layouts/SectionLayout.vue'
 import TabsLayout from '../layouts/TabsLayout.vue'
 import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
 
+/**
+ * Builtin-компоненты НЕ перекрывают уже зарегистрированные host'ом:
+ * registerField(...) до createAdminApp() имеет приоритет.
+ */
+function registerAbsent(
+  bundle: { fields?: Record<string, unknown>; layouts?: Record<string, unknown> },
+): void {
+  for (const [k, v] of Object.entries(bundle.fields ?? {})) {
+    if (!hasField(k)) registerField(k, v as never)
+  }
+  for (const [k, v] of Object.entries(bundle.layouts ?? {})) {
+    if (!hasLayout(k)) registerLayout(k, v as never)
+  }
+}
+
 export function registerBuiltinComponents(): void {
-  registerComponents({
+  registerAbsent({
     fields: {
       // Backend Field-классы из dskripchenko/laravel-admin отдают эти fieldType()
       // строки. Соответствие см. core/src/Field/{Input,TextArea,Select,...}.php.

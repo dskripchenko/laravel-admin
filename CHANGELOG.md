@@ -5,6 +5,15 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [npm 1.9.1] - 2026-07-22
+
+### Fixed
+- Builtin registration no longer clobbers host components: `registerField`/
+  `registerWidget` calls made before `createAdminApp()` keep priority
+  (builtins register only absent types). Previously the built-in bundle
+  silently overwrote host overrides (e.g. a host `repeater` or a rich
+  `markdown` dashboard widget).
+
 ## [npm 1.9.0] - 2026-07-22
 
 ### Added — complex field components (roadmap backlog closed)

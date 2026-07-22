@@ -2,7 +2,7 @@
  * Default-bundle с минимальным набором builtin widget-типов.
  */
 
-import { registerWidgets } from './registry'
+import { hasWidget, registerWidget } from './registry'
 import StatWidget from './StatWidget.vue'
 import BarChartWidget from './BarChartWidget.vue'
 import DonutChartWidget from './DonutChartWidget.vue'
@@ -20,7 +20,13 @@ import IframeWidget from './IframeWidget.vue'
  * (`stats`/`chart`/`recent_list` и т.д.); справа — frontend Vue-компонент.
  */
 export function registerBuiltinWidgets(): void {
-  registerWidgets({
+  // Не перекрываем host-регистрации, сделанные до createAdminApp().
+  const registerAbsent = (bundle: Record<string, unknown>): void => {
+    for (const [k, v] of Object.entries(bundle)) {
+      if (!hasWidget(k)) registerWidget(k, v as never)
+    }
+  }
+  registerAbsent({
     // Stat / Stats overview
     stat: StatWidget,
     stats: StatWidget,
