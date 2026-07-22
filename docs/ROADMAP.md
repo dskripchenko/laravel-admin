@@ -41,7 +41,7 @@
 |---|---|---|
 | F1–F9 + F-refactor.0 | ✅ | на @dskripchenko/ui |
 | P22 ScreenPage, M1 AdminSidebarNode | ✅ | n-уровневое меню |
-| F10. Dashboard | ✅ | npm 1.8.0 (2026-07-22): DashboardPage — 12-col grid, edit-mode (drag-reorder / resize-span / hide / remove), AddWidgetDialog из реестра, per-user персистенция (/dashboard/get|save|reset, DashboardLayout); полный набор widget-компонентов под backend-типы: stats/chart(+bar/donut)/recent_list/heatmap/gauge/markdown/**table** (resource-колонки + formatCell)/**iframe** (sandbox) |
+| F10. Dashboard | ✅ | npm 1.8.0+1.8.1 / composer 1.9.1 (2026-07-22, E2E 8/8 на стенде): DashboardPage — 12-col grid, edit-mode (drag-reorder / resize-span / hide / remove), AddWidgetDialog из реестра, per-user персистенция (/dashboard/get|save|reset, DashboardLayout); полный набор widget-компонентов под backend-типы: stats/chart(+bar/donut)/recent_list/heatmap/gauge/markdown/**table** (resource-колонки + formatCell)/**iframe** (sandbox); 1.8.1: сидирование draft при входе в edit (первый save слал widgets:[] → 422), кнопка «Сбросить» (reset был без UI), i18n тулбара |
 
 ## Sister-packs
 
