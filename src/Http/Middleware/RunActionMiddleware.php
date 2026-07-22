@@ -75,6 +75,17 @@ final class RunActionMiddleware
             array_merge($excludeController, $excludeAction),
         );
 
+        // Современный laravel-api сам вешает per-action middleware на route
+        // (getMiddlewareForAction при регистрации) — гонять их вторым проходом
+        // нельзя: stateful middleware (ThrottleRequests) сработали бы дважды
+        // за запрос. Пропускаем всё, что уже есть в route-стеке; Pipeline
+        // остаётся страховкой для контекстов без route-регистрации.
+        $routeMiddleware = $request->route()?->gatherMiddleware() ?? [];
+        $stack = array_filter(
+            $stack,
+            static fn ($mw): bool => ! in_array($mw, $routeMiddleware, true),
+        );
+
         if ($stack === []) {
             /** @var Response $response */
             $response = $next($request);

@@ -197,3 +197,20 @@ it('does not burn the login throttle with ordinary api traffic', function (): vo
         'password' => 'super-secret',
     ])->assertOk();
 });
+
+it('login consumes exactly one throttle hit per request', function (): void {
+    // Дубль был: laravel-api вешает per-action middleware на route, а
+    // RunActionMiddleware гонял их же вторым Pipeline'ом — каждый запрос
+    // съедал 2+ попытки и 429 приходил на 3-м логине вместо 6-го.
+    // TestCase глобально выключает throttle — здесь возвращаем.
+    $this->withMiddleware(Illuminate\Routing\Middleware\ThrottleRequests::class);
+
+    $key = 'auth-admin'.sha1('|127.0.0.1');
+    Illuminate\Support\Facades\RateLimiter::clear($key);
+
+    $this->postJson('/api/admin/auth/login', [
+        'email' => 'nobody@example.com', 'password' => 'wrong',
+    ])->assertStatus(401);
+
+    expect(Illuminate\Support\Facades\RateLimiter::attempts($key))->toBe(1);
+});

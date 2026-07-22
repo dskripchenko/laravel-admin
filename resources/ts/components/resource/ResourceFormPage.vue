@@ -108,6 +108,32 @@ const layoutNodes = computed<LayoutNode[]>(
   () => resourceMeta.value?.fields ?? [],
 )
 
+/**
+ * Backend Field::default() сериализуется в node.defaultValue, но state
+ * create-формы стартует пустым — required-select с дефолтом валился бы
+ * на «field is required». Сидируем дефолты один раз, когда манифест готов.
+ */
+function collectDefaults(nodes: LayoutNode[], out: Record<string, unknown>): void {
+  for (const node of nodes) {
+    const n = node as LayoutNode & {
+      kind?: string
+      name?: string
+      defaultValue?: unknown
+      items?: LayoutNode[]
+    }
+    if (Array.isArray(n.items)) collectDefaults(n.items, out)
+    if (n.kind !== 'field' || typeof n.name !== 'string') continue
+    if (n.defaultValue === null || n.defaultValue === undefined) continue
+    out[n.name] = n.defaultValue
+  }
+}
+
+function seedDefaultsFromManifest(): void {
+  const defaults: Record<string, unknown> = {}
+  collectDefaults(layoutNodes.value, defaults)
+  if (Object.keys(defaults).length > 0) form.seedDefaults(defaults)
+}
+
 const titleLabel = computed(() => {
   if (form.isCreate) return `Создать: ${resourceMeta.value?.label ?? props.slug}`
   return `${resourceMeta.value?.label ?? props.slug}: запись #${props.id}`
@@ -136,6 +162,7 @@ onMounted(async () => {
     await form.load(props.slug, props.id, 'edit').catch(() => undefined)
   } else {
     form.prepareCreate(props.slug, defaultsFromQuery())
+    seedDefaultsFromManifest()
   }
 })
 
@@ -146,6 +173,7 @@ watch(
       await form.load(nextSlug, nextId, 'edit').catch(() => undefined)
     } else {
       form.prepareCreate(nextSlug, defaultsFromQuery())
+      seedDefaultsFromManifest()
     }
   },
 )

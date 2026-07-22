@@ -54,7 +54,15 @@ async function submit(): Promise<void> {
     })
     emit('success', result)
   } catch (err) {
-    if (err instanceof ValidationError) {
+    const httpStatus =
+      err instanceof ApiError
+        ? err.status
+        : (err as { response?: { status?: number } })?.response?.status
+    if (httpStatus === 429) {
+      // Throttle-ответ Laravel не в API-envelope — без этой ветки пользователь
+      // видел сырое «Request failed with status code 429».
+      generalError.value = 'Слишком много попыток входа. Подождите минуту и попробуйте снова'
+    } else if (err instanceof ValidationError) {
       fieldErrors.value = err.fields
       generalError.value = err.firstFieldMessage()
     } else if (err instanceof NetworkError) {

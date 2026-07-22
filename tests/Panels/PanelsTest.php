@@ -174,3 +174,24 @@ it('logs a client user in through the panel login endpoint', function (): void {
     // Логин в client-панель не даёт admin-сессии.
     $this->getJson('/api/admin/system/me')->assertStatus(401);
 });
+
+it('panel login throttles use independent buckets', function (): void {
+    $this->withMiddleware(Illuminate\Routing\Middleware\ThrottleRequests::class);
+    $sig = sha1('|127.0.0.1');
+    Illuminate\Support\Facades\RateLimiter::clear('auth-admin'.$sig);
+    Illuminate\Support\Facades\RateLimiter::clear('auth-client'.$sig);
+
+    // Попытки в клиентскую панель не должны сжигать лимит админской.
+    for ($i = 0; $i < 5; $i++) {
+        $this->postJson('/api/client/auth/login', [
+            'email' => 'nobody@example.com', 'password' => 'wrong',
+        ])->assertStatus(401);
+    }
+    $this->postJson('/api/client/auth/login', [
+        'email' => 'nobody@example.com', 'password' => 'wrong',
+    ])->assertStatus(429);
+
+    $this->postJson('/api/admin/auth/login', [
+        'email' => 'nobody@example.com', 'password' => 'wrong',
+    ])->assertStatus(401);
+});

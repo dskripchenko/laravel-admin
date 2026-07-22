@@ -174,3 +174,23 @@ describe('useResourceFormStore', () => {
     expect(s.isDirty).toBe(true)
   })
 })
+
+describe('seedDefaults', () => {
+  it('fills state and initial without making the form dirty', () => {
+    const form = useResourceFormStore()
+    form.prepareCreate('clients', {})
+    form.seedDefaults({ status: 'provisioning', enabled: true })
+
+    expect(form.state.status).toBe('provisioning')
+    expect(form.state.enabled).toBe(true)
+    expect(form.isDirty).toBe(false)
+  })
+
+  it('does not override query-prefilled values', () => {
+    const form = useResourceFormStore()
+    form.prepareCreate('clients', { status: 'active' })
+    form.seedDefaults({ status: 'provisioning' })
+
+    expect(form.state.status).toBe('active')
+  })
+})

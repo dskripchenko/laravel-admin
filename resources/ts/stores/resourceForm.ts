@@ -148,6 +148,20 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     errors.value = { ...next }
   }
 
+  /**
+   * Засеять дефолты полей (Field::default() из манифеста) на create-форме.
+   * Пишет и в state, и в initial — дефолт не считается «несохранённым
+   * изменением». Уже заданные значения (query-prefill) не трогает.
+   */
+  function seedDefaults(values: Record<string, unknown>): void {
+    for (const [name, value] of Object.entries(values)) {
+      if (state.value[name] === undefined) {
+        state.value[name] = value
+        initial.value[name] = value
+      }
+    }
+  }
+
   function clearErrors(): void {
     errors.value = {}
   }
@@ -245,6 +259,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     load,
     setField,
     setErrors,
+    seedDefaults,
     clearErrors,
     save,
     destroy,
