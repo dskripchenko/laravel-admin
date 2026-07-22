@@ -274,7 +274,9 @@ abstract class Field implements Renderable
             'placeholder' => $this->attributes['placeholder'] ?? null,
             'help' => $this->attributes['help'] ?? null,
             'required' => (bool) ($this->attributes['required'] ?? false),
-            'rules' => $this->rules,
+            // В манифест едут только строковые правила: object-rules
+            // (Rule::unique и т.п.) не JSON-сериализуемы и нужны только валидатору.
+            'rules' => array_values(array_filter($this->rules, 'is_string')),
             'options' => $this->options,
             'visibility' => [
                 'create' => $this->onCreate ?? true,

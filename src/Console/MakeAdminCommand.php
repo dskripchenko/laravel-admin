@@ -17,8 +17,8 @@ use Throwable;
  *
  * Создаёт администратора. Без аргументов — interactive (Laravel Prompts).
  *
- * Флаг --super на фазе P0 ничего пока не делает — RBAC появится в P2.
- * Зарезервирован для будущего: с ролями он будет назначать `Super Admin`.
+ * `--super` назначает системную роль Super Admin (permissions `['*']`;
+ * создаётся идемпотентно по slug `super-admin`).
  */
 final class MakeAdminCommand extends Command
 {
@@ -78,7 +78,18 @@ final class MakeAdminCommand extends Command
         $this->info("Администратор создан: {$email} (id={$admin->getKey()})");
 
         if ($this->option('super')) {
-            $this->warn('Опция --super пока не реализована (фаза P2). Роль Super Admin не назначена.');
+            if (! method_exists($admin, 'assignRole')) {
+                $this->error('Модель не использует HasAdminAccess — роль не назначена.');
+
+                return self::FAILURE;
+            }
+
+            $role = \Dskripchenko\LaravelAdmin\Permission\Models\Role::query()->firstOrCreate(
+                ['slug' => 'super-admin'],
+                ['name' => 'Super Admin', 'permissions' => ['*'], 'is_system' => true],
+            );
+            $admin->assignRole($role);
+            $this->info('Назначена роль Super Admin (permissions: *)');
         }
 
         return self::SUCCESS;

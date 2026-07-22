@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.2] - 2026-07-22
+
+### Added
+- `admin:user --super` actually assigns the system Super Admin role
+  (idempotent by `super-admin` slug, permissions `['*']`, `is_system`).
+- Session hardening: `AdminAuth` re-validates a session-stored password hash
+  on every request — changing a user's password elsewhere invalidates their
+  other sessions (own session survives a profile password change;
+  impersonation refreshes the hash on start/stop). Deactivated accounts
+  (`is_active`/`enabled` = false) are cut on the next request, not only at
+  login.
+
+### Fixed
+- `ValidationRulesExporter` silently dropped object rules (`Rule::unique()`
+  et al.) — they never reached the validator. Objects now pass through to
+  validation; the manifest keeps serializing string rules only.
+
 ## [npm 1.8.1] - 2026-07-22
 
 ### Fixed — F10 Dashboard polish (staging E2E findings)

@@ -130,6 +130,15 @@ class ProfileController extends ApiController
 
         $user->forceFill(['password' => $request->input('password')])->save();
 
+        // Обновляем session-hash СВОЕЙ сессии — иначе AdminAuth счёл бы её
+        // устаревшей на следующем запросе. Остальные сессии юзера гаснут.
+        if ($request->hasSession()) {
+            $request->session()->put(
+                'password_hash_'.\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard(),
+                (string) $user->getAttribute('password'),
+            );
+        }
+
         Event::dispatch(new PasswordReset($user));
 
         return $this->success([]);

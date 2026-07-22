@@ -26,7 +26,7 @@ final class ValidationRulesExporter
     /**
      * @param  list<Field>  $fields
      * @param  string  $context  create|update|view — фильтрует по appliesTo()
-     * @return array<string, list<string>>
+     * @return array<string, list<mixed>>
      */
     public static function export(array $fields, string $context = 'create'): array
     {
@@ -49,11 +49,15 @@ final class ValidationRulesExporter
     }
 
     /**
-     * @return list<string>
+     * @return list<mixed>
      */
     private static function rulesFor(Field $field): array
     {
-        $explicit = self::onlyStringRules($field->getRules());
+        $all = $field->getRules();
+        $explicit = self::onlyStringRules($all);
+        // Object-rules (Rule::unique() и т.п.) идут в валидатор как есть —
+        // раньше экспортёр молча их отбрасывал и они не работали вовсе.
+        $objects = array_values(array_filter($all, static fn ($r): bool => ! is_string($r)));
         $implicit = self::implicitRulesByType($field);
 
         // required attribute сам по себе подтягивает rule (на случай если
@@ -71,7 +75,7 @@ final class ValidationRulesExporter
             }
         }
 
-        return array_values(array_unique($merged));
+        return [...array_unique($merged), ...$objects];
     }
 
     /**

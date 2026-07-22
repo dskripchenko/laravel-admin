@@ -46,6 +46,41 @@ final class AdminAuth
             ], Response::HTTP_UNAUTHORIZED);
         }
 
+        $user = Auth::guard($guard)->user();
+
+        // Выключенная учётка гаснет на первом же запросе, а не только на login
+        // (is_active — AdminUser, enabled — панельные user-модели).
+        if ($user !== null
+            && ($user->getAttribute('is_active') === false || $user->getAttribute('enabled') === false)) {
+            Auth::guard($guard)->logout();
+
+            return response()->json([
+                'success' => false,
+                'payload' => ['errorKey' => 'account_inactive', 'message' => 'Учётная запись отключена'],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        // Смена пароля инвалидирует остальные сессии (механика Laravel
+        // AuthenticateSession, но JSON-first): в session хранится hash пароля
+        // на момент входа; не совпал с текущим — сессия чужая/устаревшая.
+        if ($user !== null && $request->hasSession()) {
+            $key = 'password_hash_'.$guard;
+            $hash = (string) $user->getAuthPassword();
+            $stored = $request->session()->get($key);
+            if (is_string($stored) && $stored !== $hash) {
+                Auth::guard($guard)->logout();
+                $request->session()->invalidate();
+
+                return response()->json([
+                    'success' => false,
+                    'payload' => ['errorKey' => 'session_expired', 'message' => 'Пароль был изменён — войдите заново'],
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+            if ($stored === null) {
+                $request->session()->put($key, $hash);
+            }
+        }
+
         /** @var SymfonyResponse $response */
         $response = $next($request);
 

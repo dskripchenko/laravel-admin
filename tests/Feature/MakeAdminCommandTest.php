@@ -20,14 +20,14 @@ it('creates an admin via non-interactive arguments', function (): void {
     expect(Hash::check('super-secret-password', $admin->password))->toBeTrue();
 });
 
-it('warns about --super flag being not implemented yet', function (): void {
+it('reports the Super Admin role assignment with --super', function (): void {
     $this->artisan('admin:user', [
         'name' => 'Super',
         'email' => 'super@test.local',
         'password' => 'super-secret-password',
         '--super' => true,
     ])
-        ->expectsOutputToContain('пока не реализована')
+        ->expectsOutputToContain('Super Admin')
         ->assertSuccessful();
 });
 
@@ -43,4 +43,24 @@ it('fails on duplicate email', function (): void {
         'email' => 'dup@test.local',
         'password' => 'super-secret-password',
     ])->assertFailed();
+});
+
+it('assigns the system Super Admin role with --super', function (): void {
+    $this->artisan('admin:user', [
+        'name' => 'Root', 'email' => 'root-super@example.com', 'password' => 'secret-pass',
+        '--super' => true,
+    ])->assertExitCode(0);
+
+    $admin = AdminUser::where('email', 'root-super@example.com')->firstOrFail();
+    expect($admin->getAllPermissions())->toContain('*');
+
+    $role = Dskripchenko\LaravelAdmin\Permission\Models\Role::where('slug', 'super-admin')->firstOrFail();
+    expect($role->is_system)->toBeTrue();
+
+    // Идемпотентность роли: второй запуск не создаёт дубль.
+    $this->artisan('admin:user', [
+        'name' => 'Root2', 'email' => 'root-super2@example.com', 'password' => 'secret-pass',
+        '--super' => true,
+    ])->assertExitCode(0);
+    expect(Dskripchenko\LaravelAdmin\Permission\Models\Role::where('slug', 'super-admin')->count())->toBe(1);
 });

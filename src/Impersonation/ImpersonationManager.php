@@ -70,6 +70,9 @@ final class ImpersonationManager
 
         Session::put(self::SESSION_KEY, $impersonator->getKey());
         Auth::guard($guard)->login($target);
+        // Сессия легитимно сменила юзера — обновляем hash для AdminAuth
+        // (иначе session-invalidation счёл бы её устаревшей).
+        Session::put('password_hash_'.$guard, (string) $target->getAuthPassword());
     }
 
     /**
@@ -94,6 +97,7 @@ final class ImpersonationManager
 
         if ($user instanceof Authenticatable) {
             Auth::guard($this->guard())->login($user);
+            Session::put('password_hash_'.$this->guard(), (string) $user->getAuthPassword());
         }
 
         return $user;
