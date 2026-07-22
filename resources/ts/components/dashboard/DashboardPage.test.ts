@@ -100,3 +100,21 @@ describe('DashboardPage', () => {
     expect(w.text()).toContain('123')
   })
 })
+
+describe('edit-mode draft seeding (первый save без persisted layout)', () => {
+  it('seedDraft заполняет пустой draft и не трогает непустой', async () => {
+    const { createPinia, setActivePinia } = await import('pinia')
+    setActivePinia(createPinia())
+    const { useDashboardStore } = await import('../../stores/dashboard')
+    const store = useDashboardStore()
+
+    store.seedDraft([{ slug: 'stat-clients', size: 6, type: 'stats' }])
+    expect(store.draft.length).toBe(1)
+    expect(store.draft[0].slug).toBe('stat-clients')
+
+    // Повторный seed не перетирает существующий draft.
+    store.seedDraft([{ slug: 'other', size: 12 }])
+    expect(store.draft.length).toBe(1)
+    expect(store.draft[0].slug).toBe('stat-clients')
+  })
+})

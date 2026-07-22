@@ -321,10 +321,26 @@ function closeDialog(): void {
 }
 
 function onEnterEdit(): void {
+  // Пустой draft (persisted layout'а ещё нет) сидируем текущим merged-видом:
+  // без этого первый save отправлял widgets:[] и падал на required-валидации.
+  if (dashboardStore.draft.length === 0) {
+    dashboardStore.seedDraft(
+      renderedWidgets.value.map(({ node, layoutSlug }) => ({
+        slug: layoutSlug,
+        size: spanFor(node),
+        type: String((node as Record<string, unknown>).type ?? '') || undefined,
+      })),
+    )
+  }
   dashboardStore.enterEditMode()
 }
 function onCancelEdit(): void {
   dashboardStore.cancelEdit()
+}
+async function onResetLayout(): Promise<void> {
+  // Сброс к дефолтному layout'у дашборда (persisted-запись удаляется).
+  if (!confirm(t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'))) return
+  await dashboardStore.resetToDefault().catch(() => undefined)
 }
 async function onSaveLayout(): Promise<void> {
   await dashboardStore.saveLayout().catch(() => undefined)
@@ -564,24 +580,27 @@ function onExport(): void {
 
         <UidButton variant="secondary" size="md" @click="onExport">
           <template #prepend><UidIcon :icon="Download" :size="14" /></template>
-          Export
+          {{ t('admin.dashboard.export', 'Экспорт') }}
         </UidButton>
 
         <!-- Edit-mode toggle -->
         <template v-if="!dashboardStore.editMode">
           <UidButton variant="secondary" size="md" @click="onEnterEdit">
             <template #prepend><UidIcon :icon="Pencil" :size="14" /></template>
-            Редактировать
+            {{ t('admin.dashboard.edit_layout', 'Редактировать') }}
           </UidButton>
         </template>
         <template v-else>
           <UidButton variant="secondary" size="md" @click="openAdd">
             <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
-            Add widget
+            {{ t('admin.dashboard.add_widget', 'Добавить виджет') }}
+          </UidButton>
+          <UidButton variant="ghost" size="md" @click="onResetLayout">
+            <template #prepend><UidIcon :icon="RotateCcw" :size="14" /></template>
+            {{ t('admin.dashboard.reset_layout', 'Сбросить') }}
           </UidButton>
           <UidButton variant="ghost" size="md" @click="onCancelEdit">
-            <template #prepend><UidIcon :icon="RotateCcw" :size="14" /></template>
-            Отмена
+            {{ t('admin.dashboard.cancel_edit', 'Отмена') }}
           </UidButton>
           <UidButton
             variant="primary"
@@ -590,7 +609,7 @@ function onExport(): void {
             :disabled="dashboardStore.saving"
             @click="onSaveLayout"
           >
-            Сохранить
+            {{ t('admin.dashboard.save_layout', 'Сохранить') }}
           </UidButton>
         </template>
       </div>

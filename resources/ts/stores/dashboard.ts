@@ -73,6 +73,17 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     editMode.value = true
   }
 
+  /**
+   * Засеять draft из merged-layout'а страницы (см. DashboardPage.onEnterEdit):
+   * при пустом persisted-layout'е save обязан отправить ПОЛНЫЙ список
+   * виджетов, а не пустой массив.
+   */
+  function seedDraft(items: WidgetLayoutItem[]): void {
+    if (draft.value.length === 0) {
+      draft.value = items.map((it) => ({ ...it }))
+    }
+  }
+
   function cancelEdit(): void {
     draft.value = original.value.map((it) => ({ ...it }))
     editMode.value = false
@@ -164,6 +175,7 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     isDirty,
     openDashboard,
     enterEditMode,
+    seedDraft,
     cancelEdit,
     saveLayout,
     resetToDefault,

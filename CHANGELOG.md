@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [npm 1.8.1] - 2026-07-22
+
+### Fixed — F10 Dashboard polish (staging E2E findings)
+- First-ever layout save no longer 422s: entering edit mode seeds the draft
+  with the merged manifest layout, so `/dashboard/save` always receives the
+  full widget list (empty `widgets` failed `required` validation).
+- «Сбросить» button added to the edit toolbar — the store's
+  `resetToDefault()` (POST /dashboard/reset) had no UI.
+- Toolbar labels went through i18n (`admin.dashboard.*`): «Add widget» /
+  «Export» hardcodes replaced; ru/en lang files extended with
+  `reset_layout` / `reset_confirm`.
+
 ## [npm 1.8.0] - 2026-07-22
 
 ### Added — F10 Dashboard complete

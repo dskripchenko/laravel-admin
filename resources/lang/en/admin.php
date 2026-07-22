@@ -38,6 +38,8 @@ return [
         'edit_layout' => 'Edit',
         'save_layout' => 'Save',
         'cancel_edit' => 'Cancel',
+        'reset_layout' => 'Reset',
+        'reset_confirm' => 'Reset layout to defaults?',
         'export' => 'Export',
         'period' => [
             'label' => 'Period',

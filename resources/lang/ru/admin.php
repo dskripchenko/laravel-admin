@@ -39,12 +39,14 @@ return [
     ],
 
     'dashboard' => [
-        'title' => 'Dashboard',
+        'title' => 'Дашборд',
         'add_widget' => 'Добавить виджет',
         'edit_layout' => 'Редактировать',
         'save_layout' => 'Сохранить',
         'cancel_edit' => 'Отмена',
-        'export' => 'Export',
+        'reset_layout' => 'Сбросить',
+        'reset_confirm' => 'Сбросить layout к настройкам по умолчанию?',
+        'export' => 'Экспорт',
         'period' => [
             'label' => 'Период',
             '7d' => 'За 7 дней',
