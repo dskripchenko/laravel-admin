@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Support;
 
 use Dskripchenko\LaravelAdmin\Admin;
-use Dskripchenko\LaravelAdmin\Permission\Concerns\HasAdminAccess;
 use Dskripchenko\LaravelAdmin\Theme\LocaleResolver;
 use Dskripchenko\LaravelAdmin\Theme\ThemeManager;
 use Illuminate\Database\Eloquent\Model;
@@ -149,14 +148,8 @@ final class BootstrapBuilder
         if (! $user instanceof Model) {
             return [];
         }
-        if (! in_array(HasAdminAccess::class, class_uses_recursive($user::class), true)) {
-            return [];
-        }
-        if (! method_exists($user, 'getAllPermissions')) {
-            return [];
-        }
 
-        return array_values((array) $user->getAllPermissions());
+        return \Dskripchenko\LaravelAdmin\Permission\UserPermissions::resolve($user);
     }
 
     private function unreadNotificationsCount(): int

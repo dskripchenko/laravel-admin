@@ -518,11 +518,7 @@ final class AuthController extends ApiController
      */
     private function resolveUserPermissions(Authenticatable $user): array
     {
-        if (! method_exists($user, 'getAllPermissions')) {
-            return [];
-        }
-
-        return array_values((array) $user->getAllPermissions());
+        return \Dskripchenko\LaravelAdmin\Permission\UserPermissions::resolve($user);
     }
 
     /**

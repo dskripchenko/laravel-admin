@@ -195,3 +195,21 @@ it('panel login throttles use independent buckets', function (): void {
         'email' => 'nobody@example.com', 'password' => 'wrong',
     ])->assertStatus(401);
 });
+
+it('login payload gives wildcard permissions to hasAccess-only panel users', function (): void {
+    TestPanelClientUser::create([
+        'name' => 'Perm User',
+        'email' => 'perm@example.com',
+        'password' => bcrypt('secret-password'),
+    ]);
+
+    $login = $this->postJson('/api/client/auth/login', [
+        'email' => 'perm@example.com',
+        'password' => 'secret-password',
+    ]);
+
+    $login->assertOk();
+    // Контракт панельных моделей — только hasAccess(); без wildcard SPA-гарды
+    // отправляли бы пользователя в /forbidden на каждом permission-роуте.
+    expect($login->json('payload.permissions'))->toBe(['*']);
+});
