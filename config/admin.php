@@ -16,6 +16,11 @@ return [
     // API живёт ОТДЕЛЬНО от SPA — на /api/admin/* (не нестится под path).
     'api_path' => env('ADMIN_API_PATH', 'api/admin'),
 
+    'api' => [
+        // Глобальный rate-limit admin-API (per-user): 'запросов,минут'.
+        'throttle' => env('ADMIN_API_THROTTLE', '240,1'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Auth — multi-guard

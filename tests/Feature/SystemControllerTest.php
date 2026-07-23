@@ -119,3 +119,13 @@ it('serves /api/admin/system/plugins', function (): void {
     $response->assertOk();
     expect($response->json('payload.plugins'))->toBeArray();
 });
+
+it('admin api throttle is config-driven (default 240,1)', function (): void {
+    // Роуты регистрируются на boot — проверяем декларацию getMethods().
+    $mw = implode('|', Dskripchenko\LaravelAdmin\Http\AdminApi::getMethods()['middleware']);
+    expect($mw)->toContain(':240,1');
+
+    config()->set('admin.api.throttle', '17,3');
+    $mw2 = implode('|', Dskripchenko\LaravelAdmin\Http\AdminApi::getMethods()['middleware']);
+    expect($mw2)->toContain(':17,3');
+});

@@ -224,7 +224,10 @@ class AdminApi extends BaseApi
 
         return [
             'middleware' => [
-                \Illuminate\Routing\Middleware\ThrottleRequests::class.':60,1',
+                // Глобальный лимит admin-API per-user. 60/мин мало для SPA
+                // (навигация = пачка XHR, дашборд-поллинг, e2e): дефолт 240.
+                \Illuminate\Routing\Middleware\ThrottleRequests::class.':'
+                    .(string) config('admin.api.throttle', '240,1'),
             ],
             'controllers' => $controllers,
         ];
