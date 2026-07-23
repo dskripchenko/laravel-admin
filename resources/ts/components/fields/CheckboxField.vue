@@ -30,20 +30,21 @@ function onUpdate(next: boolean): void {
 </script>
 
 <template>
+  <!-- Чекбокс/переключатель: подпись ИНЛАЙН рядом с контролом (не отдельным
+       label'ом сверху) — иначе лейбл висит на новой строке над пустым
+       чекбоксом. hint/error по-прежнему под строкой. -->
   <UidFormField
-    :label="label ?? undefined"
     :hint="help ?? undefined"
     :error="errorMsg"
-    :required="required"
     :disabled="disabled"
   >
     <UidCheckbox
       :model-value="checked"
       :disabled="disabled"
+      :required="required"
       :name="name"
+      :label="inlineLabel ?? label ?? undefined"
       @update:model-value="onUpdate"
-    >
-      <template v-if="inlineLabel">{{ inlineLabel }}</template>
-    </UidCheckbox>
+    />
   </UidFormField>
 </template>

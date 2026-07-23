@@ -26,6 +26,7 @@ import {
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { useManifestStore } from '../../stores/manifest'
 import { provideFormState } from '../render/formState'
+import { ApiError } from '../../api/errors'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
@@ -103,6 +104,18 @@ watch(
 )
 
 const resourceMeta = computed(() => manifest.getResource(props.slug))
+
+/**
+ * Запись не найдена (404 на read) в edit/view-режиме: показываем чистый
+ * not-found вместо формы с плейсхолдерами (иначе пользователь мог бы
+ * заполнить пустую форму удалённой записи и «сохранить»).
+ */
+const recordNotFound = computed<boolean>(
+  () => !form.isCreate
+    && form.hasError
+    && form.error instanceof ApiError
+    && form.error.status === 404,
+)
 
 const layoutNodes = computed<LayoutNode[]>(
   () => resourceMeta.value?.fields ?? [],
@@ -242,7 +255,7 @@ function onCancel(): void {
           Отмена
         </UidButton>
         <UidButton
-          v-if="form.isEdit"
+          v-if="form.isEdit && !recordNotFound"
           variant="danger"
           :disabled="form.saving || form.deleting"
           :loading="form.deleting"
@@ -251,6 +264,7 @@ function onCancel(): void {
           Удалить
         </UidButton>
         <UidButton
+          v-if="!recordNotFound"
           variant="primary"
           :disabled="form.saving || form.loading"
           :loading="form.saving"
@@ -261,28 +275,39 @@ function onCancel(): void {
       </div>
     </header>
 
-    <UidAlert
-      v-if="form.hasError"
-      variant="danger"
-      class="admin-resource-form__alert"
-      role="alert"
-    >
-      {{ form.error?.message ?? 'Не удалось сохранить запись' }}
-    </UidAlert>
-
-    <!-- Loading state — UidSkeleton imitates form-rows -->
-    <div v-if="form.loading" class="admin-resource-form__loading">
-      <UidSkeleton v-for="i in 6" :key="i" height="40px" />
-    </div>
-
-    <!-- Body: layout из manifest, обёрнут в Rows-layout чтобы поддержать
-         field.span (12-grid layout). -->
-    <UidCard v-else padding="md" class="admin-resource-form__body">
-      <RowsLayout :items="layoutNodes" />
+    <!-- Not-found: запись удалена/не существует — без формы и кнопки сохранить -->
+    <UidCard v-if="recordNotFound" padding="lg" class="admin-resource-form__notfound">
+      <p class="admin-resource-form__notfound-title">Запись не найдена</p>
+      <p class="admin-resource-form__notfound-hint">
+        Возможно, она была удалена. Вернитесь к списку.
+      </p>
+      <UidButton variant="primary" size="sm" @click="onCancel">← К списку</UidButton>
     </UidCard>
 
+    <template v-else>
+      <UidAlert
+        v-if="form.hasError"
+        variant="danger"
+        class="admin-resource-form__alert"
+        role="alert"
+      >
+        {{ form.error?.message ?? 'Не удалось сохранить запись' }}
+      </UidAlert>
+
+      <!-- Loading state — UidSkeleton imitates form-rows -->
+      <div v-if="form.loading" class="admin-resource-form__loading">
+        <UidSkeleton v-for="i in 6" :key="i" height="40px" />
+      </div>
+
+      <!-- Body: layout из manifest, обёрнут в Rows-layout чтобы поддержать
+           field.span (12-grid layout). -->
+      <UidCard v-else padding="md" class="admin-resource-form__body">
+        <RowsLayout :items="layoutNodes" />
+      </UidCard>
+    </template>
+
     <!-- Sticky save-bar — показывается при unsaved-changes -->
-    <div v-if="form.isDirty && !form.loading" class="admin-resource-form__savebar">
+    <div v-if="form.isDirty && !form.loading && !recordNotFound" class="admin-resource-form__savebar">
       <span class="admin-resource-form__savebar-hint">
         Есть несохранённые изменения
       </span>
@@ -320,6 +345,22 @@ function onCancel(): void {
   gap: var(--uid-space-sm);
 }
 .admin-resource-form__body { margin-bottom: var(--uid-space-2xl); }
+.admin-resource-form__notfound {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-sm, 8px);
+  align-items: center;
+}
+.admin-resource-form__notfound-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.admin-resource-form__notfound-hint {
+  color: var(--uid-text-secondary, #6b7280);
+  margin: 0 0 var(--uid-space-sm, 8px);
+}
 
 .admin-resource-form__savebar {
   position: sticky;

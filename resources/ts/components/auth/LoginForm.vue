@@ -113,9 +113,7 @@ async function submit(): Promise<void> {
     />
 
     <div class="admin-auth-card__row">
-      <UidCheckbox v-model="remember" :disabled="submitting">
-        Запомнить меня
-      </UidCheckbox>
+      <UidCheckbox v-model="remember" :disabled="submitting" label="Запомнить меня" />
       <a v-if="forgotUrl" :href="forgotUrl" class="admin-auth-card__link">
         Забыли пароль?
       </a>

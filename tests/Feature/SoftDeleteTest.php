@@ -153,3 +153,28 @@ it('admin without restore permission gets 403', function (): void {
     $this->postJson('/api/admin/test-soft-deletes/restore', ['id' => $r->id])
         ->assertStatus(403);
 });
+
+it('search endpoint applies the auto-injected trashed filter (regression BL-27)', function (): void {
+    TestSoftDeleteUserModel::create(['name' => 'alive-1']);
+    $dead = TestSoftDeleteUserModel::create(['name' => 'dead-1']);
+    $dead->delete();
+
+    // По умолчанию (without) — только живые.
+    $def = $this->postJson('/api/admin/test-soft-deletes/search', ['page' => 1]);
+    $names = collect($def->json('payload.data'))->pluck('name');
+    expect($names)->toContain('alive-1')->not->toContain('dead-1');
+
+    // filters[trashed]=only — раньше игнорировалось (auto-trashed был только
+    // в манифесте, а search шёл по filters()). Теперь применяется.
+    $only = $this->postJson('/api/admin/test-soft-deletes/search', [
+        'page' => 1, 'filters' => ['trashed' => 'only'],
+    ]);
+    $onlyNames = collect($only->json('payload.data'))->pluck('name');
+    expect($onlyNames)->toContain('dead-1')->not->toContain('alive-1');
+
+    // with — и живые, и удалённые.
+    $withNames = collect($this->postJson('/api/admin/test-soft-deletes/search', [
+        'page' => 1, 'filters' => ['trashed' => 'with'],
+    ])->json('payload.data'))->pluck('name');
+    expect($withNames)->toContain('alive-1', 'dead-1');
+});

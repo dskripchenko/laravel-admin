@@ -210,22 +210,28 @@ describe('manifest invalidation after mutations', () => {
     clearAdminClient()
   })
 
-  it('save busts the cached manifest so DB-driven options refresh', async () => {
+  it('save refreshes the manifest in background WITHOUT nulling it', async () => {
     const { useManifestStore } = await import('./manifest')
     const manifest = useManifestStore()
+    const stale = { version: 'v1', resources: [], screens: [], settings: [], plugins: [] }
     // @ts-expect-error — прямое наполнение кэша для теста
-    manifest.manifest = { version: 'v1', resources: [], screens: [], settings: [], plugins: [] }
+    manifest.manifest = stale
 
     const form = useResourceFormStore()
     form.prepareCreate('groups', {})
     form.setField('name', 'G')
 
     mock.onPost('/groups/create').reply(200, {
-      success: true,
-      payload: { record: { id: 42, name: 'G' } },
+      success: true, payload: { record: { id: 42, name: 'G' } },
+    })
+    mock.onGet('/system/manifest').reply(200, {
+      success: true, payload: { version: 'v2', resources: [], screens: [], settings: [], plugins: [] },
     })
 
     await form.save()
-    expect(manifest.manifest).toBeNull()
+    // Манифест НЕ обнулён (форма не теряет layout) — фоновый refresh заменит.
+    expect(manifest.manifest).not.toBeNull()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(manifest.manifest?.version).toBe('v2')
   })
 })

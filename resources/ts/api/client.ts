@@ -50,12 +50,17 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
     instance.defaults.headers.common['X-Admin-Locale'] = opts.locale
   }
 
-  // Подцепляем XSRF из cookie на каждый запрос — браузер сам обновит
-  // его после первого 419, но axios reads на вызове.
+  // CSRF на каждый запрос. XSRF-TOKEN cookie всегда актуален (браузер
+  // обновляет его через Set-Cookie при регенерации сессии на логине);
+  // bootstrap-снятый X-CSRF-TOKEN — устаревает. Laravel в tokensMatch()
+  // ПРЕДПОЧИТАЕТ X-CSRF-TOKEN cookie'у, поэтому при наличии свежего
+  // cookie статичный заголовок СНИМАЕМ — иначе стухший токен даёт 419
+  // (setTheme/setLocale и любой POST после client-side логина без reload).
   instance.interceptors.request.use((config) => {
     const xsrf = readCookie('XSRF-TOKEN')
     if (xsrf) {
       config.headers.set('X-XSRF-TOKEN', decodeURIComponent(xsrf))
+      config.headers.delete('X-CSRF-TOKEN')
     }
     return config
   })

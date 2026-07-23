@@ -103,12 +103,27 @@ describe('AdminClient', () => {
     await expect(client.get('/x')).rejects.toThrow(NetworkError)
   })
 
-  it('sends X-CSRF-TOKEN from constructor option', async () => {
+  it('sends X-CSRF-TOKEN fallback when no XSRF cookie', async () => {
+    // Явно нет XSRF-TOKEN cookie — используется bootstrap-fallback.
+    document.cookie = 'XSRF-TOKEN=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
     mock.onGet('/x').reply((config) => {
       expect(config.headers?.['X-CSRF-TOKEN']).toBe('csrf-test')
       return [200, { success: true, payload: {} }]
     })
     await client.get('/x')
+  })
+
+  it('drops the stale X-CSRF-TOKEN when a fresh XSRF cookie is present', async () => {
+    // Laravel предпочитает X-CSRF-TOKEN cookie'у — стухший заголовок дал бы
+    // 419; при наличии свежего cookie его снимаем.
+    document.cookie = 'XSRF-TOKEN=fresh-cookie-token; path=/'
+    mock.onGet('/x').reply((config) => {
+      expect(config.headers?.['X-CSRF-TOKEN']).toBeUndefined()
+      expect(config.headers?.['X-XSRF-TOKEN']).toBe('fresh-cookie-token')
+      return [200, { success: true, payload: {} }]
+    })
+    await client.get('/x')
+    document.cookie = 'XSRF-TOKEN=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
   })
 
   it('sends X-Admin-Locale from constructor option', async () => {

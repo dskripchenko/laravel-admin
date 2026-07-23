@@ -339,6 +339,19 @@ abstract class Resource
      */
     private function compiledFilters(): array
     {
+        return array_map(static fn (Filter $f): array => $f->toArray(), $this->resolvedFilters());
+    }
+
+    /**
+     * Фактический набор фильтр-ОБЪЕКТОВ (declared + авто-инжект TrashedFilter
+     * для SoftDeletes). Единый источник и для манифеста (compiledFilters), и
+     * для применения в search — иначе auto-trashed показывался в UI, но не
+     * применялся (search шёл по filters(), без него).
+     *
+     * @return list<Filter>
+     */
+    public function resolvedFilters(): array
+    {
         $declared = $this->filters();
         $hasTrashed = false;
         foreach ($declared as $f) {
@@ -352,7 +365,7 @@ abstract class Resource
                 ->label('Удалённые');
         }
 
-        return array_map(static fn (Filter $f): array => $f->toArray(), $declared);
+        return $declared;
     }
 
     /**

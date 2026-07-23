@@ -127,20 +127,40 @@ interface HeaderAction {
   label: string
   confirm?: string
   icon?: string
+  /** true — действие оперирует выбранными строками (position row/bulk). */
+  needsSelection: boolean
+  destructive?: boolean
 }
-const headerActions = computed<HeaderAction[]>(() => {
+const allActions = computed<HeaderAction[]>(() => {
   const raw = (resourceMeta.value?.actions ?? []) as Array<Record<string, unknown>>
   return raw
-    .map((a) => ({
-      key: String(a.key ?? a.name ?? ''),
-      label: String(a.label ?? a.name ?? a.key ?? ''),
-      confirm: typeof a.confirm === 'string' ? a.confirm : undefined,
-      icon: typeof a.icon === 'string' ? a.icon : undefined,
-    }))
+    .map((a) => {
+      const position = Array.isArray(a.position) ? (a.position as string[]) : []
+      return {
+        key: String(a.key ?? a.name ?? ''),
+        label: String(a.label ?? a.name ?? a.key ?? ''),
+        confirm: typeof a.confirm === 'string' ? a.confirm : undefined,
+        icon: typeof a.icon === 'string' ? a.icon : undefined,
+        // row/bulk-действия применяются к выбранным записям (провижининг,
+        // suspend, drop …) — без выбора запускать нечего.
+        needsSelection: position.includes('row') || position.includes('bulk'),
+        destructive: Boolean(a.destructive),
+      }
+    })
     .filter((a) => a.key !== '' && a.label !== '')
 })
+// Глобальные (не требующие выбора) — в ⋯ меню; selection-действия — в
+// bulk-панели (появляется при выборе строк).
+const headerActions = computed<HeaderAction[]>(() => allActions.value.filter((a) => !a.needsSelection))
+const selectionActions = computed<HeaderAction[]>(() => allActions.value.filter((a) => a.needsSelection))
 
 async function onCustomAction(action: HeaderAction): Promise<void> {
+  // selection-действия требуют выбора (защита, хотя кнопки и так только в
+  // bulk-панели); глобальные — запускаются без выбора.
+  if (action.needsSelection && !index.hasSelection) {
+    adminToast.error('Сначала выберите записи.')
+    return
+  }
   if (action.confirm && !window.confirm(action.confirm)) return
   emit('header-action', action.key)
   try {
@@ -156,6 +176,7 @@ async function onCustomAction(action: HeaderAction): Promise<void> {
         ids: [...index.selection],
       },
     )
+    if (action.needsSelection) index.clearSelection()
     await index.load().catch(() => undefined)
     adminToast.success(
       result?.message ?? `Action «${action.label}» применён к ${result?.affected ?? 0} записям.`,
@@ -165,6 +186,37 @@ async function onCustomAction(action: HeaderAction): Promise<void> {
     adminToast.error(`Не удалось выполнить action «${action.label}».`)
   } finally {
     nav.end()
+  }
+}
+
+const bulkDeleting = ref(false)
+/** Массовое удаление выбранных строк — последовательные /delete по каждому id. */
+async function onBulkDelete(): Promise<void> {
+  const ids = [...index.selection]
+  if (ids.length === 0) return
+  if (!window.confirm(`Удалить выбранные записи (${ids.length})?`)) return
+  bulkDeleting.value = true
+  try {
+    const { getAdminClient } = await import('../../stores/registry')
+    const client = getAdminClient()
+    let ok = 0
+    for (const id of ids) {
+      try {
+        await client.post(`/${props.slug}/delete`, { id })
+        ok++
+      } catch {
+        /* пропускаем упавшие, продолжаем остальные */
+      }
+    }
+    index.clearSelection()
+    await index.load().catch(() => undefined)
+    if (ok === ids.length) {
+      adminToast.success(`Удалено записей: ${ok}.`)
+    } else {
+      adminToast.error(`Удалено ${ok} из ${ids.length}; часть не удалена.`)
+    }
+  } finally {
+    bulkDeleting.value = false
   }
 }
 
@@ -889,10 +941,6 @@ async function onForceDelete(row: Record<string, unknown>, e?: MouseEvent): Prom
   }
 }
 
-function bulkAction(action: string): void {
-  emit('bulk-action', action, [...index.selection])
-}
-
 async function retryLoad(): Promise<void> {
   await index.load().catch(() => undefined)
 }
@@ -1003,16 +1051,33 @@ async function retryLoad(): Promise<void> {
       </div>
     </header>
 
-    <!-- Bulk toolbar (selection > 0) ИЛИ filter bar -->
+    <!-- Bulk toolbar (selection > 0) ИЛИ filter bar. Действия ресурса
+         (provision/suspend/drop …) доступны ТОЛЬКО здесь — без выбора
+         строк запустить массовое действие нельзя (BL-26). -->
     <div v-if="index.hasSelection" class="admin-bulk-toolbar" role="toolbar">
       <span class="admin-bulk-toolbar__count">
         Выбрано <b>{{ index.selectedCount }}</b>
       </span>
       <span class="admin-bulk-toolbar__divider" />
-      <UidButton size="sm" variant="ghost" @click="bulkAction('publish')">Опубликовать</UidButton>
-      <UidButton size="sm" variant="ghost" @click="bulkAction('archive')">Архивировать</UidButton>
-      <UidButton size="sm" variant="ghost" @click="bulkAction('export')">Экспорт</UidButton>
-      <UidButton size="sm" variant="danger" @click="bulkAction('delete')">Удалить</UidButton>
+      <UidButton
+        v-for="action in selectionActions"
+        :key="action.key"
+        size="sm"
+        :variant="action.destructive ? 'danger' : 'ghost'"
+        @click="onCustomAction(action)"
+      >
+        {{ action.label }}
+      </UidButton>
+      <UidButton size="sm" variant="ghost" @click="onExport('csv')">Экспорт</UidButton>
+      <UidButton
+        v-if="isEditable"
+        size="sm"
+        variant="danger"
+        :loading="bulkDeleting"
+        @click="onBulkDelete"
+      >
+        Удалить
+      </UidButton>
       <span class="admin-bulk-toolbar__spacer" />
       <UidButton size="sm" variant="ghost" @click="index.clearSelection">
         Снять выделение

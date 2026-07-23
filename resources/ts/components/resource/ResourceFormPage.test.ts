@@ -214,4 +214,22 @@ describe('ResourceFormPage', () => {
     // Ошибки обновляются в store; UidInput через FormState получит error.
     expect(form.errors.title).toEqual(['Required'])
   })
+
+  it('edit-mode: 404 on read shows not-found without Save/Delete', async () => {
+    mock.onGet('/articles/read').reply(404, {
+      success: false,
+      payload: { errorKey: 'not_found', message: 'Record not found' },
+    })
+    const wrapper = await mountPage({ id: 999 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Запись не найдена')
+    // Ни Сохранить, ни Удалить — нельзя случайно «пересоздать» удалённую запись.
+    const saveBtn = wrapper.findAll('button').find((b) => b.text() === 'Сохранить')
+    const delBtn = wrapper.findAll('button').find((b) => b.text() === 'Удалить')
+    expect(saveBtn).toBeUndefined()
+    expect(delBtn).toBeUndefined()
+    // Форма-body не рендерится.
+    expect(wrapper.find('.admin-resource-form__body').exists()).toBe(false)
+  })
 })

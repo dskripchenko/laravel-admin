@@ -198,6 +198,9 @@ const tabsList = computed<InfolistTab[]>(() => {
 .admin-infolist-entry {
   display: flex;
   flex-direction: column;
+  /* flex-start чтобы inline-контролы (badge/chip) не растягивались на всю
+     ширину строки — иначе status-чип занимает всю колонку. */
+  align-items: flex-start;
   gap: var(--uid-space-2xs);
   padding: var(--uid-space-sm) 0;
 }

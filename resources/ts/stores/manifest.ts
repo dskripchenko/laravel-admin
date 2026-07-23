@@ -120,12 +120,22 @@ export const useManifestStore = defineStore('admin-manifest', () => {
    * Force=true принудительно обновит с сервера.
    */
   /**
-   * Сбросить кэш манифеста. Вызывается после мутаций ресурсов: DB-driven
-   * options полей (selects из моделей) сериализуются в манифест и без
-   * сброса протухают до полной перезагрузки страницы.
+   * Сбросить кэш манифеста (обнуляет). Использовать ТОЛЬКО когда текущий
+   * манифест точно не рендерится (иначе форма/таблица потеряют layout до
+   * перефетча) — для фонового обновления есть `refresh()`.
    */
   function invalidate(): void {
     manifest.value = null
+  }
+
+  /**
+   * Фоново обновить манифест, НЕ обнуляя текущий: `load(true)` заменяет
+   * `manifest.value` атомарно только по приходу свежего ответа, поэтому
+   * открытая форма/таблица не теряет layout. Вызывается после мутаций
+   * ресурсов (DB-driven options селектов протухают иначе). Fire-and-forget.
+   */
+  function refresh(): Promise<AdminManifest> {
+    return load(true)
   }
 
   async function load(force = false): Promise<AdminManifest> {
@@ -174,6 +184,7 @@ export const useManifestStore = defineStore('admin-manifest', () => {
     getSettings,
     load,
     invalidate,
+    refresh,
     reset,
   }
 })

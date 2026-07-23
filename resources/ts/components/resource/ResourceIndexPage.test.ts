@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'
@@ -156,7 +156,7 @@ describe('ResourceIndexPage', () => {
     expect(wrapper.find('.admin-bulk-toolbar').text()).toContain('Выбрано')
   })
 
-  it('emits bulk-action with selected ids', async () => {
+  it('bulk Удалить deletes each selected row and clears selection', async () => {
     mock.onPost('/articles/search').reply(200, {
       success: true,
       payload: {
@@ -164,6 +164,13 @@ describe('ResourceIndexPage', () => {
         meta: { page: 1, per_page: 20, total: 2, last_page: 1 },
       },
     })
+    const deleted: unknown[] = []
+    mock.onPost('/articles/delete').reply((config) => {
+      deleted.push(JSON.parse(config.data).id)
+      return [200, { success: true, payload: {} }]
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
     const wrapper = await mountPage()
     await flushPromises()
 
@@ -178,8 +185,11 @@ describe('ResourceIndexPage', () => {
       .find((b) => b.text() === 'Удалить')
     expect(deleteBtn).toBeDefined()
     await deleteBtn!.trigger('click')
+    await flushPromises()
 
-    expect(wrapper.emitted('bulk-action')?.[0]).toEqual(['delete', [1, 2]])
+    expect(deleted.sort()).toEqual([1, 2])
+    expect(idx.hasSelection).toBe(false)
+
   })
 
   it('shows pagination footer when items present', async () => {

@@ -116,7 +116,7 @@ final class ResourceController extends ApiController
         $query = $resource->indexQuery();
 
         $filterInputs = HttpFilterParser::parse($request);
-        foreach ($resource->filters() as $filter) {
+        foreach ($resource->resolvedFilters() as $filter) {
             /** @var Filter $filter */
             $value = $filterInputs[$filter->field()] ?? null;
             if ($value !== null) {
@@ -373,7 +373,7 @@ final class ResourceController extends ApiController
 
         // Filters: { filters: [{column, operator, value}] } либо { filters: { col: value } }
         $filterInputs = HttpFilterParser::parse($request);
-        foreach ($resource->filters() as $filter) {
+        foreach ($resource->resolvedFilters() as $filter) {
             /** @var Filter $filter */
             $value = $filterInputs[$filter->field()] ?? null;
             if ($value !== null) {
@@ -425,7 +425,7 @@ final class ResourceController extends ApiController
         if ($groupBy !== '') {
             $groupQuery = $resource->indexQuery();
             $filterInputs = HttpFilterParser::parse($request);
-            foreach ($resource->filters() as $filter) {
+            foreach ($resource->resolvedFilters() as $filter) {
                 $value = $filterInputs[$filter->field()] ?? null;
                 if ($value !== null) {
                     $groupQuery = $filter->apply($groupQuery, $value);
@@ -681,7 +681,7 @@ final class ResourceController extends ApiController
         $query = $resource->indexQuery();
 
         $filterInputs = HttpFilterParser::parse($request);
-        foreach ($resource->filters() as $filter) {
+        foreach ($resource->resolvedFilters() as $filter) {
             $value = $filterInputs[$filter->field()] ?? null;
             if ($value !== null) {
                 $query = $filter->apply($query, $value);
@@ -1081,7 +1081,7 @@ final class ResourceController extends ApiController
 
         // Применяем те же filters, что и в search.
         $filterInputs = HttpFilterParser::parse($request);
-        foreach ($resource->filters() as $filter) {
+        foreach ($resource->resolvedFilters() as $filter) {
             $value = $filterInputs[$filter->field()] ?? null;
             if ($value !== null) {
                 $query = $filter->apply($query, $value);

@@ -204,7 +204,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
       // DB-driven options полей сериализованы в манифест — после мутации
       // сбрасываем его кэш, иначе селекты (родитель группы и т.п.)
       // протухают до полной перезагрузки страницы.
-      useManifestStore().invalidate()
+      void useManifestStore().refresh().catch(() => undefined)
       return newId
     } catch (err) {
       if (err instanceof ValidationError) {
@@ -232,7 +232,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     try {
       const client = getAdminClient()
       await client.post(`/${slug.value}/delete`, { id: recordId.value })
-      useManifestStore().invalidate()
+      void useManifestStore().refresh().catch(() => undefined)
     } catch (err) {
       if (err instanceof Error) error.value = err
       throw err

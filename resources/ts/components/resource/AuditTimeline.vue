@@ -283,13 +283,19 @@ function formatVal(v: unknown): string {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-top: 2px;
+  /* без padding-top: первая строка (аватар 24px) должна совпасть по высоте
+     с event-иконкой 24px в левой колонке — иначе аватар смещён вниз. */
+  padding-top: 0;
 }
 .admin-audit-timeline__row {
   display: flex;
   align-items: center;
   gap: var(--uid-space-2xs);
   flex-wrap: wrap;
+}
+/* Первая строка выровнена по центру с event-иконкой (обе 24px). */
+.admin-audit-timeline__row:first-child {
+  min-height: 24px;
 }
 .admin-audit-timeline__actor {
   font-size: 13px;

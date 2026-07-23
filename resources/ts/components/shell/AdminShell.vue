@@ -158,6 +158,9 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  /* UidSidebar-паттерн несёт border-top 3px; в админ-шелле topbar его не
+     имеет → sidebar-контент был смещён на 3px вниз. Убираем для выравнивания. */
+  border-top: none;
 }
 .admin-shell .uid-pattern-sidebar__nav {
   flex: 1 1 0;
