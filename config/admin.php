@@ -38,7 +38,7 @@ return [
         'table' => 'admin_users',
         'password_broker' => 'admin_users',
 
-        'login_throttle' => '5,1',
+        'login_throttle' => env('ADMIN_LOGIN_THROTTLE', '5,1'),
 
         'two_factor' => [
             'enabled' => true,

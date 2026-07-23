@@ -103,7 +103,7 @@ class AdminApi extends BaseApi
                         // = sha1(domain|ip); без префикса счётчик делился бы с
                         // глобальным ':60,1' (и любыми другими throttle'ами роута)
                         // и сгорал от обычных API-запросов.
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1,auth-'.static::panelId()],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':'.(string) config('admin.auth.login_throttle', '5,1').',auth-'.static::panelId()],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'logout' => ['method' => ['post']],
@@ -127,12 +127,12 @@ class AdminApi extends BaseApi
                     ],
                     'twoFactorChallenge' => [
                         'method' => ['post'],
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1,auth-'.static::panelId()],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':'.(string) config('admin.auth.login_throttle', '5,1').',auth-'.static::panelId()],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'twoFactorRecovery' => [
                         'method' => ['post'],
-                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1,auth-'.static::panelId()],
+                        'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':'.(string) config('admin.auth.login_throttle', '5,1').',auth-'.static::panelId()],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
                     'startImpersonation' => ['method' => ['post']],

@@ -129,3 +129,11 @@ it('admin api throttle is config-driven (default 240,1)', function (): void {
     $mw2 = implode('|', Dskripchenko\LaravelAdmin\Http\AdminApi::getMethods()['middleware']);
     expect($mw2)->toContain(':17,3');
 });
+
+it('login throttle is config-driven (config existed but was hardcoded)', function (): void {
+    config()->set('admin.auth.login_throttle', '9,2');
+    Dskripchenko\LaravelAdmin\Http\AdminApi::clearCache();
+    $auth = Dskripchenko\LaravelAdmin\Http\AdminApi::getMethods()['controllers']['auth']['actions'];
+    expect(implode('|', $auth['login']['middleware']))->toContain(':9,2,auth-admin');
+    expect(implode('|', $auth['twoFactorChallenge']['middleware']))->toContain(':9,2,auth-admin');
+});
