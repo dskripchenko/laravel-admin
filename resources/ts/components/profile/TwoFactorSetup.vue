@@ -89,12 +89,18 @@ async function confirmCode(): Promise<void> {
 }
 
 async function disable(): Promise<void> {
+  // Бэкенд требует подтверждение паролем — без него кнопка молча 422-илась.
+  if (password.value === '') {
+    error.value = 'Введите текущий пароль.'
+    return
+  }
   if (!window.confirm('Отключить 2FA? Аккаунт станет менее защищённым.')) return
   busy.value = true
+  error.value = ''
   try {
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
-    await client.post('/profile/twoFactorDisable')
+    await client.post('/profile/twoFactorDisable', { password: password.value })
     stage.value = 'idle'
     adminToast.success('2FA отключена.')
     emit('disabled')
