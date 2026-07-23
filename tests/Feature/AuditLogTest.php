@@ -165,3 +165,35 @@ it('records exactly one login and one logout row per real auth cycle', function 
 
     expect(AuditLog::query()->where('event', 'logout')->count())->toBe(1);
 });
+
+it('resolveTypeLabel: config map wins, else class_basename, else null (BL-4)', function (): void {
+    config()->set('admin.audit.type_labels', [
+        AdminUser::class => 'Администратор',
+    ]);
+
+    // config map
+    expect(AuditLog::resolveTypeLabel(AdminUser::class))->toBe('Администратор');
+    // fallback → class_basename для незамапленного класса
+    expect(AuditLog::resolveTypeLabel('App\\Models\\TemplateVariable'))->toBe('TemplateVariable');
+    // null/пусто → null (login без subject)
+    expect(AuditLog::resolveTypeLabel(null))->toBeNull();
+    expect(AuditLog::resolveTypeLabel(''))->toBeNull();
+});
+
+it('exposes actor_label / subject_label accessors in serialization (BL-4)', function (): void {
+    config()->set('admin.audit.type_labels', [
+        AdminUser::class => 'Администратор',
+    ]);
+
+    $log = AuditLog::create([
+        'actor_type' => AdminUser::class,
+        'actor_id' => 1,
+        'subject_type' => AdminUser::class,
+        'subject_id' => 1,
+        'event' => 'updated',
+    ]);
+
+    $arr = $log->fresh()->toArray();
+    expect($arr['actor_label'])->toBe('Администратор');
+    expect($arr['subject_label'])->toBe('Администратор');
+});

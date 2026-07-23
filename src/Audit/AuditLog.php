@@ -47,6 +47,14 @@ final class AuditLog extends Model
     ];
 
     /**
+     * Человекочитаемые ярлыки типов — едут в каждую сериализацию (list/timeline),
+     * чтобы UI не показывал FQCN. Значения через getActorLabelAttribute и т.п.
+     *
+     * @var list<string>
+     */
+    protected $appends = ['actor_label', 'subject_label'];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -54,6 +62,43 @@ final class AuditLog extends Model
         return [
             'changes' => 'array',
         ];
+    }
+
+    /**
+     * Резолв FQCN morph-типа в человекочитаемый ярлык.
+     *
+     * Порядок: config('admin.audit.type_labels')[$fqcn] → reverse morph-map
+     * alias (если host вызвал Relation::enforceMorphMap) → class_basename.
+     * Пустой/null-тип (например login без subject) → null.
+     */
+    public static function resolveTypeLabel(?string $type): ?string
+    {
+        if ($type === null || $type === '') {
+            return null;
+        }
+
+        $map = (array) config('admin.audit.type_labels', []);
+        $label = $map[$type] ?? null;
+        if (is_string($label)) {
+            return $label;
+        }
+
+        $alias = array_search($type, \Illuminate\Database\Eloquent\Relations\Relation::morphMap(), true);
+        if (is_string($alias)) {
+            return $alias;
+        }
+
+        return class_basename($type);
+    }
+
+    public function getActorLabelAttribute(): ?string
+    {
+        return self::resolveTypeLabel($this->actor_type);
+    }
+
+    public function getSubjectLabelAttribute(): ?string
+    {
+        return self::resolveTypeLabel($this->subject_type);
     }
 
     /**
