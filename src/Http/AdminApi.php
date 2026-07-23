@@ -85,6 +85,7 @@ class AdminApi extends BaseApi
                     'manifest' => ['method' => ['get']],
                     'me' => ['method' => ['get']],
                     'menu' => ['method' => ['get']],
+                    'search' => ['method' => ['get']],
                     'locales' => ['method' => ['get'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                     'setLocale' => ['method' => ['post'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                     'permissions' => ['method' => ['get']],

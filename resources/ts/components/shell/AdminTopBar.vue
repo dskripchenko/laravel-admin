@@ -37,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'toggle-sidebar': []
+  'open-search': []
 }>()
 
 const lastIdx = computed(() => props.breadcrumbs.length - 1)
@@ -72,7 +73,14 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
     <div class="admin-topbar__spacer" />
 
     <slot name="search">
-      <div class="admin-topbar__search" role="button" tabindex="0">
+      <div
+        class="admin-topbar__search"
+        role="button"
+        tabindex="0"
+        @click="emit('open-search')"
+        @keydown.enter.prevent="emit('open-search')"
+        @keydown.space.prevent="emit('open-search')"
+      >
         <UidIcon :icon="Search" :size="14" data-icon="search" />
         <span>Поиск везде…</span>
         <kbd>⌘K</kbd>

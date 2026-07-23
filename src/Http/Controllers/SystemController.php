@@ -370,6 +370,34 @@ final class SystemController extends ApiController
     }
 
     /**
+     * Глобальный поиск по всем ресурсам панели (⌘K палитра).
+     *
+     * @output object $payload
+     * @output string $payload.query
+     * @output array  $payload.groups
+     *
+     * @security AdminSession
+     * @security AdminBearer
+     *
+     * @response 200 {SuccessResponse}
+     */
+    public function search(Request $request, \Dskripchenko\LaravelAdmin\Support\GlobalSearch $search): JsonResponse
+    {
+        $query = (string) $request->query('q', '');
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        $user = Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+
+        $groups = mb_strlen(trim($query)) < 2
+            ? []
+            : $search->search($query, $user, $panel);
+
+        return $this->success([
+            'query' => $query,
+            'groups' => $groups,
+        ]);
+    }
+
+    /**
      * Список зарегистрированных AdminPlugin'ов.
      *
      * @output object $payload

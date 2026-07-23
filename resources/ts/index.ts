@@ -122,6 +122,7 @@ export {
   AdminShell,
   AdminTopBar,
   AdminSidebar,
+  GlobalSearch,
   ThemeToggle,
   LocaleSwitcher,
   NotificationBell,

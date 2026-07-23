@@ -14,10 +14,11 @@
  * (.imp-banner). На <html> ставим data-impersonating='true' чтобы корректно
  * сместить sticky-элементы вниз.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { UidSidebarLayout } from '@dskripchenko/ui'
 import AdminTopBar from './AdminTopBar.vue'
 import AdminSidebar from './AdminSidebar.vue'
+import GlobalSearch from './GlobalSearch.vue'
 
 interface ImpersonationData {
   /** Имя того, в кого вошли. */
@@ -78,6 +79,23 @@ onBeforeUnmount(() => {
     document.documentElement.removeAttribute(HTML_ATTR)
   }
 })
+
+// ⌘K / Ctrl+K — глобальное открытие поиска, из любого фокуса.
+const searchOpen = ref<boolean>(false)
+
+function onGlobalKeydown(e: KeyboardEvent): void {
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+    e.preventDefault()
+    searchOpen.value = true
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') window.addEventListener('keydown', onGlobalKeydown)
+})
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') window.removeEventListener('keydown', onGlobalKeydown)
+})
 </script>
 
 <template>
@@ -105,8 +123,11 @@ onBeforeUnmount(() => {
         </slot>
       </template>
       <template #header>
-        <slot name="topbar">
-          <AdminTopBar @toggle-sidebar="onCollapseChange(!collapsed)" />
+        <slot name="topbar" :open-search="() => (searchOpen = true)">
+          <AdminTopBar
+            @toggle-sidebar="onCollapseChange(!collapsed)"
+            @open-search="searchOpen = true"
+          />
         </slot>
       </template>
       <slot />
@@ -121,6 +142,8 @@ onBeforeUnmount(() => {
         </slot>
       </template>
     </UidSidebarLayout>
+
+    <GlobalSearch v-model="searchOpen" />
   </div>
 </template>
 

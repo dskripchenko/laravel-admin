@@ -153,6 +153,48 @@ abstract class Resource
     }
 
     /**
+     * Заголовок записи для глобального поиска / быстрых ссылок. Default —
+     * первое непустое из name/title/label/email/slug, иначе первое
+     * searchable-поле, иначе `#{id}`. Host переопределяет для кастомного
+     * представления.
+     */
+    public function recordTitle(Model $row): string
+    {
+        foreach (['name', 'title', 'label', 'email', 'slug'] as $attr) {
+            $value = $row->getAttribute($attr);
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
+        }
+
+        foreach ($this->searchableFields() as $field) {
+            $value = $row->getAttribute($field);
+            if (is_scalar($value) && (string) $value !== '') {
+                return (string) $value;
+            }
+        }
+
+        return '#'.$row->getKey();
+    }
+
+    /**
+     * Вторичная строка записи в результатах поиска (например email/slug/status).
+     * Возвращает null если подходящего атрибута нет либо он дублирует заголовок.
+     */
+    public function recordSubtitle(Model $row): ?string
+    {
+        $title = $this->recordTitle($row);
+        foreach (['email', 'slug', 'status', 'code'] as $attr) {
+            $value = $row->getAttribute($attr);
+            if (is_string($value) && $value !== '' && $value !== $title) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Whitelist для eager-loading из ?with[]=... и Resource::with().
      *
      * @return list<string>
