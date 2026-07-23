@@ -151,7 +151,7 @@ watch(open, (isOpen) => {
 </script>
 
 <template>
-  <UidModal v-model="open" size="md" class="admin-search">
+  <UidModal v-model="open" size="md">
     <div class="admin-search__box">
       <UidIcon :icon="Search" :size="16" class="admin-search__box-icon" />
       <input

@@ -25,6 +25,14 @@ interface ImpersonationData {
   asName: string
 }
 
+interface BrandData {
+  name?: string
+  logo?: string | null
+  favicon?: string | null
+  copyright?: string | null
+  footer?: string | null
+}
+
 interface Props {
   /**
    * v-model:collapsed — состояние сворачивания. Опционально: если host
@@ -34,11 +42,18 @@ interface Props {
   collapsed?: boolean
   /** Если задано — показывает amber-banner и сдвигает контент. */
   impersonation?: ImpersonationData | null
+  /** Брендинг (name/logo/copyright) из config('admin.brand') (BL-12). */
+  brand?: BrandData | null
 }
 const props = withDefaults(defineProps<Props>(), {
   collapsed: undefined,
   impersonation: null,
+  brand: null,
 })
+
+const brandName = computed<string | undefined>(() => props.brand?.name || undefined)
+const brandMark = computed<string | null>(() => props.brand?.logo ?? null)
+const brandCopyright = computed<string | null>(() => props.brand?.copyright ?? null)
 
 const emit = defineEmits<{
   'update:collapsed': [value: boolean]
@@ -119,7 +134,11 @@ onBeforeUnmount(() => {
     >
       <template #sidebar>
         <slot name="sidebar">
-          <AdminSidebar :collapsed="collapsed" />
+          <AdminSidebar
+            :collapsed="collapsed"
+            :brand-name="brandName"
+            :brand-mark="brandMark"
+          />
         </slot>
       </template>
       <template #header>
@@ -138,7 +157,9 @@ onBeforeUnmount(() => {
             по Y с footer'ом sidebar'а — общая высота через --admin-foot-height.
             Host может переопределить полностью через slot=footer.
           -->
-          <div class="admin-main-footer" />
+          <div class="admin-main-footer">
+            <span v-if="brandCopyright" class="admin-main-footer__copyright">{{ brandCopyright }}</span>
+          </div>
         </slot>
       </template>
     </UidSidebarLayout>
@@ -230,5 +251,13 @@ onBeforeUnmount(() => {
   border-top: 1px solid var(--uid-border-subtle);
   background: var(--uid-surface-base);
   flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 var(--uid-space-md, 16px);
+}
+.admin-main-footer__copyright {
+  font-size: 12px;
+  color: var(--uid-text-tertiary);
 }
 </style>

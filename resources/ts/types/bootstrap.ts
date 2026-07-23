@@ -20,6 +20,10 @@ export interface AdminBrand {
   name?: string
   logo?: string | null
   favicon?: string | null
+  /** Текст копирайта в футере (например «© 2026 Printable»). */
+  copyright?: string | null
+  /** Доп. текст/ссылка в футере sidebar'а (версия, docs). */
+  footer?: string | null
 }
 
 export interface AdminBootstrapConfig {

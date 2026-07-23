@@ -17,10 +17,12 @@ import NotificationsDrawer from './shell/NotificationsDrawer.vue'
 import { useManifestStore } from '../stores/manifest'
 import { useAuthStore } from '../stores/auth'
 import { adminToast } from '../stores/toast'
+import { useBrand } from '../composables/useBrand'
 
 const route = useRoute()
 const manifest = useManifestStore()
 const auth = useAuthStore()
+const brand = useBrand()
 
 /**
  * Impersonation state — backend кладёт в bootstrap.user.impersonator
@@ -78,6 +80,7 @@ const suppressNotFound = computed<boolean>(
   <AdminShell
     v-if="useShell"
     :impersonation="impersonation"
+    :brand="brand"
     @exit-impersonation="exitImpersonation"
   >
     <div class="admin-page-host">

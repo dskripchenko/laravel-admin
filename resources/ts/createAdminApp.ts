@@ -44,6 +44,7 @@ import { DashboardPage } from './components/dashboard'
 
 import { createAdminClient, type AdminClient } from './api/client'
 import { setAdminClient } from './stores'
+import { BRAND_KEY } from './composables/useBrand'
 import { useAuthStore } from './stores/auth'
 import { useLocaleStore } from './stores/locale'
 import { useI18nStore } from './stores/i18n'
@@ -142,6 +143,12 @@ export function createAdminApp(
   const app = createApp(AdminApp)
   const pinia = createPinia()
   app.use(pinia)
+
+  // Брендинг (BL-12): провайдим bootstrap.brand в shell + применяем favicon.
+  // Host кастомизирует чисто через config('admin.brand') — без патча UI.
+  const brand = bootstrap.brand ?? {}
+  app.provide(BRAND_KEY, brand)
+  applyFavicon(brand.favicon)
 
   // 3. Pinia stores hydrate
   useAuthStore().hydrate(bootstrap)
@@ -304,4 +311,19 @@ function deriveBase(baseUrl: string | undefined): string | null {
   } catch {
     return baseUrl.startsWith('/') ? baseUrl : null
   }
+}
+
+/**
+ * Проставить favicon из config('admin.brand.favicon') — сервис под своей
+ * иконкой во вкладке (BL-12). Idempotent: переиспользует существующий тег.
+ */
+function applyFavicon(href: string | null | undefined): void {
+  if (typeof document === 'undefined' || !href) return
+  let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]')
+  if (link === null) {
+    link = document.createElement('link')
+    link.rel = 'icon'
+    document.head.appendChild(link)
+  }
+  link.href = href
 }

@@ -111,8 +111,11 @@ return [
 
     'brand' => [
         'name' => env('ADMIN_BRAND_NAME', 'Admin'),
-        'logo' => null,
-        'favicon' => null,
+        'logo' => env('ADMIN_BRAND_LOGO'),
+        'favicon' => env('ADMIN_BRAND_FAVICON'),
+        // Копирайт в футере панели (BL-12). null = футер пустой.
+        'copyright' => env('ADMIN_BRAND_COPYRIGHT'),
+        'footer' => null,
     ],
 
     'ui' => [
