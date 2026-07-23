@@ -41,6 +41,8 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
   /** Loading state для load/save. */
   const saving = ref<boolean>(false)
   const loading = ref<boolean>(false)
+  /** Per-user персистентный период дашборда (null = дефолт страницы). */
+  const period = ref<string | null>(null)
 
   const isDirty = computed<boolean>(() => {
     return JSON.stringify(draft.value) !== JSON.stringify(original.value)
@@ -52,9 +54,10 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     loading.value = true
     try {
       const client = getAdminClient()
-      const result = await client.get<{ layout: WidgetLayoutItem[] | null }>(
+      const result = await client.get<{ layout: WidgetLayoutItem[] | null; period?: string | null }>(
         `/dashboard/get?key=${encodeURIComponent(dashboardSlug)}`,
       )
+      period.value = result.period ?? null
       const items = (result.layout ?? []).map((it, idx) => ({
         ...it,
         position: it.position ?? idx,
@@ -163,12 +166,25 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     editMode.value = false
     draft.value = []
     original.value = []
+    period.value = null
+  }
+
+  /** Персистит per-user период (fire-and-forget, оптимистично обновляет ref). */
+  async function savePeriod(key: string, value: string): Promise<void> {
+    period.value = value
+    try {
+      await getAdminClient().post('/dashboard/savePeriod', { key, period: value })
+    } catch {
+      // silent — период уже применён локально; повторный save при след. смене.
+    }
   }
 
   return {
     slug,
     editMode,
     draft,
+    period,
+    savePeriod,
     original,
     saving,
     loading,

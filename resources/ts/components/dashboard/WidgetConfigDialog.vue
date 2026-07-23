@@ -221,7 +221,11 @@ function close(): void {
               <label class="admin-dialog__label">
                 Тип виджета <span class="admin-dialog__required">*</span>
               </label>
-              <div class="admin-dialog__type-grid">
+              <p v-if="types.length === 0" class="admin-dialog__empty">
+                Нет виджетов для добавления — все доступные типы уже на дашборде
+                или ни один не зарегистрирован.
+              </p>
+              <div v-else class="admin-dialog__type-grid">
                 <button
                   v-for="t in types"
                   :key="t"
@@ -232,8 +236,8 @@ function close(): void {
                   ]"
                   @click="selectedType = t"
                 >
-                  <span class="admin-dialog__type-name">{{ t }}</span>
-                  <span class="admin-dialog__type-help">{{ labelOf[t] ?? '' }}</span>
+                  <span class="admin-dialog__type-name">{{ labelOf[t] ?? t }}</span>
+                  <span class="admin-dialog__type-help">{{ t }}</span>
                 </button>
               </div>
             </div>
@@ -324,6 +328,15 @@ function close(): void {
 </template>
 
 <style>
+.admin-dialog__empty {
+  margin: 0;
+  padding: 16px 12px;
+  border: 1px dashed var(--uid-border-subtle);
+  border-radius: var(--uid-radius-md);
+  color: var(--uid-text-tertiary);
+  font-size: 13px;
+  text-align: center;
+}
 .admin-dialog__readonly {
   padding: 8px 10px;
   background: var(--uid-surface-base);

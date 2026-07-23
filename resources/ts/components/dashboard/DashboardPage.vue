@@ -218,6 +218,9 @@ async function setPeriod(key: string, close: () => void): Promise<void> {
   selectedPeriod.value = key
   emit('change-period', key)
   close()
+  // BL-16: персистим выбор per-user (fire-and-forget) — переживёт reload.
+  const slug = resolvedSlug.value
+  if (slug) void dashboardStore.savePeriod(slug, key)
   await refetchPeriod()
 }
 
@@ -283,6 +286,11 @@ onMounted(async () => {
   const slug = resolvedSlug.value
   if (slug) {
     await dashboardStore.openDashboard(slug).catch(() => undefined)
+    // BL-16: восстановить персистентный per-user период.
+    if (dashboardStore.period) {
+      selectedPeriod.value = dashboardStore.period
+      await refetchPeriod()
+    }
   }
   startPolling()
 })
@@ -297,6 +305,10 @@ watch(
     if (next === prev) return
     if (next) {
       await dashboardStore.openDashboard(next).catch(() => undefined)
+      if (dashboardStore.period) {
+        selectedPeriod.value = dashboardStore.period
+        await refetchPeriod()
+      }
     } else {
       dashboardStore.reset()
     }
@@ -545,7 +557,34 @@ function onResizeEnd(): void {
 }
 
 function onExport(): void {
+  // BL-17: экспорт текущего среза дашборда (виджеты + их данные + период)
+  // в JSON-файл. Host может слушать 'export' для своего формата.
   emit('export')
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+  const snapshot = {
+    dashboard: resolvedSlug.value,
+    period: selectedPeriod.value,
+    exported_at: new Date().toISOString(),
+    widgets: renderedWidgets.value.map(({ node }) => {
+      const n = node as Record<string, unknown>
+      return {
+        type: n.type,
+        title: n.title ?? (n.data as Record<string, unknown> | undefined)?.title ?? null,
+        data: n.data ?? null,
+      }
+    }),
+  }
+
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `dashboard-${resolvedSlug.value ?? 'export'}-${selectedPeriod.value}.json`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }
 </script>
 

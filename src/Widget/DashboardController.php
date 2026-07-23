@@ -48,7 +48,52 @@ class DashboardController extends ApiController
 
         return $this->success([
             'layout' => $layout?->widgets,
+            'period' => $layout?->getAttribute('period'),
         ]);
+    }
+
+    /**
+     * Сохранить per-user период дашборда (фильтр «за N дней»), не трогая
+     * layout. Персистится чтобы выбор пережил перезагрузку (BL-16).
+     *
+     * @input string $key
+     * @input string $period
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {SuccessResponse}
+     */
+    public function savePeriod(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'key' => ['required', 'string'],
+            'period' => ['required', 'string', 'max:16'],
+        ]);
+
+        $user = $this->user();
+        if ($user === null) {
+            return $this->error([
+                'errorKey' => 'unauthenticated',
+                'message' => 'Unauthenticated',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $row = DashboardLayout::query()->firstOrNew([
+            'dashboard_key' => $data['key'],
+            'owner_type' => $user->getMorphClass(),
+            'owner_id' => $user->getKey(),
+        ]);
+        // Период может сохраняться до какой-либо кастомизации layout'а —
+        // widgets NOT NULL, поэтому засеваем пустым для новой записи.
+        if ($row->getAttribute('widgets') === null) {
+            $row->setAttribute('widgets', []);
+        }
+        $row->setAttribute('period', $data['period']);
+        $row->save();
+
+        return $this->success(['period' => $data['period']]);
     }
 
     /**

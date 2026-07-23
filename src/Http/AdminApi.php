@@ -160,6 +160,7 @@ class AdminApi extends BaseApi
                 'actions' => [
                     'get' => ['method' => ['get']],
                     'save' => ['method' => ['post']],
+                    'savePeriod' => ['method' => ['post']],
                     'reset' => ['method' => ['post']],
                     'widgets' => ['method' => ['get']],
                 ],

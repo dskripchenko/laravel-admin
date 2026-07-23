@@ -149,3 +149,28 @@ it('dashboard.get returns saved layout for current user only', function (): void
     $response = $this->getJson('/api/admin/dashboard/get?key=test-dashboard');
     expect($response->json('payload.layout'))->toBe([['slug' => 'a', 'size' => 5]]);
 });
+
+it('dashboard.savePeriod persists per-user period and get returns it (BL-16)', function (): void {
+    // до сохранения — период null
+    expect($this->getJson('/api/admin/dashboard/get?key=test')->json('payload.period'))->toBeNull();
+
+    $this->postJson('/api/admin/dashboard/savePeriod', ['key' => 'test', 'period' => '90d'])
+        ->assertOk()
+        ->assertJsonPath('payload.period', '90d');
+
+    // персистентно и возвращается в get
+    expect($this->getJson('/api/admin/dashboard/get?key=test')->json('payload.period'))->toBe('90d');
+});
+
+it('dashboard.savePeriod does not clobber an existing layout (BL-16)', function (): void {
+    $this->postJson('/api/admin/dashboard/save', [
+        'key' => 'test',
+        'widgets' => [['slug' => 'w1', 'size' => 6, 'position' => 0]],
+    ])->assertOk();
+
+    $this->postJson('/api/admin/dashboard/savePeriod', ['key' => 'test', 'period' => '7d'])->assertOk();
+
+    $get = $this->getJson('/api/admin/dashboard/get?key=test');
+    expect($get->json('payload.period'))->toBe('7d');
+    expect($get->json('payload.layout'))->toHaveCount(1); // layout сохранён
+});

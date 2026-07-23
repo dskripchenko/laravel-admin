@@ -31,6 +31,7 @@ final class DashboardLayout extends Model
         'owner_type',
         'owner_id',
         'widgets',
+        'period',
     ];
 
     /**
