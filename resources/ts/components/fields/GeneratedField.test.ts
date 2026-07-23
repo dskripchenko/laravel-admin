@@ -52,3 +52,24 @@ describe('GeneratedField', () => {
     expect(value).toMatch(/^[ab]{40}$/)
   })
 })
+
+describe('GeneratedField — гонка с сидированием формы', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('регенерит после того как сидирование затёрло значение (create-форма)', async () => {
+    let ctx!: ReturnType<typeof provideFormState>
+    const w = mount(
+      defineComponent({
+        setup() {
+          ctx = provideFormState({ token: '' })
+          return () => h(GeneratedField, { name: 'token', length: 12 } as never)
+        },
+      }),
+    )
+    await w.vm.$nextTick()
+    // эмулируем prepareCreate: стор затирает state пустыми default'ами
+    ctx.setField('token', '')
+    await w.vm.$nextTick()
+    expect((w.find('input').element as HTMLInputElement).value).toHaveLength(12)
+  })
+})

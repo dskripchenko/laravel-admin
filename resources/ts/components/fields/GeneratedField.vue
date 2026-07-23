@@ -9,7 +9,7 @@
  * Если crypto недоступен (экзотика) — автогенерации нет, поле остаётся
  * обычным ручным вводом.
  */
-import { computed, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { UidButton, UidInput } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import { useI18nStore } from '../../stores/i18n'
@@ -73,13 +73,27 @@ function generate(): void {
   form.setField(props.name, randomString(props.length, props.charset))
 }
 
+const userEdited = ref(false)
+
 function onUpdate(next: string): void {
+  userEdited.value = true
   form.setField(props.name, next)
 }
 
-onMounted(() => {
-  if (props.autogenerate && !props.disabled && value.value === '') generate()
-})
+/*
+ * Автогенерация через immediate-watch, а не onMounted: сидирование
+ * create-формы (prepareCreate) может перезаписать state ПОСЛЕ монтирования
+ * поля и затереть сгенерированное значение (вскрыто браузерным смоуком —
+ * jsdom с синхронным provideFormState гонку не ловил). Пустое значение
+ * без ручного ввода → генерим снова; ручная очистка (userEdited) — нет.
+ */
+watch(
+  value,
+  (v) => {
+    if (props.autogenerate && !props.disabled && !userEdited.value && v === '') generate()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
