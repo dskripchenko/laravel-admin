@@ -321,7 +321,7 @@ abstract class Resource
                 'reorderable' => $this->reorderable(),
                 'reorderColumn' => $this->reorderable() ? $this->reorderColumn() : null,
                 'importable' => $this->importable(),
-                'exportable' => ['csv'],
+                'exportable' => $this->exportable(),
                 'polling' => $this->polling(),
                 'warnOnUnsavedChanges' => true,
                 'creatable' => $this->fields() !== [],
@@ -428,6 +428,17 @@ abstract class Resource
     public function importable(): bool
     {
         return false;
+    }
+
+    /**
+     * Форматы экспорта списка (пусто = экспорт скрыт). По умолчанию CSV;
+     * read-only ресурсы (аудит) могут вернуть [] чтобы убрать кнопку.
+     *
+     * @return list<string>
+     */
+    public function exportable(): array
+    {
+        return ['csv'];
     }
 
     /**
