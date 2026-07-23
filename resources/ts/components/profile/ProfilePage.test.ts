@@ -76,14 +76,23 @@ describe('ProfilePage', () => {
     expect(w.text()).toContain('Отключена')
   })
 
-  it('Security section shows "Включена" + disable/regenerate buttons when 2FA on', async () => {
+  it('Security section shows "Включена" + встроенный визард (disable/regenerate) when 2FA on', async () => {
     useAuthStore().hydrate(mkBootstrap({ user: mkUser({ twoFactorEnabled: true }) }))
     const w = mount(ProfilePage)
     await w.findAll('.admin-profile__nav-item')[1].trigger('click')
     expect(w.text()).toContain('Включена')
-    const buttons = w.findAll('.admin-profile__card-ft button').map((b) => b.text())
-    expect(buttons).toContain('Перегенерировать коды')
+    // Кнопки живут во встроенном TwoFactorSetup (.admin-2fa), не placeholder-footer.
+    const buttons = w.findAll('.admin-2fa button').map((b) => b.text())
     expect(buttons).toContain('Отключить 2FA')
+    expect(buttons.some((t) => t.includes('Перегенерировать'))).toBe(true)
+  })
+
+  it('Security section renders the working enable-2fa wizard (no disabled placeholder) when off', async () => {
+    const w = mount(ProfilePage)
+    await w.findAll('.admin-profile__nav-item')[1].trigger('click')
+    const enableBtn = w.findAll('.admin-2fa button').find((b) => b.text() === 'Включить 2FA')
+    expect(enableBtn).toBeTruthy()
+    expect(enableBtn!.attributes('disabled')).toBeUndefined()
   })
 
   it('emits save with profile fields', async () => {

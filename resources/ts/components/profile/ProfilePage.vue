@@ -19,6 +19,7 @@ import {
 import { useAuthStore } from '../../stores/auth'
 import { useThemeStore } from '../../stores/theme'
 import { useLocaleStore } from '../../stores/locale'
+import TwoFactorSetup from './TwoFactorSetup.vue'
 
 interface Props {
   /** Заголовок страницы (по умолчанию «Profile»). */
@@ -105,15 +106,22 @@ function onAvatarReplace(): void {
   emit('avatar-replace')
 }
 
-function on2FADisable(): void {
-  emit('two-factor-disable')
-}
+// Локальный флаг статуса 2FA — обновляется событиями встроенного визарда
+// TwoFactorSetup, чтобы бейдж «Включена/Отключена» реагировал мгновенно.
+const twoFAEnabled = ref<boolean>(Boolean(auth.user?.twoFactorEnabled))
+const has2FA = computed(() => twoFAEnabled.value)
 
-function on2FARegenerate(): void {
+function onTwoFactorEnabled(): void {
+  twoFAEnabled.value = true
+  if (auth.user) auth.user.twoFactorEnabled = true
   emit('two-factor-regenerate')
 }
 
-const has2FA = computed(() => Boolean(auth.user?.twoFactorEnabled))
+function onTwoFactorDisabled(): void {
+  twoFAEnabled.value = false
+  if (auth.user) auth.user.twoFactorEnabled = false
+  emit('two-factor-disable')
+}
 </script>
 
 <template>
@@ -205,30 +213,18 @@ const has2FA = computed(() => Boolean(auth.user?.twoFactorEnabled))
             </UidBadge>
           </header>
 
-          <p v-if="has2FA" class="admin-profile__hint">
-            2FA включена. У вас остались recovery-коды на случай потери устройства.
-          </p>
-          <p v-else class="admin-profile__hint">
-            Включите 2FA для дополнительной защиты аккаунта.
-          </p>
-
-          <footer class="admin-profile__card-ft">
-            <template v-if="has2FA">
-              <UidButton variant="ghost" size="sm" @click="on2FARegenerate">
-                Перегенерировать коды
-              </UidButton>
-              <UidButton variant="danger" size="sm" @click="on2FADisable">
-                Отключить 2FA
-              </UidButton>
-            </template>
-            <template v-else>
-              <slot name="enable-2fa">
-                <UidButton variant="primary" disabled>
-                  Включить 2FA (host customize)
-                </UidButton>
-              </slot>
-            </template>
-          </footer>
+          <!--
+            Встроенный визард TwoFactorSetup сам ходит в /profile/twoFactor*
+            (enable/confirm/disable/regenerate) и рендерит все стадии. Host
+            может полностью заменить блок через slot `enable-2fa`.
+          -->
+          <slot name="enable-2fa">
+            <TwoFactorSetup
+              :enabled="has2FA"
+              @enabled="onTwoFactorEnabled"
+              @disabled="onTwoFactorDisabled"
+            />
+          </slot>
         </UidCard>
 
         <!-- Tokens / Sessions / другое — host рендерит через slot -->
