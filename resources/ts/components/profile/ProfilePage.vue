@@ -86,7 +86,13 @@ watch(
   () => profile.value.locale,
   (next, prev) => {
     if (next === prev || !next) return
-    void locale.setLocale(next).catch(() => undefined)
+    // Reload после смены локали — заново бутстрапит меню/манифест/i18n (BL-11).
+    void locale
+      .setLocale(next)
+      .then(() => {
+        if (typeof window !== 'undefined') window.location.reload()
+      })
+      .catch(() => undefined)
   },
 )
 

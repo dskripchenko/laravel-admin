@@ -12,6 +12,10 @@ const locale = useLocaleStore()
 async function pick(loc: string): Promise<void> {
   if (loc === locale.current) return
   await locale.setLocale(loc)
+  // Полный reload: заново бутстрапит меню/манифест/i18n-bag в новой локали
+  // (setLocale только persist'ит + меняет header; кэш меню/манифеста иначе
+  // остаётся в старой локали) — BL-11.
+  if (typeof window !== 'undefined') window.location.reload()
 }
 </script>
 

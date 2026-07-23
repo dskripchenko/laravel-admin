@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import MockAdapter from 'axios-mock-adapter'
@@ -12,6 +12,12 @@ describe('LocaleSwitcher', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
+    // pick() делает window.location.reload() после смены локали (BL-11) —
+    // в jsdom это «not implemented»; глушим, поведение проверяется e2e.
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: vi.fn() },
+    })
     const client = createAdminClient({ baseURL: 'http://api.test' })
     setAdminClient(client)
     mock = new MockAdapter(client.raw)
