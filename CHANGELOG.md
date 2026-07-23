@@ -5,6 +5,41 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.10] - 2026-07-23
+
+### Added
+- `Field\Generated` + `GeneratedField.vue` (`generated-field`) — строка с
+  криптослучайной автогенерацией (токены/секреты): только
+  `crypto.getRandomValues`, rejection sampling без modulo bias; length/
+  charset/autogenerate. Перенос из host-реализации printable (BL-34/35).
+- Lang-bag: секции `admin.search.*`, `admin.fields.generate` (ru/en).
+
+### Changed
+- `AdminNotification` теперь `ShouldQueue` — доменный фан-аут уведомлений
+  не блокирует request path.
+- `Manifest::build()` мемоизируется per-instance (locale|panel): bootstrap
+  больше не собирает манифест дважды за запрос (`version()` переиспользует
+  memo); добавлен `flush()`.
+- `Resource::$group` и group в меню переводятся при сериализации через
+  `__()` (i18n групп, идемпотентно для непереведённых строк).
+- ⌘K-палитра: инпут получает фокус сразу при открытии (`autofocus` +
+  @dskripchenko/ui 1.1.3, где focus-trap предпочитает `[autofocus]`);
+  строки палитры — через lang-bag.
+
+## [1.10.0…1.10.9] - 2026-07-23 (консолидировано)
+
+Backlog-трейн printable (BL-1…36): CSRF-интерцептор (стухший X-CSRF-TOKEN),
+not-found экран edit-форм, bulk-тулбар + disabled-гейтинг, авто-inject
+TrashedFilter в search, per-resource importable()/exportable(), BadgeEntry
+colors/labels, manifest.refresh() без обнуления (fix «схлопывания» формы),
+инлайн-чекбоксы, выравнивания shell/timeline, кликабельный RecentListWidget
+(linkTo), рабочий 2FA-визард в профиле (v1.10.3), audit type_labels +
+resolveTypeLabel (v1.10.4), глобальный ⌘K-поиск: GET /system/search +
+GlobalSearch.vue (v1.10.5), персист периода дашборда + JSON-экспорт +
+empty-state добавления виджетов (v1.10.6), брендинг из config('admin.brand')
+в shell + favicon + копирайт (v1.10.7), перевод MenuNode-лейблов per-request
+(v1.10.8), reload при смене локали (v1.10.9).
+
 ## [npm 1.9.3] - 2026-07-22
 
 ### Fixed

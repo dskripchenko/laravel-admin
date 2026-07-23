@@ -23,6 +23,7 @@ import KeyValueField from '../fields/KeyValueField.vue'
 import RepeaterField from '../fields/RepeaterField.vue'
 import BuilderField from '../fields/BuilderField.vue'
 import RelationTableField from '../fields/RelationTableField.vue'
+import GeneratedField from '../fields/GeneratedField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -106,6 +107,7 @@ export function registerBuiltinComponents(): void {
       // Составные поля (backlog ROADMAP): рендерились UnknownField.
       key_value: KeyValueField,
       repeater: RepeaterField,
+    'generated-field': GeneratedField,
       builder: BuilderField,
       relation_table: RelationTableField,
     },

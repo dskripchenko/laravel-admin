@@ -197,3 +197,8 @@ it('exposes actor_label / subject_label accessors in serialization (BL-4)', func
     expect($arr['actor_label'])->toBe('Администратор');
     expect($arr['subject_label'])->toBe('Администратор');
 });
+
+it('AdminNotification is queued (не блокирует request path)', function (): void {
+    expect(new Dskripchenko\LaravelAdmin\Notifications\AdminNotification('t'))
+        ->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
+});

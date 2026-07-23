@@ -61,6 +61,7 @@ it('manifest version changes when adding a resource', function (): void {
     /** @var ResourceRegistry $rr */
     $rr = app(ResourceRegistry::class);
     $rr->add(TestUserResource::class);
+    $manifest->flush(); // memo: сборка кэшируется per-instance — реестр мутирован
 
     $withResource = $manifest->build('ru')['version'];
 

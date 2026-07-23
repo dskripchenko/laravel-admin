@@ -1,6 +1,6 @@
 {
     "name": "@dskripchenko/laravel-admin",
-    "version": "1.10.9",
+    "version": "1.10.10",
     "publishConfig": {
         "access": "public"
     },
@@ -149,7 +149,7 @@
         }
     },
     "devDependencies": {
-        "@dskripchenko/ui": "^1.1.2",
+        "@dskripchenko/ui": "^1.1.3",
         "@dskripchenko/wysiwyg": "^0.2.3",
         "@eslint/js": "^10.0.1",
         "@size-limit/preset-small-lib": "^12.1.0",

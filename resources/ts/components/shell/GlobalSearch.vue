@@ -15,6 +15,7 @@ import { UidIcon, UidModal, UidSpinner } from '@dskripchenko/ui'
 import { Search, CornerDownLeft } from 'lucide-vue-next'
 import { getAdminClient } from '../../stores/registry'
 import { useMenuStore, type MenuItem } from '../../stores/menu'
+import { useI18nStore } from '../../stores/i18n'
 import { resolveIcon } from './iconRegistry'
 
 interface Props {
@@ -38,6 +39,8 @@ interface Group {
 
 const router = useRouter()
 const menu = useMenuStore()
+const i18n = useI18nStore()
+const t = (k: string, fb: string): string => (i18n.has(k) ? i18n.t(k) : fb)
 
 const query = ref<string>('')
 const loading = ref<boolean>(false)
@@ -68,7 +71,7 @@ const navGroup = computed<Group | null>(() => {
     .slice(0, 6)
     .map<Hit>((it) => ({ title: it.label, subtitle: null, url: it.url as string }))
   if (hits.length === 0) return null
-  return { label: 'Разделы', icon: null, items: hits }
+  return { label: t('admin.search.sections', 'Разделы'), icon: null, items: hits }
 })
 
 /** Все группы для рендера: сначала навигация, затем записи. */
@@ -158,8 +161,9 @@ watch(open, (isOpen) => {
         ref="inputRef"
         v-model="query"
         type="text"
+        autofocus
         class="admin-search__input"
-        placeholder="Поиск по разделам и записям…"
+        :placeholder="t('admin.search.placeholder', 'Поиск по разделам и записям…')"
         autocomplete="off"
         spellcheck="false"
         @keydown.down.prevent="onArrow(1)"
@@ -171,10 +175,10 @@ watch(open, (isOpen) => {
 
     <div class="admin-search__results">
       <p v-if="!hasQuery" class="admin-search__hint">
-        Введите минимум 2 символа. Ищет по разделам и записям всех ресурсов.
+        {{ t('admin.search.hint_min', 'Введите минимум 2 символа. Ищет по разделам и записям всех ресурсов.') }}
       </p>
       <p v-else-if="showEmpty" class="admin-search__hint">
-        Ничего не найдено по запросу «{{ query }}».
+        {{ t('admin.search.hint_empty', 'Ничего не найдено по запросу') }} «{{ query }}».
       </p>
 
       <div v-for="group in groups" :key="group.label" class="admin-search__group">

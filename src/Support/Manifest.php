@@ -33,6 +33,23 @@ final class Manifest
     ) {}
 
     /**
+     * Memo собранных манифестов на время жизни инстанса (singleton =
+     * один HTTP-запрос в FPM). Убирает двойную сборку bootstrap'а
+     * (version() внутри звал полный build(), затем /manifest строил ещё раз).
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private array $built = [];
+
+    /**
+     * Сбросить memo (для тестов, мутирующих реестры между сборками).
+     */
+    public function flush(): void
+    {
+        $this->built = [];
+    }
+
+    /**
      * Собрать manifest для текущего пользователя и локали.
      *
      * На P1 фильтрация по permissions ещё не делается — все resource'ы видны.
@@ -44,6 +61,10 @@ final class Manifest
     {
         // v1.8 Panels: null — манифест дефолтной панели (BC).
         $panel ??= 'admin';
+        $memoKey = $locale.'|'.$panel;
+        if (isset($this->built[$memoKey])) {
+            return $this->built[$memoKey];
+        }
 
         $resourcesPayload = [];
         foreach ($this->resources->all($panel) as $slug => $class) {
@@ -129,7 +150,7 @@ final class Manifest
             'permissions' => [],
         ];
 
-        return [
+        return $this->built[$memoKey] = [
             'version' => $this->buildVersion($payload),
             ...$payload,
         ];

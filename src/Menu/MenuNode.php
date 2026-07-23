@@ -238,7 +238,7 @@ final class MenuNode
             'url' => $this->url,
             'routeName' => $this->routeName,
             'badge' => $this->badge,
-            'group' => $this->group,
+            'group' => $this->group === null ? null : (string) __($this->group),
             'order' => $this->order,
             'permissions' => $this->permissions,
             'children' => $children,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use InvalidArgumentException;
 
@@ -27,7 +28,7 @@ use InvalidArgumentException;
  * Можно extend'ить для domain-specific notifications с собственным channels
  * и via() конфигом.
  */
-class AdminNotification extends Notification
+class AdminNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 

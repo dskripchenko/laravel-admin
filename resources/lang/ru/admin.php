@@ -189,4 +189,14 @@ return [
         'permissions' => 'Permission keys',
         'permissions_help' => 'Введите ключ и нажмите Enter. Поддерживаются glob-маски: admin.content.* / admin.*.view / *.',
     ],
+    'search' => [
+        'sections' => 'Разделы',
+        'placeholder' => 'Поиск по разделам и записям…',
+        'hint_min' => 'Введите минимум 2 символа. Ищет по разделам и записям всех ресурсов.',
+        'hint_empty' => 'Ничего не найдено по запросу',
+    ],
+
+    'fields' => [
+        'generate' => 'Сгенерировать',
+    ],
 ];

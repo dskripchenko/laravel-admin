@@ -183,4 +183,14 @@ return [
         'permissions' => 'Permission keys',
         'permissions_help' => 'Type a key and press Enter. Glob masks supported: admin.content.* / admin.*.view / *.',
     ],
+    'search' => [
+        'sections' => 'Sections',
+        'placeholder' => 'Search sections and records…',
+        'hint_min' => 'Type at least 2 characters. Searches sections and records of all resources.',
+        'hint_empty' => 'Nothing found for',
+    ],
+
+    'fields' => [
+        'generate' => 'Generate',
+    ],
 ];
