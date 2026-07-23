@@ -163,6 +163,7 @@ watch(open, (isOpen) => {
         type="text"
         autofocus
         class="admin-search__input"
+        data-testid="search-input"
         :placeholder="t('admin.search.placeholder', 'Поиск по разделам и записям…')"
         autocomplete="off"
         spellcheck="false"
@@ -191,6 +192,7 @@ watch(open, (isOpen) => {
           :key="group.label + item.url"
           type="button"
           class="admin-search__item"
+          data-testid="search-item"
           :class="{ 'admin-search__item--active': indexOfHit(group, item) === activeIndex }"
           @click="select(item)"
           @mousemove="activeIndex = indexOfHit(group, item)"

@@ -259,6 +259,7 @@ function onCancel(): void {
           variant="danger"
           :disabled="form.saving || form.deleting"
           :loading="form.deleting"
+          data-testid="form-delete"
           @click="onDelete"
         >
           Удалить
@@ -268,6 +269,7 @@ function onCancel(): void {
           variant="primary"
           :disabled="form.saving || form.loading"
           :loading="form.saving"
+          data-testid="form-save"
           @click="onSave"
         >
           {{ form.isCreate ? 'Создать' : 'Сохранить' }}

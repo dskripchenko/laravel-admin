@@ -75,6 +75,7 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
     <slot name="search">
       <div
         class="admin-topbar__search"
+        data-testid="topbar-search"
         role="button"
         tabindex="0"
         @click="emit('open-search')"

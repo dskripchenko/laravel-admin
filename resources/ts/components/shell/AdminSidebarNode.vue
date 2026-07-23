@@ -135,6 +135,7 @@ function toggle(): void {
     <UidSidebarItem
       v-else
       class="admin-sidebar-node__leaf"
+      :data-testid="`menu-${item.key}`"
       :to="itemTarget"
       :active="isActive(item)"
       :badge="item.badge ?? undefined"

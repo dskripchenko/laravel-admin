@@ -173,7 +173,7 @@ const qrSvg = computed<string>(() => {
         Двухфакторная аутентификация добавляет второй слой защиты — даже если пароль попадёт
         в чужие руки, без OTP-кода из приложения войти не получится.
       </p>
-      <UidButton variant="primary" :loading="busy" @click="startSetup">
+      <UidButton variant="primary" :loading="busy" data-testid="2fa-enable" @click="startSetup">
         <template #prepend><UidIcon :icon="ShieldCheck" :size="14" /></template>
         Включить 2FA
       </UidButton>
@@ -186,7 +186,7 @@ const qrSvg = computed<string>(() => {
         <li>Откройте Authenticator-приложение (Google Authenticator, 1Password, Authy…).</li>
         <li>
           Добавьте новый аккаунт вручную, скопировав ключ:
-          <div class="admin-2fa__secret">
+          <div class="admin-2fa__secret" data-testid="2fa-secret">
             <code>{{ formattedSecret }}</code>
             <button type="button" class="admin-2fa__copy" @click="copySecret">
               <UidIcon :icon="Copy" :size="12" />
@@ -206,6 +206,7 @@ const qrSvg = computed<string>(() => {
           <div class="admin-2fa__code-row">
             <UidInput
               v-model="code"
+              data-testid="2fa-code"
               placeholder="123456"
               maxlength="6"
               class="admin-2fa__code-input"
@@ -214,6 +215,7 @@ const qrSvg = computed<string>(() => {
               variant="primary"
               :loading="busy"
               :disabled="code.length < 4"
+              data-testid="2fa-confirm"
               @click="confirmCode"
             >
               Подтвердить
@@ -255,7 +257,7 @@ const qrSvg = computed<string>(() => {
           <template #prepend><UidIcon :icon="RefreshCw" :size="14" /></template>
           Перегенерировать recovery-коды
         </UidButton>
-        <UidButton variant="danger" :loading="busy" @click="disable">
+        <UidButton variant="danger" :loading="busy" data-testid="2fa-disable" @click="disable">
           <template #prepend><UidIcon :icon="ShieldOff" :size="14" /></template>
           Отключить 2FA
         </UidButton>

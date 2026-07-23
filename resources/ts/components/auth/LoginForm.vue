@@ -99,6 +99,7 @@ async function submit(): Promise<void> {
       :disabled="submitting"
       :error="emailError"
       name="email"
+      data-testid="login-email"
     />
 
     <UidInput
@@ -110,6 +111,7 @@ async function submit(): Promise<void> {
       :disabled="submitting"
       :error="passwordError"
       name="password"
+      data-testid="login-password"
     />
 
     <div class="admin-auth-card__row">
@@ -125,6 +127,7 @@ async function submit(): Promise<void> {
       size="lg"
       :loading="submitting"
       :disabled="submitting"
+      data-testid="login-submit"
     >
       {{ submitting ? 'Вход…' : 'Войти' }}
     </UidButton>

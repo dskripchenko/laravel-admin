@@ -602,7 +602,7 @@ function onExport(): void {
 
         <UidMenu>
           <template #trigger>
-            <UidButton variant="ghost" size="md">
+            <UidButton variant="ghost" size="md" data-testid="dash-period">
               <template #prepend><UidIcon :icon="Calendar" :size="14" /></template>
               {{ periodLabel }}
               <template #append><UidIcon :icon="ChevronDown" :size="14" /></template>
@@ -617,20 +617,20 @@ function onExport(): void {
           </UidMenuItem>
         </UidMenu>
 
-        <UidButton variant="secondary" size="md" @click="onExport">
+        <UidButton variant="secondary" size="md" data-testid="dash-export" @click="onExport">
           <template #prepend><UidIcon :icon="Download" :size="14" /></template>
           {{ t('admin.dashboard.export', 'Экспорт') }}
         </UidButton>
 
         <!-- Edit-mode toggle -->
         <template v-if="!dashboardStore.editMode">
-          <UidButton variant="secondary" size="md" @click="onEnterEdit">
+          <UidButton variant="secondary" size="md" data-testid="dash-edit" @click="onEnterEdit">
             <template #prepend><UidIcon :icon="Pencil" :size="14" /></template>
             {{ t('admin.dashboard.edit_layout', 'Редактировать') }}
           </UidButton>
         </template>
         <template v-else>
-          <UidButton variant="secondary" size="md" @click="openAdd">
+          <UidButton variant="secondary" size="md" data-testid="dash-add-widget" @click="openAdd">
             <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
             {{ t('admin.dashboard.add_widget', 'Добавить виджет') }}
           </UidButton>

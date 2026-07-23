@@ -1059,7 +1059,7 @@ async function retryLoad(): Promise<void> {
           accept=".csv,.json,.xlsx,.xls,application/json,text/csv"
           @change="onImportFileChange"
         />
-        <UidButton
+        <UidButton data-testid="resource-create"
           v-if="resolvedCreateRouteName && isCreatable"
           variant="primary"
           size="md"
@@ -1074,7 +1074,7 @@ async function retryLoad(): Promise<void> {
     <!-- Bulk toolbar (selection > 0) ИЛИ filter bar. Действия ресурса
          (provision/suspend/drop …) доступны ТОЛЬКО здесь — без выбора
          строк запустить массовое действие нельзя (BL-26). -->
-    <div v-if="index.hasSelection" class="admin-bulk-toolbar" role="toolbar">
+    <div v-if="index.hasSelection" class="admin-bulk-toolbar" data-testid="bulk-bar" role="toolbar">
       <span class="admin-bulk-toolbar__count">
         Выбрано <b>{{ index.selectedCount }}</b>
       </span>
