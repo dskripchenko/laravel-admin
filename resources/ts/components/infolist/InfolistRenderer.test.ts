@@ -130,4 +130,24 @@ describe('InfolistRenderer', () => {
     // → нет такого entry → UnknownEntry
     expect(w.text()).toContain('rows')
   })
+  it('BadgeEntry maps colors variant and localizes label', () => {
+    const wrapper = mount(Wrap, {
+      props: {
+        record: { status: 'active' },
+        node: {
+          kind: 'entry', type: 'badge', name: 'status', label: 'Статус',
+          attributes: {
+            colors: { active: 'success', archived: 'default' },
+            labels: { active: 'Активен', archived: 'Архивирован' },
+          },
+        },
+      },
+    })
+    // Отображается локализованная подпись, не сырое значение.
+    expect(wrapper.text()).toContain('Активен')
+    expect(wrapper.text()).not.toContain('active')
+    // success-variant применён (класс бэйджа).
+    expect(wrapper.html()).toMatch(/badge.*success|success.*badge/)
+  })
+
 })

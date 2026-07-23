@@ -229,7 +229,7 @@ async function onBulkDelete(): Promise<void> {
  *   - xlsx       — openspout/openspout
  *   - pdf        — mpdf/mpdf или dompdf/dompdf
  */
-async function onExport(format: 'csv' | 'json' | 'xlsx' | 'pdf' = 'csv'): Promise<void> {
+async function onExport(format: string = 'csv'): Promise<void> {
   emit('header-action', 'export')
   try {
     nav.start()
@@ -372,6 +372,23 @@ const isEditable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   return features.editable !== false
 })
+
+/** Import доступен только при features.importable (default false). */
+const isImportable = computed<boolean>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  return features.importable === true
+})
+
+/** Форматы экспорта из features.exportable — показываем только реально
+ * поддерживаемые (иначе пункты xlsx/pdf вели в никуда). */
+const exportFormats = computed<string[]>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  const list = Array.isArray(features.exportable) ? (features.exportable as string[]) : ['csv']
+  return list.filter((f) => typeof f === 'string' && f.length > 0)
+})
+const EXPORT_LABELS: Record<string, string> = {
+  csv: 'CSV', json: 'JSON', xlsx: 'XLSX', pdf: 'PDF',
+}
 
 const columns = computed<UidTableColumn[]>(() => {
   const cols = resourceMeta.value?.columns ?? []
@@ -1014,10 +1031,13 @@ async function retryLoad(): Promise<void> {
             </UidButton>
           </template>
           <UidMenuItem @click="retryLoad">Обновить</UidMenuItem>
-          <UidMenuItem @click="onExport('csv')">Экспорт CSV</UidMenuItem>
-          <UidMenuItem @click="onExport('json')">Экспорт JSON</UidMenuItem>
-          <UidMenuItem @click="onExport('xlsx')">Экспорт XLSX</UidMenuItem>
-          <UidMenuItem @click="onExport('pdf')">Экспорт PDF</UidMenuItem>
+          <UidMenuItem
+            v-for="fmt in exportFormats"
+            :key="fmt"
+            @click="onExport(fmt)"
+          >
+            Экспорт {{ EXPORT_LABELS[fmt] ?? fmt.toUpperCase() }}
+          </UidMenuItem>
           <!-- Кастомные действия от backend Resource->actions(). -->
           <UidMenuItem
             v-for="action in headerActions"
@@ -1028,9 +1048,9 @@ async function retryLoad(): Promise<void> {
           </UidMenuItem>
           <slot name="header-menu" />
         </UidMenu>
-        <UidButton variant="secondary" size="md" @click="onImportClick">
+        <UidButton v-if="isImportable" variant="secondary" size="md" @click="onImportClick">
           <template #prepend><UidIcon :icon="Upload" :size="14" /></template>
-          Import
+          Импорт
         </UidButton>
         <input
           ref="importInput"

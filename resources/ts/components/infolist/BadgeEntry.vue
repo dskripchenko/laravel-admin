@@ -18,6 +18,10 @@ interface Props {
   value?: string | null
   /** map value → variant. Если не задан — default. */
   map?: Record<string, BadgeVariant>
+  /** Backend BadgeEntry::colors() — value → variant (алиас map). */
+  colors?: Record<string, BadgeVariant>
+  /** map value → отображаемая подпись (локализация: active → «Активен»). */
+  labels?: Record<string, string>
   /** Принудительный variant. */
   variant?: BadgeVariant
 }
@@ -27,6 +31,8 @@ const props = withDefaults(defineProps<Props>(), {
   label: '',
   value: undefined,
   map: () => ({}),
+  colors: () => ({}),
+  labels: () => ({}),
   variant: undefined,
 })
 
@@ -38,15 +44,20 @@ const value = computed<string>(() => {
   }
   return v === null || v === undefined ? '' : String(v)
 })
+const variantMap = computed<Record<string, BadgeVariant>>(() => ({
+  ...props.map,
+  ...props.colors,
+}))
 const resolvedVariant = computed<BadgeVariant>(() => {
   if (props.variant) return props.variant
-  return props.map[value.value] ?? 'default'
+  return variantMap.value[value.value] ?? 'default'
 })
+const displayLabel = computed<string>(() => props.labels[value.value] ?? value.value)
 </script>
 
 <template>
   <UidBadge v-if="value" :variant="resolvedVariant">
-    {{ value }}
+    {{ displayLabel }}
   </UidBadge>
   <span v-else class="admin-infolist-text">—</span>
 </template>
