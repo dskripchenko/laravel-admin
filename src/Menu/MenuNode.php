@@ -228,7 +228,12 @@ final class MenuNode
 
         return [
             'key' => $this->key,
-            'label' => $this->label,
+            // Лейбл резолвится через переводчик ПРИ СЕРИАЛИЗАЦИИ (per-request,
+            // после AdminLocale middleware) — иначе `->label('Клиенты')` брался
+            // бы в локали boot'а плагина (i18n меню, BL-11). Строки без перевода
+            // возвращаются как есть (ключ = fallback); resource-лейблы уже
+            // локализованы Resource::label() и __() к ним идемпотентен.
+            'label' => $this->label === '' ? '' : (string) __($this->label),
             'icon' => $this->icon,
             'url' => $this->url,
             'routeName' => $this->routeName,

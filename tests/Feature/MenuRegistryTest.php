@@ -184,3 +184,17 @@ it('GET /system/menu fallbacks to auto-only when registry is empty', function ()
     expect($items)->toHaveCount(1);
     expect($items[0]['key'])->toBe('screen.test-contact');
 });
+
+it('MenuNode::toArray translates the label through the translator per-request (BL-11)', function (): void {
+    app('translator')->addLines(['menu.clients' => 'Clients EN'], 'en');
+    app()->setLocale('en');
+
+    $node = MenuNode::make('c', 'menu.clients');
+    $arr = $node->toArray(app(ResourceRegistry::class), app(ScreenRegistry::class));
+
+    expect($arr['label'])->toBe('Clients EN');
+
+    // Незамапленный лейбл — возвращается как есть (ключ = fallback).
+    $raw = MenuNode::make('r', 'Просто текст')->toArray(app(ResourceRegistry::class), app(ScreenRegistry::class));
+    expect($raw['label'])->toBe('Просто текст');
+});
