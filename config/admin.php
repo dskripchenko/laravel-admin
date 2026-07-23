@@ -123,6 +123,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | OpenAPI / Scalar
+    |--------------------------------------------------------------------------
+    | `scalar_script` — URL Scalar-бандла. По умолчанию внешний CDN (jsdelivr);
+    | host-проект может задать локальный self-host путь для окружений без
+    | доступа к CDN (`/vendor/scalar/api-reference.js`).
+    */
+    'openapi' => [
+        'ui' => env('ADMIN_OPENAPI_UI', 'scalar'),
+        'scalar_theme' => 'default',
+        'scalar_script' => env('ADMIN_SCALAR_SCRIPT', 'https://cdn.jsdelivr.net/npm/@scalar/api-reference'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Notifications
     |--------------------------------------------------------------------------
     */

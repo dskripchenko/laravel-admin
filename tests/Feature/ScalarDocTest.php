@@ -47,3 +47,21 @@ it('Scalar doc passes $sources from API versions', function (): void {
     // в data-configuration — sources с slug='admin'.
     expect($html)->toContain('admin.json');
 });
+
+it('Scalar script URL is configurable and falls back with raw spec links', function (): void {
+    config()->set('admin.openapi.scalar_script', '/vendor/scalar/api-reference.js');
+
+    $admin = Dskripchenko\LaravelAdmin\Models\AdminUser::create([
+        'name' => 'D', 'email' => 'doc-'.uniqid().'@example.com', 'password' => 'secret',
+    ]);
+    $this->actingAs($admin, 'admin');
+
+    $html = $this->get('/api/admin/doc')->assertOk()->getContent();
+
+    // Скрипт грузится с настроенного (локального) URL, не с жёсткого CDN.
+    expect($html)->toContain('src="/vendor/scalar/api-reference.js"');
+    expect($html)->not->toContain('cdn.jsdelivr.net');
+    // Fallback-блок со ссылками на сырые спеки присутствует.
+    expect($html)->toContain('api-doc-fallback');
+    expect($html)->toContain('OpenAPI');
+});
