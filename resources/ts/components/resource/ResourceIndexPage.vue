@@ -495,6 +495,31 @@ function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
   return (slotProps as { row?: Record<string, unknown> } | undefined)?.row
 }
 
+/** Колонка-ссылка (preset 'link', см. TableColumn::asLink). */
+function columnIsLink(key: string): boolean {
+  return columnMeta.value[key]?.preset === 'link'
+}
+
+/**
+ * Резолв href для link-колонки: шаблон из meta.template с плейсхолдерами
+ * `{field}` (значение поля строки) и `:value` (значение ячейки). Пусто —
+ * если поле отсутствует/null (тогда ссылка не рендерится, остаётся текст).
+ */
+function linkHref(key: string, slotProps: unknown): string {
+  const row = rowFromSlot(slotProps) ?? {}
+  const tpl = (columnMeta.value[key]?.meta?.template as string | undefined) ?? ''
+  if (!tpl) return ''
+  const href = tpl
+    .replace(/\{(\w+)\}/g, (_m, f: string) => String(row[f] ?? ''))
+    .replace(/:value/g, String(row[key] ?? ''))
+  // если остались нерезолвленные плейсхолдеры или пусто — ссылки нет
+  return href.includes('{') || href === '' ? '' : href
+}
+
+function linkTarget(key: string): string | undefined {
+  return (columnMeta.value[key]?.meta?.target as string | undefined) ?? undefined
+}
+
 /**
  * Показывать ли filter-toolbar:
  *   - если есть данные → всегда (search + фильтры внутри);
@@ -1305,6 +1330,14 @@ async function retryLoad(): Promise<void> {
             >
               <span class="admin-cell-truncate">{{ renderCell(col.key, slotProps) }}</span>
             </InlineEditCell>
+            <a
+              v-else-if="columnIsLink(col.key) && linkHref(col.key, slotProps)"
+              class="admin-cell-truncate admin-cell-link"
+              :href="linkHref(col.key, slotProps)"
+              :target="linkTarget(col.key)"
+              rel="noopener"
+              :title="renderCell(col.key, slotProps)"
+            >{{ renderCell(col.key, slotProps) }}</a>
             <span
               v-else
               class="admin-cell-truncate"
@@ -1451,6 +1484,14 @@ async function retryLoad(): Promise<void> {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.admin-cell-link {
+  color: var(--uid-accent, #2563eb);
+  text-decoration: none;
+  cursor: pointer;
+}
+.admin-cell-link:hover {
+  text-decoration: underline;
 }
 .admin-cell-truncate--multi {
   display: -webkit-box;

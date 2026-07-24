@@ -214,21 +214,20 @@ final class TableColumn
     }
 
     /**
-     * Превратить значение в clickable link.
+     * Превратить значение ячейки в clickable link.
      *
-     * @param  string|callable(mixed, array<string, mixed>): string  $href
-     *                                                                      Строка-шаблон с `:value` либо callable($value, $row): string.
+     * $template — href-шаблон с плейсхолдерами, резолвится на фронте по строке:
+     *   `{field}` — значение поля строки (напр. `{signed_download_url}`),
+     *   `:value`  — значение самой ячейки.
+     * Если резолв пустой (поле null) — ссылка не рендерится, остаётся текст.
+     *
+     * Callable намеренно НЕ поддерживается: конфиг колонки сериализуется в
+     * manifest (JSON), замыкание туда не попадает. Нужную ссылку кладите
+     * appended-атрибутом модели и ссылайтесь на неё через `{attr}`.
      */
-    public function asLink(string|callable $href, ?string $target = null): self
+    public function asLink(string $template, ?string $target = null): self
     {
-        $config = ['target' => $target];
-        if (is_string($href)) {
-            $config['template'] = $href;
-        } else {
-            $config['hrefFn'] = $href;
-        }
-
-        return $this->as('link', $config);
+        return $this->as('link', ['template' => $template, 'target' => $target]);
     }
 
     /**

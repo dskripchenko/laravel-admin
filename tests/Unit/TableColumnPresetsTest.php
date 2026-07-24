@@ -51,12 +51,14 @@ it('asLink with string template', function (): void {
     expect($arr['meta']['target'])->toBe('_blank');
 });
 
-it('asLink with callable stores hrefFn (not template)', function (): void {
-    $arr = TableColumn::make('id')
-        ->asLink(fn ($v, $row) => "/users/{$v}")
+it('asLink template supports {field} row-placeholder', function (): void {
+    // Ссылка из appended-атрибута строки (сериализуемо, без замыканий).
+    $arr = TableColumn::make('filename')
+        ->asLink('{signed_download_url}', '_blank')
         ->toArray();
-    expect($arr['meta']['template'] ?? null)->toBeNull();
-    expect($arr['meta']['hrefFn'])->toBeCallable();
+    expect($arr['preset'])->toBe('link');
+    expect($arr['meta']['template'])->toBe('{signed_download_url}');
+    expect($arr['meta'])->not->toHaveKey('hrefFn');
 });
 
 it('asImage stores width/height meta', function (): void {
