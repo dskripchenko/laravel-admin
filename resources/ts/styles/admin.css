@@ -196,8 +196,10 @@
 }
 .admin-topbar__bell-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  /* Угол кнопки (32px, иконка 18px по центру): top/right 6px клали бейдж
+     прямо на колокол — в углу он перекрывает только уголок иконки. */
+  top: 0;
+  right: 0;
   min-width: 14px;
   height: 14px;
   padding: 0 4px;
