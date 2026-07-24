@@ -153,6 +153,18 @@ abstract class Resource
     }
 
     /**
+     * Сериализация записи для SPA (read/create/update-ответы: record/state).
+     * Host переопределяет для virtual-полей формы — например, распаковать
+     * JSON-колонку в плоские поля (обратная сторона fillModel).
+     *
+     * @return array<string, mixed>
+     */
+    public function transformRecord(Model $record): array
+    {
+        return $record->toArray();
+    }
+
+    /**
      * Заголовок записи для глобального поиска / быстрых ссылок. Default —
      * первое непустое из name/title/label/email/slug, иначе первое
      * searchable-поле, иначе `#{id}`. Host переопределяет для кастомного

@@ -532,8 +532,8 @@ final class ResourceController extends ApiController
         }
 
         return $this->success([
-            'record' => $record->toArray(),
-            'state' => $record->toArray(),
+            'record' => $resource->transformRecord($record),
+            'state' => $resource->transformRecord($record),
         ]);
     }
 
@@ -572,7 +572,7 @@ final class ResourceController extends ApiController
         \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
         return $this->created([
-            'record' => $record->toArray(),
+            'record' => $resource->transformRecord($record),
             'redirect_url' => '/admin/r/'.$resource::slug().'/'.$record->getKey(),
             'message' => 'Created',
         ]);
@@ -623,8 +623,8 @@ final class ResourceController extends ApiController
         \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
         return $this->success([
-            'record' => $record->toArray(),
-            'state' => $record->toArray(),
+            'record' => $resource->transformRecord($record),
+            'state' => $resource->transformRecord($record),
             'message' => 'Updated',
         ]);
     }
@@ -863,7 +863,7 @@ final class ResourceController extends ApiController
         $copy->save();
 
         return $this->success([
-            'record' => $copy->toArray(),
+            'record' => $resource->transformRecord($copy),
             'redirect_url' => '/admin/r/'.$resource::slug().'/'.$copy->getKey().'/edit',
             'message' => 'Replicated',
         ]);
@@ -910,7 +910,7 @@ final class ResourceController extends ApiController
         $record->save();
 
         return $this->success([
-            'record' => $record->toArray(),
+            'record' => $resource->transformRecord($record),
             'message' => 'Restored',
         ]);
     }
@@ -998,7 +998,7 @@ final class ResourceController extends ApiController
         $record->delete();
 
         return $this->success([
-            'record' => $record->toArray(),
+            'record' => $resource->transformRecord($record),
             'message' => 'Deleted',
         ]);
     }
@@ -1056,7 +1056,7 @@ final class ResourceController extends ApiController
         $record->forceFill([$columnName => $validated['value'] ?? null])->save();
 
         return $this->success([
-            'record' => $record->toArray(),
+            'record' => $resource->transformRecord($record),
             'column' => $columnName,
             'value' => $record->getAttribute($columnName),
         ]);
