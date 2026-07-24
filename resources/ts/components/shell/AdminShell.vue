@@ -206,6 +206,12 @@ onBeforeUnmount(() => {
      имеет → sidebar-контент был смещён на 3px вниз. Убираем для выравнивания. */
   border-top: none;
 }
+.admin-shell .uid-pattern-sidebar__header {
+  /* Аналогично border-top выше: паттерн несёт border-bottom 1px на header,
+     а admin-topbar — нет → лишний пиксель ломает совмещение горизонталей
+     sidebar-шапки и топбара. В шелле убираем (standalone-кит не трогаем). */
+  border-bottom: none;
+}
 .admin-shell .uid-pattern-sidebar__nav {
   flex: 1 1 0;
   min-height: 0;
