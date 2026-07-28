@@ -120,7 +120,7 @@ const defaultMetrics = computed<MetricRow[]>(() => {
     })
   }
   const created = fmt(r.created_at)
-  if (created) rows.push({ label: 'Создано', value: created })
+  if (created) rows.push({ label: tr('Создано'), value: created })
   const updated = fmt(r.updated_at)
   if (updated && updated !== created) rows.push({ label: 'Обновлено', value: updated })
   const author =
@@ -287,7 +287,7 @@ async function onDelete(): Promise<void> {
       <div class="admin-resource-view__hd-right">
         <UidButton v-if="isEditable" variant="secondary" size="md" @click="onEdit">
           <template #prepend><UidIcon :icon="Pencil" :size="14" /></template>
-          Редактировать
+          {{ tr('Редактировать') }}
         </UidButton>
         <UidMenu>
           <template #trigger>

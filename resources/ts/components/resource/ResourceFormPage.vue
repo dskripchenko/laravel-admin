@@ -149,7 +149,7 @@ function seedDefaultsFromManifest(): void {
 }
 
 const titleLabel = computed(() => {
-  if (form.isCreate) return `Создать: ${resourceMeta.value?.label ?? props.slug}`
+  if (form.isCreate) return `${tr('Создать')}: ${resourceMeta.value?.label ?? props.slug}`
   return `${resourceMeta.value?.label ?? props.slug}: запись #${props.id}`
 })
 
@@ -253,7 +253,7 @@ function onCancel(): void {
           :disabled="form.saving || form.deleting"
           @click="onCancel"
         >
-          Отмена
+          {{ tr('Отмена') }}
         </UidButton>
         <UidButton
           v-if="form.isEdit && !recordNotFound"
@@ -273,7 +273,7 @@ function onCancel(): void {
           data-testid="form-save"
           @click="onSave"
         >
-          {{ form.isCreate ? 'Создать' : 'Сохранить' }}
+          {{ form.isCreate ? tr('Создать') : tr('Сохранить') }}
         </UidButton>
       </div>
     </header>
@@ -322,7 +322,7 @@ function onCancel(): void {
         :disabled="form.saving"
         @click="onSave"
       >
-        Сохранить
+        {{ tr('Сохранить') }}
       </UidButton>
     </div>
   </section>

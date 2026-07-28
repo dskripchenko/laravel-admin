@@ -91,12 +91,12 @@ function eventIcon(event: string): LucideIcon {
 
 function eventLabel(event: string): string {
   const map: Record<string, string> = {
-    created: 'создал',
-    updated: 'отредактировал',
-    deleted: 'удалил',
-    destroyed: 'удалил',
-    restored: 'восстановил',
-    published: 'опубликовал',
+    created: tr('создал'),
+    updated: tr('отредактировал'),
+    deleted: tr('удалил'),
+    destroyed: tr('удалил'),
+    restored: tr('восстановил'),
+    published: tr('опубликовал'),
   }
   return map[event] ?? event
 }
@@ -105,10 +105,10 @@ function relativeTime(iso: string): string {
   const ts = new Date(iso).getTime()
   if (Number.isNaN(ts)) return ''
   const diff = (Date.now() - ts) / 1000
-  if (diff < 60) return `${Math.max(1, Math.floor(diff))} сек назад`
-  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`
-  if (diff < 86_400) return `${Math.floor(diff / 3600)} ч назад`
-  if (diff < 86_400 * 30) return `${Math.floor(diff / 86_400)} д назад`
+  if (diff < 60) return `${Math.max(1, Math.floor(diff))} ${tr('сек назад')}`
+  if (diff < 3600) return `${Math.floor(diff / 60)} ${tr('мин назад')}`
+  if (diff < 86_400) return `${Math.floor(diff / 3600)} ${tr('ч назад')}`
+  if (diff < 86_400 * 30) return `${Math.floor(diff / 86_400)} ${tr('д назад')}`
   return new Date(iso).toLocaleDateString('ru-RU')
 }
 
@@ -184,7 +184,7 @@ function formatVal(v: unknown): string {
               size="xs"
             />
             <span class="admin-audit-timeline__actor">
-              {{ entry.actor?.name ?? 'Система' }}
+              {{ entry.actor?.name ?? tr('Система') }}
             </span>
             <span class="admin-audit-timeline__verb">
               {{ eventLabel(entry.event) }}

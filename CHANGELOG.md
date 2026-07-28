@@ -5,6 +5,15 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.2] - 2026-07-28
+
+### Fixed
+- i18n: добиты фронтовые строки — заголовок/кнопки ResourceFormPage,
+  createLabel и словоформы «записей» ResourceIndexPage, AuditTimeline
+  (события, «Система», относительное время), ResourceViewPage; словарь
+  пакета 124 ключа. EN-обход панелей чист (остаток — placeholder
+  «Выберите…» в @dskripchenko/ui).
+
 ## [1.12.1] - 2026-07-28
 
 ### Fixed
