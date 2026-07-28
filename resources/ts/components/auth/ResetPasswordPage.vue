@@ -12,6 +12,7 @@ import { UidButton, UidCard, UidIcon, UidInput } from '@dskripchenko/ui'
 import { adminToast } from '../../stores/toast'
 import { useBrand } from '../../composables/useBrand'
 import BrandLogo from '../shell/BrandLogo.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 // Бренд из bootstrap.brand (config('admin.brand')) — как на LoginPage.
 const brand = useBrand()
@@ -72,8 +73,8 @@ async function submit(): Promise<void> {
           <span v-else-if="brand.mark">{{ brand.mark }}</span>
           <BrandLogo v-else :size="40" />
         </div>
-        <div class="admin-auth-card__title">Новый пароль</div>
-        <div class="admin-auth-card__sub">Задайте новый пароль для своего аккаунта.</div>
+        <div class="admin-auth-card__title">{{ tr('Новый пароль') }}</div>
+        <div class="admin-auth-card__sub">{{ tr('Задайте новый пароль для своего аккаунта.') }}</div>
       </div>
       <div class="admin-auth-card__body">
         <form @submit.prevent="submit">
@@ -81,14 +82,14 @@ async function submit(): Promise<void> {
           <UidInput
             v-model="password"
             type="password"
-            placeholder="Новый пароль (мин. 8)"
+            :placeholder="tr('Новый пароль (мин. 8)')"
             autocomplete="new-password"
             required
           />
           <UidInput
             v-model="confirm"
             type="password"
-            placeholder="Повторите пароль"
+            :placeholder="tr('Повторите пароль')"
             autocomplete="new-password"
             required
           />

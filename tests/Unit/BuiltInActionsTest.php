@@ -11,7 +11,7 @@ it('RestoreAction returns Button with row position + restore permission', functi
     $arr = RestoreAction::for('admin.posts')->toArray();
     expect($arr['type'])->toBe('button');
     expect($arr['name'])->toBe('restore');
-    expect($arr['label'])->toBe('Восстановить');
+    expect($arr['label'])->toBe((string) __('Восстановить'));
     expect($arr['position'])->toBe(['row']);
     expect($arr['permission'])->toBe('admin.posts.restore');
     expect($arr['icon'])->toBe('rotate-ccw');

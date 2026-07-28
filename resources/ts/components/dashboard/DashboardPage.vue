@@ -68,6 +68,7 @@ const emit = defineEmits<{
 const manifest = useManifestStore()
 const dashboardStore = useDashboardStore()
 const i18n = useI18nStore()
+const tr = (s: string): string => i18n.tr(s)
 // Router в standalone-тестах может отсутствовать — useRoute() в этом случае
 // возвращает undefined (без RouterPlugin). Делаем фоллбэк на пустой объект.
 const route = useRoute() as ReturnType<typeof useRoute> | undefined
@@ -727,7 +728,7 @@ function onExport(): void {
         <span
           v-if="dashboardStore.editMode"
           class="admin-dashboard__resize"
-          aria-label="Изменить размер"
+          :aria-label="tr('Изменить размер')"
           @mousedown="onResizeStart($event, item.layoutSlug, spanFor(item.node), rowSpanFor(item.layoutSlug, item.node))"
         />
       </div>

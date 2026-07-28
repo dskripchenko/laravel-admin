@@ -7,6 +7,7 @@
  */
 import { GripVertical, Settings, X } from 'lucide-vue-next'
 import { UidIcon } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 defineEmits<{
   configure: []
@@ -15,12 +16,12 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="admin-widget-actions" role="toolbar" aria-label="Действия с виджетом">
+  <div class="admin-widget-actions" role="toolbar" :aria-label="tr('Действия с виджетом')">
     <button
       type="button"
       class="admin-widget-actions__btn admin-widget-actions__drag"
-      aria-label="Перетащить"
-      title="Перетащить"
+      :aria-label="tr('Перетащить')"
+      :title="tr('Перетащить')"
       data-drag-handle="true"
     >
       <UidIcon :icon="GripVertical" :size="14" />
@@ -28,8 +29,8 @@ defineEmits<{
     <button
       type="button"
       class="admin-widget-actions__btn"
-      aria-label="Настройки"
-      title="Настройки"
+      :aria-label="tr('Настройки')"
+      :title="tr('Настройки')"
       @click="$emit('configure')"
     >
       <UidIcon :icon="Settings" :size="14" />
@@ -37,8 +38,8 @@ defineEmits<{
     <button
       type="button"
       class="admin-widget-actions__btn admin-widget-actions__btn--danger"
-      aria-label="Удалить"
-      title="Удалить"
+      :aria-label="tr('Удалить')"
+      :title="tr('Удалить')"
       @click="$emit('remove')"
     >
       <UidIcon :icon="X" :size="14" />

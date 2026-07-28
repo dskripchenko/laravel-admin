@@ -73,8 +73,8 @@ it('GeneratedCreateScreen has Сохранить + Отмена in commandBar', 
     $compiled = $screen->compile();
 
     $labels = array_map(fn ($a) => $a['label'], $compiled['command_bar']);
-    expect($labels)->toContain('Сохранить');
-    expect($labels)->toContain('Отмена');
+    expect($labels)->toContain((string) __('Сохранить'));
+    expect($labels)->toContain((string) __('Отмена'));
 });
 
 it('GeneratedEditScreen compile() loads record by id', function (): void {
@@ -106,7 +106,7 @@ it('GeneratedEditScreen commandBar has Сохранить, Удалить, На�
     $compiled = $screen->compile();
 
     $labels = array_map(fn ($a) => $a['label'], $compiled['command_bar']);
-    expect($labels)->toContain('Сохранить');
-    expect($labels)->toContain('Удалить');
+    expect($labels)->toContain((string) __('Сохранить'));
+    expect($labels)->toContain((string) __('Удалить'));
     expect($labels)->toContain('Назад');
 });

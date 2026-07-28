@@ -33,6 +33,7 @@ import {
 } from '@dskripchenko/ui'
 import { useManifestStore } from '../../stores/manifest'
 import { getAdminClient } from '../../stores/registry'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   slug: string
@@ -276,7 +277,7 @@ onMounted(load)
     <div class="admin-resource-tree-page__toolbar">
       <UidInput
         v-model="search"
-        placeholder="Поиск по дереву…"
+        :placeholder="tr('Поиск по дереву…')"
         class="admin-resource-tree-page__search"
       />
       <UidMenu>
@@ -286,8 +287,8 @@ onMounted(load)
             <UidIcon :icon="ChevronDown" />
           </UidButton>
         </template>
-        <UidMenuItem @click="expandAll">Развернуть все</UidMenuItem>
-        <UidMenuItem @click="collapseAll">Свернуть все</UidMenuItem>
+        <UidMenuItem @click="expandAll">{{ tr('Развернуть все') }}</UidMenuItem>
+        <UidMenuItem @click="collapseAll">{{ tr('Свернуть все') }}</UidMenuItem>
       </UidMenu>
       <template v-if="selectedNodeKey !== null">
         <span class="admin-resource-tree-page__selection-divider" aria-hidden="true">|</span>
@@ -315,7 +316,7 @@ onMounted(load)
         >
           <UidIcon :icon="Trash2" /> Удалить
         </UidButton>
-        <UidButton variant="ghost" @click="selectedKeys = []">Снять выбор</UidButton>
+        <UidButton variant="ghost" @click="selectedKeys = []">{{ tr('Снять выбор') }}</UidButton>
       </template>
     </div>
 
@@ -326,7 +327,7 @@ onMounted(load)
       <UidErrorState v-else-if="error" :message="error.message" @retry="load" />
       <UidEmptyState
         v-else-if="nodes.length === 0"
-        title="Нет данных"
+        :title="tr('Нет данных')"
         :hint="search.length > 0 ? 'Ничего не найдено по запросу.' : null"
       />
       <UidTreeView

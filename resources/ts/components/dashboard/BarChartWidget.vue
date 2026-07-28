@@ -9,6 +9,7 @@
  */
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Datum {
   label: string
@@ -54,7 +55,7 @@ const bars = computed(() => {
       <h3 v-if="title" class="admin-widget__title">{{ title }}</h3>
       <p v-if="description" class="admin-widget__desc">{{ description }}</p>
     </header>
-    <div v-if="isEmpty" class="admin-widget__empty">Нет данных за период</div>
+    <div v-if="isEmpty" class="admin-widget__empty">{{ tr('Нет данных за период') }}</div>
     <svg
       v-else
       class="admin-widget-bar-chart"

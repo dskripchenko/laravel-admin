@@ -51,6 +51,7 @@ import { adminToast } from '../../stores/toast'
 import { useI18nStore } from '../../stores/i18n'
 
 const i18n = useI18nStore()
+const tr = (s: string): string => i18n.tr(s)
 /**
  * Локальная обёртка над t() с graceful fallback на ru-string.
  * Это позволяет постепенный sweep: пока bootstrap.translations не наполнен,
@@ -1041,7 +1042,7 @@ async function retryLoad(): Promise<void> {
                 v-if="v.owned"
                 type="button"
                 class="admin-page__view-delete"
-                aria-label="Удалить view"
+                :aria-label="tr('Удалить view')"
                 @click.stop="onDeleteView(v, $event)"
               >
                 <UidIcon :icon="Trash2" :size="12" />
@@ -1051,11 +1052,11 @@ async function retryLoad(): Promise<void> {
         </UidMenu>
         <UidMenu>
           <template #trigger>
-            <UidButton variant="ghost" size="md" aria-label="Действия" class="admin-page__more">
+            <UidButton variant="ghost" size="md" :aria-label="tr('Действия')" class="admin-page__more">
               <UidIcon :icon="MoreHorizontal" :size="16" />
             </UidButton>
           </template>
-          <UidMenuItem @click="retryLoad">Обновить</UidMenuItem>
+          <UidMenuItem @click="retryLoad">{{ tr('Обновить') }}</UidMenuItem>
           <UidMenuItem
             v-for="fmt in exportFormats"
             :key="fmt"
@@ -1113,7 +1114,7 @@ async function retryLoad(): Promise<void> {
       >
         {{ action.label }}
       </UidButton>
-      <UidButton size="sm" variant="ghost" @click="onExport('csv')">Экспорт</UidButton>
+      <UidButton size="sm" variant="ghost" @click="onExport('csv')">{{ tr('Экспорт') }}</UidButton>
       <UidButton
         v-if="isEditable"
         size="sm"
@@ -1165,18 +1166,18 @@ async function retryLoad(): Promise<void> {
     </div>
     <UidErrorState
       v-else-if="index.hasError"
-      title="Не удалось загрузить данные"
+      :title="tr('Не удалось загрузить данные')"
       :description="index.error?.message ?? 'Попробуйте обновить страницу.'"
       class="admin-resource-index__state"
     >
       <template #actions>
-        <UidButton variant="primary" @click="retryLoad">Обновить</UidButton>
+        <UidButton variant="primary" @click="retryLoad">{{ tr('Обновить') }}</UidButton>
       </template>
     </UidErrorState>
     <UidEmptyState
       v-else-if="index.isEmpty"
-      title="Пока пусто"
-      description="Создайте первую запись или измените фильтры."
+      :title="tr('Пока пусто')"
+      :description="tr('Создайте первую запись или измените фильтры.')"
       class="admin-resource-index__state"
     >
       <template #actions>
@@ -1231,7 +1232,7 @@ async function retryLoad(): Promise<void> {
             ]"
             data-row-drag-handle="true"
             :draggable="isReorderable"
-            title="Перетащить"
+            :title="tr('Перетащить')"
             @dragstart="(e: DragEvent) => onRowDragStart(
               index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
               e,
@@ -1257,7 +1258,7 @@ async function retryLoad(): Promise<void> {
             <button
               type="button"
               class="admin-resource-index__row-action"
-              title="Просмотр"
+              :title="tr('Просмотр')"
               @click.stop="onView(rowFromSlot(slotProps) ?? {}, $event)"
             >
               <UidIcon :icon="Eye" :size="16" />
@@ -1267,7 +1268,7 @@ async function retryLoad(): Promise<void> {
                 v-if="isEditable"
                 type="button"
                 class="admin-resource-index__row-action"
-                title="Редактировать"
+                :title="tr('Редактировать')"
                 @click.stop="onEdit(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="Pencil" :size="16" />
@@ -1276,7 +1277,7 @@ async function retryLoad(): Promise<void> {
                 v-if="isEditable"
                 type="button"
                 class="admin-resource-index__row-action admin-resource-index__row-action--danger"
-                title="Удалить"
+                :title="tr('Удалить')"
                 @click.stop="onDelete(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="Trash2" :size="16" />
@@ -1286,7 +1287,7 @@ async function retryLoad(): Promise<void> {
               <button
                 type="button"
                 class="admin-resource-index__row-action"
-                title="Восстановить"
+                :title="tr('Восстановить')"
                 @click.stop="onRestore(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="RotateCcw" :size="16" />
@@ -1294,7 +1295,7 @@ async function retryLoad(): Promise<void> {
               <button
                 type="button"
                 class="admin-resource-index__row-action admin-resource-index__row-action--danger"
-                title="Удалить навсегда"
+                :title="tr('Удалить навсегда')"
                 @click.stop="onForceDelete(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="Trash2" :size="16" />

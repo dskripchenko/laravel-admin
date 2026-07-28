@@ -134,6 +134,10 @@ final class AdminServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'admin');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'admin');
+        // JSON-словарь (ключ = исходная RU-строка) для frontend tr() —
+        // BootstrapBuilder кладёт его в bag; host может перекрыть своим
+        // lang/{locale}.json (BL-11).
+        $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang');
 
         $this->registerAdminGuards();
         $this->registerCommands();

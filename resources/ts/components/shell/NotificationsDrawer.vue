@@ -29,6 +29,7 @@ import {
   type NotificationFilter,
   type NotificationItem,
 } from '../../stores/notifications'
+import { trSafe as tr } from '../../stores/i18n'
 
 const notifications = useNotificationsStore()
 
@@ -193,7 +194,7 @@ onUnmounted(() => {
               <button
                 type="button"
                 class="admin-notif-drawer__close"
-                aria-label="Закрыть"
+                :aria-label="tr('Закрыть')"
                 @click="close"
               >
                 <UidIcon :icon="X" :size="16" />
@@ -273,7 +274,7 @@ onUnmounted(() => {
                 <button
                   type="button"
                   class="admin-notif-drawer__item-delete"
-                  aria-label="Удалить"
+                  :aria-label="tr('Удалить')"
                   @click.stop="onDelete(item, $event)"
                 >
                   <UidIcon :icon="X" :size="12" />

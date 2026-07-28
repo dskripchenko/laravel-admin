@@ -10,6 +10,7 @@ import { UidButton, UidCard, UidIcon } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import type { FieldNode } from '../render/FieldRenderer.vue'
 import NestedFieldsGroup from './NestedFieldsGroup.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   name: string
@@ -113,16 +114,16 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
           <UidButton
             v-if="reorderable"
             variant="ghost" size="sm" :disabled="idx === 0"
-            aria-label="Выше" @click="move(idx, -1)"
+            :aria-label="tr('Выше')" @click="move(idx, -1)"
           ><UidIcon :icon="ChevronUp" :size="14" /></UidButton>
           <UidButton
             v-if="reorderable"
             variant="ghost" size="sm" :disabled="idx === items.length - 1"
-            aria-label="Ниже" @click="move(idx, 1)"
+            :aria-label="tr('Ниже')" @click="move(idx, 1)"
           ><UidIcon :icon="ChevronDown" :size="14" /></UidButton>
           <UidButton
             v-if="canRemove"
-            variant="ghost" size="sm" aria-label="Удалить элемент"
+            variant="ghost" size="sm" :aria-label="tr('Удалить элемент')"
             @click="removeItem(idx)"
           ><UidIcon :icon="X" :size="14" /></UidButton>
         </span>

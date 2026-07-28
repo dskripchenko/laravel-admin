@@ -20,6 +20,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useThemeStore } from '../../stores/theme'
 import { useLocaleStore } from '../../stores/locale'
 import TwoFactorSetup from './TwoFactorSetup.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   /** Заголовок страницы (по умолчанию «Profile»). */
@@ -160,7 +161,7 @@ function onTwoFactorDisabled(): void {
         <!-- General -->
         <UidCard v-if="localSection === 'general'" padding="md">
           <header class="admin-profile__card-hd">
-            <h3 class="admin-profile__card-title">Профиль</h3>
+            <h3 class="admin-profile__card-title">{{ tr('Профиль') }}</h3>
           </header>
 
           <div class="admin-profile__hero">
@@ -184,7 +185,7 @@ function onTwoFactorDisabled(): void {
           <div class="admin-profile__form">
             <UidInput
               v-model="profile.name"
-              label="Имя"
+              :label="tr('Имя')"
               name="name"
             />
             <UidInput
@@ -196,24 +197,24 @@ function onTwoFactorDisabled(): void {
             <UidSelect
               v-model="profile.locale"
               :options="localeOptions"
-              label="Язык"
+              :label="tr('Язык')"
             />
             <UidSelect
               v-model="profile.theme"
               :options="themeOptions"
-              label="Тема"
+              :label="tr('Тема')"
             />
           </div>
 
           <footer class="admin-profile__card-ft">
-            <UidButton variant="primary" @click="onSave">Сохранить</UidButton>
+            <UidButton variant="primary" @click="onSave">{{ tr('Сохранить') }}</UidButton>
           </footer>
         </UidCard>
 
         <!-- Security -->
         <UidCard v-else-if="localSection === 'security'" padding="md">
           <header class="admin-profile__card-hd">
-            <h3 class="admin-profile__card-title">Двухфакторная аутентификация</h3>
+            <h3 class="admin-profile__card-title">{{ tr('Двухфакторная аутентификация') }}</h3>
             <UidBadge :variant="has2FA ? 'success' : 'default'">
               {{ has2FA ? 'Включена' : 'Отключена' }}
             </UidBadge>

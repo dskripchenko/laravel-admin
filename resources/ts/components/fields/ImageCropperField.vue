@@ -26,6 +26,7 @@ import { UidButton, UidIcon } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface UploadedFile {
   disk: string
@@ -318,7 +319,7 @@ onBeforeUnmount(cleanupSource)
         @drop="onDrop"
       >
         <UidIcon :icon="ImageIcon" :size="28" />
-        <p class="admin-image-cropper__hint">Кликните или перетащите картинку</p>
+        <p class="admin-image-cropper__hint">{{ tr('Кликните или перетащите картинку') }}</p>
         <p v-if="outputWidth && outputHeight" class="admin-image-cropper__hint-sub">
           Будет обрезано до {{ outputWidth }}×{{ outputHeight }} px
         </p>

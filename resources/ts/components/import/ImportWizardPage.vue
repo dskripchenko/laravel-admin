@@ -27,6 +27,7 @@ import {
   UidTable,
   type UidTableColumn,
 } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface ColumnHeader {
   key: string
@@ -169,7 +170,7 @@ function onCancel(): void {
         <h1 class="admin-page__title">{{ title }}</h1>
       </div>
       <div class="admin-page__actions">
-        <UidButton variant="ghost" @click="onCancel">Отмена</UidButton>
+        <UidButton variant="ghost" @click="onCancel">{{ tr('Отмена') }}</UidButton>
       </div>
     </header>
 
@@ -178,8 +179,8 @@ function onCancel(): void {
     <!-- Step 1: Upload -->
     <UidCard v-if="currentStep === 0" padding="md" class="admin-import-wizard__card">
       <header class="admin-import-wizard__card-hd">
-        <h3>1. Загрузите файл</h3>
-        <p>CSV / TSV / XLSX, до 50 MB</p>
+        <h3>{{ tr('1. Загрузите файл') }}</h3>
+        <p>{{ tr('CSV / TSV / XLSX, до 50 MB') }}</p>
       </header>
       <UidFileUpload
         :model-value="uploadedFiles"
@@ -195,8 +196,8 @@ function onCancel(): void {
     <!-- Step 2: Mapping -->
     <UidCard v-else-if="currentStep === 1" padding="md" class="admin-import-wizard__card">
       <header class="admin-import-wizard__card-hd">
-        <h3>2. Сопоставьте колонки</h3>
-        <p>Выберите поле ресурса для каждой колонки файла</p>
+        <h3>{{ tr('2. Сопоставьте колонки') }}</h3>
+        <p>{{ tr('Выберите поле ресурса для каждой колонки файла') }}</p>
       </header>
 
       <div v-if="headers.length === 0" class="admin-import-wizard__empty">
@@ -215,7 +216,7 @@ function onCancel(): void {
           <UidSelect
             :model-value="mapping[h.key] ?? ''"
             :options="fileOptions"
-            placeholder="Не импортировать"
+            :placeholder="tr('Не импортировать')"
             @update:model-value="(v) => setTarget(h.key, v)"
           />
         </div>
@@ -225,7 +226,7 @@ function onCancel(): void {
     <!-- Step 3: Preview -->
     <UidCard v-else-if="currentStep === 2" padding="md" class="admin-import-wizard__card">
       <header class="admin-import-wizard__card-hd">
-        <h3>3. Предпросмотр</h3>
+        <h3>{{ tr('3. Предпросмотр') }}</h3>
         <p>Первые {{ preview.length }} строк перед импортом</p>
       </header>
 
@@ -250,7 +251,7 @@ function onCancel(): void {
     <!-- Step 4: Run + Summary -->
     <UidCard v-else padding="md" class="admin-import-wizard__card">
       <header class="admin-import-wizard__card-hd">
-        <h3>4. Импорт</h3>
+        <h3>{{ tr('4. Импорт') }}</h3>
       </header>
 
       <div v-if="!progress" class="admin-import-wizard__empty">
@@ -263,9 +264,9 @@ function onCancel(): void {
           :max="progress.total"
         />
         <div class="admin-import-wizard__kpi">
-          <UidStat title="Создано" :value="progress.created" tone="success" />
-          <UidStat title="Обновлено" :value="progress.updated" tone="info" />
-          <UidStat title="Ошибки" :value="progress.errors" tone="danger" />
+          <UidStat :title="tr('Создано')" :value="progress.created" tone="success" />
+          <UidStat :title="tr('Обновлено')" :value="progress.updated" tone="info" />
+          <UidStat :title="tr('Ошибки')" :value="progress.errors" tone="danger" />
         </div>
       </template>
     </UidCard>
