@@ -48,6 +48,13 @@ final class RunActionMiddleware
         /** @var class-string<\Dskripchenko\LaravelApi\Components\BaseApi> $apiClass */
         $apiClass = \Dskripchenko\LaravelApi\Facades\ApiModule::getApi() ?? AdminApi::class;
         $methods = $apiClass::getPreparedMethods();
+        // Global-middleware API-класса (панельные additions: layer-активация,
+        // throttle) обязаны выполняться и когда запрос сматчился generic-роутом
+        // laravel-api `api/{version}/{controller}/{action}` — тот несёт только
+        // базовую группу, и панельный слой молча терялся (клиентская панель
+        // работала мимо схемы клиента). Дубли со специфичных роутов отсеет
+        // фильтр по route-стеку ниже.
+        $globalMiddleware = (array) Arr::get($methods, 'middleware', []);
         $controllerMiddleware = (array) Arr::get(
             $methods,
             "controllers.{$controllerKey}.middleware",
@@ -71,7 +78,7 @@ final class RunActionMiddleware
         );
 
         $stack = array_diff(
-            array_merge($controllerMiddleware, $actionMiddleware),
+            array_merge($globalMiddleware, $controllerMiddleware, $actionMiddleware),
             array_merge($excludeController, $excludeAction),
         );
 

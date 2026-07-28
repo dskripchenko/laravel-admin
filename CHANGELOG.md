@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.6] - 2026-07-28
+
+### Fixed
+- **КРИТИЧНО, панели**: global-middleware API-класса (панельные additions —
+  layer-активация, throttle) теперь применяются и когда запрос сматчился
+  generic-роутом laravel-api `api/{version}/{controller}/{action}` — тот
+  нёс только базовую группу, и, в зависимости от порядка регистрации
+  роутов, панельные экраны/эндпоинты исполнялись БЕЗ панельного слоя
+  (multi-tenant хост читал/писал центральную схему вместо слоя клиента).
+  RunActionMiddleware включает `methods['middleware']` в pipeline; дубли
+  на специфичных роутах отсеиваются фильтром по route-стеку.
+
 ## [1.12.5] - 2026-07-28
 
 ### Fixed
