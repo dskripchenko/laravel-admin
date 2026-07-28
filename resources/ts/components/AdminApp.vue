@@ -18,11 +18,18 @@ import { useManifestStore } from '../stores/manifest'
 import { useAuthStore } from '../stores/auth'
 import { adminToast } from '../stores/toast'
 import { useBrand } from '../composables/useBrand'
+import { provideLocale, ru as uidRu, en as uidEn } from '@dskripchenko/ui'
+import { useLocaleStore } from '../stores/locale'
 
 const route = useRoute()
 const manifest = useManifestStore()
 const auth = useAuthStore()
 const brand = useBrand()
+
+// UI-kit локаль следует локали панели (BL-11: «Выберите…» и другие
+// встроенные строки примитивов @dskripchenko/ui при EN).
+const localeStore = useLocaleStore()
+provideLocale(computed(() => (localeStore.current === 'en' ? uidEn : uidRu)))
 
 /**
  * Impersonation state — backend кладёт в bootstrap.user.impersonator
