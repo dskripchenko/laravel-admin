@@ -117,6 +117,23 @@ describe('useScreenStore', () => {
     expect(s.errors.email).toEqual(['Введите email'])
   })
 
+
+  it('переход на другой экран сбрасывает lastMessage; reload того же — нет', async () => {
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onGet('/other/state').reply(200, STATE_ENVELOPE)
+    const s = useScreenStore()
+    await s.load('contact')
+    s.lastMessage = 'Импортировано'
+
+    // reload того же экрана (res.refresh) message не трогает
+    await s.load('contact')
+    expect(s.lastMessage).toBe('Импортировано')
+
+    // другой экран — баннер прошлого не должен пережить навигацию
+    await s.load('other')
+    expect(s.lastMessage).toBeNull()
+  })
+
   it('reset clears all state', async () => {
     mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
     const s = useScreenStore()

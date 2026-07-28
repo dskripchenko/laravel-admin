@@ -141,6 +141,11 @@ export const useScreenStore = defineStore('admin-screen', () => {
 
   /** Загрузить screen-snapshot. */
   async function load(screenSlug: string, params?: Record<string, unknown>): Promise<void> {
+    // Переход на ДРУГОЙ экран сбрасывает баннер прошлого; reload того же
+    // экрана (res.refresh после runMethod) — нет, иначе съест свежий message.
+    if (slug.value !== screenSlug) {
+      lastMessage.value = null
+    }
     slug.value = screenSlug
     loading.value = true
     error.value = null
