@@ -75,7 +75,7 @@ abstract class Filter
     {
         return [
             'name' => $this->field,
-            'label' => $this->label ?? $this->humanizeField(),
+            'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->label ?? $this->humanizeField()),
             'type' => $this->type(),
             'options' => null,
             'default' => $this->defaultValue,

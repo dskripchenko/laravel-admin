@@ -73,7 +73,7 @@ final class GeneratedTreeScreen extends GeneratedScreen
         $userActions = $this->resource->actions();
 
         $createUrl = '/admin/r/'.$this->resource::slug().'/create';
-        $createLink = Link::make('Создать')->href($createUrl);
+        $createLink = Link::make((string) __('admin::admin.resource.create_button'))->href($createUrl);
         $createPermission = $this->resource::permission().'.create';
         $createLink->permission($createPermission);
 

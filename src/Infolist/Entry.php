@@ -98,14 +98,16 @@ abstract class Entry implements Renderable
      */
     public function toArray(): array
     {
+        $help = $this->attributes['help'] ?? null;
+
         return [
             'kind' => 'entry',
             'name' => $this->name,
             'type' => $this->entryType(),
-            'label' => (string) ($this->attributes['label'] ?? ''),
-            'help' => $this->attributes['help'] ?? null,
+            'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string((string) ($this->attributes['label'] ?? '')),
+            'help' => is_string($help) ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($help) : $help,
             'defaultValue' => $this->defaultValue,
-            'attributes' => $this->attributes,
+            'attributes' => \Dskripchenko\LaravelAdmin\I18n\Localize::attributes($this->attributes),
         ];
     }
 }

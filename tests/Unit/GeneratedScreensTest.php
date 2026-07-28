@@ -33,12 +33,12 @@ it('GeneratedListScreen compile() returns generated.list type + columns/filters'
     expect($compiled['state'])->toHaveKey('searchable');
 });
 
-it('GeneratedListScreen has Создать button in commandBar', function (): void {
+it('GeneratedListScreen has create button in commandBar', function (): void {
     $screen = new GeneratedListScreen(new TestUserResource);
     $compiled = $screen->compile();
 
     expect($compiled['command_bar'])->not->toBeEmpty();
-    expect($compiled['command_bar'][0]['label'])->toBe('Создать');
+    expect($compiled['command_bar'][0]['label'])->toBe((string) __('admin::admin.resource.create_button'));
 });
 
 it('GeneratedListScreen instanceSlug returns {resource}.list', function (): void {
@@ -59,7 +59,7 @@ it('GeneratedCreateScreen compile() returns generated.create + empty record', fu
 
     expect($compiled['type'])->toBe('generated.create');
     expect($compiled['state']['record'])->toBeArray();
-    expect($compiled['name'])->toContain('Создать');
+    expect($compiled['name'])->toContain((string) __('admin::admin.common.create'));
 });
 
 it('GeneratedCreateScreen permission() = resource.create', function (): void {

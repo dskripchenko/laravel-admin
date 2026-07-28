@@ -334,9 +334,9 @@ abstract class Resource
 
         return [
             'slug' => static::slug(),
-            'label' => static::label(),
+            'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string(static::label()),
             'icon' => static::$icon,
-            'group' => static::$group,
+            'group' => \Dskripchenko\LaravelAdmin\I18n\Localize::string(static::$group),
             // Eloquent morph-class модели — нужен фронту для AuditTimeline
             // (subject_type в /audit/timeline endpoint'е). Если modelClass
             // зарегистрирован в morphMap — отдаём alias, иначе FQCN.

@@ -92,8 +92,8 @@ final class Manifest
             }
             $screensPayload[] = [
                 'slug' => $slug,
-                'name' => $screen->name(),
-                'description' => $screen->description(),
+                'name' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->name()),
+                'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->description()),
                 'permission' => $screen->permission(),
             ];
         }
@@ -133,8 +133,8 @@ final class Manifest
             }
             $dashboardsPayload[] = [
                 'slug' => $slug,
-                'label' => $screen->name() ?? $slug,
-                'description' => $screen->description(),
+                'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->name() ?? $slug),
+                'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->description()),
                 'widgets' => $widgets,
             ];
         }

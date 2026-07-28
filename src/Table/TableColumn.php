@@ -288,9 +288,19 @@ final class TableColumn
      */
     public function toArray(): array
     {
+        $meta = $this->presetMeta;
+        foreach (['trueLabel', 'falseLabel', 'label'] as $key) {
+            if (isset($meta[$key]) && is_string($meta[$key])) {
+                $meta[$key] = \Dskripchenko\LaravelAdmin\I18n\Localize::string($meta[$key]);
+            }
+        }
+        if (isset($meta['options']) && is_array($meta['options'])) {
+            $meta['options'] = \Dskripchenko\LaravelAdmin\I18n\Localize::options($meta['options']);
+        }
+
         return [
             'name' => $this->name,
-            'label' => $this->label ?? $this->humanize($this->name),
+            'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->label ?? $this->humanize($this->name)),
             'type' => $this->preset ?? 'text',
             'sortable' => $this->sortable,
             'searchable' => $this->searchable,
@@ -302,7 +312,7 @@ final class TableColumn
             'editable' => $this->editable,
             'summary' => $this->summary === [] ? null : $this->summary,
             'preset' => $this->preset,
-            'meta' => $this->presetMeta,
+            'meta' => $meta,
         ];
     }
 

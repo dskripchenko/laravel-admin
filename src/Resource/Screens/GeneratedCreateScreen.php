@@ -23,7 +23,7 @@ final class GeneratedCreateScreen extends GeneratedScreen
 
     public function name(): string
     {
-        return 'Создать: '.$this->resource::label();
+        return __('admin::admin.common.create').': '.\Dskripchenko\LaravelAdmin\I18n\Localize::string($this->resource::label());
     }
 
     /**

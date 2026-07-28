@@ -70,7 +70,7 @@ final class GeneratedListScreen extends GeneratedScreen
 
         // По умолчанию добавляем «Создать» если у Resource есть create-permission.
         $createUrl = '/admin/r/'.$this->resource::slug().'/create';
-        $createLink = Link::make('Создать')->href($createUrl);
+        $createLink = Link::make((string) __('admin::admin.resource.create_button'))->href($createUrl);
         $createPermission = $this->resource::permission().'.create';
         $createLink->permission($createPermission);
 

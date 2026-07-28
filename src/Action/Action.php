@@ -146,14 +146,24 @@ abstract class Action implements Renderable
      */
     public function toArray(): array
     {
+        $confirm = $this->confirm;
+        if (is_array($confirm)) {
+            foreach (['title', 'message', 'confirmLabel', 'cancelLabel'] as $key) {
+                $value = $confirm[$key] ?? null;
+                if (is_string($value)) {
+                    $confirm[$key] = \Dskripchenko\LaravelAdmin\I18n\Localize::string($value);
+                }
+            }
+        }
+
         return [
             'kind' => 'action',
             'name' => $this->name,
-            'label' => $this->label,
+            'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->label),
             'type' => $this->type(),
             'icon' => $this->attributes['icon'] ?? null,
             'permission' => $this->permission,
-            'confirm' => $this->confirm,
+            'confirm' => $confirm,
             'primary' => (bool) ($this->attributes['primary'] ?? false),
             'destructive' => (bool) ($this->attributes['destructive'] ?? false),
             'position' => $this->position,

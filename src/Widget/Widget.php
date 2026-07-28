@@ -152,7 +152,7 @@ abstract class Widget implements Renderable
             'kind' => 'widget',
             'slug' => static::slug(),
             'type' => $this->widgetType(),
-            'title' => $this->title,
+            'title' => is_string($this->title) ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->title) : $this->title,
             'size' => $this->size,
             'rowSpan' => $this->rowSpan,
             'refresh' => $this->refreshSeconds,

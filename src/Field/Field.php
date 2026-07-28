@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
+use Dskripchenko\LaravelAdmin\I18n\Localize;
 
 /**
  * Абстрактный базовый класс всех Field-виджетов.
@@ -266,18 +267,23 @@ abstract class Field implements Renderable
      */
     public function toArray(): array
     {
+        // Пользовательские строки переводятся при сериализации (BL-11) —
+        // host не обязан оборачивать лейблы в __().
+        $placeholder = $this->attributes['placeholder'] ?? null;
+        $help = $this->attributes['help'] ?? null;
+
         return [
             'kind' => 'field',
             'name' => $this->name,
             'type' => $this->fieldType(),
-            'label' => (string) ($this->attributes['title'] ?? ''),
-            'placeholder' => $this->attributes['placeholder'] ?? null,
-            'help' => $this->attributes['help'] ?? null,
+            'label' => (string) Localize::string((string) ($this->attributes['title'] ?? '')),
+            'placeholder' => is_string($placeholder) ? Localize::string($placeholder) : $placeholder,
+            'help' => is_string($help) ? Localize::string($help) : $help,
             'required' => (bool) ($this->attributes['required'] ?? false),
             // В манифест едут только строковые правила: object-rules
             // (Rule::unique и т.п.) не JSON-сериализуемы и нужны только валидатору.
             'rules' => array_values(array_filter($this->rules, 'is_string')),
-            'options' => $this->options,
+            'options' => Localize::options($this->options),
             'visibility' => [
                 'create' => $this->onCreate ?? true,
                 'update' => $this->onUpdate ?? true,
@@ -285,7 +291,7 @@ abstract class Field implements Renderable
             ],
             'reactive' => $this->attributes['reactive'] ?? null,
             'defaultValue' => $this->defaultValue,
-            'attributes' => $this->attributes,
+            'attributes' => Localize::attributes($this->attributes),
         ];
     }
 }

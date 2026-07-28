@@ -23,7 +23,7 @@ final class GeneratedEditScreen extends GeneratedScreen
 
     public function name(): string
     {
-        return 'Редактировать: '.$this->resource::label();
+        return __('admin::admin.common.edit').': '.\Dskripchenko\LaravelAdmin\I18n\Localize::string($this->resource::label());
     }
 
     /**
