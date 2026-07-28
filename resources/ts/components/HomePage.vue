@@ -14,6 +14,7 @@ import { useManifestStore } from '../stores/manifest'
 import { useAuthStore } from '../stores/auth'
 import { useDashboardStore } from '../stores/dashboard'
 import DashboardPage from './dashboard/DashboardPage.vue'
+import { trSafe as tr } from './../stores/i18n'
 
 interface DashboardManifest {
   slug: string
@@ -63,7 +64,7 @@ watch(
     </UidCard>
 
     <section v-if="resources.length" class="admin-home__resources">
-      <h2 class="admin-home__heading">Ресурсы</h2>
+      <h2 class="admin-home__heading">{{ tr('Ресурсы') }}</h2>
       <ul class="admin-home__grid">
         <li v-for="r in resources" :key="r.slug">
           <button

@@ -55,7 +55,7 @@ final class BootstrapBuilder
             'availableLocales' => $this->locales->available(),
             'theme' => $this->theme->current($request),
             'availableThemes' => $this->theme->available(),
-            'brand' => (array) config('admin.brand', []),
+            'brand' => \Dskripchenko\LaravelAdmin\I18n\Localize::brand(),
             'user' => $user,
             'permissions' => $this->userPermissions(),
             // Гостю манифест не считаем: login-странице он не нужен, а его
@@ -109,6 +109,20 @@ final class BootstrapBuilder
                     $result["{$ns}.{$key}"] = $value;
                 }
             }
+        }
+
+        // JSON-переводы хоста (lang/{locale}.json): ключ — исходная строка.
+        // Frontend tr() переводит по ним захардкоженные строки компонентов
+        // (BL-11); для локали разработки файла обычно нет — bag не растёт.
+        try {
+            $json = (array) app('translator')->getLoader()->load($locale, '*', '*');
+            foreach ($json as $key => $value) {
+                if (is_string($key) && is_string($value)) {
+                    $result[$key] = $value;
+                }
+            }
+        } catch (\Throwable) {
+            // Нет JSON-файла локали — штатно.
         }
 
         return $result;

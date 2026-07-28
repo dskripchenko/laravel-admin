@@ -10,6 +10,7 @@ import { UidButton, UidCard, UidIcon, UidInput } from '@dskripchenko/ui'
 import { adminToast } from '../../stores/toast'
 import { useBrand } from '../../composables/useBrand'
 import BrandLogo from '../shell/BrandLogo.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 // Бренд из bootstrap.brand (config('admin.brand')) — как на LoginPage.
 const brand = useBrand()
@@ -58,7 +59,7 @@ async function submit(): Promise<void> {
           <span v-else-if="brand.mark">{{ brand.mark }}</span>
           <BrandLogo v-else :size="40" />
         </div>
-        <div class="admin-auth-card__title">Восстановление пароля</div>
+        <div class="admin-auth-card__title">{{ tr('Восстановление пароля') }}</div>
         <div class="admin-auth-card__sub">
           {{ submitted
             ? 'Если такой email зарегистрирован — мы отправили письмо со ссылкой на сброс.'

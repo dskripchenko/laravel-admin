@@ -21,6 +21,7 @@ import {
 } from '@dskripchenko/ui'
 import { listWidgets } from './registry'
 import type { WidgetLayoutItem } from '../../stores/dashboard'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   open: boolean
@@ -126,11 +127,11 @@ function showsConfig(t: string): 'markdown' | 'stat' | 'gauge' | null {
         <div class="admin-dialog-root__backdrop" @click="close" />
         <div class="admin-dialog">
           <header class="admin-dialog__hd">
-            <h2 id="add-widget-title" class="admin-dialog__title">Добавить виджет</h2>
+            <h2 id="add-widget-title" class="admin-dialog__title">{{ tr('Добавить виджет') }}</h2>
             <button
               type="button"
               class="admin-dialog__close"
-              aria-label="Закрыть"
+              :aria-label="tr('Закрыть')"
               @click="close"
             >
               <UidIcon :icon="X" :size="16" />
@@ -139,7 +140,7 @@ function showsConfig(t: string): 'markdown' | 'stat' | 'gauge' | null {
 
           <div class="admin-dialog__body">
             <div class="admin-dialog__field">
-              <label class="admin-dialog__label">Тип виджета</label>
+              <label class="admin-dialog__label">{{ tr('Тип виджета') }}</label>
               <div class="admin-dialog__type-grid">
                 <button
                   v-for="t in types"
@@ -158,19 +159,19 @@ function showsConfig(t: string): 'markdown' | 'stat' | 'gauge' | null {
             </div>
 
             <div class="admin-dialog__field">
-              <label class="admin-dialog__label">Заголовок</label>
-              <UidInput v-model="title" placeholder="Название виджета" />
+              <label class="admin-dialog__label">{{ tr('Заголовок') }}</label>
+              <UidInput v-model="title" :placeholder="tr('Название виджета')" />
             </div>
 
             <div class="admin-dialog__field">
-              <label class="admin-dialog__label">Ширина (1..12)</label>
+              <label class="admin-dialog__label">{{ tr('Ширина (1..12)') }}</label>
               <UidInput v-model="size" type="number" />
             </div>
 
             <!-- Type-specific config -->
             <template v-if="selectedType && showsConfig(selectedType) === 'markdown'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Markdown содержимое</label>
+                <label class="admin-dialog__label">{{ tr('Markdown содержимое') }}</label>
                 <textarea
                   v-model="markdownContent"
                   class="admin-dialog__textarea"
@@ -180,24 +181,24 @@ function showsConfig(t: string): 'markdown' | 'stat' | 'gauge' | null {
             </template>
             <template v-else-if="selectedType && showsConfig(selectedType) === 'stat'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Метка (LABEL)</label>
+                <label class="admin-dialog__label">{{ tr('Метка (LABEL)') }}</label>
                 <UidInput v-model="statLabel" />
               </div>
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Значение</label>
+                <label class="admin-dialog__label">{{ tr('Значение') }}</label>
                 <UidInput v-model="statValue" />
               </div>
             </template>
             <template v-else-if="selectedType && showsConfig(selectedType) === 'gauge'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Значение (0..100)</label>
+                <label class="admin-dialog__label">{{ tr('Значение (0..100)') }}</label>
                 <UidInput v-model="gaugeValue" type="number" />
               </div>
             </template>
           </div>
 
           <footer class="admin-dialog__ft">
-            <UidButton variant="ghost" @click="close">Отмена</UidButton>
+            <UidButton variant="ghost" @click="close">{{ tr('Отмена') }}</UidButton>
             <UidButton variant="primary" :disabled="!canAdd" @click="onAdd">
               Добавить
             </UidButton>

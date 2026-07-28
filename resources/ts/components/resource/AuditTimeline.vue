@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-vue-next'
 import { UidAvatar, UidIcon, UidSkeleton } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface AuditActor {
   id: number | string
@@ -152,7 +153,7 @@ function formatVal(v: unknown): string {
 
 <template>
   <section class="admin-audit-timeline">
-    <h2 class="admin-audit-timeline__title">История изменений</h2>
+    <h2 class="admin-audit-timeline__title">{{ tr('История изменений') }}</h2>
 
     <div v-if="loading" class="admin-audit-timeline__loading">
       <UidSkeleton v-for="i in 3" :key="i" height="48px" />

@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import { Bell } from 'lucide-vue-next'
 import { UidIcon } from '@dskripchenko/ui'
 import { useNotificationsStore } from '../../../stores/notifications'
+import { trSafe as tr } from '../../../stores/i18n'
 
 const notifications = useNotificationsStore()
 
@@ -25,7 +26,7 @@ function onClick(): void {
   <button
     type="button"
     class="admin-topbar__icon-btn"
-    aria-label="Уведомления"
+    :aria-label="tr('Уведомления')"
     aria-haspopup="dialog"
     :aria-expanded="notifications.isOpen"
     @click="onClick"

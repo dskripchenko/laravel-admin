@@ -20,6 +20,7 @@ import TwoFactorForm from './TwoFactorForm.vue'
 import ThemeToggle from '../shell/widgets/ThemeToggle.vue'
 import LocaleSwitcher from '../shell/widgets/LocaleSwitcher.vue'
 import BrandLogo from '../shell/BrandLogo.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   brandName?: string
@@ -103,14 +104,14 @@ onMounted(() => {
           <BrandLogo v-else :size="40" />
         </div>
         <div class="admin-auth-card__title">
-          <template v-if="auth.isChallengePending">Двухфакторная проверка</template>
+          <template v-if="auth.isChallengePending">{{ tr('Двухфакторная проверка') }}</template>
           <template v-else>{{ brandName }}</template>
         </div>
         <div class="admin-auth-card__sub">
           <template v-if="auth.isChallengePending">
             Введите 6-значный код из приложения-аутентификатора
           </template>
-          <template v-else>Войдите, чтобы продолжить работу</template>
+          <template v-else>{{ tr('Войдите, чтобы продолжить работу') }}</template>
         </div>
       </div>
 

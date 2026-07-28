@@ -12,6 +12,24 @@ namespace Dskripchenko\LaravelAdmin\I18n;
  */
 final class Localize
 {
+    /**
+     * Брендинг из config('admin.brand') с локализованным copyright/footer
+     * (name/logo не переводятся).
+     *
+     * @return array<string, mixed>
+     */
+    public static function brand(): array
+    {
+        $brand = (array) config('admin.brand', []);
+        foreach (['copyright', 'footer'] as $key) {
+            if (isset($brand[$key]) && is_string($brand[$key])) {
+                $brand[$key] = self::string($brand[$key]);
+            }
+        }
+
+        return $brand;
+    }
+
     public static function string(?string $value): ?string
     {
         if ($value === null || $value === '') {

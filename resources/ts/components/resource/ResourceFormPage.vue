@@ -29,6 +29,7 @@ import { provideFormState } from '../render/formState'
 import { ApiError } from '../../api/errors'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   /** Slug ресурса (articles/users/etc). */
@@ -240,7 +241,7 @@ function onCancel(): void {
   <section class="admin-page admin-resource-form">
     <header class="admin-page__hd">
       <div class="admin-page__title-wrap">
-        <a class="admin-resource-form__back" @click="onCancel">← Назад</a>
+        <a class="admin-resource-form__back" @click="onCancel">{{ tr('← Назад') }}</a>
         <h1 class="admin-page__title">{{ titleLabel }}</h1>
         <UidBadge v-if="statusValue" :variant="statusBadgeVariant">
           {{ statusValue }}
@@ -279,11 +280,11 @@ function onCancel(): void {
 
     <!-- Not-found: запись удалена/не существует — без формы и кнопки сохранить -->
     <UidCard v-if="recordNotFound" padding="lg" class="admin-resource-form__notfound">
-      <p class="admin-resource-form__notfound-title">Запись не найдена</p>
+      <p class="admin-resource-form__notfound-title">{{ tr('Запись не найдена') }}</p>
       <p class="admin-resource-form__notfound-hint">
         Возможно, она была удалена. Вернитесь к списку.
       </p>
-      <UidButton variant="primary" size="sm" @click="onCancel">← К списку</UidButton>
+      <UidButton variant="primary" size="sm" @click="onCancel">{{ tr('← К списку') }}</UidButton>
     </UidCard>
 
     <template v-else>
@@ -311,9 +312,9 @@ function onCancel(): void {
     <!-- Sticky save-bar — показывается при unsaved-changes -->
     <div v-if="form.isDirty && !form.loading && !recordNotFound" class="admin-resource-form__savebar">
       <span class="admin-resource-form__savebar-hint">
-        Есть несохранённые изменения
+        {{ tr('Есть несохранённые изменения') }}
       </span>
-      <UidButton variant="ghost" size="sm" @click="onCancel">Отмена</UidButton>
+      <UidButton variant="ghost" size="sm" @click="onCancel">{{ tr('Отмена') }}</UidButton>
       <UidButton
         variant="primary"
         size="sm"

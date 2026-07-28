@@ -19,6 +19,7 @@ import { UidButton, UidIcon, UidInput } from '@dskripchenko/ui'
 import { generate, correction } from 'lean-qr'
 import { toSvgSource } from 'lean-qr/extras/svg'
 import { adminToast } from '../../stores/toast'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   /** Включена ли 2FA на момент монтирования (auth.user.twoFactorEnabled). */
@@ -189,7 +190,7 @@ const qrSvg = computed<string>(() => {
     <!-- Setup: показываем secret + поле для кода -->
     <div v-else-if="stage === 'setup'" class="admin-2fa__panel">
       <ol class="admin-2fa__steps">
-        <li>Откройте Authenticator-приложение (Google Authenticator, 1Password, Authy…).</li>
+        <li>{{ tr('Откройте Authenticator-приложение (Google Authenticator, 1Password, Authy…).') }}</li>
         <li>
           Добавьте новый аккаунт вручную, скопировав ключ:
           <div class="admin-2fa__secret" data-testid="2fa-secret">
@@ -245,7 +246,7 @@ const qrSvg = computed<string>(() => {
         <template #prepend><UidIcon :icon="Copy" :size="14" /></template>
         Скопировать все
       </UidButton>
-      <UidButton variant="primary" @click="stage = 'enabled'">Готово</UidButton>
+      <UidButton variant="primary" @click="stage = 'enabled'">{{ tr('Готово') }}</UidButton>
     </div>
 
     <!-- Enabled: 2FA активна — manage -->
@@ -257,7 +258,7 @@ const qrSvg = computed<string>(() => {
         <UidInput
           v-model="password"
           type="password"
-          placeholder="Текущий пароль"
+          :placeholder="tr('Текущий пароль')"
         />
         <UidButton variant="secondary" :loading="busy" @click="regenerate">
           <template #prepend><UidIcon :icon="RefreshCw" :size="14" /></template>

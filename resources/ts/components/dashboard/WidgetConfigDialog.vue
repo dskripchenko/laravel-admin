@@ -28,6 +28,7 @@ import {
 } from '@dskripchenko/ui'
 import { listWidgets } from './registry'
 import type { WidgetLayoutItem } from '../../stores/dashboard'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   open: boolean
@@ -217,7 +218,7 @@ function close(): void {
             <button
               type="button"
               class="admin-dialog__close"
-              aria-label="Закрыть"
+              :aria-label="tr('Закрыть')"
               @click="close"
             >
               <UidIcon :icon="X" :size="16" />
@@ -227,7 +228,7 @@ function close(): void {
           <div class="admin-dialog__body">
             <!-- Восстановление скрытых виджетов (BL-18) — только в add-mode. -->
             <div v-if="mode === 'add'" class="admin-dialog__field">
-              <label class="admin-dialog__label">Скрытые виджеты</label>
+              <label class="admin-dialog__label">{{ tr('Скрытые виджеты') }}</label>
               <p v-if="restorable.length === 0" class="admin-dialog__empty">
                 Нечего добавлять — все виджеты дашборда уже показаны.
               </p>
@@ -241,7 +242,7 @@ function close(): void {
                   @click="onRestore(r.slug)"
                 >
                   <span class="admin-dialog__type-name">{{ r.title }}</span>
-                  <span class="admin-dialog__type-help">Вернуть на дашборд</span>
+                  <span class="admin-dialog__type-help">{{ tr('Вернуть на дашборд') }}</span>
                 </button>
               </div>
             </div>
@@ -272,7 +273,7 @@ function close(): void {
               </div>
             </div>
             <div v-else class="admin-dialog__field">
-              <label class="admin-dialog__label">Тип</label>
+              <label class="admin-dialog__label">{{ tr('Тип') }}</label>
               <div class="admin-dialog__readonly">{{ selectedType || 'unknown' }}</div>
             </div>
 
@@ -280,18 +281,18 @@ function close(): void {
               <label class="admin-dialog__label">
                 Заголовок <span class="admin-dialog__required">*</span>
               </label>
-              <UidInput v-model="title" placeholder="Название виджета" />
+              <UidInput v-model="title" :placeholder="tr('Название виджета')" />
             </div>
 
             <div class="admin-dialog__field">
-              <label class="admin-dialog__label">Ширина (1..12)</label>
+              <label class="admin-dialog__label">{{ tr('Ширина (1..12)') }}</label>
               <UidInput v-model="size" type="number" />
             </div>
 
             <!-- Type-specific config -->
             <template v-if="configKind(selectedType) === 'markdown'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Markdown содержимое</label>
+                <label class="admin-dialog__label">{{ tr('Markdown содержимое') }}</label>
                 <textarea
                   v-model="markdownContent"
                   class="admin-dialog__textarea"
@@ -301,27 +302,27 @@ function close(): void {
             </template>
             <template v-else-if="configKind(selectedType) === 'stat'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Метка</label>
+                <label class="admin-dialog__label">{{ tr('Метка') }}</label>
                 <UidInput v-model="statLabel" />
               </div>
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Значение</label>
+                <label class="admin-dialog__label">{{ tr('Значение') }}</label>
                 <UidInput v-model="statValue" />
               </div>
             </template>
             <template v-else-if="configKind(selectedType) === 'gauge'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Значение (0..100)</label>
+                <label class="admin-dialog__label">{{ tr('Значение (0..100)') }}</label>
                 <UidInput v-model="gaugeValue" type="number" />
               </div>
             </template>
             <template v-else-if="configKind(selectedType) === 'chart'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Метки (через запятую)</label>
-                <UidInput v-model="chartLabels" placeholder="Янв, Фев, Мар" />
+                <label class="admin-dialog__label">{{ tr('Метки (через запятую)') }}</label>
+                <UidInput v-model="chartLabels" :placeholder="tr('Янв, Фев, Мар')" />
               </div>
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Значения (через запятую)</label>
+                <label class="admin-dialog__label">{{ tr('Значения (через запятую)') }}</label>
                 <UidInput v-model="chartValues" placeholder="10, 20, 15" />
               </div>
             </template>
@@ -341,7 +342,7 @@ function close(): void {
             <span v-if="!canSubmit" class="admin-dialog__hint">
               Заполните <span class="admin-dialog__required">*</span>-поля
             </span>
-            <UidButton variant="ghost" @click="close">Отмена</UidButton>
+            <UidButton variant="ghost" @click="close">{{ tr('Отмена') }}</UidButton>
             <UidButton
               variant="primary"
               :disabled="!canSubmit"

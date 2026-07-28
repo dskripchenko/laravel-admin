@@ -33,6 +33,7 @@ import InfolistRenderer from '../infolist/InfolistRenderer.vue'
 import type { InfolistNode } from '../infolist/InfolistRenderer.vue'
 import { provideRecord } from '../infolist/recordContext'
 import AuditTimeline from './AuditTimeline.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   slug: string
@@ -290,7 +291,7 @@ async function onDelete(): Promise<void> {
         </UidButton>
         <UidMenu>
           <template #trigger>
-            <UidButton variant="ghost" size="md" aria-label="Действия" class="admin-page__more">
+            <UidButton variant="ghost" size="md" :aria-label="tr('Действия')" class="admin-page__more">
               <UidIcon :icon="MoreHorizontal" :size="16" />
             </UidButton>
           </template>
@@ -325,7 +326,7 @@ async function onDelete(): Promise<void> {
     <div v-else class="admin-resource-view__grid">
       <div class="admin-resource-view__main">
         <UidCard padding="md" class="admin-resource-view__card">
-          <h2 class="admin-resource-view__card-title">Основные данные</h2>
+          <h2 class="admin-resource-view__card-title">{{ tr('Основные данные') }}</h2>
           <InfolistRenderer
             v-for="(node, idx) in layoutNodes"
             :key="idx"
@@ -354,7 +355,7 @@ async function onDelete(): Promise<void> {
           padding="md"
           class="admin-resource-view__card"
         >
-          <h2 class="admin-resource-view__card-title">Метрики</h2>
+          <h2 class="admin-resource-view__card-title">{{ tr('Метрики') }}</h2>
           <dl class="admin-resource-view__metrics">
             <template v-for="row in defaultMetrics" :key="row.label">
               <dt class="admin-resource-view__metric-label">{{ row.label }}</dt>

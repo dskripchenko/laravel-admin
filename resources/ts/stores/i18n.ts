@@ -16,6 +16,18 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { AdminBootstrap } from '../types/bootstrap'
 
+/**
+ * Standalone-обёртка над store.tr() для компонентов: не падает без активной
+ * Pinia (unit-тесты, SSR-edge) — возвращает исходную строку.
+ */
+export function trSafe(text: string): string {
+  try {
+    return useI18nStore().tr(text)
+  } catch {
+    return text
+  }
+}
+
 export const useI18nStore = defineStore('admin-i18n', () => {
   const messages = ref<Record<string, string>>({})
   const locale = ref<string>('ru')
@@ -47,12 +59,23 @@ export const useI18nStore = defineStore('admin-i18n', () => {
 
   const has = (key: string): boolean => key in messages.value
 
+  /**
+   * Перевод по строке-ключу (JSON-стиль, ключ = исходная строка на языке
+   * разработки). Backend подмешивает в bag JSON-переводы текущей локали
+   * (lang/{locale}.json хоста) — BL-11. Без перевода строка возвращается
+   * как есть, интерполяция не применяется.
+   */
+  function tr(text: string): string {
+    return messages.value[text] ?? text
+  }
+
   return {
     messages,
     locale,
     hydrate,
     setMessages,
     t,
+    tr,
     has,
     keys: computed(() => Object.keys(messages.value)),
   }

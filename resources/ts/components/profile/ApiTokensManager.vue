@@ -14,6 +14,7 @@ import { onMounted, ref } from 'vue'
 import { Copy, Plus, Trash2 } from 'lucide-vue-next'
 import { UidButton, UidIcon, UidInput } from '@dskripchenko/ui'
 import { adminToast } from '../../stores/toast'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Token {
   id: number
@@ -116,7 +117,7 @@ onMounted(load)
     <div v-if="justCreated" class="admin-tokens__new">
       <div class="admin-tokens__new-row">
         <strong>{{ justCreated.name }}</strong>
-        <span>создан только что</span>
+        <span>{{ tr('создан только что') }}</span>
       </div>
       <code class="admin-tokens__plain">{{ justCreated.token }}</code>
       <div class="admin-tokens__new-actions">
@@ -124,7 +125,7 @@ onMounted(load)
           <template #prepend><UidIcon :icon="Copy" :size="12" /></template>
           Скопировать
         </UidButton>
-        <UidButton size="sm" variant="ghost" @click="dismissJustCreated">Скрыть</UidButton>
+        <UidButton size="sm" variant="ghost" @click="dismissJustCreated">{{ tr('Скрыть') }}</UidButton>
       </div>
       <p class="admin-tokens__warn">
         ⚠ Plain-значение показывается один раз. Если потеряете — нужно пересоздать.
@@ -133,7 +134,7 @@ onMounted(load)
 
     <!-- Create form -->
     <div class="admin-tokens__create">
-      <UidInput v-model="newName" placeholder="Название (например, ci-deploy)" />
+      <UidInput v-model="newName" :placeholder="tr('Название (например, ci-deploy)')" />
       <UidButton variant="primary" @click="create">
         <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
         Создать токен
@@ -141,8 +142,8 @@ onMounted(load)
     </div>
 
     <!-- Existing tokens -->
-    <div v-if="loading" class="admin-tokens__empty">Загрузка…</div>
-    <div v-else-if="tokens.length === 0" class="admin-tokens__empty">Токенов нет.</div>
+    <div v-if="loading" class="admin-tokens__empty">{{ tr('Загрузка…') }}</div>
+    <div v-else-if="tokens.length === 0" class="admin-tokens__empty">{{ tr('Токенов нет.') }}</div>
     <ul v-else class="admin-tokens__list">
       <li v-for="t in tokens" :key="t.id" class="admin-tokens__item">
         <div class="admin-tokens__item-meta">
@@ -155,7 +156,7 @@ onMounted(load)
         <button
           type="button"
           class="admin-tokens__revoke"
-          aria-label="Отозвать"
+          :aria-label="tr('Отозвать')"
           @click="revoke(t.id)"
         >
           <UidIcon :icon="Trash2" :size="14" />

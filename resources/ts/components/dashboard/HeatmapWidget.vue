@@ -11,6 +11,7 @@
  */
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   title?: string
@@ -89,7 +90,7 @@ function cellTitle(value: number, rowIdx: number, colIdx: number): string {
         </div>
       </div>
     </div>
-    <div v-else class="admin-heatmap__empty">Нет данных</div>
+    <div v-else class="admin-heatmap__empty">{{ tr('Нет данных') }}</div>
   </UidCard>
 </template>
 

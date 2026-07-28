@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 /**
  * Backend IframeWidget::data() — {src, height, sandbox}. Host отвечает за
@@ -40,7 +41,7 @@ const frameStyle = computed(() => ({
       loading="lazy"
       referrerpolicy="no-referrer"
     />
-    <p v-else class="admin-widget__empty">Не задан src</p>
+    <p v-else class="admin-widget__empty">{{ tr('Не задан src') }}</p>
   </UidCard>
 </template>
 

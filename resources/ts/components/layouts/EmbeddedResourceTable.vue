@@ -31,6 +31,7 @@ import { useManifestStore } from '../../stores/manifest'
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Features {
   create?: boolean
@@ -249,8 +250,8 @@ function getCellDisplay(row: Record<string, unknown>, col: string): string {
     <UidErrorState v-else-if="error" :message="error.message" @retry="load" />
     <UidEmptyState
       v-else-if="!loading && items.length === 0 && draft === null"
-      title="Нет данных"
-      hint="Нажмите «Добавить», чтобы создать первую запись."
+      :title="tr('Нет данных')"
+      :hint="tr('Нажмите «Добавить», чтобы создать первую запись.')"
     />
     <UidTable
       v-else
@@ -289,7 +290,7 @@ function getCellDisplay(row: Record<string, unknown>, col: string): string {
         <button
           type="button"
           class="admin-embedded-table__row-delete"
-          aria-label="Удалить"
+          :aria-label="tr('Удалить')"
           @click="rowFromSlot(slotProps) && deleteRow(rowFromSlot(slotProps)!)"
         >
           <UidIcon :icon="Trash2" :size="14" />

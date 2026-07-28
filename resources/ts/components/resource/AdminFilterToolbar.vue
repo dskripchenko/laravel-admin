@@ -29,6 +29,7 @@ import {
 import { UidButton, UidIcon, UidMenu } from '@dskripchenko/ui'
 import { resolveIcon } from '../shell/iconRegistry'
 import { FilterEditor, type FilterDef, type FilterOption } from './FilterEditor'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface ColumnDef {
   key?: string
@@ -252,7 +253,7 @@ function iconFor(name: string | null | undefined) {
             <span
               role="button"
               tabindex="0"
-              aria-label="Сбросить фильтр"
+              :aria-label="tr('Сбросить фильтр')"
               class="admin-toolbar__chip-x"
               @click.stop="clearFilter(f.name)"
               @keydown.enter.stop="clearFilter(f.name)"
@@ -397,7 +398,7 @@ function iconFor(name: string | null | undefined) {
             @click="setGroupBy(null, () => undefined)"
           >
             <UidIcon v-if="!groupBy" :icon="Check" :size="14" />
-            <span>Без группировки</span>
+            <span>{{ tr('Без группировки') }}</span>
           </button>
           <button
             v-for="c in groupableColumns"
@@ -418,7 +419,7 @@ function iconFor(name: string | null | undefined) {
         <template #trigger>
           <button type="button" class="admin-toolbar__chip">
             <UidIcon :icon="Columns" :size="14" />
-            <span class="admin-toolbar__chip-text">Колонки</span>
+            <span class="admin-toolbar__chip-text">{{ tr('Колонки') }}</span>
           </button>
         </template>
         <div class="admin-toolbar__popover admin-toolbar__popover--list" @keydown.stop>
@@ -442,14 +443,14 @@ function iconFor(name: string | null | undefined) {
         <template #trigger>
           <button type="button" class="admin-toolbar__chip">
             <UidIcon :icon="Bookmark" :size="14" />
-            <span class="admin-toolbar__chip-text">Сохранить</span>
+            <span class="admin-toolbar__chip-text">{{ tr('Сохранить') }}</span>
           </button>
         </template>
         <div class="admin-toolbar__popover" @keydown.stop>
           <input
             v-model="newViewLabel"
             type="text"
-            placeholder="Название view"
+            :placeholder="tr('Название view')"
             class="admin-toolbar__input"
             @keydown.enter="saveView(() => undefined)"
           />

@@ -42,7 +42,7 @@ final class ShellController
             'bootstrap' => $bootstrap,
             'strategy' => $strategy,
             'cspNonce' => $request->attributes->get('admin.csp_nonce'),
-            'brand' => (array) config('admin.brand', []),
+            'brand' => \Dskripchenko\LaravelAdmin\I18n\Localize::brand(),
             'assets' => $this->resolveAssets(),
         ]);
     }

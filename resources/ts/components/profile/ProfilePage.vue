@@ -20,6 +20,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useThemeStore } from '../../stores/theme'
 import { useLocaleStore } from '../../stores/locale'
 import TwoFactorSetup from './TwoFactorSetup.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   /** Заголовок страницы (по умолчанию «Profile»). */
@@ -32,7 +33,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   title: 'Profile',
-  subtitle: 'Личные данные, безопасность, токены',
+  subtitle: undefined,
   section: 'general',
 })
 
@@ -53,10 +54,10 @@ const theme = useThemeStore()
 const locale = useLocaleStore()
 
 const navItems = [
-  { id: 'general', label: 'Основное', icon: 'user' },
-  { id: 'security', label: 'Безопасность', icon: 'shield' },
-  { id: 'tokens', label: 'API токены', icon: 'key' },
-  { id: 'sessions', label: 'Сессии', icon: 'monitor' },
+  { id: 'general', label: tr('Основное'), icon: 'user' },
+  { id: 'security', label: tr('Безопасность'), icon: 'shield' },
+  { id: 'tokens', label: tr('API токены'), icon: 'key' },
+  { id: 'sessions', label: tr('Сессии'), icon: 'monitor' },
 ]
 
 const localSection = ref(props.section)
@@ -77,7 +78,7 @@ const localeOptions = computed(() =>
   locale.available.map((l) => ({ value: l, label: l.toUpperCase() })),
 )
 const themeOptions = computed(() =>
-  theme.available.map((t) => ({ value: t, label: t === 'dark' ? 'Тёмная' : t === 'light' ? 'Светлая' : t })),
+  theme.available.map((t) => ({ value: t, label: t === 'dark' ? tr('Тёмная') : t === 'light' ? tr('Светлая') : t })),
 )
 
 // Locale / theme применяются мгновенно при изменении select'а — не требуют
@@ -135,7 +136,7 @@ function onTwoFactorDisabled(): void {
     <header class="admin-page__hd">
       <div class="admin-page__title-wrap">
         <h1 class="admin-page__title">{{ title }}</h1>
-        <div class="admin-page__count">{{ subtitle }}</div>
+        <div class="admin-page__count">{{ subtitle ?? tr('Личные данные, безопасность, токены') }}</div>
       </div>
     </header>
 
@@ -160,7 +161,7 @@ function onTwoFactorDisabled(): void {
         <!-- General -->
         <UidCard v-if="localSection === 'general'" padding="md">
           <header class="admin-profile__card-hd">
-            <h3 class="admin-profile__card-title">Профиль</h3>
+            <h3 class="admin-profile__card-title">{{ tr('Профиль') }}</h3>
           </header>
 
           <div class="admin-profile__hero">
@@ -177,14 +178,14 @@ function onTwoFactorDisabled(): void {
             </div>
             <div style="flex:1" />
             <UidButton variant="ghost" size="sm" @click="onAvatarReplace">
-              Заменить
+              {{ tr('Заменить') }}
             </UidButton>
           </div>
 
           <div class="admin-profile__form">
             <UidInput
               v-model="profile.name"
-              label="Имя"
+              :label="tr('Имя')"
               name="name"
             />
             <UidInput
@@ -196,26 +197,26 @@ function onTwoFactorDisabled(): void {
             <UidSelect
               v-model="profile.locale"
               :options="localeOptions"
-              label="Язык"
+              :label="tr('Язык')"
             />
             <UidSelect
               v-model="profile.theme"
               :options="themeOptions"
-              label="Тема"
+              :label="tr('Тема')"
             />
           </div>
 
           <footer class="admin-profile__card-ft">
-            <UidButton variant="primary" @click="onSave">Сохранить</UidButton>
+            <UidButton variant="primary" @click="onSave">{{ tr('Сохранить') }}</UidButton>
           </footer>
         </UidCard>
 
         <!-- Security -->
         <UidCard v-else-if="localSection === 'security'" padding="md">
           <header class="admin-profile__card-hd">
-            <h3 class="admin-profile__card-title">Двухфакторная аутентификация</h3>
+            <h3 class="admin-profile__card-title">{{ tr('Двухфакторная аутентификация') }}</h3>
             <UidBadge :variant="has2FA ? 'success' : 'default'">
-              {{ has2FA ? 'Включена' : 'Отключена' }}
+              {{ has2FA ? tr('Включена') : tr('Отключена') }}
             </UidBadge>
           </header>
 

@@ -17,6 +17,7 @@ import ThemeToggle from './widgets/ThemeToggle.vue'
 import LocaleSwitcher from './widgets/LocaleSwitcher.vue'
 import NotificationBell from './widgets/NotificationBell.vue'
 import UserMenu from './widgets/UserMenu.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Crumb {
   label: string
@@ -49,7 +50,7 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
       v-if="showCollapseToggle"
       type="button"
       class="admin-topbar__icon-btn"
-      aria-label="Свернуть меню"
+      :aria-label="tr('Свернуть меню')"
       @click="emit('toggle-sidebar')"
     >
       <UidIcon :icon="PanelLeft" :size="18" data-icon="panel-left" />
@@ -83,7 +84,7 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
         @keydown.space.prevent="emit('open-search')"
       >
         <UidIcon :icon="Search" :size="14" data-icon="search" />
-        <span>Поиск везде…</span>
+        <span>{{ tr('Поиск везде…') }}</span>
         <kbd>⌘K</kbd>
       </div>
     </slot>

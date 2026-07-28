@@ -10,6 +10,7 @@ import { computed, nextTick, ref } from 'vue'
 import { UidAlert, UidButton, UidInput } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { ApiError, NetworkError, ValidationError } from '../../api/errors'
+import { trSafe as tr } from '../../stores/i18n'
 
 const emit = defineEmits<{
   success: []
@@ -156,7 +157,7 @@ function switchMode(): void {
       v-else
       v-model="recoveryCode"
       type="text"
-      label="Recovery-код"
+      :label="tr('Recovery-код')"
       autocomplete="one-time-code"
       :disabled="submitting"
       name="recovery-code"
@@ -174,8 +175,8 @@ function switchMode(): void {
 
     <div class="admin-auth-card__row">
       <button type="button" class="admin-auth-card__link" @click="switchMode">
-        <template v-if="mode === 'totp'">Использовать recovery-код</template>
-        <template v-else>Вернуться к коду из приложения</template>
+        <template v-if="mode === 'totp'">{{ tr('Использовать recovery-код') }}</template>
+        <template v-else>{{ tr('Вернуться к коду из приложения') }}</template>
       </button>
       <button type="button" class="admin-auth-card__link" @click="cancel">
         Отмена

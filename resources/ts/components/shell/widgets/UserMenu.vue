@@ -6,6 +6,7 @@
 import { UidAvatar, UidMenu, UidMenuItem, UidMenuSeparator } from '@dskripchenko/ui'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
+import { trSafe as tr } from '../../../stores/i18n'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -29,7 +30,7 @@ function goProfile(): void {
       <button
         type="button"
         class="admin-topbar__icon-btn admin-user-menu__trigger"
-        aria-label="Меню пользователя"
+        :aria-label="tr('Меню пользователя')"
         aria-haspopup="menu"
         style="width: auto; padding: 0 4px; gap: 8px;"
       >
@@ -42,8 +43,8 @@ function goProfile(): void {
       </button>
     </template>
 
-    <UidMenuItem @click="goProfile">Профиль</UidMenuItem>
+    <UidMenuItem @click="goProfile">{{ tr('Профиль') }}</UidMenuItem>
     <UidMenuSeparator />
-    <UidMenuItem variant="danger" @click="logout">Выйти</UidMenuItem>
+    <UidMenuItem variant="danger" @click="logout">{{ tr('Выйти') }}</UidMenuItem>
   </UidMenu>
 </template>

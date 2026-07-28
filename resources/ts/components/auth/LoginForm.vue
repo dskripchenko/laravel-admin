@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 import { UidAlert, UidButton, UidCheckbox, UidInput } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { ApiError, NetworkError, ValidationError } from '../../api/errors'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   /** URL «Забыли пароль?» — если задан, показывается link справа от remember. */
@@ -105,7 +106,7 @@ async function submit(): Promise<void> {
     <UidInput
       v-model="password"
       type="password"
-      label="Пароль"
+      :label="tr('Пароль')"
       autocomplete="current-password"
       :required="true"
       :disabled="submitting"
@@ -115,7 +116,7 @@ async function submit(): Promise<void> {
     />
 
     <div class="admin-auth-card__row">
-      <UidCheckbox v-model="remember" :disabled="submitting" label="Запомнить меня" />
+      <UidCheckbox v-model="remember" :disabled="submitting" :label="tr('Запомнить меня')" />
       <a v-if="forgotUrl" :href="forgotUrl" class="admin-auth-card__link">
         Забыли пароль?
       </a>

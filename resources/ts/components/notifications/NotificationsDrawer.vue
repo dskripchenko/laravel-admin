@@ -15,6 +15,7 @@
 import { computed, watch } from 'vue'
 import { UidButton, UidDrawer, UidTabs, UidTab, UidTabPanel } from '@dskripchenko/ui'
 import { useNotificationsStore, type NotificationFilter, type NotificationItem } from '../../stores/notifications'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   /** v-model:open. */
@@ -103,7 +104,7 @@ function relTime(iso: string | null): string {
     :model-value="open"
     side="right"
     width="400px"
-    title="Уведомления"
+    :title="tr('Уведомления')"
     @update:model-value="setOpen"
   >
     <template #header>
@@ -127,13 +128,13 @@ function relTime(iso: string | null): string {
 
     <UidTabs :model-value="activeFilter" @update:model-value="setFilter">
       <template #list>
-        <UidTab value="all">Все</UidTab>
+        <UidTab value="all">{{ tr('Все') }}</UidTab>
         <UidTab value="unread">
           Непрочитанные<template v-if="notifications.unreadCount > 0">
             ({{ notifications.unreadCount }})
           </template>
         </UidTab>
-        <UidTab value="read">Прочитанные</UidTab>
+        <UidTab value="read">{{ tr('Прочитанные') }}</UidTab>
       </template>
 
       <UidTabPanel v-for="filter in (['all','unread','read'] as const)" :key="filter" :value="filter">

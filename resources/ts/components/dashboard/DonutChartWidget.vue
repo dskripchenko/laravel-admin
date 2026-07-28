@@ -8,6 +8,7 @@
  */
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Slice {
   label: string
@@ -74,7 +75,7 @@ const slices = computed(() => {
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <div v-if="isEmpty" class="admin-widget__empty">Нет данных</div>
+    <div v-if="isEmpty" class="admin-widget__empty">{{ tr('Нет данных') }}</div>
     <div v-else class="admin-donut-widget__row">
       <svg viewBox="0 0 120 120" class="admin-donut-widget__svg" role="img" :aria-label="title">
         <path

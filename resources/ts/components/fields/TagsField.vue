@@ -18,6 +18,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
 import { UidIcon, usePopover } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface SuggestionGroup {
   label: string
@@ -273,7 +274,7 @@ watch(
           v-if="!disabled"
           type="button"
           class="admin-tags__chip-remove"
-          aria-label="Удалить"
+          :aria-label="tr('Удалить')"
           @click.stop="removeTag(idx)"
         >
           <UidIcon :icon="X" :size="10" />

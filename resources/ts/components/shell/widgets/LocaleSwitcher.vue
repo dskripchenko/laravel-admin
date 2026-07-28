@@ -6,6 +6,7 @@
 import { Globe } from 'lucide-vue-next'
 import { UidIcon, UidMenu, UidMenuItem } from '@dskripchenko/ui'
 import { useLocaleStore } from '../../../stores/locale'
+import { trSafe as tr } from '../../../stores/i18n'
 
 const locale = useLocaleStore()
 
@@ -26,7 +27,7 @@ async function pick(loc: string): Promise<void> {
         type="button"
         class="admin-topbar__icon-btn"
         style="width: auto; padding: 0 8px; gap: 4px; font-size: 12px;"
-        aria-label="Сменить локаль"
+        :aria-label="tr('Сменить локаль')"
       >
         <UidIcon :icon="Globe" :size="14" data-icon="globe" />
         <span>{{ (locale.current ?? '').toUpperCase() }}</span>
