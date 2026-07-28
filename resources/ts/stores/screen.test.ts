@@ -134,6 +134,28 @@ describe('useScreenStore', () => {
     expect(s.lastMessage).toBeNull()
   })
 
+
+  it('runMethod с download_url триггерит программное скачивание', async () => {
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onPost('/contact/runMethod').reply(200, {
+      success: true,
+      payload: { download_url: 'https://files.test/translation.json', message: 'Файл сформирован' },
+    })
+    const s = useScreenStore()
+    await s.load('contact')
+
+    const clicks: string[] = []
+    const orig = HTMLAnchorElement.prototype.click
+    HTMLAnchorElement.prototype.click = function () { clicks.push(this.href) }
+    try {
+      await s.runMethod('download')
+    } finally {
+      HTMLAnchorElement.prototype.click = orig
+    }
+    expect(clicks).toEqual(['https://files.test/translation.json'])
+    expect(s.lastMessage).toBe('Файл сформирован')
+  })
+
   it('reset clears all state', async () => {
     mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
     const s = useScreenStore()

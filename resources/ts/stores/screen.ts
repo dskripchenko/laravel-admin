@@ -209,6 +209,18 @@ export const useScreenStore = defineStore('admin-screen', () => {
       if (res.message) {
         lastMessage.value = res.message
       }
+      if (res.download_url && typeof document !== 'undefined') {
+        // Сервер отдаёт файл по signed-URL (Content-Disposition: attachment) —
+        // триггерим скачивание программным анкором. Поле было объявлено в
+        // контракте, но не обрабатывалось: кнопки «Скачать…» экранов молча
+        // не работали.
+        const a = document.createElement('a')
+        a.href = res.download_url
+        a.rel = 'noopener'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      }
       if (res.refresh) {
         // Сервер попросил перезагрузить snapshot — делаем lazy reload.
         await load(slug.value).catch(() => undefined)
