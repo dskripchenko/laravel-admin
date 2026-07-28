@@ -24,6 +24,8 @@ interface Props {
    * host-проекту с собственным логотипом.
    */
   brandMark?: string | null
+  /** URL картинки-логотипа (приоритетнее brandMark/BrandLogo). */
+  brandLogo?: string | null
   /** Named-route для click'а по brand-row. */
   homeRouteName?: string
   /** Тенант / workspace — опционально показывается под брендом. */
@@ -37,6 +39,7 @@ withDefaults(defineProps<Props>(), {
   collapsed: false,
   brandName: 'Laravel Admin',
   brandMark: null,
+  brandLogo: null,
   homeRouteName: 'admin.home',
   tenant: null,
   version: null,
@@ -57,7 +60,8 @@ const groups = computed(() => menu.groupedItems)
         :title="collapsed ? brandName : undefined"
         :aria-label="brandName"
       >
-        <div v-if="brandMark" class="admin-sidebar-brand__mark">{{ brandMark }}</div>
+        <img v-if="brandLogo" class="admin-sidebar-brand__logo" :src="brandLogo" :alt="brandName" />
+        <div v-else-if="brandMark" class="admin-sidebar-brand__mark">{{ brandMark }}</div>
         <BrandLogo v-else :size="28" />
         <div v-if="!collapsed" class="admin-sidebar-brand__name">{{ brandName }}</div>
       </router-link>
@@ -84,8 +88,8 @@ const groups = computed(() => menu.groupedItems)
 
     <template #footer>
       <div class="admin-sidebar-foot">
-        <span class="admin-sidebar-foot__text" :title="version ?? 'Laravel Admin'">
-          <template v-if="!collapsed">{{ version ?? 'Laravel Admin' }}</template>
+        <span class="admin-sidebar-foot__text" :title="version ?? brandName">
+          <template v-if="!collapsed">{{ version ?? brandName }}</template>
           <template v-else>·</template>
         </span>
         <a
@@ -127,6 +131,13 @@ const groups = computed(() => menu.groupedItems)
 .admin-sidebar-brand:focus-visible {
   outline: 2px solid var(--uid-color-focus-ring, var(--uid-accent));
   outline-offset: -2px;
+}
+.admin-sidebar-brand__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex: none;
+  display: block;
 }
 .admin-sidebar-brand__mark {
   width: 28px;

@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-07-28
+
+### Added
+- Брендинг (BL-12): `brand.logo` теперь картинка везде — sidebar рендерит
+  `<img>` (раньше URL печатался текстом), Forgot/Reset-страницы берут
+  бренд из `bootstrap.brand`; LoginPage читает `useBrand()` как фолбэк
+  к props. Новый ключ `brand.mark` (`ADMIN_BRAND_MARK`) — короткий
+  текстовый mark, фолбэк без картинки. CSS: у auth-логотипа с `<img>`
+  снимается плашка контейнера.
+
 ## [1.10.10] - 2026-07-23
 
 ### Added

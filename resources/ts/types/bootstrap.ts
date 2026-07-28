@@ -18,7 +18,10 @@ export interface AdminUser {
 
 export interface AdminBrand {
   name?: string
+  /** URL картинки-логотипа (sidebar + auth-страницы). */
   logo?: string | null
+  /** Короткий текстовый mark (1-2 символа) — фолбэк без картинки. */
+  mark?: string | null
   favicon?: string | null
   /** Текст копирайта в футере (например «© 2026 Printable»). */
   copyright?: string | null

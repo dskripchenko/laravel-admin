@@ -258,6 +258,16 @@
   font-weight: var(--uid-font-weight-bold);
   font-size: var(--uid-font-size-lg);
 }
+.admin-auth-card__logo img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  display: block;
+}
+/* Картинка-логотип несёт собственный фон — плашку контейнера убираем. */
+.admin-auth-card__logo:has(img) {
+  background: none;
+}
 .admin-auth-card__logo--accent {
   background: var(--uid-accent);
   color: var(--uid-text-on-accent);

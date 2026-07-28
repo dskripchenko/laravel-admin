@@ -10,10 +10,11 @@
  * `?redirect`-query учитывает только относительные пути (защита от
  * open-redirect).
  */
-import { onMounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { UidCard } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
+import { useBrand } from '../../composables/useBrand'
 import LoginForm from './LoginForm.vue'
 import TwoFactorForm from './TwoFactorForm.vue'
 import ThemeToggle from '../shell/widgets/ThemeToggle.vue'
@@ -40,9 +41,9 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  brandName: 'Laravel Admin',
-  brandMark: null,
-  brandLogo: null,
+  brandName: undefined,
+  brandMark: undefined,
+  brandLogo: undefined,
   homeRouteName: 'admin.home',
   redirectQueryKey: 'redirect',
   forgotUrl: null,
@@ -54,6 +55,12 @@ const props = withDefaults(defineProps<Props>(), {
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+
+// Бренд: явные props перекрывают bootstrap.brand (config('admin.brand')).
+const injectedBrand = useBrand()
+const brandName = computed<string>(() => props.brandName ?? injectedBrand.name ?? 'Laravel Admin')
+const brandLogo = computed<string | null>(() => props.brandLogo ?? injectedBrand.logo ?? null)
+const brandMark = computed<string | null>(() => props.brandMark ?? injectedBrand.mark ?? null)
 
 async function redirectToHome(): Promise<void> {
   const target = route.query[props.redirectQueryKey]

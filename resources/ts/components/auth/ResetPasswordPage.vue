@@ -10,7 +10,11 @@ import { useRouter, useRoute } from 'vue-router'
 import { Check } from 'lucide-vue-next'
 import { UidButton, UidCard, UidIcon, UidInput } from '@dskripchenko/ui'
 import { adminToast } from '../../stores/toast'
+import { useBrand } from '../../composables/useBrand'
 import BrandLogo from '../shell/BrandLogo.vue'
+
+// Бренд из bootstrap.brand (config('admin.brand')) — как на LoginPage.
+const brand = useBrand()
 
 interface Props {
   loginRouteName?: string
@@ -64,7 +68,9 @@ async function submit(): Promise<void> {
     <UidCard padding="none" class="admin-auth-card">
       <div class="admin-auth-card__hd">
         <div class="admin-auth-card__logo">
-          <BrandLogo :size="40" />
+          <img v-if="brand.logo" :src="brand.logo" :alt="brand.name ?? 'Logo'" />
+          <span v-else-if="brand.mark">{{ brand.mark }}</span>
+          <BrandLogo v-else :size="40" />
         </div>
         <div class="admin-auth-card__title">Новый пароль</div>
         <div class="admin-auth-card__sub">Задайте новый пароль для своего аккаунта.</div>

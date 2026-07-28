@@ -116,7 +116,10 @@ return [
 
     'brand' => [
         'name' => env('ADMIN_BRAND_NAME', 'Admin'),
+        // URL картинки-логотипа: sidebar + login/forgot/reset-страницы.
         'logo' => env('ADMIN_BRAND_LOGO'),
+        // Короткий текстовый mark (1-2 символа) — фолбэк, если logo не задан.
+        'mark' => env('ADMIN_BRAND_MARK'),
         'favicon' => env('ADMIN_BRAND_FAVICON'),
         // Копирайт в футере панели (BL-12). null = футер пустой.
         'copyright' => env('ADMIN_BRAND_COPYRIGHT'),

@@ -28,6 +28,8 @@ interface ImpersonationData {
 interface BrandData {
   name?: string
   logo?: string | null
+  /** Короткий текстовый mark (1-2 символа) — если нет картинки-logo. */
+  mark?: string | null
   favicon?: string | null
   copyright?: string | null
   footer?: string | null
@@ -52,7 +54,12 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const brandName = computed<string | undefined>(() => props.brand?.name || undefined)
-const brandMark = computed<string | null>(() => props.brand?.logo ?? null)
+// logo — URL картинки; mark — короткий текст. Исторически logo прокидывался
+// в sidebar текстом — теперь это картинка, как на LoginPage.
+const brandLogo = computed<string | null>(() => props.brand?.logo ?? null)
+const brandMark = computed<string | null>(() => props.brand?.mark ?? null)
+// brand.footer → нижняя строка sidebar'а (версия/произвольный текст).
+const brandFooter = computed<string | null>(() => props.brand?.footer ?? null)
 const brandCopyright = computed<string | null>(() => props.brand?.copyright ?? null)
 
 const emit = defineEmits<{
@@ -138,6 +145,8 @@ onBeforeUnmount(() => {
             :collapsed="collapsed"
             :brand-name="brandName"
             :brand-mark="brandMark"
+            :brand-logo="brandLogo"
+            :version="brandFooter"
           />
         </slot>
       </template>

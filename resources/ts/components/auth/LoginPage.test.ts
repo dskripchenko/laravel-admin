@@ -5,6 +5,7 @@ import { createRouter, createMemoryHistory, type Router } from 'vue-router'
 import { defineComponent, h } from 'vue'
 import MockAdapter from 'axios-mock-adapter'
 import LoginPage from './LoginPage.vue'
+import { BRAND_KEY } from '../../composables/useBrand'
 import { setAdminClient, clearAdminClient } from '../../stores/registry'
 import { createAdminClient } from '../../api/client'
 import { useAuthStore } from '../../stores/auth'
@@ -72,6 +73,32 @@ describe('LoginPage', () => {
         },
       },
     })
+
+  it('берёт бренд из bootstrap.brand (BRAND_KEY): logo-img и name', () => {
+    const wrapper = mount(LoginPage, {
+      global: {
+        plugins: [router],
+        provide: { [BRAND_KEY as symbol]: { name: 'Printable', logo: '/assets/mark.svg' } },
+        stubs: { LocaleSwitcher: { template: '<div/>' } },
+      },
+    })
+    const img = wrapper.find('.admin-auth-card__logo img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('/assets/mark.svg')
+    expect(wrapper.find('.admin-auth-card__title').text()).toBe('Printable')
+  })
+
+  it('явные props перекрывают инжектированный бренд', () => {
+    const wrapper = mount(LoginPage, {
+      props: { brandName: 'FromProps' },
+      global: {
+        plugins: [router],
+        provide: { [BRAND_KEY as symbol]: { name: 'FromBootstrap' } },
+        stubs: { LocaleSwitcher: { template: '<div/>' } },
+      },
+    })
+    expect(wrapper.find('.admin-auth-card__title').text()).toBe('FromProps')
+  })
 
   it('renders LoginForm by default', () => {
     const wrapper = mountPage()
