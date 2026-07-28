@@ -139,6 +139,13 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     draft.value = draft.value.filter((it) => it.slug !== slugKey)
   }
 
+  /** Вернуть скрытый (hidden-override) виджет на дашборд (BL-18). */
+  function restoreWidget(slugKey: string): void {
+    draft.value = draft.value.map((it) =>
+      it.slug === slugKey ? { ...it, hidden: false } : it,
+    )
+  }
+
   function updateWidget(slugKey: string, patch: Partial<WidgetLayoutItem>): void {
     draft.value = draft.value.map((it) =>
       it.slug === slugKey ? { ...it, ...patch } : it,
@@ -196,6 +203,7 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     saveLayout,
     resetToDefault,
     addWidget,
+    restoreWidget,
     removeWidget,
     updateWidget,
     moveWidget,

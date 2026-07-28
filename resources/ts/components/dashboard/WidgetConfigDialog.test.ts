@@ -27,3 +27,27 @@ describe('WidgetConfigDialog — add empty state (BL-18)', () => {
     expect(addBtn!.attributes('disabled')).toBeDefined()
   })
 })
+
+describe('WidgetConfigDialog — restore hidden widgets (BL-18)', () => {
+  it('без скрытых виджетов показывает «нечего добавлять»', () => {
+    const w = mountOpen()
+    expect(w.text()).toContain('Нечего добавлять')
+  })
+
+  it('показывает скрытые виджеты и эмитит restore + close по клику', async () => {
+    const w = mount(WidgetConfigDialog, {
+      props: {
+        open: true,
+        mode: 'add',
+        restorable: [{ slug: 'printable.stat.templates', title: 'Шаблоны' }],
+      },
+      global: { stubs: { teleport: true } },
+    })
+    const btn = w.find('[data-testid="restore-widget-printable.stat.templates"]')
+    expect(btn.exists()).toBe(true)
+    expect(btn.text()).toContain('Шаблоны')
+    await btn.trigger('click')
+    expect(w.emitted('restore')).toEqual([['printable.stat.templates']])
+    expect(w.emitted('close')).toBeTruthy()
+  })
+})

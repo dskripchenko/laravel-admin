@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1] - 2026-07-28
+
+### Fixed
+- Дашборд (BL-18): скрытые (hidden-override) виджеты можно вернуть — в
+  диалоге «Добавить виджет» секция «Скрытые виджеты» (restore); при
+  пустом списке — «Нечего добавлять». Store: `restoreWidget()`.
+- Удаление manifest-виджета, уже попавшего в draft, делало полный
+  remove — рендер-мерж возвращал виджет обратно; теперь для manifest
+  всегда hidden-override (полное удаление — только user-added).
+- `ensureDraftReflectsRendered` пересобирал draft из видимых виджетов и
+  молча терял hidden-записи (скрытые «воскресали» после resize/config).
+
 ## [1.11.0] - 2026-07-28
 
 ### Added

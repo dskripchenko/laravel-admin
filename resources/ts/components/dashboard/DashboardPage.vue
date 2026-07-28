@@ -359,13 +359,21 @@ async function onSaveLayout(): Promise<void> {
 }
 
 function onRemoveWidget(layoutSlug: string): void {
-  // Если widget есть в draft — удаляем, иначе делаем hidden override.
+  // Manifest-widget нельзя удалить из draft насовсем: рендер-мерж вернёт его
+  // обратно (widgets без layout-записи дорисовываются в конец). Поэтому для
+  // manifest — всегда hidden-override; полное удаление — только для user-added.
+  const isManifest = manifestWidgets.value.some(
+    (w) => String((w as Record<string, unknown>).slug ?? '') === layoutSlug,
+  )
   const inDraft = dashboardStore.draft.some((it) => it.slug === layoutSlug)
-  if (inDraft) {
-    dashboardStore.removeWidget(layoutSlug)
+  if (isManifest) {
+    if (inDraft) {
+      dashboardStore.updateWidget(layoutSlug, { hidden: true })
+    } else {
+      dashboardStore.addWidget({ slug: layoutSlug, hidden: true })
+    }
   } else {
-    // Manifest widget — добавляем как hidden override.
-    dashboardStore.addWidget({ slug: layoutSlug, hidden: true })
+    dashboardStore.removeWidget(layoutSlug)
   }
 }
 
@@ -388,6 +396,33 @@ function onConfigureWidget(layoutSlug: string): void {
 
 function onAddWidget(item: WidgetLayoutItem): void {
   dashboardStore.addWidget(item)
+}
+
+/**
+ * Скрытые (hidden-override) виджеты — для секции восстановления
+ * в диалоге добавления (BL-18). Title берём из manifest'а, для
+ * user-added — из config.title, иначе slug.
+ */
+const restorableWidgets = computed<Array<{ slug: string; title: string }>>(() => {
+  const bySlug = new Map<string, WidgetNode>()
+  for (const w of manifestWidgets.value) {
+    const s = String((w as Record<string, unknown>).slug ?? '')
+    if (s) bySlug.set(s, w)
+  }
+  return dashboardStore.draft
+    .filter((it) => it.hidden === true)
+    .map((it) => {
+      const node = bySlug.get(it.slug) as Record<string, unknown> | undefined
+      const cfg = (it.config ?? {}) as Record<string, unknown>
+      return {
+        slug: it.slug,
+        title: (node?.title as string | undefined) || (cfg.title as string | undefined) || it.slug,
+      }
+    })
+})
+
+function onRestoreWidget(slug: string): void {
+  dashboardStore.restoreWidget(slug)
 }
 
 function onSaveConfig(patch: Partial<WidgetLayoutItem>): void {
@@ -476,19 +511,22 @@ function onDrop(toIdx: number, e: DragEvent): void {
  * manifest widget'ы).
  */
 function ensureDraftReflectsRendered(): void {
-  if (dashboardStore.draft.length === renderedWidgets.value.length) return
+  // renderedWidgets не содержит hidden-виджеты — их записи сохраняем отдельно,
+  // иначе пересборка draft'а молча «воскрешает» скрытые (BL-18).
+  const hiddenItems = dashboardStore.draft.filter((it) => it.hidden === true)
+  if (dashboardStore.draft.length === renderedWidgets.value.length + hiddenItems.length) return
   const items: WidgetLayoutItem[] = renderedWidgets.value.map(({ node, layoutSlug }, idx) => {
     const existing = dashboardStore.draft.find((it) => it.slug === layoutSlug)
     return {
       slug: layoutSlug,
       size: spanFor(node),
       position: idx,
-      hidden: existing?.hidden ?? false,
+      hidden: false,
       type: existing?.type ?? (node as Record<string, unknown>).type as string | undefined,
       config: existing?.config,
     }
   })
-  dashboardStore.setDraft(items)
+  dashboardStore.setDraft([...items, ...hiddenItems.map((it) => ({ ...it }))])
 }
 
 // === Resize via mouse (по двум осям: ширина-cols и высота-rows) ===
@@ -700,9 +738,11 @@ function onExport(): void {
       :mode="dialogMode ?? 'add'"
       :item="dialogItem"
       :initial-title="dialogInitialTitle"
+      :restorable="restorableWidgets"
       @close="closeDialog"
       @add="onAddWidget"
       @save="onSaveConfig"
+      @restore="onRestoreWidget"
     />
   </section>
 </template>

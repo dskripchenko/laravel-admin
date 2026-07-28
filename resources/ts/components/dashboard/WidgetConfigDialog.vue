@@ -37,18 +37,27 @@ interface Props {
   item?: WidgetLayoutItem | null
   /** Title виджета на момент открытия (для configure-mode из manifest'а). */
   initialTitle?: string
+  /** Скрытые виджеты дашборда — предлагаются к восстановлению (BL-18). */
+  restorable?: Array<{ slug: string; title: string }>
 }
 const props = withDefaults(defineProps<Props>(), {
   mode: 'add',
   item: null,
   initialTitle: '',
+  restorable: () => [],
 })
 
 const emit = defineEmits<{
   close: []
   add: [item: WidgetLayoutItem]
   save: [patch: Partial<WidgetLayoutItem>]
+  restore: [slug: string]
 }>()
+
+function onRestore(slug: string): void {
+  emit('restore', slug)
+  emit('close')
+}
 
 const types = computed<string[]>(() => listWidgets())
 const selectedType = ref<string>('')
@@ -216,6 +225,27 @@ function close(): void {
           </header>
 
           <div class="admin-dialog__body">
+            <!-- Восстановление скрытых виджетов (BL-18) — только в add-mode. -->
+            <div v-if="mode === 'add'" class="admin-dialog__field">
+              <label class="admin-dialog__label">Скрытые виджеты</label>
+              <p v-if="restorable.length === 0" class="admin-dialog__empty">
+                Нечего добавлять — все виджеты дашборда уже показаны.
+              </p>
+              <div v-else class="admin-dialog__restore-list">
+                <button
+                  v-for="r in restorable"
+                  :key="r.slug"
+                  type="button"
+                  class="admin-dialog__type-card"
+                  :data-testid="`restore-widget-${r.slug}`"
+                  @click="onRestore(r.slug)"
+                >
+                  <span class="admin-dialog__type-name">{{ r.title }}</span>
+                  <span class="admin-dialog__type-help">Вернуть на дашборд</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Type selector — только в add-mode. -->
             <div v-if="mode === 'add'" class="admin-dialog__field">
               <label class="admin-dialog__label">
@@ -328,6 +358,11 @@ function close(): void {
 </template>
 
 <style>
+.admin-dialog__restore-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
 .admin-dialog__empty {
   margin: 0;
   padding: 16px 12px;
