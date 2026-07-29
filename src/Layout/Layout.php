@@ -201,14 +201,18 @@ abstract class Layout implements Renderable
         // Splat'им `props` и алиасим `children → items`. Legacy ключи
         // `props` / `children` сохраняем для уже-нормализующих consumer'ов
         // (screen-store).
+        // props несут подписи (labels вкладок, title аккордеона) и уезжают
+        // ДВАЖДЫ: сплэтом на верхний уровень (Vue v-bind=) и ключом `props`
+        // для legacy-consumer'ов. Локализуем один раз до обеих копий.
+        $props = \Dskripchenko\LaravelAdmin\I18n\Localize::attributes($this->props);
+
         return [
             'id' => $this->id(),
             'kind' => 'layout',
             'type' => $this->type(),
-            ...$this->props,
+            ...$props,
             'items' => $children,
-            // props несут подписи (labels вкладок, title аккордеона) — переводим
-            'props' => \Dskripchenko\LaravelAdmin\I18n\Localize::attributes($this->props),
+            'props' => $props,
             'children' => $children,
         ];
     }

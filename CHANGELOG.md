@@ -5,6 +5,13 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.3] - 2026-07-29
+
+### Fixed
+- i18n: `Layout::toArray` отдаёт props ДВАЖДЫ (сплэтом на верхний уровень
+  для `v-bind` и ключом `props`) — локализовалась только вторая копия,
+  поэтому подписи вкладок в манифесте оставались русскими.
+
 ## [1.13.2] - 2026-07-29
 
 ### Fixed
