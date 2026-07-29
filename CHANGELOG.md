@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.1] - 2026-07-29
+
+### Fixed
+- i18n: расширено покрытие Localize — переводятся подписи, до которых
+  сериализация раньше не доходила: любые атрибуты `*Label` (key-value,
+  repeater, builder), `props` layout'ов (labels вкладок), опции
+  `OptionsFilter`, а также `name`/`description` экрана в его compile.
+  Симптом: при en-локали панель показывала русские вкладки, фильтры
+  и заголовки экранов, хотя переводы в словаре были.
+
 ## [1.13.0] - 2026-07-29
 
 ### Fixed

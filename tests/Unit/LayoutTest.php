@@ -42,13 +42,13 @@ it('Layout::columns supports ratios and gap', function (): void {
 
 it('Layout::tabs builds labels + child layouts', function (): void {
     $layout = Layout::tabs([
-        'Профиль' => Layout::rows([Input::make('name')]),
-        'Безопасность' => [Input::make('password')],
+        (string) __('Профиль') => Layout::rows([Input::make('name')]),
+        (string) __('Безопасность') => [Input::make('password')],
     ]);
 
     $arr = $layout->toArray();
     expect($arr['type'])->toBe('tabs');
-    expect($arr['props']['labels'])->toBe(['Профиль', 'Безопасность']);
+    expect($arr['props']['labels'])->toBe([(string) __('Профиль'), (string) __('Безопасность')]);
     expect($arr['children'])->toHaveCount(2);
 });
 

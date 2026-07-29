@@ -173,6 +173,6 @@ it('ImportWizardLayout::for produces 4-step Wizard', function (): void {
     expect($arr['children'][0]['props']['title'])->toBe('Загрузка файла');
     expect($arr['children'][1]['props']['title'])->toBe('Сопоставление колонок');
     expect($arr['children'][2]['props']['title'])->toBe('Предпросмотр');
-    expect($arr['children'][3]['props']['title'])->toBe('Импорт');
+    expect($arr['children'][3]['props']['title'])->toBe((string) __('Импорт'));
     expect($arr['props']['persistKey'])->toBe('import-test-users');
 });

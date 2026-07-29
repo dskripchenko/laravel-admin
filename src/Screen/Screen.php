@@ -149,8 +149,8 @@ abstract class Screen
 
         $payload = [
             'state' => $state,
-            'name' => $this->name(),
-            'description' => $this->description(),
+            'name' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->name()),
+            'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->description()),
             'layout' => array_map(
                 static fn (Layout $l): array => $l->toArray(),
                 array_values(array_filter($this->layout(), static fn (Layout $l): bool => $l->isVisible())),

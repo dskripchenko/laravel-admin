@@ -53,7 +53,10 @@ final class OptionsFilter extends Filter
     {
         $base = parent::toArray();
         $base['options'] = array_map(
-            static fn ($value, $key): array => ['value' => $key, 'label' => $value],
+            static fn ($value, $key): array => [
+                'value' => $key,
+                'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($value),
+            ],
             $this->options,
             array_keys($this->options),
         );

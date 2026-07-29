@@ -207,7 +207,8 @@ abstract class Layout implements Renderable
             'type' => $this->type(),
             ...$this->props,
             'items' => $children,
-            'props' => $this->props,
+            // props несут подписи (labels вкладок, title аккордеона) — переводим
+            'props' => \Dskripchenko\LaravelAdmin\I18n\Localize::attributes($this->props),
             'children' => $children,
         ];
     }

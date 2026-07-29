@@ -49,14 +49,20 @@ final class Localize
      */
     public static function attributes(array $attributes): array
     {
-        foreach (['title', 'help', 'placeholder', 'label', 'trueLabel', 'falseLabel'] as $key) {
-            if (isset($attributes[$key]) && is_string($attributes[$key])) {
-                $attributes[$key] = self::string($attributes[$key]);
-            }
-        }
+        foreach ($attributes as $key => $value) {
+            $key = (string) $key;
+            // Любой ключ-подпись: title/help/placeholder и всё, что
+            // заканчивается на label (label, keyLabel, trueLabel, addLabel…) —
+            // раньше список был жёстким и мимо него проходили подписи
+            // key-value/repeater/tabs.
+            $isTextKey = in_array($key, ['title', 'help', 'placeholder'], true)
+                || str_ends_with(mb_strtolower($key), 'label');
 
-        if (isset($attributes['options']) && is_array($attributes['options'])) {
-            $attributes['options'] = self::options($attributes['options']);
+            if ($isTextKey && is_string($value)) {
+                $attributes[$key] = self::string($value);
+            } elseif (in_array($key, ['options', 'labels'], true) && is_array($value)) {
+                $attributes[$key] = self::options($value);
+            }
         }
 
         return $attributes;
