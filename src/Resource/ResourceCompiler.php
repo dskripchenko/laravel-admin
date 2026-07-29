@@ -32,7 +32,7 @@ final class ResourceCompiler
             if ($resource === null) {
                 continue;
             }
-            $controllers[$slug] = self::buildControllerEntry($resource::permission());
+            $controllers[$slug] = self::buildControllerEntry($resource);
             $controllers[$slug.'_views'] = self::buildSavedViewsEntry($resource::permission());
         }
 
@@ -58,10 +58,18 @@ final class ResourceCompiler
     }
 
     /**
+     * Actions ресурса.
+     *
+     * Часть действий имеет смысл не для каждого ресурса: дерево — только для
+     * иерархических, restore/forceDelete — только при SoftDeletes. Регистрируя
+     * их поголовно, мы заводили роуты, которые на большинстве ресурсов могли
+     * ответить только ошибкой, и раздували публикуемую карту API.
+     *
      * @return array<string, mixed>
      */
-    private static function buildControllerEntry(string $base): array
+    private static function buildControllerEntry(Resource $resource): array
     {
+        $base = $resource::permission();
         $view = AdminAccess::class.':'.$base.'.view';
         $create = AdminAccess::class.':'.$base.'.create';
         $update = AdminAccess::class.':'.$base.'.update';
@@ -71,33 +79,51 @@ final class ResourceCompiler
         $replicate = AdminAccess::class.':'.$base.'.replicate';
         $reorder = AdminAccess::class.':'.$base.'.reorder';
 
+        $actions = [
+            'meta' => ['method' => ['get'], 'middleware' => [$view]],
+            'search' => ['method' => ['post'], 'middleware' => [$view]],
+            'summary' => ['method' => ['post'], 'middleware' => [$view]],
+            'read' => ['method' => ['get'], 'middleware' => [$view]],
+            'create' => ['method' => ['post'], 'middleware' => [$create]],
+            'update' => ['method' => ['post'], 'middleware' => [$update]],
+            'inlineUpdate' => ['method' => ['post'], 'middleware' => [$update]],
+            'replicate' => ['method' => ['post'], 'middleware' => [$replicate]],
+            'reorder' => ['method' => ['post'], 'middleware' => [$reorder]],
+            'exportCsv' => ['method' => ['get', 'post'], 'middleware' => [$view]],
+            'export' => ['method' => ['get', 'post'], 'middleware' => [$view]],
+            'delete' => ['method' => ['post'], 'middleware' => [$delete]],
+            'restore' => ['method' => ['post'], 'middleware' => [$restore]],
+            'forceDelete' => ['method' => ['post'], 'middleware' => [$forceDelete]],
+            // Generic bulk-action dispatcher: POST /{slug}/action body
+            // {key, ids[], payload?}. Резолвит Action из Resource->actions().
+            'action' => ['method' => ['post'], 'middleware' => [$view]],
+            'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
+            'treeScreen' => ['method' => ['get'], 'middleware' => [$view]],
+            'tree' => ['method' => ['post'], 'middleware' => [$view]],
+            'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
+            'editScreen' => ['method' => ['get'], 'middleware' => [$update]],
+            'viewScreen' => ['method' => ['get'], 'middleware' => [$view]],
+        ];
+
+        if ($resource->hierarchyParentKey() === null) {
+            unset($actions['tree'], $actions['treeScreen']);
+        }
+
+        if (! $resource::supportsSoftDeletes()) {
+            unset($actions['restore'], $actions['forceDelete']);
+        }
+
+        if (! $resource->replicable()) {
+            unset($actions['replicate']);
+        }
+
+        if (! $resource->reorderable()) {
+            unset($actions['reorder']);
+        }
+
         return [
             'controller' => ResourceController::class,
-            'actions' => [
-                'meta' => ['method' => ['get'], 'middleware' => [$view]],
-                'search' => ['method' => ['post'], 'middleware' => [$view]],
-                'summary' => ['method' => ['post'], 'middleware' => [$view]],
-                'read' => ['method' => ['get'], 'middleware' => [$view]],
-                'create' => ['method' => ['post'], 'middleware' => [$create]],
-                'update' => ['method' => ['post'], 'middleware' => [$update]],
-                'inlineUpdate' => ['method' => ['post'], 'middleware' => [$update]],
-                'replicate' => ['method' => ['post'], 'middleware' => [$replicate]],
-                'reorder' => ['method' => ['post'], 'middleware' => [$reorder]],
-                'exportCsv' => ['method' => ['get', 'post'], 'middleware' => [$view]],
-                'export' => ['method' => ['get', 'post'], 'middleware' => [$view]],
-                'delete' => ['method' => ['post'], 'middleware' => [$delete]],
-                'restore' => ['method' => ['post'], 'middleware' => [$restore]],
-                'forceDelete' => ['method' => ['post'], 'middleware' => [$forceDelete]],
-                // Generic bulk-action dispatcher: POST /{slug}/action body
-                // {key, ids[], payload?}. Резолвит Action из Resource->actions().
-                'action' => ['method' => ['post'], 'middleware' => [$view]],
-                'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
-                'treeScreen' => ['method' => ['get'], 'middleware' => [$view]],
-                'tree' => ['method' => ['post'], 'middleware' => [$view]],
-                'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
-                'editScreen' => ['method' => ['get'], 'middleware' => [$update]],
-                'viewScreen' => ['method' => ['get'], 'middleware' => [$view]],
-            ],
+            'actions' => $actions,
         ];
     }
 }

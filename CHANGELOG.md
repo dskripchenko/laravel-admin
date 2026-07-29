@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-07-29
+
+### Changed
+- **Действия ресурса регистрируются по возможностям ресурса.** `tree`/
+  `treeScreen` заводятся только для иерархических ресурсов, `restore`/
+  `forceDelete` — только при SoftDeletes, `replicate` и `reorder` — по
+  соответствующим флагам. Раньше все 21 действие регистрировались поголовно:
+  на обычном ресурсе больше половины могли ответить только ошибкой, а карта
+  API раздувалась (в пилотном проекте — 116 мёртвых endpoint'ов из 843).
+  Вызов неподдерживаемого действия теперь 404, а не 409/422.
+- Публичные описания: убраны отсылки к внутреннему устройству SPA и
+  `{@see …}` из docblock'ов действий, попадающих в OpenAPI.
+
 ## [1.14.0] - 2026-07-29
 
 ### Added

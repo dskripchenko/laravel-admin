@@ -89,7 +89,7 @@ it('tree action narrows by ?q= search but keeps roots without ancestors', functi
     expect($labels)->not->toContain('Skip');
 });
 
-it('tree action returns 409 for non-hierarchical resources', function (): void {
+it('does not register tree actions for non-hierarchical resources', function (): void {
     /** @var ResourceRegistry $rr */
     $rr = app(ResourceRegistry::class);
     $rr->clear();
@@ -104,10 +104,9 @@ it('tree action returns 409 for non-hierarchical resources', function (): void {
         $t->timestamps();
     });
 
-    $response = $this->postJson('/api/admin/test-users/tree');
-
-    $response->assertStatus(409);
-    expect($response->json('payload.errorKey'))->toBe('not_hierarchical');
+    // Действия дерева не регистрируются вовсе: роутов нет, а не ошибка.
+    $this->postJson('/api/admin/test-users/tree')->assertStatus(404);
+    $this->getJson('/api/admin/test-users/treeScreen')->assertStatus(404);
 });
 
 it('tree action returns empty data for table without rows', function (): void {

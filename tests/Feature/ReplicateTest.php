@@ -51,7 +51,7 @@ it('replicate action duplicates record with default name suffix', function (): v
     expect(TestResourceUserModel::count())->toBe(2);
 });
 
-it('replicate returns 422 when resource is not replicable', function (): void {
+it('does not register replicate when resource is not replicable', function (): void {
     app(ResourceRegistry::class)->add(TestUserResource::class);
     AdminApi::clearCache();
     $r = TestResourceUserModel::create([
@@ -60,9 +60,9 @@ it('replicate returns 422 when resource is not replicable', function (): void {
         'password' => 'p',
     ]);
 
+    // Действие не регистрируется вовсе: роут отсутствует, а не отвечает ошибкой.
     $response = $this->postJson('/api/admin/test-users/replicate', ['id' => $r->id]);
-    $response->assertStatus(422);
-    expect($response->json('payload.message'))->toContain('not replicable');
+    $response->assertStatus(404);
 });
 
 it('replicate returns 404 if record missing', function (): void {

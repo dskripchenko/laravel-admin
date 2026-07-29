@@ -66,9 +66,10 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Compile GeneratedTreeScreen — описание tree-страницы для иерархических
-     * ресурсов (с self-ref parent_id). Данные подгружаются SPA через
-     * {@see tree()} action.
+     * Описание страницы-дерева ресурса.
+     *
+     * Отдаёт разметку иерархического списка; сами узлы забираются
+     * отдельным действием `tree`.
      *
      * @output object $payload
      *

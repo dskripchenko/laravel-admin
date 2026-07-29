@@ -66,7 +66,7 @@ it('reorder validates items array structure', function (): void {
     ])->assertStatus(422);
 });
 
-it('reorder returns 422 when resource is not reorderable', function (): void {
+it('does not register reorder when resource is not reorderable', function (): void {
     /** @var ResourceRegistry $rr */
     $rr = app(ResourceRegistry::class);
     $rr->add(TestUserResource::class);
@@ -83,8 +83,8 @@ it('reorder returns 422 when resource is not reorderable', function (): void {
     $response = $this->postJson('/api/admin/test-users/reorder', [
         'items' => [['id' => 1, 'position' => 0]],
     ]);
-    $response->assertStatus(422);
-    expect($response->json('payload.message'))->toContain('not reorderable');
+    // Действие не регистрируется вовсе: роут отсутствует, а не отвечает ошибкой.
+    $response->assertStatus(404);
 });
 
 it('meta.features.reorderable=true exposes reorderColumn', function (): void {

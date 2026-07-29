@@ -102,11 +102,11 @@ final class UploadController extends ApiController
     }
 
     /**
-     * Стримит файл с заданного disk через admin-API. Решает проблему
-     * private-дисков (без storage:link) и обеспечивает permission-gate
-     * через стандартный AdminAuth middleware.
+     * Отдаёт файл с указанного диска.
      *
-     * Disk должен быть в `admin.uploads.servable_disks` whitelist.
+     * Работает и с приватными дисками; доступ проверяется так же, как
+     * на остальных действиях панели. Диск должен быть разрешён в
+     * настройке `admin.uploads.servable_disks`.
      *
      * @input string $disk
      * @input string $path

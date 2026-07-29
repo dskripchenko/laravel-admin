@@ -81,7 +81,7 @@ it('forceDelete action removes record permanently', function (): void {
     expect(TestSoftDeleteUserModel::withTrashed()->find($r->id))->toBeNull();
 });
 
-it('restore returns 422 for resource without SoftDeletes', function (): void {
+it('does not register restore for a resource without SoftDeletes', function (): void {
     $rr = app(ResourceRegistry::class);
     $rr->add(TestUserResource::class);
     AdminApi::clearCache();
@@ -95,9 +95,9 @@ it('restore returns 422 for resource without SoftDeletes', function (): void {
     });
 
     $r = TestResourceUserModel::create(['name' => 'X']);
+    // Действие не регистрируется вовсе: роут отсутствует, а не отвечает ошибкой.
     $response = $this->postJson('/api/admin/test-users/restore', ['id' => $r->id]);
-    $response->assertStatus(422);
-    expect($response->json('payload.message'))->toContain('soft-delete');
+    $response->assertStatus(404);
 });
 
 it('restore returns 404 when record not found (even with withTrashed)', function (): void {
