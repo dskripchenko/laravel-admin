@@ -26,7 +26,7 @@ it('asMoney stores currency + decimals', function (): void {
 it('asBoolean stores labels (or null defaults)', function (): void {
     $arr = TableColumn::make('is_active')->asBoolean('Да', 'Нет')->toArray();
     expect($arr['preset'])->toBe('boolean');
-    expect($arr['meta'])->toBe(['trueLabel' => 'Да', 'falseLabel' => 'Нет']);
+    expect($arr['meta'])->toBe(['trueLabel' => (string) __('Да'), 'falseLabel' => (string) __('Нет')]);
 });
 
 it('asBytes preset name is bytes', function (): void {

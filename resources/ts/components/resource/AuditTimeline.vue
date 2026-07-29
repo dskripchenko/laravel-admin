@@ -131,10 +131,10 @@ const ISO_DATETIME_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:Z|
 
 function formatVal(v: unknown): string {
   if (v === null || v === undefined) return '∅'
-  if (typeof v === 'boolean') return v ? 'Да' : 'Нет'
+  if (typeof v === 'boolean') return v ? tr('Да') : tr('Нет')
   // 0/1 are stored as int but typically reflect booleans in MySQL/Postgres.
-  if (v === 0) return 'Нет'
-  if (v === 1) return 'Да'
+  if (v === 0) return tr('Нет')
+  if (v === 1) return tr('Да')
   if (typeof v === 'string') {
     const m = v.match(ISO_DATETIME_RE)
     if (m) return `${m[1]} ${m[2]}`
@@ -180,7 +180,7 @@ function formatVal(v: unknown): string {
           <div class="admin-audit-timeline__row">
             <UidAvatar
               :name="entry.actor?.name ?? '?'"
-              :alt="entry.actor?.name ?? 'Неизвестный'"
+              :alt="entry.actor?.name ?? tr('Неизвестный')"
               size="xs"
             />
             <span class="admin-audit-timeline__actor">

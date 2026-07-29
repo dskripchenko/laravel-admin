@@ -231,7 +231,7 @@ function runAction(action: TreeNodeAction): void {
 
 async function deleteSelected(): Promise<void> {
   if (selectedRecordId.value === null) return
-  if (!confirm('Удалить выбранный узел?')) return
+  if (!confirm(tr('Удалить выбранный узел?'))) return
   try {
     const client = getAdminClient()
     await client.post(`/${selectedSlug.value}/delete`, { id: selectedRecordId.value })
@@ -328,7 +328,7 @@ onMounted(load)
       <UidEmptyState
         v-else-if="nodes.length === 0"
         :title="tr('Нет данных')"
-        :hint="search.length > 0 ? 'Ничего не найдено по запросу.' : null"
+        :hint="search.length > 0 ? tr('Ничего не найдено по запросу.') : null"
       />
       <UidTreeView
         v-else

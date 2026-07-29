@@ -159,7 +159,7 @@ async function onCustomAction(action: HeaderAction): Promise<void> {
   // selection-действия требуют выбора (защита, хотя кнопки и так только в
   // bulk-панели); глобальные — запускаются без выбора.
   if (action.needsSelection && !index.hasSelection) {
-    adminToast.error('Сначала выберите записи.')
+    adminToast.error(tr('Сначала выберите записи.'))
     return
   }
   if (action.confirm && !window.confirm(action.confirm)) return
@@ -324,7 +324,7 @@ async function onImportFileChange(e: Event): Promise<void> {
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] import failed:', err)
     adminToast.error(
-      'Импорт не удался. Проверьте формат файла и поля ресурса либо обратитесь к администратору.',
+      tr('Импорт не удался. Проверьте формат файла и поля ресурса либо обратитесь к администратору.'),
     )
   } finally {
     input.value = ''
@@ -677,7 +677,7 @@ async function onSaveView(label: string): Promise<void> {
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] save-view failed:', err)
     adminToast.error(
-      'Не удалось сохранить view. Возможно, недостаточно прав либо ресурс не зарегистрирован.',
+      tr('Не удалось сохранить view. Возможно, недостаточно прав либо ресурс не зарегистрирован.'),
     )
   } finally {
     nav.end()
@@ -1167,7 +1167,7 @@ async function retryLoad(): Promise<void> {
     <UidErrorState
       v-else-if="index.hasError"
       :title="tr('Не удалось загрузить данные')"
-      :description="index.error?.message ?? 'Попробуйте обновить страницу.'"
+      :description="index.error?.message ?? tr('Попробуйте обновить страницу.')"
       class="admin-resource-index__state"
     >
       <template #actions>

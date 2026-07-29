@@ -5,6 +5,22 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-07-29
+
+### Added
+- i18n: переводятся строковые литералы компонентов — интерполяции с
+  тернарником (`{{ x ? 'Войти' : 'Вход…' }}`), toast'ы, `confirm()`,
+  дефолты props и заголовки маршрутов. 110 строк в 36 файлах; словарь
+  `resources/lang/en.json` 178 → 292 ключа.
+- `createTitleGuard` переводит `meta.title` — единственная точка, через
+  которую в `document.title` уезжают заголовки системных маршрутов.
+
+### Changed
+- Дефолты props (`emptyText`, `keyLabel`, `searchPlaceholder`, …) остаются
+  исходными строками, а переводятся в точке использования: `withDefaults`
+  вычисляет их на загрузке модуля, когда стор ещё не поднят, и перевод
+  «замёрз» бы на языке первой загрузки.
+
 ## [1.13.4] - 2026-07-29
 
 ### Fixed

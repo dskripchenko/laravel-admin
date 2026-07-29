@@ -68,7 +68,7 @@ it('KeyValueEntry has type=key_value with labels', function (): void {
     $arr = $e->toArray();
     expect($arr['type'])->toBe('key_value');
     expect($arr['attributes']['keyLabel'])->toBe('Свойство');
-    expect($arr['attributes']['valueLabel'])->toBe('Значение');
+    expect($arr['attributes']['valueLabel'])->toBe((string) __('Значение'));
 });
 
 it('RepeatableEntry has type=repeatable and serializes nested entries', function (): void {

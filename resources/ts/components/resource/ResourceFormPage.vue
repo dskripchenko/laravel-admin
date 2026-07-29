@@ -222,7 +222,7 @@ const resolvedIndexRouteName = computed<string>(() => {
 })
 
 async function onDelete(): Promise<void> {
-  if (!confirm('Удалить запись?')) return
+  if (!confirm(tr('Удалить запись?'))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
     void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
@@ -230,7 +230,7 @@ async function onDelete(): Promise<void> {
 }
 
 function onCancel(): void {
-  if (form.isDirty && !confirm('Несохранённые изменения будут потеряны. Продолжить?')) {
+  if (form.isDirty && !confirm(tr('Несохранённые изменения будут потеряны. Продолжить?'))) {
     return
   }
   void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
@@ -294,7 +294,7 @@ function onCancel(): void {
         class="admin-resource-form__alert"
         role="alert"
       >
-        {{ form.error?.message ?? 'Не удалось сохранить запись' }}
+        {{ form.error?.message ?? tr('Не удалось сохранить запись') }}
       </UidAlert>
 
       <!-- Loading state — UidSkeleton imitates form-rows -->

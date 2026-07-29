@@ -91,10 +91,10 @@ const emit = defineEmits<{
 }>()
 
 const STEPS = [
-  { label: 'Загрузка', description: 'CSV / TSV / XLSX' },
-  { label: 'Сопоставление', description: 'Колонки файла → поля' },
-  { label: 'Предпросмотр', description: 'Проверка первых строк' },
-  { label: 'Импорт', description: 'Запуск + сводка' },
+  { label: tr('Загрузка'), description: 'CSV / TSV / XLSX' },
+  { label: tr('Сопоставление'), description: tr('Колонки файла → поля') },
+  { label: tr('Предпросмотр'), description: tr('Проверка первых строк') },
+  { label: tr('Импорт'), description: tr('Запуск + сводка') },
 ]
 
 const internalStep = ref(0)
@@ -153,7 +153,7 @@ const canGoNext = computed(() => {
 
 const fileOptions = computed<Array<{ value: string; label: string }>>(() => {
   return [
-    { value: '', label: 'Не импортировать' },
+    { value: '', label: tr('Не импортировать') },
     ...props.fieldOptions,
   ]
 })
@@ -167,7 +167,7 @@ function onCancel(): void {
   <section class="admin-page admin-import-wizard">
     <header class="admin-page__hd">
       <div class="admin-page__title-wrap">
-        <h1 class="admin-page__title">{{ title }}</h1>
+        <h1 class="admin-page__title">{{ tr(title) }}</h1>
       </div>
       <div class="admin-page__actions">
         <UidButton variant="ghost" @click="onCancel">{{ tr('Отмена') }}</UidButton>

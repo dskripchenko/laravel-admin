@@ -15,6 +15,7 @@ import { UidButton, UidIcon } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface UploadedFile {
   disk: string
@@ -88,7 +89,7 @@ async function upload(file: File): Promise<void> {
     form.setField(props.name, res)
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] upload failed:', err)
-    adminToast.error('Не удалось загрузить файл.')
+    adminToast.error(tr('Не удалось загрузить файл.'))
   } finally {
     uploading.value = false
   }
@@ -116,7 +117,7 @@ function clear(): void {
       >
         <UidIcon :icon="Upload" :size="24" />
         <p class="admin-file-field__hint">
-          {{ uploading ? 'Загрузка…' : 'Кликните или перетащите файл сюда' }}
+          {{ uploading ? tr('Загрузка…') : tr('Кликните или перетащите файл сюда') }}
         </p>
       </div>
       <input

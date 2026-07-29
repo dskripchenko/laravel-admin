@@ -45,7 +45,7 @@ async function load(): Promise<void> {
 async function create(): Promise<void> {
   const name = newName.value.trim()
   if (name === '') {
-    adminToast.error('Введите название токена.')
+    adminToast.error(tr('Введите название токена.'))
     return
   }
   try {
@@ -58,23 +58,23 @@ async function create(): Promise<void> {
     justCreated.value = result
     newName.value = ''
     await load()
-    adminToast.success('Токен создан. Скопируйте plain-значение — оно не будет показано повторно.')
+    adminToast.success(tr('Токен создан. Скопируйте plain-значение — оно не будет показано повторно.'))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] token create failed:', err)
-    adminToast.error('Не удалось создать токен.')
+    adminToast.error(tr('Не удалось создать токен.'))
   }
 }
 
 async function revoke(id: number): Promise<void> {
-  if (!window.confirm('Отозвать токен? Запросы с ним перестанут работать.')) return
+  if (!window.confirm(tr('Отозвать токен? Запросы с ним перестанут работать.'))) return
   try {
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     await client.post('/profile/tokenRevoke', { id })
     await load()
-    adminToast.success('Токен отозван.')
+    adminToast.success(tr('Токен отозван.'))
   } catch {
-    adminToast.error('Не удалось отозвать токен.')
+    adminToast.error(tr('Не удалось отозвать токен.'))
   }
 }
 
@@ -82,9 +82,9 @@ async function copyJustCreated(): Promise<void> {
   if (!justCreated.value) return
   try {
     await navigator.clipboard.writeText(justCreated.value.token)
-    adminToast.success('Скопировано.')
+    adminToast.success(tr('Скопировано.'))
   } catch {
-    adminToast.warning('Скопируйте вручную.')
+    adminToast.warning(tr('Скопируйте вручную.'))
   }
 }
 

@@ -164,14 +164,14 @@ function toggleSelectAll(): void {
 
 async function deleteRow(row: Record<string, unknown>): Promise<void> {
   const id = rowId(row)
-  if (!confirm('Удалить строку?')) return
+  if (!confirm(tr('Удалить строку?'))) return
   try {
     await getAdminClient().post(`/${props.resource}/delete`, { id })
     items.value = items.value.filter((r) => rowId(r) !== id)
     selection.value.delete(id)
     selection.value = new Set(selection.value)
   } catch {
-    adminToast.error('Не удалось удалить строку.')
+    adminToast.error(tr('Не удалось удалить строку.'))
   }
 }
 
@@ -185,7 +185,7 @@ async function bulkDelete(): Promise<void> {
     selection.value = new Set()
     await load()
   } catch {
-    adminToast.error('Не удалось удалить часть строк.')
+    adminToast.error(tr('Не удалось удалить часть строк.'))
     await load()
   }
 }
@@ -208,7 +208,7 @@ async function commitDraft(): Promise<void> {
     draft.value = null
     await load()
   } catch {
-    adminToast.error('Не удалось создать запись.')
+    adminToast.error(tr('Не удалось создать запись.'))
   }
 }
 

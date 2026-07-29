@@ -25,6 +25,7 @@ import '@dskripchenko/wysiwyg/style.css'
 import { useFormState } from '../render/formState'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   name: string
@@ -90,13 +91,13 @@ async function onFilePicked(e: Event): Promise<void> {
     controller.value.chain().setImage(res.url, res.name).run()
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] image upload failed:', err)
-    adminToast.error('Не удалось загрузить изображение.')
+    adminToast.error(tr('Не удалось загрузить изображение.'))
   }
 }
 
 function onLinkRequest(currentUrl: string | null): void {
   if (!controller.value) return
-  const next = window.prompt('URL ссылки (пусто — удалить ссылку):', currentUrl ?? '')
+  const next = window.prompt(tr('URL ссылки (пусто — удалить ссылку):'), currentUrl ?? '')
   if (next === null) return
   controller.value.chain().setLink(next.trim() === '' ? null : next.trim()).run()
 }

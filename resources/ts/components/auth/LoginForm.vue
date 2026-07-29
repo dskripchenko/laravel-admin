@@ -62,14 +62,14 @@ async function submit(): Promise<void> {
     if (httpStatus === 429) {
       // Throttle-ответ Laravel не в API-envelope — без этой ветки пользователь
       // видел сырое «Request failed with status code 429».
-      generalError.value = 'Слишком много попыток входа. Подождите минуту и попробуйте снова'
+      generalError.value = tr('Слишком много попыток входа. Подождите минуту и попробуйте снова')
     } else if (err instanceof ValidationError) {
       fieldErrors.value = err.fields
       generalError.value = err.firstFieldMessage()
     } else if (err instanceof NetworkError) {
-      generalError.value = 'Нет соединения с сервером'
+      generalError.value = tr('Нет соединения с сервером')
     } else if (err instanceof ApiError) {
-      generalError.value = err.message || 'Не удалось войти'
+      generalError.value = err.message || tr('Не удалось войти')
     } else {
       generalError.value = (err as Error).message
     }
@@ -130,7 +130,7 @@ async function submit(): Promise<void> {
       :disabled="submitting"
       data-testid="login-submit"
     >
-      {{ submitting ? 'Вход…' : 'Войти' }}
+      {{ submitting ? tr('Вход…') : tr('Войти') }}
     </UidButton>
 
     <div

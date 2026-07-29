@@ -69,7 +69,7 @@ const markdownContent = ref<string>('# Новая заметка\n\nТекст�
 const statLabel = ref<string>('LABEL')
 const statValue = ref<string>('0')
 const gaugeValue = ref<string>('50')
-const chartLabels = ref<string>('Янв, Фев, Мар, Апр')
+const chartLabels = ref<string>(tr('Янв, Фев, Мар, Апр'))
 const chartValues = ref<string>('10, 20, 15, 30')
 const recentResource = ref<string>('')
 const recentLimit = ref<string>('5')
@@ -112,17 +112,17 @@ const canSubmit = computed<boolean>(
 )
 
 const labelOf: Record<string, string> = {
-  stat: 'Stat — карточка с числом',
-  stats: 'Stats overview — несколько метрик',
-  chart: 'Chart — линия / столбцы / донат',
-  'bar-chart': 'Bar chart — гистограмма',
-  'donut-chart': 'Donut — кольцевая диаграмма',
-  'recent-table': 'Recent list — последние записи',
-  recent_list: 'Recent list — последние записи',
-  'recent-list': 'Recent list — последние записи',
-  heatmap: 'Heatmap — тепловая карта',
-  gauge: 'Gauge — шкала со значением',
-  markdown: 'Markdown — заметка / текст',
+  stat: tr('Stat — карточка с числом'),
+  stats: tr('Stats overview — несколько метрик'),
+  chart: tr('Chart — линия / столбцы / донат'),
+  'bar-chart': tr('Bar chart — гистограмма'),
+  'donut-chart': tr('Donut — кольцевая диаграмма'),
+  'recent-table': tr('Recent list — последние записи'),
+  recent_list: tr('Recent list — последние записи'),
+  'recent-list': tr('Recent list — последние записи'),
+  heatmap: tr('Heatmap — тепловая карта'),
+  gauge: tr('Gauge — шкала со значением'),
+  markdown: tr('Markdown — заметка / текст'),
 }
 
 type ConfigKind =
@@ -213,7 +213,7 @@ function close(): void {
         <div class="admin-dialog">
           <header class="admin-dialog__hd">
             <h2 id="widget-config-title" class="admin-dialog__title">
-              {{ mode === 'add' ? 'Добавить виджет' : 'Настроить виджет' }}
+              {{ mode === 'add' ? tr('Добавить виджет') : tr('Настроить виджет') }}
             </h2>
             <button
               type="button"
@@ -346,10 +346,10 @@ function close(): void {
             <UidButton
               variant="primary"
               :disabled="!canSubmit"
-              :title="!canSubmit ? 'Заполните обязательные поля' : undefined"
+              :title="!canSubmit ? tr('Заполните обязательные поля') : undefined"
               @click="onSubmit"
             >
-              {{ mode === 'add' ? 'Добавить' : 'Сохранить' }}
+              {{ mode === 'add' ? tr('Добавить') : tr('Сохранить') }}
             </UidButton>
           </footer>
         </div>

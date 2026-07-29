@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
+import { trSafe as tr } from '../../stores/i18n'
 
 /**
  * Backend RecentListWidget::data() отдаёт columns как `[{column, label}]`,
@@ -59,7 +60,7 @@ const normalizedColumns = computed<UidTableColumn[]>(() =>
     <UidTable
       :columns="normalizedColumns"
       :data="rows"
-      :empty-text="emptyText"
+      :empty-text="tr(emptyText)"
       :class="{ 'admin-widget__table--clickable': !!linkTo }"
       @row-click="onRowClick"
     />

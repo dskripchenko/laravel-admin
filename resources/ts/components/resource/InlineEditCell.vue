@@ -17,6 +17,7 @@
  */
 import { computed, nextTick, ref } from 'vue'
 import { adminToast } from '../../stores/toast'
+import { trSafe as tr } from '../../stores/i18n'
 
 type InlineInputType = 'text' | 'number' | 'select' | 'date' | 'textarea' | 'switcher'
 
@@ -135,7 +136,7 @@ const optionEntries = computed(() =>
     <span
       v-if="!editing"
       :class="['admin-inline-edit', { 'admin-inline-edit--editable': isEditable }]"
-      :title="isEditable ? 'Двойной клик для редактирования' : undefined"
+      :title="isEditable ? tr('Двойной клик для редактирования') : undefined"
       @dblclick.stop="startEdit"
     >
       <slot>{{ value }}</slot>

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
 import { formatCell, type CellMeta } from '../resource/cellFormat'
+import { trSafe as tr } from '../../stores/i18n'
 
 /**
  * Backend TableWidget::data() — {rows, columns[TableColumn::toArray]}:
@@ -56,6 +57,6 @@ const formattedRows = computed<Record<string, unknown>[]>(() =>
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <UidTable :columns="uidColumns" :data="formattedRows" :empty-text="emptyText" />
+    <UidTable :columns="uidColumns" :data="formattedRows" :empty-text="tr(emptyText)" />
   </UidCard>
 </template>

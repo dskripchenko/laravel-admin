@@ -8,6 +8,7 @@
  * понятных сообщений.
  */
 import { useToast } from '@dskripchenko/ui'
+import { trSafe } from './i18n'
 
 interface Options {
   title?: string
@@ -37,7 +38,7 @@ export const adminToast = {
 /**
  * fromError — извлекает message из ApiError / Error / unknown и пушит toast.
  */
-export function toastError(err: unknown, fallback = 'Произошла ошибка'): void {
+export function toastError(err: unknown, fallback = trSafe('Произошла ошибка')): void {
   const msg =
     err instanceof Error
       ? err.message || fallback

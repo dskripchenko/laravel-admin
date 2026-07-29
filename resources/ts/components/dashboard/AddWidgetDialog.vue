@@ -93,17 +93,17 @@ function close(): void {
 }
 
 const labelOf: Record<string, string> = {
-  stat: 'Stat — карточка с числом',
-  stats: 'Stats overview — несколько метрик',
-  chart: 'Chart — линия / столбцы / донат',
-  'bar-chart': 'Bar chart — гистограмма',
-  'donut-chart': 'Donut — кольцевая диаграмма',
-  'recent-table': 'Recent list — последние записи',
-  recent_list: 'Recent list — последние записи',
-  'recent-list': 'Recent list — последние записи',
-  heatmap: 'Heatmap — тепловая карта',
-  gauge: 'Gauge — шкала со значением',
-  markdown: 'Markdown — заметка / текст',
+  stat: tr('Stat — карточка с числом'),
+  stats: tr('Stats overview — несколько метрик'),
+  chart: tr('Chart — линия / столбцы / донат'),
+  'bar-chart': tr('Bar chart — гистограмма'),
+  'donut-chart': tr('Donut — кольцевая диаграмма'),
+  'recent-table': tr('Recent list — последние записи'),
+  recent_list: tr('Recent list — последние записи'),
+  'recent-list': tr('Recent list — последние записи'),
+  heatmap: tr('Heatmap — тепловая карта'),
+  gauge: tr('Gauge — шкала со значением'),
+  markdown: tr('Markdown — заметка / текст'),
 }
 
 function showsConfig(t: string): 'markdown' | 'stat' | 'gauge' | null {

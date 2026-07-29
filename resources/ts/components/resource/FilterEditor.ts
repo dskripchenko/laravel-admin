@@ -5,6 +5,7 @@
  * выбирает control под filter.type без шаблона и состояния.
  */
 import { defineComponent, h, type PropType } from 'vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 export interface FilterOption {
   value: string | number
@@ -70,7 +71,7 @@ export const FilterEditor = defineComponent({
             type: 'date',
             value: v.from ?? '',
             class: 'admin-toolbar__input',
-            placeholder: 'От',
+            placeholder: tr('От'),
             onChange: (e: Event) =>
               emit('set-draft', { ...v, from: (e.target as HTMLInputElement).value }),
           }),
@@ -78,7 +79,7 @@ export const FilterEditor = defineComponent({
             type: 'date',
             value: v.to ?? '',
             class: 'admin-toolbar__input',
-            placeholder: 'До',
+            placeholder: tr('До'),
             onChange: (e: Event) =>
               emit('set-draft', { ...v, to: (e.target as HTMLInputElement).value }),
           }),
@@ -88,9 +89,9 @@ export const FilterEditor = defineComponent({
       // TrashedFilter — tri-state (without / with / only).
       if (f.type === 'trashed') {
         const options = [
-          { value: 'without', label: 'Без удалённых' },
-          { value: 'with', label: 'С удалёнными' },
-          { value: 'only', label: 'Только удалённые' },
+          { value: 'without', label: tr('Без удалённых') },
+          { value: 'with', label: tr('С удалёнными') },
+          { value: 'only', label: tr('Только удалённые') },
         ]
         return h(
           'div',
@@ -124,7 +125,7 @@ export const FilterEditor = defineComponent({
               checked: props.draft === true,
               onChange: () => emit('set-draft', true),
             }),
-            h('span', null, 'Да'),
+            h('span', null, tr('Да')),
           ]),
           h('label', { class: 'admin-toolbar__list-item admin-toolbar__list-item--checkbox' }, [
             h('input', {
@@ -132,7 +133,7 @@ export const FilterEditor = defineComponent({
               checked: props.draft === false,
               onChange: () => emit('set-draft', false),
             }),
-            h('span', null, 'Нет'),
+            h('span', null, tr('Нет')),
           ]),
         ])
       }

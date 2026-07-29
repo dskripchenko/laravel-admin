@@ -36,9 +36,9 @@ const notifications = useNotificationsStore()
 const isOpen = computed<boolean>(() => notifications.isOpen)
 
 const tabs: Array<{ key: NotificationFilter; label: string }> = [
-  { key: 'all', label: 'Все' },
-  { key: 'unread', label: 'Непрочитанные' },
-  { key: 'read', label: 'Прочитанные' },
+  { key: 'all', label: tr('Все') },
+  { key: 'unread', label: tr('Непрочитанные') },
+  { key: 'read', label: tr('Прочитанные') },
 ]
 
 async function selectTab(key: NotificationFilter): Promise<void> {
@@ -108,7 +108,7 @@ function relativeTime(iso: string | null): string {
   if (diff < 60) return `${Math.max(1, Math.floor(diff))} сек назад`
   if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`
   if (diff < 86_400) return `${Math.floor(diff / 3600)} ч назад`
-  if (diff < 86_400 * 2) return 'вчера'
+  if (diff < 86_400 * 2) return tr('вчера')
   if (diff < 86_400 * 7) return `${Math.floor(diff / 86_400)} д назад`
   return new Date(iso).toLocaleDateString('ru-RU')
 }
@@ -122,7 +122,7 @@ function viewOf(item: NotificationItem): ItemView {
   // `title`/`message`/`description` + fallback на data.text.
   const d = item.data
   const title =
-    typeof d.title === 'string' ? d.title : typeof d.subject === 'string' ? d.subject : 'Уведомление'
+    typeof d.title === 'string' ? d.title : typeof d.subject === 'string' ? d.subject : tr('Уведомление')
   const description =
     typeof d.description === 'string'
       ? d.description

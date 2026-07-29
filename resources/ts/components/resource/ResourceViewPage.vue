@@ -122,14 +122,14 @@ const defaultMetrics = computed<MetricRow[]>(() => {
   const created = fmt(r.created_at)
   if (created) rows.push({ label: tr('Создано'), value: created })
   const updated = fmt(r.updated_at)
-  if (updated && updated !== created) rows.push({ label: 'Обновлено', value: updated })
+  if (updated && updated !== created) rows.push({ label: tr('Обновлено'), value: updated })
   const author =
     typeof r.created_by_name === 'string' && r.created_by_name !== ''
       ? r.created_by_name
       : typeof r.author === 'string'
         ? r.author
         : null
-  if (author) rows.push({ label: 'Автор', value: author })
+  if (author) rows.push({ label: tr('Автор'), value: author })
   return rows
 })
 const recordTitle = computed<string>(() => {
@@ -254,7 +254,7 @@ function onEdit(): void {
 }
 
 async function onDelete(): Promise<void> {
-  if (!confirm('Удалить запись?')) return
+  if (!confirm(tr('Удалить запись?'))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
     router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
@@ -316,7 +316,7 @@ async function onDelete(): Promise<void> {
       class="admin-resource-view__alert"
       role="alert"
     >
-      {{ form.error?.message ?? 'Не удалось загрузить запись' }}
+      {{ form.error?.message ?? tr('Не удалось загрузить запись') }}
     </UidAlert>
 
     <div v-if="form.loading" class="admin-resource-view__loading">

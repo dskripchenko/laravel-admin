@@ -22,6 +22,7 @@ import { useScreenStore, type ScreenAction } from '../stores/screen'
 import { provideFormState } from './render/formState'
 import { provideRecord } from './infolist/recordContext'
 import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
+import { trSafe as tr } from '../stores/i18n'
 
 interface Props {
   /** Slug screen'а. Если null — берётся из route.params.slug. */
@@ -128,7 +129,7 @@ function actionVariant(action: ScreenAction): 'primary' | 'danger' | 'ghost' | '
       class="admin-screen-page__alert"
       role="alert"
     >
-      {{ screen.error?.message ?? 'Не удалось выполнить действие' }}
+      {{ screen.error?.message ?? tr('Не удалось выполнить действие') }}
     </UidAlert>
 
     <UidAlert

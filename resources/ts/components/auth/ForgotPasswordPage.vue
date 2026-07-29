@@ -31,7 +31,7 @@ const busy = ref<boolean>(false)
 
 async function submit(): Promise<void> {
   if (email.value.trim() === '') {
-    adminToast.error('Введите email.')
+    adminToast.error(tr('Введите email.'))
     return
   }
   busy.value = true
@@ -62,8 +62,8 @@ async function submit(): Promise<void> {
         <div class="admin-auth-card__title">{{ tr('Восстановление пароля') }}</div>
         <div class="admin-auth-card__sub">
           {{ submitted
-            ? 'Если такой email зарегистрирован — мы отправили письмо со ссылкой на сброс.'
-            : 'Введите email — отправим ссылку для сброса пароля.' }}
+            ? tr('Если такой email зарегистрирован — мы отправили письмо со ссылкой на сброс.')
+            : tr('Введите email — отправим ссылку для сброса пароля.') }}
         </div>
       </div>
       <div class="admin-auth-card__body">

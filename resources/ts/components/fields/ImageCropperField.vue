@@ -119,7 +119,7 @@ function loadFile(file: File): void {
     return
   }
   if (!file.type.startsWith('image/')) {
-    adminToast.error('Можно только изображения.')
+    adminToast.error(tr('Можно только изображения.'))
     return
   }
   cleanupSource()
@@ -251,7 +251,7 @@ async function applyCrop(): Promise<void> {
   canvas.width = outW
   canvas.height = outH
   const ctx = canvas.getContext('2d')
-  if (!ctx) { adminToast.error('Canvas недоступен.'); return }
+  if (!ctx) { adminToast.error(tr('Canvas недоступен.')); return }
   ctx.drawImage(src, sx, sy, sw, sh, 0, 0, outW, outH)
 
   // Сохраняем как PNG по умолчанию (lossless), для JPEG/WEBP — по mime;
@@ -259,7 +259,7 @@ async function applyCrop(): Promise<void> {
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, 'image/png', props.quality ?? 0.92),
   )
-  if (!blob) { adminToast.error('Не удалось получить blob.'); return }
+  if (!blob) { adminToast.error(tr('Не удалось получить blob.')); return }
 
   uploading.value = true
   try {
@@ -272,7 +272,7 @@ async function applyCrop(): Promise<void> {
     cancelCrop()
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] upload failed:', err)
-    adminToast.error('Не удалось загрузить.')
+    adminToast.error(tr('Не удалось загрузить.'))
   } finally {
     uploading.value = false
   }
@@ -359,7 +359,7 @@ onBeforeUnmount(cleanupSource)
       </div>
       <div class="admin-image-cropper__actions">
         <UidButton variant="primary" size="sm" :disabled="uploading" @click="applyCrop">
-          <UidIcon :icon="Check" /> {{ uploading ? 'Загрузка…' : 'Применить' }}
+          <UidIcon :icon="Check" /> {{ uploading ? tr('Загрузка…') : tr('Применить') }}
         </UidButton>
         <UidButton variant="ghost" size="sm" :disabled="uploading" @click="cancelCrop">
           <UidIcon :icon="X" /> Отмена

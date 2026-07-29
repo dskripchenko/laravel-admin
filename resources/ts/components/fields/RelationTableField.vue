@@ -10,6 +10,7 @@ import { computed } from 'vue'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import { formatCell, type CellMeta } from '../resource/cellFormat'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface BackendColumn {
   name: string
@@ -63,7 +64,7 @@ const uidColumns = computed<UidTableColumn[]>(() =>
   <div class="uid-form-field admin-relation-table">
     <label v-if="label" class="uid-form-field__label">{{ label }}</label>
     <UidCard padding="sm">
-      <UidTable :columns="uidColumns" :data="rows" :empty-text="emptyText" />
+      <UidTable :columns="uidColumns" :data="rows" :empty-text="tr(emptyText)" />
     </UidCard>
     <p v-if="help" class="uid-form-field__hint">{{ help }}</p>
   </div>

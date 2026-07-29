@@ -140,7 +140,7 @@ function chipText(f: FilterDef): string {
     return `${f.label}: ${r.from ?? ''} – ${r.to ?? ''}`
   }
   if (f.type === 'switcher') {
-    return `${f.label}: ${v ? 'да' : 'нет'}`
+    return `${f.label}: ${v ? tr('да') : tr('нет')}`
   }
   return `${f.label}: ${String(v)}`
 }
@@ -225,7 +225,7 @@ function iconFor(name: string | null | undefined) {
         <input
           v-model="localSearch"
           type="search"
-          :placeholder="searchPlaceholder"
+          :placeholder="tr(searchPlaceholder)"
           class="admin-toolbar__search-input"
           @keydown.enter="commitSearch"
           @blur="commitSearch"
@@ -386,7 +386,7 @@ function iconFor(name: string | null | undefined) {
             <span class="admin-toolbar__chip-text">
               {{ groupBy
                 ? `Группа: ${colLabel(columns.find((c) => colKey(c) === groupBy) ?? {})}`
-                : 'Группировать' }}
+                : tr('Группировать') }}
             </span>
           </button>
         </template>

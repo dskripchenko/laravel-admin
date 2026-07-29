@@ -15,6 +15,7 @@
  */
 
 import type { RouteLocationNormalized, RouteLocationRaw } from 'vue-router'
+import { trSafe } from '../stores/i18n'
 import { useAuthStore } from '../stores/auth'
 
 /** Тип возвращаемого значения guard'а — true (passthrough) либо redirect-target. */
@@ -113,7 +114,9 @@ export function createTitleGuard(
 
   return (to) => {
     if (typeof document === 'undefined') return
-    const t = (to.meta?.title as string | undefined) ?? fallback
+    // meta.title уезжает в document.title — единственная точка,
+    // где переводятся заголовки всех системных маршрутов.
+    const t = trSafe((to.meta?.title as string | undefined) ?? fallback)
     let title: string
     if (template) {
       title = template.replace('{title}', t).replace('{brand}', brand)

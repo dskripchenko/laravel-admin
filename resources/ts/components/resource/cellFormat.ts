@@ -15,6 +15,8 @@
  * datetime (`*_at` или строка с T...Z) — применяется default datetime формат.
  */
 
+import { trSafe as tr } from '../../stores/i18n'
+
 export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes'
 
 export interface CellMeta {
@@ -51,7 +53,7 @@ export function formatCell(
     case 'money':
       return formatMoney(value, meta.currency ?? 'RUB', meta.decimals ?? 2)
     case 'boolean':
-      return formatBoolean(value, meta.trueLabel ?? 'Да', meta.falseLabel ?? 'Нет')
+      return formatBoolean(value, tr(meta.trueLabel ?? 'Да'), tr(meta.falseLabel ?? 'Нет'))
     case 'bytes':
       return formatBytes(value)
     case 'json':

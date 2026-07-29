@@ -17,6 +17,7 @@
  */
 import { computed, h, defineComponent, type PropType } from 'vue'
 import { useFormState } from '../../../render/formState'
+import { trSafe as tr } from '../../../../stores/i18n'
 
 interface Props {
   name: string
@@ -84,7 +85,7 @@ const Editor = defineComponent({
   setup() {
     return () => h('textarea', {
       class: 'tinymce-fallback',
-      placeholder: '@tinymce/tinymce-vue не загружен — host передаёт actual Editor',
+      placeholder: tr('@tinymce/tinymce-vue не загружен — host передаёт actual Editor'),
     })
   },
 })

@@ -8,6 +8,7 @@ import { computed } from 'vue'
 import { Moon, Sun } from 'lucide-vue-next'
 import { UidIcon } from '@dskripchenko/ui'
 import { useThemeStore } from '../../../stores/theme'
+import { trSafe as tr } from '../../../stores/i18n'
 
 const theme = useThemeStore()
 
@@ -15,7 +16,7 @@ const isDark = computed(() => theme.current === 'dark')
 const icon = computed(() => (isDark.value ? Sun : Moon))
 const iconName = computed(() => (isDark.value ? 'sun' : 'moon'))
 const ariaLabel = computed(() =>
-  isDark.value ? 'Переключить на светлую тему' : 'Переключить на тёмную тему',
+  isDark.value ? tr('Переключить на светлую тему') : tr('Переключить на тёмную тему'),
 )
 
 async function toggle(): Promise<void> {

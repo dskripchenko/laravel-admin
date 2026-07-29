@@ -6,6 +6,7 @@
 import { computed } from 'vue'
 import { UidDescriptionList, UidDescriptionItem } from '@dskripchenko/ui'
 import { tryUseRecord } from './recordContext'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   name?: string
@@ -35,9 +36,9 @@ function formatValue(v: unknown): string {
   // Booleans (and 0/1 placeholders for them) read as "Да" / "Нет" so a
   // permission-style {slug: true} map renders as a clean list of
   // allowed items, not literal "true" tokens.
-  if (typeof v === 'boolean') return v ? 'Да' : 'Нет'
-  if (v === 0) return 'Нет'
-  if (v === 1) return 'Да'
+  if (typeof v === 'boolean') return v ? tr('Да') : tr('Нет')
+  if (v === 0) return tr('Нет')
+  if (v === 1) return tr('Да')
   if (typeof v === 'object') return JSON.stringify(v)
   return String(v)
 }

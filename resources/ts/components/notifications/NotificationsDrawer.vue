@@ -89,7 +89,7 @@ function relTime(iso: string | null): string {
   const dt = new Date(iso)
   const diff = Math.max(0, Date.now() - dt.getTime())
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'только что'
+  if (mins < 1) return tr('только что')
   if (mins < 60) return `${mins} мин назад`
   const hours = Math.floor(mins / 60)
   if (hours < 24) return `${hours} ч назад`
@@ -169,7 +169,7 @@ function relTime(iso: string | null): string {
             <button
               type="button"
               class="admin-notifs__close"
-              :aria-label="'Удалить'"
+              :aria-label="tr('Удалить')"
               @click="onDestroy(item, $event)"
             >
               ×

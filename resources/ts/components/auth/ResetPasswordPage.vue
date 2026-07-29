@@ -37,11 +37,11 @@ const error = ref<string>('')
 async function submit(): Promise<void> {
   error.value = ''
   if (password.value.length < 8) {
-    error.value = 'Пароль должен быть не менее 8 символов.'
+    error.value = tr('Пароль должен быть не менее 8 символов.')
     return
   }
   if (password.value !== confirm.value) {
-    error.value = 'Пароли не совпадают.'
+    error.value = tr('Пароли не совпадают.')
     return
   }
   busy.value = true
@@ -54,10 +54,10 @@ async function submit(): Promise<void> {
       password: password.value,
       password_confirmation: confirm.value,
     })
-    adminToast.success('Пароль обновлён. Войдите с новым паролем.')
+    adminToast.success(tr('Пароль обновлён. Войдите с новым паролем.'))
     await router.push({ name: props.loginRouteName })
   } catch {
-    error.value = 'Не удалось сбросить пароль. Возможно, ссылка устарела.'
+    error.value = tr('Не удалось сбросить пароль. Возможно, ссылка устарела.')
   } finally {
     busy.value = false
   }

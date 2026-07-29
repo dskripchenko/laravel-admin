@@ -61,7 +61,7 @@ async function startSetup(): Promise<void> {
     recoveryCodes.value = result.recovery_codes ?? []
     stage.value = 'setup'
   } catch {
-    error.value = 'Не удалось инициализировать 2FA.'
+    error.value = tr('Не удалось инициализировать 2FA.')
   } finally {
     busy.value = false
   }
@@ -80,10 +80,10 @@ async function confirmCode(): Promise<void> {
     )
     if (result.recovery_codes) recoveryCodes.value = result.recovery_codes
     stage.value = 'confirmed'
-    adminToast.success('Двухфакторная аутентификация подключена.')
+    adminToast.success(tr('Двухфакторная аутентификация подключена.'))
     emit('enabled')
   } catch {
-    error.value = 'Неверный код. Попробуйте ещё раз.'
+    error.value = tr('Неверный код. Попробуйте ещё раз.')
   } finally {
     busy.value = false
   }
@@ -92,10 +92,10 @@ async function confirmCode(): Promise<void> {
 async function disable(): Promise<void> {
   // Бэкенд требует подтверждение паролем — без него кнопка молча 422-илась.
   if (password.value === '') {
-    error.value = 'Введите текущий пароль.'
+    error.value = tr('Введите текущий пароль.')
     return
   }
-  if (!window.confirm('Отключить 2FA? Аккаунт станет менее защищённым.')) return
+  if (!window.confirm(tr('Отключить 2FA? Аккаунт станет менее защищённым.'))) return
   busy.value = true
   error.value = ''
   try {
@@ -103,10 +103,10 @@ async function disable(): Promise<void> {
     const client = getAdminClient()
     await client.post('/profile/twoFactorDisable', { password: password.value })
     stage.value = 'idle'
-    adminToast.success('2FA отключена.')
+    adminToast.success(tr('2FA отключена.'))
     emit('disabled')
   } catch {
-    adminToast.error('Не удалось отключить 2FA.')
+    adminToast.error(tr('Не удалось отключить 2FA.'))
   } finally {
     busy.value = false
   }
@@ -114,7 +114,7 @@ async function disable(): Promise<void> {
 
 async function regenerate(): Promise<void> {
   if (password.value === '') {
-    error.value = 'Введите текущий пароль.'
+    error.value = tr('Введите текущий пароль.')
     return
   }
   busy.value = true
@@ -128,9 +128,9 @@ async function regenerate(): Promise<void> {
     )
     recoveryCodes.value = result.recovery_codes
     password.value = ''
-    adminToast.success('Recovery-коды обновлены.')
+    adminToast.success(tr('Recovery-коды обновлены.'))
   } catch {
-    error.value = 'Неверный пароль.'
+    error.value = tr('Неверный пароль.')
   } finally {
     busy.value = false
   }
@@ -139,18 +139,18 @@ async function regenerate(): Promise<void> {
 async function copySecret(): Promise<void> {
   try {
     await navigator.clipboard.writeText(secret.value)
-    adminToast.success('Secret скопирован.')
+    adminToast.success(tr('Secret скопирован.'))
   } catch {
-    adminToast.warning('Скопируйте вручную.')
+    adminToast.warning(tr('Скопируйте вручную.'))
   }
 }
 
 async function copyCodes(): Promise<void> {
   try {
     await navigator.clipboard.writeText(recoveryCodes.value.join('\n'))
-    adminToast.success('Recovery-коды скопированы.')
+    adminToast.success(tr('Recovery-коды скопированы.'))
   } catch {
-    adminToast.warning('Скопируйте вручную.')
+    adminToast.warning(tr('Скопируйте вручную.'))
   }
 }
 

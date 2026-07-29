@@ -93,11 +93,11 @@ async function submit(): Promise<void> {
     emit('success')
   } catch (err) {
     if (err instanceof ValidationError) {
-      generalError.value = err.firstFieldMessage() ?? 'Неверный код'
+      generalError.value = err.firstFieldMessage() ?? tr('Неверный код')
     } else if (err instanceof NetworkError) {
-      generalError.value = 'Нет соединения с сервером'
+      generalError.value = tr('Нет соединения с сервером')
     } else if (err instanceof ApiError) {
-      generalError.value = err.message || 'Не удалось проверить код'
+      generalError.value = err.message || tr('Не удалось проверить код')
     } else {
       generalError.value = (err as Error).message
     }
@@ -170,7 +170,7 @@ function switchMode(): void {
       :loading="submitting"
       :disabled="submitting || !isValid"
     >
-      {{ submitting ? 'Проверка…' : 'Подтвердить' }}
+      {{ submitting ? tr('Проверка…') : tr('Подтвердить') }}
     </UidButton>
 
     <div class="admin-auth-card__row">

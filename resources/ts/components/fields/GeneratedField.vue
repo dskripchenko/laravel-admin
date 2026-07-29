@@ -13,6 +13,7 @@ import { computed, ref, watch } from 'vue'
 import { UidButton, UidInput } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import { useI18nStore } from '../../stores/i18n'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   name: string
@@ -120,7 +121,7 @@ watch(
         :disabled="disabled"
         @click="generate"
       >
-        {{ i18n.has('admin.fields.generate') ? i18n.t('admin.fields.generate') : 'Сгенерировать' }}
+        {{ i18n.has('admin.fields.generate') ? i18n.t('admin.fields.generate') : tr('Сгенерировать') }}
       </UidButton>
     </div>
     <p v-if="errorMsg" class="uid-form-field__hint uid-form-field__hint--error">{{ errorMsg }}</p>

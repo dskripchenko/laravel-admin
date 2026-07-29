@@ -41,7 +41,7 @@ it('TableWidget assembles columns + rows from Eloquent', function (): void {
     expect($data['rows'])->toHaveCount(2);
     expect($data['rows'][0]['name'])->toBe('A');
     expect($data['columns'])->toHaveCount(2);
-    expect($data['columns'][0]['label'])->toBe('Имя');
+    expect($data['columns'][0]['label'])->toBe((string) __('Имя'));
 });
 
 it('TableWidget::query applies custom builder modifier', function (): void {

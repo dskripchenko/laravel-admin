@@ -92,18 +92,18 @@ const listId = computed(() => `kv-keys-${props.name}`)
 
     <div class="admin-keyvalue__rows">
       <div class="admin-keyvalue__head">
-        <span>{{ keyLabel }}</span>
-        <span>{{ valueLabel }}</span>
+        <span>{{ tr(keyLabel) }}</span>
+        <span>{{ tr(valueLabel) }}</span>
         <span />
       </div>
       <div v-for="(p, idx) in pairs" :key="idx" class="admin-keyvalue__row">
         <UidInput
           v-model="p.key"
           :list="allowedKeys.length > 0 ? listId : undefined"
-          :placeholder="keyLabel"
+          :placeholder="tr(keyLabel)"
           @blur="sync"
         />
-        <UidInput v-model="p.value" :placeholder="valueLabel" @blur="sync" />
+        <UidInput v-model="p.value" :placeholder="tr(valueLabel)" @blur="sync" />
         <UidButton
           v-if="removable"
           variant="ghost"

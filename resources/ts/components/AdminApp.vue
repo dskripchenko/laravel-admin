@@ -20,6 +20,7 @@ import { adminToast } from '../stores/toast'
 import { useBrand } from '../composables/useBrand'
 import { provideLocale, ru as uidRu, en as uidEn } from '@dskripchenko/ui'
 import { useLocaleStore } from '../stores/locale'
+import { trSafe as tr } from '../stores/i18n'
 
 const route = useRoute()
 const manifest = useManifestStore()
@@ -51,7 +52,7 @@ async function exitImpersonation(): Promise<void> {
     await client.post('/auth/stopImpersonation')
     window.location.reload()
   } catch {
-    adminToast.error('Не удалось выйти из режима импертонации.')
+    adminToast.error(tr('Не удалось выйти из режима импертонации.'))
   }
 }
 

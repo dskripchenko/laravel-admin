@@ -283,7 +283,7 @@ watch(
       <input
         ref="inputRef"
         :value="query"
-        :placeholder="tags.length === 0 ? (placeholder ?? '') : ''"
+        :placeholder="tags.length === 0 ? tr(placeholder ?? '') : ''"
         :disabled="disabled"
         class="admin-tags__input"
         type="text"
