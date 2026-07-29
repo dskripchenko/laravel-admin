@@ -125,7 +125,8 @@ onBeforeUnmount(() => {
   <div class="admin-shell-root">
     <div v-if="impersonation" class="admin-impersonation-banner" role="status">
       <span>
-        Вы вошли как <b>{{ impersonation.asName }}</b> · режим имперсонации
+        {{ tr('Вы вошли как') }} <b>{{ impersonation.asName }}</b> ·
+        {{ tr('режим имперсонации') }}
       </span>
       <button
         type="button"
