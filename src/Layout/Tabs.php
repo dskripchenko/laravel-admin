@@ -59,7 +59,11 @@ final class Tabs extends Layout
         $tabs = [];
         foreach ($childArrays as $idx => $child) {
             $tabs[] = [
-                'label' => (string) ($labels[$idx] ?? ('Tab '.($idx + 1))),
+                // labels уже переведены Layout::toArray (props), но берём их
+                // из сырых props — локализуем здесь.
+                'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string(
+                    (string) ($labels[$idx] ?? ('Tab '.($idx + 1))),
+                ),
                 // child уже сериализован Layout::toArray() — внутри есть items.
                 'items' => $child['items'] ?? ($child['children'] ?? [$child]),
             ];

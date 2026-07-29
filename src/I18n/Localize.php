@@ -60,7 +60,9 @@ final class Localize
 
             if ($isTextKey && is_string($value)) {
                 $attributes[$key] = self::string($value);
-            } elseif (in_array($key, ['options', 'labels'], true) && is_array($value)) {
+            } elseif (is_array($value)
+                && (in_array($key, ['options', 'labels'], true)
+                    || str_ends_with(mb_strtolower($key), 'options'))) {
                 $attributes[$key] = self::options($value);
             }
         }
