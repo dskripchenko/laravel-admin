@@ -304,7 +304,7 @@ async function onDelete(): Promise<void> {
           </UidMenuItem>
           <UidMenuItem variant="danger" @click="onDelete">
             <template #icon><UidIcon :icon="Trash2" :size="14" /></template>
-            Удалить
+            {{ tr('Удалить') }}
           </UidMenuItem>
         </UidMenu>
       </div>

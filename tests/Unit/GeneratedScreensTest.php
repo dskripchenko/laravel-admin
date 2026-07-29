@@ -108,5 +108,5 @@ it('GeneratedEditScreen commandBar has Сохранить, Удалить, На�
     $labels = array_map(fn ($a) => $a['label'], $compiled['command_bar']);
     expect($labels)->toContain((string) __('Сохранить'));
     expect($labels)->toContain((string) __('Удалить'));
-    expect($labels)->toContain('Назад');
+    expect($labels)->toContain((string) __('Назад'));
 });

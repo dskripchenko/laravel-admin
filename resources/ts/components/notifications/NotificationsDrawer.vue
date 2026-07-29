@@ -110,7 +110,7 @@ function relTime(iso: string | null): string {
     <template #header>
       <div class="admin-notifs__hd">
         <h2 class="admin-notifs__title">
-          Уведомления
+          {{ tr('Уведомления') }}
           <span v-if="notifications.unreadCount > 0" class="admin-notifs__count">
             ({{ notifications.unreadCount }})
           </span>
@@ -121,7 +121,7 @@ function relTime(iso: string | null): string {
           size="sm"
           @click="markAllRead"
         >
-          Прочитать все
+          {{ tr('Прочитать все') }}
         </UidButton>
       </div>
     </template>
@@ -140,10 +140,10 @@ function relTime(iso: string | null): string {
       <UidTabPanel v-for="filter in (['all','unread','read'] as const)" :key="filter" :value="filter">
         <ul class="admin-notifs__list">
           <li v-if="notifications.loading" class="admin-notifs__empty">
-            Загрузка…
+            {{ tr('Загрузка…') }}
           </li>
           <li v-else-if="notifications.items.length === 0" class="admin-notifs__empty">
-            Нет уведомлений
+            {{ tr('Нет уведомлений') }}
           </li>
           <li
             v-for="item in notifications.items"

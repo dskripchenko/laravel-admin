@@ -1076,7 +1076,7 @@ async function retryLoad(): Promise<void> {
         </UidMenu>
         <UidButton v-if="isImportable" variant="secondary" size="md" @click="onImportClick">
           <template #prepend><UidIcon :icon="Upload" :size="14" /></template>
-          Импорт
+          {{ tr('Импорт') }}
         </UidButton>
         <input
           ref="importInput"
@@ -1122,11 +1122,11 @@ async function retryLoad(): Promise<void> {
         :loading="bulkDeleting"
         @click="onBulkDelete"
       >
-        Удалить
+        {{ tr('Удалить') }}
       </UidButton>
       <span class="admin-bulk-toolbar__spacer" />
       <UidButton size="sm" variant="ghost" @click="index.clearSelection">
-        Снять выделение
+        {{ tr('Снять выделение') }}
       </UidButton>
     </div>
 

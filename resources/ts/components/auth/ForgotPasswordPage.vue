@@ -82,7 +82,7 @@ async function submit(): Promise<void> {
             :loading="busy"
           >
             <template #prepend><UidIcon :icon="Mail" :size="14" /></template>
-            Отправить ссылку
+            {{ tr('Отправить ссылку') }}
           </UidButton>
         </form>
         <UidButton
@@ -90,7 +90,7 @@ async function submit(): Promise<void> {
           class="admin-auth-card__back"
           @click="router.push({ name: loginRouteName })"
         >
-          ← Назад ко входу
+          {{ tr('← Назад ко входу') }}
         </UidButton>
       </div>
     </UidCard>

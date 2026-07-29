@@ -137,7 +137,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 
     <UidButton v-if="canAdd" variant="secondary" size="sm" class="admin-repeater__add" @click="addItem">
       <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
-      Добавить элемент
+      {{ tr('Добавить элемент') }}
     </UidButton>
 
     <p v-if="errorMsg" class="uid-form-field__hint uid-form-field__hint--error">{{ errorMsg }}</p>

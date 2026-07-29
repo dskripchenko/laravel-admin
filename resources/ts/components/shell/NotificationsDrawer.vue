@@ -175,7 +175,7 @@ onUnmounted(() => {
         <aside class="admin-notif-drawer__panel">
           <header class="admin-notif-drawer__hd">
             <h2 id="admin-notif-drawer-title" class="admin-notif-drawer__title">
-              Уведомления
+              {{ tr('Уведомления') }}
               <span
                 v-if="notifications.unreadCount > 0"
                 class="admin-notif-drawer__unread-badge"
@@ -189,7 +189,7 @@ onUnmounted(() => {
                 @click="onMarkAll"
               >
                 <UidIcon :icon="Check" :size="14" />
-                Прочитать все
+                {{ tr('Прочитать все') }}
               </button>
               <button
                 type="button"
@@ -227,13 +227,13 @@ onUnmounted(() => {
               v-if="notifications.loading && notifications.items.length === 0"
               class="admin-notif-drawer__empty"
             >
-              Загрузка…
+              {{ tr('Загрузка…') }}
             </div>
             <div
               v-else-if="notifications.items.length === 0"
               class="admin-notif-drawer__empty"
             >
-              Нет уведомлений
+              {{ tr('Нет уведомлений') }}
             </div>
             <ol v-else class="admin-notif-drawer__list">
               <li

@@ -109,7 +109,7 @@ onMounted(load)
 <template>
   <div class="admin-tokens">
     <p class="admin-tokens__lead">
-      Personal access tokens используются для авторизации API-запросов в обход cookie-сессии.
+      {{ tr('Personal access tokens используются для авторизации API-запросов в обход cookie-сессии.') }}
       Создайте токен с понятным названием и используйте в `Authorization: Bearer {token}`.
     </p>
 
@@ -123,12 +123,12 @@ onMounted(load)
       <div class="admin-tokens__new-actions">
         <UidButton size="sm" variant="primary" @click="copyJustCreated">
           <template #prepend><UidIcon :icon="Copy" :size="12" /></template>
-          Скопировать
+          {{ tr('Скопировать') }}
         </UidButton>
         <UidButton size="sm" variant="ghost" @click="dismissJustCreated">{{ tr('Скрыть') }}</UidButton>
       </div>
       <p class="admin-tokens__warn">
-        ⚠ Plain-значение показывается один раз. Если потеряете — нужно пересоздать.
+        {{ tr('⚠ Plain-значение показывается один раз. Если потеряете — нужно пересоздать.') }}
       </p>
     </div>
 
@@ -137,7 +137,7 @@ onMounted(load)
       <UidInput v-model="newName" :placeholder="tr('Название (например, ci-deploy)')" />
       <UidButton variant="primary" @click="create">
         <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
-        Создать токен
+        {{ tr('Создать токен') }}
       </UidButton>
     </div>
 

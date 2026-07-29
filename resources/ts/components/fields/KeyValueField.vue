@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue'
 import { Plus, X } from 'lucide-vue-next'
 import { UidButton, UidIcon, UidInput } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   name: string
@@ -120,7 +121,7 @@ const listId = computed(() => `kv-keys-${props.name}`)
 
     <UidButton v-if="addable" variant="secondary" size="sm" class="admin-keyvalue__add" @click="addPair">
       <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
-      Добавить
+      {{ tr('Добавить') }}
     </UidButton>
 
     <p v-if="errorMsg" class="uid-form-field__hint uid-form-field__hint--error">{{ errorMsg }}</p>

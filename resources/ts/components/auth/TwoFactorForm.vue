@@ -179,7 +179,7 @@ function switchMode(): void {
         <template v-else>{{ tr('Вернуться к коду из приложения') }}</template>
       </button>
       <button type="button" class="admin-auth-card__link" @click="cancel">
-        Отмена
+        {{ tr('Отмена') }}
       </button>
     </div>
   </form>

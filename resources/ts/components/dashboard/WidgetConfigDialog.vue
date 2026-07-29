@@ -230,7 +230,7 @@ function close(): void {
             <div v-if="mode === 'add'" class="admin-dialog__field">
               <label class="admin-dialog__label">{{ tr('Скрытые виджеты') }}</label>
               <p v-if="restorable.length === 0" class="admin-dialog__empty">
-                Нечего добавлять — все виджеты дашборда уже показаны.
+                {{ tr('Нечего добавлять — все виджеты дашборда уже показаны.') }}
               </p>
               <div v-else class="admin-dialog__restore-list">
                 <button
@@ -253,8 +253,8 @@ function close(): void {
                 Тип виджета <span class="admin-dialog__required">*</span>
               </label>
               <p v-if="types.length === 0" class="admin-dialog__empty">
-                Нет виджетов для добавления — все доступные типы уже на дашборде
-                или ни один не зарегистрирован.
+                {{ tr('Нет виджетов для добавления — все доступные типы уже на дашборде') }}
+                {{ tr('или ни один не зарегистрирован.') }}
               </p>
               <div v-else class="admin-dialog__type-grid">
                 <button

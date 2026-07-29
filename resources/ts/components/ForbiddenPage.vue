@@ -15,7 +15,7 @@ const router = useRouter()
       <h1 class="admin-status-page__code">403</h1>
       <p class="admin-status-page__message">{{ tr('Доступ запрещён.') }}</p>
       <UidButton variant="ghost" @click="router.replace({ name: 'admin.home' })">
-        На главную
+        {{ tr('На главную') }}
       </UidButton>
     </UidCard>
   </div>

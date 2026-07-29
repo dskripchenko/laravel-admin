@@ -275,14 +275,14 @@ function iconFor(name: string | null | undefined) {
           />
           <div class="admin-toolbar__popover-actions">
             <UidButton size="sm" variant="ghost" @click="setDraft(f.name, null)">
-              Очистить
+              {{ tr('Очистить') }}
             </UidButton>
             <UidButton
               size="sm"
               variant="primary"
               @click="applyDraft(f.name, () => undefined)"
             >
-              Применить
+              {{ tr('Применить') }}
             </UidButton>
           </div>
         </div>
@@ -319,14 +319,14 @@ function iconFor(name: string | null | undefined) {
           />
           <div class="admin-toolbar__popover-actions">
             <UidButton size="sm" variant="ghost" @click="setDraft(f.name, null)">
-              Очистить
+              {{ tr('Очистить') }}
             </UidButton>
             <UidButton
               size="sm"
               variant="primary"
               @click="applyDraft(f.name, () => undefined)"
             >
-              Применить
+              {{ tr('Применить') }}
             </UidButton>
           </div>
         </div>
@@ -368,7 +368,7 @@ function iconFor(name: string | null | undefined) {
         @click="emit('reset')"
       >
         <template #prepend><UidIcon :icon="RotateCcw" :size="14" /></template>
-        Сбросить
+        {{ tr('Сбросить') }}
       </UidButton>
 
       <!-- Спейсер: отодвигает actions вправо в этой же строке -->
@@ -461,7 +461,7 @@ function iconFor(name: string | null | undefined) {
               :disabled="newViewLabel.trim() === ''"
               @click="saveView(() => undefined)"
             >
-              Сохранить view
+              {{ tr('Сохранить view') }}
             </UidButton>
           </div>
         </div>

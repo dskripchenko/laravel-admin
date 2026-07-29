@@ -177,12 +177,12 @@ const qrSvg = computed<string>(() => {
     <!-- Idle: 2FA выключена -->
     <div v-if="stage === 'idle'" class="admin-2fa__panel">
       <p class="admin-2fa__lead">
-        Двухфакторная аутентификация добавляет второй слой защиты — даже если пароль попадёт
-        в чужие руки, без OTP-кода из приложения войти не получится.
+        {{ tr('Двухфакторная аутентификация добавляет второй слой защиты — даже если пароль попадёт') }}
+        {{ tr('в чужие руки, без OTP-кода из приложения войти не получится.') }}
       </p>
       <UidButton variant="primary" :loading="busy" data-testid="2fa-enable" @click="startSetup">
         <template #prepend><UidIcon :icon="ShieldCheck" :size="14" /></template>
-        Включить 2FA
+        {{ tr('Включить 2FA') }}
       </UidButton>
       <p v-if="error" class="admin-2fa__error">{{ error }}</p>
     </div>
@@ -192,24 +192,24 @@ const qrSvg = computed<string>(() => {
       <ol class="admin-2fa__steps">
         <li>{{ tr('Откройте Authenticator-приложение (Google Authenticator, 1Password, Authy…).') }}</li>
         <li>
-          Добавьте новый аккаунт вручную, скопировав ключ:
+          {{ tr('Добавьте новый аккаунт вручную, скопировав ключ:') }}
           <div class="admin-2fa__secret" data-testid="2fa-secret">
             <code>{{ formattedSecret }}</code>
             <button type="button" class="admin-2fa__copy" @click="copySecret">
               <UidIcon :icon="Copy" :size="12" />
-              Копировать
+              {{ tr('Копировать') }}
             </button>
           </div>
           <slot name="qr-code" :uri="qrUri">
             <div v-if="qrSvg" class="admin-2fa__qr" v-html="qrSvg" />
             <p v-else class="admin-2fa__hint">
-              Либо отсканируйте QR с другого устройства — поделитесь URI:
+              {{ tr('Либо отсканируйте QR с другого устройства — поделитесь URI:') }}
               <code class="admin-2fa__uri">{{ qrUri }}</code>
             </p>
           </slot>
         </li>
         <li>
-          Введите 6-значный код из приложения:
+          {{ tr('Введите 6-значный код из приложения:') }}
           <div class="admin-2fa__code-row">
             <UidInput
               v-model="code"
@@ -225,7 +225,7 @@ const qrSvg = computed<string>(() => {
               data-testid="2fa-confirm"
               @click="confirmCode"
             >
-              Подтвердить
+              {{ tr('Подтвердить') }}
             </UidButton>
           </div>
         </li>
@@ -236,15 +236,15 @@ const qrSvg = computed<string>(() => {
     <!-- Confirmed: показываем recovery-коды -->
     <div v-else-if="stage === 'confirmed'" class="admin-2fa__panel admin-2fa__panel--success">
       <p class="admin-2fa__lead">
-        2FA активирована. Сохраните recovery-коды в безопасном месте — они нужны если вы
-        потеряете доступ к Authenticator-приложению.
+        {{ tr('2FA активирована. Сохраните recovery-коды в безопасном месте — они нужны если вы') }}
+        {{ tr('потеряете доступ к Authenticator-приложению.') }}
       </p>
       <div class="admin-2fa__codes">
         <code v-for="c in recoveryCodes" :key="c" class="admin-2fa__codes-item">{{ c }}</code>
       </div>
       <UidButton variant="ghost" @click="copyCodes">
         <template #prepend><UidIcon :icon="Copy" :size="14" /></template>
-        Скопировать все
+        {{ tr('Скопировать все') }}
       </UidButton>
       <UidButton variant="primary" @click="stage = 'enabled'">{{ tr('Готово') }}</UidButton>
     </div>
@@ -252,7 +252,7 @@ const qrSvg = computed<string>(() => {
     <!-- Enabled: 2FA активна — manage -->
     <div v-else-if="stage === 'enabled'" class="admin-2fa__panel">
       <p class="admin-2fa__lead">
-        2FA включена. Если у вас остался доступ к Authenticator app — всё в порядке.
+        {{ tr('2FA включена. Если у вас остался доступ к Authenticator app — всё в порядке.') }}
       </p>
       <div class="admin-2fa__manage">
         <UidInput
@@ -262,11 +262,11 @@ const qrSvg = computed<string>(() => {
         />
         <UidButton variant="secondary" :loading="busy" @click="regenerate">
           <template #prepend><UidIcon :icon="RefreshCw" :size="14" /></template>
-          Перегенерировать recovery-коды
+          {{ tr('Перегенерировать recovery-коды') }}
         </UidButton>
         <UidButton variant="danger" :loading="busy" data-testid="2fa-disable" @click="disable">
           <template #prepend><UidIcon :icon="ShieldOff" :size="14" /></template>
-          Отключить 2FA
+          {{ tr('Отключить 2FA') }}
         </UidButton>
       </div>
       <p v-if="error" class="admin-2fa__error">{{ error }}</p>

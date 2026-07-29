@@ -200,7 +200,7 @@ function showsConfig(t: string): 'markdown' | 'stat' | 'gauge' | null {
           <footer class="admin-dialog__ft">
             <UidButton variant="ghost" @click="close">{{ tr('Отмена') }}</UidButton>
             <UidButton variant="primary" :disabled="!canAdd" @click="onAdd">
-              Добавить
+              {{ tr('Добавить') }}
             </UidButton>
           </footer>
         </div>

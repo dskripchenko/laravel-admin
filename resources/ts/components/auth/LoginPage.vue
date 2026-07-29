@@ -109,7 +109,7 @@ onMounted(() => {
         </div>
         <div class="admin-auth-card__sub">
           <template v-if="auth.isChallengePending">
-            Введите 6-значный код из приложения-аутентификатора
+            {{ tr('Введите 6-значный код из приложения-аутентификатора') }}
           </template>
           <template v-else>{{ tr('Войдите, чтобы продолжить работу') }}</template>
         </div>

@@ -164,7 +164,7 @@ function formatVal(v: unknown): string {
     </div>
 
     <div v-else-if="!hasItems" class="admin-audit-timeline__empty">
-      Записей в истории пока нет.
+      {{ tr('Записей в истории пока нет.') }}
     </div>
 
     <ol v-else class="admin-audit-timeline__list">

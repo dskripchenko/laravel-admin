@@ -19,6 +19,7 @@ import { UidSidebarLayout } from '@dskripchenko/ui'
 import AdminTopBar from './AdminTopBar.vue'
 import AdminSidebar from './AdminSidebar.vue'
 import GlobalSearch from './GlobalSearch.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface ImpersonationData {
   /** Имя того, в кого вошли. */
@@ -131,7 +132,7 @@ onBeforeUnmount(() => {
         class="admin-impersonation-banner__exit"
         @click="exitImpersonation"
       >
-        Выйти из режима
+        {{ tr('Выйти из режима') }}
       </button>
     </div>
     <UidSidebarLayout

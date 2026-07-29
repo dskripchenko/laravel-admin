@@ -149,7 +149,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
       <template #trigger>
         <UidButton variant="secondary" size="sm" class="admin-builder__add">
           <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
-          Добавить блок
+          {{ tr('Добавить блок') }}
         </UidButton>
       </template>
       <UidMenuItem v-for="bt in blockTypes" :key="bt.type" @click="addBlock(bt.type)">

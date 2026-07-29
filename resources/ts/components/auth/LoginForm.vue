@@ -118,7 +118,7 @@ async function submit(): Promise<void> {
     <div class="admin-auth-card__row">
       <UidCheckbox v-model="remember" :disabled="submitting" :label="tr('Запомнить меня')" />
       <a v-if="forgotUrl" :href="forgotUrl" class="admin-auth-card__link">
-        Забыли пароль?
+        {{ tr('Забыли пароль?') }}
       </a>
     </div>
 
@@ -137,7 +137,7 @@ async function submit(): Promise<void> {
       v-if="ssoLinkLabel && ssoUrl"
       style="text-align: center; font-size: var(--uid-font-size-xs); color: var(--uid-text-secondary); padding-top: 4px;"
     >
-      или войдите через
+      {{ tr('или войдите через') }}
       <a :href="ssoUrl" class="admin-auth-card__link">{{ ssoLinkLabel }}</a>
     </div>
   </form>

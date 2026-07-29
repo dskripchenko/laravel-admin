@@ -201,7 +201,7 @@ function onCancel(): void {
       </header>
 
       <div v-if="headers.length === 0" class="admin-import-wizard__empty">
-        Нет данных — host ещё не отдал headers. Загрузите файл сначала.
+        {{ tr('Нет данных — host ещё не отдал headers. Загрузите файл сначала.') }}
       </div>
 
       <div v-else class="admin-import-wizard__mapping">
@@ -235,7 +235,7 @@ function onCancel(): void {
         variant="warning"
         style="margin-bottom: var(--uid-space-md);"
       >
-        Часть строк имеет предупреждения — проверьте перед импортом.
+        {{ tr('Часть строк имеет предупреждения — проверьте перед импортом.') }}
       </UidAlert>
 
       <UidTable
@@ -244,7 +244,7 @@ function onCancel(): void {
         :data="preview"
       />
       <div v-else class="admin-import-wizard__empty">
-        Host не передал previewColumns/preview.
+        {{ tr('Host не передал previewColumns/preview.') }}
       </div>
     </UidCard>
 
@@ -255,7 +255,7 @@ function onCancel(): void {
       </header>
 
       <div v-if="!progress" class="admin-import-wizard__empty">
-        Запускается импорт…
+        {{ tr('Запускается импорт…') }}
       </div>
       <template v-else>
         <UidProgress
@@ -278,7 +278,7 @@ function onCancel(): void {
         variant="ghost"
         @click="setStep(currentStep - 1)"
       >
-        Назад
+        {{ tr('Назад') }}
       </UidButton>
       <span style="flex:1" />
       <UidButton
@@ -287,7 +287,7 @@ function onCancel(): void {
         :disabled="!canGoNext"
         @click="setStep(1)"
       >
-        Далее
+        {{ tr('Далее') }}
       </UidButton>
       <UidButton
         v-else-if="currentStep === 1"
@@ -295,14 +295,14 @@ function onCancel(): void {
         :disabled="!canGoNext"
         @click="onMappingSubmit"
       >
-        Подтвердить mapping
+        {{ tr('Подтвердить mapping') }}
       </UidButton>
       <UidButton
         v-else-if="currentStep === 2"
         variant="primary"
         @click="onConfirmRun"
       >
-        Запустить импорт
+        {{ tr('Запустить импорт') }}
       </UidButton>
     </footer>
   </section>

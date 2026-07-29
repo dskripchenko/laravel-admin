@@ -101,7 +101,7 @@ async function submit(): Promise<void> {
             :loading="busy"
           >
             <template #prepend><UidIcon :icon="Check" :size="14" /></template>
-            Сохранить пароль
+            {{ tr('Сохранить пароль') }}
           </UidButton>
         </form>
       </div>

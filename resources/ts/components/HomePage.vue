@@ -58,8 +58,8 @@ watch(
     <UidCard padding="lg" class="admin-home__hero">
       <h1 class="admin-home__title">Добро пожаловать{{ userName ? ', ' + userName : '' }}</h1>
       <p class="admin-home__lead">
-        Админ-панель готова. Зарегистрируйте DashboardScreen чтобы увидеть widget-grid здесь,
-        либо переходите к ресурсам ниже.
+        {{ tr('Админ-панель готова. Зарегистрируйте DashboardScreen чтобы увидеть widget-grid здесь,') }}
+        {{ tr('либо переходите к ресурсам ниже.') }}
       </p>
     </UidCard>
 

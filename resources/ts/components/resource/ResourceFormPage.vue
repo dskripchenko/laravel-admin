@@ -263,7 +263,7 @@ function onCancel(): void {
           data-testid="form-delete"
           @click="onDelete"
         >
-          Удалить
+          {{ tr('Удалить') }}
         </UidButton>
         <UidButton
           v-if="!recordNotFound"
@@ -282,7 +282,7 @@ function onCancel(): void {
     <UidCard v-if="recordNotFound" padding="lg" class="admin-resource-form__notfound">
       <p class="admin-resource-form__notfound-title">{{ tr('Запись не найдена') }}</p>
       <p class="admin-resource-form__notfound-hint">
-        Возможно, она была удалена. Вернитесь к списку.
+        {{ tr('Возможно, она была удалена. Вернитесь к списку.') }}
       </p>
       <UidButton variant="primary" size="sm" @click="onCancel">{{ tr('← К списку') }}</UidButton>
     </UidCard>
