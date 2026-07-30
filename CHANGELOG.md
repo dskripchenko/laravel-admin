@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1] - 2026-07-30
+
+### Fixed
+- **`Password::make()` рендерился обычным текстовым полем** — секрет был
+  виден открытым текстом при вводе. Поля `password`/`email`/`url`/`tel`
+  сопоставлялись одному TextField, а тот по умолчанию ставит `type="text"`;
+  теперь тип берётся из ключа реестра (явный `inputType` из атрибутов поля
+  по-прежнему главнее). Заодно мобильная клавиатура подстраивается под
+  email и телефон.
+
 ## [1.15.0] - 2026-07-29
 
 ### Changed

@@ -7,6 +7,7 @@
  *     registerBuiltinComponents()
  */
 
+import { defineComponent, h } from 'vue'
 import { hasField, hasLayout, registerField, registerLayout } from './registry'
 import TextField from '../fields/TextField.vue'
 import TextAreaField from '../fields/TextAreaField.vue'
@@ -31,6 +32,25 @@ import TabsLayout from '../layouts/TabsLayout.vue'
 import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
 
 /**
+ * TextField с предустановленным `type` инпута.
+ *
+ * Backend-поля `password`/`email`/`url`/`tel`/`search` рендерились одним и
+ * тем же TextField, а тот по умолчанию ставит `type="text"` — то есть
+ * `Password::make()` показывал секрет открытым текстом, а мобильная
+ * клавиатура не подстраивалась под email и телефон. Тип берётся из ключа
+ * реестра; явный `inputType` из атрибутов поля по-прежнему главнее.
+ */
+function textFieldOfType(inputType: string) {
+  return defineComponent({
+    name: `TextField${inputType.charAt(0).toUpperCase()}${inputType.slice(1)}`,
+    inheritAttrs: false,
+    setup(_props, { attrs }) {
+      return () => h(TextField, { ...attrs, inputType: attrs.inputType ?? inputType })
+    },
+  })
+}
+
+/**
  * Builtin-компоненты НЕ перекрывают уже зарегистрированные host'ом:
  * registerField(...) до createAdminApp() имеет приоритет.
  */
@@ -52,11 +72,11 @@ export function registerBuiltinComponents(): void {
       // строки. Соответствие см. core/src/Field/{Input,TextArea,Select,...}.php.
       input: TextField,
       text: TextField,
-      email: TextField,
-      url: TextField,
-      password: TextField,
-      tel: TextField,
-      search: TextField,
+      email: textFieldOfType('email'),
+      url: textFieldOfType('url'),
+      password: textFieldOfType('password'),
+      tel: textFieldOfType('tel'),
+      search: textFieldOfType('search'),
       slug: TextField,
       hidden: TextField,
       label: TextField,
