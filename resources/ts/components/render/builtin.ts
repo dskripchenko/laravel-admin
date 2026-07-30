@@ -40,12 +40,18 @@ import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
  * клавиатура не подстраивалась под email и телефон. Тип берётся из ключа
  * реестра; явный `inputType` из атрибутов поля по-прежнему главнее.
  */
-function textFieldOfType(inputType: string) {
+type TextInputType = 'text' | 'email' | 'url' | 'password' | 'tel' | 'search'
+
+function textFieldOfType(inputType: TextInputType) {
   return defineComponent({
     name: `TextField${inputType.charAt(0).toUpperCase()}${inputType.slice(1)}`,
     inheritAttrs: false,
     setup(_props, { attrs }) {
-      return () => h(TextField, { ...attrs, inputType: attrs.inputType ?? inputType })
+      // Пропсы приходят через attrs (компонент их не объявляет), поэтому
+      // h() не может вывести тип — сужаем явно.
+      const props = { ...attrs, inputType: (attrs.inputType as TextInputType | undefined) ?? inputType }
+
+      return () => h(TextField, props as unknown as InstanceType<typeof TextField>['$props'])
     },
   })
 }
