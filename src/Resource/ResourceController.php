@@ -631,25 +631,6 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Потоковый CSV-экспорт списка с применением текущих filters.
-     *
-     * Backward-compat alias для `export(format=csv)`. Новый код должен
-     * использовать `export` action с явным форматом.
-     *
-     * @output file CSV
-     *
-     * @security AdminSession
-     *
-     * @response 200 {ResourceCsvExportResponse}
-     */
-    public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
-    {
-        $request->merge(['format' => 'csv']);
-
-        return $this->export($request);
-    }
-
-    /**
      * Универсальный потоковый экспорт списка в любой зарегистрированный формат.
      *
      * @input string ?$format  csv|xlsx|pdf — default csv. Должен быть

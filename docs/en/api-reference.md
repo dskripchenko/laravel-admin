@@ -115,7 +115,6 @@ For each registered Resource, prefix is `{slug}/`:
 | POST | `{slug}/forceDelete` | |
 | POST | `{slug}/replicate` | |
 | POST | `{slug}/reorder` | |
-| POST | `{slug}/exportCsv` | |
 | POST | `{slug}/export?format=xlsx&pdf...` | |
 | POST | `{slug}/action` | Generic action dispatcher. Body: `{key, ids[], payload}`. |
 | GET | `{slug}/listScreen` | Compiled `GeneratedListScreen` snapshot. |

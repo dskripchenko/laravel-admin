@@ -2,9 +2,8 @@
 
 ## Export — встроено
 
-Любой Resource автоматически имеет actions `exportCsv` (всегда) и `export`
-(универсальный с параметром `format`). XLSX/PDF появляются если установлены
-соответствующие пакеты:
+Любой Resource автоматически имеет action `export` с параметром `format`.
+XLSX/PDF появляются если установлены соответствующие пакеты:
 
 ```bash
 composer require openspout/openspout    # XLSX
@@ -15,7 +14,7 @@ composer require dompdf/dompdf           # PDF (fallback)
 
 URL'ы:
 
-- `GET /api/admin/articles/exportCsv?columns[]=title&columns[]=created_at`
+- `GET /api/admin/articles/export?format=csv&columns[]=title&columns[]=created_at`
 - `GET /api/admin/articles/export?format=xlsx&filters[is_published]=1`
 - `GET /api/admin/articles/export?format=pdf`
 

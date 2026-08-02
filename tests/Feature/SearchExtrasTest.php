@@ -61,11 +61,11 @@ it('search without ?group_by returns groups=null', function (): void {
     expect($response->json('payload.meta.groups'))->toBeNull();
 });
 
-it('exportCsv streams CSV with BOM and header row', function (): void {
+it('export streams CSV with BOM and header row', function (): void {
     TestResourceUserModel::create(['name' => 'Alice', 'status' => 'active', 'amount' => 100]);
     TestResourceUserModel::create(['name' => 'Bob', 'status' => 'banned', 'amount' => 50]);
 
-    $response = $this->get('/api/admin/test-editables/exportCsv');
+    $response = $this->get('/api/admin/test-editables/export?format=csv');
     $response->assertOk();
     $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
 
@@ -75,10 +75,10 @@ it('exportCsv streams CSV with BOM and header row', function (): void {
     expect($body)->toContain('Bob');
 });
 
-it('exportCsv respects ?columns selection', function (): void {
+it('export respects ?columns selection', function (): void {
     TestResourceUserModel::create(['name' => 'Alice', 'status' => 'active', 'amount' => 100]);
 
-    $response = $this->get('/api/admin/test-editables/exportCsv?columns[]=name&columns[]=amount');
+    $response = $this->get('/api/admin/test-editables/export?format=csv&columns[]=name&columns[]=amount');
     $body = $response->streamedContent();
 
     // Header не должен содержать 'Status' (если бы в TestEditableResource он не был
@@ -88,14 +88,14 @@ it('exportCsv respects ?columns selection', function (): void {
     expect($body)->not->toContain('Status');
 });
 
-it('exportCsv applies filter from ?filters[] before stream', function (): void {
+it('export applies filter from ?filters[] before stream', function (): void {
     TestResourceUserModel::create(['name' => 'Alice', 'status' => 'active']);
     TestResourceUserModel::create(['name' => 'Bob', 'status' => 'active']);
     TestResourceUserModel::create(['name' => 'Charlie', 'status' => 'banned']);
 
     // У TestEditableResource нет фильтров — проверим что вообще все три появятся.
     // Цель теста: убедиться что endpoint работает с filters параметром (без ошибок).
-    $response = $this->get('/api/admin/test-editables/exportCsv');
+    $response = $this->get('/api/admin/test-editables/export?format=csv');
     $body = $response->streamedContent();
     expect(substr_count($body, "\n"))->toBeGreaterThanOrEqual(3); // header + 3 rows
 });

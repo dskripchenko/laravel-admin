@@ -150,10 +150,10 @@ it('export action returns 422 for unknown format', function (): void {
     expect($response->json('payload.errorKey'))->toBe('unsupported_format');
 });
 
-it('exportCsv action still works (backward compat)', function (): void {
-    TestResourceUserModel::create(['name' => 'C', 'email' => 'c@example.com', 'password' => 'p']);
-
+it('exportCsv больше не регистрируется — остался один export', function (): void {
+    // Алиас дублировал export(format=csv) на каждом ресурсе: лишняя операция
+    // в спеке и второй путь к тому же коду. Панель звала только export.
     $response = $this->get('/api/admin/test-users/exportCsv');
-    $response->assertOk();
-    expect($response->headers->get('Content-Type'))->toContain('text/csv');
+
+    $response->assertNotFound();
 });
