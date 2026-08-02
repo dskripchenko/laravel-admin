@@ -17,7 +17,9 @@ export interface ErrorEnvelope {
   payload: {
     errorKey: string
     message: string
+    /** Ошибки по полям. `errors` — форма laravel-api, `messages` — админки. */
     messages?: Record<string, string[]>
+    errors?: Record<string, string[]>
     [key: string]: unknown
   }
 }

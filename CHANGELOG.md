@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.3] — 2026-08-02
+
+### Fixed
+- **Форма молчала на ошибки валидации.** Пользователь жал «Сохранить» с
+  пустым обязательным полем и не получал ничего: ни подсветки, ни текста.
+  `ValidationError` читал карту полей только из `payload.messages`, а
+  приходила она в `payload.errors` — так её кладёт дефолтный обработчик
+  `ValidationException` в laravel-api. Собственная регистрация админки
+  (`AdminServiceProvider::registerExceptionHandlers`) до приложения не
+  доезжала: `api_error_handler` был забинжен как `bind`, и дописанные
+  обработчики доставались выброшенному экземпляру (починено в laravel-api
+  5.6.1). Фронт теперь читает обе формы — независимо от версии бэкенда.
+
 ## [1.15.2] - 2026-07-30
 
 ### Fixed

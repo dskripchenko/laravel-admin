@@ -57,6 +57,30 @@ describe('AdminClient', () => {
     }
   })
 
+  it('читает ошибки полей и из формы laravel-api (errors)', async () => {
+    // Дефолтный обработчик ValidationException в laravel-api кладёт карту
+    // полей в `errors` и ставит errorKey `validation_error`. Пока читалось
+    // только `messages`, форма на такой ответ не показывала ничего: ни
+    // подсветки поля, ни текста — пользователь жал «Сохранить» впустую.
+    mock.onPost('/users/create').reply(422, {
+      success: false,
+      payload: {
+        errorKey: 'validation_error',
+        message: 'The email field is required. (and 1 more error)',
+        errors: { email: ['Required'] },
+      },
+    })
+
+    try {
+      await client.post('/users/create', {})
+      expect.fail('expected throw')
+    } catch (err) {
+      const v = err as ValidationError
+      expect(v).toBeInstanceOf(ValidationError)
+      expect(v.fields.email).toEqual(['Required'])
+    }
+  })
+
   it('throws UnauthenticatedError on 401 and triggers onUnauthenticated', async () => {
     mock.onGet('/users/me').reply(401, {
       success: false,

@@ -49,7 +49,11 @@ export class ValidationError extends ApiError {
   constructor(payload: ErrorEnvelope['payload']) {
     super(422, payload)
     this.name = 'ValidationError'
-    this.fields = payload.messages ?? {}
+    // Две формы конверта: `messages` шлёт админка, `errors` — laravel-api
+    // своим дефолтным обработчиком ValidationException. Читать одну — значит
+    // при чужой форме молча остаться без ошибок полей: пользователь жмёт
+    // «Сохранить», и форма не отвечает ничем.
+    this.fields = payload.messages ?? payload.errors ?? {}
   }
 
   /** Первое сообщение из field'а — удобно для toast. */
