@@ -69,14 +69,21 @@ it('TimePicker adds date_format rule based on format', function (): void {
     expect($rules['open'])->toContain('date_format:H:i:s');
 });
 
-it('FileUpload single adds file/max/mimes', function (): void {
+it('FileUpload single валидируется как upload-first {disk, path}', function (): void {
+    // SPA не шлёт multipart в create/update: файл уже загружен через
+    // /uploads/upload, в форме едет {disk, path}. Правила file/mimes здесь
+    // отклоняли ровно ту форму значения, которую панель и отправляет, —
+    // создание записи с файловым полем не проходило валидацию вовсе.
+    // Размер и тип проверяются в самом /uploads/upload.
     $rules = ValidationRulesExporter::export([
         FileUpload::make('avatar')->image()->maxSize(2048)->accept('image/png,image/jpeg'),
     ]);
 
-    expect($rules['avatar'])->toContain('image');
-    expect($rules['avatar'])->toContain('max:2048');
-    expect($rules['avatar'])->toContain('mimes:png,jpeg');
+    expect($rules['avatar'])->toContain('array');
+    expect($rules['avatar'])->not->toContain('image');
+    expect($rules['avatar'])->not->toContain('mimes:png,jpeg');
+    expect($rules['avatar.disk'])->toBe(['required_with:avatar', 'string']);
+    expect($rules['avatar.path'])->toBe(['required_with:avatar', 'string']);
 });
 
 it('FileUpload multiple adds array + max:maxFiles', function (): void {
@@ -86,6 +93,7 @@ it('FileUpload multiple adds array + max:maxFiles', function (): void {
 
     expect($rules['docs'])->toContain('array');
     expect($rules['docs'])->toContain('max:5');
+    expect($rules['docs.*.disk'])->toBe(['required_with:docs.*', 'string']);
 });
 
 it('Select multiple adds array rule', function (): void {

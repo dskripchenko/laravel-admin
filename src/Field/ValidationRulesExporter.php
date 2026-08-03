@@ -43,6 +43,17 @@ final class ValidationRulesExporter
                 $rules = ['nullable'];
             }
             $result[$field->name()] = $rules;
+
+            // Файловые поля: SPA работает upload-first (FileField.vue грузит
+            // через /uploads/upload и кладёт в форму {disk, path, ...}), и
+            // нужен контракт на эту форму значения.
+            if ($field->fieldType() === 'file') {
+                $prefix = ($field->getAttribute('multiple') ?? false) === true
+                    ? $field->name().'.*'
+                    : $field->name();
+                $result[$prefix.'.disk'] = ['required_with:'.$prefix, 'string'];
+                $result[$prefix.'.path'] = ['required_with:'.$prefix, 'string'];
+            }
         }
 
         return $result;
@@ -187,17 +198,14 @@ final class ValidationRulesExporter
             return $rules;
         }
 
-        $rules[] = ($attrs['image'] ?? false) === true ? 'image' : 'file';
-
-        if (isset($attrs['maxSize'])) {
-            $rules[] = 'max:'.$attrs['maxSize'];
-        }
-        if (isset($attrs['accept']) && is_string($attrs['accept'])) {
-            $exts = self::extensionsFromAccept($attrs['accept']);
-            if ($exts !== []) {
-                $rules[] = 'mimes:'.implode(',', $exts);
-            }
-        }
+        // Upload-first: SPA никогда не шлёт multipart в create/update — файл
+        // уже загружен через /uploads/upload, а в форме едет {disk, path}.
+        // Правила `file`/`mimes` здесь отклоняли ровно ту форму значения,
+        // которую панель и отправляет: создание записи с файловым полем не
+        // могло пройти валидацию вовсе (найдено OptionsIntegrityTest
+        // printable на файлах шрифтов). Размер и тип проверяются при самой
+        // загрузке (/uploads/upload) и доменной логикой fillModel.
+        $rules[] = 'array';
 
         return $rules;
     }
@@ -254,32 +262,5 @@ final class ValidationRulesExporter
         $colon = strpos($rule, ':');
 
         return $colon === false ? $rule : substr($rule, 0, $colon);
-    }
-
-    /**
-     * Парсит accept-строку (`image/*,.pdf,application/json`) в список расширений
-     * для Laravel `mimes:`.
-     *
-     * @return list<string>
-     */
-    private static function extensionsFromAccept(string $accept): array
-    {
-        $parts = array_filter(array_map('trim', explode(',', $accept)));
-        $exts = [];
-
-        foreach ($parts as $part) {
-            if (str_starts_with($part, '.')) {
-                $exts[] = ltrim($part, '.');
-
-                continue;
-            }
-            if (str_contains($part, '/') && ! str_ends_with($part, '/*')) {
-                // application/pdf → pdf
-                $sub = substr($part, strpos($part, '/') + 1);
-                $exts[] = $sub;
-            }
-        }
-
-        return array_values(array_unique($exts));
     }
 }

@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1] — 2026-08-03
+
+### Fixed
+- **Создание записи с файловым полем не проходило валидацию.** SPA работает
+  upload-first: файл уходит через `/uploads/upload`, а в форме create/update
+  едет `{disk, path}` — но серверный экспортёр правил добавлял файловым полям
+  `file`/`mimes:*`, отклоняя ровно ту форму значения, которую панель и
+  отправляет. Ни один ресурс с `FileUpload` не мог создать запись через
+  панель. Теперь контракт upload-first: `array` + строковые `disk`/`path`;
+  размер и тип файла проверяются при самой загрузке. Найдено
+  `OptionsIntegrityTest` printable на файлах шрифтов.
+
 ## [1.17.0] — 2026-08-03
 
 ### Changed
