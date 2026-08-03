@@ -8,22 +8,22 @@
  * Используется createAdminApp() как root-component. Host'ы редко
  * переопределяют — обычно достаточно настроить отдельные pages через опции.
  */
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { UidToastProvider } from '@dskripchenko/ui'
 import AdminShell from './shell/AdminShell.vue'
+import AdminBootSkeleton from './shell/AdminBootSkeleton.vue'
 import AdminLoadingBar from './AdminLoadingBar.vue'
 import NotificationsDrawer from './shell/NotificationsDrawer.vue'
-import { useManifestStore } from '../stores/manifest'
 import { useAuthStore } from '../stores/auth'
 import { adminToast } from '../stores/toast'
 import { useBrand } from '../composables/useBrand'
+import { useAppReady } from '../composables/useAppReady'
 import { provideLocale, ru as uidRu, en as uidEn } from '@dskripchenko/ui'
 import { useLocaleStore } from '../stores/locale'
 import { trSafe as tr } from '../stores/i18n'
 
 const route = useRoute()
-const manifest = useManifestStore()
 const auth = useAuthStore()
 const brand = useBrand()
 
@@ -64,21 +64,32 @@ const useShell = computed<boolean>(() => {
 })
 
 /**
- * При reload deep-link страницы (/admin/r/articles/1/edit) Vue Router
- * сначала матчит против static routes (dynamic resource routes ещё не
- * добавлены — manifest async-load в createAdminApp), и фолбэк-резолв
- * попадает в catch-all `admin.notFound`. Через 50-200ms manifest приходит,
- * createAdminApp re-resolve'ит current route → правильная страница.
+ * Пока каркас не собран, страницу не рендерим вовсе — на её месте скелет.
  *
- * Чтобы избежать вспышки 404 в этот промежуток — скрываем NotFoundPage
- * пока initial manifest+re-resolve не закончился (manifest.bootResolved).
- * Гейт открывается createAdminApp.loadAndApply() в finally — после того,
- * как router.replace(currentFullPath) уже отработал. Это закрывает окно
- * между "manifest пришёл" и "route переключился", где иначе виден 404.
+ * Раньше гейт закрывал только вспышку 404 (deep-link резолвится в catch-all,
+ * пока manifest не принёс динамические роуты). Но ровно та же дыра давала и
+ * вспышку чужого экрана: без манифеста HomePage не знает про дашборды хоста
+ * и рисует заглушку «зарегистрируйте DashboardScreen», которую через
+ * четверть секунды сменяет настоящий дашборд. Замер на стенде: каркас на
+ * 236 мс, настоящее содержимое на 510 мс.
+ *
+ * Поэтому гейт общий (useAppReady) и закрывает любую страницу до готовности
+ * манифеста и меню — они грузятся параллельно и приезжают почти вместе.
  */
-const suppressNotFound = computed<boolean>(
-  () => route.name === 'admin.notFound' && !manifest.bootResolved,
-)
+const appReady = useAppReady()
+const showPage = appReady
+
+/**
+ * Первый показ страницы — это подмена скелета, а не переход между экранами:
+ * уезжающий вбок скелет читался бы как навигация, которой не было. Поэтому
+ * первый кадр меняем простым проявлением, а slide оставляем переходам.
+ */
+const booted = ref(false)
+watch(showPage, (ready) => {
+  if (ready) void nextTick(() => (booted.value = true))
+}, { immediate: true })
+
+const pageTransition = computed<string>(() => (booted.value ? 'admin-page' : 'admin-boot'))
 </script>
 
 <template>
@@ -93,17 +104,17 @@ const suppressNotFound = computed<boolean>(
   >
     <div class="admin-page-host">
       <router-view v-slot="{ Component }">
-        <Transition name="admin-page">
-          <component v-if="!suppressNotFound" :is="Component" />
-          <div v-else class="admin-page-host__suspended" aria-busy="true" />
+        <Transition :name="pageTransition">
+          <component v-if="showPage" :is="Component" />
+          <AdminBootSkeleton v-else />
         </Transition>
       </router-view>
     </div>
   </AdminShell>
+  <!-- Вне каркаса (login, 403) манифест не нужен — гейт не применяем. -->
   <router-view v-else v-slot="{ Component }">
     <Transition name="admin-page">
-      <component v-if="!suppressNotFound" :is="Component" />
-      <div v-else class="admin-page-host__suspended" aria-busy="true" />
+      <component :is="Component" />
     </Transition>
   </router-view>
 
@@ -142,6 +153,26 @@ const suppressNotFound = computed<boolean>(
   min-height: 320px;
 }
 
+/*
+ * Первый показ после загрузки каркаса: скелет и страница занимают одно
+ * место, поэтому чистое перекрестное проявление без сдвига.
+ */
+.admin-boot-enter-active {
+  transition: opacity 200ms ease-out;
+}
+.admin-boot-enter-from {
+  opacity: 0;
+}
+.admin-boot-leave-active {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  transition: opacity 140ms ease-out;
+}
+.admin-boot-leave-to {
+  opacity: 0;
+}
+
 /* Leaving page absolute — не двигает layout, остаётся на месте пока fade'ится. */
 .admin-page-leave-active {
   position: absolute;
@@ -172,6 +203,8 @@ const suppressNotFound = computed<boolean>(
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .admin-boot-enter-active,
+  .admin-boot-leave-active,
   .admin-page-enter-active,
   .admin-page-leave-active {
     transition: opacity 80ms ease-out;

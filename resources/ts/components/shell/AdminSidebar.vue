@@ -10,8 +10,9 @@
  * по эталону docs/design_handoff_laravel_admin/screens-shell.jsx (Sidebar).
  */
 import { computed } from 'vue'
-import { UidSidebar, UidSidebarGroup } from '@dskripchenko/ui'
+import { UidSidebar, UidSidebarGroup, UidSkeleton } from '@dskripchenko/ui'
 import { useMenuStore } from '../../stores/menu'
+import { useAppReady } from '../../composables/useAppReady'
 import AdminSidebarNode from './AdminSidebarNode.vue'
 import BrandLogo from './BrandLogo.vue'
 
@@ -49,6 +50,16 @@ withDefaults(defineProps<Props>(), {
 const menu = useMenuStore()
 
 const groups = computed(() => menu.groupedItems)
+
+/**
+ * Пока каркас не готов, вместо пунктов — их силуэт: пустая колонка рядом с
+ * отрисованным топбаром читается как «меню сломалось», а не «сейчас будет».
+ * Гейт общий со страницей, поэтому меню и содержимое появляются вместе.
+ */
+const appReady = useAppReady()
+// Если пункты уже есть (host задал их напрямую или ответ пришёл раньше
+// манифеста) — прятать готовые данные за силуэтом незачем.
+const ready = computed(() => appReady.value || menu.isLoaded)
 </script>
 
 <template>
@@ -72,18 +83,23 @@ const groups = computed(() => menu.groupedItems)
     </template>
 
     <template #nav>
-      <UidSidebarGroup
-        v-for="(grp, idx) in groups"
-        :key="`grp-${idx}`"
-        :title="grp.group ?? undefined"
-      >
-        <AdminSidebarNode
-          v-for="item in grp.items"
-          :key="item.key"
-          :item="item"
-          :collapsed="collapsed"
-        />
-      </UidSidebarGroup>
+      <div v-if="!ready" class="admin-sidebar-boot" aria-busy="true">
+        <UidSkeleton v-for="i in 6" :key="`sk-${i}`" height="32px" />
+      </div>
+      <template v-else>
+        <UidSidebarGroup
+          v-for="(grp, idx) in groups"
+          :key="`grp-${idx}`"
+          :title="grp.group ?? undefined"
+        >
+          <AdminSidebarNode
+            v-for="item in grp.items"
+            :key="item.key"
+            :item="item"
+            :collapsed="collapsed"
+          />
+        </UidSidebarGroup>
+      </template>
     </template>
 
     <template #footer>
@@ -105,6 +121,14 @@ const groups = computed(() => menu.groupedItems)
 </template>
 
 <style>
+/* Силуэт меню на время загрузки каркаса — по геометрии пунктов. */
+.admin-sidebar-boot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
 /*
  * Sidebar header выровнен по AdminTopBar (height: 56px + 1px border).
  * Padding у uid-pattern-sidebar__header обнулён — brand занимает ровно
