@@ -376,6 +376,7 @@ abstract class Resource
                 'reorderColumn' => $this->reorderable() ? $this->reorderColumn() : null,
                 'importable' => $this->importable(),
                 'exportable' => $this->exportable(),
+                'savedViews' => $this->savedViews(),
                 'polling' => $this->polling(),
                 'warnOnUnsavedChanges' => true,
                 'creatable' => $this->fields() !== [],
@@ -472,6 +473,20 @@ abstract class Resource
      * Можно ли менять порядок записей drag-n-drop'ом.
      */
     public function reorderable(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Доступны ли сохранённые представления списка — именованные наборы
+     * фильтров, сортировки и видимых колонок.
+     *
+     * Выключено по умолчанию: возможность заводит четыре маршрута на ресурс,
+     * а осмысленна она на длинных списках, которые действительно фильтруют.
+     * Раньше маршруты появлялись у каждого ресурса поголовно — включая те,
+     * где сохранять нечего.
+     */
+    public function savedViews(): bool
     {
         return false;
     }

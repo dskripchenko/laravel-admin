@@ -215,4 +215,34 @@ describe('ResourceIndexPage', () => {
     // В EmptyState или header'е — где-то должна быть кнопка «Создать».
     expect(wrapper.text()).toContain('Создать')
   })
+
+
+  /**
+   * Сохранённые представления включаются флагом ресурса. Без него бэкенд
+   * маршрутов не заводит, поэтому страница не должна за ними ходить: раньше
+   * каждый список слал запрос, который на большинстве ресурсов отвечал бы 404.
+   */
+  it('без features.savedViews не запрашивает список представлений', async () => {
+    mock.onPost('/articles/search').reply(200, {
+      success: true,
+      payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
+    })
+    await mountPage()
+    await flushPromises()
+
+    expect(mock.history.get.filter((r) => r.url?.includes('_views'))).toHaveLength(0)
+  })
+
+  it('с features.savedViews запрашивает список представлений', async () => {
+    seedManifest({ features: { savedViews: true } })
+    mock.onPost('/articles/search').reply(200, {
+      success: true,
+      payload: { data: [], meta: { page: 1, per_page: 20, total: 0, last_page: 1 } },
+    })
+    mock.onGet('/articles_views/list').reply(200, { success: true, payload: { data: [] } })
+    await mountPage()
+    await flushPromises()
+
+    expect(mock.history.get.filter((r) => r.url?.includes('_views'))).toHaveLength(1)
+  })
 })

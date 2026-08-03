@@ -374,6 +374,15 @@ const isEditable = computed<boolean>(() => {
   return features.editable !== false
 })
 
+/**
+ * Сохранённые представления — только при features.savedViews (default false).
+ * Без флага бэкенд маршрутов не заводит, и запрос списка ушёл бы в 404.
+ */
+const hasSavedViews = computed<boolean>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  return features.savedViews === true
+})
+
 /** Import доступен только при features.importable (default false). */
 const isImportable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
@@ -586,6 +595,10 @@ const savedViews = ref<SavedViewItem[]>([])
 const activeViewId = ref<number | null>(null)
 
 async function loadSavedViews(): Promise<void> {
+  if (!hasSavedViews.value) {
+    savedViews.value = []
+    return
+  }
   try {
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
@@ -1017,7 +1030,7 @@ async function retryLoad(): Promise<void> {
       </div>
       <div class="admin-page__actions">
         <slot name="actions" />
-        <UidMenu>
+        <UidMenu v-if="hasSavedViews">
           <template #trigger>
             <UidButton variant="ghost" size="md" class="admin-page__scope">
               <template #prepend><UidIcon :icon="Bookmark" :size="14" /></template>
@@ -1139,6 +1152,7 @@ async function retryLoad(): Promise<void> {
       :columns="(manifestColumns as never)"
       :group-by="groupByCol"
       :column-visibility="columnVisibility"
+      :enable-saved-views="hasSavedViews"
       @update:search="onSearchUpdate"
       @apply-filter="onFilterApply"
       @reset="onResetFilters"

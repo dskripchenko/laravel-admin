@@ -17,6 +17,11 @@ final class TestUserResource extends Resource
 {
     public static string $model = TestResourceUserModel::class;
 
+    public function savedViews(): bool
+    {
+        return true;
+    }
+
     public function fields(): array
     {
         return [

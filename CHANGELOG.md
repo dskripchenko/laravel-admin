@@ -5,6 +5,20 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] — 2026-08-03
+
+### Changed
+- **Сохранённые представления списка включаются флагом ресурса** —
+  `Resource::savedViews()`, по умолчанию `false`, как у остальных
+  возможностей (`replicable`, `reorderable`, `importable`). Раньше четыре
+  маршрута `{slug}_views/*` заводились у каждого ресурса поголовно, включая
+  те, где сохранять нечего. Флаг едет в манифест (`features.savedViews`), и
+  панель по нему же решает, запрашивать ли список: до этого каждый список
+  слал запрос, который на большинстве ресурсов ответил бы 404.
+
+  Хостам, которые пользуются представлениями, нужно вернуть `true` в
+  соответствующих ресурсах.
+
 ## [1.16.0] — 2026-08-02
 
 ### Removed

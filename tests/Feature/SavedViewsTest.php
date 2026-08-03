@@ -187,3 +187,25 @@ it('admin without view permission gets 403 for SavedViews', function (): void {
 
     $this->getJson('/api/admin/test-users_views/list')->assertStatus(403);
 });
+
+/**
+ * Возможность включается флагом ресурса — как replicable/reorderable.
+ *
+ * Раньше четыре маршрута заводились у каждого ресурса поголовно, включая те,
+ * где сохранять нечего: карта API росла на ровном месте.
+ */
+it('без флага ресурса маршруты представлений не заводятся', function (): void {
+    /** @var ResourceRegistry $rr */
+    $rr = app(ResourceRegistry::class);
+    $rr->clear();
+    $rr->add(TestArticleResource::class);
+    AdminApi::clearCache();
+
+    $this->getJson('/api/admin/test-articles_views/list')->assertNotFound();
+});
+
+it('флаг виден в манифесте ресурса', function (): void {
+    $resource = app(ResourceRegistry::class)->resolve('test-users');
+
+    expect($resource->meta()['features']['savedViews'])->toBeTrue();
+});

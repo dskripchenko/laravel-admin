@@ -122,7 +122,7 @@ For each registered Resource, prefix is `{slug}/`:
 | GET | `{slug}/editScreen?id={id}` | |
 | GET | `{slug}/viewScreen?id={id}` | |
 
-Saved-views: `{slug}_views/{list,create,update,delete}`.
+Saved-views: `{slug}_views/{list,create,update,delete}` — registered only for resources whose `savedViews()` returns `true`.
 
 ### screens (per-Screen, dynamic)
 

@@ -33,7 +33,12 @@ final class ResourceCompiler
                 continue;
             }
             $controllers[$slug] = self::buildControllerEntry($resource);
-            $controllers[$slug.'_views'] = self::buildSavedViewsEntry($resource::permission());
+            // Сохранённые представления — по флагу ресурса, как остальные
+            // возможности: четыре маршрута на ресурс имеют смысл там, где
+            // список действительно фильтруют.
+            if ($resource->savedViews()) {
+                $controllers[$slug.'_views'] = self::buildSavedViewsEntry($resource::permission());
+            }
         }
 
         return $controllers;
