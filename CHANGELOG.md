@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.2] — 2026-08-04
+
+### Fixed
+- **Выключенный пользователь панели входил в систему.** Логин проверял только
+  `is_active` (поле `AdminUser`), а панельные user-модели выключаются полем
+  `enabled` — такому пользователю выдавалась сессия и ответ «вы вошли» со
+  списком прав, и лишь следующий запрос выкидывал его через `AdminAuth`. Для
+  учётки, отключённой уволенному сотруднику, это неверно по сути. Признак
+  выключения переехал в `Auth\AccountState` — один и тот же ответ на входе и на
+  каждом запросе; заодно снята строгая сверка с `false`, из-за которой значение
+  `0` из баз без булева типа не считалось выключением. Найдено сценарным
+  тестом онбординга в printable.
+
 ## [1.18.1] — 2026-08-04
 
 ### Fixed

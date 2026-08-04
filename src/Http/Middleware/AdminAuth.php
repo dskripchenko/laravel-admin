@@ -49,9 +49,8 @@ final class AdminAuth
         $user = Auth::guard($guard)->user();
 
         // Выключенная учётка гаснет на первом же запросе, а не только на login
-        // (is_active — AdminUser, enabled — панельные user-модели).
-        if ($user !== null
-            && ($user->getAttribute('is_active') === false || $user->getAttribute('enabled') === false)) {
+        // (признак выключения — см. AccountState).
+        if ($user !== null && \Dskripchenko\LaravelAdmin\Auth\AccountState::isDisabled($user)) {
             Auth::guard($guard)->logout();
 
             return response()->json([

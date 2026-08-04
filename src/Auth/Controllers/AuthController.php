@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Auth\Controllers;
 
+use Dskripchenko\LaravelAdmin\Auth\AccountState;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\RecoveryCodes;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
 use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
@@ -93,7 +94,11 @@ final class AuthController extends ApiController
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        if ($user->getAttribute('is_active') === false) {
+        // Тот же контракт, что и в AdminAuth: is_active — AdminUser,
+        // enabled — панельные user-модели. Проверять только первое значило
+        // отдавать выключенному пользователю сессию и payload «вы вошли»,
+        // который тут же отбирал первый же запрос.
+        if (AccountState::isDisabled($user)) {
             return $this->error([
                 'errorKey' => 'account_inactive',
                 'message' => 'Учётная запись отключена',

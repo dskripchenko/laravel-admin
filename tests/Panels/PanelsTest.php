@@ -175,6 +175,27 @@ it('logs a client user in through the panel login endpoint', function (): void {
     $this->getJson('/api/admin/system/me')->assertStatus(401);
 });
 
+it('refuses a disabled panel user at login, not one request later', function (): void {
+    TestPanelClientUser::create([
+        'name' => 'Disabled User',
+        'email' => 'disabled@example.com',
+        'password' => bcrypt('secret-password'),
+        'enabled' => false,
+    ]);
+
+    // Выключатель обещает «войти нельзя». Пуская такого пользователя внутрь и
+    // выкидывая его на первом же запросе, панель показала бы ему успешный
+    // логин с правами — а отключают учётку обычно уволенному сотруднику.
+    $login = $this->postJson('/api/client/auth/login', [
+        'email' => 'disabled@example.com',
+        'password' => 'secret-password',
+    ]);
+
+    $login->assertStatus(403);
+    expect($login->json('payload.errorKey'))->toBe('account_inactive');
+    $this->getJson('/api/client/system/me')->assertStatus(401);
+});
+
 it('panel login throttles use independent buckets', function (): void {
     $this->withMiddleware(Illuminate\Routing\Middleware\ThrottleRequests::class);
     $sig = sha1('|127.0.0.1');

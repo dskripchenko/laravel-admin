@@ -56,6 +56,9 @@ abstract class PanelsTestCase extends TestCase
                 $table->string('name');
                 $table->string('email')->unique();
                 $table->string('password');
+                // Панельные user-модели выключаются через `enabled`
+                // (у AdminUser это `is_active`) — оба поля запирают вход.
+                $table->boolean('enabled')->default(true);
                 $table->timestamps();
             });
         }
