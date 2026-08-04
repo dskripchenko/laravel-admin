@@ -54,6 +54,12 @@ final class TestActionResource extends Resource
             BulkAction::make('Опубликовать')
                 ->method('publish')
                 ->withName('publish'),
+            BulkAction::make('Проверить связь')
+                ->method('checkLink')
+                ->withName('check-link'),
+            BulkAction::make('Сломаться')
+                ->method('explode')
+                ->withName('explode'),
         ];
     }
 
@@ -70,5 +76,19 @@ final class TestActionResource extends Resource
         return TestResourceUserModel::query()
             ->whereIn('id', $ids)
             ->update(['status' => 'published']);
+    }
+
+    /** Отказ по делу: действие отработало и объясняет, почему не вышло. */
+    public function checkLink(array $ids, array $payload = []): int
+    {
+        throw new Dskripchenko\LaravelAdmin\Resource\ActionFailedException(
+            'Не удалось подключиться: хост не отвечает',
+        );
+    }
+
+    /** Настоящая поломка — она обязана остаться пятисоткой. */
+    public function explode(array $ids, array $payload = []): int
+    {
+        throw new LogicException('внутренняя ошибка');
     }
 }

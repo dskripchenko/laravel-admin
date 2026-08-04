@@ -88,3 +88,30 @@ it('action endpoint resolves second declared BulkAction independently', function
     $response->assertOk();
     expect($a->fresh()->status)->toBe('published');
 });
+
+it('отказ действия по делу — 422 с человеческим текстом, а не пятисотка', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A', 'status' => 'draft']);
+
+    // Проверка соединения, не достучавшаяся до сервера, — законный ответ
+    // действия. Пятисотка означала бы, что сломалась панель, и мониторинг
+    // будил бы дежурного из-за неверно введённого пользователем порта.
+    $response = $this->postJson('/api/admin/test-actions/action', [
+        'key' => 'check-link',
+        'ids' => [$a->id],
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.errorKey'))->toBe('action_failed')
+        ->and((string) $response->json('payload.message'))->toContain('хост не отвечает');
+});
+
+it('настоящая поломка действия остаётся пятисоткой', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A', 'status' => 'draft']);
+
+    $response = $this->postJson('/api/admin/test-actions/action', [
+        'key' => 'explode',
+        'ids' => [$a->id],
+    ]);
+
+    $response->assertStatus(500);
+});

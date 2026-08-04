@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] — 2026-08-04
+
+### Added
+- **`Resource\ActionFailedException` — отказ действия по делу отвечает 422, а
+  не 500.** Действие ресурса, бросившее исключение, всегда становилось
+  пятисоткой: проверка соединения, не достучавшаяся до чужой базы, выглядела в
+  мониторинге ровно как упавшая панель, и опечатка пользователя в номере порта
+  будила дежурного. Теперь у действия есть способ сообщить «не вышло, вот
+  почему»: брошенный `ActionFailedException` уходит пользователю текстом
+  сообщения со статусом 422, а любое другое исключение по-прежнему 500 —
+  поведение существующих хостов не меняется. Найдено свипом действий панелей
+  в printable.
+
 ## [1.18.3] — 2026-08-04
 
 ### Added

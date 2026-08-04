@@ -762,6 +762,14 @@ final class ResourceController extends ApiController
         // Вызов: $resource->{method}(array $ids, array $payload).
         try {
             $result = $resource->{$methodName}($data['ids'], (array) ($data['payload'] ?? []));
+        } catch (ActionFailedException $e) {
+            // Отказ по делу: действие отработало и сообщает, почему не вышло.
+            // Пятисотка здесь означала бы, что сломалась панель, — и будила бы
+            // дежурного из-за неверно введённого порта.
+            return $this->error([
+                'errorKey' => 'action_failed',
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Throwable $e) {
             return $this->error([
                 'errorKey' => 'action_failed',
