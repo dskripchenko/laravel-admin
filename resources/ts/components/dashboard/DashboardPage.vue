@@ -760,6 +760,25 @@ function onExport(): void {
   grid-auto-rows: 140px;
   gap: var(--uid-space-md);
 }
+/*
+ * Узкий экран: двенадцать колонок на 390px превращают виджеты в вертикальные
+ * полоски, а те, что справа, уезжают за край — их не прочитать и не
+ * прокрутить, потому что хост прячет переполнение. Ниже порога шторки
+ * (768px, как в UidSidebarLayout) виджеты идут в одну колонку, а высота
+ * ряда перестаёт быть фиксированной: содержимое в 140px не укладывается,
+ * когда ширина втрое меньше расчётной.
+ */
+@media (max-width: 768px) {
+  .admin-dashboard__grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(140px, auto);
+  }
+
+  .admin-dashboard__cell {
+    grid-column: 1 / -1 !important;
+  }
+}
+
 .admin-dashboard__grid--editing .admin-dashboard__cell {
   outline: 1px dashed transparent;
   transition: outline-color 120ms ease, opacity 120ms ease;

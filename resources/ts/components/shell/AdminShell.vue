@@ -15,6 +15,7 @@
  * сместить sticky-элементы вниз.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { UidSidebarLayout } from '@dskripchenko/ui'
 import AdminTopBar from './AdminTopBar.vue'
 import AdminSidebar from './AdminSidebar.vue'
@@ -70,6 +71,41 @@ const emit = defineEmits<{
 
 // Internal fallback state — используется когда host не передал v-model.
 const internalCollapsed = ref<boolean>(false)
+
+/**
+ * Ширина, ниже которой сайдбар превращается в выдвижную шторку поверх
+ * контента (`@media (max-width: 768px)` в UidSidebarLayout). Флаг `collapsed`
+ * на десктопе означает «узкий сайдбар», а здесь — «шторка закрыта», и это
+ * разные вещи: со значением по умолчанию `false` панель на телефоне
+ * открывалась с меню поверх всего экрана, а кнопка сворачивания оказывалась
+ * под самой шторкой. Поэтому в этом режиме состояние задаётся отдельно.
+ */
+const DRAWER_BREAKPOINT = '(max-width: 768px)'
+const isDrawerMode = ref<boolean>(false)
+let drawerQuery: MediaQueryList | null = null
+
+function applyDrawerMode(matches: boolean): void {
+  const wasDrawer = isDrawerMode.value
+  isDrawerMode.value = matches
+
+  // Вход в режим шторки — закрываем её: пользователь пришёл читать страницу,
+  // а не меню. Возврат на широкий экран — раскрываем сайдбар обратно, иначе
+  // он останется схлопнутым без всякой причины.
+  if (matches && !wasDrawer) onCollapseChange(true)
+  if (!matches && wasDrawer) onCollapseChange(false)
+}
+
+const route = useRoute()
+
+// Выбор пункта меню — это переход, после которого шторка обязана уйти:
+// иначе она остаётся поверх только что открытой страницы, и её приходится
+// закрывать руками при каждой навигации.
+watch(
+  () => route.fullPath,
+  () => {
+    if (isDrawerMode.value) onCollapseChange(true)
+  },
+)
 const isExternallyControlled = computed<boolean>(() => props.collapsed !== undefined)
 const collapsed = computed<boolean>(
   () => (isExternallyControlled.value ? (props.collapsed as boolean) : internalCollapsed.value),
@@ -101,6 +137,24 @@ onBeforeUnmount(() => {
   if (typeof document !== 'undefined') {
     document.documentElement.removeAttribute(HTML_ATTR)
   }
+})
+
+onMounted(() => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+
+  drawerQuery = window.matchMedia(DRAWER_BREAKPOINT)
+  isDrawerMode.value = drawerQuery.matches
+  if (drawerQuery.matches) onCollapseChange(true)
+
+  drawerQuery.addEventListener('change', onDrawerQueryChange)
+})
+
+function onDrawerQueryChange(event: MediaQueryListEvent): void {
+  applyDrawerMode(event.matches)
+}
+
+onBeforeUnmount(() => {
+  drawerQuery?.removeEventListener('change', onDrawerQueryChange)
 })
 
 // ⌘K / Ctrl+K — глобальное открытие поиска, из любого фокуса.
