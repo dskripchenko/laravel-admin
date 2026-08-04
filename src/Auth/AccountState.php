@@ -20,6 +20,14 @@ final class AccountState
 
     public static function isDisabled(object $user): bool
     {
+        // Модель может закрывать доступ не своим полем, а состоянием того, кому
+        // принадлежит: приостановленный аккаунт, истёкшая подписка, отозванный
+        // договор. Панель об этих правилах не знает и знать не должна — она
+        // только спрашивает.
+        if (method_exists($user, 'isDisabledForLogin') && $user->isDisabledForLogin() === true) {
+            return true;
+        }
+
         if (! method_exists($user, 'getAttribute')) {
             return false;
         }

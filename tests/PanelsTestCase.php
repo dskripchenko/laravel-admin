@@ -59,6 +59,8 @@ abstract class PanelsTestCase extends TestCase
                 // Панельные user-модели выключаются через `enabled`
                 // (у AdminUser это `is_active`) — оба поля запирают вход.
                 $table->boolean('enabled')->default(true);
+                // Состояние владельца учётки — для хука isDisabledForLogin.
+                $table->boolean('owner_suspended')->default(false);
                 $table->timestamps();
             });
         }

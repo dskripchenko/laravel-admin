@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.3] — 2026-08-04
+
+### Added
+- **Модель может закрывать вход сама — `isDisabledForLogin()`.** Доступ
+  закрывает не только выключатель самой учётки, но и состояние того, кому она
+  принадлежит: приостановленный аккаунт, истёкшая подписка, расторгнутый
+  договор. Панель этих правил не знает, поэтому `Auth\AccountState` спрашивает
+  модель: есть метод и он вернул `true` — вход закрыт, и закрыт одинаково на
+  логине и на каждом запросе. Раньше такие проверки жили только в прикладной
+  middleware, то есть пользователь успевал получить сессию и ответ «вы вошли»,
+  а отказ приходил уже следующим запросом.
+
 ## [1.18.2] — 2026-08-04
 
 ### Fixed

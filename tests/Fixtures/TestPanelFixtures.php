@@ -33,6 +33,15 @@ final class TestPanelClientUser extends AuthUser
     {
         return true;
     }
+
+    /**
+     * Хук «модель сама закрывает вход»: здесь — по признаку в поле, в жизни
+     * это состояние владельца (приостановленный клиент, истёкшая подписка).
+     */
+    public function isDisabledForLogin(): bool
+    {
+        return (bool) $this->getAttribute('owner_suspended');
+    }
 }
 
 /**

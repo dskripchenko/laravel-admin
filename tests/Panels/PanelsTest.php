@@ -196,6 +196,26 @@ it('refuses a disabled panel user at login, not one request later', function ():
     $this->getJson('/api/client/system/me')->assertStatus(401);
 });
 
+it('модель может закрыть вход сама — состоянием своего владельца', function (): void {
+    TestPanelClientUser::create([
+        'name' => 'Suspended Owner',
+        'email' => 'owner-suspended@example.com',
+        'password' => bcrypt('secret-password'),
+        'enabled' => true,
+        'owner_suspended' => true,
+    ]);
+
+    // Учётка включена, пароль верный — но аккаунт, которому она принадлежит,
+    // приостановлен. Панель этих правил не знает, поэтому спрашивает модель.
+    $login = $this->postJson('/api/client/auth/login', [
+        'email' => 'owner-suspended@example.com',
+        'password' => 'secret-password',
+    ]);
+
+    $login->assertStatus(403);
+    expect($login->json('payload.errorKey'))->toBe('account_inactive');
+});
+
 it('panel login throttles use independent buckets', function (): void {
     $this->withMiddleware(Illuminate\Routing\Middleware\ThrottleRequests::class);
     $sig = sha1('|127.0.0.1');
