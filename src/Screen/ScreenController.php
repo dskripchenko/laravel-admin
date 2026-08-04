@@ -98,6 +98,24 @@ final class ScreenController extends ApiController
 
         $args = self::resolveArguments($request);
 
+        // Метод экрана объявляет параметр (обычно `array $state`), а запрос мог
+        // прийти без `payload` — от интегратора, из curl, из опечатки в коде.
+        // Раньше это давало ArgumentCountError и голую пятисотку на каждой
+        // кнопке каждого экрана; теперь либо подставляем пустое состояние (это
+        // ровно «нажали кнопку на пустой форме», и метод сам ответит
+        // валидацией), либо честно говорим, чего не хватает.
+        $required = (new \ReflectionMethod($screen, $method))->getNumberOfRequiredParameters();
+        if (count($args) < $required) {
+            if ($required === 1 && $args === []) {
+                $args = [[]];
+            } else {
+                return $this->error([
+                    'errorKey' => 'screen_method_arguments_missing',
+                    'message' => "Method `{$method}` expects {$required} argument(s); pass them in `payload` or `parameters`",
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+        }
+
         /** @var mixed $result */
         $result = $screen->{$method}(...$args);
 

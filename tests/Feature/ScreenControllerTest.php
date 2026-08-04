@@ -80,6 +80,18 @@ it('POST /runMethod returns 422 on validation failure', function (): void {
     expect(TestContactScreen::$sent)->toHaveCount(0);
 });
 
+it('POST /runMethod without payload behaves like an empty form, not a 500', function (): void {
+    // Метод объявляет `array $state`; запрос без `payload` приходит от
+    // интегратора, из curl, из опечатки в коде. Раньше это давало
+    // ArgumentCountError и пятисотку на каждой кнопке каждого экрана.
+    $response = $this->postJson('/api/admin/test-contact/runMethod', [
+        'method' => 'send',
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.errorKey'))->toBe('validation');
+});
+
 it('POST /runMethod 404 when method is not callable', function (): void {
     $response = $this->postJson('/api/admin/test-contact/runMethod', [
         'method' => 'query',
