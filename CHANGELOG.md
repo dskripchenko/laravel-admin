@@ -8,363 +8,374 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.1] — 2026-08-04
 
 ### Fixed
-- **Панель на телефоне открывалась меню поверх всего экрана.** Флаг
-  `collapsed` значит «узкий сайдбар» на десктопе и «шторка открыта» на узком
-  экране — это разные вещи, а значение по умолчанию было одно. В итоге на
-  390px панель встречала пользователя меню на 240px поверх контента, а кнопка
-  сворачивания оказывалась под самой шторкой и не нажималась: закрыть меню
-  можно было только тапом по затемнению, о котором никто не знает. Теперь ниже
-  порога шторки (768px, как в `UidSidebarLayout`) она стартует закрытой,
-  закрывается после перехода по меню и раскрывается обратно при возврате на
-  широкий экран.
-- **Верх панели не помещался в телефон.** На 390px «Сменить локаль» кончалась
-  на 409-й точке, а меню пользователя — на 465-й: сменить язык и выйти из
-  системы с телефона было нельзя, а из-за переполнения флекса иконки
-  сжимались до 12px и переставали быть кнопками. Ниже 768px убраны поле
-  поиска (⌘K там всё равно не нажать) и хлебные крошки, которые дублирует
-  заголовок страницы; кнопки больше не сжимаются.
-- **Шапка страницы и дашборд обрезались без возможности прокрутки.** Ряд
-  действий (период, «Экспорт», «Редактировать») был шире экрана, а хост
-  страницы прячет переполнение — кнопки становились недостижимы. Теперь на
-  узком экране шапка и ряд действий переносятся, а виджеты дашборда идут в
-  одну колонку с высотой по содержимому: двенадцать колонок на 390px
-  превращали их в полоски, половина которых уезжала за край.
+- **On a phone the panel opened with the menu covering the whole screen.** The
+  `collapsed` flag means "narrow sidebar" on the desktop and "drawer is open"
+  on a narrow screen — different things sharing a single default. At 390px the
+  panel greeted the user with a 240px menu over the content, and the collapse
+  button sat underneath the drawer itself and could not be pressed: the only
+  way to close the menu was tapping the dimmed area, which nobody knows about.
+  Below the drawer threshold (768px, as in `UidSidebarLayout`) it now starts
+  closed, closes after a menu navigation and expands again on returning to a
+  wide screen.
+- **The top bar did not fit a phone.** At 390px "Change locale" ended at pixel
+  409 and the user menu at 465: switching the language and signing out from a
+  phone were impossible, and because of the flex overflow the icons shrank to
+  12px and stopped being buttons. Below 768px the search field (⌘K is
+  unreachable there anyway) and the breadcrumbs, duplicated by the page title,
+  are dropped; the buttons no longer shrink.
+- **The page header and the dashboard were clipped with no way to scroll.** The
+  action row (period, "Export", "Edit") was wider than the screen while the
+  page host hides overflow — the buttons became unreachable. On a narrow screen
+  the header and the action row now wrap, and dashboard widgets go into a
+  single column with content-driven height: twelve columns at 390px turned them
+  into strips, half of which ran off the edge.
 
-  Найдено обходом трёх разрешений на живом стенде (printable,
+  Found by walking three viewports on a live stand (printable,
   `tests/e2e/tools/viewports.mjs`).
 
 ## [1.19.0] — 2026-08-04
 
 ### Added
-- **`Resource\ActionFailedException` — отказ действия по делу отвечает 422, а
-  не 500.** Действие ресурса, бросившее исключение, всегда становилось
-  пятисоткой: проверка соединения, не достучавшаяся до чужой базы, выглядела в
-  мониторинге ровно как упавшая панель, и опечатка пользователя в номере порта
-  будила дежурного. Теперь у действия есть способ сообщить «не вышло, вот
-  почему»: брошенный `ActionFailedException` уходит пользователю текстом
-  сообщения со статусом 422, а любое другое исключение по-прежнему 500 —
-  поведение существующих хостов не меняется. Найдено свипом действий панелей
-  в printable.
+- **`Resource\ActionFailedException` — a legitimate action failure answers 422
+  instead of 500.** A resource action that threw an exception always became a
+  500: a connection check that could not reach a foreign database looked
+  exactly like a crashed panel in monitoring, and a user's typo in a port
+  number woke the on-call engineer. An action now has a way to say "it did not
+  work, and here is why": a thrown `ActionFailedException` reaches the user as
+  its message with status 422, while any other exception is still a 500 —
+  existing hosts see no change in behaviour. Found by sweeping panel actions in
+  printable.
 
 ## [1.18.3] — 2026-08-04
 
 ### Added
-- **Модель может закрывать вход сама — `isDisabledForLogin()`.** Доступ
-  закрывает не только выключатель самой учётки, но и состояние того, кому она
-  принадлежит: приостановленный аккаунт, истёкшая подписка, расторгнутый
-  договор. Панель этих правил не знает, поэтому `Auth\AccountState` спрашивает
-  модель: есть метод и он вернул `true` — вход закрыт, и закрыт одинаково на
-  логине и на каждом запросе. Раньше такие проверки жили только в прикладной
-  middleware, то есть пользователь успевал получить сессию и ответ «вы вошли»,
-  а отказ приходил уже следующим запросом.
+- **A model can close the door itself — `isDisabledForLogin()`.** Access is
+  closed not only by the account's own switch but by the state of whoever owns
+  it: a suspended account, an expired subscription, a terminated contract. The
+  panel does not know those rules, so `Auth\AccountState` asks the model: if
+  the method exists and returned `true`, sign-in is closed — identically at
+  login and on every request. Previously such checks lived only in application
+  middleware, so the user got a session and a "you are signed in" response,
+  with the refusal arriving on the next request.
 
 ## [1.18.2] — 2026-08-04
 
 ### Fixed
-- **Выключенный пользователь панели входил в систему.** Логин проверял только
-  `is_active` (поле `AdminUser`), а панельные user-модели выключаются полем
-  `enabled` — такому пользователю выдавалась сессия и ответ «вы вошли» со
-  списком прав, и лишь следующий запрос выкидывал его через `AdminAuth`. Для
-  учётки, отключённой уволенному сотруднику, это неверно по сути. Признак
-  выключения переехал в `Auth\AccountState` — один и тот же ответ на входе и на
-  каждом запросе; заодно снята строгая сверка с `false`, из-за которой значение
-  `0` из баз без булева типа не считалось выключением. Найдено сценарным
-  тестом онбординга в printable.
+- **A disabled panel user could sign in.** Login checked only `is_active` (an
+  `AdminUser` column), while panel user models are disabled through an
+  `enabled` column — such a user received a session and a "you are signed in"
+  response with a list of permissions, and only the next request threw them out
+  through `AdminAuth`. For an account disabled for a dismissed employee that is
+  wrong in principle. The disabled check moved into `Auth\AccountState` — the
+  same answer at login and on every request; the strict comparison against
+  `false` was dropped along the way, since it made a `0` coming from databases
+  without a boolean type count as enabled. Found by an onboarding scenario test
+  in printable.
 
 ## [1.18.1] — 2026-08-04
 
 ### Fixed
-- **Кнопка экрана отвечала пятисоткой, если в запросе не было `payload`.**
-  Метод экрана объявляет параметр (обычно `array $state`), контроллер вызывал
-  его без аргументов, и наружу летел `ArgumentCountError` — на каждой кнопке
-  каждого экрана. Панель всегда шлёт `payload`, поэтому в интерфейсе это не
-  проявлялось, но любой другой клиент (интегратор, curl, опечатка в коде)
-  получал голую 500. Теперь пустой запрос равносилен «нажали кнопку на пустой
-  форме»: метод получает пустое состояние и отвечает своей валидацией, а если
-  аргументов нужно больше одного — приходит 422 с перечислением, чего не
-  хватает. Найдено обходом контракта экранов в printable.
+- **A screen button answered 500 when the request carried no `payload`.** A
+  screen method declares a parameter (usually `array $state`), the controller
+  called it with no arguments, and an `ArgumentCountError` escaped — on every
+  button of every screen. The panel always sends `payload`, so the UI never
+  showed it, but any other client (an integrator, curl, a typo in code) got a
+  bare 500. An empty request is now equivalent to "the button was pressed on an
+  empty form": the method receives empty state and answers with its own
+  validation, and if more than one argument is required a 422 arrives listing
+  what is missing. Found by walking the screen contract in printable.
 
 ## [1.18.0] — 2026-08-03
 
 ### Changed
-- **Каркас панели собирается в один такт, а не в два.** Замер на живом
-  стенде: на 236 мс отрисованы топбар и пустой сайдбар, а в области
-  содержимого — страница, которой в этой установке нет (HomePage-заглушка
-  «зарегистрируйте DashboardScreen»); настоящий дашборд и пункты меню
-  появлялись только на 510 мс. Четверть секунды пользователь смотрел на
-  чужой экран, потом всё скачком переставлялось.
+- **The panel shell is assembled in one beat instead of two.** Measured on a
+  live stand: at 236 ms the top bar and an empty sidebar were painted, and the
+  content area showed a page that does not exist in this installation (the
+  HomePage stub saying "register a DashboardScreen"); the real dashboard and
+  the menu items appeared only at 510 ms. For a quarter of a second the user
+  looked at someone else's screen, and then everything jumped into place.
 
-  Гейт готовности стал общим (`useAppReady`): до прихода манифеста и меню
-  вместо страницы показывается скелет её геометрии, вместо пунктов меню —
-  их силуэт, а появление настоящего содержимого — мягкое проявление без
-  сдвига (slide остаётся переходам между экранами). Зависший запрос меню
-  страницу не держит: гейт открывается по страховочному таймауту 1.5 с.
-  Раньше тот же гейт закрывал только вспышку 404 — теперь он закрывает
-  весь класс «показали не то, пока грузились».
+  The readiness gate is now shared (`useAppReady`): until the manifest and the
+  menu arrive, the page is replaced by a skeleton of its geometry and the menu
+  items by their silhouette, and the real content appears as a soft fade with
+  no shift (the slide is kept for transitions between screens). A hung menu
+  request does not hold the page: the gate opens on a 1.5 s safety timeout.
+  The same gate used to cover only the 404 flash — it now covers the whole
+  class of "we showed the wrong thing while loading".
 
 ## [1.17.1] — 2026-08-03
 
 ### Fixed
-- **Создание записи с файловым полем не проходило валидацию.** SPA работает
-  upload-first: файл уходит через `/uploads/upload`, а в форме create/update
-  едет `{disk, path}` — но серверный экспортёр правил добавлял файловым полям
-  `file`/`mimes:*`, отклоняя ровно ту форму значения, которую панель и
-  отправляет. Ни один ресурс с `FileUpload` не мог создать запись через
-  панель. Теперь контракт upload-first: `array` + строковые `disk`/`path`;
-  размер и тип файла проверяются при самой загрузке. Найдено
-  `OptionsIntegrityTest` printable на файлах шрифтов.
+- **Creating a record with a file field failed validation.** The SPA is
+  upload-first: the file goes through `/uploads/upload` and the create/update
+  form carries `{disk, path}` — yet the server-side rule exporter added
+  `file`/`mimes:*` to file fields, rejecting exactly the value shape the panel
+  sends. No resource with a `FileUpload` could create a record through the
+  panel. The contract is now upload-first: `array` plus string `disk`/`path`;
+  file size and type are checked during the upload itself. Found by
+  printable's `OptionsIntegrityTest` on font files.
 
 ## [1.17.0] — 2026-08-03
 
 ### Changed
-- **Сохранённые представления списка включаются флагом ресурса** —
-  `Resource::savedViews()`, по умолчанию `false`, как у остальных
-  возможностей (`replicable`, `reorderable`, `importable`). Раньше четыре
-  маршрута `{slug}_views/*` заводились у каждого ресурса поголовно, включая
-  те, где сохранять нечего. Флаг едет в манифест (`features.savedViews`), и
-  панель по нему же решает, запрашивать ли список: до этого каждый список
-  слал запрос, который на большинстве ресурсов ответил бы 404.
+- **Saved list views are enabled by a resource flag** — `Resource::savedViews()`,
+  `false` by default like the other capabilities (`replicable`, `reorderable`,
+  `importable`). Four `{slug}_views/*` routes used to be registered for every
+  resource without exception, including those with nothing to save. The flag
+  travels in the manifest (`features.savedViews`), and the panel uses the same
+  flag to decide whether to request the list: before that every list sent a
+  request which on most resources would answer 404.
 
-  Хостам, которые пользуются представлениями, нужно вернуть `true` в
-  соответствующих ресурсах.
+  Hosts that use saved views need to return `true` in the resources
+  concerned.
 
 ## [1.16.0] — 2026-08-02
 
 ### Removed
-- **Действие `exportCsv` у ресурсов.** Оно дублировало `export(format=csv)`
-  — тот же код двумя путями и лишняя операция в спеке на каждом ресурсе.
-  Панель звала только `export`. Вызов теперь отвечает 404; замена —
-  `export?format=csv`.
+- **The `exportCsv` resource action.** It duplicated `export(format=csv)` —
+  the same code by two paths and an extra operation in the spec of every
+  resource. The panel only ever called `export`. The call now answers 404; the
+  replacement is `export?format=csv`.
 
 ## [1.15.3] — 2026-08-02
 
 ### Fixed
-- **Форма молчала на ошибки валидации.** Пользователь жал «Сохранить» с
-  пустым обязательным полем и не получал ничего: ни подсветки, ни текста.
-  `ValidationError` читал карту полей только из `payload.messages`, а
-  приходила она в `payload.errors` — так её кладёт дефолтный обработчик
-  `ValidationException` в laravel-api. Собственная регистрация админки
-  (`AdminServiceProvider::registerExceptionHandlers`) до приложения не
-  доезжала: `api_error_handler` был забинжен как `bind`, и дописанные
-  обработчики доставались выброшенному экземпляру (починено в laravel-api
-  5.6.1). Фронт теперь читает обе формы — независимо от версии бэкенда.
+- **The form stayed silent on validation errors.** The user pressed "Save"
+  with an empty required field and got nothing: no highlight, no text.
+  `ValidationError` read the field map only from `payload.messages`, while it
+  arrived in `payload.errors` — that is where laravel-api's default
+  `ValidationException` handler puts it. The admin panel's own registration
+  (`AdminServiceProvider::registerExceptionHandlers`) never reached the
+  application: `api_error_handler` was bound with `bind`, so the added handlers
+  went to a discarded instance (fixed in laravel-api 5.6.1). The frontend now
+  reads both shapes — regardless of the backend version.
 
 ## [1.15.2] - 2026-07-30
 
 ### Fixed
-- Тип-ошибка в 1.15.1: обёртка над TextField не проходила `vue-tsc`.
-  Тег 1.15.1 остаётся как есть — опубликованные теги не переписываем;
-  ставить следует 1.15.2.
+- A type error in 1.15.1: the TextField wrapper did not pass `vue-tsc`. The
+  1.15.1 tag stays as it is — published tags are never rewritten; install
+  1.15.2 instead.
 
 ## [1.15.1] - 2026-07-30
 
 ### Fixed
-- **`Password::make()` рендерился обычным текстовым полем** — секрет был
-  виден открытым текстом при вводе. Поля `password`/`email`/`url`/`tel`
-  сопоставлялись одному TextField, а тот по умолчанию ставит `type="text"`;
-  теперь тип берётся из ключа реестра (явный `inputType` из атрибутов поля
-  по-прежнему главнее). Заодно мобильная клавиатура подстраивается под
-  email и телефон.
+- **`Password::make()` rendered as an ordinary text field** — the secret was
+  visible in clear text while typing. The `password`/`email`/`url`/`tel` fields
+  all mapped to one TextField, which defaults to `type="text"`; the type is now
+  taken from the registry key (an explicit `inputType` in the field attributes
+  still wins). The mobile keyboard adapts to email and telephone input as
+  well.
 
 ## [1.15.0] - 2026-07-29
 
 ### Changed
-- **Действия ресурса регистрируются по возможностям ресурса.** `tree`/
-  `treeScreen` заводятся только для иерархических ресурсов, `restore`/
-  `forceDelete` — только при SoftDeletes, `replicate` и `reorder` — по
-  соответствующим флагам. Раньше все 21 действие регистрировались поголовно:
-  на обычном ресурсе больше половины могли ответить только ошибкой, а карта
-  API раздувалась (в пилотном проекте — 116 мёртвых endpoint'ов из 843).
-  Вызов неподдерживаемого действия теперь 404, а не 409/422.
-- Публичные описания: убраны отсылки к внутреннему устройству SPA и
-  `{@see …}` из docblock'ов действий, попадающих в OpenAPI.
+- **Resource actions are registered according to the resource's
+  capabilities.** `tree`/`treeScreen` are registered only for hierarchical
+  resources, `restore`/`forceDelete` only under SoftDeletes, `replicate` and
+  `reorder` by their respective flags. All 21 actions used to be registered
+  indiscriminately: on an ordinary resource more than half could only answer
+  with an error, and the API map bloated (116 dead endpoints out of 843 in a
+  pilot project). Calling an unsupported action is now a 404 rather than a
+  409/422.
+- Public descriptions: references to the SPA's internals and `{@see …}` were
+  removed from the docblocks of actions that end up in OpenAPI.
 
 ## [1.14.0] - 2026-07-29
 
 ### Added
-- i18n: переводятся строковые литералы компонентов — интерполяции с
-  тернарником (`{{ x ? 'Войти' : 'Вход…' }}`), toast'ы, `confirm()`,
-  дефолты props и заголовки маршрутов. 110 строк в 36 файлах; словарь
-  `resources/lang/en.json` 178 → 292 ключа.
-- `createTitleGuard` переводит `meta.title` — единственная точка, через
-  которую в `document.title` уезжают заголовки системных маршрутов.
+- i18n: string literals inside components are translated — ternary
+  interpolations (`{{ x ? 'Sign in' : 'Signing in…' }}`), toasts, `confirm()`,
+  prop defaults and route titles. 110 strings across 36 files; the
+  `resources/lang/en.json` dictionary went from 178 to 292 keys.
+- `createTitleGuard` translates `meta.title` — the single point through which
+  the titles of system routes reach `document.title`.
 
 ### Changed
-- Дефолты props (`emptyText`, `keyLabel`, `searchPlaceholder`, …) остаются
-  исходными строками, а переводятся в точке использования: `withDefaults`
-  вычисляет их на загрузке модуля, когда стор ещё не поднят, и перевод
-  «замёрз» бы на языке первой загрузки.
+- Prop defaults (`emptyText`, `keyLabel`, `searchPlaceholder`, …) stay as raw
+  strings and are translated at the point of use: `withDefaults` evaluates them
+  when the module loads, before the store exists, so the translation would
+  freeze at the language of the first load.
 
 ## [1.13.4] - 2026-07-29
 
 ### Fixed
-- i18n: баннер имперсонации («Вы вошли как … · режим имперсонации») был
-  захардкожен по-русски — единственное место, которое не видит обход
-  манифеста, потому что рендерится только под имперсонацией.
+- i18n: the impersonation banner ("You are signed in as … · impersonation
+  mode") was hard-coded in Russian — the one place a manifest sweep does not
+  see, because it renders only during impersonation.
 
 ## [1.13.3] - 2026-07-29
 
 ### Fixed
-- i18n: `Layout::toArray` отдаёт props ДВАЖДЫ (сплэтом на верхний уровень
-  для `v-bind` и ключом `props`) — локализовалась только вторая копия,
-  поэтому подписи вкладок в манифесте оставались русскими.
+- i18n: `Layout::toArray` returns props TWICE (spread onto the top level for
+  `v-bind` and under a `props` key) — only the second copy was localized, so
+  tab labels in the manifest stayed in the source language.
 
 ## [1.13.2] - 2026-07-29
 
 ### Fixed
-- i18n: локализуются подписи вкладок (`Tabs::toArray`) и любые
-  атрибуты-словари опций (`*Options`, напр. `typeOptions` кастомных
-  host-полей) — оставались русскими при en-локали.
+- i18n: tab labels (`Tabs::toArray`) and any option-dictionary attributes
+  (`*Options`, e.g. `typeOptions` of custom host fields) are now localized —
+  they stayed in the source language under the `en` locale.
 
 ## [1.13.1] - 2026-07-29
 
 ### Fixed
-- i18n: расширено покрытие Localize — переводятся подписи, до которых
-  сериализация раньше не доходила: любые атрибуты `*Label` (key-value,
-  repeater, builder), `props` layout'ов (labels вкладок), опции
-  `OptionsFilter`, а также `name`/`description` экрана в его compile.
-  Симптом: при en-локали панель показывала русские вкладки, фильтры
-  и заголовки экранов, хотя переводы в словаре были.
+- i18n: Localize coverage widened — labels that serialization never reached
+  are now translated: any `*Label` attributes (key-value, repeater, builder),
+  layout `props` (tab labels), `OptionsFilter` options, and a screen's
+  `name`/`description` in its compile step. The symptom: under the `en` locale
+  the panel showed tabs, filters and screen titles in the source language even
+  though the translations were in the dictionary.
 
 ## [1.13.0] - 2026-07-29
 
 ### Fixed
-- i18n: добраны строки, которые прошлый свип (BL-11) не видел — текст,
-  стоящий отдельной строкой внутри тега (многострочные текстовые узлы):
-  статус-страницы 404/403, формы входа и 2FA, профиль и API-токены,
-  мастер импорта, тулбар фильтров, drawer уведомлений, поля
-  key-value/repeater/builder. 56 строк в 24 компонентах, словарь пакета
-  вырос до 176 ключей.
+- i18n: picked up the strings the previous sweep (BL-11) did not see — text
+  standing on its own line inside a tag (multi-line text nodes): the 404/403
+  status pages, the sign-in and 2FA forms, the profile and API tokens, the
+  import wizard, the filter toolbar, the notifications drawer and the
+  key-value/repeater/builder fields. 56 strings across 24 components; the
+  package dictionary grew to 176 keys.
 
 ## [1.12.6] - 2026-07-28
 
 ### Fixed
-- **КРИТИЧНО, панели**: global-middleware API-класса (панельные additions —
-  layer-активация, throttle) теперь применяются и когда запрос сматчился
-  generic-роутом laravel-api `api/{version}/{controller}/{action}` — тот
-  нёс только базовую группу, и, в зависимости от порядка регистрации
-  роутов, панельные экраны/эндпоинты исполнялись БЕЗ панельного слоя
-  (multi-tenant хост читал/писал центральную схему вместо слоя клиента).
-  RunActionMiddleware включает `methods['middleware']` в pipeline; дубли
-  на специфичных роутах отсеиваются фильтром по route-стеку.
+- **CRITICAL, panels**: the API class's global middleware (panel additions —
+  layer activation, throttling) is now applied when the request matched
+  laravel-api's generic route `api/{version}/{controller}/{action}` as well.
+  That route carried only the base group, so — depending on the order in which
+  routes were registered — panel screens and endpoints executed WITHOUT the
+  panel layer (a multi-tenant host read from and wrote to the central schema
+  instead of the tenant's). `RunActionMiddleware` now includes
+  `methods['middleware']` in the pipeline; duplicates on specific routes are
+  filtered out by inspecting the route stack.
 
 ## [1.12.5] - 2026-07-28
 
 ### Fixed
-- Screen-store: `download_url` из результата runMethod теперь реально
-  скачивает файл (программный анкор) — поле было в контракте, но не
-  обрабатывалось: кнопки «Скачать…» экранов (файл переводов printable
-  и т.п.) молча не работали.
+- Screen store: a `download_url` in a runMethod result now actually downloads
+  the file (through a programmatic anchor) — the field was in the contract but
+  never handled, so screen buttons like "Download…" (printable's translation
+  file and the like) silently did nothing.
 
 ## [1.12.4] - 2026-07-28
 
 ### Fixed
-- Screen-store: success-баннер (`lastMessage`) переживал навигацию на
-  другой экран — `load()` чистит его при смене slug (reload того же
-  экрана после runMethod message сохраняет).
+- Screen store: the success banner (`lastMessage`) survived navigation to
+  another screen — `load()` now clears it when the slug changes (reloading the
+  same screen after a runMethod keeps the message).
 
 ## [1.12.3] - 2026-07-28
 
 ### Fixed
-- i18n (BL-11, хвост): AdminApp прокидывает локаль панели в
-  `provideLocale()` @dskripchenko/ui — встроенные строки примитивов
-  («Выберите…», «Ничего не найдено», календарь и т.д.) переводятся
-  вместе с интерфейсом. Механизм локалей ui-kit существовал с 1.1.x —
-  admin просто его не вызывал.
+- i18n (BL-11, tail): AdminApp passes the panel locale into
+  @dskripchenko/ui's `provideLocale()` — the primitives' built-in strings
+  ("Select…", "Nothing found", the calendar and so on) are translated together
+  with the interface. The ui-kit locale mechanism had existed since 1.1.x —
+  admin simply never called it.
 
 ## [1.12.2] - 2026-07-28
 
 ### Fixed
-- i18n: добиты фронтовые строки — заголовок/кнопки ResourceFormPage,
-  createLabel и словоформы «записей» ResourceIndexPage, AuditTimeline
-  (события, «Система», относительное время), ResourceViewPage; словарь
-  пакета 124 ключа. EN-обход панелей чист (остаток — placeholder
-  «Выберите…» в @dskripchenko/ui).
+- i18n: the remaining frontend strings are covered — the title and buttons of
+  ResourceFormPage, the `createLabel` and record-count plurals of
+  ResourceIndexPage, AuditTimeline (events, "System", relative time) and
+  ResourceViewPage; the package dictionary holds 124 keys. An English walk
+  through the panels is clean (what is left is the "Select…" placeholder in
+  @dskripchenko/ui).
 
 ## [1.12.1] - 2026-07-28
 
 ### Fixed
-- Перевыпуск 1.12.0 (тег переписывался — composer/registry кэшируют
-  reference): без изменений относительно финального содержимого.
+- A re-release of 1.12.0 (the tag had been rewritten, and composer and the
+  registry cache the reference): no changes relative to the final content.
 
 ## [1.12.0] - 2026-07-28
 
 ### Added
-- i18n (BL-11, продолжение 1.11.2): фронтовые захардкоженные строки
-  компонентов переведены через `tr()` (ключ = исходная строка);
-  `useI18nStore().tr()` + standalone `trSafe`. BootstrapBuilder
-  подмешивает в bag JSON-переводы локали (пакетный
-  `resources/lang/en.json` ~95 строк + `lang/{locale}.json` хоста,
-  host перекрывает пакет). ~133 строки в 37 компонентах.
+- i18n (BL-11, continuing 1.11.2): hard-coded frontend strings in components
+  are translated through `tr()` (the key is the source string);
+  `useI18nStore().tr()` plus a standalone `trSafe`. BootstrapBuilder mixes the
+  locale's JSON translations into the bag (the package's
+  `resources/lang/en.json`, ~95 strings, plus the host's
+  `lang/{locale}.json`, where the host overrides the package). ~133 strings
+  across 37 components.
 
 ## [1.11.2] - 2026-07-28
 
 ### Fixed
-- i18n (BL-11): пользовательские строки манифеста переводятся при
-  сериализации через JSON-переводы (`I18n\Localize`) — label/help/
-  placeholder/options полей, лейблы колонок/фильтров/actions (+confirm),
-  infolist-entries, названия/описания экранов и дашбордов, титулы
-  виджетов, label/group ресурса. Host больше не обязан оборачивать
-  строки в `__()`.
-- Названия generated-экранов «Создать:/Редактировать:» и кнопка
-  «Создать» — через lang-bag (`admin::admin.*`), а не хардкод.
+- i18n (BL-11): user-facing manifest strings are translated during
+  serialization through JSON translations (`I18n\Localize`) — field
+  label/help/placeholder/options, column, filter and action labels (plus
+  confirm), infolist entries, screen and dashboard names and descriptions,
+  widget titles, and a resource's label and group. The host no longer has to
+  wrap strings in `__()`.
+- The names of generated screens ("Create:" / "Edit:") and the "Create" button
+  come from the lang bag (`admin::admin.*`) instead of being hard-coded.
 
 ## [1.11.1] - 2026-07-28
 
 ### Fixed
-- Дашборд (BL-18): скрытые (hidden-override) виджеты можно вернуть — в
-  диалоге «Добавить виджет» секция «Скрытые виджеты» (restore); при
-  пустом списке — «Нечего добавлять». Store: `restoreWidget()`.
-- Удаление manifest-виджета, уже попавшего в draft, делало полный
-  remove — рендер-мерж возвращал виджет обратно; теперь для manifest
-  всегда hidden-override (полное удаление — только user-added).
-- `ensureDraftReflectsRendered` пересобирал draft из видимых виджетов и
-  молча терял hidden-записи (скрытые «воскресали» после resize/config).
+- Dashboard (BL-18): hidden (hidden-override) widgets can be brought back —
+  the "Add widget" dialog gained a "Hidden widgets" section (restore); with an
+  empty list it says "Nothing to add". Store: `restoreWidget()`.
+- Removing a manifest widget that had already reached the draft performed a
+  full remove — the render merge brought the widget back; a manifest widget is
+  now always a hidden override (full removal applies to user-added widgets
+  only).
+- `ensureDraftReflectsRendered` rebuilt the draft from the visible widgets and
+  silently lost hidden entries (hidden widgets "resurrected" after a resize or
+  a config change).
 
 ## [1.11.0] - 2026-07-28
 
 ### Added
-- Брендинг (BL-12): `brand.logo` теперь картинка везде — sidebar рендерит
-  `<img>` (раньше URL печатался текстом), Forgot/Reset-страницы берут
-  бренд из `bootstrap.brand`; LoginPage читает `useBrand()` как фолбэк
-  к props. Новый ключ `brand.mark` (`ADMIN_BRAND_MARK`) — короткий
-  текстовый mark, фолбэк без картинки. CSS: у auth-логотипа с `<img>`
-  снимается плашка контейнера.
+- Branding (BL-12): `brand.logo` is now an image everywhere — the sidebar
+  renders an `<img>` (the URL used to be printed as text), and the
+  Forgot/Reset pages take the brand from `bootstrap.brand`; LoginPage reads
+  `useBrand()` as a fallback to its props. A new `brand.mark` key
+  (`ADMIN_BRAND_MARK`) provides a short textual mark as a fallback when there
+  is no image. CSS: the container plate is dropped from an auth logo that
+  carries an `<img>`.
 
 ## [1.10.10] - 2026-07-23
 
 ### Added
-- `Field\Generated` + `GeneratedField.vue` (`generated-field`) — строка с
-  криптослучайной автогенерацией (токены/секреты): только
-  `crypto.getRandomValues`, rejection sampling без modulo bias; length/
-  charset/autogenerate. Перенос из host-реализации printable (BL-34/35).
-- Lang-bag: секции `admin.search.*`, `admin.fields.generate` (ru/en).
+- `Field\Generated` plus `GeneratedField.vue` (`generated-field`) — a string
+  with cryptographically random generation (tokens and secrets):
+  `crypto.getRandomValues` only, rejection sampling with no modulo bias;
+  length/charset/autogenerate. Ported from printable's host implementation
+  (BL-34/35).
+- Lang bag: the `admin.search.*` and `admin.fields.generate` sections (ru/en).
 
 ### Changed
-- `AdminNotification` теперь `ShouldQueue` — доменный фан-аут уведомлений
-  не блокирует request path.
-- `Manifest::build()` мемоизируется per-instance (locale|panel): bootstrap
-  больше не собирает манифест дважды за запрос (`version()` переиспользует
-  memo); добавлен `flush()`.
-- `Resource::$group` и group в меню переводятся при сериализации через
-  `__()` (i18n групп, идемпотентно для непереведённых строк).
-- ⌘K-палитра: инпут получает фокус сразу при открытии (`autofocus` +
-  @dskripchenko/ui 1.1.3, где focus-trap предпочитает `[autofocus]`);
-  строки палитры — через lang-bag.
+- `AdminNotification` is now `ShouldQueue` — the domain fan-out of
+  notifications no longer blocks the request path.
+- `Manifest::build()` is memoized per instance (locale|panel): bootstrap no
+  longer builds the manifest twice per request (`version()` reuses the memo);
+  a `flush()` was added.
+- `Resource::$group` and the menu group are translated during serialization
+  through `__()` (group i18n, idempotent for untranslated strings).
+- The ⌘K palette: the input receives focus immediately on open (`autofocus`
+  plus @dskripchenko/ui 1.1.3, whose focus trap prefers `[autofocus]`); the
+  palette strings come from the lang bag.
 
-## [1.10.0…1.10.9] - 2026-07-23 (консолидировано)
+## [1.10.0…1.10.9] - 2026-07-23 (consolidated)
 
-Backlog-трейн printable (BL-1…36): CSRF-интерцептор (стухший X-CSRF-TOKEN),
-not-found экран edit-форм, bulk-тулбар + disabled-гейтинг, авто-inject
-TrashedFilter в search, per-resource importable()/exportable(), BadgeEntry
-colors/labels, manifest.refresh() без обнуления (fix «схлопывания» формы),
-инлайн-чекбоксы, выравнивания shell/timeline, кликабельный RecentListWidget
-(linkTo), рабочий 2FA-визард в профиле (v1.10.3), audit type_labels +
-resolveTypeLabel (v1.10.4), глобальный ⌘K-поиск: GET /system/search +
-GlobalSearch.vue (v1.10.5), персист периода дашборда + JSON-экспорт +
-empty-state добавления виджетов (v1.10.6), брендинг из config('admin.brand')
-в shell + favicon + копирайт (v1.10.7), перевод MenuNode-лейблов per-request
-(v1.10.8), reload при смене локали (v1.10.9).
+The printable backlog train (BL-1…36): a CSRF interceptor (a stale
+X-CSRF-TOKEN), a not-found screen for edit forms, a bulk toolbar with disabled
+gating, auto-injection of TrashedFilter into search, per-resource
+`importable()`/`exportable()`, BadgeEntry colours and labels,
+`manifest.refresh()` without nulling (fixing the "collapsing" form), inline
+checkboxes, shell and timeline alignment, a clickable RecentListWidget
+(`linkTo`), a working 2FA wizard in the profile (v1.10.3), audit
+`type_labels` plus `resolveTypeLabel` (v1.10.4), global ⌘K search:
+GET /system/search plus GlobalSearch.vue (v1.10.5), a persisted dashboard
+period, JSON export and an empty state for adding widgets (v1.10.6), branding
+from `config('admin.brand')` in the shell plus favicon and copyright
+(v1.10.7), per-request translation of MenuNode labels (v1.10.8), and a reload
+on locale change (v1.10.9).
 
 ## [npm 1.9.3] - 2026-07-22
 
@@ -372,14 +383,14 @@ empty-state добавления виджетов (v1.10.6), брендинг и
 - SPA permission matching now mirrors backend `Role::hasPermission`
   (fnmatch): mid-pattern globs (`printable.*.view`) work in route guards
   and menu filtering — previously only trailing `.*` masks matched, so
-  glob-роли locked users out of allowed sections.
+  glob roles locked users out of allowed sections.
 
 ## [npm 1.9.2] - 2026-07-22
 
 ### Fixed
 - DB-driven select options (model-backed `options()` serialized into the
   manifest) went stale within an SPA session: creating a group didn't add it
-  to «Родитель»-selects until a full page reload. The resource form store now
+  to the "Parent" selects until a full page reload. The resource form store now
   invalidates the cached manifest after successful save/delete; the next
   page mount refetches it.
 
@@ -428,10 +439,10 @@ empty-state добавления виджетов (v1.10.6), брендинг и
 - First-ever layout save no longer 422s: entering edit mode seeds the draft
   with the merged manifest layout, so `/dashboard/save` always receives the
   full widget list (empty `widgets` failed `required` validation).
-- «Сбросить» button added to the edit toolbar — the store's
+- A "Reset" button was added to the edit toolbar — the store's
   `resetToDefault()` (POST /dashboard/reset) had no UI.
-- Toolbar labels went through i18n (`admin.dashboard.*`): «Add widget» /
-  «Export» hardcodes replaced; ru/en lang files extended with
+- Toolbar labels went through i18n (`admin.dashboard.*`): the "Add widget" and
+  "Export" hardcodes were replaced; the ru/en lang files were extended with
   `reset_layout` / `reset_confirm`.
 
 ## [npm 1.8.0] - 2026-07-22
@@ -605,244 +616,270 @@ Multiple independent admin surfaces on one core (Filament-Panels parity):
 
 ### Changed
 
-- **Расширена матрица поддержки:** PHP 8.2–8.5 (было только 8.5) и Laravel
-  11/12/13 (было только 12). Зависимость `dskripchenko/laravel-api` поднята
-  до `^5.0`. CI гоняет всю матрицу (с карв-аутом для EOL Laravel 11).
+- **The support matrix is widened:** PHP 8.2–8.5 (previously 8.5 only) and
+  Laravel 11/12/13 (previously 12 only). The `dskripchenko/laravel-api`
+  dependency was raised to `^5.0`. CI runs the whole matrix (with a carve-out
+  for the EOL Laravel 11).
 
 ### Fixed
 
-- `SchemaIntrospector::relationType()` определял `MorphTo`/`MorphToMany` как
-  `BelongsTo`/`BelongsToMany` (подкласс проверялся после родителя) — порядок
-  исправлен.
-- Дополнена PHPDoc-схема `$col` в `FieldTypeInferrer::inferColumnCode()`
-  (`enum_values`).
+- `SchemaIntrospector::relationType()` reported `MorphTo`/`MorphToMany` as
+  `BelongsTo`/`BelongsToMany` (the subclass was checked after the parent) —
+  the order was fixed.
+- The PHPDoc shape of `$col` in `FieldTypeInferrer::inferColumnCode()` was
+  completed (`enum_values`).
 
 ## [1.6.0] - 2026-06-16
 
 ### Added
 
-- **Tree-view для иерархических ресурсов.** Resource с self-reference
-  `parent()`/`children()` relation (или явным `hierarchyParentKey()`)
-  компилируется в `GeneratedTreeScreen` вместо list-таблицы. Новые
-  endpoint'ы `{resource}.treeScreen` (GET) и `{resource}.tree` (POST,
-  отдаёт свёрнутое дерево с применением filters + `?q=`). Hook'и
-  `treeNodeActions()` (per-node toolbar), `treeAdditionalRowIds()` и
-  `treeExtraLeaves()` (cross-resource leaves — например шаблоны под своей
-  группой), `parentSlug()` (back-link на чужой index). Фронт —
-  `ResourceTreePage.vue` (search/expand/collapse/select/navigate).
-  `make:section --tree` авто-детектит иерархию и генерирует
-  `hierarchyParentKey()`.
-- **Embedded resource table** — layout `Layout\ResourceTable` (тип
-  `admin.resource-table`) для встраивания таблицы дочернего ресурса в
-  форму родителя по FK. Поддерживает `hideColumns()`, `parentField()`,
-  features create/delete/bulkDelete. Фронт — `EmbeddedResourceTable.vue`
-  (inline-edit, quick-add, per-row + bulk delete).
-- **Per-row inline edit** — `Resource::editableForRow($row, $column)`
-  даёт точечный контроль редактируемости ячейки конкретной строки;
-  ResourceController отдаёт `_editable` map в данных строки.
-  `TableColumn::editable()` принимает `$as`
-  (`text|number|select|date|textarea|switcher`) и `$options` для select.
-- **File / Image поля** — `FileField.vue` (drop-zone, image-режим) и
-  `ImageCropperField.vue` (canvas-кроппер с aspect-lock). Новый endpoint
-  `uploads.serve` (GET) стримит файлы с whitelist-дисков
-  (`config admin.uploads.servable_disks`) — preview для private-дисков
-  без `storage:link`.
-- **WysiwygField** — загрузка/ресайз (aspect-lock) и drag-n-drop
-  переупорядочивание картинок прямо в редакторе.
-- **ResourceFormPage** — pre-fill полей формы из query-параметров URL
-  (`defaultsFromQuery`) при создании записи.
-- **MenuRegistry::hideAuto($slug)** — исключение resource/screen из
-  auto-fill sidebar (для ресурсов, встроенных в родителя).
+- **A tree view for hierarchical resources.** A resource with a
+  self-referencing `parent()`/`children()` relation (or an explicit
+  `hierarchyParentKey()`) compiles into a `GeneratedTreeScreen` instead of a
+  list table. New endpoints: `{resource}.treeScreen` (GET) and
+  `{resource}.tree` (POST, returning a collapsed tree with filters and `?q=`
+  applied). Hooks: `treeNodeActions()` (a per-node toolbar),
+  `treeAdditionalRowIds()` and `treeExtraLeaves()` (cross-resource leaves —
+  templates under their own group, for instance) and `parentSlug()` (a back
+  link to another resource's index). The frontend is `ResourceTreePage.vue`
+  (search/expand/collapse/select/navigate). `make:section --tree` detects the
+  hierarchy automatically and generates `hierarchyParentKey()`.
+- **Embedded resource table** — the `Layout\ResourceTable` layout (type
+  `admin.resource-table`) embeds a child resource's table into the parent's
+  form by foreign key. Supports `hideColumns()`, `parentField()` and the
+  create/delete/bulkDelete features. The frontend is
+  `EmbeddedResourceTable.vue` (inline edit, quick add, per-row and bulk
+  delete).
+- **Per-row inline edit** — `Resource::editableForRow($row, $column)` gives
+  precise control over whether a particular row's cell is editable;
+  ResourceController returns an `_editable` map in the row data.
+  `TableColumn::editable()` accepts `$as`
+  (`text|number|select|date|textarea|switcher`) and `$options` for a select.
+- **File and image fields** — `FileField.vue` (a drop zone with an image
+  mode) and `ImageCropperField.vue` (a canvas cropper with an aspect lock). A
+  new `uploads.serve` endpoint (GET) streams files from whitelisted disks
+  (`config admin.uploads.servable_disks`) — previews for private disks without
+  `storage:link`.
+- **WysiwygField** — uploading and resizing images (with an aspect lock) and
+  reordering them by drag and drop right inside the editor.
+- **ResourceFormPage** — form fields are pre-filled from URL query parameters
+  (`defaultsFromQuery`) when creating a record.
+- **MenuRegistry::hideAuto($slug)** — excludes a resource or screen from the
+  auto-filled sidebar (for resources embedded into a parent).
 
 ## [1.5.6] - 2026-05-25
 
 ### Fixed
 
-- **AuditTimeline** — diff-строки больше не показывают зачёркнутый `∅` как
-  «было» на событиях `created`/`restored` и как «стало» на
-  `deleted`/`destroyed`: бессмысленная колонка скрыта. Колонки имени поля
-  и значения теперь выровнены через единый `display: grid` с
-  `display: contents` на строке — раскладка одинакова в пределах всего
-  diff'а независимо от длины имени поля.
-- **AuditTimeline** — вертикальная линия timeline'а больше не уходит ниже
-  иконки последнего события. Перерисована как per-item `::after`-коннектор
-  (`:not(:last-child)`), который наследует `padding-left` от элемента —
-  пропало 2px-смещение от центра иконки.
-- **TagsField** — выпадающий список подсказок больше не обрезается
-  ancestor'ами с `overflow`. Dropdown перенесён в `<Teleport to="body">`,
-  позиция считается через `usePopover` (то же поведение, что и в
-  `UidSelect`). Ширина dropdown'а синхронизирована с шириной chip-инпута,
-  позиция пересчитывается на scroll/resize.
-- **AdminAuth** — exclude-middleware (public-эндпоинты вроде `auth/login`)
-  теперь читается у фактической API-версии текущего запроса через
-  `ApiModule::getApi()` с фолбэком на `AdminApi`. Раньше бралось из
-  фиксированного `AdminApi`, из-за чего host, сшивший admin API с другими
-  версиями (external-v1) в одном laravel-api модуле, ломал определение
-  public-роутов.
+- **AuditTimeline** — diff rows no longer show a struck-through `∅` as the
+  "before" value on `created`/`restored` events or as the "after" value on
+  `deleted`/`destroyed`: the meaningless column is hidden. The field-name and
+  value columns are now aligned through a single `display: grid` with
+  `display: contents` on the row — the layout is identical across the whole
+  diff regardless of field-name length.
+- **AuditTimeline** — the vertical timeline line no longer runs below the icon
+  of the last event. It was redrawn as a per-item `::after` connector
+  (`:not(:last-child)`) that inherits `padding-left` from the element — the
+  2px offset from the icon's centre is gone.
+- **TagsField** — the suggestion dropdown is no longer clipped by ancestors
+  with `overflow`. The dropdown moved into `<Teleport to="body">` and its
+  position is computed through `usePopover` (the same behaviour as
+  `UidSelect`). The dropdown width is synchronized with the chip input, and
+  the position is recalculated on scroll and resize.
+- **AdminAuth** — the exclude middleware (public endpoints such as
+  `auth/login`) is now read from the API version that actually handles the
+  current request, through `ApiModule::getApi()` with a fallback to
+  `AdminApi`. It used to be taken from a fixed `AdminApi`, so a host that
+  stitched the admin API together with other versions (external-v1) inside one
+  laravel-api module broke the detection of public routes.
 
 ### Changed
 
-- **Resource::infolist() default** — `switch`-поля (Switcher) теперь
-  автоматически рендерятся как `IconEntry` с локализованными Да/Нет
-  (`admin.common.yes`/`admin.common.no`, иконки `check-circle-2`/`x-circle`)
-  вместо сырого `TextEntry`. Раньше view-страница без override'а показывала
-  boolean-флаги как «true»/«false»; теперь оформление выровнено с тем, что
-  даёт явный IconEntry в кастомном infolist'е. Override в подклассе
-  по-прежнему имеет приоритет.
+- **`Resource::infolist()` default** — `switch` fields (Switcher) now render
+  automatically as an `IconEntry` with localized Yes/No
+  (`admin.common.yes`/`admin.common.no`, the `check-circle-2`/`x-circle`
+  icons) instead of a raw `TextEntry`. A view page without an override used to
+  show boolean flags as "true"/"false"; the presentation now matches what an
+  explicit IconEntry gives in a custom infolist. An override in a subclass
+  still takes precedence.
 
 ## [1.4.0] - 2026-05-08
 
 ### Added
 
 - **Custom Screens API** (`Admin::screen([...])`) — generic non-CRUD screens.
-  - `Screen::compile()` отдаёт `{state, layout, command_bar, permissions, etag}`.
-  - Backend `ScreenCompiler` + `ScreenController` (state GET + runMethod POST).
-  - Frontend `useScreenStore` + `ScreenPage.vue` (двойной provide
-    FormState+Record — Screen работает и как форма, и как Infolist).
-- **Hierarchical menu** (`Admin::menu()`) — fluent API любой глубины.
+  - `Screen::compile()` returns `{state, layout, command_bar, permissions, etag}`.
+  - Backend `ScreenCompiler` plus `ScreenController` (state GET, runMethod POST).
+  - Frontend `useScreenStore` plus `ScreenPage.vue` (a double provide of
+    FormState and Record — a screen works both as a form and as an infolist).
+- **Hierarchical menu** (`Admin::menu()`) — a fluent API of arbitrary depth.
   - `MenuNode::make/resource/screen/dashboard`, `->children([...])`,
     `MenuRegistry::under(parent, [...])`.
-  - Frontend `AdminSidebarNode` рекурсивный: indent depth 0..2, после
-    — stripe-mode (left-border с fading alpha по depth).
-- **Widget polling** — `Widget::refresh(int $sec)` запускает auto-refetch
-  на dashboard'е (один интервал на минимальный refresh из видимых widgets).
-- **Widget vertical resize** — `Widget::rowSpan(int 1..6)` + dual-axis
-  resize-handle на dashboard'е (drag по X = cols span, по Y = rows span).
-- **Drag drop-indicator** на dashboard'е — accent-outline на cell-target
-  + opacity 0.45 на источнике (без sortablejs deps).
-- **E2E full-flow smoke** (`demo/e2e-full-flow.mjs`) — 10 шагов: login
-  → menu → resources → dashboard edit → custom screen → notifications
-  → profile → logout.
+  - The frontend `AdminSidebarNode` is recursive: indent for depths 0..2, and
+    stripe mode beyond that (a left border with alpha fading by depth).
+- **Widget polling** — `Widget::refresh(int $sec)` starts an auto-refetch on
+  the dashboard (a single interval taken from the smallest refresh among the
+  visible widgets).
+- **Widget vertical resize** — `Widget::rowSpan(int 1..6)` plus a dual-axis
+  resize handle on the dashboard (dragging along X sets the column span, along
+  Y the row span).
+- **A drag drop-indicator** on the dashboard — an accent outline on the target
+  cell and opacity 0.45 on the source (with no sortablejs dependency).
+- **An end-to-end full-flow smoke test** (`demo/e2e-full-flow.mjs`) — ten
+  steps: login → menu → resources → dashboard edit → custom screen →
+  notifications → profile → logout.
 
 ### Fixed
 
-- **DashboardPage** — slug читается из `route.meta` (роутер строит
-  /dashboard/{slug} как static path без props), `manifest.load()` и
-  `dashboardStore.openDashboard()` вызываются в onMounted.
-- **MenuNode::dashboard()** — auto-detect DashboardScreen → /dashboard/{slug},
-  custom screens → /screens/{slug}.
-- **WidgetRenderer** — фильтрует dashboard-meta поля (`size`/`span`/`rowSpan`/
-  `kind`/`refresh`/`permission`/`slug`) из widgetProps. Backend Widget.size
-  это grid-column-span, а UidGauge.size — pixels: ранее конфликтовало.
-- **HeatmapWidget** — переписан с UidHeatmap (календарной) на CSS-grid
-  для матричного rows×cols формата (соответствует backend HeatmapWidget).
-- **ChartWidget** — читает `data.chartType` (backend) с fallback на `type`.
-- **RecentTableWidget** — нормализует backend `column={column,label}` →
-  UidTable `{key,label}`.
-- **GaugeWidget** — принимает `thresholds` (backend) как alias к UidGauge
-  `ranges`; `unit → suffix`; flex-центрирование внутри cell.
-- **StatWidget** — читает backend `stats[]` массив (раньше ждал scalar
-  `value` → отображал 0 при заполненной БД).
-- **Bar/Donut empty-state** — «Нет данных за период» вместо пустого SVG.
-- **DashboardPage render** — hidden-override корректно убирает manifest-widget
-  (раньше hidden-item не удалялся из `bySlug` Map'а до skip-continue).
-- **Drag** — pointerdown listener сохраняет `dragInitiated` (e.target в
-  dragstart = cell, не handle, поэтому closest всегда был null).
-- **NotificationController** — guard `Schema::hasTable('notifications')`,
-  если default Laravel migration не запущен — возвращает empty result
-  вместо 500.
-- **SelectField** — `readonly` маппится в `disabled` для UidSelect
-  (визуально согласовано с TextField/NumberField).
-- **WidgetConfigDialog UX** — required-поля помечены * + footer hint
-  «Заполните *-поля» при disabled save.
+- **DashboardPage** — the slug is read from `route.meta` (the router builds
+  /dashboard/{slug} as a static path without props); `manifest.load()` and
+  `dashboardStore.openDashboard()` are called in `onMounted`.
+- **`MenuNode::dashboard()`** — auto-detects a DashboardScreen →
+  /dashboard/{slug}, custom screens → /screens/{slug}.
+- **WidgetRenderer** — filters dashboard meta fields
+  (`size`/`span`/`rowSpan`/`kind`/`refresh`/`permission`/`slug`) out of
+  widgetProps. The backend's `Widget.size` is a grid column span while
+  `UidGauge.size` is pixels: the two used to collide.
+- **HeatmapWidget** — rewritten from UidHeatmap (a calendar) onto a CSS grid
+  for the matrix rows×cols format (matching the backend HeatmapWidget).
+- **ChartWidget** — reads `data.chartType` (backend) with a fallback to
+  `type`.
+- **RecentTableWidget** — normalizes the backend's `column={column,label}` into
+  UidTable's `{key,label}`.
+- **GaugeWidget** — accepts `thresholds` (backend) as an alias for UidGauge's
+  `ranges`; `unit → suffix`; flex centring inside the cell.
+- **StatWidget** — reads the backend's `stats[]` array (it used to expect a
+  scalar `value` and displayed 0 against a populated database).
+- **Bar/Donut empty state** — "No data for the period" instead of an empty
+  SVG.
+- **DashboardPage rendering** — a hidden override now removes the manifest
+  widget correctly (the hidden item was not deleted from the `bySlug` map
+  before the skip-continue).
+- **Drag** — the pointerdown listener stores `dragInitiated` (`e.target` in
+  dragstart is the cell rather than the handle, so `closest` was always null).
+- **NotificationController** — guarded by `Schema::hasTable('notifications')`;
+  if the default Laravel migration has not been run it returns an empty result
+  instead of a 500.
+- **SelectField** — `readonly` maps to `disabled` for UidSelect (visually
+  consistent with TextField/NumberField).
+- **WidgetConfigDialog UX** — required fields are marked with `*` plus a
+  footer hint "Fill in the * fields" when saving is disabled.
 
 ### Changed
 
-- `grid-auto-rows: 140px` на dashboard-grid'е (раньше autoflow).
-- Default rowSpan по типу widget'а: stat=1, chart/heatmap/markdown=2..3.
-- Sister-packs (starter/health/jobs/media/pulse/search/quill/tinymce)
-  без изменений — auto-fill старого flat-menu сохранён, integration с
-  MenuNode/Screen API опциональна.
+- `grid-auto-rows: 140px` on the dashboard grid (autoflow before).
+- The default rowSpan by widget type: stat=1, chart/heatmap/markdown=2..3.
+- Sister packs (starter/health/jobs/media/pulse/search/quill/tinymce) are
+  unchanged — the auto-fill of the old flat menu is preserved and integration
+  with the MenuNode/Screen API is optional.
 
 ## [1.3.0] - 2026-05-08
 
 ### Added
 
-- Custom Screens (P21+P22) и Hierarchical menu (M1+M2) — initial drop
-  (см. v1.4.0 для consolidated changes).
+- Custom Screens (P21+P22) and the hierarchical menu (M1+M2) — the initial
+  drop (see v1.4.0 for the consolidated changes).
 
 ## [1.2.4] - 2026-05-02
 
 ### Changed
 
-- **`@dskripchenko/wysiwyg` 0.2.0** — peer-dep range расширен до `^0.2.0`.
-  В default WYSIWYG-поле теперь доступны: markdown shortcuts (`# `, `- `,
-  `1. `, `> `, ` ``` `), slash-commands popup (`/h1`, `/list`, …),
-  таблицы (insert/addRow/addColumn/remove*), code syntax highlighting
-  (js/ts/php/html/css/json), HTML→Markdown helper. Bundle wysiwyg'а
-  вырос с 7 KB до 12 KB gz, peer-deps не изменились.
+- **`@dskripchenko/wysiwyg` 0.2.0** — the peer-dependency range was widened to
+  `^0.2.0`. The default WYSIWYG field now offers markdown shortcuts (`# `,
+  `- `, `1. `, `> `, ` ``` `), a slash-command popup (`/h1`, `/list`, …),
+  tables (insert/addRow/addColumn/remove*), code syntax highlighting
+  (js/ts/php/html/css/json) and an HTML→Markdown helper. The wysiwyg bundle
+  grew from 7 KB to 12 KB gzipped; peer dependencies are unchanged.
 
 ## [1.2.3] - 2026-05-07
 
 ### Added
 
-- **`@dskripchenko/wysiwyg` как default WYSIWYG** — собственный zero-dep
-  редактор (~7 KB gzip). Заменил TextAreaField fallback в `wysiwyg`-field
-  registry. `WysiwygField.vue` — тонкая обёртка над `DskWysiwyg`. Host
-  может перебить через `registerField('wysiwyg', …)` (Quill/Tinymce
-  subpath остались для совместимости).
+- **`@dskripchenko/wysiwyg` as the default WYSIWYG** — our own zero-dependency
+  editor (~7 KB gzipped). It replaced the TextAreaField fallback in the
+  `wysiwyg` field registry. `WysiwygField.vue` is a thin wrapper over
+  `DskWysiwyg`. A host can override it through `registerField('wysiwyg', …)`
+  (the Quill/Tinymce subpaths remain for compatibility).
 
 ## [1.2.2] - 2026-05-07
 
 ### Added
 
-- **G1: i18n full migration** — `resources/lang/{ru,en}/admin.php` для core, `BootstrapBuilder.loadTranslations()` flatten в bootstrap.translations, `loadTranslationsFrom` в AdminServiceProvider. Frontend `tt(key, fallback)` обёртки в `ResourceIndexPage`. Host публикует override через `vendor:publish`.
-- **G2: Built-in QR-encoder** — `lean-qr` (~3KB, MIT, без peer-dep) рендерит QR прямо в TwoFactorSetup. Slot `qr-code` остаётся для override.
-- **G3: Drop-indicator при reorder** — `dragOverRowIdx` + `dragOverSide` управляют горизонтальной линией перед/после строки. Ghost-style на исходной строке (opacity:0.4).
-- **G4: Backend tests** — 4 новых теста на `/{slug}/action` endpoint (success / 404 / 422 / second-action). Total 783 (+4).
+- **G1: full i18n migration** — `resources/lang/{ru,en}/admin.php` for the core, `BootstrapBuilder.loadTranslations()` flattening into `bootstrap.translations`, `loadTranslationsFrom` in AdminServiceProvider. Frontend `tt(key, fallback)` wrappers in `ResourceIndexPage`. A host publishes its overrides through `vendor:publish`.
+- **G2: built-in QR encoder** — `lean-qr` (~3 KB, MIT, no peer dependency) renders the QR code directly in TwoFactorSetup. The `qr-code` slot remains for overrides.
+- **G3: a drop indicator during reorder** — `dragOverRowIdx` and `dragOverSide` drive a horizontal line before or after the row. The source row gets a ghost style (opacity 0.4).
+- **G4: backend tests** — four new tests for the `/{slug}/action` endpoint (success / 404 / 422 / second action). 783 in total (+4).
 
 ### Notes
 
-- **G5**: sister-pack repos локально не клонированы — host'у нужно вручную тегнуть `v1.2.0` на каждом из 8 пакетов (starter/jobs/health/media/pulse/search/quill/tinymce). Core 1.2.x не делает breaking changes для них.
+- **G5**: the sister-pack repositories are not cloned locally — the host has to tag `v1.2.0` manually on each of the eight packages (starter/jobs/health/media/pulse/search/quill/tinymce). Core 1.2.x introduces no breaking changes for them.
 
 ## [1.2.1] - 2026-05-07
 
 ### Added
 
-- **F1: Reorder-row UI** — drag-handle column для resource'ов с `reorderable=true`, HTML5 drag, persistence через `POST /{slug}/reorder`.
-- **F2: Bootstrap translations** — `BootstrapBuilder` кладёт lang-bag из admin::*-namespace в payload (пара ключ/перевод), frontend `useI18nStore` гидрирует.
-- **F4: QR slot** в TwoFactorSetup — host подключает любой QR-генератор через `<template #qr-code>`. Demo: `qrcode-svg`.
-- **F5: JSON exporter** — без зависимостей, поддержка `lines` режима (NDJSON). `Export CSV/JSON/XLSX/PDF` пункты в more-menu.
-- **F3: i18n migration scaffolding** — `t(key, fallback)`-обёртки на DashboardPage с graceful ru-fallback. Прогон остальных компонентов — следующий спринт.
+- **F1: reorder-row UI** — a drag-handle column for resources with
+  `reorderable=true`, HTML5 drag and persistence through
+  `POST /{slug}/reorder`.
+- **F2: bootstrap translations** — `BootstrapBuilder` puts the lang bag from
+  the `admin::*` namespace into the payload (key/translation pairs) and the
+  frontend `useI18nStore` hydrates from it.
+- **F4: a QR slot** in TwoFactorSetup — a host plugs in any QR generator
+  through `<template #qr-code>`. Demo: `qrcode-svg`.
+- **F5: a JSON exporter** — dependency-free, with a `lines` mode (NDJSON).
+  `Export CSV/JSON/XLSX/PDF` entries in the more-menu.
+- **F3: i18n migration scaffolding** — `t(key, fallback)` wrappers on
+  DashboardPage with a graceful fallback. The remaining components come in the
+  next sprint.
 
 ## [1.2.0] - 2026-05-07
 
 ### Added
 
 **Frontend**:
-- Dashboard widgets edit-mode (drag/resize/add/configure) с layout persistence per-user.
-- WidgetConfigDialog: per-type config editor (markdown/stat/gauge/chart/recent), заменил `window.prompt`.
-- Toast-сервис: `useToast()` смонтирован глобально, `adminToast.*` helper, `window.alert/confirm` вытесняются.
-- Drag-handle isolation в DashboardPage (только за `[☰]`).
-- Date-range фильтр прокинут в widgets через `GET /dashboard/widgets?period=`.
-- Inline-edit cells: double-click → input → Enter (`POST /{slug}/inlineUpdate`).
-- Soft-delete UI: per-row Restore/Force-delete + автоматический Trashed-фильтр.
-- 2FA setup wizard (`TwoFactorSetup.vue`).
-- API tokens manager (`ApiTokensManager.vue`).
-- Impersonation banner (auto-detect + exit).
-- Forgot/reset password страницы.
-- i18n базовый: `useI18nStore` + `t()` helper.
-- TranslatableField — input с табами по локалям.
+- A dashboard widget edit mode (drag/resize/add/configure) with per-user
+  layout persistence.
+- WidgetConfigDialog: a per-type config editor
+  (markdown/stat/gauge/chart/recent) that replaced `window.prompt`.
+- A toast service: `useToast()` mounted globally, an `adminToast.*` helper;
+  `window.alert`/`confirm` are being phased out.
+- Drag-handle isolation in DashboardPage (dragging only by `[☰]`).
+- The date-range filter is passed to widgets through
+  `GET /dashboard/widgets?period=`.
+- Inline-edit cells: double click → input → Enter
+  (`POST /{slug}/inlineUpdate`).
+- Soft-delete UI: per-row Restore/Force delete plus an automatic Trashed
+  filter.
+- A 2FA setup wizard (`TwoFactorSetup.vue`).
+- An API token manager (`ApiTokensManager.vue`).
+- An impersonation banner (auto-detect plus exit).
+- Forgot/reset password pages.
+- Basic i18n: `useI18nStore` plus a `t()` helper.
+- TranslatableField — an input with per-locale tabs.
 
 **Backend**:
-- `Resource::meta().subject_type` — морф-class модели для AuditTimeline.
-- Auto-inject TrashedFilter в `meta()` для SoftDeletes.
-- `ResourceController::action()` — generic dispatcher `POST /{slug}/action`.
+- `Resource::meta().subject_type` — the model's morph class for
+  AuditTimeline.
+- Auto-injection of TrashedFilter into `meta()` under SoftDeletes.
+- `ResourceController::action()` — a generic dispatcher for
+  `POST /{slug}/action`.
 - `DashboardController::widgets()` — `GET /dashboard/widgets?key=&period=`.
-- `DashboardScreen::withPeriod() / periodDays()` — period propagation.
-- `Manifest::build()` сериализует dashboards из ScreenRegistry.
-- `Role::hasPermission()` через `fnmatch()` — middle-segment wildcards.
+- `DashboardScreen::withPeriod()` / `periodDays()` — period propagation.
+- `Manifest::build()` serializes dashboards from the ScreenRegistry.
+- `Role::hasPermission()` through `fnmatch()` — middle-segment wildcards.
 
 ### Changed
 
-- Снят `final` с встроенных Widget-классов (extends-friendly).
-- `FieldRenderer` разворачивает `attributes` из manifest'а на верхний уровень props.
+- `final` was dropped from the built-in Widget classes (extends-friendly).
+- `FieldRenderer` spreads `attributes` from the manifest onto the top level of
+  the props.
 
 ### Demo
 
-- `ContentDashboardScreen` (10 виджетов по эталону).
-- DemoSeeder с baseline-ролями (`super-admin` / `editor` / `viewer`).
-- Quill через `defineAsyncComponent` — lazy load (~200 KB меньше initial bundle).
+- `ContentDashboardScreen` (ten widgets following the reference design).
+- A DemoSeeder with baseline roles (`super-admin` / `editor` / `viewer`).
+- Quill through `defineAsyncComponent` — lazy loaded (~200 KB off the initial
+  bundle).
 
 ## [Unreleased]
 
