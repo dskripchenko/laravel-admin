@@ -11,6 +11,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useNavigationStore } from '../stores/navigation'
+import { trSafe as tr } from '../stores/i18n'
 
 const nav = useNavigationStore()
 
@@ -44,7 +45,9 @@ const cls = computed(() => ({
 </script>
 
 <template>
-  <div :class="cls" role="progressbar" aria-busy="true" />
+  <!-- Индикатор обязан иметь имя: без него скринридер объявляет «progressbar»
+       и не говорит, что происходит. -->
+  <div :class="cls" role="progressbar" aria-busy="true" :aria-label="tr('Загрузка')" />
 </template>
 
 <style>
