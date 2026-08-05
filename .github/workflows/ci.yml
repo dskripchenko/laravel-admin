@@ -85,3 +85,8 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Витрина компонентов: собирается на CI, чтобы сломанная история не
+      # доехала незамеченной — смотреть её будут уже после, а чинить дорого.
+      - name: Storybook build
+        run: npm run storybook:build

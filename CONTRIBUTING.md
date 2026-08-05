@@ -5,6 +5,21 @@ This document covers the workflow, code style and review expectations.
 
 > 🌐 [English](CONTRIBUTING.md) · [Русский](docs/ru/contributing.md) · [Deutsch](docs/de/contributing.md) · [中文](docs/zh/contributing.md)
 
+## Витрина компонентов
+
+```bash
+npm run storybook        # http://localhost:6007
+npm run storybook:build  # то же статикой, этим же проверяет CI
+```
+
+Витрина показывает экран на любой ширине без поднятого бэкенда и без
+данных — так вскрываются дефекты раскладки, которых не видно на
+разработческом мониторе. Размеры экранов в переключателе те же, что
+проверяет CI printable (телефон 402, планшет 768, рабочий стол 1280):
+дефект, найденный здесь, воспроизводится тестом и наоборот.
+
+Истории лежат рядом с компонентами — `*.stories.ts`.
+
 ## Quick start (local development)
 
 ```bash
