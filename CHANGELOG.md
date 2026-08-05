@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.19.2
+
+### Fixed
+- **The sign-in form sat off-centre on a phone, with the page scrolling
+  sideways.** The card was a fixed 400px wide and its `max-width: 100%`
+  resolved against a grid area that was itself wider than the screen. Width is
+  now capped rather than fixed, and the page padding shrinks below 480px.
+- **The profile showed only the left half of its form on a phone.** Its two
+  columns never collapsed: the content column simply ran off the edge, out of
+  reach — the page did not even scroll to it. Below 720px the layout is a
+  single column and the section list becomes a row of tabs that scrolls
+  horizontally on its own.
+
 ## [1.19.1] — 2026-08-04
 
 ### Fixed

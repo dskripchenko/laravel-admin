@@ -251,7 +251,9 @@ function onTwoFactorDisabled(): void {
 <style>
 .admin-profile__layout {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  /* minmax(0,1fr), а не 1fr: колонка `1fr` не уже своего содержимого, и
+     широкое поле формы растягивало сетку за пределы экрана. */
+  grid-template-columns: 200px minmax(0, 1fr);
   gap: var(--uid-space-lg);
   align-items: start;
 }
@@ -337,7 +339,22 @@ function onTwoFactorDisabled(): void {
   grid-template-columns: 1fr 1fr;
   gap: var(--uid-space-md);
 }
+/* Телефон: колонки не помещаются рядом. Разделы уезжают в строку над
+   содержимым и прокручиваются горизонтально сами — раньше вторая колонка
+   просто уходила за край, и видна была только левая часть формы. */
 @media (max-width: 720px) {
   .admin-profile__form { grid-template-columns: 1fr; }
+  .admin-profile__layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-profile__nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: var(--uid-space-xs);
+    padding-bottom: var(--uid-space-xs);
+    scrollbar-width: thin;
+  }
+  .admin-profile__nav-item {
+    flex: none;
+    white-space: nowrap;
+  }
 }
 </style>

@@ -226,6 +226,10 @@
   background: var(--uid-surface-base);
   position: relative;
 }
+/* На телефоне поля страницы съедают заметную часть ширины формы. */
+@media (max-width: 480px) {
+  .admin-auth-page { padding: var(--uid-space-md); }
+}
 .admin-auth-page__corner {
   position: absolute;
   top: var(--uid-space-md);
@@ -233,11 +237,14 @@
   display: flex;
   gap: var(--uid-space-sm);
 }
+/* Ширина через max-width, а не width: карточка — элемент grid-области, и
+   `max-width: 100%` считался от области, которая сама шире экрана. На
+   телефоне это давало горизонтальную прокрутку и съезд карточки вправо. */
 .admin-auth-card {
-  width: 400px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 400px;
 }
-.admin-auth-card--wide { width: 440px; }
+.admin-auth-card--wide { max-width: 440px; }
 .admin-auth-card__hd {
   padding: var(--uid-space-lg) var(--uid-space-lg) var(--uid-space-md);
   text-align: center;
