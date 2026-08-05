@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.19.3
+
+### Fixed
+- **The loading bar had no accessible name.** A `role="progressbar"` without a
+  label is announced as "progressbar" and says nothing about what is
+  happening. Found by running axe-core over the sign-in screen.
+
+### Added
+- **Storybook** — `npm run storybook`. A screen can be viewed at any width
+  with no backend and no data, which is how layout defects surface; the
+  viewport presets match what the consuming app checks in CI.
+
 ## 1.19.2
 
 ### Fixed
