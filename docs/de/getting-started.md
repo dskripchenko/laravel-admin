@@ -19,6 +19,6 @@ note: |
 
 ## Schnellnavigation
 
-- [Schnellstart](../getting-started.md)
-- [Architektur](../architecture.md)
+- [Schnellstart](getting-started.md)
+- [Architektur](architecture.md)
 - [Glossar](glossary.md)

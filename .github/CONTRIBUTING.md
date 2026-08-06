@@ -5,20 +5,20 @@ This document covers the workflow, code style and review expectations.
 
 > 🌐 [English](CONTRIBUTING.md) · [Русский](../docs/ru/contributing.md) · [Deutsch](../docs/de/contributing.md) · [中文](../docs/zh/contributing.md)
 
-## Витрина компонентов
+## Component catalogue
 
 ```bash
 npm run storybook        # http://localhost:6007
-npm run storybook:build  # то же статикой, этим же проверяет CI
+npm run storybook:build  # the same as static files; this is what CI checks
 ```
 
-Витрина показывает экран на любой ширине без поднятого бэкенда и без
-данных — так вскрываются дефекты раскладки, которых не видно на
-разработческом мониторе. Размеры экранов в переключателе те же, что
-проверяет CI printable (телефон 402, планшет 768, рабочий стол 1280):
-дефект, найденный здесь, воспроизводится тестом и наоборот.
+The catalogue renders a screen at any width with no backend and no data,
+which is how layout defects surface — they are invisible on a developer's
+monitor. The viewport presets match the ones printable's CI checks (phone
+402, tablet 768, desktop 1280), so a defect found here reproduces in a test
+and the other way round.
 
-Истории лежат рядом с компонентами — `*.stories.ts`.
+Stories sit next to their components as `*.stories.ts`.
 
 ## Quick start (local development)
 

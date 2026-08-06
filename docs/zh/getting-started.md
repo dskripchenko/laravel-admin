@@ -18,6 +18,6 @@ note: |
 
 ## 快速导航
 
-- [快速开始](../getting-started.md)
-- [架构](../architecture.md)
+- [快速开始](getting-started.md)
+- [架构](architecture.md)
 - [术语表](glossary.md)

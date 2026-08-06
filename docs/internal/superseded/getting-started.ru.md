@@ -115,18 +115,18 @@ public function boot(Admin $admin): void
 ### Resource
 
 Описание модели в админке: какие поля показывать, какие колонки в таблице,
-какие фильтры доступны, какие custom-actions. См. [API: Resources](api/resources.md)
-и [API: Registration](api/registration.md).
+какие фильтры доступны, какие custom-actions. См. [API: Resources](../../ru/api/resources.md)
+и [API: Registration](../../ru/api/registration.md).
 
 ### Field
 
 Декларация одного поля формы: `Input`, `Number`, `Select`, `Wysiwyg` и т.д.
-30+ типов из коробки. См. [API: Schemas](api/schemas.md).
+30+ типов из коробки. См. [API: Schemas](../../ru/api/schemas.md).
 
 ### Layout
 
 Структурный элемент: `Rows`, `Columns`, `Tabs`, `Modal`, `Wizard`,
-`Infolist`, `Dashboard` и др. См. [API: Screens](api/screens.md).
+`Infolist`, `Dashboard` и др. См. [API: Screens](../../ru/api/screens.md).
 
 ### Action
 
@@ -154,11 +154,11 @@ $role = Role::create(['name' => 'Editor', 'slug' => 'editor', 'permissions' => [
 $user->assignRole($role);
 ```
 
-См. [API: Auth](api/auth.md).
+См. [API: Auth](../../ru/api/auth.md).
 
 ## Что дальше
 
-- [Recipes](recipes/) — типовые сценарии (custom-actions, file-upload, multi-tenancy и т.п.)
-- [API Reference](api/) — полное описание endpoint'ов
-- [Architecture](ARCHITECTURE.md) — design-документ
-- [Sister-packs](sister-packs/) — дополнительные пакеты (starter, search, media и др.)
+- [Recipes](../../ru/recipes/) — типовые сценарии (custom-actions, file-upload, multi-tenancy и т.п.)
+- [API Reference](../../ru/api/) — полное описание endpoint'ов
+- [Architecture](../architecture.md) — design-документ
+- [Sister-packs](../../ru/sister-packs/) — дополнительные пакеты (starter, search, media и др.)
