@@ -431,21 +431,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plus @dskripchenko/ui 1.1.3, whose focus trap prefers `[autofocus]`); the
   palette strings come from the lang bag.
 
-## [1.10.0…1.10.9] - 2026-07-23 (consolidated)
+## [1.10.9] - 2026-07-23
 
-The printable backlog train (BL-1…36): a CSRF interceptor (a stale
-X-CSRF-TOKEN), a not-found screen for edit forms, a bulk toolbar with disabled
-gating, auto-injection of TrashedFilter into search, per-resource
-`importable()`/`exportable()`, BadgeEntry colours and labels,
-`manifest.refresh()` without nulling (fixing the "collapsing" form), inline
-checkboxes, shell and timeline alignment, a clickable RecentListWidget
-(`linkTo`), a working 2FA wizard in the profile (v1.10.3), audit
-`type_labels` plus `resolveTypeLabel` (v1.10.4), global ⌘K search:
-GET /system/search plus GlobalSearch.vue (v1.10.5), a persisted dashboard
-period, JSON export and an empty state for adding widgets (v1.10.6), branding
-from `config('admin.brand')` in the shell plus favicon and copyright
-(v1.10.7), per-request translation of MenuNode labels (v1.10.8), and a reload
-on locale change (v1.10.9).
+### Changed
+- Switching the locale reloads the shell, which completes the panel translation work.
+
+## [1.10.8] - 2026-07-23
+
+### Changed
+- `MenuNode` labels are translated per request rather than once at build time.
+
+## [1.10.7] - 2026-07-23
+
+### Added
+- Branding taken from `config('admin.brand')` in the shell: logo, favicon and copyright line.
+
+## [1.10.6] - 2026-07-23
+
+### Added
+- The dashboard remembers the selected period, exports to JSON, and shows an
+  empty state that offers to add a widget.
+
+## [1.10.5] - 2026-07-23
+
+### Added
+- Global ⌘K search across resources: `GET /system/search` and `GlobalSearch.vue`.
+
+## [1.10.4] - 2026-07-23
+
+### Added
+- Audit `type_labels` and `resolveTypeLabel()`, so events read as words instead of raw types.
+
+## [1.10.3] - 2026-07-23
+
+### Fixed
+- The profile page wires up the two-factor wizard that actually works.
+
+## [1.10.2] - 2026-07-23
+
+### Changed
+- Version bump carrying the backlog train forward; no separate feature of its own.
+
+## [1.10.0] - 2026-07-23
+
+The printable backlog train (BL-1…36).
+
+### Added
+- A CSRF interceptor that refreshes a stale `X-CSRF-TOKEN`.
+- A not-found screen for edit forms.
+- A bulk toolbar whose actions are gated rather than silently inert.
+- `TrashedFilter` injected into search automatically.
+- Per-resource `importable()` and `exportable()`.
+- `BadgeEntry` colours and labels.
+- Inline checkboxes, and a `RecentListWidget` whose rows are clickable through `linkTo`.
+
+### Fixed
+- `manifest.refresh()` no longer nulls the manifest, which is what made forms appear to collapse.
+- Shell and timeline alignment.
+- The ⌘K palette focuses its input on open (`autofocus`, with @dskripchenko/ui 1.1.3
+  preferring `[autofocus]` in its focus trap); palette strings come from the lang bag.
 
 ## [npm 1.9.3] - 2026-07-22
 
