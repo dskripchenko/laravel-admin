@@ -61,7 +61,7 @@ TranslatableInput::make('title')->locales(['en', 'ru']),
 Wysiwyg::make('body')->sanitize(),
 ```
 
-См. [каталог полей](../en/fields-reference.md) (en) для всех типов.
+См. [каталог полей](../../en/fields-reference.md) (en) для всех типов.
 
 ### Видимость по режимам
 
@@ -158,5 +158,5 @@ RelationSelect::make('author_id')->relation('author')->display('name')->searchab
 ## См. также
 
 - [Screens](screens.md)
-- [Permissions](../en/concepts/permissions.md) (en)
-- [Каталог полей](../en/fields-reference.md) (en)
+- [Permissions](../../en/concepts/permissions.md) (en)
+- [Каталог полей](../../en/fields-reference.md) (en)

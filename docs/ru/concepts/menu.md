@@ -147,4 +147,4 @@ Frontend рендерит узлы рекурсивно (`AdminSidebarNode.vue`)
 
 - [Resources](resources.md)
 - [Screens](screens.md)
-- [Permissions](../en/concepts/permissions.md) (en)
+- [Permissions](../../en/concepts/permissions.md) (en)

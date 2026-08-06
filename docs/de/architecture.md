@@ -21,4 +21,4 @@ note: |
 
 - [Schnellstart](../getting-started.md)
 - [Architektur](../architecture.md)
-- [Glossar](../glossary.md)
+- [Glossar](glossary.md)

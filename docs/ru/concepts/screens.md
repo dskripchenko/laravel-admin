@@ -188,5 +188,5 @@ public function permission(): array|string|null
 
 ## См. также
 
-- [Permissions](../en/concepts/permissions.md) (en)
-- [Каталог layouts](../en/layouts-reference.md) (en)
+- [Permissions](../../en/concepts/permissions.md) (en)
+- [Каталог layouts](../../en/layouts-reference.md) (en)

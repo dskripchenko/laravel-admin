@@ -188,6 +188,6 @@ command method itself.
 
 ## See also
 
-- [Custom forms cookbook](../recipes/custom-form.md) (TBD)
+- [Custom forms cookbook](../../recipes/custom-form.md) (TBD)
 - [Permissions](permissions.md)
 - [Layouts reference](../layouts-reference.md)

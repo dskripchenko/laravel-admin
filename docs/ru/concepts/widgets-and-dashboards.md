@@ -139,5 +139,5 @@ registerWidget('weather', WeatherWidget)
 ## См. также
 
 - [Screens](screens.md)
-- [Permissions](../en/concepts/permissions.md) (en)
+- [Permissions](../../en/concepts/permissions.md) (en)
 - [Архитектура](../architecture.md)

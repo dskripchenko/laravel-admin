@@ -1,6 +1,6 @@
 # dskripchenko/laravel-admin
 
-> 🌐 **English** · [Русский](README.ru.md) · [Deutsch](README.de.md) · [中文](README.zh.md)
+> 🌐 **English** · [Русский](docs/ru/README.md) · [Deutsch](docs/de/README.md) · [中文](docs/zh/README.md)
 
 A Laravel admin-panel constructor inspired by Orchid, with a Vue 3 SPA frontend.
 
@@ -128,7 +128,7 @@ Optional extensions, install only what you need:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). PRs welcome.
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md). PRs welcome.
 
 ## License
 

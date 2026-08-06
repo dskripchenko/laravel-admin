@@ -1,12 +1,12 @@
 # dskripchenko/laravel-admin
 
-> 🌐 [English](README.md) · **Русский** · [Deutsch](README.de.md) · [中文](README.zh.md)
+> 🌐 [English](../../README.md) · **Русский** · [Deutsch](../de/README.md) · [中文](../zh/README.md)
 
 Конструктор админ-панели для Laravel в духе Orchid — с собственным Vue 3 SPA-фронтендом.
 
 [![npm](https://img.shields.io/npm/v/@dskripchenko/laravel-admin?label=%40dskripchenko%2Flaravel-admin)](https://www.npmjs.com/package/@dskripchenko/laravel-admin)
 [![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
-[![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](LICENSE)
+[![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](../../LICENSE)
 
 ```php
 Admin::resources([UserResource::class, ArticleResource::class]);
@@ -79,28 +79,28 @@ npm i @dskripchenko/laravel-admin @dskripchenko/ui
 npm run build
 ```
 
-Открой `/admin/login`. См. [getting-started.md](docs/ru/getting-started.md)
+Открой `/admin/login`. См. [getting-started.md](../../docs/ru/getting-started.md)
 для первого resource'а.
 
 ## Документация
 
-- [Быстрый старт](docs/ru/getting-started.md)
-- [Архитектура](docs/ru/architecture.md)
-- Концепции: [Resources](docs/ru/concepts/resources.md) ·
-  [Screens](docs/ru/concepts/screens.md) ·
-  [Widgets & Dashboards](docs/ru/concepts/widgets-and-dashboards.md) ·
-  [Menu](docs/ru/concepts/menu.md) ·
-  [Actions](docs/en/concepts/actions.md) (en) ·
-  [Permissions](docs/en/concepts/permissions.md) (en) ·
-  [i18n](docs/en/concepts/i18n.md) (en) ·
-  [Tenancy](docs/en/concepts/tenancy.md) (en)
-- [Каталог полей](docs/en/fields-reference.md) (en)
-- [Каталог layout'ов](docs/en/layouts-reference.md) (en)
-- [API reference](docs/en/api-reference.md) (en)
-- [Frontend-расширение](docs/en/frontend-extension.md) (en)
-- [Тестирование](docs/en/testing.md) (en)
-- [Migration guide](docs/en/migration-guide.md) (en)
-- [Глоссарий](docs/ru/glossary.md)
+- [Быстрый старт](../../docs/ru/getting-started.md)
+- [Архитектура](../../docs/ru/architecture.md)
+- Концепции: [Resources](../../docs/ru/concepts/resources.md) ·
+  [Screens](../../docs/ru/concepts/screens.md) ·
+  [Widgets & Dashboards](../../docs/ru/concepts/widgets-and-dashboards.md) ·
+  [Menu](../../docs/ru/concepts/menu.md) ·
+  [Actions](../../docs/en/concepts/actions.md) (en) ·
+  [Permissions](../../docs/en/concepts/permissions.md) (en) ·
+  [i18n](../../docs/en/concepts/i18n.md) (en) ·
+  [Tenancy](../../docs/en/concepts/tenancy.md) (en)
+- [Каталог полей](../../docs/en/fields-reference.md) (en)
+- [Каталог layout'ов](../../docs/en/layouts-reference.md) (en)
+- [API reference](../../docs/en/api-reference.md) (en)
+- [Frontend-расширение](../../docs/en/frontend-extension.md) (en)
+- [Тестирование](../../docs/en/testing.md) (en)
+- [Migration guide](../../docs/en/migration-guide.md) (en)
+- [Глоссарий](../../docs/ru/glossary.md)
 
 ## Стек
 
@@ -128,8 +128,8 @@ npm run build
 
 ## Contributing
 
-См. [CONTRIBUTING.md](CONTRIBUTING.md). PR'ы welcome.
+См. [CONTRIBUTING.md](../../.github/CONTRIBUTING.md). PR'ы welcome.
 
 ## Лицензия
 
-[MIT](LICENSE) © Denis Skripchenko
+[MIT](../../LICENSE) © Denis Skripchenko

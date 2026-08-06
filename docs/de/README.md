@@ -1,12 +1,12 @@
 # dskripchenko/laravel-admin
 
-> 🌐 [English](README.md) · [Русский](README.ru.md) · **Deutsch** · [中文](README.zh.md)
+> 🌐 [English](../../README.md) · [Русский](../ru/README.md) · **Deutsch** · [中文](../zh/README.md)
 
 Ein Laravel Admin-Panel-Konstruktor im Stil von Orchid mit einem Vue 3 SPA-Frontend.
 
 [![npm](https://img.shields.io/npm/v/@dskripchenko/laravel-admin?label=%40dskripchenko%2Flaravel-admin)](https://www.npmjs.com/package/@dskripchenko/laravel-admin)
 [![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
-[![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](LICENSE)
+[![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](../../LICENSE)
 
 ```php
 Admin::resources([UserResource::class, ArticleResource::class]);
@@ -84,27 +84,27 @@ npm run build
 ```
 
 Öffnen Sie `/admin/login`. Siehe
-[getting-started.md](docs/de/getting-started.md) für die erste Resource.
+[getting-started.md](../../docs/de/getting-started.md) für die erste Resource.
 
 ## Dokumentation
 
-- [Erste Schritte](docs/de/getting-started.md)
-- [Architektur](docs/de/architecture.md)
-- Konzepte: [Resources](docs/de/concepts/resources.md) ·
-  [Screens](docs/de/concepts/screens.md) ·
-  [Widgets & Dashboards](docs/de/concepts/widgets-and-dashboards.md) ·
-  [Menü](docs/de/concepts/menu.md) ·
-  [Actions](docs/en/concepts/actions.md) (en) ·
-  [Permissions](docs/en/concepts/permissions.md) (en) ·
-  [i18n](docs/en/concepts/i18n.md) (en) ·
-  [Mandanten](docs/en/concepts/tenancy.md) (en)
-- [Felder-Referenz](docs/en/fields-reference.md) (en)
-- [Layouts-Referenz](docs/en/layouts-reference.md) (en)
-- [API-Referenz](docs/en/api-reference.md) (en)
-- [Frontend-Erweiterung](docs/en/frontend-extension.md) (en)
-- [Testen](docs/en/testing.md) (en)
-- [Migration Guide](docs/en/migration-guide.md) (en)
-- [Glossar](docs/de/glossary.md)
+- [Erste Schritte](../../docs/de/getting-started.md)
+- [Architektur](../../docs/de/architecture.md)
+- Konzepte: [Resources](../../docs/de/concepts/resources.md) ·
+  [Screens](../../docs/de/concepts/screens.md) ·
+  [Widgets & Dashboards](../../docs/de/concepts/widgets-and-dashboards.md) ·
+  [Menü](../../docs/de/concepts/menu.md) ·
+  [Actions](../../docs/en/concepts/actions.md) (en) ·
+  [Permissions](../../docs/en/concepts/permissions.md) (en) ·
+  [i18n](../../docs/en/concepts/i18n.md) (en) ·
+  [Mandanten](../../docs/en/concepts/tenancy.md) (en)
+- [Felder-Referenz](../../docs/en/fields-reference.md) (en)
+- [Layouts-Referenz](../../docs/en/layouts-reference.md) (en)
+- [API-Referenz](../../docs/en/api-reference.md) (en)
+- [Frontend-Erweiterung](../../docs/en/frontend-extension.md) (en)
+- [Testen](../../docs/en/testing.md) (en)
+- [Migration Guide](../../docs/en/migration-guide.md) (en)
+- [Glossar](../../docs/de/glossary.md)
 
 ## Stack
 
@@ -132,8 +132,8 @@ Optionale Erweiterungen, installieren Sie nur was Sie brauchen:
 
 ## Mitwirken
 
-Siehe [CONTRIBUTING.md](CONTRIBUTING.md). PRs willkommen.
+Siehe [CONTRIBUTING.md](../../.github/CONTRIBUTING.md). PRs willkommen.
 
 ## Lizenz
 
-[MIT](LICENSE) © Denis Skripchenko
+[MIT](../../LICENSE) © Denis Skripchenko

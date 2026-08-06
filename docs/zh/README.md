@@ -1,12 +1,12 @@
 # dskripchenko/laravel-admin
 
-> 🌐 [English](README.md) · [Русский](README.ru.md) · [Deutsch](README.de.md) · **中文**
+> 🌐 [English](../../README.md) · [Русский](../ru/README.md) · [Deutsch](../de/README.md) · **中文**
 
 受 Orchid 启发的 Laravel 管理面板构造器，配备 Vue 3 SPA 前端。
 
 [![npm](https://img.shields.io/npm/v/@dskripchenko/laravel-admin?label=%40dskripchenko%2Flaravel-admin)](https://www.npmjs.com/package/@dskripchenko/laravel-admin)
 [![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
-[![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](LICENSE)
+[![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](../../LICENSE)
 
 ```php
 Admin::resources([UserResource::class, ArticleResource::class]);
@@ -75,27 +75,27 @@ npm run build
 ```
 
 访问 `/admin/login`。第一个 resource 见
-[getting-started.md](docs/zh/getting-started.md)。
+[getting-started.md](../../docs/zh/getting-started.md)。
 
 ## 文档
 
-- [快速开始](docs/zh/getting-started.md)
-- [架构](docs/zh/architecture.md)
-- 概念: [Resources](docs/zh/concepts/resources.md) ·
-  [Screens](docs/zh/concepts/screens.md) ·
-  [Widgets & Dashboards](docs/zh/concepts/widgets-and-dashboards.md) ·
-  [菜单](docs/zh/concepts/menu.md) ·
-  [Actions](docs/en/concepts/actions.md) (en) ·
-  [权限](docs/en/concepts/permissions.md) (en) ·
-  [i18n](docs/en/concepts/i18n.md) (en) ·
-  [租户](docs/en/concepts/tenancy.md) (en)
-- [字段参考](docs/en/fields-reference.md) (en)
-- [布局参考](docs/en/layouts-reference.md) (en)
-- [API 参考](docs/en/api-reference.md) (en)
-- [前端扩展](docs/en/frontend-extension.md) (en)
-- [测试](docs/en/testing.md) (en)
-- [迁移指南](docs/en/migration-guide.md) (en)
-- [术语表](docs/zh/glossary.md)
+- [快速开始](../../docs/zh/getting-started.md)
+- [架构](../../docs/zh/architecture.md)
+- 概念: [Resources](../../docs/zh/concepts/resources.md) ·
+  [Screens](../../docs/zh/concepts/screens.md) ·
+  [Widgets & Dashboards](../../docs/zh/concepts/widgets-and-dashboards.md) ·
+  [菜单](../../docs/zh/concepts/menu.md) ·
+  [Actions](../../docs/en/concepts/actions.md) (en) ·
+  [权限](../../docs/en/concepts/permissions.md) (en) ·
+  [i18n](../../docs/en/concepts/i18n.md) (en) ·
+  [租户](../../docs/en/concepts/tenancy.md) (en)
+- [字段参考](../../docs/en/fields-reference.md) (en)
+- [布局参考](../../docs/en/layouts-reference.md) (en)
+- [API 参考](../../docs/en/api-reference.md) (en)
+- [前端扩展](../../docs/en/frontend-extension.md) (en)
+- [测试](../../docs/en/testing.md) (en)
+- [迁移指南](../../docs/en/migration-guide.md) (en)
+- [术语表](../../docs/zh/glossary.md)
 
 ## 技术栈
 
@@ -123,8 +123,8 @@ npm run build
 
 ## 贡献
 
-参见 [CONTRIBUTING.md](CONTRIBUTING.md)。欢迎 PR。
+参见 [CONTRIBUTING.md](../../.github/CONTRIBUTING.md)。欢迎 PR。
 
 ## 许可证
 
-[MIT](LICENSE) © Denis Skripchenko
+[MIT](../../LICENSE) © Denis Skripchenko
