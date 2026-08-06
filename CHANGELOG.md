@@ -364,6 +364,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is no image. CSS: the container plate is dropped from an auth logo that
   carries an `<img>`.
 
+## [1.10.19] - 2026-07-24
+
+### Added
+- `asLink` cells in the table: the grid renders a real `<a>`, with row-level placeholders in the URL.
+
+## [1.10.18] - 2026-07-24
+
+### Added
+- `transformRecord()` hook — the read-side counterpart of `fillModel()`.
+
+## [1.10.17] - 2026-07-24
+
+### Fixed
+- The notification badge moved into the corner of its button and no longer covers the bell.
+
+## [1.10.16] - 2026-07-24
+
+### Fixed
+- Dropped the bottom border of the sidebar header in the admin shell.
+
+## [1.10.15] - 2026-07-23
+
+### Fixed
+- Two-factor `disable()` sends the password, so the button no longer answers 422 every time.
+
+## [1.10.14] - 2026-07-23
+
+### Fixed
+- `config('admin.auth.login_throttle')` is wired into the routes instead of being ignored.
+
+## [1.10.13] - 2026-07-23
+
+### Added
+- The admin API throttle is configuration-driven and defaults to 240 requests per minute.
+
+## [1.10.12] - 2026-07-23
+
+### Added
+- A `data-testid` contract across the shell, which is what makes end-to-end selectors stable.
+
+## [1.10.11] - 2026-07-23
+
+### Fixed
+- Autogeneration survives the create-form seeding race.
+
 ## [1.10.10] - 2026-07-23
 
 ### Added
