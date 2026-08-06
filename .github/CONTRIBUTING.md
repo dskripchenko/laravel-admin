@@ -3,7 +3,7 @@
 Thanks for considering a contribution to `dskripchenko/laravel-admin`!
 This document covers the workflow, code style and review expectations.
 
-> 🌐 [English](CONTRIBUTING.md) · [Русский](docs/ru/contributing.md) · [Deutsch](docs/de/contributing.md) · [中文](docs/zh/contributing.md)
+> 🌐 [English](CONTRIBUTING.md) · [Русский](../docs/ru/contributing.md) · [Deutsch](../docs/de/contributing.md) · [中文](../docs/zh/contributing.md)
 
 ## Витрина компонентов
 
@@ -106,6 +106,31 @@ vendor/bin/phpstan analyse # static analysis (level 5)
   by `Orchestra\Testbench`).
 - E2E smoke (Playwright) lives in `demo/e2e-full-flow.mjs`.
 
+## Releasing
+
+The package ships to two registries from one tag. Composer reads the tag
+itself; npm reads `package.json`. They are allowed to diverge — a change
+that touches only PHP gets a tag without an npm release.
+
+1. Update `CHANGELOG.md`.
+2. If the frontend changed, bump `version` in `package.json` in the same
+   commit. If it didn't, leave it alone.
+3. Tag `vX.Y.Z` and push the tag.
+
+Pushing the tag runs `Publish to npm`, which publishes only when
+`package.json` names exactly the tag's version and that version is not in
+the registry yet. Anything else — a PHP-only tag, a re-run of a tag that
+already shipped — ends green without publishing, so the history stays
+honest about what actually happened.
+
+Publishing runs `typecheck` and `test` first: a tag can sit on a commit
+the branch CI never saw, and a bad version cannot be taken back out of
+npm.
+
+If a tag was pushed before `package.json` caught up, bump the version on
+`main` and start `Publish to npm` by hand (`workflow_dispatch`) — the same
+guards apply.
+
 ## Sister-packs
 
 This repository is the **core**. Sister-packs (`starter`, `health`,
@@ -129,4 +154,4 @@ public issues.
 ## License
 
 By contributing you agree your work is licensed under the project
-[MIT License](LICENSE).
+[MIT License](../LICENSE).

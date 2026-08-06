@@ -1,0 +1,89 @@
+name: Publish to npm
+
+# Теги vX.Y.Z обслуживают сразу два реестра: Composer берёт из них версию
+# пакета, npm — свою. Разъезжаться они умеют (в истории есть версии, которые
+# уезжали только в npm), поэтому публикуем не по факту тега, а только когда
+# package.json действительно называет ту же версию.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Версия из package.json, которую нужно опубликовать (для ручной досылки)'
+        required: true
+
+concurrency: publish-npm
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org
+
+      - name: Decide whether there is anything to publish
+        id: decide
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "name=$PKG_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+              # Тег только для Composer — фронтенд в этот релиз не входит.
+              # Это штатный случай, а не поломка, поэтому выходим зелёными.
+              echo "Тег $GITHUB_REF_NAME, а в package.json $PKG_VERSION — публиковать нечего."
+              echo "publish=no" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          # Повторный запуск на уже опубликованной версии не должен падать:
+          # npm всё равно откажет, а красный прогон в истории будет врать.
+          if npm view "$PKG_NAME@$PKG_VERSION" version > /dev/null 2>&1; then
+            echo "$PKG_NAME@$PKG_VERSION уже в реестре."
+            echo "publish=no" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "publish=yes" >> "$GITHUB_OUTPUT"
+
+      - name: Install
+        if: steps.decide.outputs.publish == 'yes'
+        # Пакет библиотечный, package-lock.json не коммитится — как в ci.yml.
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        if: steps.decide.outputs.publish == 'yes'
+        run: npm run typecheck
+
+      - name: Test
+        if: steps.decide.outputs.publish == 'yes'
+        # Тег может стоять на коммите, который основной CI не гонял (он ходит
+        # по веткам). Публиковать непроверенное в реестр нельзя — оттуда
+        # версию уже не отозвать.
+        run: npm test
+
+      - name: Publish
+        if: steps.decide.outputs.publish == 'yes'
+        # Сборку запускает prepublishOnly из package.json.
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.decide.outputs.publish }}" = "yes" ]; then
+            echo "Опубликовано: ${{ steps.decide.outputs.name }}@${{ steps.decide.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Публикация не потребовалась (${{ steps.decide.outputs.name }}@${{ steps.decide.outputs.version }})." >> "$GITHUB_STEP_SUMMARY"
+          fi
