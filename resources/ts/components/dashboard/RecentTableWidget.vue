@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
+import { formatCell } from '../resource/cellFormat'
 import { trSafe as tr } from '../../stores/i18n'
 
 /**
@@ -50,6 +51,22 @@ const normalizedColumns = computed<UidTableColumn[]>(() =>
     } as UidTableColumn
   }),
 )
+
+/**
+ * RecentListWidget не шлёт preset'ы колонок — но formatCell сам узнаёт
+ * ISO-дату и приводит её к `d.m.Y H:i:s`. Без этого прохода виджет
+ * показывал сырой `2026-08-05T03:03:44.000000Z`, тогда как список
+ * ресурса той же датой рисует `05.08.2026 03:03:44`.
+ */
+const formattedRows = computed<Record<string, unknown>[]>(() =>
+  props.rows.map((row) => {
+    const out: Record<string, unknown> = { ...row }
+    for (const c of normalizedColumns.value) {
+      out[c.key] = formatCell(row[c.key], undefined, {})
+    }
+    return out
+  }),
+)
 </script>
 
 <template>
@@ -59,7 +76,7 @@ const normalizedColumns = computed<UidTableColumn[]>(() =>
     </header>
     <UidTable
       :columns="normalizedColumns"
-      :data="rows"
+      :data="formattedRows"
       :empty-text="tr(emptyText)"
       :class="{ 'admin-widget__table--clickable': !!linkTo }"
       @row-click="onRowClick"

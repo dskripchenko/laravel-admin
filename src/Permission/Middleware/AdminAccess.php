@@ -51,7 +51,7 @@ final class AdminAccess
             if (! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
                 return ApiResponseHelper::sayError([
                     'errorKey' => 'forbidden',
-                    'message' => 'Доступ запрещён: '.$permission,
+                    'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
                 ], Response::HTTP_FORBIDDEN);
             }
         }

@@ -16,6 +16,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
+import { useLocaleStore } from './locale'
 import { ApiError } from '../api/errors'
 import type { AdminUser, AdminBootstrap } from '../types/bootstrap'
 
@@ -42,6 +43,33 @@ export const useAuthStore = defineStore('admin-auth', () => {
   function hydrate(bootstrap: AdminBootstrap): void {
     user.value = bootstrap.user
     permissions.value = bootstrap.permissions
+  }
+
+  /**
+   * Локаль вошедшего — из его же ответа сервера.
+   *
+   * Логин делается XHR'ом без перезагрузки страницы, а locale-store был
+   * гидрирован один раз, на гостевом bootstrap'е — то есть по
+   * Accept-Language браузера. Сохранённая настройка пользователя
+   * подхватывалась только при следующей полной загрузке, и панель после
+   * входа говорила на языке браузера, а после F5 — на языке аккаунта.
+   *
+   * Ставим ДО присвоения user: на его появление подписан загрузчик
+   * манифеста, и заголовок X-Admin-Locale должен быть уже правильным —
+   * иначе манифест приедет на чужом языке.
+   */
+  function adoptUserLocale(next: AdminUser | null): void {
+    const locale = next?.locale
+    if (typeof locale !== 'string' || locale === '') return
+
+    try {
+      const localeStore = useLocaleStore()
+      if (localeStore.current === locale) return
+      localeStore.applyLocal(locale)
+    } catch {
+      // Локаль пользователя вне available-списка либо store ещё не поднят —
+      // не повод ронять вход.
+    }
   }
 
   /**
@@ -88,6 +116,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
         payload,
       )
       if (result?.user) {
+        adoptUserLocale(result.user)
         user.value = result.user
       }
       if (Array.isArray(result?.permissions)) {
@@ -118,6 +147,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
       challenge_token: pendingChallenge.value.challengeToken,
       code,
     })
+    adoptUserLocale(result.user)
     user.value = result.user
     pendingChallenge.value = null
   }
@@ -135,6 +165,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
       challenge_token: pendingChallenge.value.challengeToken,
       recovery_code: recoveryCode,
     })
+    adoptUserLocale(result.user)
     user.value = result.user
     pendingChallenge.value = null
     return { remaining: result.recovery_codes_remaining }

@@ -82,7 +82,16 @@ final class SystemController extends ApiController
      */
     public function manifest(Request $request): JsonResponse
     {
-        $locale = (string) ($request->header('X-Admin-Locale') ?? config('admin.ui.default_locale', 'ru'));
+        // Ключ memo обязан совпадать с тем, чем реально переведено содержимое.
+        // Строки манифеста гоняются через Localize::string() → __(), то есть
+        // через app()->getLocale(), который выставил AdminLocale по полной
+        // цепочке (query → header → user.locale → cookie → Accept-Language).
+        // Заголовок — лишь одно звено этой цепочки: когда он пуст, а локаль
+        // пришла из user.locale, ключ расходился с содержимым, и английский
+        // манифест ложился под ключ `ru`. Под Octane инстанс Manifest живёт
+        // дольше запроса, поэтому следующий русский пользователь получал из
+        // memo чужой английский манифест — вместе с совпадающим ETag.
+        $locale = app()->getLocale();
         $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current();
         $payload = $this->manifest->build($locale, $panel->id);
         $etag = '"'.$payload['version'].'"';

@@ -55,7 +55,7 @@ final class AdminAuth
 
             return response()->json([
                 'success' => false,
-                'payload' => ['errorKey' => 'account_inactive', 'message' => 'Учётная запись отключена'],
+                'payload' => ['errorKey' => 'account_inactive', 'message' => __('Учётная запись отключена')],
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -72,7 +72,7 @@ final class AdminAuth
 
                 return response()->json([
                     'success' => false,
-                    'payload' => ['errorKey' => 'session_expired', 'message' => 'Пароль был изменён — войдите заново'],
+                    'payload' => ['errorKey' => 'session_expired', 'message' => __('Пароль был изменён — войдите заново')],
                 ], Response::HTTP_UNAUTHORIZED);
             }
             if ($stored === null) {

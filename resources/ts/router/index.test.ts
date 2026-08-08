@@ -129,6 +129,21 @@ describe('createAdminRouter', () => {
     expect(router.currentRoute.value.name).toBe('admin.notFound')
   })
 
+  it('гостя с прямой ссылки на раздел ведёт на логин, а не в 404', async () => {
+    // Роуты ресурсов появляются только из манифеста, а гостю манифест не
+    // грузится — поэтому `/r/templates` не совпадает ни с чем и попадает в
+    // catch-all. Без requiresAuth на нём человек, у которого истекла сессия,
+    // видел «страницы нет» вместо формы входа.
+    const router = mkRouter()
+    const auth = useAuthStore()
+    auth.hydrate(mkBootstrap({ user: null }))
+
+    await router.push('/r/templates')
+
+    expect(router.currentRoute.value.name).toBe('admin.login')
+    expect(router.currentRoute.value.query.redirect).toBe('/r/templates')
+  })
+
   it('updates document.title via title guard', async () => {
     document.title = ''
     const router = mkRouter()

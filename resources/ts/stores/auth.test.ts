@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import MockAdapter from 'axios-mock-adapter'
 import { useAuthStore } from './auth'
+import { useLocaleStore } from './locale'
 import { setAdminClient, clearAdminClient } from './registry'
 import { createAdminClient } from '../api/client'
 import type { AdminBootstrap, AdminUser } from '../types/bootstrap'
@@ -114,6 +115,51 @@ describe('auth store', () => {
       const result = await auth.login({ email: 'b@example.com', password: 'x' })
       expect(result).toBe('authenticated')
       expect(auth.user?.id).toBe(1)
+    })
+
+    it('подхватывает локаль вошедшего, а не оставляет гостевую', async () => {
+      // Вход идёт XHR'ом без перезагрузки, а locale-store гидрируется один
+      // раз на гостевом bootstrap'е — по Accept-Language браузера. Без этого
+      // панель после входа говорила на языке браузера и переключалась на
+      // язык аккаунта только после F5.
+      const locale = useLocaleStore()
+      locale.hydrate(mkBootstrap({ locale: 'en', availableLocales: ['ru', 'en'] }))
+      expect(locale.current).toBe('en')
+
+      const auth = useAuthStore()
+      mock.onPost('/auth/login').reply(200, {
+        success: true,
+        payload: {
+          user: {
+            id: 2, name: 'Ann', email: 'a@example.com',
+            avatar: null, locale: 'ru', theme: null, twoFactorEnabled: false,
+          },
+        },
+      })
+
+      await auth.login({ email: 'a@example.com', password: 'x' })
+
+      expect(locale.current).toBe('ru')
+    })
+
+    it('локаль не трогается, когда у пользователя её нет', async () => {
+      const locale = useLocaleStore()
+      locale.hydrate(mkBootstrap({ locale: 'en', availableLocales: ['ru', 'en'] }))
+
+      const auth = useAuthStore()
+      mock.onPost('/auth/login').reply(200, {
+        success: true,
+        payload: {
+          user: {
+            id: 3, name: 'Nil', email: 'n@example.com',
+            avatar: null, locale: null, theme: null, twoFactorEnabled: false,
+          },
+        },
+      })
+
+      await auth.login({ email: 'n@example.com', password: 'x' })
+
+      expect(locale.current).toBe('en')
     })
 
     it('sets pendingChallenge on two_factor_required', async () => {

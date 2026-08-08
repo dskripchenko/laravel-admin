@@ -5,6 +5,40 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.19.4
+
+### Fixed
+- **The manifest was memoised under a key that did not match the language of
+  its own contents.** The cache key came from the `X-Admin-Locale` header
+  alone, while the strings inside are translated through `app()->getLocale()`,
+  which the locale middleware resolves from a longer chain. With no header and
+  a locale taken from the user's saved preference, an English manifest was
+  stored under the `ru` key — and because the `Manifest` instance outlives a
+  request under Octane, the next Russian-speaking user was served that English
+  manifest, ETag included. The key is now the locale the content was actually
+  built with.
+- **The panel kept the guest language after signing in.** Signing in is an XHR
+  with no page reload, and the locale store is hydrated once — from the guest
+  bootstrap, i.e. from the browser's `Accept-Language`. The login response
+  carries the user's own locale, but only `user` and `permissions` were read
+  from it, so the panel spoke the browser's language until the next full
+  reload and then switched to the account's. The locale is now adopted from
+  the login response, before the manifest request goes out.
+- **Signed-out visitors following a direct link to a section were told the page
+  does not exist.** Resource routes come from the manifest, which is not
+  fetched for guests, so `/r/<slug>` matched nothing and fell through to the
+  catch-all — which carried no `requiresAuth` and was therefore waved past the
+  auth guard. A guest now lands on the sign-in form with a redirect back;
+  authenticated users still get a genuine 404.
+- **The "recent records" dashboard widget printed raw ISO timestamps.** It
+  passed rows straight to the table, unlike its sibling table widget, so a
+  date rendered as `2026-08-05T03:03:44.000000Z` where a resource list shows
+  `05.08.2026 03:03:44`. Cells now go through the same formatter.
+- **Authentication and permission messages were hardcoded in Russian.** An
+  English sign-in form answered a wrong password with a Russian error. These
+  messages now go through the translator, with English wording supplied for
+  every one of them.
+
 ## 1.19.3
 
 ### Fixed

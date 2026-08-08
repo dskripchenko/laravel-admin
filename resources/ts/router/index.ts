@@ -147,11 +147,18 @@ export function createAdminRouter(opts: AdminRouterOptions): AdminRouter {
 
   // Catch-all 404 кладём в конец — vue-router matches in order и динамика
   // может быть добавлена позже через addRoute.
+  //
+  // requiresAuth здесь не про защиту данных (их отдаёт бэкенд), а про
+  // достоверность ответа: роуты ресурсов существуют только после манифеста,
+  // а гостю манифест не грузится вовсе. Без этого флага гость, зашедший по
+  // прямой ссылке на `/r/templates`, попадал в catch-all и получал «404 —
+  // страницы нет» вместо формы входа: раздел выглядел несуществующим, хотя
+  // на деле требовал авторизации.
   const notFoundRoute: RouteRecordRaw = {
     path: '/:pathMatch(.*)*',
     name: 'admin.notFound',
     component: opts.components.notFound,
-    meta: { kind: 'system', title: '404' },
+    meta: { kind: 'system', title: '404', requiresAuth: true },
   }
 
   const router = createRouter({

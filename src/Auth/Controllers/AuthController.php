@@ -83,14 +83,14 @@ final class AuthController extends ApiController
 
             return $this->error([
                 'errorKey' => 'invalid_credentials',
-                'message' => 'Неверный email или пароль',
+                'message' => __('Неверный email или пароль'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
         if (! $user instanceof Model) {
             return $this->error([
                 'errorKey' => 'invalid_credentials',
-                'message' => 'Неверный email или пароль',
+                'message' => __('Неверный email или пароль'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -101,7 +101,7 @@ final class AuthController extends ApiController
         if (AccountState::isDisabled($user)) {
             return $this->error([
                 'errorKey' => 'account_inactive',
-                'message' => 'Учётная запись отключена',
+                'message' => __('Учётная запись отключена'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -116,7 +116,7 @@ final class AuthController extends ApiController
 
             return $this->error([
                 'errorKey' => 'two_factor_required',
-                'message' => 'Введите код из приложения-аутентификатора',
+                'message' => __('Введите код из приложения-аутентификатора'),
                 'challenge_token' => $token,
             ], Response::HTTP_OK);
         }
@@ -190,7 +190,7 @@ final class AuthController extends ApiController
         if ($challenge === null) {
             return $this->error([
                 'errorKey' => 'challenge_expired',
-                'message' => 'Истёк срок challenge\'а, повторите вход',
+                'message' => __('Истёк срок challenge\'а, повторите вход'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -201,7 +201,7 @@ final class AuthController extends ApiController
             || ! $user->hasTwoFactorEnabled()) {
             return $this->error([
                 'errorKey' => 'invalid_two_factor_code',
-                'message' => 'Неверный код',
+                'message' => __('Неверный код'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -212,7 +212,7 @@ final class AuthController extends ApiController
         )) {
             return $this->error([
                 'errorKey' => 'invalid_two_factor_code',
-                'message' => 'Неверный код',
+                'message' => __('Неверный код'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -245,7 +245,7 @@ final class AuthController extends ApiController
         if ($challenge === null) {
             return $this->error([
                 'errorKey' => 'challenge_expired',
-                'message' => 'Истёк срок challenge\'а',
+                'message' => __('Истёк срок challenge\'а'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -254,7 +254,7 @@ final class AuthController extends ApiController
         if ($user === null) {
             return $this->error([
                 'errorKey' => 'invalid_recovery_code',
-                'message' => 'Неверный recovery-код',
+                'message' => __('Неверный recovery-код'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -264,7 +264,7 @@ final class AuthController extends ApiController
         if ($remaining === null) {
             return $this->error([
                 'errorKey' => 'invalid_recovery_code',
-                'message' => 'Неверный recovery-код',
+                'message' => __('Неверный recovery-код'),
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -330,7 +330,7 @@ final class AuthController extends ApiController
         Password::broker($broker)->sendResetLink($request->only('email'));
 
         return $this->success([
-            'message' => 'Если такой email зарегистрирован, на него отправлено письмо со ссылкой для сброса пароля',
+            'message' => __('Если такой email зарегистрирован, на него отправлено письмо со ссылкой для сброса пароля'),
         ]);
     }
 
@@ -424,7 +424,7 @@ final class AuthController extends ApiController
         if (! URL::hasValidSignature($request)) {
             return $this->error([
                 'errorKey' => 'validation',
-                'message' => 'Невалидная или просроченная ссылка верификации',
+                'message' => __('Невалидная или просроченная ссылка верификации'),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
@@ -438,13 +438,13 @@ final class AuthController extends ApiController
             )) {
             return $this->error([
                 'errorKey' => 'validation',
-                'message' => 'Невалидная подпись',
+                'message' => __('Невалидная подпись'),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if ($user->hasVerifiedEmail()) {
             return $this->success([
-                'message' => 'Email уже подтверждён',
+                'message' => __('Email уже подтверждён'),
                 'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
             ]);
         }
@@ -454,7 +454,7 @@ final class AuthController extends ApiController
         }
 
         return $this->success([
-            'message' => 'Email подтверждён',
+            'message' => __('Email подтверждён'),
             'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
         ]);
     }
@@ -484,12 +484,12 @@ final class AuthController extends ApiController
         }
 
         if ($user->hasVerifiedEmail()) {
-            return $this->success(['message' => 'Email уже подтверждён']);
+            return $this->success(['message' => __('Email уже подтверждён')]);
         }
 
         $user->sendEmailVerificationNotification();
 
-        return $this->success(['message' => 'Письмо отправлено']);
+        return $this->success(['message' => __('Письмо отправлено')]);
     }
 
     /**
@@ -547,7 +547,7 @@ final class AuthController extends ApiController
         if (! $manager->enabled()) {
             return $this->error([
                 'errorKey' => 'impersonation_disabled',
-                'message' => 'Impersonation отключена в конфиге',
+                'message' => __('Impersonation отключена в конфиге'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -570,7 +570,7 @@ final class AuthController extends ApiController
             || ! $current->hasAccess($manager->requiredPermission())) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => 'Нет права '.$manager->requiredPermission(),
+                'message' => __('Нет права :permission', ['permission' => $manager->requiredPermission()]),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -578,7 +578,7 @@ final class AuthController extends ApiController
         if ($manager->isActive()) {
             return $this->error([
                 'errorKey' => 'already_impersonating',
-                'message' => 'Сначала остановите текущую impersonation',
+                'message' => __('Сначала остановите текущую impersonation'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -588,21 +588,21 @@ final class AuthController extends ApiController
         if (! $target instanceof Authenticatable || ! $target instanceof Model) {
             return $this->error([
                 'errorKey' => 'not_found',
-                'message' => 'Пользователь не найден',
+                'message' => __('Пользователь не найден'),
             ], Response::HTTP_NOT_FOUND);
         }
 
         if ($target->getKey() === $current->getKey()) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => 'Нельзя impersonate самого себя',
+                'message' => __('Нельзя impersonate самого себя'),
             ], Response::HTTP_FORBIDDEN);
         }
 
         if ($manager->isHigherPowered($current, $target)) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => 'Цель имеет больше прав, чем вы — impersonation запрещена',
+                'message' => __('Цель имеет больше прав, чем вы — impersonation запрещена'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -633,7 +633,7 @@ final class AuthController extends ApiController
         if (! $manager->isActive()) {
             return $this->error([
                 'errorKey' => 'no_active_impersonation',
-                'message' => 'Нет активной impersonation',
+                'message' => __('Нет активной impersonation'),
             ], Response::HTTP_BAD_REQUEST);
         }
 
@@ -642,7 +642,7 @@ final class AuthController extends ApiController
         if (! $original instanceof Authenticatable || ! $original instanceof Model) {
             return $this->error([
                 'errorKey' => 'impersonator_not_found',
-                'message' => 'Оригинальный пользователь не найден',
+                'message' => __('Оригинальный пользователь не найден'),
             ], Response::HTTP_BAD_REQUEST);
         }
 
