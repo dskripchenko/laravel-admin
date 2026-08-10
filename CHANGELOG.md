@@ -5,6 +5,30 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.20.0
+
+### Added
+- **Installation notice above the panel.** A short banner with optional
+  countdown, driven by `admin.notice` — text, link, and a moment to count down
+  to. Empty text renders nothing at all.
+
+  Rendered by the shell rather than by the SPA, and deliberately so. A notice
+  of this kind — "this is a demo stand", "data is wiped hourly", "migration in
+  progress" — is a property of the *installation*, not of a screen, and it has
+  to stay visible when the SPA fails to boot: that is exactly the moment
+  somebody most needs to know where they have landed. Its styles are inline for
+  the same reason; a banner waiting on the SPA stylesheet is invisible during
+  the seconds it matters most.
+
+  The countdown runs in the browser from a server-supplied instant, not from
+  the visitor's clock — those drift, and "40 minutes left" measured against a
+  wrong clock means nothing. It stops at zero rather than going negative: the
+  moment has arrived, and what happens next is not this page's business.
+
+  `countdown_to` is left null in config on purpose. The value is dynamic, and a
+  cached config would freeze it forever; the host application sets it mid-request,
+  from middleware.
+
 ## 1.19.5
 
 Three follow-ups to the locale defects fixed in 1.19.4. None of them was

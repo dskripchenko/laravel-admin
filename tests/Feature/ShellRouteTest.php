@@ -75,3 +75,62 @@ it('returns empty assets when neither config-list nor vite-manifest provided', f
         'js' => [],
     ]);
 });
+
+/*
+ * Плашка установки.
+ *
+ * Рисуется оболочкой, а не приложением: объявление вроде «данные стираются
+ * каждый час» — свойство установки, и человеку важнее всего увидеть его
+ * именно тогда, когда SPA не поднялась.
+ */
+
+it('без текста не печатает плашку вовсе', function (): void {
+    // Пустая плашка на каждой странице каждой установки — это разметка,
+    // которая ничего не значит, и место, где однажды окажется чужой текст.
+    config()->set('admin.notice.text', null);
+
+    $html = (string) $this->get('/admin')->getContent();
+
+    expect($html)->not->toContain('admin-notice');
+});
+
+it('печатает текст плашки, когда он задан', function (): void {
+    config()->set('admin.notice.text', 'Демонстрационный стенд: данные стираются');
+
+    $html = (string) $this->get('/admin')->getContent();
+
+    expect($html)->toContain('Демонстрационный стенд: данные стираются');
+});
+
+it('отсчёт ведётся от серверной метки, а не от часов посетителя', function (): void {
+    // Часы у посетителей расходятся, и «осталось 40 минут», посчитанное по
+    // ним, означало бы что угодно. Сервер называет момент, браузер считает
+    // разницу.
+    $until = now()->addMinutes(17)->toIso8601String();
+    config()->set('admin.notice.text', 'Сброс стенда');
+    config()->set('admin.notice.countdown_to', $until);
+
+    $html = (string) $this->get('/admin')->getContent();
+
+    expect($html)->toContain('data-until="'.$until.'"');
+});
+
+it('без момента отсчёта не печатает ни разметки отсчёта, ни скрипта', function (): void {
+    config()->set('admin.notice.text', 'Просто объявление');
+    config()->set('admin.notice.countdown_to', null);
+
+    $html = (string) $this->get('/admin')->getContent();
+
+    expect($html)->toContain('Просто объявление')
+        ->and($html)->not->toContain('admin-notice-left');
+});
+
+it('плашка стоит выше приложения, а не внутри него', function (): void {
+    // Внутри #admin-app её снесло бы первым же рендером SPA — ровно тогда,
+    // когда она нужна.
+    config()->set('admin.notice.text', 'Стенд');
+
+    $html = (string) $this->get('/admin')->getContent();
+
+    expect(strpos($html, 'admin-notice'))->toBeLessThan(strpos($html, 'id="admin-app"'));
+});

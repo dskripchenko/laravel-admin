@@ -43,6 +43,10 @@ final class ShellController
             'strategy' => $strategy,
             'cspNonce' => $request->attributes->get('admin.csp_nonce'),
             'brand' => \Dskripchenko\LaravelAdmin\I18n\Localize::brand(),
+            // Читается на каждом запросе, а не кэшируется вместе с bootstrap:
+            // отсчёт в плашке ведётся до конкретного момента, и host-приложение
+            // выставляет его посреди запроса.
+            'notice' => (array) config('admin.notice', []),
             'assets' => $this->resolveAssets(),
         ]);
     }
