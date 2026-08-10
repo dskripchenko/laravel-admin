@@ -102,8 +102,21 @@ final class AdminServiceProvider extends ServiceProvider
         ));
         $this->app->alias(Admin::class, 'admin');
 
-        $this->app->singleton(Manifest::class);
-        $this->app->singleton(Support\BootstrapBuilder::class);
+        // Manifest копит собранные payload'ы в memo, чтобы bootstrap и
+        // /manifest не собирали одно и то же дважды за запрос. Memo писался
+        // под FPM, где singleton и есть «один запрос»; под Octane экземпляр
+        // живёт сколько живёт воркер, и memo незаметно превращается из
+        // дедупликации в межзапросный кэш. Сейчас содержимое зависит только
+        // от локали и панели — обе в ключе, — но в самом Manifest записано,
+        // что фильтрация по правам ещё впереди: в тот день ключ перестанет
+        // описывать содержимое, и воркер отдаст манифест одного человека
+        // другому. По той же причине рядом scoped'ится tenancy.
+        //
+        // BootstrapBuilder переезжает следом не за компанию: он держит
+        // Manifest в конструкторе, и singleton намертво захватил бы
+        // scoped-экземпляр первого запроса — получилось бы хуже, чем было.
+        $this->app->scoped(Manifest::class);
+        $this->app->scoped(Support\BootstrapBuilder::class);
 
         // Override laravel-api's `api_module` to our AdminApiModule.
         // Pre-condition: laravel-api's ApiServiceProvider already ran register()

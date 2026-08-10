@@ -139,3 +139,16 @@ it('system.setLocale rejects unknown locale with 422', function (): void {
     $response->assertStatus(422);
     expect($response->json('payload.errorKey'))->toBe('unsupported_locale');
 });
+
+it('ответ панели объявляет Vary по всем источникам локали', function (): void {
+    // Шелл несёт инлайн-bootstrap со строками, манифест — подписи ресурсов.
+    // Без Vary обратный прокси или CDN перед панелью раздаст язык одного
+    // посетителя другому. Cookie здесь не перестраховка: два из пяти
+    // источников — куки (сессия с user.locale и admin_locale).
+    $vary = $this->get('/admin')->headers->get('Vary');
+
+    expect($vary)->not->toBeNull('шелл не объявляет Vary');
+    foreach (['Accept-Language', 'X-Admin-Locale', 'Cookie'] as $source) {
+        expect(strtolower((string) $vary))->toContain(strtolower($source));
+    }
+});

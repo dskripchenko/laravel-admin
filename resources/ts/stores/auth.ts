@@ -185,6 +185,13 @@ export const useAuthStore = defineStore('admin-auth', () => {
       user.value = null
       permissions.value = []
       pendingChallenge.value = null
+      // Локаль вышедшего не должна достаться следующему: заголовок стоит
+      // в цепочке выше сохранённой настройки аккаунта.
+      try {
+        useLocaleStore().release()
+      } catch {
+        // Store недоступен (тесты без Pinia) — выход важнее уборки.
+      }
     }
   }
 

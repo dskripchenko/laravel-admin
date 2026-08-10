@@ -28,3 +28,20 @@ it('Manifest::flush drops the memo', function (): void {
     $rr->clear();
     expect($m->build('ru', 'admin')['resources'])->toBe([]);
 });
+
+it('Manifest и BootstrapBuilder живут ровно запрос, а не сколько воркер', function (): void {
+    // Memo писался под FPM, где singleton и есть «один запрос». Под Octane
+    // singleton пережил бы запрос, и дедупликация превратилась бы в
+    // межзапросный кэш по ключу, который не описывает всё, от чего зависит
+    // содержимое (фильтрация по правам в самом Manifest помечена как
+    // предстоящая). Проверяем ровно тем, чем Octane разделяет запросы.
+    $first = app(Manifest::class);
+    $firstBoot = app(Dskripchenko\LaravelAdmin\Support\BootstrapBuilder::class);
+    expect(app(Manifest::class))->toBe($first); // в пределах запроса — один
+
+    app()->forgetScopedInstances(); // граница запроса под Octane
+
+    expect(app(Manifest::class))->not->toBe($first, 'Manifest пережил границу запроса');
+    expect(app(Dskripchenko\LaravelAdmin\Support\BootstrapBuilder::class))
+        ->not->toBe($firstBoot, 'BootstrapBuilder держит Manifest — обязан жить столько же');
+});

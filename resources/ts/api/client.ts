@@ -31,6 +31,8 @@ export interface AdminClient {
   patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
   delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
   setLocale(locale: string): void
+  /** Снять закреплённый X-Admin-Locale — резолвить локаль будет сервер. */
+  clearLocale(): void
 }
 
 export function createAdminClient(opts: ClientOptions): AdminClient {
@@ -122,6 +124,9 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
       wrapBody<T>('patch', url, data, config),
     setLocale: (locale: string): void => {
       instance.defaults.headers.common['X-Admin-Locale'] = locale
+    },
+    clearLocale: (): void => {
+      delete instance.defaults.headers.common['X-Admin-Locale']
     },
   }
 }

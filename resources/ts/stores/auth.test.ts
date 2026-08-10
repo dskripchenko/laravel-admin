@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import MockAdapter from 'axios-mock-adapter'
 import { useAuthStore } from './auth'
 import { useLocaleStore } from './locale'
-import { setAdminClient, clearAdminClient } from './registry'
+import { setAdminClient, clearAdminClient, getAdminClient } from './registry'
 import { createAdminClient } from '../api/client'
 import type { AdminBootstrap, AdminUser } from '../types/bootstrap'
 
@@ -140,6 +140,26 @@ describe('auth store', () => {
       await auth.login({ email: 'a@example.com', password: 'x' })
 
       expect(locale.current).toBe('ru')
+    })
+
+    it('выход отпускает локаль — она не достаётся следующему', async () => {
+      // Заголовок X-Admin-Locale стоит в цепочке ВЫШЕ сохранённой настройки
+      // аккаунта: пока вкладка его шлёт, он перебивает настройку. После
+      // выхода это чужая локаль — следующий вошедший в той же вкладке
+      // получил бы язык предшественника, не имея своей настройки.
+      const locale = useLocaleStore()
+      locale.hydrate(mkBootstrap({ locale: 'en', availableLocales: ['ru', 'en'] }))
+
+      const auth = useAuthStore()
+      mock.onPost('/auth/logout').reply(200, { success: true, payload: {} })
+
+      await auth.logout()
+
+      mock.onGet('/probe').reply((config) => {
+        expect(config.headers?.['X-Admin-Locale']).toBeUndefined()
+        return [200, { success: true, payload: {} }]
+      })
+      await getAdminClient().get('/probe')
     })
 
     it('локаль не трогается, когда у пользователя её нет', async () => {

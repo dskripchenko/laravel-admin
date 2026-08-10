@@ -31,6 +31,23 @@ export const useLocaleStore = defineStore('admin-locale', () => {
     applySideEffects(locale)
   }
 
+  /**
+   * Отпустить локаль: убрать закреплённый заголовок, чтобы её резолвил
+   * сервер по полной цепочке.
+   *
+   * Заголовок стоит в цепочке ВЫШЕ сохранённой настройки пользователя —
+   * пока вкладка его шлёт, она перебивает настройку аккаунта. После выхода
+   * это уже чужая локаль: следующий вошедший в этой же вкладке получил бы
+   * язык предшественника, если своей сохранённой настройки у него нет.
+   */
+  function release(): void {
+    try {
+      getAdminClient().clearLocale()
+    } catch {
+      // Клиент ещё не зарегистрирован — отпускать нечего.
+    }
+  }
+
   async function setLocale(locale: string): Promise<void> {
     if (!available.value.includes(locale)) {
       throw new Error(`Locale "${locale}" is not available`)
@@ -66,5 +83,6 @@ export const useLocaleStore = defineStore('admin-locale', () => {
     hydrate,
     applyLocal,
     setLocale,
+    release,
   }
 })

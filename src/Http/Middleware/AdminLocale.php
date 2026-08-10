@@ -18,6 +18,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class AdminLocale
 {
+    /**
+     * Источники локали, о которых обязан знать кэширующий посредник.
+     *
+     * `Cookie` здесь не перестраховка: два из пяти источников —
+     * куки (сессия, из которой берётся user.locale, и admin_locale).
+     */
+    private const VARY = ['Accept-Language', LocaleResolver::HEADER, 'Cookie'];
+
     public function __construct(private readonly LocaleResolver $resolver) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -25,6 +33,24 @@ final class AdminLocale
         $locale = $this->resolver->resolve($request);
         app()->setLocale($locale);
 
-        return $next($request);
+        $response = $next($request);
+
+        // Ответ зависит от языка: шелл несёт инлайн-bootstrap со строками,
+        // манифест — подписи ресурсов и меню. Без Vary любой обратный прокси
+        // или CDN перед панелью раздаст язык одного посетителя другому — тот
+        // же класс ошибки, что кэш манифеста под чужим ключом, только этажом
+        // выше. У самого сервиса прокси нет, но коробку и кластер клиент
+        // ставит за своим.
+        // Одной строкой, а не тремя заголовками: три значения через
+        // setVary(..., replace: false) — валидный HTTP, но простые прокси
+        // и часть CDN читают только первый. Чужой Vary при этом сохраняем.
+        $existing = array_filter(array_map(
+            'trim',
+            explode(',', (string) $response->headers->get('Vary', '')),
+        ));
+        $merged = array_values(array_unique([...$existing, ...self::VARY]));
+        $response->headers->set('Vary', implode(', ', $merged));
+
+        return $response;
     }
 }

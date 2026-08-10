@@ -5,6 +5,43 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.19.5
+
+Three follow-ups to the locale defects fixed in 1.19.4. None of them was
+misbehaving on its own; each was a loaded gun aimed at a change someone
+would reasonably make later.
+
+### Fixed
+- **The manifest cache outlived the request it was built for.** `Manifest`
+  memoises assembled payloads so that the bootstrap and `/manifest` don't
+  build the same thing twice, and the memo was written for FPM, where a
+  singleton *is* one request — the code said so in as many words. Under
+  Octane the instance lives as long as the worker, and the deduplication
+  quietly becomes a cross-request cache. Nothing leaks today: the content
+  depends only on locale and panel, and both are in the key. But `Manifest`
+  itself records that permission filtering is still to come, and on that
+  day the key would stop describing the content while the cache went on
+  spanning requests. Both `Manifest` and `BootstrapBuilder` are now
+  `scoped()` — the latter because it holds the former in its constructor,
+  and a singleton would have pinned the first request's instance forever.
+- **Locale-dependent responses did not say so.** The shell carries an
+  inline bootstrap full of translated strings and the manifest carries
+  resource and menu labels, but neither declared `Vary`. Any reverse proxy
+  or CDN in front of the panel would serve one visitor's language to
+  another — the same mistake as caching the manifest under a key that
+  doesn't match its contents, one layer up. Responses now vary on
+  `Accept-Language`, `X-Admin-Locale` and `Cookie`; the last is not
+  belt-and-braces, since two of the five locale sources are cookies. The
+  header is emitted as a single line and merges with any `Vary` the host
+  already set.
+- **Signing out left the previous person's language pinned.** The
+  `X-Admin-Locale` header sits above the saved account preference in the
+  resolution chain, so while a tab keeps sending it, it wins. After a sign
+  out that value belongs to someone else: the next person to sign in on
+  the same tab would have inherited it unless they had a saved preference
+  of their own. The header is now released on logout, and the server
+  resolves the locale afresh.
+
 ## 1.19.4
 
 ### Fixed
