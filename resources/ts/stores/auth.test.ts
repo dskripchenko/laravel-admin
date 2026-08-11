@@ -271,6 +271,42 @@ describe('auth store', () => {
       auth.cancelChallenge()
       expect(auth.isChallengePending).toBe(false)
     })
+
+    it('BL-44: гидратация на ru + пустая локаль у пользователя оставляет ru', async () => {
+      // Воспроизведение с бета-стенда: браузер ru, сервер отдал bootstrap с
+      // locale=ru, у учётки в базе locale=NULL. Наблюдалось: сам вход уходит с
+      // X-Admin-Locale=ru, а следующий же запрос меню — с en.
+      //
+      // Отличие от соседнего теста «локаль не трогается…» в двух вещах, и обе
+      // взяты со стенда: гидратация на РУССКОМ (там был en, то есть совпадал с
+      // умолчанием и ничего не проверял) и порядок availableLocales, где
+      // английский идёт первым.
+      const locale = useLocaleStore()
+      locale.hydrate(mkBootstrap({ locale: 'ru', availableLocales: ['en', 'ru'] }))
+
+      const auth = useAuthStore()
+      mock.onPost('/auth/login').reply(200, {
+        success: true,
+        payload: {
+          user: {
+            id: 7, name: 'Beta', email: 'user@beta.printable.ink',
+            avatar: null, locale: null, theme: null, twoFactorEnabled: false,
+          },
+        },
+      })
+
+      await auth.login({ email: 'user@beta.printable.ink', password: 'x' })
+
+      expect(locale.current).toBe('ru')
+
+      // И заголовок, которым уйдёт следующий запрос, — тоже ru: именно он
+      // решает, на каком языке приедет меню.
+      mock.onGet('/probe').reply((config) => {
+        expect(config.headers?.['X-Admin-Locale']).toBe('ru')
+        return [200, { success: true, payload: {} }]
+      })
+      await getAdminClient().get('/probe')
+    })
   })
 
   describe('logout', () => {

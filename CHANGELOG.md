@@ -5,6 +5,28 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.20.1
+
+### Fixed
+- **A user with no saved locale got the panel in the default language after
+  logging in, and the browser's language back after a refresh.** The two
+  serialisers of the same user shape disagreed: `BootstrapBuilder` returned the
+  stored value as-is, while `AuthController::serializeUser` substituted
+  `admin.ui.default_locale` when the column was null — even though its own
+  docblock promises "the summary shape the SPA receives in bootstrap/me/login".
+
+  So a full page load told the SPA "this user has no preference" and the
+  browser-resolved locale stood; logging in told it "this user chose English"
+  and the SPA adopted it, exactly as it should. Nothing in the client was
+  wrong — it was being lied to.
+
+  Both fields are now returned raw. `theme` had the identical substitution: the
+  SPA does not adopt theme on login today, so it was harmless — and loaded for
+  the day somebody adds that.
+
+  Reachable by every account that has never switched language: an empty locale
+  is the default state of any freshly created user.
+
 ## 1.20.0
 
 ### Added

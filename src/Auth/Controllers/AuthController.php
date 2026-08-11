@@ -508,8 +508,21 @@ final class AuthController extends ApiController
             'name' => $user->getAttribute('name'),
             'email' => $user->getAttribute('email'),
             'avatar' => $user->getAttribute('avatar'),
-            'locale' => $user->getAttribute('locale') ?? config('admin.ui.default_locale', 'ru'),
-            'theme' => $user->getAttribute('theme') ?? config('admin.ui.default_theme', 'light'),
+            // Как есть, без подстановки умолчаний — иначе «у пользователя нет
+            // предпочтения» превращается в «пользователь выбрал вот это».
+            //
+            // Разница была видна: BootstrapBuilder отдаёт сырое значение, а
+            // здесь подставлялось умолчание, хотя докблок обещает один и тот же
+            // shape. Из-за этого панель у пользователя без сохранённой локали
+            // после ВХОДА уходила в язык по умолчанию, а после F5 возвращалась
+            // к языку браузера: полная загрузка получала null и язык не
+            // трогала, а вход получал 'en' и честно его принимал.
+            //
+            // `theme` правится заодно: сейчас SPA тему при входе не принимает,
+            // и подстановка безвредна — но она заряжена ровно на тот день,
+            // когда примет.
+            'locale' => $user->getAttribute('locale'),
+            'theme' => $user->getAttribute('theme'),
             'twoFactorEnabled' => $twoFactorEnabled,
             'impersonator' => null,
         ];

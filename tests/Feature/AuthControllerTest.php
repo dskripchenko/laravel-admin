@@ -214,3 +214,66 @@ it('login consumes exactly one throttle hit per request', function (): void {
 
     expect(Illuminate\Support\Facades\RateLimiter::attempts($key))->toBe(1);
 });
+
+/*
+ * BL-44: shape пользователя одинаков в bootstrap и в ответе на вход.
+ *
+ * Докблок `serializeUser` обещает «сводный shape, который SPA получает в
+ * bootstrap/me/login», но `locale` и `theme` там подставлялись из конфига,
+ * тогда как BootstrapBuilder отдаёт сырые значения. Расхождение было видно
+ * глазами: панель у пользователя без сохранённой локали после ВХОДА уходила
+ * в язык по умолчанию, а после F5 возвращалась к языку браузера. Полная
+ * загрузка получала null и язык не трогала, вход получал 'en' и принимал.
+ */
+
+it('вход не выдаёт умолчание за выбор пользователя', function (): void {
+    config(['admin.ui.default_locale' => 'en', 'admin.ui.default_theme' => 'dark']);
+    $user = AdminUser::create([
+        'name' => 'Без предпочтений', 'email' => 'nopref@example.com',
+        'password' => 'secret-password', 'locale' => null, 'theme' => null,
+    ]);
+
+    $response = $this->postJson('/api/admin/auth/login', [
+        'email' => 'nopref@example.com', 'password' => 'secret-password',
+    ]);
+
+    $response->assertOk();
+    expect($response->json('payload.user.locale'))->toBeNull('умолчание локали выдано за выбор пользователя');
+    expect($response->json('payload.user.theme'))->toBeNull('умолчание темы выдано за выбор пользователя');
+});
+
+it('сохранённые значения по-прежнему отдаются', function (): void {
+    // Обратная сторона: правка не должна перестать отдавать реальный выбор.
+    config(['admin.ui.default_locale' => 'en']);
+    AdminUser::create([
+        'name' => 'С выбором', 'email' => 'withpref@example.com',
+        'password' => 'secret-password', 'locale' => 'ru', 'theme' => 'dark',
+    ]);
+
+    $response = $this->postJson('/api/admin/auth/login', [
+        'email' => 'withpref@example.com', 'password' => 'secret-password',
+    ]);
+
+    expect($response->json('payload.user.locale'))->toBe('ru');
+    expect($response->json('payload.user.theme'))->toBe('dark');
+});
+
+it('вход и bootstrap описывают пользователя одинаково', function (): void {
+    // Суть дефекта была не в самом умолчании, а в РАСХОЖДЕНИИ двух
+    // сериализаторов одного и того же shape.
+    config(['admin.ui.default_locale' => 'en']);
+    AdminUser::create([
+        'name' => 'Сверка', 'email' => 'compare@example.com',
+        'password' => 'secret-password', 'locale' => null, 'theme' => null,
+    ]);
+
+    $login = $this->postJson('/api/admin/auth/login', [
+        'email' => 'compare@example.com', 'password' => 'secret-password',
+    ])->json('payload.user');
+
+    $bootstrap = $this->getJson('/api/admin/system/bootstrap')->json('payload.user');
+
+    foreach (['locale', 'theme'] as $key) {
+        expect($login[$key])->toBe($bootstrap[$key], "поле {$key} расходится между входом и bootstrap");
+    }
+});
