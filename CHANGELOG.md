@@ -5,6 +5,21 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.22.0
+
+### Added
+- **The translator is now part of the public API: `trSafe`, `useI18nStore`,
+  `tRaw`.** Without them a host could not translate its own components — and
+  had no way of knowing why. The dictionary was always delivered
+  (`BootstrapBuilder` merges the host's `lang/{locale}.json` into the bootstrap
+  bag) and the store was there; only the reader never reached the public entry.
+
+  So a host could fill its JSON translations carefully and still watch every
+  string in its own components stay in the language it was typed in.
+
+      import { trSafe as tr } from '@dskripchenko/laravel-admin'
+      tr('Ключ обязателен')   // key = the source string, as on the server
+
 ## 1.21.4
 
 ### Fixed

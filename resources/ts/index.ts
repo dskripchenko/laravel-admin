@@ -118,6 +118,18 @@ export type {
 export { useMenuStore } from './stores/menu'
 export type { MenuItem, MenuGroup } from './stores/menu'
 
+// i18n. Exported because a host cannot translate its own components without
+// it — and until now it could not: the store lived here but never reached the
+// public entry, so every string in a host component stayed in the language it
+// was typed in, however carefully the host filled `lang/{locale}.json`.
+//
+// The dictionary itself has always been delivered: BootstrapBuilder merges the
+// host's JSON translations into the bootstrap bag. Only the reader was missing.
+//
+//   import { trSafe as tr } from '@dskripchenko/laravel-admin'
+//   tr('Ключ обязателен')   // key = the source string, as on the server
+export { trSafe, useI18nStore, tRaw } from './stores/i18n'
+
 // Shell components
 export {
   AdminShell,
