@@ -202,11 +202,20 @@
   right: 0;
   min-width: 14px;
   height: 14px;
-  padding: 0 4px;
+  /* 2px, not 4px. Under border-box a single digit measured 6.09px + 8px of
+     padding + 2px of border = 16.09px, which beats `min-width` — so the badge
+     came out 16×14: an oval where the eye expects a circle, and the digit read
+     as pushed off-centre even though it was centred in it. With 2px a single
+     digit stays under `min-width` and the badge is a true 14×14 circle, while
+     `12` and `99+` still grow into a pill, which is what they should be. */
+  padding: 0 2px;
   border-radius: var(--uid-radius-full);
   background: var(--uid-danger);
   color: var(--uid-color-white, #fff);
   font-size: 9px;
+  /* Inherited line-height was 13.5px inside a 12px content box; the overflow
+     centred to a half-pixel and the digit sat visibly high. */
+  line-height: 1;
   font-weight: var(--uid-font-weight-semibold);
   display: grid;
   place-items: center;

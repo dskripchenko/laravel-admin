@@ -5,6 +5,20 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.21.2
+
+### Fixed
+- **The unread-notifications badge was an oval, and the digit inside it read as
+  off-centre.** Under `box-sizing: border-box` a single digit measured 6.09px
+  plus 8px of padding plus 2px of border — 16.09px against a height of 14px, so
+  `min-width: 14px` never applied and the badge came out 16×14 where the eye
+  expects a circle. The inherited 13.5px line-height inside a 12px content box
+  added another half-pixel of vertical drift.
+
+  Horizontal padding is now 2px, which keeps a single digit under `min-width`
+  (a true 14×14 circle) while `12` and `99+` still grow into a pill, and the
+  line-height is pinned to 1.
+
 ## 1.21.1
 
 ### Fixed
