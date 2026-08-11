@@ -408,6 +408,14 @@ onBeforeUnmount(cleanupSource)
   border-radius: 8px;
   padding: 32px 16px;
   text-align: center;
+  /* Flex, not just `text-align: center`. The icon renders as a block-level
+     svg, and text-align does not touch a block: the label sat centred while
+     the icon stayed pinned to the left edge, 449px away from it on a wide
+     field. Centring the box itself puts both on the same axis. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
   color: var(--uid-color-text-secondary, #62686f);

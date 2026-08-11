@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.21.4
+
+### Fixed
+- **The upload icon in a drop zone sat pinned to the left while its label was
+  centred.** Centring was done with `text-align: center` alone, which has no
+  effect on a block-level element — and the icon renders as a block svg. On a
+  wide field the two were 449px apart, measured on a stand.
+
+  Both drop zones are now centred columns: the file field and the image
+  cropper, which carried the same rule and the same defect. Label spacing is
+  untouched.
+
 ## 1.21.3
 
 ### Fixed
