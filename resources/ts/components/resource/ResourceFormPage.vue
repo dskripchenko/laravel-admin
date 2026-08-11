@@ -15,6 +15,7 @@
  * FieldRenderer'ы внутри форм автоматически подхватывают через useFormState.
  */
 import { computed, onMounted, watch } from 'vue'
+import { tRaw } from '../../stores/i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
   UidAlert,
@@ -150,7 +151,7 @@ function seedDefaultsFromManifest(): void {
 
 const titleLabel = computed(() => {
   if (form.isCreate) return `${tr('Создать')}: ${resourceMeta.value?.label ?? props.slug}`
-  return `${resourceMeta.value?.label ?? props.slug}: запись #${props.id}`
+  return `${resourceMeta.value?.label ?? props.slug}: ${tRaw('запись #:id', { id: props.id ?? '' })}`
 })
 
 const statusValue = computed<string | null>(() => {

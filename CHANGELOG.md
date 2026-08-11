@@ -5,6 +5,14 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.22.1
+
+### Fixed
+- **The record page title stayed Russian on an English panel** — `Templates:
+  запись #2`. The label came from the resource manifest and was translated; the
+  word next to it was written into the component and never went through the
+  translator. Both the view and the form page carried the same line.
+
 ## 1.22.0
 
 ### Added

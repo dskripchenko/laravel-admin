@@ -16,6 +16,7 @@
  *   └──────────────────────────────┴─────────────────┘
  */
 import { computed, onMounted, watch } from 'vue'
+import { tRaw } from '../../stores/i18n'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, MoreHorizontal, Pencil, Trash2 } from 'lucide-vue-next'
 import {
@@ -134,11 +135,11 @@ const defaultMetrics = computed<MetricRow[]>(() => {
 })
 const recordTitle = computed<string>(() => {
   // Запись может иметь поле `title` / `name` / `label` — пробуем по очереди.
-  // Иначе fallback на "{ResourceLabel}: запись #{id}".
+  // Otherwise fall back to "{ResourceLabel}: запись #{id}".
   const r = form.state as Record<string, unknown>
   const t = r.title ?? r.name ?? r.label
   if (typeof t === 'string' && t.length > 0) return t
-  return `${resourceMeta.value?.label ?? props.slug}: запись #${props.id}`
+  return `${resourceMeta.value?.label ?? props.slug}: ${tRaw('запись #:id', { id: props.id })}`
 })
 const indexLabel = computed<string>(
   () => resourceMeta.value?.label ?? props.slug,
