@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.21.0
+
+### Added
+- **`Layout\Dashboard` now renders on an ordinary screen.** The class is public
+  API and could always be returned from `layout()`, but the only thing able to
+  draw it was the dashboard route, which has its own page component and never
+  consults the layout registry. Put it on a regular screen and the page came out
+  empty: heading present, body gone, nothing in any log.
+
+  A missing layout type is the worst kind of failure — it looks exactly like a
+  backend that returned no data, so the search starts on the wrong side. The new
+  `DashboardLayout` component fills the gap: a plain 12-column grid rendering
+  each child through the widget registry, with spans clamped to the grid.
+
+  Drag, resize and per-user persistence deliberately stay with `DashboardPage`
+  — they only mean something where a dashboard can be customised and saved.
+
 ## 1.20.1
 
 ### Fixed

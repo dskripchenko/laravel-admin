@@ -30,6 +30,7 @@ import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
 import TabsLayout from '../layouts/TabsLayout.vue'
 import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
+import DashboardLayout from '../layouts/DashboardLayout.vue'
 
 /**
  * TextField с предустановленным `type` инпута.
@@ -147,6 +148,8 @@ export function registerBuiltinComponents(): void {
       group: RowsLayout,
       step: SectionLayout,
       wizard: SectionLayout,
+      // Widgets on an ordinary screen: `Layout\Dashboard::make([...])`.
+      dashboard: DashboardLayout,
       'admin.resource-table': EmbeddedResourceTable,
     },
   })
