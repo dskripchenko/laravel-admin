@@ -254,3 +254,51 @@ it('login payload gives wildcard permissions to hasAccess-only panel users', fun
     // отправляли бы пользователя в /forbidden на каждом permission-роуте.
     expect($login->json('payload.permissions'))->toBe(['*']);
 });
+
+it('один экран может служить нескольким панелям', function (): void {
+    // The trap this closes: `panels` held ONE panel per slug, so registering
+    // the same screen into a second panel silently moved it out of the first.
+    // The section disappeared from a panel that used to have it, with nothing
+    // in any log — found on a live stand, not by a test.
+    $screens = new Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
+    $screens->add(PanelsSharedScreen::class, 'admin');
+    $screens->add(PanelsSharedScreen::class, 'client');
+
+    expect($screens->all('admin'))->toHaveKey('panels-shared')
+        ->and($screens->all('client'))->toHaveKey('panels-shared')
+        ->and($screens->panelsOf('panels-shared'))->toBe(['admin', 'client'])
+        ->and($screens->panelOf('panels-shared'))->toBe('admin');
+});
+
+it('повторная регистрация в ту же панель не плодит дублей', function (): void {
+    $screens = new Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
+    $screens->add(PanelsSharedScreen::class, 'client');
+    $screens->add(PanelsSharedScreen::class, 'client');
+
+    expect($screens->panelsOf('panels-shared'))->toBe(['client']);
+});
+
+final class PanelsSharedScreen extends Dskripchenko\LaravelAdmin\Screen\Screen
+{
+    public static function slug(): string
+    {
+        return 'panels-shared';
+    }
+
+    public function name(): string
+    {
+        return 'Shared';
+    }
+
+    /** @return array<string, mixed> */
+    public function query(mixed ...$params): array
+    {
+        return [];
+    }
+
+    /** @return list<Dskripchenko\LaravelAdmin\Layout\Layout> */
+    public function layout(): array
+    {
+        return [];
+    }
+}

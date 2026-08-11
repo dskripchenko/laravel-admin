@@ -18,7 +18,14 @@ final class ScreenRegistry
     /** @var array<string, class-string<Screen>> slug => FQCN */
     private array $screens = [];
 
-    /** @var array<string, string> slug => panel id */
+    /**
+     * One screen may serve several panels: the slug is the key, the panels are
+     * a list. A single value used to live here, and registering the same class
+     * into a second panel silently MOVED it out of the first — no error, no
+     * warning, the section just vanished from a panel that used to have it.
+     *
+     * @var array<string, list<string>> slug => panel ids
+     */
     private array $panels = [];
 
     /**
@@ -41,7 +48,10 @@ final class ScreenRegistry
         }
 
         $this->screens[$slug] = $class;
-        $this->panels[$slug] = $panel;
+
+        if (! in_array($panel, $this->panels[$slug] ?? [], true)) {
+            $this->panels[$slug][] = $panel;
+        }
     }
 
     /**
@@ -80,14 +90,34 @@ final class ScreenRegistry
 
         return array_filter(
             $this->screens,
-            fn (string $slug): bool => ($this->panels[$slug] ?? 'admin') === $panel,
+            fn (string $slug): bool => in_array($panel, $this->panels[$slug] ?? ['admin'], true),
             ARRAY_FILTER_USE_KEY,
         );
     }
 
+    /**
+     * The FIRST panel the screen was registered into. Kept for callers that
+     * predate multi-panel screens; use `panelsOf()` when the answer matters.
+     */
     public function panelOf(string $slug): ?string
     {
-        return isset($this->screens[$slug]) ? ($this->panels[$slug] ?? 'admin') : null;
+        if (! isset($this->screens[$slug])) {
+            return null;
+        }
+
+        return ($this->panels[$slug] ?? [])[0] ?? 'admin';
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function panelsOf(string $slug): array
+    {
+        if (! isset($this->screens[$slug])) {
+            return [];
+        }
+
+        return $this->panels[$slug] ?? ['admin'];
     }
 
     /**

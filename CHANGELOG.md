@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.21.1
+
+### Fixed
+- **Registering one screen into a second panel silently removed it from the
+  first.** `ScreenRegistry` kept a single panel id per slug, so the last
+  registration won: a screen wanted in both the service and the client panel
+  ended up in whichever plugin booted last, and disappeared from the other one
+  without an error, a warning or a log line.
+
+  The registry now keeps a list of panels per slug. `panelOf()` still answers
+  with the first one for callers that predate this; `panelsOf()` returns them
+  all. Re-registering into the same panel does not duplicate the entry.
+
 ## 1.21.0
 
 ### Added
