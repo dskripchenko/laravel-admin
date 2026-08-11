@@ -19,6 +19,7 @@ import { useAuthStore } from '../stores/auth'
 import { adminToast } from '../stores/toast'
 import { useBrand } from '../composables/useBrand'
 import { useAppReady } from '../composables/useAppReady'
+import { useShellVisibility } from '../composables/useShellVisibility'
 import { provideLocale, ru as uidRu, en as uidEn } from '@dskripchenko/ui'
 import { useLocaleStore } from '../stores/locale'
 import { trSafe as tr } from '../stores/i18n'
@@ -56,12 +57,9 @@ async function exitImpersonation(): Promise<void> {
   }
 }
 
-const useShell = computed<boolean>(() => {
-  if (route.meta?.fullscreen === true) return false
-  if (route.meta?.kind === 'auth') return false
-  if (route.name === 'admin.notFound') return false
-  return true
-})
+const appReady = useAppReady()
+
+const { useShell } = useShellVisibility(route, appReady)
 
 /**
  * Пока каркас не собран, страницу не рендерим вовсе — на её месте скелет.
@@ -76,7 +74,6 @@ const useShell = computed<boolean>(() => {
  * Поэтому гейт общий (useAppReady) и закрывает любую страницу до готовности
  * манифеста и меню — они грузятся параллельно и приезжают почти вместе.
  */
-const appReady = useAppReady()
 const showPage = appReady
 
 /**

@@ -5,6 +5,22 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.21.3
+
+### Fixed
+- **Reloading any screen showed a full-page 404 first and the real page a
+  moment later.** Dynamic routes exist only once the manifest has been fetched,
+  so during boot every deep link resolves to the catch-all. A gate for exactly
+  this flash already existed — but it lived inside the shell branch, and the
+  shell was dropped precisely for `admin.notFound`, so the one route the gate
+  was written for went down the ungated path and rendered `NotFoundPage` at
+  once.
+
+  A catch-all match now counts as a 404 only after the app is ready; before
+  that the visitor sees the ordinary boot skeleton, exactly as on any other
+  deep link. The rule moved out of the SFC into `useShellVisibility()` so it
+  can be tested as itself — inline it was untestable, which is how it shipped.
+
 ## 1.21.2
 
 ### Fixed
