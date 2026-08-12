@@ -1,16 +1,17 @@
 <script setup lang="ts">
 /**
- * NotificationsDrawer — slide-in справа панель с уведомлениями.
+ * NotificationsDrawer — the notifications panel sliding in from the right.
  *
- * Структура по docs/design_handoff_laravel_admin (Notifications):
- *   Header  — title + unread badge + "Прочитать все" + close
- *   Tabs    — Все (count) | Непрочитанные (count) | Прочитанные
- *   List    — items с иконкой, title, time, description, unread-dot
- *   Backdrop — закрывает по клику
+ * Its structure follows docs/design_handoff_laravel_admin (Notifications):
+ *   header   — the title, the unread badge, "Mark all as read" and close
+ *   tabs     — All (count) | Unread (count) | Read
+ *   list     — the items, each with an icon, a title, a time, a description
+ *              and an unread dot
+ *   backdrop — closes the drawer when clicked
  *
- * Открывается через notificationsStore.toggleDrawer() из NotificationBell
- * в топбаре. Drawer mounted один раз в AdminApp.vue, стейт открытости —
- * в pinia store (см. stores/notifications.ts).
+ * It is opened through notificationsStore.toggleDrawer() from the
+ * NotificationBell in the topbar. The drawer is mounted once, in AdminApp.vue,
+ * and whether it is open lives in the Pinia store — see stores/notifications.ts.
  */
 import { computed, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -56,13 +57,13 @@ async function onItemClick(item: NotificationItem): Promise<void> {
   if (item.read_at === null) {
     await notifications.markAsRead(item.id).catch(() => undefined)
   }
-  // Если у уведомления есть ссылка в data — открываем; иначе остаёмся.
+  // When the notification carries a link in its data we follow it; otherwise we stay.
   const url = item.data.url
   if (typeof url === 'string' && url.length > 0) {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       window.open(url, '_blank', 'noopener')
     } else {
-      // SPA-навигация — закроем drawer и оставим решение router'у через href.
+      // An SPA navigation: close the drawer and let the router decide, through the href.
       notifications.closeDrawer()
       window.location.href = url
     }
@@ -74,7 +75,7 @@ async function onDelete(item: NotificationItem, e: MouseEvent): Promise<void> {
   await notifications.destroy(item.id).catch(() => undefined)
 }
 
-/** Полный список: шторку закрываем, иначе она останется поверх страницы. */
+/** The full list: the drawer is closed, or it would stay on top of the page. */
 async function openAll(): Promise<void> {
   close()
   await router.push({ name: 'admin.notifications' }).catch(() => undefined)
@@ -85,9 +86,9 @@ function close(): void {
 }
 
 /**
- * Иконка по типу уведомления. Backend laravel-notifications использует FQCN
- * в `type` ('App\\Notifications\\ImportFinished' и т.п.) — пробуем находить
- * по подстроке. Default — bell.
+ * The icon for a notification's type. Laravel's notifications put an FQCN into
+ * `type` ('App\\Notifications\\ImportFinished' and the like), so we match on a
+ * substring. The default is the bell.
  */
 function iconFor(item: NotificationItem): LucideIcon {
   const t = item.type.toLowerCase()
@@ -126,8 +127,8 @@ interface ItemView {
   description: string
 }
 function viewOf(item: NotificationItem): ItemView {
-  // Backend кладёт payload в `data`; поддерживаем стандартные ключи
-  // `title`/`message`/`description` + fallback на data.text.
+  // The backend puts the payload into `data`; we support the usual
+  // `title`, `message` and `description` keys, falling back to data.text.
   const d = item.data
   const title =
     typeof d.title === 'string' ? d.title : typeof d.subject === 'string' ? d.subject : tr('Уведомление')
@@ -150,7 +151,7 @@ const tabCounts = computed<Record<NotificationFilter, number>>(() => {
   return { all: total, unread, read }
 })
 
-// Загружаем при первом открытии. И каждый раз — чтобы свежие данные.
+// Loaded when it first opens — and on every open after that, to stay fresh.
 watch(isOpen, async (open) => {
   if (open) {
     await notifications.load(notifications.lastFilter, 1).catch(() => undefined)
@@ -316,11 +317,11 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   /*
-   * Полупрозрачный затеняющий слой над основным интерфейсом. Не используем
-   * --uid-color-overlay — в @dskripchenko/ui это opaque surface для popover'ов
-   * (white в light / dark-grey в dark), и backdrop становится непрозрачным,
-   * закрывая контент полностью. Берём жёсткий rgba(0,0,0,0.4) — стандартный
-   * dim для модальных слоёв.
+   * The translucent layer dimming the interface underneath. We do not use
+   * --uid-color-overlay: in @dskripchenko/ui that is the opaque surface of
+   * popovers (white in the light theme, dark grey in the dark one), which
+   * would make the backdrop opaque and hide the content entirely. So a hard
+   * rgba(0,0,0,0.4) — the usual dim of a modal layer.
    */
   background: rgba(0, 0, 0, 0.4);
   pointer-events: auto;

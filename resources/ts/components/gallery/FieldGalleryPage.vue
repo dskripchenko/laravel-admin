@@ -1,21 +1,22 @@
 <script setup lang="ts">
 /**
- * FieldGalleryPage — каталог field-компонентов.
+ * FieldGalleryPage — the catalogue of field components.
  *
- * Эталон: docs/design_handoff_laravel_admin/screens-secondary.jsx (FieldGallery).
+ * It follows docs/design_handoff_laravel_admin/screens-secondary.jsx
+ * (FieldGallery).
  *
- * 3-col grid из demo-cards. Каждая card:
- *   - Group label (например "Текстовые")
- *   - Тип поля (json type-key)
- *   - Демо-компонент с sample-данными
- *   - Краткое описание
+ * A three-column grid of demo cards, each showing:
+ *   - the group's label ("Text", for instance)
+ *   - the field's type, its JSON type key
+ *   - a demo component with sample data
+ *   - a short description
  *
- * Используется как:
- *   1. Тестовая площадка для devs (визуально все Uid* fields на одной странице)
- *   2. Docs / referencer для host'ов
+ * It serves two purposes:
+ *   1. a playground for developers, with every Uid* field on one page
+ *   2. documentation and a reference for the hosts
  *
- * Все секции рендерятся через FieldRenderer + provideFormState с локальной
- * state-mock'ой.
+ * Every section is rendered through FieldRenderer and provideFormState over a
+ * local mock state.
  */
 import { reactive, computed } from 'vue'
 import { trSafe as tr } from '../../stores/i18n'
@@ -28,20 +29,20 @@ interface Demo {
   group: string
   title: string
   description: string
-  /** Demo node для FieldRenderer'а. */
+  /** The demo node for FieldRenderer. */
   node: FieldNode
-  /** Initial state для form-context. */
+  /** The initial state of the form context. */
   initial: Record<string, unknown>
 }
 
 /**
- * Список собирается ФУНКЦИЕЙ, а не константой модуля: `tr()` на уровне модуля
- * отработал бы один раз и до того, как приедет словарь, — галерея навсегда
- * осталась бы на языке исходников.
+ * The list is built by a FUNCTION rather than a module constant: a `tr()` at
+ * module level would run once, and before the dictionary arrives — the gallery
+ * would stay in the source language for good.
  */
 function demos(): Demo[] {
   return [
-  // Текстовые
+  // Text
   {
     type: 'text',
     group: tr('Текстовые'),
@@ -66,7 +67,7 @@ function demos(): Demo[] {
     node: { type: 'number', name: 'demo_number', label: tr('Цена'), min: 0, max: 1000 },
     initial: { demo_number: 42 },
   },
-  // Выбор
+  // Selection
   {
     type: 'select',
     group: tr('Выбор'),
@@ -92,7 +93,7 @@ function demos(): Demo[] {
     node: { type: 'checkbox', name: 'demo_checkbox', label: tr('Опубликовать'), inlineLabel: tr('Сделать доступным всем') },
     initial: { demo_checkbox: true },
   },
-  // Дата/время
+  // Date and time
   {
     type: 'date',
     group: tr('Дата/время'),
@@ -104,7 +105,7 @@ function demos(): Demo[] {
   ]
 }
 
-// Группируем для рендера.
+// Grouped for rendering.
 const groupedDemos = computed<Record<string, Demo[]>>(() => demos().reduce<Record<string, Demo[]>>((acc, d) => {
   if (!acc[d.group]) acc[d.group] = []
   acc[d.group].push(d)
@@ -112,8 +113,8 @@ const groupedDemos = computed<Record<string, Demo[]>>(() => demos().reduce<Recor
   return acc
 }, {}))
 
-// provideFormState на корневом уровне — все demo'и шарят один form-context
-// (имена не пересекаются благодаря demo_ префиксу).
+// provideFormState sits at the root level, so every demo shares one form
+// context; the names do not collide thanks to the demo_ prefix.
 const allInitial = reactive<Record<string, unknown>>(
   demos().reduce<Record<string, unknown>>((acc, d) => Object.assign(acc, d.initial), {}),
 )

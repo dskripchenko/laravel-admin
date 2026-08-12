@@ -1,17 +1,18 @@
 /**
- * Dashboard store: edit-mode + working-copy layout + save/load.
+ * The dashboard store: the edit mode, the working copy of the layout, and
+ * save/load.
  *
- * Backend контракт:
+ * The backend contract:
  *   GET  /api/admin/dashboard/get?key={dashboard_slug}   → { layout: WidgetItem[] | null }
  *   POST /api/admin/dashboard/save  body { key, widgets[] }
  *   POST /api/admin/dashboard/reset body { key }
  *
- * WidgetItem — это per-user override:
+ * A WidgetItem is a per-user override:
  *   { slug, size, position, hidden, config?, type? }
  *
- * `slug` — backend Widget::slug() (для встроенных) либо user-generated
- * (для виджетов добавленных через Add Widget — host сохраняет config
- * в `config` поле, type — в `type`).
+ * `slug` is either the backend's Widget::slug(), for the built-in ones, or
+ * user-generated, for the widgets added through "Add widget" — where the host
+ * saves the configuration in `config` and the type in `type`.
  */
 
 import { defineStore } from 'pinia'
@@ -23,32 +24,32 @@ export interface WidgetLayoutItem {
   size?: number
   position?: number
   hidden?: boolean
-  /** Тип widget'а (для user-added; для backend — синхронизируется с Widget). */
+  /** The widget's type: set for the user-added ones, synced with Widget for the backend ones. */
   type?: string
-  /** Title override + per-type конфигурация. */
+  /** A title override plus the per-type configuration. */
   config?: Record<string, unknown>
 }
 
 export const useDashboardStore = defineStore('admin-dashboard', () => {
-  /** Текущий dashboard-slug (открытый в DashboardPage). */
+  /** The current dashboard slug, the one open in DashboardPage. */
   const slug = ref<string | null>(null)
-  /** Edit-mode флаг — показывает overlay'и поверх виджетов. */
+  /** The edit-mode flag; it shows the overlays on top of the widgets. */
   const editMode = ref<boolean>(false)
-  /** Working-copy layout (то что юзер редактирует, до save). */
+  /** The layout's working copy — what the user edits, before the save. */
   const draft = ref<WidgetLayoutItem[]>([])
-  /** Изначальный layout — для cancel/restore. */
+  /** The original layout, for cancel and restore. */
   const original = ref<WidgetLayoutItem[]>([])
-  /** Loading state для load/save. */
+  /** The loading state of load and save. */
   const saving = ref<boolean>(false)
   const loading = ref<boolean>(false)
-  /** Per-user персистентный период дашборда (null = дефолт страницы). */
+  /** The dashboard's persisted per-user period; null means the page's default. */
   const period = ref<string | null>(null)
 
   const isDirty = computed<boolean>(() => {
     return JSON.stringify(draft.value) !== JSON.stringify(original.value)
   })
 
-  /** Открыть dashboard — load persisted layout если есть. */
+  /** Opens a dashboard, loading the persisted layout when there is one. */
   async function openDashboard(dashboardSlug: string): Promise<void> {
     slug.value = dashboardSlug
     loading.value = true
@@ -77,9 +78,9 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
   }
 
   /**
-   * Засеять draft из merged-layout'а страницы (см. DashboardPage.onEnterEdit):
-   * при пустом persisted-layout'е save обязан отправить ПОЛНЫЙ список
-   * виджетов, а не пустой массив.
+   * Seeds the draft from the page's merged layout (see
+   * DashboardPage.onEnterEdit): with an empty persisted layout, the save must
+   * send the FULL list of widgets rather than an empty array.
    */
   function seedDraft(items: WidgetLayoutItem[]): void {
     if (draft.value.length === 0) {
@@ -97,7 +98,7 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     saving.value = true
     try {
       const client = getAdminClient()
-      // Перед save нумеруем position в порядке текущего draft (drag-order).
+      // Before saving, the positions are renumbered in the draft's current order — the drag order.
       const widgets = draft.value.map((it, idx) => ({
         slug: it.slug,
         size: it.size,
@@ -139,7 +140,7 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     draft.value = draft.value.filter((it) => it.slug !== slugKey)
   }
 
-  /** Вернуть скрытый (hidden-override) виджет на дашборд (BL-18). */
+  /** Brings a widget hidden by an override back onto the dashboard. */
   function restoreWidget(slugKey: string): void {
     draft.value = draft.value.map((it) =>
       it.slug === slugKey ? { ...it, hidden: false } : it,
@@ -161,8 +162,9 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
   }
 
   /**
-   * Полностью заменить draft (используется DashboardPage.ensureDraftReflectsRendered
-   * для инициализации draft'а из текущего rendered-состояния перед drag/resize).
+   * Replaces the draft entirely. DashboardPage.ensureDraftReflectsRendered uses
+   * it to initialize the draft from what is currently rendered, before a drag
+   * or a resize.
    */
   function setDraft(items: WidgetLayoutItem[]): void {
     draft.value = items
@@ -176,13 +178,13 @@ export const useDashboardStore = defineStore('admin-dashboard', () => {
     period.value = null
   }
 
-  /** Персистит per-user период (fire-and-forget, оптимистично обновляет ref). */
+  /** Persists the per-user period: fire-and-forget, updating the ref optimistically. */
   async function savePeriod(key: string, value: string): Promise<void> {
     period.value = value
     try {
       await getAdminClient().post('/dashboard/savePeriod', { key, period: value })
     } catch {
-      // silent — период уже применён локально; повторный save при след. смене.
+      // Silent: the period is applied locally already, and the next change will save again.
     }
   }
 

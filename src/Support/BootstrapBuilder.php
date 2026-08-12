@@ -14,17 +14,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Сборщик payload'а bootstrap'а SPA.
+ * Assembles the SPA's bootstrap payload.
  *
- * Один источник истины для двух стратегий:
- *   - inline (default) — ShellController инжектит payload через `<script>`
- *     с CSP-nonce.
- *   - xhr — SPA fetch'ит /api/admin/system/bootstrap.
+ * One source of truth for both strategies:
+ *   - inline, the default, where ShellController injects the payload through a
+ *     `<script>` with a CSP nonce.
+ *   - xhr, where the SPA fetches /api/admin/system/bootstrap.
  *
- * Структура payload'а: csrf, baseUrl, apiUrl, locale (current), availableLocales,
- * theme (current), availableThemes, brand, user (или null), permissions[],
- * manifestVersion, plugins[], unread_notifications_count, config (manifest etag,
- * bootstrap strategy).
+ * The payload holds: csrf, baseUrl, apiUrl, the current locale,
+ * availableLocales, the current theme, availableThemes, brand, user (or null),
+ * permissions[], manifestVersion, plugins[], unread_notifications_count and
+ * config — the manifest etag and the bootstrap strategy.
  */
 final class BootstrapBuilder
 {
@@ -58,9 +58,10 @@ final class BootstrapBuilder
             'brand' => \Dskripchenko\LaravelAdmin\I18n\Localize::brand(),
             'user' => $user,
             'permissions' => $this->userPermissions(),
-            // Гостю манифест не считаем: login-странице он не нужен, а его
-            // сборка выполняет resource-код хоста (options-запросы к данным,
-            // которые до аутентификации могут быть недоступны/не тот контекст).
+            // No manifest is computed for a guest: the login page does not
+            // need it, and building it runs the host's resource code — the
+            // options queries against data that may be unavailable, or in the
+            // wrong context, before authentication.
             'manifestVersion' => $user === null ? null : $this->manifest->version($locale, $panel->id),
             'plugins' => $this->admin->getPlugins(),
             'unread_notifications_count' => $this->unreadNotificationsCount(),
@@ -73,13 +74,14 @@ final class BootstrapBuilder
     }
 
     /**
-     * Lang-bag для SPA: flat-объект `{key: translation}` из admin namespace.
-     * Frontend useI18nStore использует через `t('admin.dashboard.add_widget')`.
+     * The SPA's lang bag: a flat `{key: translation}` object from the admin
+     * namespace, which the frontend's useI18nStore reaches through
+     * `t('admin.dashboard.add_widget')`.
      *
-     * Загружает `resources/lang/{locale}/admin.php` (через `loadTranslationsFrom`
-     * в AdminServiceProvider зарегистрирован namespace `admin`) и сплющивает
-     * вложенные массивы в dot.notation. Host может публиковать override через
-     * `php artisan vendor:publish --tag=admin-lang`.
+     * It loads `resources/lang/{locale}/admin.php` — the `admin` namespace is
+     * registered by `loadTranslationsFrom` in AdminServiceProvider — and
+     * flattens the nested arrays into dot notation. A host can publish an
+     * override with `php artisan vendor:publish --tag=admin-lang`.
      *
      * @return array<string, string>
      */
@@ -92,8 +94,9 @@ final class BootstrapBuilder
             if (! is_string($ns) || $ns === '') {
                 continue;
             }
-            // trans('admin::*') → массив ключей или fallback. Используем
-            // Lang::get('admin::admin.dashboard.title') и т.п.
+            // trans('admin::*') gives either an array of keys or the
+            // fallback, so we use Lang::get('admin::admin.dashboard.title') and
+            // the like.
             try {
                 $bag = trans($ns.'::admin', [], $locale);
             } catch (\Throwable) {
@@ -104,16 +107,18 @@ final class BootstrapBuilder
             }
             foreach (\Illuminate\Support\Arr::dot($bag) as $key => $value) {
                 if (is_string($value)) {
-                    // Префикс с namespace + 'admin.' даёт ключи вида
-                    // 'admin.dashboard.title', что соответствует frontend t()-call'ам.
+                    // The namespace prefix plus 'admin.' gives keys like
+                    // 'admin.dashboard.title', which is what the frontend's
+                    // t() calls use.
                     $result["{$ns}.{$key}"] = $value;
                 }
             }
         }
 
-        // JSON-переводы хоста (lang/{locale}.json): ключ — исходная строка.
-        // Frontend tr() переводит по ним захардкоженные строки компонентов
-        // (BL-11); для локали разработки файла обычно нет — bag не растёт.
+        // The host's JSON translations (lang/{locale}.json), keyed by the
+        // source string. The frontend's tr() translates the components'
+        // hard-coded strings through them; for the development locale there is
+        // usually no such file, and the bag does not grow.
         try {
             $json = (array) app('translator')->getLoader()->load($locale, '*', '*');
             foreach ($json as $key => $value) {
@@ -122,7 +127,7 @@ final class BootstrapBuilder
                 }
             }
         } catch (\Throwable) {
-            // Нет JSON-файла локали — штатно.
+            // No JSON file for this locale, which is normal.
         }
 
         return $result;

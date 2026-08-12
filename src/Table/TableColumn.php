@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Table;
 
 /**
- * Описание колонки таблицы list-экрана.
+ * Describes one column of a list screen's table.
  *
- * В отличие от Field (форма), у TableColumn свой набор атрибутов: sortable,
- * searchable, copyable, width, alignment, preset (date/money/badge/...),
- * editable (inline-edit), summary (footer-агрегаты).
+ * Unlike a Field, which belongs to a form, TableColumn has attributes of its
+ * own: sortable, searchable, copyable, width, alignment, a preset
+ * (date/money/badge/...), editable for inline editing and summary for the
+ * footer aggregates.
  *
- * Сериализуется в `ColumnSchema` (см. docs/api/schemas.md).
+ * It serializes into a `ColumnSchema`; see docs/api/schemas.md.
  */
 final class TableColumn
 {
@@ -121,11 +122,11 @@ final class TableColumn
     }
 
     /**
-     * Включает inline-edit ячейки.
+     * Turns inline editing of the cell on.
      *
-     * @param  list<string|array<string, mixed>>  $rules  Validation rules для inline-edit.
-     * @param  'text'|'number'|'select'|'date'|'textarea'|'switcher'  $as  Тип инпута.
-     * @param  array<int|string, string>  $options  Для as='select' — мапа value→label.
+     * @param  list<string|array<string, mixed>>  $rules  The validation rules of the inline edit.
+     * @param  'text'|'number'|'select'|'date'|'textarea'|'switcher'  $as  The input's type.
+     * @param  array<int|string, string>  $options  For as='select': a value → label map.
      */
     public function editable(array $rules = [], string $as = 'text', array $options = []): self
     {
@@ -177,7 +178,7 @@ final class TableColumn
     }
 
     /**
-     * Денежная сумма с currency-форматированием на UI.
+     * A monetary amount, formatted with its currency in the UI.
      */
     public function asMoney(string $currency = 'RUB', int $decimals = 2): self
     {
@@ -185,7 +186,7 @@ final class TableColumn
     }
 
     /**
-     * Boolean с иконкой/badge'ом true/false.
+     * A boolean, shown as a true/false icon or badge.
      */
     public function asBoolean(?string $trueLabel = null, ?string $falseLabel = null): self
     {
@@ -196,7 +197,7 @@ final class TableColumn
     }
 
     /**
-     * Размер в байтах → human-readable (1.2 MB).
+     * A size in bytes, rendered human-readably as 1.2 MB.
      */
     public function asBytes(): self
     {
@@ -204,7 +205,8 @@ final class TableColumn
     }
 
     /**
-     * Бэйдж с цветом по value (`map: ['active' => 'green', 'banned' => 'red']`).
+     * A badge coloured by its value
+     * (`map: ['active' => 'green', 'banned' => 'red']`).
      *
      * @param  array<string, string>  $colorMap  value => UI color name
      */
@@ -214,16 +216,20 @@ final class TableColumn
     }
 
     /**
-     * Превратить значение ячейки в clickable link.
+     * Turns the cell's value into a clickable link.
      *
-     * $template — href-шаблон с плейсхолдерами, резолвится на фронте по строке:
-     *   `{field}` — значение поля строки (напр. `{signed_download_url}`),
-     *   `:value`  — значение самой ячейки.
-     * Если резолв пустой (поле null) — ссылка не рендерится, остаётся текст.
+     * $template is an href template with placeholders, resolved on the
+     * frontend against the row:
+     *   `{field}` — the value of that field of the row, `{signed_download_url}`
+     *               for instance,
+     *   `:value`  — the cell's own value.
+     * When the resolution comes out empty — the field is null — no link is
+     * rendered and the text stays.
      *
-     * Callable намеренно НЕ поддерживается: конфиг колонки сериализуется в
-     * manifest (JSON), замыкание туда не попадает. Нужную ссылку кладите
-     * appended-атрибутом модели и ссылайтесь на неё через `{attr}`.
+     * A callable is deliberately NOT supported: the column's configuration is
+     * serialized into the manifest as JSON, and a closure cannot go there. Put
+     * the link you need into an appended attribute of the model and point at
+     * it with `{attr}`.
      */
     public function asLink(string $template, ?string $target = null): self
     {
@@ -231,7 +237,7 @@ final class TableColumn
     }
 
     /**
-     * Изображение по URL. width/height — фиксированный размер превью.
+     * An image at a URL; width and height fix the preview's size.
      */
     public function asImage(?int $width = null, ?int $height = null): self
     {
@@ -242,8 +248,8 @@ final class TableColumn
     }
 
     /**
-     * Custom formatter — server-side трансформация значения.
-     * Вызывается в `format($value, $row)` при сериализации row'ов.
+     * A custom formatter — a server-side transformation of the value, called
+     * as `format($value, $row)` while the rows are serialized.
      *
      * @param  callable(mixed, array<string, mixed>): mixed  $formatter
      */
@@ -260,7 +266,7 @@ final class TableColumn
     }
 
     /**
-     * Применить formatter к значению.
+     * Applies the formatter to a value.
      *
      * @param  array<string, mixed>  $row
      */

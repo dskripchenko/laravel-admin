@@ -13,16 +13,17 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Per-user dashboard layout: get/save/reset (delete row → fallback на default).
+ * The per-user dashboard layout: get, save and reset — where a reset deletes
+ * the row and falls back to the default.
  *
- * URL: `/api/admin/dashboard/{action}`. Привязки к конкретному dashboard'у
- * нет — `dashboard_key` приходит в payload.
+ * The URL is `/api/admin/dashboard/{action}`. Nothing ties it to a particular
+ * dashboard: the `dashboard_key` arrives in the payload.
  */
 class DashboardController extends ApiController
 {
     /**
-     * Получить сохранённый layout текущего пользователя для конкретного dashboard'а.
-     * Если не найден — возвращает null (SPA использует default).
+     * Returns the current user's saved layout for a given dashboard, or null
+     * when there is none — the SPA then uses the default.
      *
      * @input string $key
      *
@@ -53,8 +54,9 @@ class DashboardController extends ApiController
     }
 
     /**
-     * Сохранить per-user период дашборда (фильтр «за N дней»), не трогая
-     * layout. Персистится чтобы выбор пережил перезагрузку (BL-16).
+     * Saves the dashboard's per-user period — the "last N days" filter —
+     * without touching the layout. It is persisted so that the choice survives
+     * a reload.
      *
      * @input string $key
      * @input string $period
@@ -85,8 +87,8 @@ class DashboardController extends ApiController
             'owner_type' => $user->getMorphClass(),
             'owner_id' => $user->getKey(),
         ]);
-        // Период может сохраняться до какой-либо кастомизации layout'а —
-        // widgets NOT NULL, поэтому засеваем пустым для новой записи.
+        // The period may be saved before the layout is customized at all, and
+        // widgets is NOT NULL, so a new row is seeded with an empty one.
         if ($row->getAttribute('widgets') === null) {
             $row->setAttribute('widgets', []);
         }
@@ -97,7 +99,7 @@ class DashboardController extends ApiController
     }
 
     /**
-     * Сохранить layout текущего пользователя.
+     * Saves the current user's layout.
      *
      * @input string $key
      * @input array $widgets
@@ -117,13 +119,15 @@ class DashboardController extends ApiController
             'widgets.*.size' => ['nullable', 'integer', 'min:1', 'max:12'],
             'widgets.*.position' => ['nullable', 'integer', 'min:0'],
             'widgets.*.hidden' => ['nullable', 'boolean'],
-            // Тип widget'а — нужен для user-added (custom-key, не из manifest).
-            // Backend-Widget не использует это поле для declared widgets,
-            // но frontend-renderer применяет его для рендера.
+            // The widget's type, needed by the user-added ones, which carry a
+            // custom key rather than a manifest one. The backend widget
+            // ignores this field for declared widgets, but the frontend
+            // renderer uses it to draw them.
             'widgets.*.type' => ['nullable', 'string'],
-            // Per-widget конфиг (title, content для markdown, value для gauge, ...).
-            // Frontend-Renderer кладёт это в `data` widget'а; для backend-widgets
-            // используется как override (например, новый title).
+            // The per-widget configuration: a title, the content of a
+            // markdown widget, a gauge's value and so on. The frontend
+            // renderer puts it into the widget's `data`; for the backend
+            // widgets it acts as an override — a new title, say.
             'widgets.*.config' => ['nullable', 'array'],
         ]);
 
@@ -151,7 +155,7 @@ class DashboardController extends ApiController
     }
 
     /**
-     * Сбросить кастомизацию — удалить запись, чтобы вернуться к default.
+     * Drops the customization: the row is deleted and the default returns.
      *
      * @input string $key
      *
@@ -162,12 +166,12 @@ class DashboardController extends ApiController
      * @response 200 {SuccessResponse}
      */
     /**
-     * Свежие widget data для dashboard'а с применением фильтров (period, …).
-     * Frontend вызывает при смене date-range, чтобы виджеты пересчитались
-     * без полного reload manifest'а.
+     * Fresh widget data for a dashboard, with the filters (the period and so
+     * on) applied. The frontend calls it when the date range changes, so that
+     * the widgets are recomputed without reloading the whole manifest.
      *
      * @input string $key
-     * @input string ?$period 7d/30d/90d/all (default 30d)
+     * @input string ?$period 7d/30d/90d/all; 30d by default
      *
      * @output object $payload
      *
@@ -192,10 +196,10 @@ class DashboardController extends ApiController
 
         /** @var DashboardScreen $screen */
         $screen = app($screenClass);
-        // Прокидываем period в screen-context — DashboardScreen может
-        // использовать его в `widgets()` для условной агрегации (см.
-        // Screen::query()/$this->context()). Если screen не учитывает —
-        // получим тот же набор виджетов.
+        // The period is passed into the screen context, where a
+        // DashboardScreen may use it in `widgets()` for a conditional
+        // aggregation — see Screen::query() and $this->context(). A screen
+        // that ignores it simply returns the same set of widgets.
         $screen->withPeriod($data['period'] ?? '30d');
 
         $widgets = [];

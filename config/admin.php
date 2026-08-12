@@ -10,14 +10,14 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    // SPA-shell живёт под `path` (например, /admin/*).
+    // The SPA shell lives under `path`, /admin/* for instance.
     'path' => env('ADMIN_PATH', 'admin'),
     'domain' => env('ADMIN_DOMAIN'),
-    // API живёт ОТДЕЛЬНО от SPA — на /api/admin/* (не нестится под path).
+    // The API lives SEPARATELY from the SPA, at /api/admin/*; it does not nest under path.
     'api_path' => env('ADMIN_API_PATH', 'api/admin'),
 
     'api' => [
-        // Глобальный rate-limit admin-API (per-user): 'запросов,минут'.
+        // The admin API's global per-user rate limit: 'requests,minutes'.
         'throttle' => env('ADMIN_API_THROTTLE', '240,1'),
     ],
 
@@ -84,9 +84,10 @@ return [
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminCspNonce::class,
         ],
         'api' => [
-            // admin-API сессионный (не stateless) — используем `web` middleware
-            // group для StartSession/EncryptCookies/CSRF. Headless Bearer-tokens
-            // через Sanctum — фаза P15 (опционально).
+            // The admin API is session-based rather than stateless, so it
+            // uses the `web` middleware group for StartSession,
+            // EncryptCookies and CSRF. Headless bearer tokens through Sanctum
+            // are optional and come later.
             'web',
             Dskripchenko\LaravelAdmin\Http\Middleware\CaptureApiRequest::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
@@ -116,12 +117,12 @@ return [
 
     'brand' => [
         'name' => env('ADMIN_BRAND_NAME', 'Admin'),
-        // URL картинки-логотипа: sidebar + login/forgot/reset-страницы.
+        // The logo image's URL, used by the sidebar and the login, forgot and reset pages.
         'logo' => env('ADMIN_BRAND_LOGO'),
-        // Короткий текстовый mark (1-2 символа) — фолбэк, если logo не задан.
+        // A short textual mark of one or two characters, used when there is no logo.
         'mark' => env('ADMIN_BRAND_MARK'),
         'favicon' => env('ADMIN_BRAND_FAVICON'),
-        // Копирайт в футере панели (BL-12). null = футер пустой.
+        // The copyright line in the panel's footer; null leaves the footer empty.
         'copyright' => env('ADMIN_BRAND_COPYRIGHT'),
         'footer' => null,
     ],
@@ -146,7 +147,7 @@ return [
         'text' => env('ADMIN_NOTICE'),
         'href' => env('ADMIN_NOTICE_HREF'),
         'countdown_to' => null,
-        // Подпись рядом с отсчётом: «до сброса», «до окончания» и т.п.
+        // The caption next to the countdown: "until the reset", "until it ends" and the like.
         'countdown_label' => env('ADMIN_NOTICE_COUNTDOWN_LABEL'),
     ],
 
@@ -193,7 +194,7 @@ return [
         'log_auth_events' => true,
         // Attributes whose changes are stripped from the diff snapshot.
         // Default: credentials/secrets + bookkeeping timestamps that fire on
-        // every save and would clutter the timeline ("Изменено: updated_at
+        // every save and would clutter the timeline ("Changed: updated_at
         // 12:00:01 → 12:00:02"). Hosts can override this list via env or
         // per-model by overriding getAuditExcluded(): array.
         'excluded_attributes' => [
@@ -206,15 +207,16 @@ return [
         ],
         // When an update event survives `excluded_attributes` with nothing
         // left to record, skip writing the audit row entirely instead of
-        // leaving an empty "Изменено" entry in the timeline.
+        // leaving an empty "Changed" entry in the timeline.
         'skip_empty_updates' => true,
         'retention_days' => 365,
         'user_agent_max_length' => 1024,
         'url_max_length' => 2048,
-        // Человекочитаемые ярлыки для actor_type / subject_type (FQCN → label).
-        // Оператору FQCN бесполезен — здесь host задаёт «Администратор» и т.п.
-        // Если класс не в мапе: reverse morph-map alias, иначе class_basename.
-        //   App\Models\ClientUser::class => 'Пользователь клиента',
+        // Human-readable labels for actor_type and subject_type: FQCN → label.
+        // An FQCN means nothing to an operator, so the host writes
+        // "Administrator" and the like here. A class outside the map falls back
+        // to the reverse morph-map alias, and then to class_basename.
+        //   App\Models\ClientUser::class => 'Client user',
         'type_labels' => [],
     ],
 
@@ -225,10 +227,11 @@ return [
     */
 
     'roles' => [
-        // Slug-префиксы ролей, которые НЕ показываются и НЕ редактируются в
-        // сервисном списке system-roles (список + прямой edit по URL). Полезно
-        // чтобы роли иного домена (напр. клиентские `client-*`, ADR-017) не
-        // смешивались с admin-ролями. По умолчанию — ничего не скрыто.
+        // The slug prefixes of the roles that are NOT shown and NOT editable
+        // in the service list of system roles — neither in the list nor
+        // through a direct edit URL. Useful so that roles of another domain
+        // (the client-side `client-*` ones, say) do not mix with the admin
+        // roles. Nothing is hidden by default.
         'hidden_slug_prefixes' => [],
     ],
 
@@ -249,9 +252,10 @@ return [
         'directory' => 'uploads',
         'max_kilobytes' => 51200,
         'max_kilobytes_image' => 10240,
-        // Whitelist дисков, которые admin может стримить через
-        // /api/admin/uploads/serve. Решает проблему preview для private-дисков
-        // (без storage:link). Host добавляет свои disk'и сюда явно.
+        // The whitelist of disks the admin may stream through
+        // /api/admin/uploads/serve. It solves previewing files on private
+        // disks, where there is no storage:link. A host adds its own disks
+        // here explicitly.
         'servable_disks' => [env('ADMIN_UPLOADS_DISK', 'local'), 'public'],
     ],
 
