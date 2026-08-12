@@ -5,21 +5,23 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Menu;
 
 /**
- * Реестр узлов меню. Singleton, биндится в DI как Menu\MenuRegistry.
+ * The registry of menu nodes. A singleton, bound in the container as
+ * Menu\MenuRegistry.
  *
- * Поддерживает:
- *   - add(MenuNode) — корневой узел
- *   - under($parentKey, MenuNode|MenuNode[]) — добавить child'ов в существующий
- *     родительский узел (рекурсивный поиск по key)
- *   - withAuto(true) — после рендера host-меню добавить недостающие auto-items
- *     (Resources/Screens, не упомянутые ни как key, ни через resource()/screen())
+ * It supports:
+ *   - add(MenuNode) for a root node
+ *   - under($parentKey, MenuNode|MenuNode[]) to add children to an existing
+ *     parent, found recursively by key
+ *   - withAuto(true) to append, after the host's menu, the auto items that are
+ *     missing — the resources and screens mentioned neither by key nor through
+ *     resource() or screen()
  *
- * Если в registry ничего не зарегистрировано — SystemController::menu()
- * fallback'ается на старую auto-логику. Это даёт backward-compatible default.
+ * When nothing is registered at all, SystemController::menu() falls back to the
+ * older automatic logic, which keeps the default backward-compatible.
  */
 final class MenuRegistry
 {
-    /** @var array<string, list<MenuNode>> panel id => корневые узлы */
+    /** @var array<string, list<MenuNode>> panel id => its root nodes */
     private array $roots = [];
 
     /** @var array<string, bool> */
@@ -29,9 +31,10 @@ final class MenuRegistry
     private array $autoHidden = [];
 
     /**
-     * Панель, в которую пишут registration-методы (ставится Admin/PluginRegistry
-     * на время boot'а плагинов панели). Read-методы без аргумента читают её же —
-     * для однопанельных хостов это неизменно 'admin' (BC).
+     * The panel the registration methods write into; Admin and PluginRegistry
+     * set it while booting that panel's plugins. The read methods without an
+     * argument read the same one, which for a single-panel host is always
+     * 'admin'.
      */
     private string $activePanel = 'admin';
 
@@ -55,7 +58,7 @@ final class MenuRegistry
     }
 
     /**
-     * Добавить child'ов в существующий узел (поиск по key, рекурсивно).
+     * Adds children to an existing node, found by key, recursively.
      *
      * @param  list<MenuNode>|MenuNode  $children
      */
@@ -64,7 +67,7 @@ final class MenuRegistry
         $list = is_array($children) ? $children : [$children];
         $parent = self::findByKey($this->roots[$this->activePanel] ?? [], $parentKey);
         if ($parent === null) {
-            // Создаём stub-родителя (chain-friendly) — host может потом дополнить.
+            // Create a stub parent, chain-friendly, which the host can fill in later.
             $parent = MenuNode::make($parentKey, $parentKey);
             $this->roots[$this->activePanel][] = $parent;
         }
@@ -76,9 +79,9 @@ final class MenuRegistry
     }
 
     /**
-     * Если true (default), SystemController::menu() добавит недостающие
-     * auto-items (Resources + custom Screens) после кастомного дерева.
-     * Установите false если хотите контролировать всё меню вручную.
+     * When true, the default, SystemController::menu() appends the missing
+     * auto items — the resources and the custom screens — after the custom
+     * tree. Set it to false to control the whole menu by hand.
      */
     public function withAuto(bool $enabled = true): self
     {
@@ -93,9 +96,10 @@ final class MenuRegistry
     }
 
     /**
-     * Исключить конкретный resource/screen slug из auto-fill (если withAuto = true).
-     * Используется, когда Resource зарегистрирован для API/CRUD, но не должен
-     * показываться в sidebar (например, ребёнок встраивается в parent'а).
+     * Excludes a particular resource or screen slug from the auto-fill, when
+     * withAuto is true. Useful when a resource is registered for the API and
+     * CRUD but should not appear in the sidebar — a child embedded into its
+     * parent, for one.
      */
     public function hideAuto(string $slug): self
     {
@@ -135,7 +139,7 @@ final class MenuRegistry
     }
 
     /**
-     * Рекурсивный поиск узла по key.
+     * Finds a node by key, recursively.
      *
      * @param  list<MenuNode>  $nodes
      */

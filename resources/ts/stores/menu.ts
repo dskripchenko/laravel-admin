@@ -1,9 +1,10 @@
 /**
- * Menu store: дерево пунктов сайдбара.
+ * The menu store: the tree of sidebar items.
  *
- * Источник — /system/menu (backend строит из ResourceRegistry/ScreenRegistry/
- * Settings + plugin-вкладов). Фронт фильтрует по permission'ам залогиненного
- * пользователя через auth-store.
+ * They come from /system/menu, which the backend builds out of
+ * ResourceRegistry, ScreenRegistry, the settings and the plugins'
+ * contributions. The frontend filters them by the logged-in user's permissions
+ * through the auth store.
  */
 
 import { defineStore } from 'pinia'
@@ -12,30 +13,30 @@ import { getAdminClient } from './registry'
 import { useAuthStore } from './auth'
 
 export interface MenuItem {
-  /** Уникальный идентификатор. */
+  /** The unique identifier. */
   key: string
-  /** Текст пункта. */
+  /** The item's text. */
   label: string
-  /** Имя icon'а (опционально — host-проект сам резолвит icon-set). */
+  /** The icon's name; optional, since the host project resolves the icon set itself. */
   icon?: string | null
-  /** URL (внутренний router-target) либо null для группы. */
+  /** The URL — an internal router target — or null for a group. */
   url?: string | null
-  /** Имя router-route (если задано — приоритет над url). */
+  /** The router route's name; when set it wins over the url. */
   routeName?: string | null
-  /** Бейдж справа (число unread, ярлык вроде "new"). */
+  /** The badge on the right: an unread count, or a label such as "new". */
   badge?: string | number | null
-  /** Группа (header в sidebar). */
+  /** The group, rendered as a header in the sidebar. */
   group?: string | null
-  /** Сортировочный вес. */
+  /** The sorting weight. */
   order?: number
-  /** Permission-keys; если заданы — пункт виден только при hasAnyPermission. */
+  /** The permission keys; when set, the item is visible only if hasAnyPermission passes. */
   permissions?: string[]
-  /** Вложенные пункты. */
+  /** The nested items. */
   children?: MenuItem[]
 }
 
 export interface MenuGroup {
-  /** Заголовок группы (null = пункты без группы). */
+  /** The group's heading; null for the items outside any group. */
   group: string | null
   items: MenuItem[]
 }
@@ -51,9 +52,9 @@ export const useMenuStore = defineStore('admin-menu', () => {
   const isLoaded = ref(false)
 
   /**
-   * Видимые пункты — отфильтрованные по permission'ам через auth-store.
-   * Поддерживает wildcards (`*`, `admin.users.*`) через auth.hasAnyPermission.
-   * Items без permissions считаются открытыми всем.
+   * The visible items, filtered by permission through the auth store.
+   * Wildcards (`*`, `admin.users.*`) work through auth.hasAnyPermission, and
+   * an item with no permissions is open to everyone.
    */
   const visibleItems = computed<MenuItem[]>(() => {
     const auth = useAuthStore()
@@ -70,8 +71,8 @@ export const useMenuStore = defineStore('admin-menu', () => {
   })
 
   /**
-   * Группированный список — для рендера в sidebar по секциям.
-   * Сортировка: order по возрастанию, затем label по алфавиту.
+   * The grouped list, for rendering the sidebar in sections. Sorted by order
+   * ascending, then by label alphabetically.
    */
   const groupedItems = computed<MenuGroup[]>(() => {
     const groups = new Map<string | null, MenuItem[]>()
@@ -92,7 +93,7 @@ export const useMenuStore = defineStore('admin-menu', () => {
     return result
   })
 
-  /** Загрузить меню с backend'а. Кэшируется до reset()/force=true. */
+  /** Loads the menu from the backend; cached until reset() or force=true. */
   async function load(force = false): Promise<MenuItem[]> {
     if (isLoaded.value && !force) return items.value
     loading.value = true
@@ -111,7 +112,7 @@ export const useMenuStore = defineStore('admin-menu', () => {
     }
   }
 
-  /** Установить items напрямую (например, host-проект построил из manifest'а). */
+  /** Sets the items directly — when the host project built them from the manifest, say. */
   function setItems(next: MenuItem[]): void {
     items.value = next
     isLoaded.value = true

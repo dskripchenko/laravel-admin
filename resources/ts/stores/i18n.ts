@@ -1,24 +1,26 @@
 /**
- * i18n store — простой message-bag + t() helper.
+ * The i18n store — a plain message bag plus the t() helper.
  *
- * Backend кладёт translations bag в `bootstrap.translations` (Record<key, string>).
- * При смене локали (`/system/setLocale`) bootstrap переподнимается либо
- * helper зовёт `loadLocale(locale)`, который POST'ит messages.
+ * The backend puts the bag into `bootstrap.translations`, a
+ * Record<key, string>. When the locale changes (`/system/setLocale`) either
+ * the bootstrap is raised again or the helper calls `loadLocale(locale)`,
+ * which POSTs for the messages.
  *
- * Формат:
+ * The form:
  *   t('admin.dashboard.add_widget')        // 'Add widget'
- *   t('admin.records.count', { n: 42 })    // 'Записей: 42' (interpolation :n)
+ *   t('admin.records.count', { n: 42 })    // 'Records: 42', interpolating :n
  *
- * Fallback: если ключ не найден — возвращает сам ключ (помогает быстро
- * увидеть отсутствующие переводы во время разработки).
+ * The fallback: a key that is not found is returned as it is, which makes
+ * missing translations easy to spot during development.
  */
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { AdminBootstrap } from '../types/bootstrap'
 
 /**
- * Standalone-обёртка над store.tr() для компонентов: не падает без активной
- * Pinia (unit-тесты, SSR-edge) — возвращает исходную строку.
+ * A standalone wrapper around store.tr() for the components: it does not fall
+ * over without an active Pinia (unit tests, SSR edges) and returns the source
+ * string instead.
  */
 export function trSafe(text: string): string {
   try {
@@ -33,7 +35,7 @@ export const useI18nStore = defineStore('admin-i18n', () => {
   const locale = ref<string>('ru')
 
   function hydrate(bootstrap: AdminBootstrap): void {
-    // Backend кладёт translations в bootstrap (опционально).
+    // The backend may put the translations into the bootstrap.
     const t = (bootstrap as unknown as { translations?: Record<string, string> }).translations
     if (t && typeof t === 'object') {
       messages.value = { ...t }
@@ -46,8 +48,8 @@ export const useI18nStore = defineStore('admin-i18n', () => {
   }
 
   /**
-   * Translate. Поддерживает interpolation вида `:name` (Laravel-стиль).
-   * Если ключ отсутствует — возвращается сам ключ (visible-fallback).
+   * Translates, supporting Laravel-style `:name` interpolation. A missing key
+   * is returned as it is, which makes the gap visible.
    */
   function t(key: string, replace: Record<string, string | number> = {}): string {
     let str = messages.value[key] ?? key
@@ -60,10 +62,10 @@ export const useI18nStore = defineStore('admin-i18n', () => {
   const has = (key: string): boolean => key in messages.value
 
   /**
-   * Перевод по строке-ключу (JSON-стиль, ключ = исходная строка на языке
-   * разработки). Backend подмешивает в bag JSON-переводы текущей локали
-   * (lang/{locale}.json хоста) — BL-11. Без перевода строка возвращается
-   * как есть, интерполяция не применяется.
+   * Translates by a string key, JSON-style, where the key is the source string
+   * in the development language. The backend mixes the current locale's JSON
+   * translations — the host's lang/{locale}.json — into the bag. Without a
+   * translation the string comes back untouched, with no interpolation.
    */
   function tr(text: string): string {
     return messages.value[text] ?? text
@@ -82,16 +84,17 @@ export const useI18nStore = defineStore('admin-i18n', () => {
 })
 
 /**
- * Convenience: глобальный t() для не-Vue контекстов (utils, services).
- * В Vue-компонентах предпочтительнее `const { t } = useI18nStore()`.
+ * A convenience: the global t() for non-Vue contexts — utilities, services. In
+ * a Vue component prefer `const { t } = useI18nStore()`.
  */
 export function tRaw(key: string, replace?: Record<string, string | number>): string {
   try {
     return useI18nStore().t(key, replace ?? {})
   } catch {
-    // Без активной Pinia (юнит-тесты, отрисовка до инициализации) — исходная
-    // строка с подставленными значениями. Раньше здесь летело исключение и
-    // роняло компонент целиком: строка без перевода лучше пустой страницы.
+    // Without an active Pinia — unit tests, a render before the
+    // initialization — we return the source string with the values
+    // substituted. This used to throw and take the whole component down: an
+    // untranslated string beats an empty page.
     let str = key
     for (const [k, v] of Object.entries(replace ?? {})) {
       str = str.replace(new RegExp(`:${k}`, 'g'), String(v))

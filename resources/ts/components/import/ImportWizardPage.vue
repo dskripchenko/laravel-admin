@@ -1,18 +1,20 @@
 <script setup lang="ts">
 /**
- * ImportWizardPage — 4-step wizard для импорта данных в Resource.
+ * ImportWizardPage — the four-step wizard importing data into a resource.
  *
- * Эталон: docs/design_handoff_laravel_admin/screens-secondary.jsx (ImportWizard).
+ * It follows docs/design_handoff_laravel_admin/screens-secondary.jsx
+ * (ImportWizard).
  *
- * Шаги:
- *   1. Загрузка файла — UidFileUpload (CSV/TSV/XLSX)
- *   2. Сопоставление колонок — header'ы файла → field-name'ы ресурса
- *   3. Предпросмотр — таблица первых N строк с warning'ами
- *   4. Импорт — progress-bar + KPI (created/updated/errors)
+ * The steps:
+ *   1. The upload — a UidFileUpload taking CSV, TSV or XLSX
+ *   2. The mapping — the file's headers onto the resource's field names
+ *   3. The preview — a table of the first N rows, with the warnings
+ *   4. The import — a progress bar and the KPIs (created, updated, errors)
  *
- * Library предоставляет каркас + state. Конкретные API-вызовы (analyze
- * uploaded file → headers/sample, mapping submit → preview, run import →
- * progress events) — host реализует через emit'ы.
+ * The library provides the frame and the state. The actual API calls —
+ * analysing the uploaded file into headers and a sample, submitting the
+ * mapping for a preview, running the import and reporting progress — are the
+ * host's, through the emitted events.
  */
 import { computed, ref } from 'vue'
 import {
@@ -36,9 +38,9 @@ interface ColumnHeader {
 }
 
 interface Mapping {
-  /** Header из файла. */
+  /** A header from the file. */
   source: string
-  /** Field-name в ресурсе либо null = пропустить. */
+  /** The resource's field name, or null to skip the column. */
   target: string | null
 }
 
@@ -54,19 +56,19 @@ interface ImportProgress {
 }
 
 interface Props {
-  /** Заголовок страницы. */
+  /** The page's title. */
   title?: string
-  /** Опции для select'а target field'а на step 2. */
+  /** The options of the target-field select on step 2. */
   fieldOptions: Array<{ value: string; label: string }>
-  /** Headers + sample из uploaded file (host передаёт после step 1). */
+  /** The headers and the sample from the uploaded file; the host passes them after step 1. */
   headers?: ColumnHeader[]
-  /** Preview rows с warning'ами (host передаёт после step 2 submit). */
+  /** The preview rows with their warnings; the host passes them after step 2 is submitted. */
   preview?: PreviewRow[]
-  /** Preview-table columns (host передаёт). */
+  /** The preview table's columns, passed by the host. */
   previewColumns?: UidTableColumn[]
-  /** Финальная сводка импорта. */
+  /** The import's final summary. */
   progress?: ImportProgress | null
-  /** Внешне controlled-mode current step (опц.). */
+  /** The current step in the externally controlled mode; optional. */
   step?: number
 }
 
@@ -80,11 +82,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  /** Файл загружен — host анализирует, отдаёт headers через v-bind. */
+  /** The file has been uploaded: the host analyses it and returns the headers through v-bind. */
   'file-uploaded': [file: File]
-  /** Mapping submit — host генерирует preview. */
+  /** The mapping has been submitted: the host builds the preview. */
   'mapping-submit': [mapping: Mapping[]]
-  /** Run import — host выполняет с реальной записью. */
+  /** Run the import: the host performs it, writing for real. */
   'run-import': []
   /** Cancel wizard. */
   cancel: []
@@ -140,7 +142,7 @@ function onConfirmRun(): void {
   setStep(3)
 }
 
-// Кнопки навигации
+// The navigation buttons
 const canGoBack = computed(() => currentStep.value > 0)
 const canGoNext = computed(() => {
   switch (currentStep.value) {

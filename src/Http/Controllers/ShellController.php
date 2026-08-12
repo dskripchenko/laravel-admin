@@ -11,19 +11,19 @@ use Illuminate\Http\Request;
 /**
  * Single Page Application shell.
  *
- * Возвращает один и тот же Blade на любой URL под /admin/* (кроме API).
- * Vue-router на клиенте сам обрабатывает routing.
+ * It returns the same Blade view for every URL under /admin/*, the API aside;
+ * the routing is the client-side vue-router's business.
  *
- * Стратегия 'inline' (default): bootstrap-payload инжектится в shell.blade
- * через `<script>`-тег с CSP-nonce. Стратегия 'xhr': SPA сама запрашивает
- * `/api/admin/system/bootstrap`. Контракт payload'а — единый, через
- * BootstrapBuilder.
+ * With the 'inline' strategy, the default, the bootstrap payload is injected
+ * into shell.blade through a `<script>` tag with a CSP nonce. With the 'xhr'
+ * strategy the SPA requests `/api/admin/system/bootstrap` itself. Either way
+ * the payload's contract is the same one, produced by BootstrapBuilder.
  */
 final class ShellController
 {
     public function __invoke(Request $request, BootstrapBuilder $builder): View
     {
-        // v1.8 Panels: shell-роут каждой панели несёт её id в route-defaults.
+        // Panels: each panel's shell route carries its id in the route defaults.
         $panelId = $request->route('adminPanel');
         if (is_string($panelId)) {
             $request->attributes->set('admin.panel', $panelId);
@@ -43,26 +43,26 @@ final class ShellController
             'strategy' => $strategy,
             'cspNonce' => $request->attributes->get('admin.csp_nonce'),
             'brand' => \Dskripchenko\LaravelAdmin\I18n\Localize::brand(),
-            // Читается на каждом запросе, а не кэшируется вместе с bootstrap:
-            // отсчёт в плашке ведётся до конкретного момента, и host-приложение
-            // выставляет его посреди запроса.
+            // Read on every request rather than cached along with the
+            // bootstrap: the banner counts down to a particular moment, and
+            // the host application sets it mid-request.
             'notice' => (array) config('admin.notice', []),
             'assets' => $this->resolveAssets(),
         ]);
     }
 
     /**
-     * Резолвит CSS/JS ассеты для shell.blade.
+     * Resolves the CSS and JS assets for shell.blade.
      *
-     * Два режима, см. config/admin.php → 'assets':
-     *  1. Явный список — `assets.css` / `assets.js` массивы URL'ов.
-     *  2. Vite-manifest — `assets.vite_manifest` (path к manifest.json) +
-     *     `assets.vite_entry` (например `resources/js/admin.js`). Контроллер
-     *     парсит manifest и строит финальный список с учётом `imports` chunks
-     *     и `css` для каждого entry.
+     * There are two modes, see config/admin.php → 'assets':
+     *  1. An explicit list: the `assets.css` and `assets.js` arrays of URLs.
+     *  2. A Vite manifest: `assets.vite_manifest`, the path to manifest.json,
+     *     plus `assets.vite_entry`, `resources/js/admin.js` for instance. The
+     *     controller parses the manifest and builds the final list, taking the
+     *     `imports` chunks and each entry's `css` into account.
      *
-     * Оба режима совместимы — если указан vite_manifest, он применяется в
-     * дополнение к явным спискам (явные ставятся ПОСЛЕ — для override-кейса).
+     * The two are compatible: when vite_manifest is set it applies on top of
+     * the explicit lists, which come AFTER it so that they can override.
      *
      * @return array{css: list<string>, js: list<string>}
      */
@@ -76,8 +76,8 @@ final class ShellController
 
         if (is_string($manifestPath) && $manifestPath !== '' && is_string($entry) && $entry !== '' && is_file($manifestPath)) {
             $resolved = $this->resolveViteManifest($manifestPath, $entry);
-            // vite-manifest ассеты идут ПЕРЕД явными — чтобы host мог
-            // override'ить через config.
+            // The Vite manifest's assets come BEFORE the explicit ones, so
+            // that a host can override them through the config.
             $css = [...$resolved['css'], ...$css];
             $js = [...$resolved['js'], ...$js];
         }
@@ -89,9 +89,10 @@ final class ShellController
     }
 
     /**
-     * Парсит Vite manifest.json и собирает CSS/JS для указанного entry.
+     * Parses a Vite manifest.json and collects the CSS and JS of the given
+     * entry.
      *
-     * Manifest format (см. https://vite.dev/guide/backend-integration.html):
+     * The manifest's format, see https://vite.dev/guide/backend-integration.html:
      *   {
      *     "resources/js/admin.js": {
      *       "file": "assets/admin-XXX.js",

@@ -1,13 +1,14 @@
 /**
- * Axios-клиент для admin API.
+ * The axios client of the admin API.
  *
- * Особенности:
- *   - baseURL берётся из bootstrap.apiUrl (либо передаётся явно).
- *   - X-XSRF-TOKEN добавляется автоматически из cookie (Laravel Sanctum/web).
- *   - X-CSRF-TOKEN — fallback из meta[name=csrf-token] (Blade-injection).
- *   - X-Admin-Locale выставляется при наличии текущей локали.
- *   - Response interceptor разворачивает envelope и бросает ApiError.
- *   - 401 → onUnauthenticated callback (редирект на login на стороне consumer'а).
+ * What it does:
+ *   - takes its baseURL from bootstrap.apiUrl, unless one is passed explicitly.
+ *   - adds X-XSRF-TOKEN automatically from the cookie (Laravel's Sanctum/web).
+ *   - falls back to X-CSRF-TOKEN from meta[name=csrf-token], injected by Blade.
+ *   - sets X-Admin-Locale whenever there is a current locale.
+ *   - unwraps the envelope in a response interceptor and throws an ApiError.
+ *   - calls the onUnauthenticated callback on a 401, leaving the redirect to
+ *     the login to the consumer.
  */
 
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig } from 'axios'
@@ -18,12 +19,12 @@ export interface ClientOptions {
   baseURL: string
   csrfToken?: string
   locale?: string
-  /** Вызывается при 401. Обычно — push на /admin/login. */
+  /** Called on a 401; usually a push to /admin/login. */
   onUnauthenticated?: () => void
 }
 
 export interface AdminClient {
-  /** Низкоуровневый axios — для специфичных случаев. */
+  /** The raw axios instance, for the odd special case. */
   raw: AxiosInstance
   get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
   post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
@@ -31,7 +32,7 @@ export interface AdminClient {
   patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
   delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
   setLocale(locale: string): void
-  /** Снять закреплённый X-Admin-Locale — резолвить локаль будет сервер. */
+  /** Removes the pinned X-Admin-Locale, leaving the locale to the server. */
   clearLocale(): void
 }
 
@@ -52,12 +53,13 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
     instance.defaults.headers.common['X-Admin-Locale'] = opts.locale
   }
 
-  // CSRF на каждый запрос. XSRF-TOKEN cookie всегда актуален (браузер
-  // обновляет его через Set-Cookie при регенерации сессии на логине);
-  // bootstrap-снятый X-CSRF-TOKEN — устаревает. Laravel в tokensMatch()
-  // ПРЕДПОЧИТАЕТ X-CSRF-TOKEN cookie'у, поэтому при наличии свежего
-  // cookie статичный заголовок СНИМАЕМ — иначе стухший токен даёт 419
-  // (setTheme/setLocale и любой POST после client-side логина без reload).
+  // The CSRF token on every request. The XSRF-TOKEN cookie is always current
+  // — the browser refreshes it through Set-Cookie when the session is
+  // regenerated on login — while the X-CSRF-TOKEN taken from the bootstrap
+  // goes stale. Laravel's tokensMatch() PREFERS X-CSRF-TOKEN over the cookie,
+  // so when a fresh cookie is there we REMOVE the static header; otherwise the
+  // stale token gives a 419 on setTheme, setLocale and any POST after a
+  // client-side login without a reload.
   instance.interceptors.request.use((config) => {
     const xsrf = readCookie('XSRF-TOKEN')
     if (xsrf) {
@@ -67,20 +69,20 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
     return config
   })
 
-  // Response interceptor — разворачиваем envelope, бросаем правильную ошибку.
+  // The response interceptor: unwrap the envelope, throw the right error.
   instance.interceptors.response.use(
     (response) => {
       const env = response.data as ApiEnvelope
       if (env && typeof env === 'object' && 'success' in env) {
         if (isSuccess(env)) {
-          // payload подменяет data — теперь callers получают чистый payload.
+          // The payload replaces data, so the callers get the payload alone.
           response.data = env.payload
           return response
         }
-        // success: false → throw как ApiError
+        // success: false is thrown as an ApiError
         throw toApiError(response.status, env.payload)
       }
-      // Не envelope (например, бинарный stream) — пропускаем как есть.
+      // Not an envelope — a binary stream, say — so it passes through untouched.
       return response
     },
     (error: AxiosError<ErrorEnvelope>) => {
@@ -131,7 +133,7 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
   }
 }
 
-/** Читает cookie из document.cookie. Returns null если нет. */
+/** Reads a cookie from document.cookie, returning null when there is none. */
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null
   const match = document.cookie.match(new RegExp('(^|; )' + escapeRegex(name) + '=([^;]*)'))
