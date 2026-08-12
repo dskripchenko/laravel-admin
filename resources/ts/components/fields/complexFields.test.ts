@@ -41,7 +41,7 @@ describe('complex fields (backlog: key_value / repeater / builder / relation_tab
     await inputs[1].trigger('blur')
     expect(ctx!.getField('meta')).toEqual({ color: 'blue' })
 
-    // Добавление пары.
+    // Adding a pair.
     await wrapper.find('button.admin-keyvalue__add').trigger('click')
     const after = wrapper.findAll('input')
     expect(after.length).toBeGreaterThanOrEqual(4)
@@ -66,7 +66,7 @@ describe('complex fields (backlog: key_value / repeater / builder / relation_tab
     await inputs[1].setValue('B2')
     expect((ctx!.getField('lines') as Array<{ title: string }>)[1].title).toBe('B2')
 
-    // Добавление item'а из defaultItem.
+    // Adding an item out of defaultItem.
     await wrapper.find('button.admin-repeater__add').trigger('click')
     expect((ctx!.getField('lines') as unknown[]).length).toBe(3)
   })

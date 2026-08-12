@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Превью картинки.
+ * An image preview.
  */
 final class ImageEntry extends Entry
 {

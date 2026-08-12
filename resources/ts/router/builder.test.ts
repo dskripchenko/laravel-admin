@@ -68,10 +68,10 @@ describe('buildRoutesFromManifest', () => {
     expect(routes[0].meta?.permissions).toEqual(['admin.users.view'])
     expect(routes[1].meta?.permissions).toEqual(['admin.users.create'])
     expect(routes[2].meta?.permissions).toEqual(['admin.users.update'])
-    // resourceEdit/resourceView передают slug+id через function-mode props.
+    // resourceEdit and resourceView pass the slug and the id through function-mode props.
     expect(typeof routes[2].props).toBe('function')
     expect(typeof routes[3].props).toBe('function')
-    // resourceIndex/resourceCreate — slug запекается через object-mode.
+    // For resourceIndex and resourceCreate the slug is baked in through the object mode.
     expect(routes[0].props).toEqual({ slug: 'users' })
     expect(routes[1].props).toEqual({ slug: 'users' })
   })

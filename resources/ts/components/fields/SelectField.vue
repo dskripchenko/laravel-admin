@@ -18,8 +18,9 @@ interface Props {
   placeholder?: string | null
   disabled?: boolean
   /**
-   * Read-only — бэкенд может пометить Select через `->readonly()`. UidSelect
-   * не различает readonly/disabled — мапим в disabled (визуально совпадает).
+   * Read-only: the backend may mark a Select with `->readonly()`. UidSelect
+   * does not tell readonly from disabled, so we map it to disabled, which
+   * looks the same.
    */
   readonly?: boolean
   searchable?: boolean

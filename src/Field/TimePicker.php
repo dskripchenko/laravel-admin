@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Time picker (часы/минуты/[секунды]).
+ * A time picker: hours, minutes and optionally seconds.
  */
 final class TimePicker extends Field
 {
@@ -32,7 +32,7 @@ final class TimePicker extends Field
     }
 
     /**
-     * Шаг минут — 1/5/15/30/...
+     * The step of the minutes: 1, 5, 15, 30 and so on.
      */
     public function step(int $minutes): static
     {

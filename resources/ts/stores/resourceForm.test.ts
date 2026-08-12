@@ -214,7 +214,7 @@ describe('manifest invalidation after mutations', () => {
     const { useManifestStore } = await import('./manifest')
     const manifest = useManifestStore()
     const stale = { version: 'v1', resources: [], screens: [], settings: [], plugins: [] }
-    // @ts-expect-error — прямое наполнение кэша для теста
+    // @ts-expect-error — filling the cache directly, for the test
     manifest.manifest = stale
 
     const form = useResourceFormStore()
@@ -229,7 +229,7 @@ describe('manifest invalidation after mutations', () => {
     })
 
     await form.save()
-    // Манифест НЕ обнулён (форма не теряет layout) — фоновый refresh заменит.
+    // The manifest is NOT cleared, so the form keeps its layout; the background refresh replaces it.
     expect(manifest.manifest).not.toBeNull()
     await new Promise((r) => setTimeout(r, 20))
     expect(manifest.manifest?.version).toBe('v2')

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Schemas;
 
 /**
- * Templates для Resource-controllers, actions, Settings.
+ * The templates of the resource controllers, the actions and the settings.
  */
 trait AdminApiResourceSchemas
 {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Rating — звёздный/иконочный рейтинг (значение 0..count).
+ * A rating in stars or icons, valued from 0 to count.
  */
 final class Rating extends Field
 {

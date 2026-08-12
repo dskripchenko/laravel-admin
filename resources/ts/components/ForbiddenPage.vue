@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 403 fallback. Host может переопределить через createAdminApp({ pages: { forbidden } }).
+ * The 403 fallback; a host may override it through createAdminApp({ pages: { forbidden } }).
  */
 import { UidCard, UidButton } from '@dskripchenko/ui'
 import { useRouter } from 'vue-router'

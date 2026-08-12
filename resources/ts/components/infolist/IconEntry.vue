@@ -7,8 +7,8 @@
  *   IconEntry::make('flag')
  *       ->trueIcon('check-circle-2')
  *       ->falseIcon('x-circle')
- *       ->trueLabel('Активно')
- *       ->falseLabel('Отключено')
+ *       ->trueLabel('Active')
+ *       ->falseLabel('Disabled')
  * surfaces as an actual ✓ / ✗ instead of a blank placeholder.
  */
 import { computed } from 'vue'

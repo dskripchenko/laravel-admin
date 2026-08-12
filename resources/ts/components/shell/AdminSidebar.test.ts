@@ -54,8 +54,8 @@ describe('AdminSidebar', () => {
   })
 
   it('hides brand-name when collapsed=true (mark stays)', async () => {
-    // Default brandMark — null → рендерится BrandLogo (.ladmin-logo).
-    // brand__name (текст) скрывается при collapsed.
+    // brandMark defaults to null, so BrandLogo (.ladmin-logo) is rendered.
+    // brand__name, the text, is hidden while collapsed.
     const wrapper = await mountSidebar({ collapsed: true })
     expect(wrapper.find('.ladmin-logo').exists()).toBe(true)
     expect(wrapper.find('.admin-sidebar-brand__name').exists()).toBe(false)

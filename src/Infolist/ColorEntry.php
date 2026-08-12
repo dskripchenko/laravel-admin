@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Цветной swatch + hex/rgb значение рядом.
+ * A colour swatch with its hex or rgb value alongside.
  */
 final class ColorEntry extends Entry
 {

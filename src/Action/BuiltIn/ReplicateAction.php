@@ -7,7 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Action\BuiltIn;
 use Dskripchenko\LaravelAdmin\Action\Button;
 
 /**
- * Клонирование записи через ResourceController.replicate.
+ * Clones a record through ResourceController.replicate.
  */
 final class ReplicateAction
 {

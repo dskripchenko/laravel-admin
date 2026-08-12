@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Карта (lat/lng). Конкретный provider — в SPA (Yandex/OSM/Leaflet).
+ * A map by lat/lng; which provider draws it is the SPA's business — Yandex, OSM, Leaflet.
  */
 final class MapEntry extends Entry
 {

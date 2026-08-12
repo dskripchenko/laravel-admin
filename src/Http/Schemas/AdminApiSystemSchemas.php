@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Schemas;
 
 /**
- * Templates для контроллеров system, auth, profile.
+ * The templates of the system, auth and profile controllers.
  */
 trait AdminApiSystemSchemas
 {

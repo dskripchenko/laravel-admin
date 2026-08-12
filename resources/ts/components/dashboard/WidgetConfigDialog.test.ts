@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import WidgetConfigDialog from './WidgetConfigDialog.vue'
 
-// BL-18: когда добавлять нечего — пустое состояние + disabled «Добавить».
+// When there is nothing left to add: the empty state and a disabled "Add".
 vi.mock('./registry', () => ({
   listWidgets: () => [],
 }))

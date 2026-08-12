@@ -9,7 +9,7 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Registry SettingsResource'ов. Хранит slug → FQCN.
+ * The registry of the SettingsResources; it stores slug → FQCN.
  */
 final class SettingsRegistry
 {
@@ -75,7 +75,7 @@ final class SettingsRegistry
     }
 
     /**
-     * Без аргумента — все (BC); с панелью — только её скоуп.
+     * Without an argument: all of them; with a panel: that panel's scope alone.
      *
      * @return array<string, class-string<SettingsResource>>
      */

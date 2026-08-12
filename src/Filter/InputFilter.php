@@ -7,7 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
- * LIKE-поиск по текстовому полю.
+ * A LIKE search over a text field.
  *
  * `Filter\Input::for('email')` — `?filters[email]=ivan` → `WHERE email LIKE '%ivan%'`.
  */

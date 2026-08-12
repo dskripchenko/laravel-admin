@@ -1,5 +1,5 @@
 /**
- * Public exports dashboard-системы.
+ * The public exports of the dashboard system.
  */
 
 export { default as DashboardPage } from './DashboardPage.vue'

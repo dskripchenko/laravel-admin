@@ -57,7 +57,7 @@ describe('ProfilePage', () => {
   it('General section is active by default and shows user fields', () => {
     const w = mount(ProfilePage)
     const inputs = w.findAll('input')
-    // Имя input prefilled
+    // The name input is prefilled
     expect((inputs[0].element as HTMLInputElement).value).toBe('Иван Петров')
     expect((inputs[1].element as HTMLInputElement).value).toBe('ivan@example.com')
   })
@@ -81,7 +81,7 @@ describe('ProfilePage', () => {
     const w = mount(ProfilePage)
     await w.findAll('.admin-profile__nav-item')[1].trigger('click')
     expect(w.text()).toContain('Включена')
-    // Кнопки живут во встроенном TwoFactorSetup (.admin-2fa), не placeholder-footer.
+    // The buttons live in the embedded TwoFactorSetup (.admin-2fa), not in the placeholder footer.
     const buttons = w.findAll('.admin-2fa button').map((b) => b.text())
     expect(buttons).toContain('Отключить 2FA')
     expect(buttons.some((t) => t.includes('Перегенерировать'))).toBe(true)

@@ -67,7 +67,7 @@ describe('GeneratedField — гонка с сидированием формы',
       }),
     )
     await w.vm.$nextTick()
-    // эмулируем prepareCreate: стор затирает state пустыми default'ами
+    // Emulating prepareCreate: the store overwrites the state with empty defaults
     ctx.setField('token', '')
     await w.vm.$nextTick()
     expect((w.find('input').element as HTMLInputElement).value).toHaveLength(12)

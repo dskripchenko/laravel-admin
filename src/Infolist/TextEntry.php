@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Простой текст. С опциональными copy/link/format-presetами.
+ * Plain text, with optional copy, link and format presets.
  */
 final class TextEntry extends Entry
 {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Action;
 
 /**
- * Внешняя или внутренняя ссылка.
+ * An external or internal link.
  */
 final class Link extends Action
 {

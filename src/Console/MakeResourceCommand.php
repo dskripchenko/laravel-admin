@@ -7,8 +7,8 @@ namespace Dskripchenko\LaravelAdmin\Console;
 use Illuminate\Console\Command;
 
 /**
- * Простой alias для `admin:make-section --no-menu --no-role` — генерирует
- * только Resource, без меню и role'и. Внутри переадресуется в
+ * A plain alias for `admin:make-section --no-menu --no-role`: it generates
+ * the resource alone, with no menu entry and no role. Internally it forwards to
  * MakeSectionCommand.
  */
 final class MakeResourceCommand extends Command

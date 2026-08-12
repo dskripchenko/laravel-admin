@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Schemas;
 
 /**
- * Templates для UI-слоя: Screens, Dashboards/Widgets, Uploads, Delayed processes,
+ * The templates of the UI layer: screens, dashboards and widgets, uploads, delayed processes,
  * Exports/Imports.
  */
 trait AdminApiUiSchemas
@@ -64,7 +64,7 @@ trait AdminApiUiSchemas
             ],
 
             /* ------------------------------------------------------------------
-             * Dashboards и Widgets
+             * Dashboards and widgets
              * ------------------------------------------------------------------ */
 
             'DashboardsListResponse' => [

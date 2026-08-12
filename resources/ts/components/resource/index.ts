@@ -1,5 +1,5 @@
 /**
- * Public exports resource-страниц admin'а.
+ * The public exports of the admin's resource pages.
  */
 
 export { default as ResourceIndexPage } from './ResourceIndexPage.vue'

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * BarChartWidget — простой SVG-bar chart без внешних зависимостей.
+ * BarChartWidget — a plain SVG bar chart with no external dependencies.
  *
  * Manifest:
- *   { type: 'bar-chart', title: '30 дней',
+ *   { type: 'bar-chart', title: '30 days',
  *     data: [{ label: '01', value: 12 }, ...],
  *     accent: 'var(--uid-accent)' }
  */

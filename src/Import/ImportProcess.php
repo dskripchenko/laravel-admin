@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * Eloquent-модель импорт-процесса. Привязана к resource_slug и owner'у
- * (обычно AdminUser, который запустил импорт).
+ * The Eloquent model of an import process. It belongs to a resource_slug and
+ * to an owner — usually the AdminUser who started the import.
  *
  * @property int $id
  * @property string $resource_slug

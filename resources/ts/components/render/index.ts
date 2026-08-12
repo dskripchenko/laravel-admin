@@ -1,5 +1,5 @@
 /**
- * Public exports JSON-driven рендеринга.
+ * The public exports of the JSON-driven rendering.
  */
 
 export { default as FieldRenderer } from './FieldRenderer.vue'
@@ -30,7 +30,7 @@ export {
 } from './formState'
 export type { FormStateContext } from './formState'
 
-// Re-export builtin field/layout SFCs — host-проект может wrap'нуть/расширить.
+// The built-in field and layout SFCs are re-exported so a host project can wrap or extend them.
 export { default as TextField } from '../fields/TextField.vue'
 export { default as TextAreaField } from '../fields/TextAreaField.vue'
 export { default as NumberField } from '../fields/NumberField.vue'

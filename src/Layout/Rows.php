@@ -7,9 +7,9 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Простая форма из вертикально расположенных Field/Layout элементов.
+ * A simple form of vertically stacked fields and layouts.
  *
- * SPA рендерит как `<UiForm>` со списком полей.
+ * The SPA renders it as a `<UiForm>` with the list of fields.
  */
 final class Rows extends Layout
 {

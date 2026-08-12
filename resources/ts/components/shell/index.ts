@@ -1,7 +1,7 @@
 /**
- * Public exports SFC-каркаса admin-панели.
+ * The public exports of the admin panel's SFC shell.
  *
- * Использование (host-проект):
+ * Usage, from a host project:
  *
  *     import { AdminShell } from '@dskripchenko/laravel-admin'
  *

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * UserMenu с avatar + dropdown через UidMenu из @dskripchenko/ui.
- * В trigger'е — UidAvatar (с инициалами либо src, размер sm).
+ * The user menu: an avatar plus a dropdown, through UidMenu from
+ * @dskripchenko/ui. The trigger is a small UidAvatar, showing initials or a src.
  */
 import { UidAvatar, UidMenu, UidMenuItem, UidMenuSeparator } from '@dskripchenko/ui'
 import { useRouter } from 'vue-router'

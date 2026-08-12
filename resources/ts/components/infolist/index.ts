@@ -1,5 +1,5 @@
 /**
- * Public exports infolist-системы.
+ * The public exports of the infolist system.
  */
 
 export { default as InfolistRenderer } from './InfolistRenderer.vue'

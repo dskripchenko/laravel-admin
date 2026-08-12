@@ -15,7 +15,7 @@ use function Laravel\Prompts\text;
 /**
  * `php artisan admin:make-widget`
  *
- * Wizard для создания custom Widget (плитка для DashboardScreen).
+ * The wizard creating a custom widget — a tile for a DashboardScreen.
  */
 final class MakeWidgetCommand extends Command
 {

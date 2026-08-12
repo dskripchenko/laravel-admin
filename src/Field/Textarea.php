@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Многострочное текстовое поле.
+ * A multi-line text field.
  *
  * @method $this rows(int $rows)
  * @method $this maxlength(int $maxlength)
@@ -18,7 +18,7 @@ final class Textarea extends Field
     }
 
     /**
-     * Авто-resize. SPA-флаг.
+     * Auto-resize; a flag for the SPA.
      */
     public function autosize(bool $autosize = true): static
     {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 404 fallback. Host может переопределить через createAdminApp({ pages: { notFound } }).
+ * The 404 fallback; a host may override it through createAdminApp({ pages: { notFound } }).
  */
 import { UidCard, UidButton } from '@dskripchenko/ui'
 import { useRouter } from 'vue-router'

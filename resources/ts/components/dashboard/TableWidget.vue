@@ -6,8 +6,9 @@ import { trSafe as tr } from '../../stores/i18n'
 
 /**
  * Backend TableWidget::data() — {rows, columns[TableColumn::toArray]}:
- * колонки в resource-формате ({name, label, preset, meta…}) — ячейки
- * форматируем тем же formatCell, что и Resource list (даты/деньги/boolean).
+ * the columns come in the resource format ({name, label, preset, meta…}), so
+ * the cells are formatted by the same formatCell as a resource list uses —
+ * dates, money, booleans.
  */
 interface BackendColumn {
   name: string

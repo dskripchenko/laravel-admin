@@ -7,9 +7,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Таблица для password-reset токенов админов (отдельный broker от host-проекта).
+ * The table of the administrators' password-reset tokens — a broker separate from the host project's.
  *
- * Регистрируется в config через AdminGuardRegistrar.
+ * Registered in the config by AdminGuardRegistrar.
  */
 return new class extends Migration
 {

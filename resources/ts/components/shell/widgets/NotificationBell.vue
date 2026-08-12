@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Bell с unread-badge — toggle'ит slide-in drawer NotificationsDrawer.
- * Сам drawer mounted один раз в AdminApp.vue (Teleport to body).
+ * The bell with its unread badge; it toggles the sliding NotificationsDrawer.
+ * The drawer itself is mounted once, in AdminApp.vue, teleported to the body.
  */
 import { computed } from 'vue'
 import { Bell } from 'lucide-vue-next'

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * Fallback на missing field-registration. Видимый dev-warn вместо silent fail —
- * host-проект сразу замечает unregistered field-type.
+ * The fallback for a field that was never registered. A visible warning
+ * rather than a silent failure, so that the host project notices an
+ * unregistered field type at once.
  */
 import { UidAlert } from '@dskripchenko/ui'
 import { trSafe as tr, tRaw } from '../../stores/i18n'

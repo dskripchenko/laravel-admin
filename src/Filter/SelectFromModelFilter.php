@@ -8,7 +8,7 @@ use Illuminate\Contracts\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Select-фильтр с options из Eloquent-модели.
+ * A select filter whose options come from an Eloquent model.
  *
  * `SelectFromModelFilter::for('user_id')->fromModel(User::class, 'name')`
  */

@@ -6,8 +6,8 @@ import { registerBuiltinComponents } from './builtin'
 import { provideFormState } from './formState'
 
 /**
- * Поля password/email/url/tel рендерились обычным text-инпутом: секрет был
- * виден открытым текстом, а мобильная клавиатура не подстраивалась.
+ * The password, email, url and tel fields were drawn as a plain text input:
+ * the secret was visible in the clear and the mobile keyboard did not adjust.
  */
 describe('builtin: тип инпута текстовых полей', () => {
   beforeEach(() => {

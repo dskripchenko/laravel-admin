@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Read-only display поле — статический текст в форме.
+ * A read-only display field — static text inside a form.
  *
- * Не editable, не submit-able. Через `->value()` или из state по name.
+ * Neither editable nor submitted. Its text comes from `->value()` or from the state, by name.
  */
 final class Label extends Field
 {

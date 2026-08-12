@@ -67,8 +67,8 @@ describe('LoginPage', () => {
       global: {
         plugins: [router],
         stubs: {
-          // LocaleSwitcher / UserMenu inside auth corner используют UidMenu
-          // (popover/teleport — повисает в jsdom).
+          // The LocaleSwitcher and UserMenu in the auth corner use UidMenu,
+          // whose popover and teleport hang in jsdom.
           LocaleSwitcher: { template: '<div class="stub-locale-switcher"/>' },
         },
       },

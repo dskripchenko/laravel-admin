@@ -9,7 +9,7 @@ use InvalidArgumentException;
 /**
  * Color picker.
  *
- * format: 'hex' | 'rgb' | 'hsl'. Дефолт — 'hex'.
+ * format: 'hex' | 'rgb' | 'hsl'; 'hex' by default.
  */
 final class ColorPicker extends Field
 {
@@ -34,7 +34,7 @@ final class ColorPicker extends Field
     }
 
     /**
-     * Преднастроенная палитра.
+     * A preset palette.
      *
      * @param  list<string>  $colors
      */

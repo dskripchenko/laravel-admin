@@ -7,7 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Field;
 use Dskripchenko\LaravelAdmin\Field\Concerns\HasOptions;
 
 /**
- * Radio-группа (single choice). Опции через ->options([...]) или ->fromEnum(...).
+ * A radio group — a single choice. The options come from ->options([...]) or ->fromEnum(...).
  */
 final class Radio extends Field
 {

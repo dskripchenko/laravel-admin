@@ -9,10 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
 
 /**
- * Global scope для TenantScoped-моделей: фильтрует запросы по
+ * The global scope of the TenantScoped models: it filters the queries by
  * `tenant_id = current_tenant->getTenantKey()`.
  *
- * Если current tenant = null — scope no-op'ит (single-tenant mode).
+ * With no current tenant the scope does nothing — the single-tenant mode.
  */
 final class TenantScope implements Scope
 {

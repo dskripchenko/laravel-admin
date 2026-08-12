@@ -1,5 +1,5 @@
 /**
- * Public exports auth-страниц.
+ * The public exports of the auth pages.
  */
 
 export { default as LoginPage } from './LoginPage.vue'

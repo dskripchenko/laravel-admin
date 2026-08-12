@@ -41,7 +41,7 @@ describe('FieldGalleryPage', () => {
   it('renders Field components — input для text demo', () => {
     const w = mount(FieldGalleryPage)
     const inputs = w.findAll('input')
-    // text + email/password types + number + checkbox + date — все рендерят input
+    // text, email/password, number, checkbox and date all render an input
     expect(inputs.length).toBeGreaterThan(2)
   })
 
@@ -53,7 +53,7 @@ describe('FieldGalleryPage', () => {
   it('shows initial values from demo state', () => {
     const w = mount(FieldGalleryPage)
     const inputs = w.findAll('input').map((i) => (i.element as HTMLInputElement).value)
-    // Один из text-input'ов содержит «Hello World»
+    // One of the text inputs holds "Hello World"
     expect(inputs).toContain('Hello World')
   })
 })

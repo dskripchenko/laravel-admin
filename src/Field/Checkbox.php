@@ -9,8 +9,8 @@ use Dskripchenko\LaravelAdmin\Field\Concerns\HasOptions;
 /**
  * Checkbox.
  *
- * Без options() — single boolean toggle.
- * С options() — группа checkbox'ов (multi-select).
+ * Without options() it is a single boolean toggle; with options() it becomes
+ * a group of checkboxes, a multi-select.
  */
 final class Checkbox extends Field
 {

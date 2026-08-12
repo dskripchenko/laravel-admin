@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Бэйдж с цветом по value (`active` → green, `banned` → red).
+ * A badge coloured by its value: `active` → green, `banned` → red.
  */
 final class BadgeEntry extends Entry
 {

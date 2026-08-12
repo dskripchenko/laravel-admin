@@ -8,9 +8,9 @@ use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 use InvalidArgumentException;
 
 /**
- * Drawer — выезжающая панель сбоку (right/left/top/bottom).
+ * A drawer — a panel sliding in from the right, left, top or bottom.
  *
- * Подходит для quick-edit, inline-detail без перехода на отдельный screen.
+ * It suits a quick edit or an inline detail view, with no trip to a separate screen.
  */
 final class Drawer extends Layout
 {

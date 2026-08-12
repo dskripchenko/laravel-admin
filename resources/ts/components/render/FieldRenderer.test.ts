@@ -26,7 +26,7 @@ describe('FieldRenderer', () => {
         node: { type: 'no-such-type', name: 'x' },
       },
     })
-    // UnknownField теперь — UidAlert; ищем по тексту с типом
+    // UnknownField is a UidAlert now, so we look for the text carrying the type
     expect(wrapper.text()).toContain('no-such-type')
   })
 

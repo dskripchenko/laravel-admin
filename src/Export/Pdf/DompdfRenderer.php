@@ -8,8 +8,8 @@ use Dompdf\Dompdf;
 use RuntimeException;
 
 /**
- * Dompdf-адаптер — простой fallback. Меньше CSS-фич, но без зависимости
- * от mPDF (полезно для embedded окружений).
+ * The Dompdf adapter — a simple fallback. Fewer CSS features, but no
+ * dependency on mPDF, which helps in embedded environments.
  */
 final class DompdfRenderer implements PdfRenderer
 {

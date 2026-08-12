@@ -125,12 +125,12 @@ describe('useResourceIndexStore', () => {
     await s.toggleSort('title')
     expect(s.sortDirection).toBe('desc')
 
-    // Третий режим: off — sortKey становится null, direction null.
+    // The third step is off: both sortKey and direction become null.
     await s.toggleSort('title')
     expect(s.sortKey).toBeNull()
     expect(s.sortDirection).toBeNull()
 
-    // Четвёртый клик по тому же столбцу = новый sort, asc.
+    // A fourth click on the same column starts a new sort, ascending.
     await s.toggleSort('title')
     expect(s.sortKey).toBe('title')
     expect(s.sortDirection).toBe('asc')

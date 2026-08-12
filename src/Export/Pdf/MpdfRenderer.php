@@ -8,9 +8,9 @@ use Mpdf\Mpdf;
 use RuntimeException;
 
 /**
- * mPDF-адаптер. Поддерживает UTF-8 и расширенный CSS.
+ * The mPDF adapter. It supports UTF-8 and a wider range of CSS.
  *
- * Default options берутся из config('admin.exports.pdf.options.mpdf').
+ * The default options come from config('admin.exports.pdf.options.mpdf').
  */
 final class MpdfRenderer implements PdfRenderer
 {

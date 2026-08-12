@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Read-only display ассоциативного массива. Парный к Field\KeyValue.
+ * A read-only display of an associative array; the counterpart of Field\KeyValue.
  */
 final class KeyValueEntry extends Entry
 {

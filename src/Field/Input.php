@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Текстовый input.
+ * A text input.
  *
- * `type` (HTML) — text по умолчанию, переопределяется через `->type('email')`.
+ * The HTML `type` is text by default and is overridden with `->type('email')`.
  *
  * @method $this type(string $type)
  * @method $this mask(string $mask)

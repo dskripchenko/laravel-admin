@@ -46,8 +46,8 @@ describe('builtin widget bundle covers backend widgetType() strings', () => {
 
   it('registers every backend widget type', () => {
     registerBuiltinWidgets()
-    // Backend Widget::widgetType() (см. core/src/Widget/*Widget.php).
-    // Регрессия: table и iframe рендерились UnknownWidget-заглушкой.
+    // The backend's Widget::widgetType(); see core/src/Widget/*Widget.php.
+    // The regression: table and iframe were drawn by the UnknownWidget stub.
     for (const t of ['stats', 'chart', 'recent_list', 'heatmap', 'gauge', 'markdown', 'table', 'iframe']) {
       expect(hasWidget(t)).toBe(true)
     }

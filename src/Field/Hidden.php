@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Невидимое поле для transport'а служебных значений (id, _token-like).
+ * An invisible field carrying internal values: an id, something token-like.
  *
- * Не рендерится в UI, но участвует в submit-payload.
+ * It is not rendered in the UI but does take part in the submitted payload.
  */
 final class Hidden extends Field
 {

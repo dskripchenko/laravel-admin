@@ -7,11 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
- * Select-фильтр со статичным списком options.
+ * A select filter over a static list of options.
  *
  * `OptionsFilter::for('status')->options(['active' => 'Active', 'banned' => 'Banned'])`
  *
- * Поддерживает `multiple()` — тогда применяет `WHERE col IN (...)`.
+ * It supports `multiple()`, which turns into `WHERE col IN (...)`.
  */
 final class OptionsFilter extends Filter
 {

@@ -13,8 +13,8 @@ interface Props {
   size?: number
   ranges?: GaugeRange[]
   /**
-   * Backend GaugeWidget::data() отдаёт `thresholds` — структурно совпадает
-   * с UidGauge.ranges ({from, to, color}). Принимаем оба имени.
+   * The backend's GaugeWidget::data() returns `thresholds`, which matches
+   * UidGauge.ranges ({from, to, color}) structurally. Both names are accepted.
    */
   thresholds?: GaugeRange[]
   unit?: string

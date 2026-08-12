@@ -7,8 +7,8 @@ namespace Dskripchenko\LaravelAdmin\Action\BuiltIn;
 use Dskripchenko\LaravelAdmin\Action\Button;
 
 /**
- * Окончательное удаление soft-deleted записи через
- * ResourceController.forceDelete с обязательным confirm'ом.
+ * Deletes a soft-deleted record for good, through
+ * ResourceController.forceDelete, with a confirmation required.
  */
 final class ForceDeleteAction
 {

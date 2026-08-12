@@ -7,9 +7,9 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Карточка с заголовком/описанием/CTA вокруг группы Renderable'ов.
+ * A card with a title, a description and a call to action around a group of renderables.
  *
- * SPA рендерит как `<UiCard>` со slot-ами `title`/`description`/`actions`.
+ * The SPA renders it as a `<UiCard>` with the `title`, `description` and `actions` slots.
  */
 final class Block extends Layout
 {

@@ -7,14 +7,14 @@ namespace Dskripchenko\LaravelAdmin\Action\BuiltIn;
 use Dskripchenko\LaravelAdmin\Action\Button;
 
 /**
- * Восстановить soft-deleted запись через ResourceController.restore.
+ * Restores a soft-deleted record through ResourceController.restore.
  *
  * @return Button
  */
 final class RestoreAction
 {
     /**
-     * @param  string  $base  Permission-base ресурса (например 'admin.posts').
+     * @param  string  $base  The resource's permission base, 'admin.posts' for instance.
      */
     public static function for(string $base): Button
     {

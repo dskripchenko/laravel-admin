@@ -1,12 +1,12 @@
 /**
  * Public API of admin stores.
  *
- * Использование:
+ * Usage:
  *
  *     import { setAdminClient, useAuthStore, useThemeStore } from '@dskripchenko/laravel-admin'
  *
  *     const client = createAdminClient({...})
- *     setAdminClient(client)                  // ОБЯЗАТЕЛЬНО до использования stores
+ *     setAdminClient(client)                  // REQUIRED before the stores are used
  *     const auth = useAuthStore()
  *     const theme = useThemeStore()
  */

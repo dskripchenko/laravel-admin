@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Section/Block layout — UidCard с заголовком + опциональным описанием.
+ * The Section/Block layout — a UidCard with a title and an optional description.
  */
 import { UidCard } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'

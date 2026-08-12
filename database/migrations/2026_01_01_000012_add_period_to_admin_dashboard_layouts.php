@@ -7,8 +7,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Per-user период дашборда (фильтр «за N дней») — персистится вместе с
- * layout'ом, чтобы выбор не сбрасывался при перезагрузке (BL-16).
+ * The dashboard's per-user period — the "last N days" filter — persisted
+ * alongside the layout so that the choice survives a reload.
  */
 return new class extends Migration
 {
