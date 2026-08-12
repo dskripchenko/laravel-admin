@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
- * HeatmapWidget — матричный heatmap rows × cols.
+ * HeatmapWidget — a matrix heatmap of rows × cols.
  *
- * Backend HeatmapWidget::toArray() даёт {rows: ['Пн',...], cols: ['00h',...],
- * matrix: [[..24..], [..24..], ...]}. Каждая ячейка matrix[r][c] — число.
+ * The backend's HeatmapWidget::toArray() gives {rows: ['Mon',...],
+ * cols: ['00h',...], matrix: [[..24..], [..24..], ...]}, where every
+ * matrix[r][c] is a number.
  *
- * Используем собственный CSS-grid вместо UidHeatmap (которая календарная,
- * data=[{date,value}] — другой use-case). Цвет по нормированной шкале
- * 0..max: opacity = value/max, фоновый цвет — accent.
+ * We use a CSS grid of our own rather than UidHeatmap, which is a calendar
+ * over data=[{date,value}] — a different case entirely. The colour follows a
+ * 0..max scale: the opacity is value/max over the accent colour.
  */
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
@@ -18,9 +19,9 @@ interface Props {
   rows?: string[]
   cols?: string[]
   matrix?: number[][]
-  /** Для подписи в hover'e — формат значения. */
+  /** How the value is formatted in the hover label. */
   formatValue?: (v: number, row: string, col: string) => string
-  /** CSS-цвет ячейки. Default — accent token. */
+  /** The cell's CSS colour; the accent token by default. */
   color?: string
 }
 

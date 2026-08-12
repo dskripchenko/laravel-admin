@@ -13,11 +13,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * 4-step Import Wizard backend:
- *   1. upload    — multipart upload файла → возвращает source_path.
- *   2. preview   — headers + sample + auto-mapping suggestions.
- *   3. start     — создаёт ImportProcess + запускает (sync или async).
- *   4. status    — current ImportProcess state.
+ * The backend of the four-step import wizard:
+ *   1. upload    — a multipart file upload, returning the source_path.
+ *   2. preview   — the headers, a sample and the suggested mapping.
+ *   3. start     — creates an ImportProcess and runs it, synchronously or not.
+ *   4. status    — the ImportProcess's current state.
  */
 final class ImportController extends ApiController
 {
@@ -28,10 +28,10 @@ final class ImportController extends ApiController
     ) {}
 
     /**
-     * Загрузить файл импорта на disk.
+     * Uploads the import's file onto a disk.
      *
      * @input file $file
-     * @input string $resource Resource slug куда импортируем.
+     * @input string $resource The slug of the resource being imported into.
      *
      * @output object $payload
      *
@@ -66,7 +66,7 @@ final class ImportController extends ApiController
     }
 
     /**
-     * Получить preview загруженного файла + auto-mapping.
+     * Returns a preview of the uploaded file, with the automatic mapping.
      *
      * @input string $resource
      * @input string $path
@@ -108,7 +108,7 @@ final class ImportController extends ApiController
     }
 
     /**
-     * Создать ImportProcess + запустить sync (default).
+     * Creates an ImportProcess and runs it, synchronously by default.
      *
      * @input string $resource
      * @input string $path
@@ -162,7 +162,7 @@ final class ImportController extends ApiController
     }
 
     /**
-     * Получить статус ImportProcess.
+     * Returns an ImportProcess's status.
      *
      * @input integer $id
      *

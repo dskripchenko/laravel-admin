@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Page-builder — массив блоков разных типов с собственным набором полей.
+ * A page builder — an array of blocks of different types, each with its own
+ * set of fields.
  *
- * Конкретные типы блоков объявляются через `block(name, fields)`. State
- * хранится как list<{type: 'name', data: {...}}>. SPA рендерит как dnd-список
- * блоков с inline-редактором. Backend сериализует в JSON-колонке.
+ * The block types are declared through `block(name, fields)`. The state is a
+ * list<{type: 'name', data: {...}}>. The SPA renders a drag-and-drop list of
+ * blocks with an inline editor, and the backend serializes it into a JSON
+ * column.
  *
- * Пример:
+ * For example:
  *
  *     Builder::make('content')
  *         ->block('hero', [
@@ -33,7 +35,7 @@ final class Builder extends Field
     }
 
     /**
-     * Объявить тип блока с полями.
+     * Declares a block type with its fields.
      *
      * @param  list<Field>  $fields
      */
@@ -53,8 +55,8 @@ final class Builder extends Field
     }
 
     /**
-     * Получить fields-список для конкретного типа блока (для server-side
-     * валидации payload'а).
+     * Returns the field list of a particular block type, for validating the
+     * payload on the server.
      *
      * @return list<Field>|null
      */
@@ -64,7 +66,7 @@ final class Builder extends Field
     }
 
     /**
-     * Дозволенные типы блоков (для SPA-меню «добавить блок»).
+     * The block types on offer, for the SPA's "add a block" menu.
      *
      * @return list<string>
      */

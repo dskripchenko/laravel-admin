@@ -1,5 +1,5 @@
 /**
- * Default-bundle с минимальным набором builtin widget-типов.
+ * The default bundle, with the minimal set of built-in widget types.
  */
 
 import { hasWidget, registerWidget } from './registry'
@@ -15,12 +15,13 @@ import TableWidget from './TableWidget.vue'
 import IframeWidget from './IframeWidget.vue'
 
 /**
- * Регистрирует встроенные widget-компоненты + backend-aliases. Имена
- * слева совпадают с тем что отдают backend Widget::widgetType()
- * (`stats`/`chart`/`recent_list` и т.д.); справа — frontend Vue-компонент.
+ * Registers the built-in widget components and the backend's aliases. The
+ * names on the left match what the backend's Widget::widgetType() returns —
+ * `stats`, `chart`, `recent_list` and so on — and on the right stands the Vue
+ * component.
  */
 export function registerBuiltinWidgets(): void {
-  // Не перекрываем host-регистрации, сделанные до createAdminApp().
+  // We do not override what the host registered before createAdminApp().
   const registerAbsent = (bundle: Record<string, unknown>): void => {
     for (const [k, v] of Object.entries(bundle)) {
       if (!hasWidget(k)) registerWidget(k, v as never)
@@ -30,11 +31,11 @@ export function registerBuiltinWidgets(): void {
     // Stat / Stats overview
     stat: StatWidget,
     stats: StatWidget,
-    // Charts: универсальный диспетчер по data.type → bar/donut/...
+    // Charts: one dispatcher over data.type → bar, donut and the rest
     chart: ChartWidget,
     'bar-chart': BarChartWidget,
     'donut-chart': DonutChartWidget,
-    // Recent list (таблица последних записей)
+    // The recent list — a table of the latest records
     'recent-table': RecentTableWidget,
     recent_list: RecentTableWidget,
     'recent-list': RecentTableWidget,
@@ -42,7 +43,7 @@ export function registerBuiltinWidgets(): void {
     heatmap: HeatmapWidget,
     gauge: GaugeWidget,
     markdown: MarkdownWidget,
-    // Полнофункциональная таблица (resource-колонки) и iframe-встройка
+    // The full table, with resource columns, and the iframe embed
     table: TableWidget,
     iframe: IframeWidget,
   })

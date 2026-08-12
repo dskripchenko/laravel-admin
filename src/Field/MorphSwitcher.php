@@ -7,16 +7,18 @@ namespace Dskripchenko\LaravelAdmin\Field;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Селектор для morphTo-связи: type + id.
+ * The selector of a morphTo relation: a type and an id.
  *
- * SPA рендерит как два связанных Select'а:
- *   1. Type select (из заявленного списка morph-моделей).
- *   2. ID select (зависит от type, через тот же endpoint что RelationSelect).
+ * The SPA renders two linked selects:
+ *   1. The type, out of the declared list of morph models.
+ *   2. The id, which depends on the type and goes through the same endpoint as
+ *      RelationSelect.
  *
- * Сериализуется в state как `{type: 'App\Post', id: 42}`.
+ * In the state it is `{type: 'App\Post', id: 42}`.
  *
- * Резолвит alias через morph map (`Relation::enforceMorphMap`); если alias не
- * объявлен — использует FQCN модели как type.
+ * The alias is resolved through the morph map
+ * (`Relation::enforceMorphMap`); with no alias declared, the model's FQCN
+ * serves as the type.
  */
 final class MorphSwitcher extends Field
 {
@@ -29,7 +31,7 @@ final class MorphSwitcher extends Field
     }
 
     /**
-     * Зарегистрировать morph-тип.
+     * Registers a morph type.
      *
      * @param  class-string<Model>  $model
      */
@@ -46,7 +48,7 @@ final class MorphSwitcher extends Field
     }
 
     /**
-     * Зарегистрировать сразу несколько morph-типов.
+     * Registers several morph types at once.
      *
      * @param  array<string, class-string<Model>>  $map  alias => model
      */

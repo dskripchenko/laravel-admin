@@ -7,16 +7,16 @@ namespace Dskripchenko\LaravelAdmin\Import;
 use Dskripchenko\LaravelAdmin\Field\Field;
 
 /**
- * Маппит колонки CSV/XLSX → Field-имена Resource'а.
+ * Maps the columns of a CSV or XLSX onto a resource's field names.
  *
- * Стратегии auto-маппинга:
- *   1. exact match — `name` ↔ `name`.
- *   2. case-insensitive match — `Name` ↔ `name`.
- *   3. label match — `Имя` ↔ Field title.
- *   4. snake_case match — `Created At` ↔ `created_at`.
+ * The automatic strategies:
+ *   1. an exact match — `name` ↔ `name`.
+ *   2. a case-insensitive match — `Name` ↔ `name`.
+ *   3. a label match — the field's title ↔ the header.
+ *   4. a snake_case match — `Created At` ↔ `created_at`.
  *
- * Возвращает массив `[csv_header => field_name]`. CSV-header'ы без матча
- * не попадают в результат (пропустятся при импорте).
+ * It returns `[csv_header => field_name]`. The headers that match nothing are
+ * left out of the result and skipped during the import.
  */
 final class ColumnMapper
 {
@@ -73,7 +73,7 @@ final class ColumnMapper
     }
 
     /**
-     * Применить mapping к row из CSV: [csv_header => value] → [field_name => value].
+     * Applies the mapping to a CSV row: [csv_header => value] → [field_name => value].
      *
      * @param  array<string, mixed>  $row
      * @param  array<string, string>  $mapping

@@ -1,8 +1,9 @@
 /**
- * Theme store: текущая тема + список доступных + persist через API.
+ * The theme store: the current theme, the available ones, and persistence
+ * through the API.
  *
- * Side effect: применяет `<html data-theme="...">` при изменении.
- * SPA рассчитывает на это для CSS-vars overrides.
+ * As a side effect it sets `<html data-theme="...">` on every change, which
+ * the SPA relies on for its CSS-variable overrides.
  */
 
 import { defineStore } from 'pinia'
@@ -23,8 +24,8 @@ export const useThemeStore = defineStore('admin-theme', () => {
   }
 
   /**
-   * Локальное переключение без round-trip'а. Используется когда нужно
-   * мгновенно применить тему до получения ответа от сервера.
+   * Switches locally, with no round trip — for applying a theme at once,
+   * before the server has answered.
    */
   function applyLocal(theme: string): void {
     if (!available.value.includes(theme)) {
@@ -35,8 +36,8 @@ export const useThemeStore = defineStore('admin-theme', () => {
   }
 
   /**
-   * POST /system/setTheme — persist в user.theme + cookie.
-   * Применяет тему к DOM немедленно (optimistic update).
+   * POST /system/setTheme, persisting into user.theme and a cookie. The theme
+   * is applied to the DOM immediately, optimistically.
    */
   async function setTheme(theme: string): Promise<void> {
     if (!available.value.includes(theme)) {
@@ -50,7 +51,7 @@ export const useThemeStore = defineStore('admin-theme', () => {
       const client = getAdminClient()
       await client.post('/system/setTheme', { theme })
     } catch (err) {
-      // Откатываем optimistic update.
+      // Roll the optimistic update back.
       applyLocal(previous)
       throw err
     }

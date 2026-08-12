@@ -7,14 +7,14 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
- * Tri-state фильтр для SoftDeletes-моделей.
+ * A tri-state filter for the models with SoftDeletes.
  *
- * Значения:
- *   - 'without' (default) → только не-trashed (Eloquent default).
- *   - 'with' → trashed + не-trashed (`->withTrashed()`).
- *   - 'only' → только trashed (`->onlyTrashed()`).
+ * The values:
+ *   - 'without', the default → the untrashed alone, as Eloquent has it.
+ *   - 'with' → both trashed and untrashed (`->withTrashed()`).
+ *   - 'only' → the trashed alone (`->onlyTrashed()`).
  *
- * URL: `?filters[trashed]=only`.
+ * In a URL: `?filters[trashed]=only`.
  */
 final class TrashedFilter extends Filter
 {
@@ -46,9 +46,10 @@ final class TrashedFilter extends Filter
             return $query;
         }
 
-        // SoftDeletes-scope добавляет global scope SoftDeletingScope. withTrashed/
-        // onlyTrashed реализованы там как macro/method; обходим без method-magic
-        // через withoutGlobalScope + (для 'only') явный where deleted_at IS NOT NULL.
+        // SoftDeletes adds the SoftDeletingScope global scope, where
+        // withTrashed and onlyTrashed live as macros. We work around the magic
+        // with withoutGlobalScope plus, for 'only', an explicit
+        // where deleted_at IS NOT NULL.
         $query = $query->withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class);
         if ($value === 'only') {
             $deletedAtColumn = method_exists($model, 'getDeletedAtColumn')

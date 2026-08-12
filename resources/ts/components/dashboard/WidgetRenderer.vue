@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * Резолвит widget-компонент по `node.type` и forwards остальные props.
+ * Resolves the widget component by `node.type` and forwards the rest of the
+ * props.
  */
 import { computed } from 'vue'
 import { getWidget } from './registry'
@@ -8,7 +9,7 @@ import UnknownWidget from './UnknownWidget.vue'
 
 export interface WidgetNode extends Record<string, unknown> {
   type: string
-  /** Сколько колонок занимает в 12-grid (1..12). */
+  /** How many columns it takes in the twelve-column grid (1..12). */
   span?: number
 }
 
@@ -19,9 +20,10 @@ const props = defineProps<Props>()
 
 const component = computed(() => getWidget(props.node.type))
 const widgetProps = computed(() => {
-  // Удаляем dashboard-meta поля. Особенно ВАЖНО `size` — это grid-column-span
-  // (число 1..12), а в widget-компонентах `size` часто значит pixels (UidGauge,
-  // UidStat, etc) — и без удаления получаем `size=4` в pixels → виджет ломается.
+  // The dashboard's meta fields are dropped. `size` especially: here it is a
+  // grid-column span of 1..12, while in the widget components `size` often
+  // means pixels (UidGauge, UidStat and the rest) — leave it in and `size=4`
+  // arrives as pixels, breaking the widget.
   const {
     type: _type,
     span: _span,
@@ -36,10 +38,11 @@ const widgetProps = computed(() => {
     ...rest
   } = props.node as Record<string, unknown> & { data?: Record<string, unknown> }
 
-  // Backend Widget::toArray() кладёт type-specific поля внутрь `data: {...}`.
-  // Часть widget-компонентов ждёт их плоско (rows/columns/matrix/value),
-  // часть — целиком как `data` prop (ChartWidget читает data.type/labels/datasets).
-  // Передаём оба варианта: и flat-spread, и оригинальный `data`.
+  // The backend's Widget::toArray() puts the type-specific fields inside
+  // `data: {...}`. Some widget components expect them flat (rows, columns,
+  // matrix, value), others expect the whole `data` prop — ChartWidget reads
+  // data.type, data.labels and data.datasets. So we pass both: the flat spread
+  // and the original `data`.
   if (data && typeof data === 'object' && !Array.isArray(data)) {
     return { ...rest, ...(data as Record<string, unknown>), data }
   }

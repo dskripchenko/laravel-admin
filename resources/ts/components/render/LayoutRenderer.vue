@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
- * Универсальный рекурсивный renderer manifest-узлов.
+ * The general recursive renderer of the manifest's nodes.
  *
- * Узел вида `{ kind: 'field', type: 'text', name: 'title', ... }` рендерится
- * через FieldRenderer. Узел вида `{ kind: 'layout', type: 'rows', items: [...] }`
- * — через зарегистрированный layout-компонент с children-списком.
+ * A node like `{ kind: 'field', type: 'text', name: 'title', ... }` is drawn by
+ * FieldRenderer; one like `{ kind: 'layout', type: 'rows', items: [...] }` by
+ * the registered layout component, with its list of children.
  *
- * Для совместимости со старыми JSON'ами без `kind` — если type есть в
- * field-registry, считаем field; если в layout-registry — считаем layout;
- * иначе — UnknownField fallback.
+ * For compatibility with older JSON that carries no `kind`: a type found in
+ * the field registry counts as a field, one found in the layout registry as a
+ * layout, and anything else falls back to UnknownField.
  */
 import { computed } from 'vue'
 import { getField, getLayout } from './registry'
@@ -32,7 +32,7 @@ type Resolved =
   | { kind: 'unknown' }
 
 const resolved = computed<Resolved>(() => {
-  // Явный hint через `kind` всегда приоритетнее.
+  // An explicit `kind` always wins.
   if (props.node.kind === 'field') {
     return { kind: 'field' }
   }

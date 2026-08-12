@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Auth\TwoFactor;
 
 /**
- * Управление recovery-кодами 2FA.
+ * Managing the 2FA recovery codes.
  *
- * Каждый код — 10 hex-символов в формате `xxxxx-xxxxx`. Хранятся в зашифрованной
- * JSON-колонке `two_factor_recovery_codes` модели AdminUser (encrypted cast).
+ * Each code is ten hex characters in the form `xxxxx-xxxxx`. They live in
+ * AdminUser's encrypted JSON column `two_factor_recovery_codes`.
  *
- * Коды одноразовые: `verify($codes, $input)` возвращает оставшиеся коды
- * после удаления использованного. Если код не подошёл — возвращает null.
+ * The codes are single-use: `verify($codes, $input)` returns what is left
+ * after removing the one that was used, or null when nothing matched.
  */
 final class RecoveryCodes
 {
     public const DEFAULT_COUNT = 8;
 
     /**
-     * Сгенерировать набор recovery-кодов.
+     * Generates a set of recovery codes.
      *
      * @return list<string>
      */
@@ -33,8 +33,8 @@ final class RecoveryCodes
     }
 
     /**
-     * Проверить введённый код против списка и вернуть обновлённый список
-     * (без использованного) при успехе. null = не подошёл.
+     * Checks the code that was entered against the list and, on success,
+     * returns the list without it. null means nothing matched.
      *
      * @param  list<string>  $codes
      * @return list<string>|null

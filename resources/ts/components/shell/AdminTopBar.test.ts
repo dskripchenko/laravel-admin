@@ -68,10 +68,10 @@ describe('AdminTopBar', () => {
         plugins: [router],
         stubs: {
           RouterLink: RouterLinkStub,
-          // LocaleSwitcher/UserMenu внутри используют UidMenu (popover/teleport),
-          // что вешает jsdom. На уровне TopBar тестируем только нашу композицию,
-          // оставляя только NotificationBell (он чистый router-link + badge,
-          // без uid-Menu).
+          // LocaleSwitcher and UserMenu use UidMenu inside — a popover and a
+          // teleport — which hangs jsdom. At the TopBar level we test our own
+          // composition alone, keeping NotificationBell, which is a plain
+          // router-link plus a badge with no UidMenu.
           LocaleSwitcher: { template: '<div class="stub-locale-switcher"><span data-icon="globe" /></div>' },
           UserMenu: { template: '<div class="stub-user-menu"></div>' },
         },
@@ -81,8 +81,8 @@ describe('AdminTopBar', () => {
 
   it('renders 4 widgets in actions area', async () => {
     const wrapper = await mountBar()
-    // Topbar содержит ThemeToggle/LocaleSwitcher/NotificationBell/UserMenu —
-    // ищем конкретные icon-attrs.
+    // The topbar holds ThemeToggle, LocaleSwitcher, NotificationBell and
+    // UserMenu, so we look for their particular icon attributes.
     expect(wrapper.find('[data-icon="bell"]').exists()).toBe(true)
     expect(wrapper.find('[data-icon="moon"]').exists()).toBe(true)
     expect(wrapper.find('[data-icon="globe"]').exists()).toBe(true)
@@ -98,7 +98,7 @@ describe('AdminTopBar', () => {
     })
     const crumbs = wrapper.findAll('.admin-topbar__breadcrumbs .cur, .admin-topbar__breadcrumbs span:not(.sep), .admin-topbar__breadcrumbs a')
     expect(wrapper.find('.admin-topbar__breadcrumbs').text()).toContain('Введение в Laravel 12')
-    // Последний — c классом cur (не link).
+    // The last one carries the cur class and is not a link.
     const lastCur = wrapper.find('.admin-topbar__breadcrumbs .cur')
     expect(lastCur.text()).toBe('Введение в Laravel 12')
     expect(crumbs.length).toBeGreaterThan(0)
@@ -116,7 +116,7 @@ describe('AdminTopBar', () => {
     await btn.element.parentElement!.dispatchEvent(new Event('click', { bubbles: true }))
     // wait micro
     await new Promise((r) => setTimeout(r, 0))
-    // Прямой клик через DOM может не дойти до Vue handler; используем wrapper.
+    // A direct DOM click may not reach the Vue handler, so we go through the wrapper.
     const collapseBtn = wrapper.findAll('.admin-topbar__icon-btn')[0]
     await collapseBtn.trigger('click')
     expect(wrapper.emitted('toggle-sidebar')).toBeTruthy()

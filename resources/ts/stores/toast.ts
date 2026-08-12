@@ -1,18 +1,18 @@
 /**
- * adminToast — фасад над useToast() из @dskripchenko/ui для admin-flows.
+ * adminToast — the facade over useToast() from @dskripchenko/ui, for the
+ * admin's flows.
  *
- * Компонент @dskripchenko/ui/composables/useToast хранит массив toast'ов
- * в module-singleton'е (общий стек на всё приложение). Мы оборачиваем
- * методы success/error/info/warning в простые функции с дефолтными
- * длительностями + используется AdminClient ApiError для извлечения
- * понятных сообщений.
+ * @dskripchenko/ui/composables/useToast keeps its toasts in a module
+ * singleton, one stack for the whole application. We wrap success, error, info
+ * and warning into plain functions with sensible durations, and use
+ * AdminClient's ApiError to pull a readable message out.
  */
 import { useToast } from '@dskripchenko/ui'
 import { trSafe } from './i18n'
 
 interface Options {
   title?: string
-  /** Длительность в ms (0 = не закрывать автоматически). */
+  /** The duration in milliseconds; 0 means it never closes by itself. */
   duration?: number
 }
 
@@ -36,7 +36,8 @@ export const adminToast = {
 }
 
 /**
- * fromError — извлекает message из ApiError / Error / unknown и пушит toast.
+ * fromError pulls a message out of an ApiError, an Error or anything else and
+ * pushes a toast.
  */
 export function toastError(err: unknown, fallback = trSafe('Произошла ошибка')): void {
   const msg =

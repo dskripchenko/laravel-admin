@@ -10,10 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 /**
- * Опции выбора для Select/Combobox/Radio/Checkbox/Switch.
+ * The options of a Select, Combobox, Radio, Checkbox or Switch.
  *
- * Внутри хранится `attributes['options']` как list<{value, label, disabled?}>.
- * Источники: ассоциативный массив, BackedEnum, Eloquent-модель (через Model::all()).
+ * Inside, `attributes['options']` holds a list<{value, label, disabled?}>. The
+ * sources are an associative array, a BackedEnum or an Eloquent model, through
+ * Model::all().
  */
 trait HasOptions
 {
@@ -28,11 +29,11 @@ trait HasOptions
     }
 
     /**
-     * Заполнить options из enum-класса: value = enum->value (BackedEnum) либо
-     * enum->name (UnitEnum), label = enum->name.
+     * Fills the options from an enum class: the value is enum->value for a
+     * BackedEnum or enum->name for a UnitEnum, and the label is enum->name.
      *
-     * Runtime-проверка нужна потому что вызвать с произвольной строкой
-     * концептуально возможно — статика этого не остановит.
+     * The runtime check is there because calling this with an arbitrary string
+     * is conceivable, and static analysis will not stop it.
      *
      * @param  class-string  $enum
      */
@@ -56,7 +57,7 @@ trait HasOptions
     }
 
     /**
-     * Заполнить options из Eloquent-модели или Builder'а.
+     * Fills the options from an Eloquent model or a builder.
      *
      * @param  class-string<Model>|Builder  $source
      */
@@ -76,7 +77,7 @@ trait HasOptions
     }
 
     /**
-     * Множественный выбор. Накладывает rule `array` на сериализации.
+     * Multiple choice; it adds the `array` rule during serialization.
      */
     public function multiple(bool $multiple = true): static
     {

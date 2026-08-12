@@ -27,8 +27,8 @@ async function mountShell(props: Record<string, unknown> = {}) {
 }
 
 /**
- * Подменяет matchMedia: jsdom его не реализует, а именно по нему shell решает,
- * сайдбар перед ним или выдвижная шторка.
+ * Stands in for matchMedia: jsdom does not implement it, and it is what the
+ * shell uses to decide whether it faces a sidebar or a sliding drawer.
  */
 function stubMatchMedia(matches: boolean) {
   const listeners: ((e: MediaQueryListEvent) => void)[] = []
@@ -41,7 +41,7 @@ function stubMatchMedia(matches: boolean) {
   Object.defineProperty(window, 'matchMedia', { writable: true, configurable: true, value: () => mql })
 
   return {
-    /** Пересечь порог: имитируем поворот экрана или смену устройства. */
+    /** Crossing the threshold: the screen rotating, or another device. */
     change: (next: boolean) => {
       mql.matches = next
       listeners.forEach((cb) => cb({ matches: next } as MediaQueryListEvent))
@@ -75,8 +75,9 @@ describe('AdminShell — узкий экран (шторка)', () => {
     stubMatchMedia(true)
     const w = await mountShell()
 
-    // Иначе панель на телефоне открывается меню поверх всего экрана, а кнопка
-    // сворачивания оказывается под самой шторкой — закрыть её нечем.
+    // Otherwise the panel opens on a phone with the menu over the whole screen
+    // and the collapse button underneath that very drawer — nothing left to
+    // close it with.
     expect(w.emitted('update:collapsed')?.at(-1)).toEqual([true])
   })
 
@@ -95,8 +96,8 @@ describe('AdminShell — узкий экран (шторка)', () => {
     await router.push('/profile')
     await w.vm.$nextTick()
 
-    // Шторка поверх только что открытой страницы означала бы, что её надо
-    // закрывать руками при каждой навигации.
+    // A drawer on top of the page just opened would have to be closed by hand
+    // on every navigation.
     expect(w.emitted('update:collapsed')?.at(-1)).toEqual([true])
 
     const wide = stubMatchMedia(false)
@@ -107,7 +108,7 @@ describe('AdminShell — узкий экран (шторка)', () => {
     wide.change(true)
     await desktop.vm.$nextTick()
 
-    // Пересечение порога — тоже событие: экран сузился, сайдбар обязан уйти.
+    // Crossing the threshold is an event too: the screen narrowed, the sidebar must go.
     expect(desktop.emitted('update:collapsed')?.at(-1)).toEqual([true])
   })
 })

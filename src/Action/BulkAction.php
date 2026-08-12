@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Action;
 
 /**
- * Действие, применяемое к нескольким выделенным записям сразу.
+ * An action applied to several selected records at once.
  *
- * SPA рендерит как кнопку в bulk-toolbar таблицы (показывается когда
- * есть selection). Backend получает {ids: [...], confirm: ...} в payload.
+ * The SPA renders it as a button in the table's bulk toolbar, which appears as
+ * soon as something is selected. The backend receives
+ * {ids: [...], confirm: ...} in the payload.
  *
- * Бэкенд-имплементация — `runMethod` action на ResourceController, который
- * вызывает Resource-метод по name'у с переданным набором ids.
+ * On the backend it is the `runMethod` action of ResourceController, which
+ * calls the resource's method by name with the given set of ids.
  */
 final class BulkAction extends Action
 {
@@ -26,8 +27,8 @@ final class BulkAction extends Action
     }
 
     /**
-     * Имя метода на Resource'е, который выполнит действие. Принимает
-     * `array<int, mixed> $ids` плюс optional payload.
+     * The name of the resource's method that performs the action. It takes
+     * `array<int, mixed> $ids` plus an optional payload.
      */
     public function method(string $method): self
     {
@@ -37,7 +38,7 @@ final class BulkAction extends Action
     }
 
     /**
-     * Минимальное количество выделенных rows, при котором action активен.
+     * The smallest selection at which the action becomes available.
      */
     public function requiresAtLeast(int $count): self
     {
@@ -47,7 +48,7 @@ final class BulkAction extends Action
     }
 
     /**
-     * Максимальное количество (предотвращает бессмысленные «delete 10000»).
+     * The largest one, which keeps a pointless "delete 10000" from happening.
      */
     public function requiresAtMost(int $count): self
     {

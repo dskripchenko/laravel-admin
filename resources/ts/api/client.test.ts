@@ -58,10 +58,11 @@ describe('AdminClient', () => {
   })
 
   it('читает ошибки полей и из формы laravel-api (errors)', async () => {
-    // Дефолтный обработчик ValidationException в laravel-api кладёт карту
-    // полей в `errors` и ставит errorKey `validation_error`. Пока читалось
-    // только `messages`, форма на такой ответ не показывала ничего: ни
-    // подсветки поля, ни текста — пользователь жал «Сохранить» впустую.
+    // laravel-api's default ValidationException handler puts the field map
+    // into `errors` and sets the errorKey to `validation_error`. While only
+    // `messages` was read, the form showed nothing at all in response —
+    // neither a highlighted field nor any text — and one pressed "Save" in
+    // vain.
     mock.onPost('/users/create').reply(422, {
       success: false,
       payload: {
@@ -128,7 +129,7 @@ describe('AdminClient', () => {
   })
 
   it('sends X-CSRF-TOKEN fallback when no XSRF cookie', async () => {
-    // Явно нет XSRF-TOKEN cookie — используется bootstrap-fallback.
+    // There is deliberately no XSRF-TOKEN cookie, so the bootstrap fallback is used.
     document.cookie = 'XSRF-TOKEN=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
     mock.onGet('/x').reply((config) => {
       expect(config.headers?.['X-CSRF-TOKEN']).toBe('csrf-test')
@@ -138,8 +139,8 @@ describe('AdminClient', () => {
   })
 
   it('drops the stale X-CSRF-TOKEN when a fresh XSRF cookie is present', async () => {
-    // Laravel предпочитает X-CSRF-TOKEN cookie'у — стухший заголовок дал бы
-    // 419; при наличии свежего cookie его снимаем.
+    // Laravel prefers X-CSRF-TOKEN over the cookie, so a stale header would
+    // give a 419; when a fresh cookie is there, the header is removed.
     document.cookie = 'XSRF-TOKEN=fresh-cookie-token; path=/'
     mock.onGet('/x').reply((config) => {
       expect(config.headers?.['X-CSRF-TOKEN']).toBeUndefined()
@@ -189,7 +190,7 @@ describe('AdminClient', () => {
     mock.onGet('/export').reply(200, 'csv,data\n1,2', {
       'content-type': 'text/csv',
     })
-    // Не envelope — возвращается raw data.
+    // Not an envelope, so the raw data comes back.
     const data = await client.get<string>('/export')
     expect(data).toBe('csv,data\n1,2')
   })

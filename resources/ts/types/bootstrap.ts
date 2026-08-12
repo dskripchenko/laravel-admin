@@ -1,9 +1,9 @@
 /**
- * Bootstrap-payload — структура которую backend строит через
- * Support\BootstrapBuilder и доставляет одной из двух стратегий:
+ * The bootstrap payload — what the backend assembles in
+ * Support\BootstrapBuilder and delivers by one of two strategies:
  *
- *   - inline: window.__ADMIN_BOOTSTRAP__ инжектится в shell.blade
- *   - xhr:    SPA дёргает GET /api/admin/system/bootstrap
+ *   - inline: window.__ADMIN_BOOTSTRAP__ is injected into shell.blade
+ *   - xhr:    the SPA calls GET /api/admin/system/bootstrap
  */
 
 export interface AdminUser {
@@ -18,14 +18,14 @@ export interface AdminUser {
 
 export interface AdminBrand {
   name?: string
-  /** URL картинки-логотипа (sidebar + auth-страницы). */
+  /** The logo image's URL, for the sidebar and the auth pages. */
   logo?: string | null
-  /** Короткий текстовый mark (1-2 символа) — фолбэк без картинки. */
+  /** A short textual mark of one or two characters, the fallback without an image. */
   mark?: string | null
   favicon?: string | null
-  /** Текст копирайта в футере (например «© 2026 Printable»). */
+  /** The copyright line in the footer, "© 2026 Printable" for instance. */
   copyright?: string | null
-  /** Доп. текст/ссылка в футере sidebar'а (версия, docs). */
+  /** Extra text or a link in the sidebar's footer: a version, the docs. */
   footer?: string | null
 }
 
@@ -46,7 +46,7 @@ export interface AdminBootstrap {
   user: AdminUser | null
   permissions: string[]
   manifestVersion: string | null
-  /** id панели (v1.8 Panels); отсутствует в bootstrap'ах старых бэкендов */
+  /** The panel's id; older backends do not send it in their bootstrap */
   panel?: string
   plugins: string[]
   unread_notifications_count: number

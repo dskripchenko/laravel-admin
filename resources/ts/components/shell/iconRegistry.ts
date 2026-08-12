@@ -1,12 +1,13 @@
 /**
- * Резолвер kebab-имени lucide-иконки → Vue-компонент.
+ * Resolves a lucide icon's kebab-case name into a Vue component.
  *
- * MenuItem.icon приходит из backend'а строкой (например 'file-text', 'users').
- * Чтобы не тащить весь lucide-vue-next в bundle — держим whitelist
- * популярных имён. Host может расширить через registerIcon(name, comp).
+ * MenuItem.icon arrives from the backend as a string — 'file-text', 'users'.
+ * So as not to drag the whole of lucide-vue-next into the bundle, we keep a
+ * whitelist of the popular names, and a host extends it through
+ * registerIcon(name, comp).
  *
- * Не найденное имя возвращает fallback (Box) — sidebar item никогда не
- * рендерится без иконки.
+ * A name that is not found falls back to Box, so a sidebar item is never
+ * rendered without an icon.
  */
 import type { Component } from 'vue'
 import {
@@ -173,15 +174,15 @@ const REGISTRY: Record<string, Component> = {
 }
 
 /**
- * Найти иконку по имени. Не найдена — null (вызывающий код решает рендерить
- * fallback или ничего).
+ * Finds an icon by name, returning null when there is none — the caller
+ * decides between the fallback and nothing at all.
  */
 export function resolveIcon(name: string | null | undefined): Component | null {
   if (!name) return null
   return REGISTRY[name] ?? null
 }
 
-/** Зарегистрировать дополнительную иконку (host-проект). */
+/** Registers an extra icon, from a host project. */
 export function registerIcon(name: string, component: Component): void {
   REGISTRY[name] = component
 }

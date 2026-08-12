@@ -102,9 +102,9 @@ describe('ResourceIndexPage', () => {
     mock.onPost('/articles/search').reply(() => new Promise(() => {}))
     const wrapper = await mountPage()
     await flushPromises()
-    // Initial 0-100мс — skeleton НЕ должен мерцать (быстрые ответы skip).
+    // Over the first 0-100ms the skeleton must NOT flicker; fast responses skip it.
     expect(wrapper.findAll('.admin-resource-index__loading > *').length).toBe(0)
-    // После 250мс slowLoading=true → skeleton отрисован.
+    // After 250ms slowLoading is true and the skeleton is drawn.
     await new Promise((r) => setTimeout(r, 250))
     await flushPromises()
     expect(wrapper.findAll('.admin-resource-index__loading > *').length).toBeGreaterThan(0)
@@ -140,12 +140,12 @@ describe('ResourceIndexPage', () => {
     })
     const wrapper = await mountPage()
     await flushPromises()
-    // Изначально filter-bar
+    // The filter bar to begin with
     expect(wrapper.find('.admin-toolbar').exists()).toBe(true)
     expect(wrapper.find('.admin-bulk-toolbar').exists()).toBe(false)
 
-    // Эмулируем выбор через store напрямую (UidCheckbox в jsdom может не
-    // эмитить полноценно).
+    // The selection is emulated through the store directly, since UidCheckbox
+    // may not emit properly under jsdom.
     const { useResourceIndexStore } = await import('../../stores/resourceIndex')
     const idx = useResourceIndexStore()
     idx.toggleRow(1)
@@ -212,15 +212,15 @@ describe('ResourceIndexPage', () => {
     })
     const wrapper = await mountPage({ createRouteName: 'admin.resource.articles.create' })
     await flushPromises()
-    // В EmptyState или header'е — где-то должна быть кнопка «Создать».
+    // In the empty state or in the header — the "Create" button must be somewhere.
     expect(wrapper.text()).toContain('Создать')
   })
 
 
   /**
-   * Сохранённые представления включаются флагом ресурса. Без него бэкенд
-   * маршрутов не заводит, поэтому страница не должна за ними ходить: раньше
-   * каждый список слал запрос, который на большинстве ресурсов отвечал бы 404.
+   * The saved views are switched on by a flag on the resource. Without it the
+   * backend registers no routes, so the page must not go looking for them:
+   * every list used to send a request that on most resources would answer 404.
    */
   it('без features.savedViews не запрашивает список представлений', async () => {
     mock.onPost('/articles/search').reply(200, {

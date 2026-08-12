@@ -1,13 +1,13 @@
 /**
- * Реестр Vue-компонентов для JSON-driven рендеринга.
+ * The registry of the Vue components behind the JSON-driven rendering.
  *
- * Содержит две Map'ы — для `field`-типов (input'ы, контролы) и для
- * `layout`-типов (контейнеры). LayoutRenderer и FieldRenderer резолвят тип
- * через эти реестры; host-проект может зарегистрировать кастомные компоненты
- * через `registerField()` / `registerLayout()`.
+ * It holds two maps: one for the `field` types — the inputs and controls — and
+ * one for the `layout` types, the containers. LayoutRenderer and FieldRenderer
+ * resolve a type through them, and a host project registers its own components
+ * with `registerField()` and `registerLayout()`.
  *
- * Singleton — один регистр на admin-instance. Тестовый сценарий —
- * `clearRegistry()` + `registerField()` в `beforeEach`.
+ * It is a singleton, one registry per admin instance. In tests the pattern is
+ * `clearRegistry()` plus `registerField()` in a `beforeEach`.
  */
 
 import type { Component } from 'vue'
@@ -26,14 +26,14 @@ export const getLayout = layouts.get
 export const hasLayout = layouts.has
 export const listLayouts = layouts.list
 
-/** Очистить оба реестра. Используется в тестах. */
+/** Clears both registries; used by the tests. */
 export function clearRegistry(): void {
   fields.clear()
   layouts.clear()
 }
 
 /**
- * Зарегистрировать сразу несколько компонентов.
+ * Registers several components at once.
  *
  *     registerComponents({
  *       fields: { text: TextField, select: SelectField },

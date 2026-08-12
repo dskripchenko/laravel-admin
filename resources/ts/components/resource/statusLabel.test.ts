@@ -2,14 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { resolveStatusLabel } from './statusLabel'
 
 /**
- * Подпись статуса в шапке формы — проверяется НАСТОЯЩАЯ функция компонента.
+ * The status label in a form's header — the component's REAL function is what
+ * is checked here.
  *
- * Шапка печатала СЫРОЕ значение (`active`) рядом с полностью русской формой,
- * хотя select двумя строками ниже показывал «Активен»: подписи приходят в
- * манифесте уже переведёнными, шапка просто не заглядывала в них.
+ * The header printed the RAW value (`active`) beside a fully translated form,
+ * while the select two lines below showed "Active": the labels arrive in the
+ * manifest already translated, and the header simply never looked at them.
  *
- * Логика вынесена сюда как чистая функция ровно затем, чтобы её можно было
- * проверить: внутри SFC она проверяться не могла — так дефект и уехал.
+ * The logic was extracted into a pure function precisely so that it could be
+ * checked: inside the SFC it could not be, which is how the defect shipped.
  */
 const label = (nodes: unknown[], value: string | null): string | null =>
   resolveStatusLabel(nodes as never, value)
@@ -26,7 +27,7 @@ const nested = [
           {
             kind: 'field',
             name: 'status',
-            // Как на самом деле: подписи в attributes, верхний ключ пуст.
+            // How it really is: the labels are in the attributes, the top-level key is empty.
             options: [],
             attributes: { options: { active: 'Активен', archived: 'Архивирован' } },
           },
@@ -42,7 +43,7 @@ describe('status label in the form header', () => {
   })
 
   it('understands the list form of options too', () => {
-    // Половина ресурсов объявляет подписи списком, а не картой — поддержаны оба.
+    // Half the resources declare the labels as a list rather than a map; both are supported.
     const list = [
       {
         kind: 'field',
@@ -55,7 +56,7 @@ describe('status label in the form header', () => {
   })
 
   it('falls back to the raw value when the field declares no such option', () => {
-    // Лучше машинное значение, чем пустая шапка.
+    // A machine value beats an empty header.
     expect(label(nested, 'unknown-state')).toBe('unknown-state')
     expect(label([], 'active')).toBe('active')
   })

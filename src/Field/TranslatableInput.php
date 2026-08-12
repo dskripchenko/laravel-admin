@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Поле с переводами на несколько языков (интеграция с dskripchenko/laravel-translatable).
+ * A field translated into several languages, integrating with
+ * dskripchenko/laravel-translatable.
  *
- * UI: вкладки/dropdown с языками; в каждом языке — Input или Textarea.
- * State хранится как `{lang_code: 'value', ...}` — backend сохраняет через
- * `Model::saveTranslations([...])` из TranslationTrait.
+ * The UI is a set of tabs or a dropdown of languages, each holding an input or
+ * a textarea. The state is `{lang_code: 'value', ...}`, and the backend saves
+ * it through `Model::saveTranslations([...])` from TranslationTrait.
  *
- * Список языков по умолчанию берётся из `config('admin.ui.available_locales')`,
- * но можно переопределить через `->locales([...])`.
+ * The languages come from `config('admin.ui.available_locales')` by default
+ * and can be overridden with `->locales([...])`.
  */
 final class TranslatableInput extends Field
 {
@@ -32,7 +33,7 @@ final class TranslatableInput extends Field
     }
 
     /**
-     * Список языков. Если не задан — fallback на admin.ui.available_locales.
+     * The languages; without them, admin.ui.available_locales is used.
      *
      * @param  list<string>  $locales
      */
@@ -44,7 +45,7 @@ final class TranslatableInput extends Field
     }
 
     /**
-     * Помечать строку как обязательную для всех locales (default: только default).
+     * Marks the string required in every locale; by default only the default one.
      */
     public function requireAllLocales(bool $require = true): static
     {
@@ -54,7 +55,7 @@ final class TranslatableInput extends Field
     }
 
     /**
-     * Resolve locales: явно заданные → admin.ui.available_locales → ['ru', 'en'].
+     * Resolves the locales: the explicit ones → admin.ui.available_locales → ['ru', 'en'].
      *
      * @return list<string>
      */

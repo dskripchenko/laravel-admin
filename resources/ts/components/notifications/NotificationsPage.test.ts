@@ -5,12 +5,12 @@ import NotificationsPage from './NotificationsPage.vue'
 import { useNotificationsStore } from '../../stores/notifications'
 
 /**
- * Страница уведомлений.
+ * The notifications page.
  *
- * Маршрут `/notifications` регистрировался только если host передаст
- * компонент, а не передавал его никто — адрес отдавал 404 во всех панелях.
- * Ссылок туда не было, поэтому дыра не всплывала: заметить её можно было
- * только зайдя по адресу руками.
+ * The `/notifications` route was registered only if the host passed a
+ * component, and nobody did — the address gave a 404 in every panel. Nothing
+ * linked there, so the hole never surfaced: the only way to notice it was to
+ * type the address by hand.
  */
 const items = [
   { id: '1', type: 'x', data: { title: 'Новый клиент', body: 'ООО «Ромашка»', level: 'info' }, read_at: null, created_at: '2026-08-12T09:00:00Z' },
@@ -49,8 +49,8 @@ describe('NotificationsPage', () => {
     const w = mount(NotificationsPage)
     await w.findAll('.admin-notifs-page__tab')[1].trigger('click')
 
-    // Именно с первой: остаться на пятой странице другого фильтра — верный
-    // способ показать пустоту там, где записи есть.
+    // From the first page specifically: staying on another filter's fifth page
+    // is a sure way to show emptiness where there are records.
     expect(store.load).toHaveBeenCalledWith('unread', 1)
   })
 
@@ -59,7 +59,7 @@ describe('NotificationsPage', () => {
     const w = mount(NotificationsPage)
     const buttons = w.findAll('.admin-notifs-page__item')[1].findAll('button')
 
-    // У прочитанного остаётся только «удалить».
+    // A read notification is left with "remove" alone.
     expect(buttons).toHaveLength(1)
     expect(store.markAsRead).not.toHaveBeenCalled()
   })

@@ -55,7 +55,7 @@ describe('AdminSidebarNode', () => {
     }
     const wrapper = await mountNode({ item })
     expect(wrapper.find('.admin-sidebar-node--has-children').exists()).toBe(true)
-    // По умолчанию закрыт (никто из children не active в '/').
+    // Closed by default, since no child is active at '/'.
     expect(wrapper.find('.admin-sidebar-node--open').exists()).toBe(false)
     expect(wrapper.text()).toContain('Tools')
     expect(wrapper.text()).not.toContain('Contact')
@@ -74,14 +74,14 @@ describe('AdminSidebarNode', () => {
       ],
     }
     const wrapper = await mountNode({ item }, '/r/users')
-    // Группа должна авто-раскрыться, потому что child active.
+    // The group must open by itself, because a child is active.
     expect(wrapper.find('.admin-sidebar-node--open').exists()).toBe(true)
     expect(wrapper.find('.admin-sidebar-node--active').exists()).toBe(true)
     expect(wrapper.text()).toContain('All users')
   })
 
   it('renders nested 3 levels deep recursively (auto-open via active)', async () => {
-    // Auto-open работает по containsActive — поставим L3 на active route.
+    // The auto-open follows containsActive, so L3 is put on the active route.
     const item: MenuItem = {
       key: 'l0', label: 'L0',
       children: [{
@@ -93,7 +93,7 @@ describe('AdminSidebarNode', () => {
       }],
     }
     const wrapper = await mountNode({ item }, '/r/users')
-    // Все 3 уровня parent'ов должны быть авто-раскрыты, потому что L3 — active.
+    // All three levels of parents must open by themselves, because L3 is active.
     expect(wrapper.text()).toContain('L0')
     expect(wrapper.text()).toContain('L1')
     expect(wrapper.text()).toContain('L2')
@@ -116,9 +116,9 @@ describe('AdminSidebarNode', () => {
     })
     expect(wrapper.find('.admin-sidebar-node--stripe').exists()).toBe(true)
     const root = wrapper.find('.admin-sidebar-node').element as HTMLElement
-    // Indent зафиксирован на stripeAt-1 = 2 → 28px.
+    // The indent is fixed at stripeAt-1 = 2, so 28px.
     expect(root.style.getPropertyValue('--admin-sidebar-indent')).toBe('28px')
-    // Stripe-alpha должна быть >0 (visible).
+    // The stripe's alpha must be above 0, that is, visible.
     const alpha = parseFloat(root.style.getPropertyValue('--admin-sidebar-stripe-alpha'))
     expect(alpha).toBeGreaterThan(0)
     expect(alpha).toBeLessThanOrEqual(1)
@@ -130,8 +130,9 @@ describe('AdminSidebarNode', () => {
       children: [{ key: 'contact', label: 'Contact', url: '/contact' }],
     }
     const wrapper = await mountNode({ item, collapsed: true })
-    // CSS .uid-pattern-sidebar--collapsed скрывает; здесь проверим что
-    // внутри button нет chevron-элемента (он отрендерится только if !collapsed).
+    // The CSS .uid-pattern-sidebar--collapsed hides it; here we check that the
+    // button holds no chevron element, which is rendered only when not
+    // collapsed.
     expect(wrapper.find('.admin-sidebar-node__chev').exists()).toBe(false)
   })
 })

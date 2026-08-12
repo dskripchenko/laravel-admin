@@ -6,13 +6,14 @@ import type { StatTone } from '@dskripchenko/ui'
 type SemanticTone = 'neutral' | 'positive' | 'negative' | 'warning' | 'info'
 
 /**
- * Backend StatsOverviewWidget::data() отдаёт массив `stats: [{label, value,
- * change: {delta, direction}, color, icon}]`. Frontend StatWidget берёт
- * первый stat и рендерит UidStat. Несколько stats в одном виджете пока
- * не поддерживаются (если нужно — host задаёт несколько StatWidget'ов).
+ * The backend's StatsOverviewWidget::data() returns an array of
+ * `stats: [{label, value, change: {delta, direction}, color, icon}]`. This
+ * StatWidget takes the first stat and renders a UidStat; several stats in one
+ * widget are not supported yet, and a host that needs them declares several
+ * StatWidgets.
  *
- * Для legacy scalar-values (если widget сам прислал `value` напрямую) тоже
- * работает — приоритет имеет stats[0].
+ * It also works with the older scalar values, where the widget sent `value`
+ * directly, but stats[0] wins.
  */
 interface StatChange {
   delta?: number
@@ -32,7 +33,7 @@ interface Props {
   title?: string
   /** Backend payload from StatsOverviewWidget. */
   stats?: StatItem[]
-  /** Legacy scalar value (если host передал не через массив). */
+  /** The older scalar value, for a host that passes it outside the array. */
   value?: number | string
   prefix?: string
   suffix?: string
@@ -65,8 +66,8 @@ const TONE_MAP: Record<SemanticTone, StatTone> = {
 const uidTone = computed<StatTone>(() => TONE_MAP[props.tone])
 
 /**
- * Резолвим первый stat из массива (или fallback на scalar props).
- * UidStat принимает label-сверху + value-снизу + опц. trend.
+ * Resolves the first stat of the array, falling back to the scalar props.
+ * UidStat takes a label on top, a value beneath and an optional trend.
  */
 const first = computed<StatItem>(() => props.stats[0] ?? {})
 

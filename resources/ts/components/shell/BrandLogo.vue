@@ -1,22 +1,22 @@
 <script setup lang="ts">
 /**
- * LAdmin brand mark — "Terminal Block".
- * Vue-порт docs/design_handoff_laravel_admin/brand/Logo.tsx.
+ * The LAdmin brand mark — the "Terminal Block".
+ * A Vue port of docs/design_handoff_laravel_admin/brand/Logo.tsx.
  *
- * Палитра — zinc-900 фон + teal-400 ">_" с мигающим курсором.
- * Все внутренние размеры скейлятся от prop `size`, так что mark
- * остаётся чётким при любом px (28 для sidebar, 40 на login и т.д.).
+ * The palette is a zinc-900 background with a teal-400 ">_" and a blinking
+ * cursor. Every inner dimension scales off the `size` prop, so the mark stays
+ * crisp at any size: 28 in the sidebar, 40 on the login page and so on.
  *
- * При prefers-reduced-motion курсор не анимируется (см. CSS ниже).
+ * Under prefers-reduced-motion the cursor does not blink; see the CSS below.
  */
 import { computed } from 'vue'
 
 interface Props {
-  /** Сторона квадрата в px. */
+  /** The square's side, in pixels. */
   size?: number
-  /** Мигающий курсор. */
+  /** The blinking cursor. */
   animated?: boolean
-  /** color = бренд-палитра, mono = single-tone через currentColor. */
+  /** color uses the brand palette, mono a single tone through currentColor. */
   variant?: 'color' | 'mono'
   title?: string
 }

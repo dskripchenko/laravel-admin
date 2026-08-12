@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Auth\TwoFactor;
 
 /**
- * TOTP (Time-based One-Time Password) — RFC 6238.
+ * TOTP — the time-based one-time password of RFC 6238.
  *
- * Реализация без внешних зависимостей: HMAC-SHA1 + 30s окно + 6-значный код.
- * `verify()` проверяет код в окне ±$window периодов (default 1 = ±30s)
- * для компенсации clock-drift'а между сервером и устройством пользователя.
+ * An implementation with no external dependencies: HMAC-SHA1, a 30-second
+ * window and a six-digit code. `verify()` accepts a code within ±$window
+ * periods — one, that is ±30 seconds, by default — to absorb the clock drift
+ * between the server and the user's device.
  */
 final class TotpGenerator
 {
@@ -20,7 +21,7 @@ final class TotpGenerator
     private const ALGORITHM = 'sha1';
 
     /**
-     * Сгенерировать код для текущего timestamp (для тестов / debug).
+     * Generates the code for the current timestamp, for tests and debugging.
      */
     public static function code(string $secret, ?int $timestamp = null): string
     {
@@ -31,7 +32,7 @@ final class TotpGenerator
     }
 
     /**
-     * Проверить код, допуская drift в `$window` периодов в обе стороны.
+     * Checks a code, allowing a drift of `$window` periods either way.
      */
     public static function verify(string $secret, string $code, int $window = 1, ?int $timestamp = null): bool
     {
@@ -55,9 +56,9 @@ final class TotpGenerator
     }
 
     /**
-     * Построить otpauth:// URI для QR-кода.
+     * Builds the otpauth:// URI behind the QR code.
      *
-     * Пример: otpauth://totp/Acme:admin@example.com?secret=...&issuer=Acme
+     * For example: otpauth://totp/Acme:admin@example.com?secret=...&issuer=Acme
      */
     public static function provisioningUri(string $secret, string $accountName, string $issuer): string
     {
@@ -78,7 +79,7 @@ final class TotpGenerator
     {
         $binarySecret = Base32::decode($secret);
 
-        // 8-байтный counter в network byte order
+        // An eight-byte counter in network byte order
         $counterBytes = pack('N*', 0, $counter);
 
         $hash = hash_hmac(self::ALGORITHM, $counterBytes, $binarySecret, true);

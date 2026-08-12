@@ -5,14 +5,15 @@ import NotificationsDrawer from './NotificationsDrawer.vue'
 import { useNotificationsStore } from '../../stores/notifications'
 
 /**
- * Шторка уведомлений — ЖИВАЯ, та, которую рисует AdminApp.
+ * The notifications drawer — the LIVE one, the one AdminApp draws.
  *
- * Прежний тест этого файла проверял ДРУГОЙ компонент с тем же именем, лежавший
- * в `components/notifications/`: он экспортировался наружу, но не рисовался
- * нигде. Тест был зелёным, двойник — мёртвым, и правка в него уходила в
- * пустоту. Так и случилось со ссылкой на полный список.
+ * This file's earlier test checked a DIFFERENT component of the same name, in
+ * `components/notifications/`: exported outwards, rendered nowhere. The test
+ * was green, the twin was dead, and an edit to it went into the void — which
+ * is exactly what happened to the link to the full list.
  *
- * Разметка телепортируется в body, поэтому проверяем документ, а не обёртку.
+ * The markup is teleported into the body, so we check the document rather than
+ * the wrapper.
  */
 const push = vi.fn(async () => undefined)
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
@@ -54,7 +55,7 @@ describe('NotificationsDrawer', () => {
   })
 
   it('ведёт на полный список и закрывает себя', async () => {
-    // Без ссылки страница уведомлений существует, а найти её неоткуда.
+    // Without the link the notifications page exists with no way to find it.
     const store = openDrawer()
     mount(NotificationsDrawer, { attachTo: document.body })
 
@@ -65,7 +66,7 @@ describe('NotificationsDrawer', () => {
     await Promise.resolve()
 
     expect(push).toHaveBeenCalledWith({ name: 'admin.notifications' })
-    // Открытая поверх страницы шторка перекрыла бы то, ради чего переходили.
+    // A drawer left open over the page would cover the very thing one navigated for.
     expect(store.isOpen).toBe(false)
   })
 

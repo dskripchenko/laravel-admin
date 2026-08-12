@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Загрузка файлов.
+ * A file upload.
  *
- * SPA загружает файл через `/api/admin/uploads/upload` (фаза P5/upload-stack)
- * и помещает в state {id, url, name, mime, size}. Backend получает либо id
- * uploaded record'а, либо raw file (multipart) — выбор за реализатором.
+ * The SPA uploads through `/api/admin/uploads/upload` and puts
+ * {id, url, name, mime, size} into the state. The backend receives either the
+ * uploaded record's id or the raw multipart file — whichever the implementer
+ * prefers.
  */
 class FileUpload extends Field
 {
@@ -26,7 +27,7 @@ class FileUpload extends Field
     }
 
     /**
-     * MIME-типы или расширения. Браузер фильтрует выбор файлов.
+     * The MIME types or the extensions; the browser filters the file picker by them.
      *
      * @param  list<string>|string  $accept
      */
@@ -40,7 +41,7 @@ class FileUpload extends Field
     }
 
     /**
-     * Максимальный размер одного файла в килобайтах.
+     * The largest a single file may be, in kilobytes.
      */
     public function maxSize(int $kilobytes): static
     {
@@ -50,7 +51,7 @@ class FileUpload extends Field
     }
 
     /**
-     * Максимальное количество файлов (при multiple=true).
+     * The largest number of files, when multiple is true.
      */
     public function maxFiles(int $max): static
     {
@@ -60,7 +61,7 @@ class FileUpload extends Field
     }
 
     /**
-     * Включить режим image-only с превью.
+     * Turns on the image-only mode, with a preview.
      */
     public function image(bool $image = true): static
     {
@@ -73,7 +74,7 @@ class FileUpload extends Field
     }
 
     /**
-     * Disk из config/filesystems.php (default uploads idёт в `local`).
+     * The disk from config/filesystems.php; uploads go to `local` by default.
      */
     public function disk(string $disk): static
     {
