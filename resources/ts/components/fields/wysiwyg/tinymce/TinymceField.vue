@@ -1,19 +1,20 @@
 <script setup lang="ts">
 /**
- * TinymceField — wrapper над @tinymce/tinymce-vue для использования в
- * field-registry admin-renderer'а.
+ * TinymceField — the wrapper around @tinymce/tinymce-vue, for the admin
+ * renderer's field registry.
  *
- * Подключение в host-проекте:
+ * Wiring it into a host project:
  *
  *     import { registerField } from '@dskripchenko/laravel-admin'
  *     import { TinymceField } from '@dskripchenko/laravel-admin/tinymce'
  *     registerField('wysiwyg', TinymceField)
  *
- * После этого manifest-узлы `{ type: 'wysiwyg', name: 'body', ... }`
- * рендерятся через TinyMCE.
+ * After that the manifest's `{ type: 'wysiwyg', name: 'body', ... }` nodes are
+ * drawn by TinyMCE.
  *
- * Form-state — через useFormState из core lib. Прокидываем v-model в
- * TinyMCE-component, изменения через onInput → form.setField.
+ * The form state comes from the core library's useFormState: v-model is passed
+ * into the TinyMCE component and the changes travel back through onInput into
+ * form.setField.
  */
 import { computed, h, defineComponent, type PropType } from 'vue'
 import { useFormState } from '../../../render/formState'
@@ -25,17 +26,18 @@ interface Props {
   help?: string | null
   required?: boolean
   /**
-   * Конфиг TinyMCE init (height/plugins/toolbar/menubar/language/...).
-   * Объединяется с host-default'ами на frontend'е.
+   * The TinyMCE init configuration: height, plugins, toolbar, menubar,
+   * language and so on. It is merged with the host's defaults on the frontend.
    */
   init?: Record<string, unknown>
   /**
-   * License key для TinyMCE 7+. null = self-hosted GPL flow.
+   * The licence key for TinyMCE 7 and later; null means the self-hosted GPL
+   * route.
    */
   apiKey?: string | null
   /**
-   * URL-handler для image upload'ов. См. images_upload_handler в TinyMCE
-   * docs. По умолчанию использует core admin upload endpoint.
+   * The handler behind image uploads; see images_upload_handler in TinyMCE's
+   * documentation. By default it uses the core admin's upload endpoint.
    */
   imageUploadUrl?: string
   disabled?: boolean
@@ -72,8 +74,8 @@ const editorInit = computed<Record<string, unknown>>(() => ({
 }))
 
 /**
- * @tinymce/tinymce-vue lazy-loaded через async resolveComponent —
- * не required для tests; host подключает через peer-dep.
+ * @tinymce/tinymce-vue is lazy-loaded through an async resolveComponent, so it
+ * is not required by the tests; a host installs it as a peer dependency.
  */
 const Editor = defineComponent({
   props: {

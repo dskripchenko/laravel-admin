@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * ChartWidget — диспетчер по `data.type` (bar / line / pie / doughnut / area).
+ * ChartWidget — the dispatcher over `data.type`: bar, line, pie, doughnut,
+ * area.
  *
- * Backend ChartWidget::data() отдаёт `{type, labels, datasets, ...}`. Эта
- * frontend-обёртка трансформирует структуру в plain Datum/Slice массивы
- * и делегирует рисование специализированным компонентам (Bar/Donut/...).
+ * The backend's ChartWidget::data() returns `{type, labels, datasets, ...}`.
+ * This frontend wrapper turns that into plain arrays of data points or slices
+ * and leaves the drawing to the specialized components — Bar, Donut and the
+ * rest.
  */
 import { computed } from 'vue'
 import BarChartWidget from './BarChartWidget.vue'
@@ -18,8 +20,8 @@ interface ChartDataset {
 }
 interface ChartData {
   /**
-   * Backend ChartWidget::data() отдаёт `chartType`. Историческая обёртка
-   * читала `type` — оставляем как fallback для совместимости.
+   * The backend's ChartWidget::data() returns `chartType`. The older wrapper
+   * read `type`, which stays as a fallback for compatibility.
    */
   chartType?: string
   type?: string
@@ -40,9 +42,9 @@ const chartType = computed<string>(
 )
 
 /**
- * Палитра по умолчанию для donut/pie. Берём из --uid-* токенов, fallback —
- * статические цвета. Backend может прислать `color` в dataset — тогда
- * предпочтение ему.
+ * The default palette of a donut or a pie. It comes from the --uid-* tokens,
+ * falling back to static colours. When the backend sends a `color` in the
+ * dataset, that wins.
  */
 const DEFAULT_PALETTE = [
   '#10b981', // teal-500
@@ -55,9 +57,8 @@ const DEFAULT_PALETTE = [
 ]
 
 /**
- * Bar/line/area-чарты ожидают список {label, value}.
- * Берём первый dataset (multi-dataset stacked будет реализован в следующей
- * итерации).
+ * The bar, line and area charts expect a list of {label, value}. We take the
+ * first dataset; stacking several is for a later round.
  */
 const barData = computed(() => {
   const ds = props.data?.datasets?.[0]
@@ -72,7 +73,7 @@ const barAccent = computed<string | undefined>(
   () => props.data?.datasets?.[0]?.color,
 )
 
-/** Donut/pie — каждый item получает свою долю общего total. */
+/** In a donut or a pie each item gets its share of the total. */
 const donutData = computed(() => {
   const ds = props.data?.datasets?.[0]
   if (!ds) return []

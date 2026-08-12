@@ -1,19 +1,21 @@
 <script setup lang="ts">
 /**
- * AdminFilterToolbar — двухстрочный toolbar над таблицей Resource'а:
+ * AdminFilterToolbar — the two-row toolbar above a resource's table:
  *
- *   Row 1 (filter bar): search | active-chips, inactive-buttons | + Filter | Сбросить
- *   Row 2 (action bar): Группировать | Колонки | Сохранить
+ *   Row 1, the filter bar: search | the active chips and inactive buttons |
+ *                          + Filter | Reset
+ *   Row 2, the action bar: Group | Columns | Save
  *
- * Конфигурируется через manifest:
- *   - filters[] — Resource->filters() (type/options/multiple/icon/...)
- *   - columns[] — Resource->columns() (key/label/groupable/...)
- *   - searchable[] — список колонок поиска (placeholder подставляется
- *     автоматически: "Поиск по {label}…")
+ * It is configured from the manifest:
+ *   - filters[] — Resource->filters(): the type, options, multiple, icon and
+ *     so on
+ *   - columns[] — Resource->columns(): the key, label, groupable and so on
+ *   - searchable[] — the columns the search covers; the placeholder is filled
+ *     in automatically as "Search by {label}…"
  *
- * UI-фолбэк: для каждого filter-type (options / date_range / switcher /
- * input / select_from_model / trashed) рендерим универсальный popover-
- * редактор, чтобы Resource без custom-UI всё равно получил рабочий toolbar.
+ * As a fallback, every filter type — options, date_range, switcher, input,
+ * select_from_model, trashed — gets a general popover editor, so that a
+ * resource with no custom UI still has a working toolbar.
  */
 import { computed, ref, watch } from 'vue'
 import {
@@ -45,11 +47,11 @@ interface Props {
   filters: FilterDef[]
   values: Record<string, unknown>
   columns: ColumnDef[]
-  /** Group-by column key (если выбран). */
+  /** The key of the group-by column, when one is chosen. */
   groupBy?: string | null
-  /** Visibility map для column-toggle. true = видна. */
+  /** The visibility map behind the column toggle; true means shown. */
   columnVisibility?: Record<string, boolean>
-  /** Показывать ли "Сохранить" (saved-views) — host управляет наличием feature. */
+  /** Whether to show "Save" — the saved views; the host decides whether the feature is there. */
   enableSavedViews?: boolean
 }
 
@@ -145,7 +147,7 @@ function chipText(f: FilterDef): string {
   return `${f.label}: ${String(v)}`
 }
 
-// === Multi-select working-copy (буфер до Apply) ===
+// === The multi-select's working copy, buffered until Apply ===
 const draftValues = ref<Record<string, unknown>>({})
 function getDraft(name: string): unknown {
   if (!(name in draftValues.value)) {
@@ -531,7 +533,7 @@ function iconFor(name: string | null | undefined) {
 }
 .admin-toolbar__search-input::placeholder { color: var(--uid-text-tertiary); }
 
-/* Chip / button (общая база для active/inactive) */
+/* The chip and the button — one base for both the active and the inactive states */
 .admin-toolbar__chip {
   display: inline-flex;
   align-items: center;

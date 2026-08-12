@@ -12,23 +12,24 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Универсальный uploads endpoint для Wysiwyg image-upload, FileUpload field и
- * 4-step Import wizard.
+ * The universal uploads endpoint, serving the WYSIWYG's image upload, the
+ * FileUpload field and the four-step import wizard.
  *
- * URL: `/api/admin/uploads/{action}` где action ∈ {upload, image}.
+ * The URL is `/api/admin/uploads/{action}`, where the action is upload or
+ * image.
  *
- * Disk и path конфигурируются через config('admin.uploads'):
- *   - disk      — default 'local'.
+ * The disk and the path come from config('admin.uploads'):
+ *   - disk      — 'local' by default.
  *   - directory — `uploads`.
- *   - max_kilobytes — 51200 (50 MB).
+ *   - max_kilobytes — 51200, that is 50 MB.
  *
- * Возвращает {disk, path, url, name, size, mime} — SPA вставляет URL в
- * Tiptap image-extension или сохраняет id для FileUpload field'а.
+ * It returns {disk, path, url, name, size, mime}: the SPA puts the URL into
+ * Tiptap's image extension, or keeps the id for a FileUpload field.
  */
 final class UploadController extends ApiController
 {
     /**
-     * Generic upload (любой файл).
+     * A generic upload, of any file.
      *
      * @input file $file
      *
@@ -50,10 +51,11 @@ final class UploadController extends ApiController
     }
 
     /**
-     * Image upload — для Wysiwyg image-extension и ImageCropper field'а.
+     * An image upload, for the WYSIWYG's image extension and the ImageCropper
+     * field.
      *
-     * Принимает только image/* + дополнительный max-size для image (по
-     * умолчанию 10 MB вместо 50). Можно override через config.
+     * It accepts image/* alone and applies its own maximum size — 10 MB rather
+     * than 50 by default — which the config may override.
      *
      * @input file $file
      *
@@ -102,11 +104,11 @@ final class UploadController extends ApiController
     }
 
     /**
-     * Отдаёт файл с указанного диска.
+     * Serves a file from the given disk.
      *
-     * Работает и с приватными дисками; доступ проверяется так же, как
-     * на остальных действиях панели. Диск должен быть разрешён в
-     * настройке `admin.uploads.servable_disks`.
+     * Private disks work too; the access is checked exactly as it is on the
+     * panel's other actions. The disk has to be allowed in
+     * `admin.uploads.servable_disks`.
      *
      * @input string $disk
      * @input string $path
@@ -151,9 +153,9 @@ final class UploadController extends ApiController
     }
 
     /**
-     * Сформировать admin-streaming URL для произвольного disk/path.
-     * Используется при сохранении upload-record'ов и в Model accessors
-     * (когда host хочет показать preview).
+     * Builds the admin's streaming URL for any disk and path. It is used when
+     * saving the upload records, and in a model's accessors when the host
+     * wants to show a preview.
      */
     public static function serveUrl(string $disk, string $path): string
     {

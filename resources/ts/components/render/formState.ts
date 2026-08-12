@@ -1,12 +1,13 @@
 /**
- * Composable для form-state: предоставляет state + ошибки через provide/inject.
+ * The form-state composable: it exposes the state and the errors through
+ * provide/inject.
  *
- * Контейнер (Resource form / Settings page) вызывает `provideFormState()`,
- * Field-компоненты в дереве — `useFormState()` для чтения значения и
- * мутации поля.
+ * The container — a resource form, a settings page — calls
+ * `provideFormState()`, and the field components in the tree call
+ * `useFormState()` to read a value and change a field.
  *
- * State — reactive proxy; setField мутирует ключ. Errors — отдельный
- * reactive Map (field-name → string[] messages).
+ * The state is a reactive proxy that setField mutates by key; the errors are a
+ * separate reactive map of field name → string[] messages.
  */
 
 import { inject, provide, reactive, type InjectionKey } from 'vue'
@@ -14,7 +15,7 @@ import { inject, provide, reactive, type InjectionKey } from 'vue'
 export interface FormStateContext {
   state: Record<string, unknown>
   errors: Record<string, string[]>
-  /** Контекст формы: FieldRenderer скрывает поля с visibility[mode]=false. */
+  /** The form's context: FieldRenderer hides the fields with visibility[mode]=false. */
   mode?: 'create' | 'update' | 'view'
   setField: (name: string, value: unknown) => void
   getField: (name: string) => unknown
@@ -26,14 +27,15 @@ export interface FormStateContext {
 const FormStateKey: InjectionKey<FormStateContext> = Symbol('admin.form-state')
 
 /**
- * Создаёт form-context и provid'ит его потомкам.
+ * Creates the form context and provides it to the descendants.
  *
- * Переданный `initial`-object оборачивается в `reactive()` — мутации stora
- * видны и снаружи (caller владеет state'ом и может его читать после submit'а).
+ * The `initial` object given is wrapped into `reactive()`, so the mutations are
+ * visible from outside too: the caller owns the state and may read it after a
+ * submit.
  *
- * @param initial Начальные значения state'а.
- * @param initialErrors Начальные ошибки (для повторного render'а после
- *                      ValidationError).
+ * @param initial The state's initial values.
+ * @param initialErrors The initial errors, for a re-render after a
+ *                      ValidationError.
  */
 export function provideFormState(
   initial: Record<string, unknown> = {},
@@ -49,7 +51,7 @@ export function provideFormState(
     mode,
     setField(name, value) {
       ;(state as Record<string, unknown>)[name] = value
-      // Очистить ошибки этого поля при изменении — стандартный UX.
+      // Clear that field's errors as it changes, as one expects.
       if (errors[name]) {
         delete errors[name]
       }
@@ -78,7 +80,8 @@ export function provideFormState(
 }
 
 /**
- * Получить form-context. Throws, если не вызван внутри `provideFormState()`.
+ * Returns the form context. It throws when called outside a
+ * `provideFormState()`.
  */
 export function useFormState(): FormStateContext {
   const ctx = inject(FormStateKey)
@@ -88,7 +91,7 @@ export function useFormState(): FormStateContext {
   return ctx
 }
 
-/** Опционально получить (null если нет). */
+/** The optional form: null when there is none. */
 export function tryUseFormState(): FormStateContext | null {
   return inject(FormStateKey, null)
 }

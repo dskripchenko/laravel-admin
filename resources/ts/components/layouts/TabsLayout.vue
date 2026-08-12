@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * TabsLayout поверх UidTabs/UidTab/UidTabPanel.
- * Активная вкладка двусторонне связана через v-model:active.
+ * TabsLayout, built on UidTabs, UidTab and UidTabPanel.
+ * The active tab is bound both ways through v-model:active.
  */
 import { ref } from 'vue'
 import { UidTabs, UidTab, UidTabPanel, UidStack } from '@dskripchenko/ui'
@@ -9,9 +9,9 @@ import LayoutRenderer from '../render/LayoutRenderer.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
 export interface TabNode {
-  /** Уникальный ключ вкладки. Если не задан — берётся индекс. */
+  /** The tab's unique key; without one, its index is used. */
   key?: string
-  /** Текст вкладки. */
+  /** The tab's text. */
   label: string
   icon?: string | null
   items: LayoutNode[]
@@ -19,19 +19,20 @@ export interface TabNode {
 
 interface Props {
   items: TabNode[]
-  /** Активная вкладка (key либо индекс при отсутствии key). */
+  /** The active tab — its key, or its index when there is no key. */
   active?: string | number
   /**
-   * Отступ между элементами внутри вкладки.
+   * The gap between the elements inside a tab.
    *
-   * Панель вкладки раскладывала детей БЕЗ стека: поля шли вплотную, зазор 0.
-   * Внутри `Rows` тот же набор полей дышал (`--uid-space-md`), а на вкладке
-   * подпись следующего поля прилипала к подсказке предыдущего — читалось как
-   * одна сплошная лента, где не видно, где кончается одно поле и начинается
-   * другое.
+   * A tab panel used to lay its children out with NO stack: the fields ran
+   * together at a gap of zero. Inside `Rows` the very same fields breathed
+   * (`--uid-space-md`), while on a tab the next field's label stuck to the
+   * previous one's hint — it read as one continuous ribbon, with no telling
+   * where one field ended and the next began.
    *
-   * Взято на ступень крупнее строчного ритма: вкладка — это набор наборов, и
-   * расстояние между ними должно быть заметнее, чем внутри одного поля.
+   * The value is one step above the line rhythm: a tab is a set of sets, and
+   * the distance between them should be more noticeable than the distance
+   * inside a single field.
    */
   gap?: string
 }

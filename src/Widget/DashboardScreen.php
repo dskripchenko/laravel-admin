@@ -12,26 +12,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Абстрактный Dashboard-экран. Конкретный подкласс декларирует список widgets
- * через `widgets()`.
+ * The abstract dashboard screen; a subclass declares its widgets through
+ * `widgets()`.
  *
- * compile()/layout() автоматически:
- *   1. Применяет per-user customization из admin_dashboard_layouts (если есть);
- *   2. Скрывает widgets без permission'а;
- *   3. Оборачивает в Dashboard layout с key=$this->key().
+ * compile() and layout() then, by themselves:
+ *   1. apply the per-user customization from admin_dashboard_layouts, when
+ *      there is one;
+ *   2. hide the widgets the user has no permission for;
+ *   3. wrap the result into a Dashboard layout with key=$this->key().
  *
  * @method string|null name()
  */
 abstract class DashboardScreen extends Screen
 {
     /**
-     * Текущий period (7d/30d/90d/all). Передаётся через withPeriod()
-     * на /dashboard/widgets endpoint'е. По умолчанию 30d.
+     * The current period: 7d, 30d, 90d or all. The /dashboard/widgets
+     * endpoint passes it through withPeriod(); 30d by default.
      */
     protected string $period = '30d';
 
     /**
-     * Уникальный ключ — используется как `dashboard_key` в DashboardLayout.
+     * The unique key, used as the `dashboard_key` of a DashboardLayout.
      */
     public function key(): string
     {
@@ -51,8 +52,8 @@ abstract class DashboardScreen extends Screen
     }
 
     /**
-     * Конвертирует period в количество дней. Для 'all' возвращает большое
-     * число (10 лет), чтобы всё попало в окно.
+     * Converts a period into a number of days. For 'all' it returns something
+     * large — ten years — so that everything falls inside the window.
      */
     public function periodDays(): int
     {
@@ -90,7 +91,7 @@ abstract class DashboardScreen extends Screen
     }
 
     /**
-     * Применить per-user layout (если найден) и фильтровать по permission.
+     * Applies the per-user layout, when there is one, and filters by permission.
      *
      * @return list<Widget>
      */
@@ -104,7 +105,7 @@ abstract class DashboardScreen extends Screen
 
         $persisted = $this->loadPersistedLayout();
 
-        // Сборка финального списка.
+        // Assembling the final list.
         $result = [];
         if ($persisted !== null) {
             usort($persisted, static fn (array $a, array $b): int => ($a['position'] ?? 0) <=> ($b['position'] ?? 0));
@@ -124,7 +125,7 @@ abstract class DashboardScreen extends Screen
                 }
                 $result[] = $widget;
             }
-            // Новые widgets, ещё не присутствующие в persisted layout — в конец.
+            // The new widgets, the ones the persisted layout does not know, go last.
             foreach ($declaredBySlug as $widget) {
                 $result[] = $widget;
             }

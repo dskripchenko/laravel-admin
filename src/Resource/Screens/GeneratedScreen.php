@@ -11,35 +11,38 @@ use Dskripchenko\LaravelAdmin\Screen\Screen;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Базовый класс для авто-генерируемых Screen'ов поверх Resource (List/Create/Edit/View).
+ * The base class of the screens generated over a resource: list, create, edit
+ * and view.
  *
- * Каждый Generated*Screen инстанцируется ScreenRegistry'ем с привязкой к
- * конкретному Resource'у, после чего его compile() даёт JSON-описание
- * страницы для SPA. Подклассы переопределяют только: kind(), name(), layout(),
- * commandBar() — общая обвязка (permissions, slug, type) живёт здесь.
+ * ScreenRegistry instantiates each Generated*Screen bound to a particular
+ * resource, and its compile() then produces the page's JSON description for
+ * the SPA. A subclass overrides only kind(), name(), layout() and
+ * commandBar(); the shared plumbing — the permissions, the slug, the type —
+ * lives here.
  */
 abstract class GeneratedScreen extends Screen
 {
     public function __construct(protected readonly Resource $resource) {}
 
     /**
-     * Идентификатор разновидности Screen'а: list|create|edit|view.
+     * Which kind of screen this is: list, create, edit or view.
      */
     abstract public function kind(): string;
 
     /**
-     * Slug для admin-API: `{resource-slug}.{kind}`.
+     * The slug in the admin API: `{resource-slug}.{kind}`.
      */
     public static function slug(): string
     {
-        // GeneratedScreen без resource'а не используется — slug формируется из
-        // kind() инстанса. Этот static метод нужен только для совместимости
-        // со Screen::slug() — здесь вернёт class basename без 'Screen' суффикса.
+        // A GeneratedScreen is never used without a resource: the slug comes
+        // from the instance's kind(). This static method exists only for
+        // compatibility with Screen::slug(), and returns the class basename
+        // without the 'Screen' suffix.
         return parent::slug();
     }
 
     /**
-     * Slug инстанса (с привязкой к Resource).
+     * The instance's slug, bound to its resource.
      */
     public function instanceSlug(): string
     {
@@ -47,7 +50,7 @@ abstract class GeneratedScreen extends Screen
     }
 
     /**
-     * Required permission: маппится на Resource::permission().{kind}.
+     * The permission required, taken from Resource::permission().{kind}.
      *
      * @return list<string>|string|null
      */
@@ -84,8 +87,9 @@ abstract class GeneratedScreen extends Screen
     }
 
     /**
-     * Загрузить запись по id или кинуть 404. Используется query() в
-     * Edit/View screen'ах. Возвращает payload в форме `query()` (record + id).
+     * Loads a record by id, or throws a 404. The edit and view screens' query()
+     * uses it, and it returns the payload in query()'s shape: the record and
+     * the id.
      *
      * @return array<string, mixed>
      */
@@ -104,7 +108,7 @@ abstract class GeneratedScreen extends Screen
     }
 
     /**
-     * Link «Назад» на index-страницу resource'а.
+     * The "Back" link to the resource's index page.
      */
     protected function buildBackLink(string $label = 'Назад'): Link
     {
@@ -112,7 +116,7 @@ abstract class GeneratedScreen extends Screen
     }
 
     /**
-     * Отфильтровать поля Resource'а по контексту (create|update).
+     * Filters the resource's fields by context: create or update.
      *
      * @return list<Field>
      */

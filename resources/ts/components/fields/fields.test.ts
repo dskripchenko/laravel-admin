@@ -10,12 +10,12 @@ import CheckboxField from './CheckboxField.vue'
 import DateField from './DateField.vue'
 
 /**
- * Тесты строятся на КОНТРАКТЕ полей — каждое поле должно:
- *   1) читать `state[name]` через form-context;
- *   2) мутировать `state[name]` через update:modelValue uid-компонента;
- *   3) рендерить error из `errors[name]` если есть.
+ * These tests are built on the fields' CONTRACT — every field must:
+ *   1) read `state[name]` through the form context;
+ *   2) change `state[name]` through the uid component's update:modelValue;
+ *   3) render the error from `errors[name]`, when there is one.
  *
- * DOM-проверки uid-компонентов оставляем на ответственности самого uid-кита.
+ * Checking the DOM of the uid components is the uid kit's own business.
  */
 
 const wrap = (
@@ -35,7 +35,7 @@ const wrap = (
 describe('TextField', () => {
   it('renders without error and reads state', () => {
     const w = wrap(TextField, { title: 'Hi' }, { name: 'title', label: 'Title' })
-    // UidInput использует input под капотом — проверяем что value пробросилось
+    // UidInput uses an input underneath, so we check that the value got through
     const input = w.find('input')
     expect(input.exists()).toBe(true)
     expect((input.element as HTMLInputElement).value).toBe('Hi')
@@ -44,11 +44,11 @@ describe('TextField', () => {
   it('updates form on input', async () => {
     const initial: Record<string, unknown> = { title: '' }
     wrap(TextField, initial, { name: 'title' })
-    // Mутацию проверим напрямую через form-state — UidInput emit'ит
-    // 'update:modelValue', наш wrapper вызывает form.setField. Эмулируем
-    // через прямое триггерство на input.
-    // Но jsdom + uid: проще проверить mutation через ref-перехват.
-    // Здесь просто verify что компонент монтируется без ошибок и читает state.
+    // The mutation is checked through the form state directly: UidInput emits
+    // 'update:modelValue' and our wrapper calls form.setField, which we could
+    // emulate by triggering the input. But with jsdom and uid it is simpler to
+    // check the mutation through the ref, so here we merely verify that the
+    // component mounts without errors and reads the state.
     expect(initial.title).toBe('')
   })
 
@@ -97,9 +97,9 @@ describe('SelectField', () => {
       ],
     })
     expect(w.exists()).toBe(true)
-    // UidSelect рендерит свой trigger; конкретные option'ы появляются на open
-    // через popover — без teleport setup'а в jsdom не проверяем DOM,
-    // достаточно убедиться что компонент монтируется.
+    // UidSelect renders its trigger, and the options appear on open through a
+    // popover. Without a teleport set up in jsdom we do not check the DOM; it
+    // is enough that the component mounts.
   })
 })
 
@@ -128,7 +128,7 @@ describe('Field state integration', () => {
       },
     })
     mount(Captured)
-    // Прямая мутация через context — это контракт что setField работает.
+    // Mutating through the context directly is the contract that setField works.
     captured!.setField('active', true)
     expect(captured!.getField('active')).toBe(true)
   })

@@ -13,18 +13,19 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * REST endpoints для notification-center в admin-shell'е.
+ * The REST endpoints of the notification centre in the admin shell.
  *
- * URL: `/api/admin/notifications/{action}`. Все actions требуют admin-guard.
+ * The URL is `/api/admin/notifications/{action}`, and every action needs the
+ * admin guard.
  *
- * Серверная сторона хранит notifications в `notifications` (Laravel-default
- * DatabaseNotification). Каналы доставки реализуются host-проектом:
- * `via(['database', 'broadcast'])` либо custom Channel'ы.
+ * On the server the notifications live in `notifications`, Laravel's default
+ * DatabaseNotification. The delivery channels are the host project's business:
+ * `via(['database', 'broadcast'])` or channels of its own.
  */
 final class NotificationController extends ApiController
 {
     /**
-     * Список нотификаций текущего пользователя (paginated).
+     * The current user's notifications, paginated.
      *
      * @input integer ?$per_page
      * @input string ?$type  unread|read|all
@@ -72,7 +73,7 @@ final class NotificationController extends ApiController
     }
 
     /**
-     * Только unread — для bell-badge polling'а.
+     * The unread ones alone, for polling the bell's badge.
      *
      * @output object $payload
      *
@@ -100,7 +101,7 @@ final class NotificationController extends ApiController
     }
 
     /**
-     * Пометить одну нотификацию как прочитанную.
+     * Marks one notification as read.
      *
      * @input string $id
      *
@@ -139,7 +140,7 @@ final class NotificationController extends ApiController
     }
 
     /**
-     * Пометить все нотификации текущего пользователя как прочитанные.
+     * Marks every notification of the current user as read.
      *
      * @output object $payload
      *
@@ -164,7 +165,7 @@ final class NotificationController extends ApiController
     }
 
     /**
-     * Удалить нотификацию.
+     * Removes a notification.
      *
      * @input string $id
      *
@@ -196,7 +197,7 @@ final class NotificationController extends ApiController
     }
 
     /**
-     * Базовый Eloquent builder DatabaseNotification по notifiable.
+     * The base DatabaseNotification builder for the notifiable.
      *
      * @return \Illuminate\Database\Eloquent\Builder<DatabaseNotification>
      */
@@ -213,13 +214,13 @@ final class NotificationController extends ApiController
     }
 
     /**
-     * Возвращает текущего notifiable Eloquent-юзера. Проверяет Notifiable trait.
+     * Returns the current notifiable Eloquent user, checking for the Notifiable trait.
      */
     /**
-     * Проверяет существование notifications-таблицы. Default Laravel
-     * migration `2014_10_12_100000_create_notifications_table` может быть
-     * не запущен в host-проекте — не валим 500-ой, отвечаем как «у юзера
-     * нет нотификаций».
+     * Checks that the notifications table exists. Laravel's default migration
+     * `2014_10_12_100000_create_notifications_table` may never have been run
+     * in the host project, and rather than answering 500 we answer as though
+     * the user had no notifications.
      */
     private function tableExists(): bool
     {

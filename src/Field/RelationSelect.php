@@ -8,17 +8,17 @@ use Dskripchenko\LaravelAdmin\Field\Concerns\HasOptions;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Селектор связи BelongsTo / BelongsToMany.
+ * The selector of a BelongsTo or BelongsToMany relation.
  *
- * Под капотом — обычный Select, но с привязкой к Eloquent-модели:
- *  - relatedModel — class-string<Model>, чьи записи попадают в options;
- *  - displayColumn — колонка для label;
- *  - valueColumn — колонка для value (по умолчанию 'id');
- *  - searchColumns — колонки для server-side search (?q=...);
- *  - preload — список eager-loaded relations при подгрузке options.
+ * Underneath it is an ordinary select, bound to an Eloquent model:
+ *  - relatedModel — the class-string<Model> whose records become the options;
+ *  - displayColumn — the column behind the label;
+ *  - valueColumn — the column behind the value; 'id' by default;
+ *  - searchColumns — the columns the server-side search (?q=...) looks in;
+ *  - preload — the relations to eager-load while fetching the options.
  *
- * SPA шлёт ?q=...&page=... на endpoint resource'а (фаза P5+ может добавить
- * отдельный controller-action `options` — пока оставляем за реализатором).
+ * The SPA sends ?q=...&page=... to the resource's endpoint; a dedicated
+ * `options` controller action is left to whoever needs one.
  */
 final class RelationSelect extends Field
 {
@@ -62,9 +62,10 @@ final class RelationSelect extends Field
     }
 
     /**
-     * Options обязательны для рендера (SPA-компонент — обычный select, async
-     * search не реализован): если host не задал их явно (options()/eager()),
-     * подгружаем из relatedModel в момент сериализации.
+     * The options are required for the rendering — the SPA's component is a
+     * plain select, with no asynchronous search — so when the host set none
+     * explicitly, through options() or eager(), we load them from the related
+     * model at serialization time.
      */
     public function toArray(): array
     {
@@ -76,8 +77,9 @@ final class RelationSelect extends Field
     }
 
     /**
-     * Подгрузить options сразу (для small datasets — справочники).
-     * Use with caution: для больших таблиц предпочесть SPA-запрос options.
+     * Loads the options right away, which suits small data sets such as
+     * reference tables. Use it with care: for a large table, let the SPA fetch
+     * the options instead.
      */
     public function eager(int $limit = 100): static
     {

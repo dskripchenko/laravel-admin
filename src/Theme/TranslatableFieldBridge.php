@@ -10,25 +10,29 @@ use Dskripchenko\LaravelTranslatable\Models\Language;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Мост между TranslatableInput field'ом и dskripchenko/laravel-translatable.
+ * The bridge between the TranslatableInput field and
+ * dskripchenko/laravel-translatable.
  *
- * Используется в ResourceController.create/update: вычленяет переводимые
- * поля из payload (хранятся как `{field: {ru: 'Привет', en: 'Hello'}}`),
- * сохраняет каждую локаль через `Model::saveTranslation` из TranslationTrait.
+ * ResourceController's create and update use it: it pulls the translatable
+ * fields out of the payload, where they sit as
+ * `{field: {ru: 'Привет', en: 'Hello'}}`, and saves each locale through
+ * TranslationTrait's `Model::saveTranslation`.
  *
- * Сами Eloquent-модели должны подключать `TranslationTrait` чтобы это
- * работало.
+ * The Eloquent models themselves have to use `TranslationTrait` for any of
+ * this to work.
  */
 final class TranslatableFieldBridge
 {
     /**
-     * Извлекает переводимые поля из payload.
+     * Extracts the translatable fields from a payload.
      *
-     * Принимает payload как assoc array. Для каждого TranslatableInput
-     * field'а берёт значение `{locale: text}` и складывает в результат.
+     * It takes the payload as an associative array and, for every
+     * TranslatableInput field, moves the `{locale: text}` value into the
+     * result.
      *
-     * Изменяет $payload по reference: удаляет переводимые ключи (чтобы
-     * forceFill не пытался записать их в реальные колонки модели).
+     * $payload is modified by reference: the translatable keys are removed, so
+     * that forceFill does not try to write them into real columns of the
+     * model.
      *
      * @param  list<Field>  $fields
      * @param  array<string, mixed>  $payload  in/out
@@ -68,10 +72,12 @@ final class TranslatableFieldBridge
     }
 
     /**
-     * Сохраняет переводы через TranslationTrait::saveTranslation на model'е.
+     * Saves the translations through the model's
+     * TranslationTrait::saveTranslation.
      *
-     * Если model не использует TranslationTrait — silently skip (нет throw,
-     * чтобы не ломать сценарий когда переводы опциональны).
+     * A model that does not use TranslationTrait is skipped silently — nothing
+     * is thrown, so that the cases where translations are optional keep
+     * working.
      *
      * @param  array<string, array<string, string>>  $extracted  field => {locale => text}
      */

@@ -20,15 +20,15 @@ use ReflectionMethod;
 use Throwable;
 
 /**
- * Анализирует БД-таблицу и (опц.) Eloquent-модель — возвращает структурное
- * описание для генератора Resource'ов.
+ * Examines a database table, and optionally an Eloquent model, and returns a
+ * structural description for the resource generator.
  *
- * Используется `admin:make-section` / `admin:make-resource` командами.
+ * The `admin:make-section` and `admin:make-resource` commands use it.
  */
 final class SchemaIntrospector
 {
     /**
-     * Список Eloquent-моделей host-проекта (поиск в app/Models/**).
+     * The host project's Eloquent models, found under app/Models/**.
      *
      * @return list<class-string<Model>>
      */
@@ -60,7 +60,7 @@ final class SchemaIntrospector
     }
 
     /**
-     * Список таблиц в текущем connection (исключает служебные Laravel-таблицы).
+     * The tables of the current connection, Laravel's own ones aside.
      *
      * @return list<string>
      */
@@ -82,7 +82,7 @@ final class SchemaIntrospector
                 ->values()
                 ->all();
         } catch (Throwable) {
-            // Старые версии Laravel/драйвера могут не поддерживать getTables().
+            // An older Laravel or driver may not support getTables().
             $tables = [];
         }
 
@@ -90,7 +90,7 @@ final class SchemaIntrospector
     }
 
     /**
-     * Анализ таблицы: колонки + типы + nullable + indexes + unique.
+     * Examines a table: its columns, their types, nullability, indexes and uniqueness.
      *
      * @return array{
      *     table: string,
@@ -172,7 +172,7 @@ final class SchemaIntrospector
     }
 
     /**
-     * Анализ модели: fillable, casts, relations через Reflection.
+     * Examines a model: its fillable, casts and relations, through reflection.
      *
      * @param  class-string<Model>  $modelClass
      * @return array{
@@ -214,8 +214,8 @@ final class SchemaIntrospector
     }
 
     /**
-     * Поиск relation-методов через reflection: public-методы без параметров,
-     * возвращающие `Relation` instance.
+     * Finds the relation methods by reflection: the public methods that take
+     * no parameters and return a `Relation`.
      *
      * @param  class-string<Model>  $modelClass
      * @return list<array{name: string, type: string, related: ?class-string, foreign_key: ?string, owner_key: ?string}>
@@ -291,9 +291,9 @@ final class SchemaIntrospector
     }
 
     /**
-     * Подбирает «человекочитаемую» display-колонку для related-модели.
-     * Используется RelationSelect->display(). Берёт первую существующую
-     * среди name/title/label/email/code/slug/{primary}.
+     * Picks a human-readable display column for a related model, which
+     * RelationSelect->display() then uses. It takes the first that exists
+     * among name, title, label, email, code, slug and the primary key.
      *
      * @param  class-string<Model>  $relatedClass
      */
@@ -309,7 +309,7 @@ final class SchemaIntrospector
                     return $cand;
                 }
             }
-            // fallback — первая string-column
+            // The fallback: the first string column
             foreach (Schema::getColumns($instance->getTable()) as $col) {
                 $type = strtolower($col['type_name'] ?? '');
                 if (in_array($type, ['varchar', 'char', 'text', 'string'], true)) {

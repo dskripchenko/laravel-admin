@@ -5,22 +5,22 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * WYSIWYG-редактор поверх Tiptap (на стороне SPA).
+ * A WYSIWYG editor, built on Tiptap on the SPA's side.
  *
- * Backend хранит HTML-string. Реальный рендеринг — Tiptap-обёртка
- * `@tiptap/vue-3` + `@tiptap/starter-kit` в SPA. Конкретные extensions
- * объявляются здесь — SPA подгружает только те, что разрешены.
+ * The backend stores an HTML string; the rendering is the
+ * `@tiptap/vue-3` + `@tiptap/starter-kit` wrapper in the SPA. The extensions
+ * are declared here, and the SPA loads only the permitted ones.
  *
- * Presets:
- *   - 'minimal' — paragraph + bold + italic + link.
- *   - 'default' — minimal + heading + bullet/ordered list + code + blockquote
- *     + horizontal rule + image + link.
- *   - 'full' — default + table + textAlign + textColor + highlight +
- *     codeBlock + youtube + mention.
+ * The presets:
+ *   - 'minimal' — paragraph, bold, italic, link.
+ *   - 'default' — minimal plus heading, bullet and ordered lists, code,
+ *     blockquote, horizontal rule, image and link.
+ *   - 'full' — default plus table, textAlign, textColor, highlight, codeBlock,
+ *     youtube and mention.
  *
- * Альтернативные WYSIWYG (TinyMCE / Quill) подключаются через sister-packs:
- * `laravel-admin-tinymce`, `laravel-admin-quill` — каждый регистрирует
- * собственный Field\TinyMce / Field\Quill (заменители Wysiwyg).
+ * The alternative editors, TinyMCE and Quill, arrive through the sister packs
+ * `laravel-admin-tinymce` and `laravel-admin-quill`, each registering its own
+ * Field\TinyMce or Field\Quill in place of Wysiwyg.
  */
 final class Wysiwyg extends Field
 {
@@ -33,7 +33,7 @@ final class Wysiwyg extends Field
     }
 
     /**
-     * Default-extensions для preset'а.
+     * The default extensions of a preset.
      *
      * @return list<string>
      */
@@ -69,7 +69,7 @@ final class Wysiwyg extends Field
     }
 
     /**
-     * Явный список extensions (override preset'а).
+     * An explicit list of extensions, overriding the preset.
      *
      * @param  list<string>  $extensions
      */
@@ -116,7 +116,7 @@ final class Wysiwyg extends Field
     }
 
     /**
-     * Toolbar config (`floating`, `sticky` или массив групп).
+     * The toolbar's configuration: `floating`, `sticky`, or an array of groups.
      *
      * @param  string|array<int, list<string>>  $toolbar
      */
@@ -128,9 +128,9 @@ final class Wysiwyg extends Field
     }
 
     /**
-     * Включить image-upload через uploads-controller.
+     * Turns on image uploads, through the uploads controller.
      *
-     * @param  string  $endpoint  Custom endpoint (default: '/api/admin/uploads/image').
+     * @param  string  $endpoint  A custom endpoint; '/api/admin/uploads/image' by default.
      */
     public function uploadImages(bool $enable = true, string $endpoint = '/api/admin/uploads/image'): static
     {
@@ -143,9 +143,10 @@ final class Wysiwyg extends Field
     }
 
     /**
-     * Включить/выключить server-side HTML-санитизацию через HtmlSanitizer.
+     * Turns the server-side HTML sanitization through HtmlSanitizer on or off.
      *
-     * Default — true (защита от XSS). Disable только для trusted-content.
+     * It is on by default, as protection against XSS; switch it off only for
+     * content you trust.
      */
     public function sanitize(bool $sanitize = true): static
     {
@@ -160,7 +161,7 @@ final class Wysiwyg extends Field
     }
 
     /**
-     * Получить эффективный список extensions (с учётом дефолта если не задан).
+     * Returns the extensions actually in effect, falling back to the preset's.
      *
      * @return list<string>
      */

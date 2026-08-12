@@ -8,16 +8,17 @@ use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
 use Dskripchenko\LaravelAdmin\Table\SavedViewsController;
 
 /**
- * Компилирует ResourceRegistry в массив `controllers` для AdminApi::getMethods().
+ * Compiles ResourceRegistry into the `controllers` array of
+ * AdminApi::getMethods().
  *
- * Каждый зарегистрированный Resource превращается в controller-entry с
- * actions: meta/search/read/create/update/delete + listScreen/createScreen/
- * editScreen. Каждому action автоматически привязывается AdminAccess
- * middleware с соответствующим permission'ом — `admin.{slug}.{action}`.
+ * Every registered resource becomes a controller entry with the actions meta,
+ * search, read, create, update and delete, plus listScreen, createScreen and
+ * editScreen. Each of them is given the AdminAccess middleware automatically,
+ * with the matching permission `admin.{slug}.{action}`.
  *
- * Все Resource'ы используют ОДИН и тот же FQCN ResourceController. Внутри
- * controller через `ApiRequest::getApiControllerKey()` определяет, какой
- * именно Resource обслужить.
+ * Every resource uses ONE and the same ResourceController FQCN; inside, the
+ * controller works out which resource to serve through
+ * `ApiRequest::getApiControllerKey()`.
  */
 final class ResourceCompiler
 {
@@ -33,9 +34,9 @@ final class ResourceCompiler
                 continue;
             }
             $controllers[$slug] = self::buildControllerEntry($resource);
-            // Сохранённые представления — по флагу ресурса, как остальные
-            // возможности: четыре маршрута на ресурс имеют смысл там, где
-            // список действительно фильтруют.
+            // The saved views follow a flag on the resource, as the other
+            // features do: four routes per resource make sense where the list
+            // really is filtered.
             if ($resource->savedViews()) {
                 $controllers[$slug.'_views'] = self::buildSavedViewsEntry($resource::permission());
             }
@@ -63,12 +64,13 @@ final class ResourceCompiler
     }
 
     /**
-     * Actions ресурса.
+     * The resource's actions.
      *
-     * Часть действий имеет смысл не для каждого ресурса: дерево — только для
-     * иерархических, restore/forceDelete — только при SoftDeletes. Регистрируя
-     * их поголовно, мы заводили роуты, которые на большинстве ресурсов могли
-     * ответить только ошибкой, и раздували публикуемую карту API.
+     * Some of them make sense only for some resources: the tree only for the
+     * hierarchical ones, restore and forceDelete only with SoftDeletes.
+     * Registering them across the board created routes that on most resources
+     * could answer with nothing but an error, and swelled the published map of
+     * the API.
      *
      * @return array<string, mixed>
      */
@@ -98,8 +100,9 @@ final class ResourceCompiler
             'delete' => ['method' => ['post'], 'middleware' => [$delete]],
             'restore' => ['method' => ['post'], 'middleware' => [$restore]],
             'forceDelete' => ['method' => ['post'], 'middleware' => [$forceDelete]],
-            // Generic bulk-action dispatcher: POST /{slug}/action body
-            // {key, ids[], payload?}. Резолвит Action из Resource->actions().
+            // The generic bulk-action dispatcher: POST /{slug}/action with a
+            // body of {key, ids[], payload?}. It resolves the action out of
+            // Resource->actions().
             'action' => ['method' => ['post'], 'middleware' => [$view]],
             'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
             'treeScreen' => ['method' => ['get'], 'middleware' => [$view]],

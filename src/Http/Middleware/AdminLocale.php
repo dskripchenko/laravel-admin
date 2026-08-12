@@ -10,19 +10,19 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Резолвер локали admin-панели.
+ * Resolves the admin panel's locale.
  *
- * Делегирует к LocaleResolver, устанавливает app()->setLocale() для текущего
- * request'а. Приоритезация: query?locale → X-Admin-Locale → user.locale →
- * cookie admin_locale → Accept-Language → config('admin.ui.default_locale').
+ * It delegates to LocaleResolver and calls app()->setLocale() for the current
+ * request. The order is: ?locale → X-Admin-Locale → user.locale → the
+ * admin_locale cookie → Accept-Language → config('admin.ui.default_locale').
  */
 final class AdminLocale
 {
     /**
-     * Источники локали, о которых обязан знать кэширующий посредник.
+     * The sources of the locale a caching intermediary has to know about.
      *
-     * `Cookie` здесь не перестраховка: два из пяти источников —
-     * куки (сессия, из которой берётся user.locale, и admin_locale).
+     * `Cookie` here is no over-caution: two of the five sources are cookies —
+     * the session, which user.locale comes from, and admin_locale.
      */
     private const VARY = ['Accept-Language', LocaleResolver::HEADER, 'Cookie'];
 
@@ -35,15 +35,16 @@ final class AdminLocale
 
         $response = $next($request);
 
-        // Ответ зависит от языка: шелл несёт инлайн-bootstrap со строками,
-        // манифест — подписи ресурсов и меню. Без Vary любой обратный прокси
-        // или CDN перед панелью раздаст язык одного посетителя другому — тот
-        // же класс ошибки, что кэш манифеста под чужим ключом, только этажом
-        // выше. У самого сервиса прокси нет, но коробку и кластер клиент
-        // ставит за своим.
-        // Одной строкой, а не тремя заголовками: три значения через
-        // setVary(..., replace: false) — валидный HTTP, но простые прокси
-        // и часть CDN читают только первый. Чужой Vary при этом сохраняем.
+        // The response depends on the language: the shell carries an inline
+        // bootstrap full of strings, and the manifest the labels of the
+        // resources and the menu. Without a Vary, any reverse proxy or CDN in
+        // front of the panel will hand one visitor's language to another — the
+        // same class of mistake as a manifest cached under the wrong key, one
+        // floor up. The service itself has no proxy, but a customer running
+        // the boxed version or a cluster puts one in front.
+        // One line rather than three headers: three values through
+        // setVary(..., replace: false) is valid HTTP, but simple proxies and
+        // some CDNs read only the first. Anything already in Vary is kept.
         $existing = array_filter(array_map(
             'trim',
             explode(',', (string) $response->headers->get('Vary', '')),

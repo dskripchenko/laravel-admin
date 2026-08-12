@@ -1,19 +1,20 @@
 <script setup lang="ts">
 /**
- * ScreenPage — рендер произвольного Screen.
+ * ScreenPage — the renderer of an arbitrary screen.
  *
- * Получает slug из route.params либо из props. Загружает state-snapshot
- * через useScreenStore. provideFormState даёт реактивную state-проекцию
- * для Field-компонентов в layout'е. commandBar отрисовывается как UidButton'ы;
- * клик по button с `attributes.method` диспатчит `runMethod` в store.
+ * It takes the slug from route.params or from its props, loads the state
+ * snapshot through useScreenStore, and provideFormState gives the layout's
+ * field components a reactive view of that state. The command bar is drawn as
+ * UidButtons, and clicking one that carries an `attributes.method` dispatches
+ * `runMethod` into the store.
  *
- * Поддерживает:
- *   - confirm (если задан) — confirm() перед runMethod
- *   - destructive — variant=danger
- *   - primary — variant=primary
- *   - icon — пробрасывается в UidButton
- *   - alerts — UidAlert над body на основе lastMessage / store.error
- *   - field validation errors — через FormState (auto-clear на setField)
+ * What it supports:
+ *   - confirm, when set: a confirm() before the runMethod
+ *   - destructive: variant=danger
+ *   - primary: variant=primary
+ *   - icon: passed on to UidButton
+ *   - alerts: a UidAlert above the body, from lastMessage or store.error
+ *   - the fields' validation errors, through FormState, cleared on setField
  */
 import { computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -39,12 +40,13 @@ const resolvedSlug = computed<string>(() => {
   return String(route.params.slug ?? route.meta?.slug ?? '')
 })
 
-// provideFormState ОБЯЗАН вызываться в setup — связываем со store.state.
-// Двойной provide: FormState для редактируемых полей + Record для Infolist'ов.
+// provideFormState MUST be called inside setup, so it is bound to store.state
+// here. Two things are provided: FormState for the editable fields, and Record
+// for the infolists.
 const ctx = provideFormState(screen.state, screen.errors)
 provideRecord(screen.state)
 
-// При обновлении store.errors (после ValidationError) — синхронизируем в form-context.
+// When store.errors changes, after a ValidationError, it is synced into the form context.
 watch(
   () => screen.errors,
   (next) => {
@@ -88,7 +90,7 @@ async function onRunAction(action: ScreenAction): Promise<void> {
   try {
     await screen.runMethod(method)
   } catch {
-    // Ошибки уже в store.error / store.errors — UI отреагирует реактивно.
+    // The errors are in store.error and store.errors already; the UI follows reactively.
   }
 }
 

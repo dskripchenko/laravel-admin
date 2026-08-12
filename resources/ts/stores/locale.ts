@@ -1,11 +1,12 @@
 /**
- * Locale store: текущая локаль + persist + sync с AdminClient.
+ * The locale store: the current locale, its persistence and its synchronization
+ * with AdminClient.
  *
- * Side effects при смене:
- *   - `<html lang="...">` обновляется
- *   - AdminClient.setLocale() — все следующие запросы получат правильный
- *     X-Admin-Locale header
- *   - POST /system/setLocale → persist в user.locale + cookie
+ * Changing it has three effects:
+ *   - `<html lang="...">` is updated
+ *   - AdminClient.setLocale() is called, so every later request carries the
+ *     right X-Admin-Locale header
+ *   - POST /system/setLocale persists it into user.locale and a cookie
  */
 
 import { defineStore } from 'pinia'
@@ -32,19 +33,20 @@ export const useLocaleStore = defineStore('admin-locale', () => {
   }
 
   /**
-   * Отпустить локаль: убрать закреплённый заголовок, чтобы её резолвил
-   * сервер по полной цепочке.
+   * Lets the locale go: the pinned header is removed, so that the server
+   * resolves it through the whole chain again.
    *
-   * Заголовок стоит в цепочке ВЫШЕ сохранённой настройки пользователя —
-   * пока вкладка его шлёт, она перебивает настройку аккаунта. После выхода
-   * это уже чужая локаль: следующий вошедший в этой же вкладке получил бы
-   * язык предшественника, если своей сохранённой настройки у него нет.
+   * The header sits ABOVE the user's saved preference in that chain — while
+   * the tab keeps sending it, it overrides the account's setting. After a
+   * logout it belongs to someone else: the next person to log in from this tab
+   * would get their predecessor's language, unless they have a saved
+   * preference of their own.
    */
   function release(): void {
     try {
       getAdminClient().clearLocale()
     } catch {
-      // Клиент ещё не зарегистрирован — отпускать нечего.
+      // The client is not registered yet, so there is nothing to let go of.
     }
   }
 
@@ -69,11 +71,11 @@ export const useLocaleStore = defineStore('admin-locale', () => {
     if (typeof document !== 'undefined' && document.documentElement) {
       document.documentElement.setAttribute('lang', locale)
     }
-    // Try-catch потому что в test-окружении registry может быть пуст.
+    // A try/catch, because in a test environment the registry may be empty.
     try {
       getAdminClient().setLocale(locale)
     } catch {
-      // ignore — клиент ещё не зарегистрирован
+      // ignored: the client is not registered yet
     }
   }
 
