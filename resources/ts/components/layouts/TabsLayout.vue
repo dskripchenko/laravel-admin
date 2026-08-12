@@ -4,7 +4,7 @@
  * Активная вкладка двусторонне связана через v-model:active.
  */
 import { ref } from 'vue'
-import { UidTabs, UidTab, UidTabPanel } from '@dskripchenko/ui'
+import { UidTabs, UidTab, UidTabPanel, UidStack } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
@@ -21,9 +21,22 @@ interface Props {
   items: TabNode[]
   /** Активная вкладка (key либо индекс при отсутствии key). */
   active?: string | number
+  /**
+   * Отступ между элементами внутри вкладки.
+   *
+   * Панель вкладки раскладывала детей БЕЗ стека: поля шли вплотную, зазор 0.
+   * Внутри `Rows` тот же набор полей дышал (`--uid-space-md`), а на вкладке
+   * подпись следующего поля прилипала к подсказке предыдущего — читалось как
+   * одна сплошная лента, где не видно, где кончается одно поле и начинается
+   * другое.
+   *
+   * Взято на ступень крупнее строчного ритма: вкладка — это набор наборов, и
+   * расстояние между ними должно быть заметнее, чем внутри одного поля.
+   */
+  gap?: string
 }
 
-const props = withDefaults(defineProps<Props>(), { active: 0 })
+const props = withDefaults(defineProps<Props>(), { active: 0, gap: 'var(--uid-space-lg)' })
 const emit = defineEmits<{ 'update:active': [value: string | number] }>()
 
 function tabKey(tab: TabNode, idx: number): string | number {
@@ -55,11 +68,13 @@ function onUpdate(value: string | number): void {
       :key="`panel-${tabKey(tab, idx)}`"
       :value="tabKey(tab, idx)"
     >
-      <LayoutRenderer
-        v-for="(child, cidx) in tab.items"
-        :key="cidx"
-        :node="child"
-      />
+      <UidStack direction="column" :gap="gap" align="stretch">
+        <LayoutRenderer
+          v-for="(child, cidx) in tab.items"
+          :key="cidx"
+          :node="child"
+        />
+      </UidStack>
     </UidTabPanel>
   </UidTabs>
 </template>

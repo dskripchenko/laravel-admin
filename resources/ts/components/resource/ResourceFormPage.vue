@@ -119,9 +119,19 @@ const recordNotFound = computed<boolean>(
     && form.error.status === 404,
 )
 
-const layoutNodes = computed<LayoutNode[]>(
-  () => resourceMeta.value?.fields ?? [],
-)
+/**
+ * Create mode gets its own layout when the backend sent one.
+ *
+ * `create_fields` is absent whenever the two layouts are identical — most
+ * resources — and then the ordinary one is used, exactly as before.
+ */
+const layoutNodes = computed<LayoutNode[]>(() => {
+  const meta = resourceMeta.value
+
+  if (form.isCreate && meta?.create_fields) return meta.create_fields
+
+  return meta?.fields ?? []
+})
 
 /**
  * Backend Field::default() сериализуется в node.defaultValue, но state

@@ -33,6 +33,11 @@ export interface ManifestResourceMeta {
   subject_type?: string | null
   permissions: Record<string, string>
   fields: ManifestNode[]
+  /**
+   * Раскладка формы СОЗДАНИЯ. Приходит только когда отличается от `fields` —
+   * например, у ресурса, чьи вкладки нечем наполнить до сохранения записи.
+   */
+  create_fields?: ManifestNode[]
   /** Read-only entries для view-page. Default — auto-generated из fields(). */
   infolist?: ManifestNode[]
   columns: ManifestNode[]

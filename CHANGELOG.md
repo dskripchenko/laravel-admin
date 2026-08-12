@@ -5,6 +5,32 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.23.0
+
+### Added
+- **`formLayout($context)` finally means something on create.** The parameter
+  was declared from the start, but the core always called the method with
+  `'update'` — so the create form got the edit layout with all of its tabs,
+  including the ones that have nothing to show until the record exists. An
+  empty tab reads as breakage even when there is simply nothing to put in it.
+
+  The manifest now carries `create_fields` alongside `fields`, and only when
+  the two layouts actually differ: the manifest travels with every bootstrap,
+  and a second copy of the field tree for resources that do not need it is
+  weight on every panel load. The comparison ignores the generated `id`s —
+  they are per-instance, so two serialisations of the same tree are never
+  equal literally.
+
+### Fixed
+- **Fields inside a tab touched each other.** The panel rendered its children
+  straight into the DOM with no stack, so the gap was zero: the label of the
+  next field sat on the hint of the previous one and the form read as one
+  undivided ribbon. The same fields inside `Rows` had always been spaced.
+
+  Tab panels now lay out as a column one step wider than the row rhythm
+  (`--uid-space-lg`): a tab is a set of sets, and the distance between them
+  should be more visible than the distance inside a single field.
+
 ## 1.22.1
 
 ### Fixed

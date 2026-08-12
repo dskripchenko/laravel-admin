@@ -306,9 +306,9 @@ abstract class Resource
      *
      * @return list<array<string, mixed>>
      */
-    private function serializeFormFields(): array
+    private function serializeFormFields(string $context = 'update'): array
     {
-        $layout = $this->formLayout('update');
+        $layout = $this->formLayout($context);
         if ($layout !== []) {
             return array_map(
                 static fn (\Dskripchenko\LaravelAdmin\Contracts\Renderable $r): array => $r->toArray(),
@@ -317,6 +317,50 @@ abstract class Resource
         }
 
         return array_map(static fn (Field $f): array => $f->toArray(), $this->fields());
+    }
+
+    /**
+     * Раскладка создания — только если она ОТЛИЧАЕТСЯ от раскладки правки.
+     *
+     * `formLayout()` принимает контекст с самого начала, но ядро звало его
+     * всегда с `'update'`: параметр был объявлен и не значил ничего, а форма
+     * создания получала вкладки, которым нечего показать до сохранения
+     * записи — пустые «API», «Ассистент», «Превью».
+     *
+     * Ключ не добавляется, когда раскладки совпадают: манифест возят каждым
+     * бутстрапом, и второй экземпляр дерева полей ради ресурсов, которым это
+     * не нужно, — лишний вес на каждой загрузке панели.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function serializeCreateFormFields(): ?array
+    {
+        $create = $this->serializeFormFields('create');
+
+        // Сравниваются деревья БЕЗ `id`: он генерируется на каждый экземпляр
+        // layout'а, поэтому две сериализации одного и того же дерева никогда
+        // не равны буквально. Первая версия сравнивала как есть и слала
+        // вторую копию всем ресурсам подряд.
+        return self::withoutIds($create) === self::withoutIds($this->serializeFormFields('update'))
+            ? null
+            : $create;
+    }
+
+    /**
+     * @param  array<mixed>  $tree
+     * @return array<mixed>
+     */
+    private static function withoutIds(array $tree): array
+    {
+        $out = [];
+        foreach ($tree as $key => $value) {
+            if ($key === 'id') {
+                continue;
+            }
+            $out[$key] = is_array($value) ? self::withoutIds($value) : $value;
+        }
+
+        return $out;
     }
 
     /* -----------------------------------------------------------------
@@ -358,6 +402,8 @@ abstract class Resource
                 'reorder' => $base.'.reorder',
             ],
             'fields' => $this->serializeFormFields(),
+            // Отсутствует, когда создание и правка выглядят одинаково.
+            'create_fields' => $this->serializeCreateFormFields(),
             'columns' => array_map(static fn (TableColumn $c): array => $c->toArray(), $this->columns()),
             // infolist: используется ResourceViewPage для read-only display.
             // Default — TextEntry per field (см. Resource::infolist).
