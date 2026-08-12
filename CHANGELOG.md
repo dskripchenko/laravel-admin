@@ -5,6 +5,25 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.23.1
+
+### Fixed
+- **The status badge in a form header printed the machine value.** `active`
+  stood next to a fully translated form while the select two lines below said
+  "Активен" — the header took the value from the form state and rendered it
+  as-is, never looking at the field's own labels. Those labels arrive in the
+  manifest already translated, so nothing needed translating: it only needed
+  reading.
+
+  Both option shapes are supported — the map `value => label` and the list
+  `[{value, label}]` — otherwise half the resources would have kept the machine
+  value. When the field declares no matching option, the raw value is shown:
+  a machine word beats an empty header, since it still says what state the
+  record is in.
+
+  The rule lives in `statusLabel.ts` rather than inside the SFC, so it can be
+  tested as itself.
+
 ## 1.23.0
 
 ### Added

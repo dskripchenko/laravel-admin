@@ -28,6 +28,7 @@ import { useResourceFormStore } from '../../stores/resourceForm'
 import { useManifestStore } from '../../stores/manifest'
 import { provideFormState } from '../render/formState'
 import { ApiError } from '../../api/errors'
+import { resolveStatusLabel } from './statusLabel'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
@@ -169,6 +170,11 @@ const statusValue = computed<string | null>(() => {
   return typeof v === 'string' ? v : null
 })
 
+/** Подпись статуса — из подписей самого поля; см. statusLabel.ts. */
+const statusLabel = computed<string | null>(
+  () => resolveStatusLabel(layoutNodes.value, statusValue.value),
+)
+
 const statusBadgeVariant = computed<'success' | 'warning' | 'danger' | 'default'>(() => {
   switch (statusValue.value) {
     case 'published': return 'success'
@@ -254,8 +260,8 @@ function onCancel(): void {
       <div class="admin-page__title-wrap">
         <a class="admin-resource-form__back" @click="onCancel">{{ tr('← Назад') }}</a>
         <h1 class="admin-page__title">{{ titleLabel }}</h1>
-        <UidBadge v-if="statusValue" :variant="statusBadgeVariant">
-          {{ statusValue }}
+        <UidBadge v-if="statusLabel" :variant="statusBadgeVariant">
+          {{ statusLabel }}
         </UidBadge>
       </div>
       <div class="admin-page__actions">
