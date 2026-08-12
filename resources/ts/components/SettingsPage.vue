@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * Default страница для admin.settings.{slug} роутов.
+ * The default page behind the admin.settings.{slug} routes.
  *
- * Загружает settings-meta из manifest'а и рендерит fields через LayoutRenderer
- * с form-state поверх SettingsApiClient. Host'ы переопределяют через
- * createAdminApp({ pages: { settings: MySettings } }) если нужна более
- * специфичная UX (например, side-tab навигация по Settings-классам).
+ * It loads the settings meta from the manifest and renders the fields through
+ * LayoutRenderer, with a form state on top of SettingsApiClient. A host
+ * overrides it through createAdminApp({ pages: { settings: MySettings } })
+ * when it wants something more particular — side-tab navigation across the
+ * settings classes, for instance.
  */
 import { computed } from 'vue'
 import { tRaw } from '../stores/i18n'

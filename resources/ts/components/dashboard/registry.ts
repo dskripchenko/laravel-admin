@@ -1,19 +1,19 @@
 /**
- * Реестр dashboard widget-компонентов.
+ * The registry of the dashboard widget components.
  *
- * Manifest узлы dashboard выглядят так:
+ * A dashboard's manifest nodes look like this:
  *   {
  *     slug: 'main',
- *     label: 'Главный',
+ *     label: 'Main',
  *     widgets: [
- *       { type: 'stat', name: 'total', title: 'Всего', value: 1284,
+ *       { type: 'stat', name: 'total', title: 'Total', value: 1284,
  *         span: 3, trend: 12 },
  *       { type: 'bar-chart', span: 8, ... },
  *       { type: 'recent-table', span: 8, columns: [...], rows: [...] },
  *     ]
  *   }
  *
- * Host регистрирует кастомные widget'ы через `registerWidget()` /
+ * A host registers its own widgets through `registerWidget()` or a
  * `registerWidgets()` bundle.
  */
 

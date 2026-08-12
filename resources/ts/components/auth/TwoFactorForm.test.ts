@@ -39,7 +39,7 @@ describe('TwoFactorForm', () => {
   it('switches to recovery-mode and back', async () => {
     const wrapper = mount(TwoFactorForm)
     const links = wrapper.findAll('.admin-auth-card__link')
-    // Первый link — switch mode, второй — cancel
+    // The first link switches the mode, the second cancels
     await links[0].trigger('click')
     expect(wrapper.find('.admin-code-input').exists()).toBe(false)
     expect(wrapper.find('input[name="recovery-code"]').exists()).toBe(true)
@@ -53,8 +53,8 @@ describe('TwoFactorForm', () => {
     const wrapper = mount(TwoFactorForm)
     const submitBtn = wrapper.find('button[type="submit"]')
     expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
-    // 5 цифр — не валидно (need 6); кнопка остаётся disabled, auto-submit не
-    // срабатывает.
+    // Five digits is not valid — six are needed; the button stays disabled and
+    // nothing is submitted automatically.
     await fillCells(wrapper, '12345')
     expect((submitBtn.element as HTMLButtonElement).disabled).toBe(true)
   })
@@ -71,7 +71,7 @@ describe('TwoFactorForm', () => {
     })
     const wrapper = mount(TwoFactorForm)
     await fillCells(wrapper, '123456')
-    // 6-я цифра автотриггерит submit (см. onCellInput).
+    // The sixth digit triggers the submit; see onCellInput.
     await flushPromises()
     expect(wrapper.emitted('success')).toBeTruthy()
   })
@@ -133,7 +133,7 @@ describe('TwoFactorForm', () => {
     })
     firstCell.element.dispatchEvent(event)
     await flushPromises()
-    // Все 6 ячеек заполнены.
+    // All six cells are filled in.
     const cells = wrapper.findAll('.admin-code-input input')
     expect(cells.map((c) => (c.element as HTMLInputElement).value).join('')).toBe('123456')
   })

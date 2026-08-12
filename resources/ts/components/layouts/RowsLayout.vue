@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * Rows-layout — UidStack column.
+ * The rows layout — a UidStack column.
  *
- * Если хотя бы один child имеет `span` (1..12), переключается в grid-12
- * mode и каждый child получает `grid-column: span N` (default 12 = full-row).
- * Это позволяет Resource без отдельного Columns/Grid layout'а компактно
- * группировать поля в одной строке (например: slug + version по 6 col).
+ * As soon as one child carries a `span` (1..12) it switches into the
+ * twelve-column grid mode, and every child gets a `grid-column: span N`, the
+ * default 12 meaning a full row. That lets a resource group fields compactly
+ * into one line — a slug and a version at six columns each — without a
+ * separate Columns or Grid layout.
  */
 import { computed } from 'vue'
 import { UidStack, UidGrid } from '@dskripchenko/ui'
@@ -14,7 +15,7 @@ import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
 interface Props {
   items: LayoutNode[]
-  /** CSS-зазор между элементами (token либо px), по умолчанию --uid-space-md. */
+  /** The CSS gap between the items, a token or pixels; --uid-space-md by default. */
   gap?: string
 }
 const props = withDefaults(defineProps<Props>(), { gap: 'var(--uid-space-md)' })

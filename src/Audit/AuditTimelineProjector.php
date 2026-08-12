@@ -8,20 +8,21 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Преобразует коллекцию AuditLog'ов в нормализованные timeline-карточки
- * для SPA.
+ * Turns a collection of audit logs into the normalized timeline cards the SPA
+ * expects.
  *
- * Каждая карточка:
+ * Each card:
  *   ```
  *   {
  *     id, event, created_at,
  *     actor: { id, name, type } | null,
- *     summary: 'Создал User #42 «Иван»',
+ *     summary: 'Created User #42 "John"',
  *     diff: [{ field, before, after }] | null
  *   }
  *   ```
  *
- * `diff` строится из `changes.before` × `changes.after` с union'ом ключей.
+ * The `diff` is built from `changes.before` and `changes.after`, over the
+ * union of their keys.
  */
 final class AuditTimelineProjector
 {

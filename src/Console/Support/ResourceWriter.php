@@ -8,10 +8,11 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 
 /**
- * Генерирует Resource/Screen/Widget PHP-классы из stub'ов в host'е.
+ * Generates the resource, screen and widget PHP classes in the host, out of
+ * the stubs.
  *
- * Все pаblic methods принимают финальный массив подстановок и пишут файл.
- * Не делает business-logic'у — просто заменяет {{ placeholder }}.
+ * Every public method takes the final array of substitutions and writes the
+ * file. There is no logic beyond replacing {{ placeholder }}.
  */
 final class ResourceWriter
 {
@@ -48,7 +49,7 @@ final class ResourceWriter
     }
 
     /**
-     * Путь к stub'у laravel-admin'a, поддерживает host-override через
+     * The path of a laravel-admin stub; a host may override it through
      * `php artisan vendor:publish --tag=admin-stubs` (publishes to
      * resources/stubs/admin/).
      */
@@ -70,7 +71,7 @@ final class ResourceWriter
     }
 
     /**
-     * Базовое маппинг namespace → путь файла:
+     * The basic mapping from a namespace to a file path:
      *   App\Admin\Resources\ArticleResource → app/Admin/Resources/ArticleResource.php
      */
     public function classPath(string $namespace, string $class): string
@@ -81,7 +82,7 @@ final class ResourceWriter
     }
 
     /**
-     * Подобрать имя класса из строки label/name пользователя.
+     * Derives a class name from the label or name the user typed.
      */
     public function classNameFor(string $singularLabel, string $suffix = 'Resource'): string
     {

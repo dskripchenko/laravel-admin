@@ -10,14 +10,14 @@ use Illuminate\Filesystem\Filesystem;
 /**
  * `php artisan admin:link`
  *
- * Симлинк собранных SPA-ассетов admin → public/vendor/admin.
+ * Symlinks the admin's built SPA assets into public/vendor/admin.
  *
- * Резолвит источник в таком порядке:
- *   1. node_modules/@dskripchenko/laravel-admin/dist (npm-сборка SPA)
- *   2. vendor/dskripchenko/laravel-admin/dist (composer-pre-built)
- *   3. локальный dist/ пакета (для dev-режима с path-repo)
+ * It looks for the source in this order:
+ *   1. node_modules/@dskripchenko/laravel-admin/dist — the npm build of the SPA
+ *   2. vendor/dskripchenko/laravel-admin/dist — prebuilt by Composer
+ *   3. the package's own dist/, for development against a path repository
  *
- * Если ни один источник не найден — печатает инструкцию.
+ * When none of them is there, it prints what to do.
  */
 final class LinkCommand extends Command
 {

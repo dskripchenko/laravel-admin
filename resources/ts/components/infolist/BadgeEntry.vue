@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * BadgeEntry — строковое значение в виде UidBadge с variant'ом по value-mapping.
+ * BadgeEntry — a string value drawn as a UidBadge, its variant chosen by a
+ * value mapping.
  *
  * Manifest:
  *   { type: 'badge', name: 'status', label: 'Status',
@@ -16,13 +17,13 @@ interface Props {
   name?: string
   label?: string
   value?: string | null
-  /** map value → variant. Если не задан — default. */
+  /** Maps a value to a variant; without it, the default is used. */
   map?: Record<string, BadgeVariant>
-  /** Backend BadgeEntry::colors() — value → variant (алиас map). */
+  /** The backend's BadgeEntry::colors(): value → variant, an alias of map. */
   colors?: Record<string, BadgeVariant>
-  /** map value → отображаемая подпись (локализация: active → «Активен»). */
+  /** Maps a value to the label shown — the localization: active → "Active". */
   labels?: Record<string, string>
-  /** Принудительный variant. */
+  /** Forces a particular variant. */
   variant?: BadgeVariant
 }
 

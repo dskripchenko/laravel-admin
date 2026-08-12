@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
- * 2FA-форма: 6-cell mono TOTP-input + alt recovery-code.
+ * The 2FA form: a six-cell monospaced TOTP input, with a recovery code as the
+ * alternative.
  *
- * Эталон — docs/design_handoff_laravel_admin/screens-secondary.jsx (TwoFactor):
- * 6 input'ов 44×52, IBM Plex Mono 22px, при заполнении одного — фокус
- * автопереходит на следующий, paste-event раскладывает 6 цифр сразу.
+ * It follows docs/design_handoff_laravel_admin/screens-secondary.jsx
+ * (TwoFactor): six inputs of 44×52, IBM Plex Mono at 22px, the focus moving to
+ * the next cell as each is filled, and a paste spreading six digits at once.
  */
 import { computed, nextTick, ref } from 'vue'
 import { UidAlert, UidButton, UidInput } from '@dskripchenko/ui'
@@ -40,7 +41,7 @@ function setCellRef(idx: number, el: Element | null): void {
 
 function onCellInput(idx: number, event: Event): void {
   const target = event.target as HTMLInputElement
-  // Только цифры; обрезаем до 1 символа.
+  // Digits only, trimmed to a single character.
   const digit = target.value.replace(/\D/g, '').slice(-1)
   cells.value[idx] = digit
   target.value = digit

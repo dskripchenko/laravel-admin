@@ -1,8 +1,9 @@
 /**
- * FilterEditor — render-функция для редактора одного filter'а.
+ * FilterEditor — the render function behind one filter's editor.
  *
- * Отдельный модуль (не SFC), потому что компонент чисто render-based —
- * выбирает control под filter.type без шаблона и состояния.
+ * It is a module rather than an SFC because the component is purely
+ * render-based: it picks a control for the filter.type, with no template and
+ * no state.
  */
 import { defineComponent, h, type PropType } from 'vue'
 import { trSafe as tr } from '../../stores/i18n'
@@ -38,7 +39,7 @@ export const FilterEditor = defineComponent({
     return () => {
       const f = props.filter
 
-      // OptionsFilter (single/multi) — single render как radio, multi — checkbox.
+      // An OptionsFilter: single renders as radios, multiple as checkboxes.
       if (f.type === 'options' && f.options && f.options.length > 0) {
         return h(
           'div',
@@ -63,7 +64,7 @@ export const FilterEditor = defineComponent({
         )
       }
 
-      // DateRangeFilter — два input type=date.
+      // A DateRangeFilter: two inputs of type=date.
       if (f.type === 'date_range') {
         const v = (props.draft ?? {}) as { from?: string; to?: string }
         return h('div', { class: 'admin-toolbar__editor admin-toolbar__editor--dates' }, [

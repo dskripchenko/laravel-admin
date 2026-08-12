@@ -1,10 +1,11 @@
 /**
- * Generic factory для component-registry'ов (fields, layouts, widgets,
- * infolist entries и т.п.).
+ * The generic factory of the component registries: fields, layouts, widgets,
+ * infolist entries and the rest.
  *
- * Все component-registry в admin'е по сути одинаковы: keyed Map<string, Component>
- * + register/get/has/list/clear/registerBundle. Этот factory вытаскивает паттерн
- * один раз; конкретные модули просто переименовывают экспорты.
+ * Every component registry in the admin is essentially the same thing — a
+ * keyed Map<string, Component> plus register, get, has, list, clear and
+ * registerBundle. This factory captures the pattern once, and the individual
+ * modules merely rename the exports.
  *
  *     const reg = createComponentRegistry<Component>()
  *     export const registerWidget = reg.register

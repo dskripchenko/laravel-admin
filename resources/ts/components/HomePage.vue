@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Default home-страница admin'а — показывает первый зарегистрированный
- * Dashboard (host регистрирует через `Admin::screens([DashboardScreen])`),
- * иначе fallback на welcome-карточку со списком Resource'ов.
+ * The admin's default home page. It shows the first registered dashboard — the
+ * host registers one through `Admin::screens([DashboardScreen])` — and falls
+ * back to a welcome card listing the resources.
  *
- * Host может полностью переопределить через
+ * A host may replace it entirely through
  * `createAdminApp({ pages: { home: MyHome } })`.
  */
 import { computed, watch } from 'vue'
@@ -37,7 +37,7 @@ const primaryDashboardSlug = computed<string | null>(
   () => dashboards.value[0]?.slug ?? null,
 )
 
-// Загружаем persisted layout из dashboard store на mount/смену slug.
+// The persisted layout is loaded from the dashboard store on mount and when the slug changes.
 const dashboardStore = useDashboardStore()
 watch(
   primaryDashboardSlug,

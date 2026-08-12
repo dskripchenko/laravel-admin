@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * BuilderField — page-builder: список типизированных блоков (backend
- * Field\Builder, fieldType 'builder'). State — list<{type, data}>; типы
- * блоков с их полями приходят в attributes.blocks. Каждый блок редактируется
- * во вложенной под-форме.
+ * BuilderField — a page builder: a list of typed blocks (the backend's
+ * Field\Builder, fieldType 'builder'). The state is a list<{type, data}>, and
+ * the block types with their fields arrive in attributes.blocks. Each block is
+ * edited in a nested sub-form.
  */
 import { computed, ref, watch } from 'vue'
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-vue-next'
@@ -30,7 +30,7 @@ interface Props {
   label?: string | null
   help?: string | null
   required?: boolean
-  /** name => определение блока (см. Builder::block). */
+  /** name => the block's definition; see Builder::block. */
   blocks?: Record<string, BlockDef>
   maxBlocks?: number | null
   reorderable?: boolean

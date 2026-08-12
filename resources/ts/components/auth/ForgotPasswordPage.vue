@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * ForgotPasswordPage — простой email-input + submit.
- * Backend: POST /auth/forgotPassword body {email} → отправляет письмо.
+ * ForgotPasswordPage — a plain email input and a submit button.
+ * The backend: POST /auth/forgotPassword with a body of {email} sends the mail.
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -12,7 +12,7 @@ import { useBrand } from '../../composables/useBrand'
 import BrandLogo from '../shell/BrandLogo.vue'
 import { trSafe as tr } from '../../stores/i18n'
 
-// Бренд из bootstrap.brand (config('admin.brand')) — как на LoginPage.
+// The brand comes from bootstrap.brand (config('admin.brand')), as on LoginPage.
 const brand = useBrand()
 
 interface Props {
@@ -41,8 +41,8 @@ async function submit(): Promise<void> {
     await client.post('/auth/forgotPassword', { email: email.value.trim() })
     submitted.value = true
   } catch {
-    // Backend для безопасности не палит существование email — отображаем
-    // success в любом случае.
+    // For safety's sake the backend does not reveal whether the email exists,
+    // so we show the success either way.
     submitted.value = true
   } finally {
     busy.value = false

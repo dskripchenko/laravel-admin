@@ -13,20 +13,21 @@ return new class extends Migration
         Schema::create('admin_audit_logs', function (Blueprint $table): void {
             $table->id();
 
-            // Кто сделал событие (обычно AdminUser; null для system events).
+            // Who caused the event, usually an AdminUser; null for the system's own.
             $table->nullableMorphs('actor');
 
-            // Над чем (Eloquent model record). null если auth-event.
+            // What it happened to — an Eloquent record; null for an auth event.
             $table->nullableMorphs('subject');
 
-            // Тип события: created/updated/deleted/restored/force-deleted/
-            // login/logout/password.reset/two-factor.enabled/impersonation.start...
+            // The event's kind: created, updated, deleted, restored,
+            // force-deleted, login, logout, password.reset,
+            // two-factor.enabled, impersonation.start and so on.
             $table->string('event')->index();
 
-            // Старые/новые значения (для model events) или payload (для auth/custom).
+            // The old and new values, for a model event, or the payload of an auth or custom one.
             $table->json('changes')->nullable();
 
-            // Контекст: IP/user-agent/route — debug.
+            // The context — IP, user agent, route — for debugging.
             $table->string('ip', 45)->nullable();
             $table->string('user_agent')->nullable();
             $table->string('url')->nullable();

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Вложенная под-форма для составных полей (Repeater / Builder).
+ * The nested sub-form of the composite fields — Repeater and Builder.
  *
- * Даёт под-полям СОБСТВЕННЫЙ form-state (provide/inject скоупится на
- * поддерево): значения item'а живут в локальном reactive-объекте и
- * синхронизируются наружу через v-model, не смешиваясь с состоянием
- * родительской формы.
+ * It gives the sub-fields a form state of THEIR OWN, since provide/inject
+ * scopes to the subtree: the item's values live in a local reactive object and
+ * are synced outwards through v-model, without mixing into the parent form's
+ * state.
  */
 import { reactive, watch } from 'vue'
 import { provideFormState } from '../render/formState'

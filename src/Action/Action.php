@@ -7,11 +7,12 @@ namespace Dskripchenko\LaravelAdmin\Action;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Абстрактный action — кнопка/ссылка/dropdown в commandBar / row / bulk.
+ * The abstract action — a button, a link or a dropdown in a command bar, a
+ * row or a bulk operation.
  *
- * Concretе подклассы (Button, Link, DropDown, Modal, Bulk, ...) — type()
- * + специфичные fluent-методы. Общий API через `__call` для произвольных
- * атрибутов.
+ * The concrete subclasses (Button, Link, DropDown, Modal, Bulk and the rest)
+ * supply type() plus their own fluent methods; arbitrary attributes go through
+ * the shared `__call`.
  *
  * @phpstan-consistent-constructor
  *
@@ -84,7 +85,7 @@ abstract class Action implements Renderable
     }
 
     /**
-     * @param  array<string, mixed>|string  $confirm  Сообщение либо `[message, title]`.
+     * @param  array<string, mixed>|string  $confirm  A message, or `[message, title]`.
      */
     public function confirm(array|string $confirm): static
     {

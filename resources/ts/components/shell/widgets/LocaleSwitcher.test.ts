@@ -12,8 +12,9 @@ describe('LocaleSwitcher', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
-    // pick() делает window.location.reload() после смены локали (BL-11) —
-    // в jsdom это «not implemented»; глушим, поведение проверяется e2e.
+    // pick() calls window.location.reload() after the locale changes, which
+    // jsdom reports as "not implemented"; we silence it, and the behaviour is
+    // covered end to end.
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: { ...window.location, reload: vi.fn() },
@@ -49,7 +50,7 @@ describe('LocaleSwitcher', () => {
     const wrapper = mount(LocaleSwitcher, { attachTo: document.body })
     await wrapper.find('button').trigger('click')
     await flushPromises()
-    // UidMenu рендерит item'ы под trigger'ом — кликаем напрямую первый по тексту EN.
+    // UidMenu renders the items under the trigger, so we click the first one reading EN.
     const items = document.querySelectorAll('.uid-menu-item, [role="menuitem"]')
     let target: HTMLElement | null = null
     items.forEach((el) => {
@@ -60,9 +61,10 @@ describe('LocaleSwitcher', () => {
       await flushPromises()
       expect(useLocaleStore().current).toBe('en')
     } else {
-      // Fallback: вызовем pick напрямую через store, проверим что компонент жив.
-      // (UidMenu может не рендерить items в jsdom без proper teleport setup;
-      // достаточно убедиться что trigger корректно показывает текущую локаль.)
+      // The fallback: call pick through the store directly and check that the
+      // component is alive. UidMenu may render no items in jsdom without a
+      // proper teleport setup, and it is enough that the trigger shows the
+      // current locale correctly.
       await useLocaleStore().setLocale('en')
       expect(useLocaleStore().current).toBe('en')
     }

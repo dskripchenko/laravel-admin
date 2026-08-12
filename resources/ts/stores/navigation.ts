@@ -1,11 +1,11 @@
 /**
- * useNavigationStore — глобальный pending-counter для top-loading-bar.
+ * useNavigationStore — the global pending counter behind the top loading bar.
  *
- * При router.beforeEach (старт навигации) — вызываем `start()`.
- * При router.afterEach + resource-page завершила data-fetch — вызываем `end()`.
+ * `start()` is called from router.beforeEach, as a navigation begins; `end()`
+ * from router.afterEach and once a resource page has finished fetching.
  *
- * Counter (а не bool) защищает от race condition'ов: если несколько
- * параллельных fetch'ей, bar остаётся видимым пока хоть один pending.
+ * It is a counter rather than a boolean to survive the races: with several
+ * fetches in flight the bar stays visible while at least one is pending.
  */
 
 import { defineStore } from 'pinia'
@@ -23,7 +23,7 @@ export const useNavigationStore = defineStore('admin-navigation', () => {
     if (pending.value > 0) pending.value -= 1
   }
 
-  /** Сбросить counter (на случай зависшего pending в dev). */
+  /** Resets the counter, in case a pending one gets stuck during development. */
   function reset(): void {
     pending.value = 0
   }

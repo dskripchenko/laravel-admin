@@ -111,13 +111,13 @@ describe('createAdminRouter', () => {
     expect(router.hasRoute('admin.resource.users.index')).toBe(true)
     expect(router.hasRoute('admin.screen.reports')).toBe(true)
 
-    // Заменяем — старые исчезают.
+    // Replacing them makes the old ones disappear.
     const m2: AdminManifest = { ...sampleManifest, resources: [], screens: [] }
     router.replaceManifestRoutes(m2)
     expect(router.hasRoute('admin.resource.users.index')).toBe(false)
     expect(router.hasRoute('admin.screen.reports')).toBe(false)
 
-    // catch-all всегда последний.
+    // The catch-all is always last.
     expect(router.hasRoute('admin.notFound')).toBe(true)
   })
 
@@ -130,10 +130,10 @@ describe('createAdminRouter', () => {
   })
 
   it('гостя с прямой ссылки на раздел ведёт на логин, а не в 404', async () => {
-    // Роуты ресурсов появляются только из манифеста, а гостю манифест не
-    // грузится — поэтому `/r/templates` не совпадает ни с чем и попадает в
-    // catch-all. Без requiresAuth на нём человек, у которого истекла сессия,
-    // видел «страницы нет» вместо формы входа.
+    // The resource routes come from the manifest alone, and a guest never
+    // loads it, so `/r/templates` matches nothing and lands in the catch-all.
+    // Without requiresAuth on it, anyone whose session had expired saw "no
+    // such page" instead of the login form.
     const router = mkRouter()
     const auth = useAuthStore()
     auth.hydrate(mkBootstrap({ user: null }))

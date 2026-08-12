@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Переключение локали через UidMenu. В topbar показываем компактно
- * (icon + uppercase-код), под ним выпадает список доступных локалей.
+ * Switching the locale, through UidMenu. In the topbar it is compact — an icon
+ * and the uppercase code — with the available locales dropping down beneath.
  */
 import { Globe } from 'lucide-vue-next'
 import { UidIcon, UidMenu, UidMenuItem } from '@dskripchenko/ui'
@@ -13,9 +13,10 @@ const locale = useLocaleStore()
 async function pick(loc: string): Promise<void> {
   if (loc === locale.current) return
   await locale.setLocale(loc)
-  // Полный reload: заново бутстрапит меню/манифест/i18n-bag в новой локали
-  // (setLocale только persist'ит + меняет header; кэш меню/манифеста иначе
-  // остаётся в старой локали) — BL-11.
+  // A full reload, which bootstraps the menu, the manifest and the i18n bag
+  // afresh in the new locale: setLocale only persists the choice and changes
+  // the header, and the cached menu and manifest would otherwise stay in the
+  // old one.
   if (typeof window !== 'undefined') window.location.reload()
 }
 </script>

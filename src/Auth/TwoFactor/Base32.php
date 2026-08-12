@@ -7,16 +7,17 @@ namespace Dskripchenko\LaravelAdmin\Auth\TwoFactor;
 use InvalidArgumentException;
 
 /**
- * Минимальный RFC-4648 base32 encoder/decoder.
+ * A minimal RFC-4648 base32 encoder and decoder.
  *
- * Используется для secret в формате `otpauth://`. Без внешних зависимостей.
+ * It is used for the secret in the `otpauth://` format, with no external
+ * dependencies.
  */
 final class Base32
 {
     private const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
     /**
-     * Закодировать произвольную byte-строку в base32 (без padding).
+     * Encodes an arbitrary byte string into base32, without padding.
      */
     public static function encode(string $bytes): string
     {
@@ -40,7 +41,7 @@ final class Base32
     }
 
     /**
-     * Декодировать base32 в byte-строку.
+     * Decodes base32 back into a byte string.
      */
     public static function decode(string $encoded): string
     {
@@ -70,7 +71,7 @@ final class Base32
     }
 
     /**
-     * Сгенерировать новый случайный base32-секрет указанной длины.
+     * Generates a new random base32 secret of the given length.
      */
     public static function generateSecret(int $length = 32): string
     {

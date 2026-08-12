@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
- * Заглушка страницы на время загрузки каркаса (см. useAppReady).
+ * The page's stand-in while the shell loads; see useAppReady.
  *
- * Форма повторяет типовую страницу — заголовок, полоса действий, блоки
- * содержимого, — чтобы переход к реальному контенту не двигал layout.
- * Показывать здесь настоящую страницу нельзя: до манифеста она не знает,
- * что рендерить, и успевает нарисовать чужой экран.
+ * Its shape repeats a typical page — a heading, a row of actions, blocks of
+ * content — so that the switch to the real content does not move the layout.
+ * Showing the real page here is not an option: before the manifest it does not
+ * know what to render, and manages to draw the wrong screen.
  */
 import { UidSkeleton } from '@dskripchenko/ui'
 </script>

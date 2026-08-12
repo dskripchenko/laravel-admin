@@ -4,10 +4,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import LoginForm from './LoginForm.vue'
 
 /**
- * Форма входа — экран, который видят раньше остального.
+ * The login form — the screen people see before any other.
  *
- * Здесь её можно посмотреть на любой ширине: раскладка входа ломалась
- * именно на телефоне, а на разработческом мониторе выглядела правильно.
+ * Here it can be looked at in any width: its layout broke on a phone
+ * specifically, while on a developer's monitor it looked right.
  */
 setActivePinia(createPinia())
 
@@ -20,8 +20,8 @@ const meta: Meta<typeof LoginForm> = {
   render: (args) => ({
     components: { LoginForm },
     setup: () => ({ args }),
-    // Карточка живёт в auth-каркасе: без него не видно ни центрирования,
-    // ни полей страницы, а ломалось именно это.
+    // The card lives inside the auth shell: without it neither the centring
+    // nor the page's margins are visible — and those were what broke.
     template: `
       <div class="admin-auth-page">
         <div class="uid-card uid-card--pad-none admin-auth-card">

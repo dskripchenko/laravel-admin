@@ -13,12 +13,12 @@ use function Laravel\Prompts\text;
 /**
  * `php artisan admin:install`
  *
- * Публикует config + миграции, опционально запускает миграции и создаёт
- * первого администратора.
+ * Publishes the config and the migrations, optionally runs the migrations and
+ * creates the first administrator.
  *
- * На фазе P0 это минимальная версия: ставит config + миграции + предлагает
- * запустить migrate. Интерактивный выбор auth-стратегии (dedicated vs shared)
- * — на фазе P2 (когда появится shared-режим). Сейчас всегда dedicated.
+ * This is the minimal version: it installs the config and the migrations and
+ * offers to run migrate. Choosing the auth strategy interactively — dedicated
+ * versus shared — comes later; for now it is always dedicated.
  */
 final class InstallCommand extends Command implements PromptsForMissingInput
 {

@@ -3,13 +3,14 @@ import { mount } from '@vue/test-utils'
 import RecentTableWidget from './RecentTableWidget.vue'
 
 /**
- * Виджет «последние записи» на дашборде показывал дату ровно так, как её
- * отдал бэкенд — `2026-08-05T03:03:44.000000Z`, — тогда как список того же
- * ресурса рисует `05.08.2026 03:03:44`. Соседний TableWidget гонял ячейки
- * через formatCell, а этот отдавал строки в таблицу как есть.
+ * The dashboard's "latest records" widget showed the date exactly as the
+ * backend returned it — `2026-08-05T03:03:44.000000Z` — while the same
+ * resource's list draws `05.08.2026 03:03:44`. The neighbouring TableWidget
+ * ran its cells through formatCell; this one handed the strings to the table
+ * untouched.
  *
- * RecentListWidget не шлёт preset'ы колонок, поэтому проверяем именно
- * автоопределение ISO-даты — на него фикс и опирается.
+ * RecentListWidget sends no column presets, so what is checked here is the
+ * automatic detection of an ISO date, which is what the fix rests on.
  */
 describe('RecentTableWidget', () => {
   const mountWidget = (rows: Record<string, unknown>[]) =>

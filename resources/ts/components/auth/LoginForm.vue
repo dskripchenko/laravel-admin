@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * LoginForm — email/password/remember поверх UidInput/UidButton/UidCheckbox/
- * UidAlert. Архитектура auth-card по docs/design_handoff_laravel_admin/
- * screens-secondary.jsx (LoginScreen).
+ * LoginForm — email, password and remember, over UidInput, UidButton,
+ * UidCheckbox and UidAlert. The auth card follows
+ * docs/design_handoff_laravel_admin/screens-secondary.jsx (LoginScreen).
  */
 import { computed, ref } from 'vue'
 import { UidAlert, UidButton, UidCheckbox, UidInput } from '@dskripchenko/ui'
@@ -11,9 +11,9 @@ import { ApiError, NetworkError, ValidationError } from '../../api/errors'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
-  /** URL «Забыли пароль?» — если задан, показывается link справа от remember. */
+  /** The "Forgot your password?" URL; when set, a link appears to the right of remember. */
   forgotUrl?: string | null
-  /** Текст SSO-ссылки или null чтобы скрыть. */
+  /** The SSO link's text, or null to hide it. */
   ssoLinkLabel?: string | null
   ssoUrl?: string | null
 }
@@ -60,8 +60,9 @@ async function submit(): Promise<void> {
         ? err.status
         : (err as { response?: { status?: number } })?.response?.status
     if (httpStatus === 429) {
-      // Throttle-ответ Laravel не в API-envelope — без этой ветки пользователь
-      // видел сырое «Request failed with status code 429».
+      // Laravel's throttle response does not come in the API envelope;
+      // without this branch one saw a raw "Request failed with status code
+      // 429".
       generalError.value = tr('Слишком много попыток входа. Подождите минуту и попробуйте снова')
     } else if (err instanceof ValidationError) {
       fieldErrors.value = err.fields

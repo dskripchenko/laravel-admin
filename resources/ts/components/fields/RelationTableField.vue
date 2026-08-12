@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * RelationTableField — read-only таблица связанных записей на edit-форме
- * (backend Field\RelationTable, fieldType 'relation_table'). Данные берутся
- * из значения поля (record сериализует загруженную relation); колонки — в
- * resource-формате TableColumn::toArray, ячейки — те же presets, что и в
- * списках ресурсов.
+ * RelationTableField — a read-only table of related records on an edit form
+ * (the backend's Field\RelationTable, fieldType 'relation_table'). The data
+ * comes from the field's value, where the record serializes the loaded
+ * relation; the columns come in the resource format of TableColumn::toArray,
+ * and the cells use the same presets as a resource list.
  */
 import { computed } from 'vue'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
