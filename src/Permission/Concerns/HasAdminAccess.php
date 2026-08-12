@@ -8,11 +8,13 @@ use Dskripchenko\LaravelAdmin\Permission\Models\Role;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
- * Trait для модели администратора (AdminUser либо host'овской User в shared-режиме).
+ * The trait of an administrator model — AdminUser, or the host's own User in
+ * the shared mode.
  *
- * Подключает morphToMany через `admin_role_assignments` pivot, добавляет
- * методы `hasAccess()`, `assignRole()`, `revokeRole()`. Wildcard-permissions
- * (`*`, `admin.users.*`) обрабатываются на уровне `Role::hasPermission()`.
+ * It adds a morphToMany through the `admin_role_assignments` pivot, plus the
+ * `hasAccess()`, `assignRole()` and `revokeRole()` methods. The wildcard
+ * permissions (`*`, `admin.users.*`) are handled inside
+ * `Role::hasPermission()`.
  *
  * @mixin \Illuminate\Database\Eloquent\Model
  *
@@ -35,7 +37,7 @@ trait HasAdminAccess
     }
 
     /**
-     * Имеет ли пользователь permission через любую назначенную роль.
+     * Tells whether the user holds a permission through any of their roles.
      */
     public function hasAccess(string $permission): bool
     {
@@ -49,7 +51,7 @@ trait HasAdminAccess
     }
 
     /**
-     * Имеет ли пользователь хотя бы один из перечисленных permissions.
+     * Tells whether the user holds at least one of the listed permissions.
      *
      * @param  list<string>  $permissions
      */
@@ -65,7 +67,7 @@ trait HasAdminAccess
     }
 
     /**
-     * Имеет ли пользователь все перечисленные permissions.
+     * Tells whether the user holds every one of the listed permissions.
      *
      * @param  list<string>  $permissions
      */
@@ -81,7 +83,7 @@ trait HasAdminAccess
     }
 
     /**
-     * @param  Role|int|string  $role  Role-instance, id, либо slug.
+     * @param  Role|int|string  $role  A Role instance, an id or a slug.
      */
     public function assignRole(Role|int|string $role): void
     {
@@ -106,7 +108,7 @@ trait HasAdminAccess
     }
 
     /**
-     * Все permissions пользователя из всех ролей (плоский уникальный список).
+     * Every permission the user holds across every role, as one unique flat list.
      *
      * @return list<string>
      */

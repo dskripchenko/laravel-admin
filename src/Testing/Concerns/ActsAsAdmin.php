@@ -8,9 +8,9 @@ use Dskripchenko\LaravelAdmin\Models\AdminUser;
 use Dskripchenko\LaravelAdmin\Permission\Models\Role;
 
 /**
- * Trait для admin-тестов host-проекта.
+ * The trait for a host project's admin tests.
  *
- * Использование:
+ * Usage:
  *
  *     class MyTest extends TestCase
  *     {
@@ -22,12 +22,12 @@ use Dskripchenko\LaravelAdmin\Permission\Models\Role;
  *         });
  *     }
  *
- * `actingAsAdmin()` создаёт нового AdminUser, опционально ассайнит роль с
- * permissions, заодно регистрирует actingAs($admin, 'admin'). Возвращает
- * созданного юзера для дальнейшей работы.
+ * `actingAsAdmin()` creates a new AdminUser, optionally assigns a role with
+ * the given permissions, and calls actingAs($admin, 'admin') along the way. It
+ * returns the user it created.
  *
- * `actingAsSuperAdmin()` — shortcut: создаёт пользователя с `*` permission
- * (полный доступ ко всем Resource'ам).
+ * `actingAsSuperAdmin()` is the shortcut: a user with the `*` permission, and
+ * so full access to every resource.
  */
 trait ActsAsAdmin
 {
@@ -59,7 +59,7 @@ trait ActsAsAdmin
     }
 
     /**
-     * Создаёт админа с `*` permission (полный доступ).
+     * Creates an administrator with the `*` permission — full access.
      *
      * @param  array<string, mixed>  $attributes
      */

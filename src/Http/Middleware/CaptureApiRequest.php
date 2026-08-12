@@ -10,18 +10,17 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Инициализирует BaseApiRequest singleton под текущий HTTP-запрос.
+ * Initializes the BaseApiRequest singleton for the current HTTP request.
  *
- * laravel-api полагается на `BaseApiRequest::$_instance` (singleton) для
- * резолвинга {version}/{controller}/{action} из URL. В runtime он
- * заполняется через `Request::capture()` из PHP-глобалов. В тестах и при
- * нестандартных kernel-pipelines глобалы могут быть пусты, поэтому мы
- * явно вызываем `createFromBase($request)` на каждом запросе — это
- * гарантирует, что `ApiRequest::getApiVersion()` etc. вернут корректные
- * значения.
+ * laravel-api relies on the `BaseApiRequest::$_instance` singleton to resolve
+ * {version}/{controller}/{action} out of the URL. At runtime it is filled by
+ * `Request::capture()` from PHP's globals — but in tests, and with an unusual
+ * kernel pipeline, those globals may be empty. So we call
+ * `createFromBase($request)` explicitly on every request, which guarantees
+ * that `ApiRequest::getApiVersion()` and its kin return the right values.
  *
- * Middleware дешёвый — `createFromBase` просто пересоздаёт singleton.
- * Подключается в `config/admin.php → middleware.api`.
+ * The middleware is cheap: `createFromBase` merely recreates the singleton. It
+ * is wired in through `config/admin.php → middleware.api`.
  */
 final class CaptureApiRequest
 {

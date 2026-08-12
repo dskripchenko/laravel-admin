@@ -10,23 +10,23 @@ use Illuminate\Notifications\Notification;
 use InvalidArgumentException;
 
 /**
- * Базовая нотификация для admin-shell'а.
+ * The base notification of the admin shell.
  *
- * Отправляется через стандартный Laravel notify() / Notification facade:
+ * It is sent through Laravel's usual notify() or the Notification facade:
  *
  *     $admin->notify(new AdminNotification(
- *         title: 'Импорт завершён',
- *         body: 'Импортировано 1234 записей',
+ *         title: 'The import has finished',
+ *         body: '1234 records imported',
  *         level: 'success',
  *         url: '/admin/resources/products',
  *     ));
  *
- * Поддерживаемые levels: 'info' | 'success' | 'warning' | 'error'.
- * SPA рендерит нотификацию с цветом + иконкой соответственно level'у;
- * url открывает страницу при клике.
+ * The levels are 'info', 'success', 'warning' and 'error'. The SPA draws the
+ * notification with a colour and an icon to match, and the url opens a page
+ * when clicked.
  *
- * Можно extend'ить для domain-specific notifications с собственным channels
- * и via() конфигом.
+ * It can be extended for domain-specific notifications, with their own
+ * channels and via() configuration.
  */
 class AdminNotification extends Notification implements ShouldQueue
 {

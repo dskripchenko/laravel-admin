@@ -7,16 +7,17 @@ namespace Dskripchenko\LaravelAdmin\Auth;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 
 /**
- * Регистратор admin-guard'а через runtime-конфигурацию, без правки
- * config/auth.php host-проекта.
+ * Registers the admin guard through the runtime configuration, without
+ * touching the host project's config/auth.php.
  *
- * Стратегии (см. config/admin.php → auth.strategy):
- *   - dedicated  — добавляем guard 'admin' + provider 'admin_users' + password
- *                  broker 'admin_users'. Используется default AdminUser-модель.
- *   - shared     — ничего не регистрируем; пакет переиспользует уже имеющийся
- *                  guard host-проекта (имя задано в admin.auth.guard).
+ * The strategies, see config/admin.php → auth.strategy:
+ *   - dedicated — adds the 'admin' guard, the 'admin_users' provider and the
+ *                 'admin_users' password broker, over the default AdminUser
+ *                 model.
+ *   - shared    — registers nothing; the package reuses the host project's
+ *                 existing guard, named in admin.auth.guard.
  *
- * Вызывается из AdminServiceProvider::boot() после mergeConfigFrom.
+ * It is called from AdminServiceProvider::boot(), after mergeConfigFrom.
  */
 final class AdminGuardRegistrar
 {
@@ -41,8 +42,8 @@ final class AdminGuardRegistrar
     }
 
     /**
-     * Guard/provider/broker дополнительной панели (v1.8 Panels) из её
-     * auth-блока: admin.panels.{id}.auth.{strategy,guard,provider,model,…}.
+     * An additional panel's guard, provider and broker, from its auth block:
+     * admin.panels.{id}.auth.{strategy,guard,provider,model,…}.
      */
     public function registerFor(\Dskripchenko\LaravelAdmin\Panel\Panel $panel): void
     {

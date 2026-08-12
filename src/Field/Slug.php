@@ -7,12 +7,12 @@ namespace Dskripchenko\LaravelAdmin\Field;
 use Illuminate\Support\Str;
 
 /**
- * URL-slug с auto-генерацией из source-поля.
+ * A URL slug generated from a source field.
  *
- * SPA делает auto-update: при изменении source применяет `Str::slug` и пишет
- * в state этого поля (если slug ещё не редактировался вручную). Backend
- * `generate()` делает то же преобразование на стороне сервера для тестов и
- * non-SPA сценариев.
+ * The SPA updates it automatically: as the source changes it applies
+ * `Str::slug` and writes the result into this field's state, unless the slug
+ * has been edited by hand. The backend's `generate()` does the same conversion
+ * on the server, for tests and for the cases where there is no SPA.
  */
 final class Slug extends Field
 {
@@ -22,7 +22,7 @@ final class Slug extends Field
     }
 
     /**
-     * Имя другого Field'а в той же форме, из которого генерируется slug.
+     * The name of the other field, in the same form, the slug is generated from.
      */
     public function from(string $sourceField): static
     {
@@ -39,8 +39,9 @@ final class Slug extends Field
     }
 
     /**
-     * Авто-обновление при каждом изменении source-поля (default true).
-     * Если false — только при первом set'е, потом slug «отрывается» от source.
+     * Whether to follow every change of the source field; true by default.
+     * With false it follows only the first one, and then the slug parts ways
+     * with the source.
      */
     public function reactive(bool $reactive = true): static
     {
@@ -50,8 +51,8 @@ final class Slug extends Field
     }
 
     /**
-     * Сгенерировать slug из строки. Используется в backend-сценариях
-     * (тесты / non-SPA fallback).
+     * Generates a slug from a string, for the backend's own cases: tests and
+     * the fallback where there is no SPA.
      */
     public static function generate(string $source, string $separator = '-'): string
     {

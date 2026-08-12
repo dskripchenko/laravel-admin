@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 
 /**
- * Резолвер локали для admin-shell'а.
+ * Resolves the admin shell's locale.
  *
- * Приоритезация (первое подходящее значение из available()):
- *   1. ?locale=xxx — query-param (для testing/preview).
- *   2. X-Admin-Locale — header (для SPA).
- *   3. user.locale — если пользователь залогинен.
- *   4. cookie 'admin_locale'.
- *   5. Accept-Language — первая принимаемая локаль из браузера.
+ * In order of precedence, taking the first value that available() allows:
+ *   1. ?locale=xxx, the query parameter, for testing and previews.
+ *   2. X-Admin-Locale, the header the SPA sends.
+ *   3. user.locale, when someone is logged in.
+ *   4. the 'admin_locale' cookie.
+ *   5. Accept-Language — the browser's first acceptable locale.
  *   6. config('admin.ui.default_locale').
  */
 final class LocaleResolver
@@ -75,7 +75,7 @@ final class LocaleResolver
     }
 
     /**
-     * Persist locale: user.locale (если залогинен) + cookie.
+     * Persists the locale: into user.locale, when logged in, and into a cookie.
      */
     public function persist(string $locale): \Symfony\Component\HttpFoundation\Cookie
     {
@@ -101,8 +101,8 @@ final class LocaleResolver
     }
 
     /**
-     * Парсит Accept-Language: 'ru-RU,ru;q=0.9,en;q=0.8' → первый match
-     * из available().
+     * Parses Accept-Language — 'ru-RU,ru;q=0.9,en;q=0.8' — into the first
+     * match among available().
      */
     private function fromAcceptLanguage(string $header): string
     {
@@ -118,7 +118,7 @@ final class LocaleResolver
             if ($piece === '') {
                 continue;
             }
-            // 'ru-RU' → пробуем full-match, потом short-form 'ru'.
+            // For 'ru-RU' we try the full match first, then the short 'ru'.
             if (in_array($piece, $available, true)) {
                 return $piece;
             }

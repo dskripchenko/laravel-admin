@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Plugin\Concerns;
 
 /**
- * Trait для ServiceProvider'ов sister-pack'ов.
+ * The trait for the sister packs' service providers.
  *
- * Каждый sister-pack должен пушить свой AdminPlugin-class в
- * `config('admin.plugins')` на register()-фазе — чтобы core'овский
- * AdminServiceProvider::bootPlugins() забрал его при загрузке. Этот
- * trait DRY-извлекает 8-строчный boilerplate.
+ * Every sister pack has to push its AdminPlugin class into
+ * `config('admin.plugins')` during register(), so that the core's
+ * AdminServiceProvider::bootPlugins() picks it up. This trait holds the eight
+ * lines of boilerplate that takes.
  *
- * Использование:
+ * Usage:
  *
  *     final class AdminJobsServiceProvider extends ServiceProvider
  *     {
@@ -28,9 +28,9 @@ namespace Dskripchenko\LaravelAdmin\Plugin\Concerns;
 trait RegistersAdminPlugin
 {
     /**
-     * Добавить класс AdminPlugin в `config('admin.plugins')`.
+     * Adds an AdminPlugin class to `config('admin.plugins')`.
      *
-     * Идемпотентно: повторные вызовы не дублируют запись.
+     * Idempotent: calling it again adds nothing.
      *
      * @param  class-string  $pluginClass
      */

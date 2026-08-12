@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Action;
 
 /**
- * Action, выполняющийся как отложенный процесс (delayed-process).
+ * An action that runs as a delayed process.
  *
- * Используется для долгих операций: bulk-export, импорт, recompute statistics,
- * массовый mailout. SPA получает {process_uuid} и слушает прогресс через
- * polling /api/admin/delayed-processes/{uuid}.
+ * It is meant for the long operations: a bulk export, an import, recomputing
+ * statistics, a mass mailout. The SPA receives a {process_uuid} and follows
+ * the progress by polling /api/admin/delayed-processes/{uuid}.
  *
- * Серверная сторона: action заведомо whitelisted в AllowlistRegistrar
- * (`entity::method` — иначе SPA не сможет его инициировать).
+ * On the server the action must be whitelisted in AllowlistRegistrar as
+ * `entity::method`, or the SPA cannot start it at all.
  */
 final class AsyncAction extends Action
 {
@@ -22,8 +22,8 @@ final class AsyncAction extends Action
     }
 
     /**
-     * FQCN handler-класса. Должен быть зарегистрирован в AllowlistRegistrar
-     * как разрешённое `entity` для async-actions.
+     * The handler class's FQCN. It must be registered in AllowlistRegistrar
+     * as an `entity` the async actions may use.
      *
      * @param  class-string  $entity
      */
@@ -35,7 +35,7 @@ final class AsyncAction extends Action
     }
 
     /**
-     * Передать дополнительные параметры handler'у при запуске.
+     * Passes extra parameters to the handler at start-up.
      *
      * @param  array<string, mixed>  $params
      */
@@ -47,7 +47,7 @@ final class AsyncAction extends Action
     }
 
     /**
-     * URL'у callback'а отправляется webhook с progress/result.
+     * A webhook with the progress and the result is sent to this callback URL.
      */
     public function callback(string $url): self
     {
@@ -57,7 +57,7 @@ final class AsyncAction extends Action
     }
 
     /**
-     * SPA polling-интервал в секундах для отслеживания progress.
+     * How often, in seconds, the SPA polls for the progress.
      */
     public function pollInterval(int $seconds): self
     {

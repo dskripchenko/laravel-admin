@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Permission;
 
 /**
- * Декларация группы permissions с fluent API.
+ * Declares a group of permissions, with a fluent API.
  *
- *     ItemPermission::group('Системы')
- *         ->addPermission('admin.systems.users.view',   'Пользователи: просмотр')
- *         ->addPermission('admin.systems.users.update', 'Пользователи: редактирование');
+ *     ItemPermission::group('Systems')
+ *         ->addPermission('admin.systems.users.view',   'Users: view')
+ *         ->addPermission('admin.systems.users.update', 'Users: edit');
  *
- * Возвращает себя из каждого `addPermission()`, чтобы можно было цепочкой
- * добавлять много permissions в одну группу. Зарегистрировать в
- * PermissionRegistry — через `PermissionRegistry::add($itemPermission)`
- * либо через `Admin::permissions([...])`.
+ * Every `addPermission()` returns the group itself, so that many permissions
+ * can be chained into one. Registering it goes through
+ * `PermissionRegistry::add($itemPermission)` or `Admin::permissions([...])`.
  */
 final class ItemPermission
 {
@@ -52,7 +51,7 @@ final class ItemPermission
     }
 
     /**
-     * Сериализация для UI матрицы ролей.
+     * Serializes for the role matrix in the UI.
      *
      * @return array<string, mixed>
      */

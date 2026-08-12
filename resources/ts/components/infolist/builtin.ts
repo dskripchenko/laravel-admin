@@ -1,11 +1,11 @@
 /**
- * Default-bundle с минимальным набором builtin infolist-entry'ев.
+ * The default bundle, with the minimal set of built-in infolist entries.
  *
- * View-страница (ResourceViewPage) использует те же type-strings что и
- * form-page (ResourceFormPage) — backend Field::fieldType() возвращает
- * одинаковое имя в обоих контекстах. Поэтому infolist-mapping должен
- * покрывать те же типы что registerBuiltinComponents — fallback на
- * TextEntry для всех stdread-only представлений.
+ * The view page (ResourceViewPage) uses the same type strings as the form page
+ * (ResourceFormPage): the backend's Field::fieldType() returns one name in
+ * both contexts. So the infolist mapping has to cover the same types
+ * registerBuiltinComponents does, falling back to TextEntry for every
+ * read-only rendering.
  */
 
 import { registerInfolistEntries } from './registry'
@@ -17,17 +17,18 @@ import RepeatableEntry from './RepeatableEntry.vue'
 
 export function registerBuiltinInfolistEntries(): void {
   registerInfolistEntries({
-    // Дефолтные типы infolist (BadgeEntry::make() и т.п.).
+    // The infolist's own types: BadgeEntry::make() and the rest.
     text: TextEntry,
     badge: BadgeEntry,
     icon: IconEntry,
     keyvalue: KeyValueEntry,
     key_value: KeyValueEntry,
     'key-value': KeyValueEntry,
-    // Repeatable: коллекция объектов с nested-entries (таблица/cards/inline).
+    // Repeatable: a collection of objects with nested entries — a table, cards or inline.
     repeatable: RepeatableEntry,
-    // Маппинг от backend Field::fieldType() → TextEntry для view-режима.
-    // Host'ы могут перебить registerInfolistEntry('wysiwyg', WysiwygEntry).
+    // The mapping from the backend's Field::fieldType() to TextEntry for the
+    // view mode. A host may override it with
+    // registerInfolistEntry('wysiwyg', WysiwygEntry).
     input: TextEntry,
     email: TextEntry,
     url: TextEntry,

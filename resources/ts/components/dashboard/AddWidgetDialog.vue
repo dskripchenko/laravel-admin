@@ -1,16 +1,17 @@
 <script setup lang="ts">
 /**
- * AddWidgetDialog — modal для выбора типа виджета и его базовой настройки.
+ * AddWidgetDialog — the modal for picking a widget type and setting it up.
  *
- * Список типов берётся из dashboard registry (frontend `listWidgets()`).
- * Каждый тип имеет минимальную форму:
- *   - title (строка)
- *   - size (1..12)
- *   - + per-type config (markdown=content, stat=stat-value/label, etc.)
+ * The list of types comes from the dashboard registry, through the frontend's
+ * `listWidgets()`. Each type gets a minimal form:
+ *   - a title (a string)
+ *   - a size (1..12)
+ *   - plus the per-type configuration: content for markdown, the value and
+ *     label for a stat, and so on.
  *
- * Сохранение — emit `add` с готовым WidgetLayoutItem; родитель кладёт
- * его в dashboard store. Backend'ный data-источник host подключает
- * через permanent backend Widget class либо config'-схему.
+ * Saving emits `add` with a finished WidgetLayoutItem, which the parent puts
+ * into the dashboard store. A backend data source is wired in by the host,
+ * through a permanent backend Widget class or a configuration schema.
  */
 import { computed, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
@@ -36,11 +37,12 @@ const emit = defineEmits<{
 const types = computed<string[]>(() => listWidgets())
 const selectedType = ref<string>('')
 const title = ref<string>('')
-// size/gaugeValue хранятся как string чтобы UidInput'у (defineModel<string>)
-// не нужны type-cast'ы. Парсим в number при сохранении.
+// size and gaugeValue are kept as strings so that UidInput, whose
+// defineModel<string> expects one, needs no casts. They are parsed into
+// numbers on save.
 const size = ref<string>('6')
 
-// Type-specific config поля.
+// The type-specific configuration fields.
 const markdownContent = ref<string>(`# ${tr('Новая заметка')}\n\n${tr('Текст…')}`)
 const statLabel = ref<string>('LABEL')
 const statValue = ref<string>('0')

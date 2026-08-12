@@ -8,12 +8,13 @@ use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Глобальный поиск по всем зарегистрированным Resource'ам панели.
+ * The global search across every resource registered in a panel.
  *
- * Идёт по `Resource::searchableFields()` (колонки, помеченные `->search()`),
- * уважает `Resource::indexQuery()` — значит применяются soft-delete scope,
- * tenant-скоуп и host-овские ограничения (напр. скрытие client-ролей, BL-3).
- * Ресурсы, к которым у пользователя нет `.view`-права, пропускаются.
+ * It goes through `Resource::searchableFields()` — the columns marked with
+ * `->search()` — and respects `Resource::indexQuery()`, so the soft-delete
+ * scope, the tenant scope and the host's own restrictions (hiding the client
+ * roles, for one) all apply. The resources the user has no `.view` right for
+ * are skipped.
  */
 final class GlobalSearch
 {
@@ -60,9 +61,11 @@ final class GlobalSearch
             }
 
             $builder = $resource->indexQuery();
-            // pgsql ILIKE — полноценный Unicode case-insensitive (прод/стенд).
-            // Прочие драйверы (sqlite в тестах) — LIKE: ASCII-нечувствителен,
-            // Unicode совпадает посимвольно (для substring-поиска достаточно).
+            // On pgsql, ILIKE is properly case-insensitive over Unicode —
+            // that is production and the stands. The other drivers (sqlite in
+            // the tests) get LIKE, which ignores case for ASCII and matches
+            // Unicode character by character, which is enough for a substring
+            // search.
             $operator = $builder->getConnection() instanceof \Illuminate\Database\PostgresConnection ? 'ilike' : 'like';
             $builder->where(static function ($where) use ($fields, $needle, $operator): void {
                 foreach ($fields as $field) {
@@ -99,8 +102,9 @@ final class GlobalSearch
 
     private function canView(?object $user, string $permissionBase): bool
     {
-        // Модели без granular-прав (hasAccess-only, wildcard ['*']) и гость —
-        // авторизация остаётся за backend action'ом; здесь не запираем.
+        // For the models without granular rights — hasAccess only, the
+        // wildcard ['*'] — and for a guest, the authorization is left to the
+        // backend action; nothing is locked here.
         if ($user === null || ! method_exists($user, 'hasAccess')) {
             return true;
         }

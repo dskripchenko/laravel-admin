@@ -1,13 +1,15 @@
 <script setup lang="ts">
 /**
- * Страница уведомлений — полный список против шторки в топбаре.
+ * The notifications page — the full list, as against the topbar's drawer.
  *
- * Маршрут `/notifications` регистрировался и раньше, но только если host
- * передавал компонент, а не передавал его никто: адрес отдавал 404. Ссылок
- * туда не было, поэтому дыра и не всплывала — но и посмотреть историю
- * уведомлений было негде: шторка показывает последние и закрывается по клику.
+ * The `/notifications` route was registered before too, but only if the host
+ * passed a component, and nobody did: the address gave a 404. Nothing linked
+ * there, so the hole never surfaced — and there was nowhere to look through
+ * the history of notifications either, since the drawer shows the latest and
+ * closes on a click.
  *
- * Здесь то, чего шторке не положено: фильтры, страницы, разбор пачками.
+ * Here is what a drawer has no business doing: filters, pages, working through
+ * them in batches.
  */
 import { computed, onMounted, ref } from 'vue'
 import { UidButton, UidCard, UidSpinner } from '@dskripchenko/ui'
@@ -63,10 +65,11 @@ function itemKind(i: NotificationItem): 'info' | 'success' | 'warning' | 'danger
 }
 
 /**
- * Время — абсолютное, а не «5 мин назад».
+ * The time is absolute, not "5 min ago".
  *
- * В шторке относительное уместно: там последние события. Здесь же смотрят
- * историю, и «3 д назад» на второй странице не отвечает на вопрос «когда».
+ * In the drawer the relative form fits: those are the latest events. Here one
+ * reads the history, and "3 d ago" on the second page answers no question
+ * about when.
  */
 function when(iso: string | null): string {
   if (iso === null) return ''
@@ -266,7 +269,7 @@ a.admin-notifs-page__item-title:hover {
   color: var(--uid-color-text-secondary, #62686f);
 }
 
-/* Телефон: действия под текстом — в строку они не помещаются и наезжают. */
+/* On a phone the actions go below the text: in one line they do not fit and overlap. */
 @media (max-width: 640px) {
   .admin-notifs-page__row {
     flex-wrap: wrap;

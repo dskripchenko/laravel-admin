@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Permission;
 
 /**
- * Регистр всех зарегистрированных групп permissions.
+ * The registry of every registered permission group.
  *
- * Singleton, биндится в DI. Resource'ы и Plugin'ы добавляют свои группы
- * через `add()`. UI матрицы ролей читает через `groups()` / `flat()`.
+ * A singleton, bound in the container. The resources and the plugins add their
+ * groups through `add()`, and the role matrix in the UI reads them with
+ * `groups()` and `flat()`.
  *
- * Поддерживает merging: один и тот же ключ permission может быть добавлен
- * из разных источников — последняя метка побеждает (хотя и не должно так
- * быть — в production permissions должны быть уникальными по key).
+ * Merging is supported: the same permission key may arrive from several
+ * sources, and the last label wins — though it should not come to that, since
+ * in production the permissions are expected to be unique by key.
  */
 final class PermissionRegistry
 {
@@ -27,7 +28,7 @@ final class PermissionRegistry
         $this->panels[$item->group] ??= $panel;
 
         if (isset($this->groups[$item->group])) {
-            // Merge items в существующую группу
+            // Merge the items into the existing group
             foreach ($item->items() as $key => $label) {
                 $this->groups[$item->group]->addPermission($key, $label);
             }
@@ -49,7 +50,7 @@ final class PermissionRegistry
     }
 
     /**
-     * Без аргумента — все группы (BC); с панелью — только её скоуп.
+     * Without an argument: every group; with a panel: that panel's scope alone.
      *
      * @return list<ItemPermission>
      */
@@ -66,7 +67,7 @@ final class PermissionRegistry
     }
 
     /**
-     * Плоский список всех permission-keys.
+     * The flat list of every permission key.
      *
      * @return list<string>
      */
@@ -83,7 +84,7 @@ final class PermissionRegistry
     }
 
     /**
-     * Известен ли permission-key.
+     * Tells whether a permission key is known.
      */
     public function knows(string $key): bool
     {
@@ -91,7 +92,7 @@ final class PermissionRegistry
     }
 
     /**
-     * Сериализация для UI / manifest.
+     * Serializes for the UI and the manifest.
      *
      * @return array<int, array<string, mixed>>
      */

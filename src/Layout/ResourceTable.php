@@ -8,14 +8,14 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use InvalidArgumentException;
 
 /**
- * Встроенная таблица другого Resource'а, отфильтрованная по FK родителя.
+ * An embedded table of another resource, filtered by the parent's foreign key.
  *
- * Применение — внутри formLayout('update') иерархического Resource'а
- * для отображения «детей» на собственной edit-странице:
+ * It belongs inside the formLayout('update') of a hierarchical resource, to
+ * show the children on the parent's own edit page:
  *
  *   Tabs::make([
- *       'Основные' => $this->fields(),
- *       'Элементы' => [
+ *       'General' => $this->fields(),
+ *       'Items' => [
  *           ResourceTable::for(DictionaryItemResource::class)
  *               ->foreignKey('dictionary_id')
  *               ->hideColumns(['dictionary_id'])
@@ -23,10 +23,10 @@ use InvalidArgumentException;
  *       ],
  *   ])
  *
- * Фронт (registered as layout `'admin.resource-table'`) на mount резолвит
- * текущую parent-запись из `useResourceFormStore`, подставляет
- * `{[foreign_key]: parent[parent_field]}` как initial filter и грузит
- * список через стандартный `POST /{resource}/search`.
+ * On the frontend — registered as the layout `'admin.resource-table'` — it
+ * resolves the current parent record from `useResourceFormStore` on mount,
+ * puts `{[foreign_key]: parent[parent_field]}` in as the initial filter and
+ * loads the list through the usual `POST /{resource}/search`.
  */
 final class ResourceTable extends Layout
 {
@@ -59,7 +59,7 @@ final class ResourceTable extends Layout
         }
         $instance = new self;
         $instance->resourceClass = $resourceClass;
-        // Sensible default FK по имени родительского Resource — host обычно override'ит.
+        // A sensible default foreign key from the parent resource's name; a host usually overrides it.
         $instance->foreignKey = $resourceClass::slug();
 
         return $instance;
@@ -73,8 +73,8 @@ final class ResourceTable extends Layout
     }
 
     /**
-     * Имя колонки в parent-record, чьё значение подставляется в filter.
-     * Default 'id'.
+     * The column of the parent record whose value goes into the filter; 'id'
+     * by default.
      */
     public function parentField(string $column): self
     {

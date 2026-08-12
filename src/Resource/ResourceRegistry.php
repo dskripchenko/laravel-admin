@@ -10,15 +10,16 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Регистр всех Resource-классов.
+ * The registry of every resource class.
  *
- * Singleton, биндится в DI. `Admin::resources([...])` под капотом использует
- * `addMany()`. Хранит slug → FQCN. Resolver через DI-контейнер для DI-инъекций
- * в Resource-классы.
+ * A singleton, bound in the container. `Admin::resources([...])` calls
+ * `addMany()` underneath. It stores slug → FQCN and resolves through the
+ * container, so that the resource classes get their dependencies injected.
  *
- * Внутри namespace `Resource` сам класс `Resource` импортируем как `ResourceBase`,
- * чтобы Pint не нормализовал `class-string<Resource>` к `class-string<resource>`
- * (PHP считает `resource` pseudo-type для file-handle).
+ * Inside the `Resource` namespace the `Resource` class itself is imported as
+ * `ResourceBase`, so that Pint does not normalize `class-string<Resource>` into
+ * `class-string<resource>` — PHP treats `resource` as the pseudo-type of a
+ * file handle.
  */
 final class ResourceRegistry
 {
@@ -77,7 +78,7 @@ final class ResourceRegistry
     }
 
     /**
-     * Resolve Resource-instance через DI.
+     * Resolves a resource instance through the container.
      */
     public function resolve(string $slug, ?string $panel = null): ?ResourceBase
     {
@@ -96,7 +97,7 @@ final class ResourceRegistry
     }
 
     /**
-     * Без аргумента — все ресурсы (BC); с панелью — только её скоуп.
+     * Without an argument: every resource; with a panel: that panel's scope alone.
      *
      * @return array<string, class-string<ResourceBase>>
      */

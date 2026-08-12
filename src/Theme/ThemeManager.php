@@ -10,15 +10,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 
 /**
- * Resolver темы оформления для admin-shell'а.
+ * Resolves the admin shell's theme.
  *
- * Приоритезация:
- *   1. user.theme — если пользователь залогинен и установил тему.
- *   2. cookie 'admin_theme' — для anonymous-сессии до логина.
- *   3. config('admin.ui.default_theme') — fallback.
+ * In order of precedence:
+ *   1. user.theme, when someone is logged in and has chosen a theme.
+ *   2. the 'admin_theme' cookie, for an anonymous session before the login.
+ *   3. config('admin.ui.default_theme'), the fallback.
  *
- * available() — список доступных тем для UI-switcher'а из
- * config('admin.ui.available_themes'). Default: ['light', 'dark'].
+ * available() returns the themes offered by the UI's switcher, from
+ * config('admin.ui.available_themes'); ['light', 'dark'] by default.
  */
 final class ThemeManager
 {
@@ -69,10 +69,10 @@ final class ThemeManager
     }
 
     /**
-     * Сохранить тему: для залогиненных — в user.theme + cookie; для анонимов
-     * — только cookie.
+     * Saves the theme: into user.theme and a cookie for whoever is logged in,
+     * into a cookie alone for an anonymous visitor.
      *
-     * Возвращает cookie-instance, который контроллер должен прикрепить к
+     * It returns the cookie the controller is expected to attach to the
      * response.
      */
     public function persist(string $theme): \Symfony\Component\HttpFoundation\Cookie
@@ -83,7 +83,7 @@ final class ThemeManager
             $user->forceFill(['theme' => $theme])->save();
         }
 
-        // Cookie на 1 год — браузер будет помнить даже после logout.
+        // The cookie lasts a year, so the browser remembers it past a logout.
         return Cookie::make(self::COOKIE_NAME, $theme, 60 * 24 * 365);
     }
 }

@@ -9,13 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * Запись audit-лога.
+ * One entry of the audit log.
  *
- * Структура `changes` зависит от события:
+ * The shape of `changes` follows the event:
  *   - created → `{after: {...}}`
- *   - updated → `{before: {...}, after: {...}}` (только изменённые поля)
+ *   - updated → `{before: {...}, after: {...}}`, the changed fields alone
  *   - deleted/forceDeleted → `{before: {...}}`
- *   - login/logout → `{guard: 'admin'}` (auth payload)
+ *   - login/logout → `{guard: 'admin'}`, the auth payload
  *
  * @property int $id
  * @property string|null $actor_type
@@ -47,8 +47,9 @@ final class AuditLog extends Model
     ];
 
     /**
-     * Человекочитаемые ярлыки типов — едут в каждую сериализацию (list/timeline),
-     * чтобы UI не показывал FQCN. Значения через getActorLabelAttribute и т.п.
+     * The human-readable type labels. They travel with every serialization,
+     * the list and the timeline alike, so that the UI never shows an FQCN. The
+     * values come from getActorLabelAttribute and its kin.
      *
      * @var list<string>
      */
@@ -65,11 +66,12 @@ final class AuditLog extends Model
     }
 
     /**
-     * Резолв FQCN morph-типа в человекочитаемый ярлык.
+     * Resolves a morph type's FQCN into a human-readable label.
      *
-     * Порядок: config('admin.audit.type_labels')[$fqcn] → reverse morph-map
-     * alias (если host вызвал Relation::enforceMorphMap) → class_basename.
-     * Пустой/null-тип (например login без subject) → null.
+     * In order: config('admin.audit.type_labels')[$fqcn] → the reverse
+     * morph-map alias, when the host called Relation::enforceMorphMap →
+     * class_basename. An empty or null type — a login with no subject, say —
+     * gives null.
      */
     public static function resolveTypeLabel(?string $type): ?string
     {
@@ -118,7 +120,7 @@ final class AuditLog extends Model
     }
 
     /**
-     * Scope: для конкретного subject (model + id).
+     * The scope of one particular subject — a model and an id.
      *
      * @param  Builder<AuditLog>  $query
      * @return Builder<AuditLog>

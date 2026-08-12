@@ -7,15 +7,16 @@ namespace Dskripchenko\LaravelAdmin\Resource;
 use RuntimeException;
 
 /**
- * Действие не выполнилось по делу — и это не поломка сервера.
+ * The action did not go through for a good reason — and that is not a server
+ * failure.
  *
- * Проверка соединения не достучалась до базы, документ нельзя заморозить
- * дважды, клиента нельзя активировать без слоя: всё это законные ответы
- * действия, а не сбой. Раньше любое исключение действия становилось 500 —
- * и опечатка пользователя в номере порта выглядела в мониторинге так же,
- * как упавшая панель.
+ * A connection check that could not reach the database, a document that cannot
+ * be frozen twice, a client that cannot be activated without a layer: these
+ * are all legitimate answers from an action, not breakage. Every exception an
+ * action threw used to become a 500 — and a typo in a port number looked, in
+ * the monitoring, exactly like the panel falling over.
  *
- * Брошенное отсюда сообщение уходит пользователю как есть, поэтому писать
- * его надо для человека, а не для лога.
+ * The message thrown here reaches the user as it is, so write it for a person
+ * rather than for a log.
  */
 class ActionFailedException extends RuntimeException {}

@@ -18,15 +18,11 @@ use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Notifications\Notifiable;
 
 /**
- * Default-модель администратора панели.
+ * The panel's default administrator model.
  *
- * Подключается, когда `config('admin.auth.strategy')` = 'dedicated'. В режиме
- * 'shared' пользователь использует свою модель и подключает к ней trait
- * `HasAdminAccess` (появится в P2 вместе с RBAC).
- *
- * На фазе P0 — базовый набор полей. 2FA-колонки (two_factor_secret,
- * two_factor_recovery_codes, two_factor_confirmed_at) добавит P2 отдельной
- * миграцией. API-tokens trait (HasApiTokens из Sanctum) — опционально в P15.
+ * It is used when `config('admin.auth.strategy')` is 'dedicated'. In the
+ * 'shared' mode the host keeps its own model and applies the `HasAdminAccess`
+ * trait to it.
  *
  * @property int $id
  * @property string $name
@@ -101,7 +97,7 @@ class AdminUser extends Model implements AuthenticatableContract, CanResetPasswo
     }
 
     /**
-     * 2FA включена и подтверждена.
+     * 2FA is enabled and confirmed.
      */
     public function hasTwoFactorEnabled(): bool
     {

@@ -7,35 +7,36 @@ namespace Dskripchenko\LaravelAdmin\Export;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Контракт экспортёра.
+ * The contract of an exporter.
  *
- * Реализации:
- *   - CsvExporter (built-in, без deps);
- *   - XlsxExporter (требует openspout/openspout, suggest);
- *   - PdfExporter (требует mpdf/mpdf или dompdf/dompdf — через PdfRenderer).
+ * The implementations:
+ *   - CsvExporter, built in, with no dependencies;
+ *   - XlsxExporter, which needs openspout/openspout;
+ *   - PdfExporter, which needs mpdf/mpdf or dompdf/dompdf, through a
+ *     PdfRenderer.
  *
- * Каждый экспортёр получает iterable $rows (массив или Generator с
- * chunk-обработкой) и список $columns в формате `[name => label]`.
+ * Every exporter receives an iterable of $rows — an array, or a generator
+ * working in chunks — and the $columns as `[name => label]`.
  */
 interface Exporter
 {
     /**
-     * Идентификатор формата ('csv', 'xlsx', 'pdf').
+     * The format's identifier: 'csv', 'xlsx', 'pdf'.
      */
     public function format(): string;
 
     /**
-     * MIME-тип ответа.
+     * The response's MIME type.
      */
     public function mimeType(): string;
 
     /**
-     * Расширение файла (без точки).
+     * The file extension, without the dot.
      */
     public function extension(): string;
 
     /**
-     * Сформировать StreamedResponse с экспортом.
+     * Builds the StreamedResponse carrying the export.
      *
      * @param  iterable<int, array<string, mixed>>  $rows
      * @param  array<string, string>  $columns  name => label

@@ -12,14 +12,14 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 /**
- * Базовый TestCase для sister-pack'ов.
+ * The base TestCase of the sister packs.
  *
- * DRY-извлекает паттерн: ApiServiceProvider → DelayedProcess → Translatable
- * → AdminServiceProvider + standard `defineEnvironment()` (sqlite :memory:,
- * array cache/session, sync queue).
+ * It holds the shared pattern — ApiServiceProvider → DelayedProcess →
+ * Translatable → AdminServiceProvider — plus the usual `defineEnvironment()`:
+ * sqlite in memory, an array cache and session, a synchronous queue.
  *
- * Sister-pack-овский TestCase наследуется и переопределяет
- * `getPackageProviders()` через `additionalProviders()`:
+ * A sister pack's TestCase inherits from it and extends
+ * `getPackageProviders()` through `additionalProviders()`:
  *
  *     abstract class TestCase extends \Dskripchenko\LaravelAdmin\Testing\PackageTestCase
  *     {
@@ -29,9 +29,9 @@ use Orchestra\Testbench\TestCase as Orchestra;
  *         }
  *     }
  *
- * Для пакета с собственными миграциями / setUp() — переопределить
- * `defineDatabaseMigrations()` / `setUp()`. Для дополнительных env-настроек
- * — `defineAdditionalEnvironment()`.
+ * A package with migrations or a setUp() of its own overrides
+ * `defineDatabaseMigrations()` or `setUp()`; extra environment settings go
+ * into `defineAdditionalEnvironment()`.
  */
 abstract class PackageTestCase extends Orchestra
 {
@@ -52,7 +52,7 @@ abstract class PackageTestCase extends Orchestra
     }
 
     /**
-     * Sister-pack-specific service providers (например, AdminJobsServiceProvider).
+     * The sister pack's own service providers — AdminJobsServiceProvider, for one.
      *
      * @return list<class-string>
      */
@@ -73,8 +73,8 @@ abstract class PackageTestCase extends Orchestra
     }
 
     /**
-     * Hook для дополнительных config-overrides в подклассе. По умолчанию
-     * no-op.
+     * The hook for a subclass's extra config overrides; it does nothing by
+     * default.
      */
     protected function defineAdditionalEnvironment($app): void
     {

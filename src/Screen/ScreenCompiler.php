@@ -9,20 +9,24 @@ use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
 use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
 
 /**
- * Компилирует ScreenRegistry в массив `controllers` для AdminApi::getMethods().
+ * Compiles ScreenRegistry into the `controllers` array of
+ * AdminApi::getMethods().
  *
- * Каждый зарегистрированный Screen → controller-entry с двумя actions:
- *   - state (GET)        — отдаёт compile() (state + layout + commandBar + meta)
- *   - runMethod (POST)   — диспатч-точка для command-методов Screen
+ * Every registered screen becomes a controller entry with two actions:
+ *   - state (GET)      — returns compile(): the state, layout, command bar and
+ *                        meta
+ *   - runMethod (POST) — the dispatch point of the screen's command methods
  *
- * Permission gate — через AdminAccess middleware, если у Screen задан
- * `permission()` (string) либо list<string> — собираются через `;` (AND).
+ * The permission gate is the AdminAccess middleware, applied when the screen
+ * declares a `permission()` — a string, or a list joined with `;`, which means
+ * AND.
  *
- * Из generic-pipeline'а исключаются:
- *   - GeneratedScreen subclasses — обслуживаются ResourceController.
- *   - DashboardScreen subclasses — обслуживаются DashboardController.
+ * Two kinds are left out of this generic pipeline:
+ *   - the GeneratedScreen subclasses, served by ResourceController;
+ *   - the DashboardScreen subclasses, served by DashboardController.
  *
- * Controller key = slug Screen'а. URL: `/api/admin/{slug}/{action}`.
+ * The controller key is the screen's slug, and the URL
+ * `/api/admin/{slug}/{action}`.
  */
 final class ScreenCompiler
 {

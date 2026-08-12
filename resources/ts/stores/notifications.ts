@@ -1,9 +1,10 @@
 /**
- * Notifications store: список + unread count + read/delete actions.
+ * The notifications store: the list, the unread count, and the read and delete
+ * actions.
  *
- * Bell-badge polling реализуется на уровне UI через setInterval +
- * вызов loadUnread() — store сам не polling'ит, чтобы не дублировать
- * SetInterval'ы между tab'ами.
+ * The bell badge is polled by the UI, through a setInterval calling
+ * loadUnread(); the store does no polling of its own, so as not to multiply
+ * intervals across the tabs.
  */
 
 import { defineStore } from 'pinia'
@@ -28,8 +29,8 @@ export const useNotificationsStore = defineStore('admin-notifications', () => {
   const lastFilter = ref<NotificationFilter>('all')
   const meta = ref<{ page: number; per_page: number; total: number; last_page: number } | null>(null)
   /**
-   * Slide-in drawer state. Bell-кнопка в топбаре toggle'ит этот флаг,
-   * NotificationsDrawer (mounted в AdminApp root) реагирует на него.
+   * Whether the sliding drawer is open. The bell in the topbar toggles this
+   * flag, and NotificationsDrawer — mounted at AdminApp's root — follows it.
    */
   const isOpen = ref<boolean>(false)
 
@@ -72,8 +73,8 @@ export const useNotificationsStore = defineStore('admin-notifications', () => {
   }
 
   /**
-   * Лёгкий polling-endpoint — только count + последние 20.
-   * Для bell-badge.
+   * The light polling endpoint — the count and the latest twenty alone, for
+   * the bell's badge.
    */
   async function loadUnread(): Promise<void> {
     const client = getAdminClient()
@@ -81,7 +82,7 @@ export const useNotificationsStore = defineStore('admin-notifications', () => {
       '/notifications/unread',
     )
     unreadCount.value = result.count
-    // Не подменяем items если в данный момент open'нут другой filter.
+    // The items are not replaced while another filter is open.
     if (lastFilter.value === 'unread') {
       items.value = result.data
     }
@@ -90,7 +91,7 @@ export const useNotificationsStore = defineStore('admin-notifications', () => {
   async function markAsRead(id: string): Promise<void> {
     const client = getAdminClient()
     await client.post('/notifications/markAsRead', { id })
-    // Optimistic update в локальном state.
+    // An optimistic update of the local state.
     const item = items.value.find((n) => n.id === id)
     if (item && item.read_at === null) {
       item.read_at = new Date().toISOString()
