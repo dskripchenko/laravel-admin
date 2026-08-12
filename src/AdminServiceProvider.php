@@ -27,16 +27,13 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Главный сервис-провайдер пакета.
+ * The package's main service provider.
  *
- * Состоит из двух фаз:
- * - register():  биндим Admin manager в контейнер, мерджим конфиг.
- * - boot():      публикация конфига/миграций/views, регистрация роутов и macro,
- *                подключение plugin'ов, авто-регистрация guard через AdminGuardRegistrar.
- *
- * На текущей фазе (P0 скаффолд) реализованы только публикация и регистрация
- * сервисного контейнера; функциональные слои (Resource/Screen/Layout/...)
- * подключаются по мере имплементации.
+ * Two phases:
+ * - register(): binds the Admin manager into the container and merges the config.
+ * - boot():     publishes config, migrations and views, registers routes and
+ *               macros, boots the plugins and auto-registers the guard through
+ *               AdminGuardRegistrar.
  */
 final class AdminServiceProvider extends ServiceProvider
 {
@@ -44,8 +41,8 @@ final class AdminServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/admin.php', 'admin');
 
-        // laravel-api не имеет auto-discovery — регистрируем явно.
-        // app->register() безопасно: повторная регистрация игнорируется.
+        // laravel-api has no auto-discovery, so it is registered explicitly.
+        // app->register() is safe: a repeated registration is ignored.
         $this->app->register(ApiServiceProvider::class);
 
         $this->app->singleton(ScreenRegistry::class);
@@ -60,10 +57,10 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->singleton(Plugin\PluginRegistry::class);
         $this->app->singleton(Panel\PanelRegistry::class);
 
-        // Tenancy биндим как `scoped()` (per-request), а не singleton —
-        // иначе в long-running runtime'ах (Octane / queue workers) текущий
-        // tenant из одного request'а может протечь в следующий. Laravel
-        // автоматически сбрасывает scoped bindings между requests.
+        // Tenancy is bound as `scoped()` — per request — rather than as a
+        // singleton: in long-running runtimes (Octane, queue workers) the
+        // current tenant of one request could otherwise leak into the next.
+        // Laravel resets scoped bindings between requests by itself.
         $this->app->scoped(
             Tenancy\TenantResolver::class,
             Tenancy\SingleTenantResolver::class,
@@ -80,7 +77,7 @@ final class AdminServiceProvider extends ServiceProvider
         $this->app->singleton(Export\ExporterRegistry::class, function (): Export\ExporterRegistry {
             $registry = new Export\ExporterRegistry;
             $registry->add(new Export\CsvExporter);
-            // JSON exporter — без deps, всегда доступен.
+            // The JSON exporter needs no dependencies and is always available.
             $registry->add(new Export\JsonExporter);
             if (class_exists(\OpenSpout\Writer\XLSX\Writer::class)) {
                 $registry->add(new Export\XlsxExporter);
@@ -102,19 +99,20 @@ final class AdminServiceProvider extends ServiceProvider
         ));
         $this->app->alias(Admin::class, 'admin');
 
-        // Manifest копит собранные payload'ы в memo, чтобы bootstrap и
-        // /manifest не собирали одно и то же дважды за запрос. Memo писался
-        // под FPM, где singleton и есть «один запрос»; под Octane экземпляр
-        // живёт сколько живёт воркер, и memo незаметно превращается из
-        // дедупликации в межзапросный кэш. Сейчас содержимое зависит только
-        // от локали и панели — обе в ключе, — но в самом Manifest записано,
-        // что фильтрация по правам ещё впереди: в тот день ключ перестанет
-        // описывать содержимое, и воркер отдаст манифест одного человека
-        // другому. По той же причине рядом scoped'ится tenancy.
+        // Manifest memoises the payloads it assembles, so that bootstrap and
+        // /manifest do not build the same thing twice within a request. That
+        // memo was written for FPM, where a singleton IS one request; under
+        // Octane the instance lives as long as the worker, and the memo
+        // quietly turns from deduplication into a cross-request cache. Today
+        // the content depends only on the locale and the panel, and both are
+        // in the key — but Manifest itself records that permission filtering
+        // is still ahead. On that day the key stops describing the content,
+        // and a worker hands one person's manifest to another. Tenancy is
+        // scoped right here for the same reason.
         //
-        // BootstrapBuilder переезжает следом не за компанию: он держит
-        // Manifest в конструкторе, и singleton намертво захватил бы
-        // scoped-экземпляр первого запроса — получилось бы хуже, чем было.
+        // BootstrapBuilder moves along with it, and not for company: it holds
+        // Manifest in its constructor, so a singleton would capture the scoped
+        // instance of the first request for good — worse than before.
         $this->app->scoped(Manifest::class);
         $this->app->scoped(Support\BootstrapBuilder::class);
 
@@ -147,38 +145,40 @@ final class AdminServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'admin');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'admin');
-        // JSON-словарь (ключ = исходная RU-строка) для frontend tr() —
-        // BootstrapBuilder кладёт его в bag; host может перекрыть своим
-        // lang/{locale}.json (BL-11).
+        // The JSON dictionary, keyed by the source string, feeds the
+        // frontend's tr(); BootstrapBuilder puts it into the bag, and a host
+        // may override it with its own lang/{locale}.json.
         $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang');
 
         $this->registerAdminGuards();
         $this->registerCommands();
         $this->registerExceptionHandlers();
         $this->registerAuditListeners();
-        // bootPlugins должен быть ДО registerRoutes — плагины регистрируют
-        // Resource'ы через Admin::resources(), и ResourceCompiler читает
-        // ResourceRegistry при компиляции admin-API маршрутов.
+        // bootPlugins must come BEFORE registerRoutes: plugins register their
+        // resources through Admin::resources(), and ResourceCompiler reads
+        // ResourceRegistry while compiling the admin API routes.
         $this->bootPlugins();
         $this->registerRoutes();
         $this->registerScalarDoc();
 
-        // laravel-api кеширует AdminApi::getPreparedMethods() в static-property.
-        // Если кто-то (в т.ч. laravel-api ApiServiceProvider при boot — order
-        // providers'ов недетерминирован) вызвал getPreparedMethods ДО
-        // bootPlugins(), кеш содержит пустой registry. Сбрасываем чтобы первый
-        // request-time call re-compute fresh с зарегистрированными resources.
+        // laravel-api caches AdminApi::getPreparedMethods() in a static
+        // property. If anything called getPreparedMethods BEFORE bootPlugins()
+        // — laravel-api's own ApiServiceProvider might, since provider order
+        // is not deterministic — that cache holds an empty registry. We reset
+        // it so the first call at request time recomputes with the resources
+        // actually registered.
         Http\AdminApi::clearCache();
     }
 
     /**
-     * Перехватывает laravel-api default `api/doc` роут — заменяет на Scalar UI.
+     * Takes over laravel-api's default `api/doc` route and serves Scalar UI
+     * instead.
      *
-     * laravel-api регистрирует роут `api/doc` в своём boot()'е через
-     * `Route::get('doc', ApiDocumentationController@index)` под prefix `api`.
-     * Наш роут с тем же URI и более позднимрегистрацией — побеждает.
+     * laravel-api registers `api/doc` in its own boot() through
+     * `Route::get('doc', ApiDocumentationController@index)` under the `api`
+     * prefix. Our route has the same URI and registers later, so it wins.
      *
-     * Для отключения: `config('admin.openapi.ui') = 'swagger'` или null.
+     * To switch it off: `config('admin.openapi.ui') = 'swagger'` or null.
      */
     private function registerScalarDoc(): void
     {
@@ -196,12 +196,12 @@ final class AdminServiceProvider extends ServiceProvider
     }
 
     /**
-     * Резолвит PDF-renderer на основе config + установленных пакетов.
+     * Resolves the PDF renderer from the config and the installed packages.
      *
-     * Driver приоритизация:
-     *   1. config('admin.exports.pdf.driver') = 'mpdf' / 'dompdf' — берём напрямую.
-     *   2. fallback: первый available из mpdf, dompdf.
-     *   3. ни одного — возвращаем null (PdfExporter не регистрируется).
+     * Driver priority:
+     *   1. config('admin.exports.pdf.driver') = 'mpdf' / 'dompdf' — taken as is.
+     *   2. otherwise the first available of mpdf, dompdf.
+     *   3. neither — null, and PdfExporter is not registered at all.
      */
     private function resolvePdfRenderer(): ?Export\Pdf\PdfRenderer
     {
@@ -214,7 +214,7 @@ final class AdminServiceProvider extends ServiceProvider
             return new Export\Pdf\DompdfRenderer;
         }
 
-        // Fallback: что-то одно установлено, но не configured — берём что есть.
+        // Fallback: one of them is installed but not configured — take what there is.
         if (class_exists(\Mpdf\Mpdf::class)) {
             return new Export\Pdf\MpdfRenderer;
         }
@@ -226,7 +226,7 @@ final class AdminServiceProvider extends ServiceProvider
     }
 
     /**
-     * Регистрирует и boot'ит плагины из config('admin.plugins').
+     * Registers and boots the plugins listed in config('admin.plugins').
      */
     private function bootPlugins(): void
     {
@@ -256,7 +256,7 @@ final class AdminServiceProvider extends ServiceProvider
     }
 
     /**
-     * Регистрирует слушателей admin-auth событий для записи в audit-log.
+     * Registers listeners for the admin auth events, to record them in the audit log.
      */
     private function registerAuditListeners(): void
     {
@@ -272,10 +272,10 @@ final class AdminServiceProvider extends ServiceProvider
     }
 
     /**
-     * Регистрирует обработчики исключений в ApiErrorHandler из laravel-api.
+     * Registers exception handlers in laravel-api's ApiErrorHandler.
      *
-     * Без этого ValidationException возвращается как 500, потому что laravel-api
-     * не имеет встроенной поддержки Laravel'овского ValidationException.
+     * Without this a ValidationException comes back as a 500, because
+     * laravel-api has no built-in support for Laravel's ValidationException.
      */
     private function registerExceptionHandlers(): void
     {
@@ -300,8 +300,9 @@ final class AdminServiceProvider extends ServiceProvider
 
         $registrar = new AdminGuardRegistrar($config);
         foreach ($panels->all() as $panel) {
-            // Дефолтная панель читает легаси admin.auth.* (BC),
-            // остальные — свой auth-блок из admin.panels.{id}.auth.
+            // The default panel reads the legacy admin.auth.* for backward
+            // compatibility; the others read their own auth block from
+            // admin.panels.{id}.auth.
             $panel->id === 'admin'
                 ? $registrar->register()
                 : $registrar->registerFor($panel);
@@ -313,15 +314,16 @@ final class AdminServiceProvider extends ServiceProvider
         /** @var Panel\PanelRegistry $panels */
         $panels = $this->app->make(Panel\PanelRegistry::class);
 
-        // Shell-роуты панелей: от специфичного префикса к корню, чтобы
-        // root-mount панель (path '') не перехватила чужие пути раньше времени.
+        // Shell routes of the panels go from the most specific prefix to the
+        // root, so that a panel mounted at '' does not swallow another panel's
+        // paths first.
         $ordered = $panels->all();
         uasort($ordered, static fn (Panel\Panel $a, Panel\Panel $b): int => strlen($b->path) <=> strlen($a->path));
 
         foreach ($ordered as $panel) {
             $anyPattern = '.*';
             if ($panel->excludePrefixes !== []) {
-                // Catch-all, не проглатывающий чужие префиксы (api/, draft/, …).
+                // A catch-all that does not swallow other prefixes: api/, draft/, …
                 $quoted = array_map(
                     static fn (string $prefix): string => preg_quote(trim($prefix, '/'), '#'),
                     $panel->excludePrefixes,
@@ -344,8 +346,8 @@ final class AdminServiceProvider extends ServiceProvider
             });
         }
 
-        // API живёт отдельно: /api/{panel}/{controller}/{action} через
-        // AdminApiModule (версия laravel-api == id панели).
+        // The API lives separately: /api/{panel}/{controller}/{action} through
+        // AdminApiModule, where laravel-api's version equals the panel id.
     }
 
     private function registerCommands(): void
