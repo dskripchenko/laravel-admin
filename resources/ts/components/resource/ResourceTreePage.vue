@@ -269,7 +269,7 @@ onMounted(load)
       </div>
       <div class="admin-resource-tree-page__actions">
         <UidButton v-if="canCreate" variant="primary" @click="gotoCreate">
-          <UidIcon :icon="Plus" /> Создать
+          <UidIcon :icon="Plus" /> {{ tr('Создать') }}
         </UidButton>
       </div>
     </header>
@@ -283,7 +283,7 @@ onMounted(load)
       <UidMenu>
         <template #trigger>
           <UidButton variant="ghost">
-            <UidIcon :icon="ChevronsDownUp" /> Развернуть
+            <UidIcon :icon="ChevronsDownUp" /> {{ tr('Развернуть') }}
             <UidIcon :icon="ChevronDown" />
           </UidButton>
         </template>
@@ -296,10 +296,10 @@ onMounted(load)
           {{ selectedNode?.label ?? selectedNodeKey }}
         </span>
         <UidButton variant="ghost" @click="gotoView">
-          <UidIcon :icon="Pencil" /> Открыть
+          <UidIcon :icon="Pencil" /> {{ tr('Открыть') }}
         </UidButton>
         <UidButton variant="ghost" @click="gotoEdit">
-          <UidIcon :icon="Pencil" /> Редактировать
+          <UidIcon :icon="Pencil" /> {{ tr('Редактировать') }}
         </UidButton>
         <UidButton
           v-for="act in selectedNodeActions"
@@ -314,7 +314,7 @@ onMounted(load)
           variant="danger"
           @click="deleteSelected"
         >
-          <UidIcon :icon="Trash2" /> Удалить
+          <UidIcon :icon="Trash2" /> {{ tr('Удалить') }}
         </UidButton>
         <UidButton variant="ghost" @click="selectedKeys = []">{{ tr('Снять выбор') }}</UidButton>
       </template>

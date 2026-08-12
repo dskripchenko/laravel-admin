@@ -7,7 +7,7 @@ import { computed } from 'vue'
 import { Bell } from 'lucide-vue-next'
 import { UidIcon } from '@dskripchenko/ui'
 import { useNotificationsStore } from '../../../stores/notifications'
-import { trSafe as tr } from '../../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../../stores/i18n'
 
 const notifications = useNotificationsStore()
 
@@ -35,7 +35,7 @@ function onClick(): void {
     <span
       v-if="display !== null"
       class="admin-topbar__bell-badge"
-      :title="`Непрочитанных: ${notifications.unreadCount}`"
+      :title="tRaw('Непрочитанных: :count', { count: notifications.unreadCount })"
     >
       {{ display }}
     </span>

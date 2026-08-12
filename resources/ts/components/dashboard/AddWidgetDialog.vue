@@ -41,7 +41,7 @@ const title = ref<string>('')
 const size = ref<string>('6')
 
 // Type-specific config поля.
-const markdownContent = ref<string>('# Новая заметка\n\nТекст…')
+const markdownContent = ref<string>(`# ${tr('Новая заметка')}\n\n${tr('Текст…')}`)
 const statLabel = ref<string>('LABEL')
 const statValue = ref<string>('0')
 const gaugeValue = ref<string>('50')

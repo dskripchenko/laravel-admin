@@ -30,7 +30,7 @@ import {
   type NotificationFilter,
   type NotificationItem,
 } from '../../stores/notifications'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 const notifications = useNotificationsStore()
 const router = useRouter()
@@ -113,11 +113,11 @@ function relativeTime(iso: string | null): string {
   const ts = new Date(iso).getTime()
   if (Number.isNaN(ts)) return ''
   const diff = (Date.now() - ts) / 1000
-  if (diff < 60) return `${Math.max(1, Math.floor(diff))} сек назад`
-  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`
-  if (diff < 86_400) return `${Math.floor(diff / 3600)} ч назад`
+  if (diff < 60) return tRaw(':n сек назад', { n: Math.max(1, Math.floor(diff)) })
+  if (diff < 3600) return tRaw(':n мин назад', { n: Math.floor(diff / 60) })
+  if (diff < 86_400) return tRaw(':n ч назад', { n: Math.floor(diff / 3600) })
   if (diff < 86_400 * 2) return tr('вчера')
-  if (diff < 86_400 * 7) return `${Math.floor(diff / 86_400)} д назад`
+  if (diff < 86_400 * 7) return tRaw(':n д назад', { n: Math.floor(diff / 86_400) })
   return new Date(iso).toLocaleDateString('ru-RU')
 }
 

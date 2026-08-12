@@ -8,6 +8,7 @@
  * специфичная UX (например, side-tab навигация по Settings-классам).
  */
 import { computed } from 'vue'
+import { tRaw } from '../stores/i18n'
 import { useRoute } from 'vue-router'
 import { UidCard } from '@dskripchenko/ui'
 import { useManifestStore } from '../stores/manifest'
@@ -24,7 +25,7 @@ const meta = computed(() => manifest.manifest?.settings?.find((s) => s.slug === 
     <UidCard padding="lg">
       <h1 class="admin-settings-page__title">{{ meta?.label ?? slug }}</h1>
       <p v-if="!meta" class="admin-settings-page__hint">
-        Settings «{{ slug }}» не найдено в manifest'е.
+        {{ tRaw('Раздел настроек «:slug» не найден в манифесте.', { slug }) }}
       </p>
       <pre v-else class="admin-settings-page__debug">{{ JSON.stringify(meta.fields, null, 2) }}</pre>
     </UidCard>

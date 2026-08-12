@@ -27,7 +27,7 @@ import {
   UidTable,
   type UidTableColumn,
 } from '@dskripchenko/ui'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface ColumnHeader {
   key: string
@@ -71,7 +71,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: 'Импорт',
+  title: tr('Импорт'),
   headers: () => [],
   preview: () => [],
   previewColumns: () => [],
@@ -187,8 +187,8 @@ function onCancel(): void {
         accept=".csv,.tsv,.xlsx"
         :max-size="50 * 1024 * 1024"
         :max-files="1"
-        primary-text="Перетащите файл сюда или"
-        secondary-text="нажмите чтобы выбрать"
+        :primary-text="tr('Перетащите файл сюда или')"
+        :secondary-text="tr('нажмите чтобы выбрать')"
         @update:model-value="onUpload"
       />
     </UidCard>
@@ -227,7 +227,7 @@ function onCancel(): void {
     <UidCard v-else-if="currentStep === 2" padding="md" class="admin-import-wizard__card">
       <header class="admin-import-wizard__card-hd">
         <h3>{{ tr('3. Предпросмотр') }}</h3>
-        <p>Первые {{ preview.length }} строк перед импортом</p>
+        <p>{{ tRaw('Первые :count строк перед импортом', { count: preview.length }) }}</p>
       </header>
 
       <UidAlert

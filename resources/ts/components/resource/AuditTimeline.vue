@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-vue-next'
 import { UidAvatar, UidIcon, UidSkeleton } from '@dskripchenko/ui'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface AuditActor {
   id: number | string
@@ -160,7 +160,7 @@ function formatVal(v: unknown): string {
     </div>
 
     <div v-else-if="error" class="admin-audit-timeline__error">
-      Не удалось загрузить историю: {{ error.message }}
+      {{ tRaw('Не удалось загрузить историю: :reason', { reason: error.message }) }}
     </div>
 
     <div v-else-if="!hasItems" class="admin-audit-timeline__empty">

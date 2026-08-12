@@ -31,7 +31,7 @@ import { useManifestStore } from '../../stores/manifest'
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface Features {
   create?: boolean
@@ -177,7 +177,7 @@ async function deleteRow(row: Record<string, unknown>): Promise<void> {
 
 async function bulkDelete(): Promise<void> {
   if (selection.value.size === 0) return
-  if (!confirm(`Удалить ${selection.value.size} строк?`)) return
+  if (!confirm(tRaw('Удалить :count строк?', { count: selection.value.size }))) return
   const ids = [...selection.value]
   try {
     // Параллельное удаление: backend пока без bulk endpoint; шлём по одному.
@@ -234,7 +234,7 @@ function getCellDisplay(row: Record<string, unknown>, col: string): string {
         :disabled="draft !== null"
         @click="startDraft"
       >
-        <UidIcon :icon="Plus" /> Добавить
+        <UidIcon :icon="Plus" /> {{ tr('Добавить') }}
       </UidButton>
       <UidButton
         v-if="canBulkDelete && selection.size > 0"
@@ -242,7 +242,7 @@ function getCellDisplay(row: Record<string, unknown>, col: string): string {
         size="sm"
         @click="bulkDelete"
       >
-        <UidIcon :icon="Trash2" /> Удалить выбранные ({{ selection.size }})
+        <UidIcon :icon="Trash2" /> {{ tRaw('Удалить выбранные (:count)', { count: selection.size }) }}
       </UidButton>
     </div>
 
@@ -332,10 +332,10 @@ function getCellDisplay(row: Record<string, unknown>, col: string): string {
       </div>
       <div class="admin-embedded-table__draft-actions">
         <UidButton variant="primary" size="sm" @click="commitDraft">
-          <UidIcon :icon="Check" /> Создать
+          <UidIcon :icon="Check" /> {{ tr('Создать') }}
         </UidButton>
         <UidButton variant="ghost" size="sm" @click="cancelDraft">
-          <UidIcon :icon="X" /> Отмена
+          <UidIcon :icon="X" /> {{ tr('Отмена') }}
         </UidButton>
       </div>
     </div>

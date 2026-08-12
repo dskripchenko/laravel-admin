@@ -65,7 +65,7 @@ const selectedType = ref<string>('')
 const title = ref<string>('')
 const size = ref<string>('6')
 
-const markdownContent = ref<string>('# Новая заметка\n\nТекст…')
+const markdownContent = ref<string>(`# ${tr('Новая заметка')}\n\n${tr('Текст…')}`)
 const statLabel = ref<string>('LABEL')
 const statValue = ref<string>('0')
 const gaugeValue = ref<string>('50')
@@ -250,7 +250,7 @@ function close(): void {
             <!-- Type selector — только в add-mode. -->
             <div v-if="mode === 'add'" class="admin-dialog__field">
               <label class="admin-dialog__label">
-                Тип виджета <span class="admin-dialog__required">*</span>
+                {{ tr('Тип виджета') }} <span class="admin-dialog__required">*</span>
               </label>
               <p v-if="types.length === 0" class="admin-dialog__empty">
                 {{ tr('Нет виджетов для добавления — все доступные типы уже на дашборде') }}
@@ -279,7 +279,7 @@ function close(): void {
 
             <div class="admin-dialog__field">
               <label class="admin-dialog__label">
-                Заголовок <span class="admin-dialog__required">*</span>
+                {{ tr('Заголовок') }} <span class="admin-dialog__required">*</span>
               </label>
               <UidInput v-model="title" :placeholder="tr('Название виджета')" />
             </div>
@@ -340,7 +340,7 @@ function close(): void {
 
           <footer class="admin-dialog__ft">
             <span v-if="!canSubmit" class="admin-dialog__hint">
-              Заполните <span class="admin-dialog__required">*</span>-поля
+              {{ tr('Заполните') }} <span class="admin-dialog__required">*</span>{{ tr('-поля') }}
             </span>
             <UidButton variant="ghost" @click="close">{{ tr('Отмена') }}</UidButton>
             <UidButton

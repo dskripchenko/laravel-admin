@@ -15,7 +15,7 @@ import { UidButton, UidIcon } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface UploadedFile {
   disk: string
@@ -75,7 +75,7 @@ async function onDrop(e: DragEvent): Promise<void> {
 
 async function upload(file: File): Promise<void> {
   if (props.maxSize !== null && file.size > props.maxSize * 1024) {
-    adminToast.error(`Файл больше ${props.maxSize} KB.`)
+    adminToast.error(tRaw('Файл больше :size КБ.', { size: props.maxSize }))
     return
   }
   uploading.value = true
@@ -135,7 +135,7 @@ function clear(): void {
         <span class="admin-file-field__preview-meta">{{ value.mime }}</span>
       </div>
       <UidButton variant="ghost" size="sm" @click="clear">
-        <UidIcon :icon="X" /> Удалить
+        <UidIcon :icon="X" /> {{ tr('Удалить') }}
       </UidButton>
     </div>
 

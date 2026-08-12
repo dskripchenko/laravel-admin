@@ -10,7 +10,7 @@ import { computed, nextTick, ref } from 'vue'
 import { UidAlert, UidButton, UidInput } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { ApiError, NetworkError, ValidationError } from '../../api/errors'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 const emit = defineEmits<{
   success: []
@@ -133,7 +133,7 @@ function switchMode(): void {
       class="admin-auth-card__alert"
       role="status"
     >
-      Использован recovery-код. Осталось: {{ remaining }}
+      {{ tRaw('Использован код восстановления. Осталось: :count', { count: remaining }) }}
     </UidAlert>
 
     <div v-if="mode === 'totp'" class="admin-code-input" @paste="onPaste">
@@ -147,7 +147,7 @@ function switchMode(): void {
         autocomplete="one-time-code"
         maxlength="1"
         :disabled="submitting"
-        :aria-label="`Цифра ${idx + 1}`"
+        :aria-label="tRaw('Цифра :n', { n: idx + 1 })"
         @input="onCellInput(idx, $event)"
         @keydown="onCellKeydown(idx, $event)"
       />

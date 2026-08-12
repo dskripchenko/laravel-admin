@@ -5,6 +5,31 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.26.0
+
+### Added
+- **The library's own components speak the panel's language.** 94 strings in 32
+  files went straight to the screen untranslated, so an English panel mixed
+  «Delete» with «Развернуть» — worse than awkward: it reads as unfinished
+  precisely where everything else is done.
+
+  All of them now go through the translator, with 70 new entries in the shipped
+  dictionary. Strings that carry numbers or names use named placeholders rather
+  than string concatenation: a glued-together sentence cannot be translated at
+  all — the translator receives a fragment with no beginning and no end.
+
+  Three guards hold the rule from the three sides it can be broken from: a
+  string left unwrapped; a string wrapped but not translated; and a `tt()` key
+  missing from the dictionaries — that last one hands out the Russian fallback
+  and therefore looks like a working translation until someone opens the panel
+  in another language. Four such keys were found on the first sweep.
+
+### Fixed
+- **`tRaw()` threw without an active Pinia.** Unlike its neighbour `trSafe()` it
+  had no fallback, so a component rendering before the store was ready took the
+  whole page down. It now interpolates the source string instead: an
+  untranslated line beats a blank screen.
+
 ## 1.25.2
 
 ### Fixed

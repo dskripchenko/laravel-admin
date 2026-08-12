@@ -86,5 +86,17 @@ export const useI18nStore = defineStore('admin-i18n', () => {
  * В Vue-компонентах предпочтительнее `const { t } = useI18nStore()`.
  */
 export function tRaw(key: string, replace?: Record<string, string | number>): string {
-  return useI18nStore().t(key, replace ?? {})
+  try {
+    return useI18nStore().t(key, replace ?? {})
+  } catch {
+    // Без активной Pinia (юнит-тесты, отрисовка до инициализации) — исходная
+    // строка с подставленными значениями. Раньше здесь летело исключение и
+    // роняло компонент целиком: строка без перевода лучше пустой страницы.
+    let str = key
+    for (const [k, v] of Object.entries(replace ?? {})) {
+      str = str.replace(new RegExp(`:${k}`, 'g'), String(v))
+    }
+
+    return str
+  }
 }

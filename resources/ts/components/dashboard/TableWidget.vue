@@ -29,7 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
   title: '',
   columns: () => [],
   rows: () => [],
-  emptyText: 'Нет данных',
+  emptyText: tr('Нет данных'),
 })
 
 const uidColumns = computed<UidTableColumn[]>(() =>

@@ -52,6 +52,15 @@ import { useI18nStore } from '../../stores/i18n'
 
 const i18n = useI18nStore()
 const tr = (s: string): string => i18n.tr(s)
+
+/**
+ * Строка с подстановками: ключ — исходная фраза, значения по имени.
+ *
+ * Склейка через шаблонную строку не переводится в принципе — переводчику
+ * достаётся кусок без начала и конца. Здесь ключ целый, а числа и названия
+ * подставляются, поэтому в другом языке порядок слов может быть иным.
+ */
+const tRaw = (s: string, replace: Record<string, string | number>): string => i18n.t(s, replace)
 /**
  * Локальная обёртка над t() с graceful fallback на ru-string.
  * Это позволяет постепенный sweep: пока bootstrap.translations не наполнен,
@@ -180,11 +189,11 @@ async function onCustomAction(action: HeaderAction): Promise<void> {
     if (action.needsSelection) index.clearSelection()
     await index.load().catch(() => undefined)
     adminToast.success(
-      result?.message ?? `Action «${action.label}» применён к ${result?.affected ?? 0} записям.`,
+      result?.message ?? tRaw('Действие «:action» применено к :count записям.', { action: action.label, count: result?.affected ?? 0 }),
     )
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] header-action failed:', err)
-    adminToast.error(`Не удалось выполнить action «${action.label}».`)
+    adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
   } finally {
     nav.end()
   }
@@ -195,7 +204,7 @@ const bulkDeleting = ref(false)
 async function onBulkDelete(): Promise<void> {
   const ids = [...index.selection]
   if (ids.length === 0) return
-  if (!window.confirm(`Удалить выбранные записи (${ids.length})?`)) return
+  if (!window.confirm(tRaw('Удалить выбранные записи (:count)?', { count: ids.length }))) return
   bulkDeleting.value = true
   try {
     const { getAdminClient } = await import('../../stores/registry')
@@ -212,9 +221,9 @@ async function onBulkDelete(): Promise<void> {
     index.clearSelection()
     await index.load().catch(() => undefined)
     if (ok === ids.length) {
-      adminToast.success(`Удалено записей: ${ok}.`)
+      adminToast.success(tRaw('Удалено записей: :count.', { count: ok }))
     } else {
-      adminToast.error(`Удалено ${ok} из ${ids.length}; часть не удалена.`)
+      adminToast.error(tRaw('Удалено :ok из :total; часть не удалена.', { ok, total: ids.length }))
     }
   } finally {
     bulkDeleting.value = false
@@ -251,7 +260,7 @@ async function onExport(format: string = 'csv'): Promise<void> {
     URL.revokeObjectURL(url)
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] export failed:', err)
-    adminToast.error(`Не удалось экспортировать данные в формате ${format.toUpperCase()}.`)
+    adminToast.error(tRaw('Не удалось экспортировать данные в формате :format.', { format: format.toUpperCase() }))
   } finally {
     nav.end()
   }
@@ -316,9 +325,9 @@ async function onImportFileChange(e: Event): Promise<void> {
     const imported = finalStatus.imported ?? 0
     const failed = finalStatus.failed ?? 0
     if (failed > 0) {
-      adminToast.warning(`Импорт завершён с ошибками: ${imported} записей, ${failed} ошибок.`)
+      adminToast.warning(tRaw('Импорт завершён с ошибками: :imported записей, :failed ошибок.', { imported, failed }))
     } else {
-      adminToast.success(`Импортировано записей: ${imported}.`)
+      adminToast.success(tRaw('Импортировано записей: :count.', { count: imported }))
     }
     await index.load().catch(() => undefined)
   } catch (err) {
@@ -553,7 +562,7 @@ const manifestColumns = computed(
 )
 const searchPlaceholder = computed(() => {
   const label = (resourceMeta.value?.label ?? props.slug).toLowerCase()
-  return `Поиск по ${label}…`
+  return tRaw('Поиск по :label…', { label })
 })
 
 const groupByCol = ref<string | null>(null)
@@ -645,7 +654,7 @@ async function onResetView(): Promise<void> {
 async function onDeleteView(view: SavedViewItem, e?: MouseEvent): Promise<void> {
   e?.stopPropagation()
   if (!view.owned) return
-  if (!window.confirm(`Удалить view «${view.name}»?`)) return
+  if (!window.confirm(tRaw('Удалить представление «:name»?', { name: view.name }))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
@@ -700,7 +709,7 @@ async function onSaveView(label: string): Promise<void> {
 const totalLabel = computed(() => {
   const t = index.meta.total
   if (t === 0) return ''
-  return `${index.items.length} из ${t} ${pluralRecords(t)}`
+  return tRaw(':shown из :total :word', { shown: index.items.length, total: t, word: pluralRecords(t) })
 })
 
 /**
@@ -1075,7 +1084,7 @@ async function retryLoad(): Promise<void> {
             :key="fmt"
             @click="onExport(fmt)"
           >
-            Экспорт {{ EXPORT_LABELS[fmt] ?? fmt.toUpperCase() }}
+            {{ tr('Экспорт') }} {{ EXPORT_LABELS[fmt] ?? fmt.toUpperCase() }}
           </UidMenuItem>
           <!-- Кастомные действия от backend Resource->actions(). -->
           <UidMenuItem
@@ -1115,7 +1124,7 @@ async function retryLoad(): Promise<void> {
          строк запустить массовое действие нельзя (BL-26). -->
     <div v-if="index.hasSelection" class="admin-bulk-toolbar" data-testid="bulk-bar" role="toolbar">
       <span class="admin-bulk-toolbar__count">
-        Выбрано <b>{{ index.selectedCount }}</b>
+        {{ tr('Выбрано') }} <b>{{ index.selectedCount }}</b>
       </span>
       <span class="admin-bulk-toolbar__divider" />
       <UidButton

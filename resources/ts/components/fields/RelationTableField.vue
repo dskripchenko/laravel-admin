@@ -33,7 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
   label: null,
   help: null,
   columns: () => [],
-  emptyText: 'Связанных записей нет',
+  emptyText: tr('Связанных записей нет'),
 })
 
 const form = useFormState()

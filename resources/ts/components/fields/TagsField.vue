@@ -51,7 +51,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   label: null,
   help: null,
-  placeholder: 'Введите ключ и нажмите Enter…',
+  placeholder: tr('Введите значение и нажмите Enter…'),
   required: false,
   suggestions: () => [],
   suggestionsByGroup: () => [],

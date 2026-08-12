@@ -14,7 +14,7 @@ import { useManifestStore } from '../stores/manifest'
 import { useAuthStore } from '../stores/auth'
 import { useDashboardStore } from '../stores/dashboard'
 import DashboardPage from './dashboard/DashboardPage.vue'
-import { trSafe as tr } from './../stores/i18n'
+import { trSafe as tr, tRaw } from './../stores/i18n'
 
 interface DashboardManifest {
   slug: string
@@ -56,7 +56,7 @@ watch(
 
   <div v-else class="admin-home">
     <UidCard padding="lg" class="admin-home__hero">
-      <h1 class="admin-home__title">Добро пожаловать{{ userName ? ', ' + userName : '' }}</h1>
+      <h1 class="admin-home__title">{{ userName ? tRaw('Добро пожаловать, :name', { name: userName }) : tr('Добро пожаловать') }}</h1>
       <p class="admin-home__lead">
         {{ tr('Админ-панель готова. Зарегистрируйте DashboardScreen чтобы увидеть widget-grid здесь,') }}
         {{ tr('либо переходите к ресурсам ниже.') }}

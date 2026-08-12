@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 import { Plus, X } from 'lucide-vue-next'
 import { UidButton, UidIcon, UidInput } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface Props {
   name: string
@@ -26,8 +26,8 @@ const props = withDefaults(defineProps<Props>(), {
   label: null,
   help: null,
   required: false,
-  keyLabel: 'Ключ',
-  valueLabel: 'Значение',
+  keyLabel: tr('Ключ'),
+  valueLabel: tr('Значение'),
   addable: true,
   removable: true,
   allowedKeys: () => [],
@@ -108,7 +108,7 @@ const listId = computed(() => `kv-keys-${props.name}`)
           v-if="removable"
           variant="ghost"
           size="sm"
-          :aria-label="`Удалить ${p.key}`"
+          :aria-label="tRaw('Удалить :key', { key: p.key })"
           @click="removePair(idx)"
         >
           <UidIcon :icon="X" :size="14" />

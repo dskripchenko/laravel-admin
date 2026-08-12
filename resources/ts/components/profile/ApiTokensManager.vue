@@ -110,7 +110,7 @@ onMounted(load)
   <div class="admin-tokens">
     <p class="admin-tokens__lead">
       {{ tr('Personal access tokens используются для авторизации API-запросов в обход cookie-сессии.') }}
-      Создайте токен с понятным названием и используйте в `Authorization: Bearer {token}`.
+      {{ tr('Создайте токен с понятным названием и передавайте его в заголовке') }} <code>Authorization: Bearer {token}</code>.
     </p>
 
     <!-- Just-created token (one-time-display) -->
@@ -149,8 +149,8 @@ onMounted(load)
         <div class="admin-tokens__item-meta">
           <strong>{{ t.name }}</strong>
           <span class="admin-tokens__item-dates">
-            Создан: {{ fmtDate(t.created_at) }} ·
-            Использован: {{ fmtDate(t.last_used_at) }}
+            {{ tr('Создан:') }} {{ fmtDate(t.created_at) }} ·
+            {{ tr('Использован:') }} {{ fmtDate(t.last_used_at) }}
           </span>
         </div>
         <button

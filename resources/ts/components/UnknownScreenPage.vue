@@ -5,6 +5,7 @@
  * и кастомным компонентом рендерят `route.params.slug` через любой template.
  */
 import { computed } from 'vue'
+import { tRaw } from '../stores/i18n'
 import { useRoute } from 'vue-router'
 import { UidCard } from '@dskripchenko/ui'
 
@@ -18,7 +19,7 @@ const title = computed(() => String(route.meta?.title ?? slug.value))
     <UidCard padding="lg" class="admin-status-page__card">
       <h1 class="admin-status-page__title">{{ title }}</h1>
       <p class="admin-status-page__hint">
-        Это заглушка для screen «{{ slug }}». Передайте свой компонент через
+        {{ tRaw('Это заглушка экрана «:slug». Передайте свой компонент через', { slug }) }}
         <code>createAdminApp({{ '{' }} pages: {{ '{' }} screen: MyScreen {{ '}' }} {{ '}' }})</code>.
       </p>
     </UidCard>

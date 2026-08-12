@@ -20,7 +20,7 @@ import { useAuthStore } from '../../stores/auth'
 import { useThemeStore } from '../../stores/theme'
 import { useLocaleStore } from '../../stores/locale'
 import TwoFactorSetup from './TwoFactorSetup.vue'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface Props {
   /** Заголовок страницы (по умолчанию «Profile»). */
@@ -238,8 +238,8 @@ function onTwoFactorDisabled(): void {
         <slot v-else :name="localSection" :section="localSection">
           <UidCard padding="md">
             <p class="admin-profile__hint">
-              Section «{{ localSection }}» не реализована библиотекой —
-              host-проект подключает её через slot {{ localSection }}.
+              {{ tRaw('Раздел «:section» библиотекой не реализован —', { section: localSection }) }}
+              {{ tRaw('проект подключает его через слот :section.', { section: localSection }) }}
             </p>
           </UidCard>
         </slot>

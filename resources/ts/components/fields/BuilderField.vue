@@ -11,7 +11,7 @@ import { UidButton, UidCard, UidIcon, UidMenu, UidMenuItem } from '@dskripchenko
 import { useFormState } from '../render/formState'
 import type { FieldNode } from '../render/FieldRenderer.vue'
 import NestedFieldsGroup from './NestedFieldsGroup.vue'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface BlockDef {
   type: string
@@ -142,7 +142,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
         :model-value="block.data"
         @update:model-value="(v) => updateBlock(idx, v)"
       />
-      <p v-else class="uid-form-field__hint">Неизвестный тип блока: {{ block.type }}</p>
+      <p v-else class="uid-form-field__hint">{{ tRaw('Неизвестный тип блока: :type', { type: block.type }) }}</p>
     </UidCard>
 
     <UidMenu v-if="canAdd && blockTypes.length > 0">

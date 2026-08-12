@@ -4,6 +4,7 @@
  * host-проект сразу замечает unregistered field-type.
  */
 import { UidAlert } from '@dskripchenko/ui'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface Props {
   type: string
@@ -14,9 +15,9 @@ defineProps<Props>()
 
 <template>
   <UidAlert variant="warning">
-    <template #title>Неизвестный тип поля: {{ type }}</template>
+    <template #title>{{ tRaw('Неизвестный тип поля: :type', { type }) }}</template>
     <template v-if="name">
-      <code>{{ name }}</code> — зарегистрируйте field-компонент через
+      <code>{{ name }}</code> — {{ tr('зарегистрируйте компонент поля через') }}
       <code>registerField('{{ type }}', YourComponent)</code>.
     </template>
   </UidAlert>

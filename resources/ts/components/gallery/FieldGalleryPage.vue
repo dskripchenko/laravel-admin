@@ -17,7 +17,8 @@
  * Все секции рендерятся через FieldRenderer + provideFormState с локальной
  * state-mock'ой.
  */
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
+import { trSafe as tr } from '../../stores/i18n'
 import { UidCard } from '@dskripchenko/ui'
 import FieldRenderer, { type FieldNode } from '../render/FieldRenderer.vue'
 import { provideFormState } from '../render/formState'
@@ -33,42 +34,48 @@ interface Demo {
   initial: Record<string, unknown>
 }
 
-const DEMOS: Demo[] = [
+/**
+ * Список собирается ФУНКЦИЕЙ, а не константой модуля: `tr()` на уровне модуля
+ * отработал бы один раз и до того, как приедет словарь, — галерея навсегда
+ * осталась бы на языке исходников.
+ */
+function demos(): Demo[] {
+  return [
   // Текстовые
   {
     type: 'text',
-    group: 'Текстовые',
+    group: tr('Текстовые'),
     title: 'Input',
-    description: 'Простой текстовый input. type=email/url/password/tel доступны через inputType.',
-    node: { type: 'text', name: 'demo_text', label: 'Заголовок статьи', placeholder: 'Например: Введение в Laravel' },
+    description: tr('Простой текстовый ввод. Варианты email/url/password/tel задаются через inputType.'),
+    node: { type: 'text', name: 'demo_text', label: tr('Заголовок статьи'), placeholder: tr('Например: Введение в Laravel') },
     initial: { demo_text: 'Hello World' },
   },
   {
     type: 'textarea',
-    group: 'Текстовые',
+    group: tr('Текстовые'),
     title: 'Textarea',
-    description: 'Многострочный input с настраиваемым числом rows.',
-    node: { type: 'textarea', name: 'demo_textarea', label: 'Описание', rows: 4 },
+    description: tr('Многострочный ввод с настраиваемым числом строк.'),
+    node: { type: 'textarea', name: 'demo_textarea', label: tr('Описание'), rows: 4 },
     initial: { demo_textarea: 'Multi-line text...' },
   },
   {
     type: 'number',
-    group: 'Текстовые',
+    group: tr('Текстовые'),
     title: 'NumberInput',
-    description: 'Числовой input. Empty/NaN автоматически конвертируются в null.',
-    node: { type: 'number', name: 'demo_number', label: 'Цена', min: 0, max: 1000 },
+    description: tr('Числовой ввод. Пусто и NaN превращаются в null.'),
+    node: { type: 'number', name: 'demo_number', label: tr('Цена'), min: 0, max: 1000 },
     initial: { demo_number: 42 },
   },
   // Выбор
   {
     type: 'select',
-    group: 'Выбор',
+    group: tr('Выбор'),
     title: 'Select',
-    description: 'Single-select с options. Поддерживает searchable + clearable.',
+    description: tr('Выбор одного значения. Поддерживает поиск и очистку.'),
     node: {
       type: 'select',
       name: 'demo_select',
-      label: 'Категория',
+      label: tr('Категория'),
       options: [
         { value: 'frontend', label: 'Frontend' },
         { value: 'backend', label: 'Backend' },
@@ -79,34 +86,36 @@ const DEMOS: Demo[] = [
   },
   {
     type: 'checkbox',
-    group: 'Выбор',
+    group: tr('Выбор'),
     title: 'Checkbox',
-    description: 'Boolean toggle. inlineLabel рядом с боксом.',
-    node: { type: 'checkbox', name: 'demo_checkbox', label: 'Опубликовать', inlineLabel: 'Сделать доступным всем' },
+    description: tr('Переключатель. Подпись ставится рядом с флажком.'),
+    node: { type: 'checkbox', name: 'demo_checkbox', label: tr('Опубликовать'), inlineLabel: tr('Сделать доступным всем') },
     initial: { demo_checkbox: true },
   },
   // Дата/время
   {
     type: 'date',
-    group: 'Дата/время',
+    group: tr('Дата/время'),
     title: 'DatePicker',
-    description: 'date / datetime-local / time через inputType.',
-    node: { type: 'date', name: 'demo_date', label: 'Дата публикации', inputType: 'date' },
+    description: tr('Дата, дата со временем или время — через inputType.'),
+    node: { type: 'date', name: 'demo_date', label: tr('Дата публикации'), inputType: 'date' },
     initial: { demo_date: '2026-05-01' },
   },
-]
+  ]
+}
 
 // Группируем для рендера.
-const groupedDemos = DEMOS.reduce<Record<string, Demo[]>>((acc, d) => {
+const groupedDemos = computed<Record<string, Demo[]>>(() => demos().reduce<Record<string, Demo[]>>((acc, d) => {
   if (!acc[d.group]) acc[d.group] = []
   acc[d.group].push(d)
+
   return acc
-}, {})
+}, {}))
 
 // provideFormState на корневом уровне — все demo'и шарят один form-context
 // (имена не пересекаются благодаря demo_ префиксу).
 const allInitial = reactive<Record<string, unknown>>(
-  DEMOS.reduce<Record<string, unknown>>((acc, d) => Object.assign(acc, d.initial), {}),
+  demos().reduce<Record<string, unknown>>((acc, d) => Object.assign(acc, d.initial), {}),
 )
 provideFormState(allInitial)
 </script>
@@ -117,7 +126,7 @@ provideFormState(allInitial)
       <div class="admin-page__title-wrap">
         <h1 class="admin-page__title">Field Gallery</h1>
         <div class="admin-page__count">
-          Каталог встроенных field-компонентов library + примеры использования
+          {{ tr('Каталог встроенных полей с примерами использования') }}
         </div>
       </div>
     </header>

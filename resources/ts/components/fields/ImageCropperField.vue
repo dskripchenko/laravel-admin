@@ -26,7 +26,7 @@ import { UidButton, UidIcon } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface UploadedFile {
   disk: string
@@ -115,7 +115,7 @@ function onDrop(e: DragEvent): void {
 
 function loadFile(file: File): void {
   if (props.maxSize !== null && file.size > props.maxSize * 1024) {
-    adminToast.error(`Файл больше ${props.maxSize} KB.`)
+    adminToast.error(tRaw('Файл больше :size КБ.', { size: props.maxSize }))
     return
   }
   if (!file.type.startsWith('image/')) {
@@ -321,7 +321,7 @@ onBeforeUnmount(cleanupSource)
         <UidIcon :icon="ImageIcon" :size="28" />
         <p class="admin-image-cropper__hint">{{ tr('Кликните или перетащите картинку') }}</p>
         <p v-if="outputWidth && outputHeight" class="admin-image-cropper__hint-sub">
-          Будет обрезано до {{ outputWidth }}×{{ outputHeight }} px
+          {{ tRaw('Будет обрезано до :w×:h px', { w: outputWidth, h: outputHeight }) }}
         </p>
       </div>
       <input
@@ -362,7 +362,7 @@ onBeforeUnmount(cleanupSource)
           <UidIcon :icon="Check" /> {{ uploading ? tr('Загрузка…') : tr('Применить') }}
         </UidButton>
         <UidButton variant="ghost" size="sm" :disabled="uploading" @click="cancelCrop">
-          <UidIcon :icon="X" /> Отмена
+          <UidIcon :icon="X" /> {{ tr('Отмена') }}
         </UidButton>
       </div>
     </div>
@@ -375,10 +375,10 @@ onBeforeUnmount(cleanupSource)
         <div class="admin-image-cropper__preview-meta">{{ value.mime }} · {{ (value.size / 1024).toFixed(1) }} KB</div>
         <div class="admin-image-cropper__preview-actions">
           <UidButton variant="ghost" size="sm" @click="replace">
-            <UidIcon :icon="Replace" /> Заменить
+            <UidIcon :icon="Replace" /> {{ tr('Заменить') }}
           </UidButton>
           <UidButton variant="ghost" size="sm" @click="remove">
-            <UidIcon :icon="X" /> Удалить
+            <UidIcon :icon="X" /> {{ tr('Удалить') }}
           </UidButton>
         </div>
       </div>

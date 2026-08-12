@@ -29,7 +29,7 @@ import {
 import { UidButton, UidIcon, UidMenu } from '@dskripchenko/ui'
 import { resolveIcon } from '../shell/iconRegistry'
 import { FilterEditor, type FilterDef, type FilterOption } from './FilterEditor'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface ColumnDef {
   key?: string
@@ -54,7 +54,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  searchPlaceholder: 'Поиск…',
+  searchPlaceholder: tr('Поиск…'),
   groupBy: null,
   columnVisibility: () => ({}),
   enableSavedViews: true,
@@ -385,7 +385,7 @@ function iconFor(name: string | null | undefined) {
             <UidIcon :icon="LayoutGrid" :size="14" />
             <span class="admin-toolbar__chip-text">
               {{ groupBy
-                ? `Группа: ${colLabel(columns.find((c) => colKey(c) === groupBy) ?? {})}`
+                ? tRaw('Группа: :name', { name: colLabel(columns.find((c) => colKey(c) === groupBy) ?? {}) })
                 : tr('Группировать') }}
             </span>
           </button>
