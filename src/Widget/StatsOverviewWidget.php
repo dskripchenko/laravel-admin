@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Widget;
 
 /**
- * Набор KPI-карточек: title, value, optional descriptor (icon, trend, color).
+ * A set of KPI cards: a title, a value and an optional descriptor — an icon, a
+ * trend, a colour.
  *
- * Каждая карточка — `{label, value, change?, color?, icon?}`. SPA рендерит
- * как горизонтальный grid из stat-cards.
+ * Each card is `{label, value, change?, color?, icon?}`, and the SPA renders
+ * them as a horizontal grid of stat cards.
  */
 class StatsOverviewWidget extends Widget
 {
@@ -21,7 +22,7 @@ class StatsOverviewWidget extends Widget
     }
 
     /**
-     * Добавить одну карточку.
+     * Adds one card.
      */
     public function stat(string $label, mixed $value, ?string $color = null, ?string $icon = null): static
     {
@@ -36,7 +37,7 @@ class StatsOverviewWidget extends Widget
     }
 
     /**
-     * Тренд (delta) для последней добавленной карточки.
+     * The trend — the delta — of the card added last.
      * direction: 'up' | 'down' | 'flat'.
      */
     public function trend(float $delta, string $direction = 'up'): static

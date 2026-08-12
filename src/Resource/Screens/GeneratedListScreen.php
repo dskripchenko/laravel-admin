@@ -10,11 +10,12 @@ use Dskripchenko\LaravelAdmin\Layout\View;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 
 /**
- * List-страница ресурса: таблица с колонками + фильтры + commandBar.
+ * A resource's list page: the table with its columns, the filters and the
+ * command bar.
  *
- * State не загружает данные сам — SPA после получения compile() делает
- * запрос на `{resource}.search` (см. ResourceController.search). Здесь
- * только описание страницы и ссылок.
+ * The state loads no data itself — once the SPA has the compile() result it
+ * calls `{resource}.search` (see ResourceController.search). What is here is
+ * the description of the page and its links.
  */
 final class GeneratedListScreen extends GeneratedScreen
 {
@@ -68,7 +69,7 @@ final class GeneratedListScreen extends GeneratedScreen
     {
         $userActions = $this->resource->actions();
 
-        // По умолчанию добавляем «Создать» если у Resource есть create-permission.
+        // "Create" is added by default when the resource has a create permission.
         $createUrl = '/admin/r/'.$this->resource::slug().'/create';
         $createLink = Link::make((string) __('admin::admin.resource.create_button'))->href($createUrl);
         $createPermission = $this->resource::permission().'.create';

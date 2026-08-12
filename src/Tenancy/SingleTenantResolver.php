@@ -7,12 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Tenancy;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Default-резолвер: single-tenant mode (no-op).
+ * The default resolver: the single-tenant mode, which does nothing.
  *
- * `current()` возвращает только то, что выставлено через `setCurrent()`
- * (по дефолту null). Используется когда multi-tenancy не нужен — в admin'е
- * не появится tenant-switcher, а TenantScoped trait не будет фильтровать
- * запросы.
+ * `current()` returns only what `setCurrent()` put there, and null by default.
+ * It is used when multi-tenancy is not needed: no tenant switcher appears in
+ * the admin, and the TenantScoped trait filters nothing.
  */
 final class SingleTenantResolver implements TenantResolver
 {

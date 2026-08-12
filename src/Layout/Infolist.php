@@ -8,11 +8,11 @@ use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 use Dskripchenko\LaravelAdmin\Infolist\Entry;
 
 /**
- * Layout для отображения read-only записи через Entry-список.
+ * The layout showing a record read-only, through a list of entries.
  *
- * Используется в GeneratedViewScreen и custom view-screen'ах. Каждый entry
- * — read-only display одного поля; SPA рендерит как definition-list или
- * grid в зависимости от layout('rows'|'columns').
+ * It is used by GeneratedViewScreen and by custom view screens. Each entry
+ * displays one field read-only, and the SPA renders either a definition list
+ * or a grid, depending on layout('rows'|'columns').
  */
 final class Infolist extends Layout
 {
@@ -52,7 +52,7 @@ final class Infolist extends Layout
     }
 
     /**
-     * Добавить entry/secondary layout fluently.
+     * Adds an entry or a secondary layout, fluently.
      */
     public function add(Renderable $child): self
     {

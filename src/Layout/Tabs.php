@@ -7,9 +7,9 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Табы. Принимает map `label => layout|fields[]`.
+ * Tabs, taking a map of `label => layout|fields[]`.
  *
- * Если значение — массив, оборачивается в Rows автоматически.
+ * An array value is wrapped into Rows automatically.
  */
 final class Tabs extends Layout
 {
@@ -44,8 +44,8 @@ final class Tabs extends Layout
     }
 
     /**
-     * Frontend TabsLayout ожидает items в форме `[{label, items}]` —
-     * собираем из props.labels + children один-в-один.
+     * The frontend's TabsLayout expects the items as `[{label, items}]`, so we
+     * pair props.labels with the children one to one.
      *
      * @return array<string, mixed>
      */
@@ -59,12 +59,13 @@ final class Tabs extends Layout
         $tabs = [];
         foreach ($childArrays as $idx => $child) {
             $tabs[] = [
-                // labels уже переведены Layout::toArray (props), но берём их
-                // из сырых props — локализуем здесь.
+                // Layout::toArray has already translated the labels in the
+                // props, but we take them from the raw props, so we localize
+                // them here.
                 'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string(
                     (string) ($labels[$idx] ?? ('Tab '.($idx + 1))),
                 ),
-                // child уже сериализован Layout::toArray() — внутри есть items.
+                // The child has been serialized by Layout::toArray() already and holds its items.
                 'items' => $child['items'] ?? ($child['children'] ?? [$child]),
             ];
         }

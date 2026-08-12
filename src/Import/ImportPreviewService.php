@@ -9,10 +9,10 @@ use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use RuntimeException;
 
 /**
- * Читает первые N rows из CSV/XLSX-файла для preview-шага wizard'а.
+ * Reads the first N rows of a CSV or XLSX file, for the wizard's preview step.
  *
- * Возвращает headers + sample rows + total estimated count (для CSV — точный,
- * для XLSX — `null`, чтобы избежать чтения всего файла).
+ * It returns the headers, the sample rows and an estimated total — exact for a
+ * CSV, and `null` for an XLSX, so as not to read the whole file.
  */
 final class ImportPreviewService
 {
@@ -52,7 +52,7 @@ final class ImportPreviewService
             throw new RuntimeException("Cannot open file `{$localPath}`");
         }
 
-        // Strip BOM если есть.
+        // Strip the BOM, if there is one.
         $first = fread($handle, 3);
         if ($first !== "\xEF\xBB\xBF") {
             rewind($handle);
@@ -125,7 +125,7 @@ final class ImportPreviewService
     }
 
     /**
-     * Определяем delimiter по first non-empty line (auto-detect между ',', ';', '\t').
+     * Detects the delimiter from the first non-empty line, among ',', ';' and '\t'.
      */
     private static function sniffCsvDelimiter(string $path): string
     {

@@ -11,16 +11,18 @@ use Dskripchenko\LaravelAdmin\Layout\View;
 use Dskripchenko\LaravelAdmin\Layout\Wizard;
 
 /**
- * Готовая разметка 4-step Import Wizard.
+ * The ready-made layout of the four-step import wizard.
  *
- * Шаги:
- *   1. Upload — FileUpload + accept csv/tsv/xlsx.
- *   2. Mapping — auto-mapping предложение, ручная корректировка через
- *      `admin.import.mapping` view (имя соответствует реализации SPA).
- *   3. Preview — отображение sample rows + summary.
- *   4. Run — старт импорта, прогресс через polling /api/admin/import/status.
+ * The steps:
+ *   1. Upload — a FileUpload accepting csv, tsv and xlsx.
+ *   2. Mapping — the suggested mapping, corrected by hand through the
+ *      `admin.import.mapping` view, named after the SPA's implementation.
+ *   3. Preview — the sample rows and a summary.
+ *   4. Run — the import starts, and the progress is polled from
+ *      /api/admin/import/status.
  *
- * Resource slug передаётся как persistKey'ом, чтобы wizard сохранял прогресс.
+ * The resource slug doubles as the persistKey, so that the wizard keeps its
+ * progress.
  */
 final class ImportWizardLayout
 {

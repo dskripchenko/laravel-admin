@@ -10,13 +10,15 @@ use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedViewScreen;
 
 /**
- * Сериализация Resource'а в manifest-entry.
+ * Serializes a resource into its manifest entry.
  *
- * Дополняет `Resource::meta()` блоком `screens` — slugs трёх авто-сгенерированных
- * страниц (list/create/edit) с их permission-маппингом. SPA использует эти
- * slugs для построения роутов /admin/resources/{slug} → list, /create, /{id}/edit.
+ * It extends `Resource::meta()` with a `screens` block — the slugs of the three
+ * generated pages (list, create, edit) and their permission mapping. The SPA
+ * builds the /admin/resources/{slug} → list, /create and /{id}/edit routes out
+ * of those slugs.
  *
- * Этот класс намеренно отдельный, чтобы Resource не разрастался UI-логикой.
+ * The class is deliberately separate, so that Resource does not swell with UI
+ * logic.
  */
 final class ResourceManifest
 {

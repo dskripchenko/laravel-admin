@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Widget;
 
 /**
- * Heatmap — двумерная матрица value по (row, col) координатам.
+ * A heatmap — a two-dimensional matrix of values at (row, col).
  *
- * Подходит для distribution-визуализаций: активность по дням недели/часам,
- * load-distribution и т.п.
+ * It suits the distributions: activity by weekday and hour, the spread of
+ * load, and the like.
  */
 class HeatmapWidget extends Widget
 {
@@ -29,8 +29,8 @@ class HeatmapWidget extends Widget
     }
 
     /**
-     * @param  list<string>  $rows  Метки строк (например, дни недели).
-     * @param  list<string>  $cols  Метки колонок (например, часы).
+     * @param  list<string>  $rows  The rows' labels — the days of the week, say.
+     * @param  list<string>  $cols  The columns' labels — the hours, say.
      */
     public function axes(array $rows, array $cols): static
     {
@@ -41,7 +41,7 @@ class HeatmapWidget extends Widget
     }
 
     /**
-     * @param  array<int, array<int, int|float>>  $matrix  rows × cols значения.
+     * @param  array<int, array<int, int|float>>  $matrix  The rows × cols values.
      */
     public function matrix(array $matrix): static
     {
@@ -51,7 +51,7 @@ class HeatmapWidget extends Widget
     }
 
     /**
-     * Имя цветовой шкалы для SPA: 'viridis' | 'magma' | 'plasma' | ...
+     * The colour scale's name for the SPA: 'viridis' | 'magma' | 'plasma' | …
      */
     public function colorScale(string $scale): static
     {

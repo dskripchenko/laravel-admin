@@ -7,11 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Infolist;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Read-only Entry для Infolist'а — display-аналог Field.
+ * A read-only entry of an infolist — the display counterpart of a field.
  *
- * Используется в GeneratedViewScreen для отображения записи без формы.
- * Source указывает на поле модели/state. Default value применяется когда
- * source отсутствует или равен null.
+ * GeneratedViewScreen uses it to show a record without a form. The source
+ * points at a field of the model or the state, and the default value applies
+ * when that source is missing or null.
  *
  * @phpstan-consistent-constructor
  *
@@ -32,7 +32,7 @@ abstract class Entry implements Renderable
     protected mixed $defaultValue = null;
 
     /**
-     * Type-имя для SPA-renderer'а: text/badge/icon/color/key_value/...
+     * The type name for the SPA renderer: text, badge, icon, color, key_value and so on.
      */
     abstract public function entryType(): string;
 

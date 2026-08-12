@@ -7,11 +7,13 @@ namespace Dskripchenko\LaravelAdmin\Widget;
 use InvalidArgumentException;
 
 /**
- * Embed-виджет — внешний iframe (Grafana panel, статус-страница и т.д.).
+ * The embed widget — an external iframe: a Grafana panel, a status page and so
+ * on.
  *
- * Безопасность: src должен пройти `allowedHosts` — fnmatch-проверку, чтобы
- * SPA не пускал произвольные URL'ы (XSS via clickjacking). Если allowedHosts
- * пуст — пропускает любые URL'ы (decision реализатора).
+ * On safety: the src must pass `allowedHosts`, an fnmatch check, so that the
+ * SPA does not admit arbitrary URLs — that is XSS by way of clickjacking. An
+ * empty allowedHosts lets any URL through, which is the implementer's
+ * decision.
  */
 class IframeWidget extends Widget
 {
@@ -40,7 +42,7 @@ class IframeWidget extends Widget
     }
 
     /**
-     * @param  list<string>  $hosts  fnmatch-паттерны (`grafana.*.example.com`).
+     * @param  list<string>  $hosts  fnmatch patterns, `grafana.*.example.com` for one.
      */
     public function allowedHosts(array $hosts): static
     {

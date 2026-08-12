@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Permission;
 
 /**
- * Плоский список permissions пользователя для SPA (login payload / bootstrap).
+ * A user's flat permission list, for the SPA — the login payload and the
+ * bootstrap.
  *
- * Панельные user-модели (v1.8 Panels, shared-strategy) обязаны реализовать
- * только контракт `hasAccess(string): bool` — перечислить их права нельзя.
- * Такие модели получают wildcard `['*']`: реальная авторизация остаётся за
- * backend'ом (AdminAccess → 403), а SPA-гарды не запирают пользователя в
- * /forbidden. Модели с granular-правами должны отдавать getAllPermissions().
+ * A panel's own user model, in the shared strategy, is required to implement
+ * only `hasAccess(string): bool`, and its rights cannot be enumerated. Such a
+ * model gets the wildcard `['*']`: the real authorization stays with the
+ * backend, where AdminAccess answers 403, and the SPA's guards do not lock the
+ * user into /forbidden. A model with granular rights should return
+ * getAllPermissions().
  */
 final class UserPermissions
 {

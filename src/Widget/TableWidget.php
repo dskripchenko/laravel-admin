@@ -9,11 +9,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Полнофункциональная таблица как widget — с TableColumn'ами + sort + limit.
+ * A full table as a widget — TableColumns, a sort and a limit.
  *
- * В отличие от RecentList, здесь поддерживаются те же колонки/presets,
- * что и в Resource list-режиме. Подходит для встраивания «summary table»
- * на dashboard.
+ * Unlike RecentList it supports the same columns and presets as a resource's
+ * list does, which makes it a good fit for a summary table on a dashboard.
  */
 class TableWidget extends Widget
 {
@@ -73,7 +72,7 @@ class TableWidget extends Widget
     }
 
     /**
-     * Произвольный фильтр поверх default query (например, where(...) для скоупов).
+     * An arbitrary filter over the default query — a where(...) for a scope, say.
      *
      * @param  callable(Builder<Model>): Builder<Model>  $modifier
      */

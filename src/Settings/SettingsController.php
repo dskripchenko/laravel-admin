@@ -12,11 +12,12 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Универсальный controller для settings — обслуживает все зарегистрированные
- * SettingsResource'ы.
+ * The universal settings controller, serving every registered
+ * SettingsResource.
  *
- * URL: `/api/admin/settings.{slug}/{action}` где `slug` — SettingsResource::slug().
- * Регистрация через AdminApi (фаза P11.2 совместно с PluginRegistry).
+ * The URL is `/api/admin/settings.{slug}/{action}`, where `slug` is
+ * SettingsResource::slug(). The registration goes through AdminApi, together
+ * with PluginRegistry.
  */
 final class SettingsController extends ApiController
 {
@@ -26,7 +27,7 @@ final class SettingsController extends ApiController
     ) {}
 
     /**
-     * Метаданные группы settings (fields + permissions).
+     * A settings group's metadata: its fields and permissions.
      *
      * @output object $payload
      *
@@ -40,7 +41,7 @@ final class SettingsController extends ApiController
     }
 
     /**
-     * Прочитать текущие значения (merge defaults ↔ storage).
+     * Reads the current values, merging the defaults with the storage.
      *
      * @output object $payload
      *
@@ -58,7 +59,7 @@ final class SettingsController extends ApiController
     }
 
     /**
-     * Сохранить значения через resource->write().
+     * Saves the values through resource->write().
      *
      * @input object $values
      *

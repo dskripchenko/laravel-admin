@@ -7,12 +7,14 @@ namespace Dskripchenko\LaravelAdmin\Panel;
 use Dskripchenko\LaravelAdmin\Http\AdminApi;
 
 /**
- * Панель — независимая поверхность админки (v1.8, паритет с Filament Panels):
- * собственный mount-путь, guard, API-версия, middleware-стеки и набор
- * плагинов (→ ресурсы/экраны/меню/permissions скоупятся по панели).
+ * A panel — an independent surface of the admin, on a par with Filament's
+ * panels: its own mount path, guard, API version, middleware stacks and set of
+ * plugins, so that the resources, screens, menu and permissions are all scoped
+ * to it.
  *
- * Дефолтная панель `admin` синтезируется из легаси top-level ключей
- * config('admin.*') — однопанельные хосты не меняют конфигурацию вовсе.
+ * The default `admin` panel is synthesized from the legacy top-level
+ * config('admin.*') keys, so a single-panel host changes no configuration at
+ * all.
  */
 final class Panel
 {
@@ -67,7 +69,7 @@ final class Panel
         return new self(
             id: $id,
             path: (string) ($config['path'] ?? $id),
-            // API-версия laravel-api == id панели: /api/{id}/{controller}/{action}.
+            // laravel-api's version equals the panel's id: /api/{id}/{controller}/{action}.
             apiPath: (string) ($config['api_path'] ?? 'api/'.$id),
             guard: (string) ($auth['guard'] ?? $id),
             auth: $auth,

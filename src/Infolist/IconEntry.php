@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Иконка вместо текста (для статусов, типов).
+ * An icon instead of text, for statuses and types.
  */
 final class IconEntry extends Entry
 {
@@ -15,7 +15,7 @@ final class IconEntry extends Entry
     }
 
     /**
-     * Маппинг value → имя иконки.
+     * Maps a value to an icon's name.
      *
      * @param  array<string, string>  $iconMap
      */
@@ -34,12 +34,12 @@ final class IconEntry extends Entry
     }
 
     /* -----------------------------------------------------------------
-     * Boolean-режим (trueIcon/falseIcon + trueLabel/falseLabel).
+     * The boolean mode: trueIcon/falseIcon plus trueLabel/falseLabel.
      *
-     * Альтернатива {@see icons()}: для двухзначных флагов фронт
-     * (IconEntry.vue) показывает иконку + опциональный текст в
-     * зависимости от truthiness значения. Используется в дефолтном
-     * Resource::infolist() для `switch`-полей.
+     * An alternative to {@see icons()}: for a two-valued flag the frontend
+     * (IconEntry.vue) shows an icon and an optional text, depending on the
+     * value's truthiness. The default Resource::infolist() uses it for the
+     * `switch` fields.
      * ----------------------------------------------------------------- */
 
     public function trueIcon(string $icon): static

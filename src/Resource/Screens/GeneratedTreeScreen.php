@@ -10,12 +10,12 @@ use Dskripchenko\LaravelAdmin\Layout\View;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 
 /**
- * Tree-страница ресурса: иерархическое дерево вместо таблицы.
+ * A resource's tree page: a hierarchy instead of a table.
  *
- * Применяется к Resource'ам с `viewMode() === 'tree'` (автодетект по
- * `parent()`/`children()` Eloquent relations на self-referencing модели).
- * Данные подгружаются SPA через `{resource}.tree` action (см.
- * ResourceController::tree).
+ * It applies to the resources whose `viewMode() === 'tree'`, which is detected
+ * from the `parent()` and `children()` Eloquent relations of a
+ * self-referencing model. The SPA loads the data through the
+ * `{resource}.tree` action; see ResourceController::tree.
  */
 final class GeneratedTreeScreen extends GeneratedScreen
 {
@@ -81,8 +81,8 @@ final class GeneratedTreeScreen extends GeneratedScreen
     }
 
     /**
-     * Имя колонки, по которой формируется лейбл узла дерева.
-     * Берётся первая search-колонка, иначе `'name'` как fallback.
+     * The column a tree node's label is built from: the first searchable
+     * column, falling back to `'name'`.
      */
     private function resolveLabelColumn(): string
     {

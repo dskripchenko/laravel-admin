@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Display связанной записи через relation на родительской модели.
+ * Displays a related record, through a relation on the parent model.
  *
- * SPA рендерит как ссылку на view-страницу resource'а связанной модели
- * (если linkTo задан) или как простой текст.
+ * The SPA renders it as a link to the related resource's view page, when
+ * linkTo is set, and as plain text otherwise.
  */
 final class RelationEntry extends Entry
 {
@@ -18,7 +18,7 @@ final class RelationEntry extends Entry
     }
 
     /**
-     * Имя relation на родительской модели.
+     * The relation's name on the parent model.
      */
     public function relation(string $relation): static
     {
@@ -28,7 +28,7 @@ final class RelationEntry extends Entry
     }
 
     /**
-     * Колонка для отображения (default: 'name').
+     * The column to display; 'name' by default.
      */
     public function display(string $column): static
     {
@@ -38,7 +38,7 @@ final class RelationEntry extends Entry
     }
 
     /**
-     * Resource slug, на который вести по клику.
+     * The resource slug a click leads to.
      */
     public function linkTo(string $resourceSlug): static
     {

@@ -11,16 +11,16 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Middleware-стражник по permissions.
+ * The middleware guarding by permission.
  *
  *     'middleware' => [AdminAccess::class.':admin.users.view']
  *
- * Поддерживает несколько permissions через `;`:
+ * Several permissions are separated by `;`:
  *
  *     AdminAccess::class.':admin.users.view;admin.systems.audit.view'
  *
- * Семантика — «требуется ВСЕ перечисленные» (AND). Для OR используется
- * отдельный middleware AdminAccessAny (P3+, если понадобится).
+ * The semantics are AND — every one of them is required. An OR would call for
+ * a separate AdminAccessAny middleware, if it is ever needed.
  */
 final class AdminAccess
 {
@@ -45,8 +45,9 @@ final class AdminAccess
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        // Поддерживаем как HasAdminAccess (наша модель), так и любой объект
-        // с публичным `hasAccess` методом (для shared-strategy host User).
+        // Both HasAdminAccess — our own model — and any object with a public
+        // `hasAccess` method are supported, the latter for the host's User in
+        // the shared strategy.
         foreach ($required as $permission) {
             if (! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
                 return ApiResponseHelper::sayError([

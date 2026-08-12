@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Tenancy;
 
 /**
- * Удобный фасад поверх TenantResolver — упрощает доступ из traits/scope'ов.
+ * A convenient facade over TenantResolver, for reaching it from traits and
+ * scopes.
  *
- * Используется в TenantScoped: в boot()-loop'ах модели нет request-context'а
- * по типу middleware, и нам нужен глобальный доступ к текущему tenant'у.
+ * TenantScoped uses it: inside a model's boot() loops there is no
+ * request context of the middleware kind, and the current tenant has to be
+ * reachable globally.
  */
 final class TenantContext
 {
@@ -25,8 +27,8 @@ final class TenantContext
     }
 
     /**
-     * Запустить callback в контексте определённого tenant'а, восстановить
-     * предыдущий после.
+     * Runs a callback in a particular tenant's context and restores the
+     * previous one afterwards.
      *
      * @template T
      *

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Layout;
 
 /**
- * Layout для отображения audit-timeline на view-screen'е.
+ * The layout showing an audit timeline on a view screen.
  *
- * Конфиг говорит SPA какой subject грузить (subject_type + ?subject_id из state)
- * и какой endpoint вызывать. Сама загрузка идёт через `audit.timeline` action.
+ * Its configuration tells the SPA which subject to load — the subject_type and
+ * the subject_id from the state — and which endpoint to call. The loading
+ * itself goes through the `audit.timeline` action.
  *
- * Использование:
+ * Usage:
  *
  *     AuditTrail::for(\App\Models\User::class)->limit(50)
  */
@@ -30,7 +31,7 @@ final class AuditTrail extends Layout
     }
 
     /**
-     * Source key из state, откуда брать `id` записи. Default: 'id'.
+     * The key of the state holding the record's `id`; 'id' by default.
      */
     public function fromState(string $key): self
     {
@@ -47,8 +48,8 @@ final class AuditTrail extends Layout
     }
 
     /**
-     * Permission для отображения: если у пользователя его нет — компонент
-     * скрыт целиком. Default: null = доступно всем authenticated.
+     * The permission needed to see it: without it the component is hidden
+     * entirely. null, the default, means everyone authenticated may see it.
      */
     public function withPermission(string $permission): self
     {

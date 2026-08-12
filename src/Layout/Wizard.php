@@ -7,13 +7,13 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use InvalidArgumentException;
 
 /**
- * Многошаговая форма (Wizard).
+ * A multi-step form — a wizard.
  *
- * Состоит из Step'ов — каждый шаг показывается отдельно с навигацией
- * Next/Prev. Каждый Step может иметь validation rules — переход вперёд
- * блокируется если шаг невалиден.
+ * It is made of steps, each shown on its own with Next and Prev navigation. A
+ * step may carry validation rules, and moving forward is blocked while it is
+ * invalid.
  *
- * Используется в импорт-мастере (фаза P13) и onboarding'е.
+ * The import wizard and the onboarding both use it.
  */
 final class Wizard extends Layout
 {
@@ -43,7 +43,7 @@ final class Wizard extends Layout
     }
 
     /**
-     * Submit-action как имя method'а на Screen'е (вызывается через runMethod).
+     * The submit action, as the name of a screen's method called through runMethod.
      */
     public function submit(string $method): self
     {
@@ -53,8 +53,8 @@ final class Wizard extends Layout
     }
 
     /**
-     * Линейный режим (default) или freeForm — пользователь может прыгать
-     * между шагами в любом порядке.
+     * The linear mode, which is the default, or freeForm, where one may jump
+     * between the steps in any order.
      */
     public function freeForm(bool $freeForm = true): self
     {

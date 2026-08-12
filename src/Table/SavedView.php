@@ -9,16 +9,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * Сохранённые view'ы — пресеты filters/sort/columns/per_page для list-таблицы.
+ * The saved views — presets of the filters, sort, columns and per_page of a
+ * list table.
  *
- * Создаются администратором («мои фильтры»), могут быть приватными (owner =
- * текущий админ) или глобальными (owner = null) при наличии прав.
+ * An administrator creates them as "my filters"; they may be private, owned by
+ * that administrator, or global, with no owner, given the rights.
  *
- * State хранится в JSON-колонке. Структура:
+ * The state lives in a JSON column:
  *   {
  *     filters: { col: value, ... },
  *     order:   [{ column, direction }, ...],
- *     columns: [name, ...],          // visible columns + порядок
+ *     columns: [name, ...],          // the visible columns and their order
  *     per_page: 25,
  *     q:       'free text'
  *   }
@@ -66,8 +67,8 @@ final class SavedView extends Model
     }
 
     /**
-     * Scope: views, видимые конкретному пользователю.
-     * Включает свои + global (owner_id NULL).
+     * The scope of the views a particular user may see: their own plus the
+     * global ones, where owner_id is NULL.
      *
      * @param  Builder<SavedView>  $query
      * @return Builder<SavedView>

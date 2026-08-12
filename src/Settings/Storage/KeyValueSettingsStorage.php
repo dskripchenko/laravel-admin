@@ -7,12 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Settings\Storage;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Универсальное key-value хранилище через таблицу admin_settings.
+ * A general key-value store over the admin_settings table.
  *
- * Подходит для большинства случаев: настройки SMTP, branding, feature flags,
- * любые произвольные значения. Для больших количеств настроек или
- * type-strict схем — реализовать собственный SettingsStorage поверх
- * Eloquent-модели с типизированными колонками.
+ * It fits most cases: the SMTP settings, the branding, feature flags, any
+ * arbitrary value. For a great many settings, or for a strictly typed schema,
+ * write your own SettingsStorage over an Eloquent model with typed columns.
  */
 final class KeyValueSettingsStorage implements SettingsStorage
 {

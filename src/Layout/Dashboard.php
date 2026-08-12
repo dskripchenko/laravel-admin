@@ -7,11 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Widget\Widget;
 
 /**
- * Dashboard layout — сетка из widgets.
+ * The dashboard layout — a grid of widgets.
  *
- * SPA рендерит как 12-колоночный grid; каждый widget занимает widget->size
- * колонок. Поддерживает per-user customization (P8.3) — слой dashboard
- * сериализуется с порядком, который SPA сохраняет в admin_dashboard_layouts.
+ * The SPA renders a twelve-column grid, where each widget takes widget->size
+ * columns. Per-user customization is supported: the dashboard layer is
+ * serialized with an order that the SPA saves into admin_dashboard_layouts.
  */
 final class Dashboard extends Layout
 {
@@ -41,7 +41,7 @@ final class Dashboard extends Layout
     }
 
     /**
-     * Колонок в сетке — обычно 12 (Bootstrap-like) или 24 (более fine-grained).
+     * The grid's columns — usually 12, as in Bootstrap, or 24 for a finer grain.
      */
     public function gridColumns(int $columns): self
     {
@@ -51,7 +51,7 @@ final class Dashboard extends Layout
     }
 
     /**
-     * Отступ между ячейками (px / Tailwind class).
+     * The gap between the cells, in pixels or as a Tailwind class.
      */
     public function gap(string $gap): self
     {
@@ -61,7 +61,7 @@ final class Dashboard extends Layout
     }
 
     /**
-     * Имя dashboard'а — используется как `persistKey` для per-user customization.
+     * The dashboard's name, which doubles as the `persistKey` of the per-user customization.
      */
     public function key(string $key): self
     {

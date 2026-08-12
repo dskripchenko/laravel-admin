@@ -8,18 +8,18 @@ use Dskripchenko\LaravelAdmin\Tenancy\Concerns\TenantScoped;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Опциональная abstract base-модель с подключённым TenantScoped.
+ * An optional abstract base model with TenantScoped already applied.
  *
- * Используется для краткой записи в host-проекте:
+ * It is shorthand for a host project:
  *
  *     class Post extends TenantedModel { ... }
  *
- * Эквивалент:
+ * which is the same as:
  *
  *     class Post extends Model { use TenantScoped; ... }
  *
- * Если нужны другие трейты (HasFactory, Loggable) — лучше подключать
- * TenantScoped напрямую без наследования от этого класса.
+ * When other traits are needed — HasFactory, Loggable — it is better to use
+ * TenantScoped directly rather than to inherit from this class.
  */
 abstract class TenantedModel extends Model
 {

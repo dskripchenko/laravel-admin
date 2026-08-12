@@ -7,9 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Testing\Concerns;
 use Illuminate\Testing\TestResponse;
 
 /**
- * Trait для тестов, работающих с admin Resource API.
+ * The trait for the tests that work against the admin's resource API.
  *
- * Предоставляет high-level helpers вместо ручного `getJson('/api/admin/...')`:
+ * It offers high-level helpers instead of hand-written
+ * `getJson('/api/admin/...')` calls:
  *
  *     $this->getResourceMeta('users')->assertOk();
  *     $this->postResourceCreate('users', ['name' => 'X', 'email' => 'x@a.com']);
@@ -18,8 +19,8 @@ use Illuminate\Testing\TestResponse;
  *     $this->postResourceDelete('users', $id);
  *     $this->postResourceSearch('users', filters: ['email' => 'x']);
  *
- * URL формируется как `/api/admin/{slug}/{action}` — это базовый паттерн
- * laravel-api с {version}=admin.
+ * The URL is `/api/admin/{slug}/{action}`, which is laravel-api's basic
+ * pattern with {version}=admin.
  */
 trait InteractsWithAdminResources
 {
@@ -92,7 +93,7 @@ trait InteractsWithAdminResources
     }
 
     /**
-     * Утверждение: meta-action вернул success + содержит ожидаемые ключи.
+     * Asserts that the meta action succeeded and carries the expected keys.
      *
      * @param  list<string>  $expectedKeys
      */
@@ -109,7 +110,7 @@ trait InteractsWithAdminResources
     }
 
     /**
-     * Утверждение: search-action вернул success + meta.total === ожидаемое.
+     * Asserts that the search action succeeded and that meta.total is as expected.
      */
     public function assertResourceCount(string $slug, int $expected): TestResponse
     {
