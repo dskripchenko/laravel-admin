@@ -45,7 +45,15 @@ export function resolveStatusLabel(
 ): string | null {
   if (value === null) return null
 
-  const options = findFieldNode(nodes, 'status')?.options
+  const field = findFieldNode(nodes, 'status')
+
+  // Подписи лежат в `attributes.options` — там их держит трейт HasOptions.
+  // Верхнеуровневый ключ `options` в сериализации ЕСТЬ, но всегда пустой: он
+  // читает свойство, которого поля не заполняют. Первая версия смотрела туда
+  // и честно ничего не находила, откатываясь к машинному значению — правка
+  // выглядела сделанной и не работала.
+  const attributes = field?.attributes as Record<string, unknown> | undefined
+  const options = attributes?.options ?? field?.options
 
   if (Array.isArray(options)) {
     const hit = options.find(

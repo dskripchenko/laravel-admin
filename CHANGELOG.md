@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.23.2
+
+### Fixed
+- **The status label fix of 1.23.1 did not actually work.** It looked for the
+  labels in the node's top-level `options`, which the serialiser does emit —
+  always empty, because it reads a property no field fills. The labels live in
+  `attributes.options`, where the `HasOptions` trait keeps them. So the header
+  kept printing `active` while the fix looked done.
+
+  The unit test agreed with the wrong assumption, since its fixtures were built
+  from it. What caught this was the manifest of a running stand.
+
 ## 1.23.1
 
 ### Fixed

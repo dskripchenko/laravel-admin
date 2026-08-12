@@ -22,7 +22,15 @@ const nested = [
       { label: 'Main', items: [{ kind: 'field', name: 'name' }] },
       {
         label: 'Other',
-        items: [{ kind: 'field', name: 'status', options: { active: 'Активен', archived: 'Архивирован' } }],
+        items: [
+          {
+            kind: 'field',
+            name: 'status',
+            // Как на самом деле: подписи в attributes, верхний ключ пуст.
+            options: [],
+            attributes: { options: { active: 'Активен', archived: 'Архивирован' } },
+          },
+        ],
       },
     ],
   },
@@ -35,7 +43,13 @@ describe('status label in the form header', () => {
 
   it('understands the list form of options too', () => {
     // Половина ресурсов объявляет подписи списком, а не картой — поддержаны оба.
-    const list = [{ kind: 'field', name: 'status', options: [{ value: 'suspended', label: 'Приостановлен' }] }]
+    const list = [
+      {
+        kind: 'field',
+        name: 'status',
+        attributes: { options: [{ value: 'suspended', label: 'Приостановлен' }] },
+      },
+    ]
 
     expect(label(list, 'suspended')).toBe('Приостановлен')
   })
