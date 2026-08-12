@@ -7,17 +7,18 @@ namespace Dskripchenko\LaravelAdmin\Console\Support;
 use Illuminate\Support\Str;
 
 /**
- * Эвристически выбирает Field-class и параметры по column metadata
- * (name, type, nullable, indexed, enum_values).
+ * Guesses a field class and its parameters from a column's metadata: the name,
+ * the type, whether it is nullable or indexed, and the enum values.
  *
- * Используется генератором Resource'ов чтобы сразу выдать рабочий
- * fields() — host'у нужно лишь причесать.
+ * The resource generator uses it to produce a working fields() right away,
+ * leaving the host only to tidy it up.
  */
 final class FieldTypeInferrer
 {
     /**
-     * Возвращает кодовую строку для одного field в массиве `fields()`.
-     * Включает rules + helpers (placeholder/title/required/options).
+     * Returns the line of code for one field of the `fields()` array,
+     * including the rules and the helpers: placeholder, title, required,
+     * options.
      *
      * @param  array{name: string, type: string, nullable: bool, default: mixed, comment: ?string, is_unique: bool, is_indexed: bool, enum_values: ?list<string>}  $col
      * @param  list<array{name: string, type: string, related: ?class-string, foreign_key: ?string, owner_key: ?string}>  $relations
@@ -31,7 +32,7 @@ final class FieldTypeInferrer
             return null;
         }
 
-        // Foreign-key columns → RelationSelect (если соответствующий relation есть)
+        // A foreign-key column becomes a RelationSelect, when the matching relation exists
         foreach ($relations as $rel) {
             if ($rel['type'] === 'BelongsTo' && $rel['foreign_key'] === $name) {
                 return $this->relationSelect($name, $rel);
@@ -47,7 +48,7 @@ final class FieldTypeInferrer
             return $this->selectFromEnum($name, $title, $col['enum_values'], $required);
         }
 
-        // Name-pattern шорткаты
+        // The shortcuts by name pattern
         $pattern = $this->detectByName($name);
 
         // Type-mapping
@@ -73,7 +74,7 @@ final class FieldTypeInferrer
     }
 
     /**
-     * Возвращает кодовую строку для TableColumn (для columns()).
+     * Returns the line of code for a TableColumn, for columns().
      *
      * @param  array{name: string, type: string, is_indexed: bool, enum_values: ?list<string>}  $col
      */
@@ -119,7 +120,7 @@ final class FieldTypeInferrer
     }
 
     /**
-     * Возвращает код фильтра (если column подходит под фильтр).
+     * Returns a filter's code, when the column suits a filter at all.
      *
      * @param  array{name: string, type: string, is_indexed: bool, enum_values: ?list<string>}  $col
      */
@@ -196,9 +197,9 @@ final class FieldTypeInferrer
         $relName = $rel['name'];
         $title = $this->humanize($relName);
 
-        // Для display — лучше брать из related-модели через introspector,
-        // но в момент инференса у нас нет к нему доступа: ставим 'name'
-        // как дефолт, host поправит если нужно.
+        // The display column would better come from the related model,
+        // through the introspector, but at inference time we have no access to
+        // it: 'name' is the default, and the host corrects it if need be.
         return "RelationSelect::make('{$columnName}')->relation('{$relName}')->display('name')->searchable()->title('{$title}')";
     }
 
@@ -223,7 +224,7 @@ final class FieldTypeInferrer
 
     private function insertModifier(string $code, string $modifier): string
     {
-        // Вставляем перед закрывающей кавычкой / в конец цепочки.
+        // Inserted before the closing quote, at the end of the chain.
         return $code.$modifier;
     }
 

@@ -7,38 +7,38 @@ namespace Dskripchenko\LaravelAdmin\Plugin;
 use Dskripchenko\LaravelAdmin\Admin;
 
 /**
- * Контракт admin-плагина.
+ * The contract of an admin plugin.
  *
- * Жизненный цикл: register() → boot().
- *   - register() вызывается до полной загрузки бинда — здесь можно бинды
- *     добавлять, миграции грузить.
- *   - boot() вызывается после, на этой стадии регистрируем Resources/Screens/
- *     Permissions через переданный $admin.
+ * Its lifecycle is register() → boot().
+ *   - register() runs before the bindings are fully in place, which is where
+ *     bindings are added and migrations loaded.
+ *   - boot() runs afterwards, and that is where the resources, screens and
+ *     permissions are registered through the $admin passed in.
  *
- * Plugins декларируются в config/admin.php → plugins[] либо через
+ * Plugins are declared in config/admin.php → plugins[], or through
  * Admin::plugins([...]).
  */
 interface AdminPlugin
 {
     /**
-     * Уникальный идентификатор плагина (для discovery, deps, audit).
+     * The plugin's unique identifier, used by discovery, dependencies and the audit.
      */
     public function name(): string;
 
     /**
-     * Версия (для совместимости).
+     * The version, for compatibility.
      */
     public function version(): string;
 
     /**
-     * Слой register: бинды/миграции. Не имеет доступа к Admin manager'у —
-     * слишком ранняя точка.
+     * The register stage: bindings and migrations. It has no access to the
+     * Admin manager — that would be too early.
      */
     public function register(): void;
 
     /**
-     * Слой boot: регистрация Resources/Screens/Permissions/Settings/Widgets
-     * через переданный Admin.
+     * The boot stage: registering the resources, screens, permissions,
+     * settings and widgets through the Admin passed in.
      */
     public function boot(Admin $admin): void;
 }

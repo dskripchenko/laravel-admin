@@ -1,13 +1,14 @@
 /**
- * Entry-CSS: токены + темы UI-кита @dskripchenko/ui + admin-каркасные классы.
- * Импортируется через `import '@dskripchenko/laravel-admin/style.css'` в host'е.
+ * The entry CSS: the tokens and themes of the @dskripchenko/ui kit plus the
+ * admin shell's classes. A host imports it as
+ * `import '@dskripchenko/laravel-admin/style.css'`.
  */
 import './styles/admin.css'
 
 /**
- * Точка входа SPA-бандла @dskripchenko/laravel-admin.
+ * The entry point of the @dskripchenko/laravel-admin SPA bundle.
  *
- * Минимальный host-mount:
+ * The minimal mount in a host:
  *
  *     import { createAdminApp } from '@dskripchenko/laravel-admin'
  *     import '@dskripchenko/laravel-admin/style.css'
@@ -15,16 +16,17 @@ import './styles/admin.css'
  *     const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
  *     app.mount('#admin-app')
  *
- * Низкоуровневые экспорты (для расширений / партнёров):
- *   - createAdminClient() / AdminClient — axios-обёртка для admin API.
+ * The lower-level exports, for extensions and partners:
+ *   - createAdminClient() / AdminClient — the axios wrapper of the admin API.
  *   - loadBootstrap() / readInlineBootstrap() / readCsrfFromMeta().
- *   - createAdminRouter() — фабрика router'а с manifest-driven routes.
- *   - useAuthStore() / useManifestStore() / ... — Pinia stores.
- *   - registerField() / registerLayout() / registerWidget() / ... — registries.
- *   - ApiError + подклассы (Unauthenticated/Forbidden/NotFound/Validation/Network).
+ *   - createAdminRouter() — the router factory, with manifest-driven routes.
+ *   - useAuthStore() / useManifestStore() / … — the Pinia stores.
+ *   - registerField() / registerLayout() / registerWidget() / … — the registries.
+ *   - ApiError and its subclasses: Unauthenticated, Forbidden, NotFound,
+ *     Validation, Network.
  */
 
-// Главный helper для host-проектов
+// The main helper for the host projects
 export { createAdminApp } from './createAdminApp'
 export type {
   CreateAdminAppOptions,
@@ -32,7 +34,7 @@ export type {
   AdminAppHandle,
 } from './createAdminApp'
 
-// Default page-компоненты (host'ы могут заменить или переэкспортировать)
+// The default page components; a host may replace or re-export them
 export { default as AdminApp } from './components/AdminApp.vue'
 export { default as HomePage } from './components/HomePage.vue'
 export { default as ForbiddenPage } from './components/ForbiddenPage.vue'
@@ -127,7 +129,7 @@ export type { MenuItem, MenuGroup } from './stores/menu'
 // host's JSON translations into the bootstrap bag. Only the reader was missing.
 //
 //   import { trSafe as tr } from '@dskripchenko/laravel-admin'
-//   tr('Ключ обязателен')   // key = the source string, as on the server
+//   tr('The key is required')   // key = the source string, as on the server
 export { trSafe, useI18nStore, tRaw } from './stores/i18n'
 
 // Shell components

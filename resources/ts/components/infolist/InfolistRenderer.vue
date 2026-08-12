@@ -1,17 +1,19 @@
 <script setup lang="ts">
 /**
- * InfolistRenderer — read-only аналог LayoutRenderer для view-страниц.
+ * InfolistRenderer — the read-only counterpart of LayoutRenderer, for the view
+ * pages.
  *
- * Узлы:
- *   { type: 'text', name: 'title', label: 'Заголовок' }   — entry (leaf)
- *   { type: 'rows', items: [ ... ] }                       — layout (recurse)
- *   { type: 'section', title: 'X', items: [ ... ] }        — layout
- *   { type: 'columns', items: [ ... ] }                    — layout
+ * The nodes:
+ *   { type: 'text', name: 'title', label: 'Title' }   — an entry, a leaf
+ *   { type: 'rows', items: [ ... ] }                  — a layout, recursed
+ *   { type: 'section', title: 'X', items: [ ... ] }   — a layout
+ *   { type: 'columns', items: [ ... ] }               — a layout
  *
- * Внимание: layout-узлы рендерятся СВОИМ внутренним wrapper'ом, а не
- * registered uid-layouts из render/registry, потому что те делегируют детей
- * в LayoutRenderer (field-registry → useFormState ОБЯЗАТЕЛЕН). Здесь record-
- * read-only режим — детей рендерим через сам InfolistRenderer.
+ * Note that the layout nodes are drawn by OUR OWN inner wrapper rather than by
+ * the registered uid layouts from render/registry: those delegate their
+ * children to LayoutRenderer, whose field registry REQUIRES a useFormState.
+ * Here the record is read-only, so the children go through InfolistRenderer
+ * itself.
  */
 import { computed } from 'vue'
 import { getInfolistEntry } from './registry'
@@ -19,7 +21,7 @@ import UnknownEntry from './UnknownEntry.vue'
 
 export interface InfolistNode extends Record<string, unknown> {
   type: string
-  /** Hint: 'entry' либо 'layout'. */
+  /** The hint: 'entry' or 'layout'. */
   kind?: 'entry' | 'layout'
   items?: InfolistNode[]
 }
@@ -46,7 +48,7 @@ const resolved = computed<Resolved>(() => {
       ? { kind: 'layout', layoutType: props.node.type }
       : { kind: 'unknown' }
   }
-  // Auto-detect: layouts по имени, entries по registry.
+  // Detected automatically: the layouts by name, the entries through the registry.
   if (KNOWN_LAYOUTS.has(props.node.type)) {
     return { kind: 'layout', layoutType: props.node.type }
   }
@@ -57,9 +59,10 @@ const resolved = computed<Resolved>(() => {
 
 const entryProps = computed(() => {
   const { type: _t, kind: _k, items: _i, attributes, ...rest } = props.node
-  // Backend кладёт preset/format/etc в `attributes` под-объект (см.
-  // Infolist\Entry::toArray). Flat'имся для удобства Vue v-bind:
-  // attributes.preset → preset prop, attributes.format → meta.format.
+  // The backend puts preset, format and the rest into the `attributes`
+  // sub-object; see Infolist\Entry::toArray. We flatten them for Vue's
+  // v-bind: attributes.preset becomes the preset prop, attributes.format
+  // becomes meta.format.
   const attrs = (attributes as Record<string, unknown> | undefined) ?? {}
   const { preset, format, currency, decimals, ...rest2 } = attrs
   const meta: Record<string, unknown> = {}
@@ -198,7 +201,7 @@ const tabsList = computed<InfolistTab[]>(() => {
 .admin-infolist-entry {
   display: flex;
   flex-direction: column;
-  /* flex-start чтобы inline-контролы (badge/chip) не растягивались на всю
+  /* flex-start keeps the inline controls — a badge, a chip — from stretching across the whole
      ширину строки — иначе status-чип занимает всю колонку. */
   align-items: flex-start;
   gap: var(--uid-space-2xs);

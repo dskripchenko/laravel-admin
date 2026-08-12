@@ -10,15 +10,15 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Registry admin-плагинов.
+ * The registry of the admin plugins.
  *
- * Двухфазный lifecycle:
- *   1. register($class) — добавляет FQCN в очередь.
- *   2. registerAll() — инстанцирует все, вызывает register() (раннее
- *      биндинг-время).
- *   3. bootAll($admin) — вызывает boot($admin) для каждого плагина.
+ * Its lifecycle has three steps:
+ *   1. register($class) queues an FQCN.
+ *   2. registerAll() instantiates them all and calls register(), early enough
+ *      for bindings.
+ *   3. bootAll($admin) calls boot($admin) on each of them.
  *
- * Дубликаты по name() запрещены — RuntimeException на повторе.
+ * Duplicate name() values are forbidden: a repeat throws a RuntimeException.
  */
 final class PluginRegistry
 {
@@ -67,7 +67,7 @@ final class PluginRegistry
     }
 
     /**
-     * Инстанцирует плагины и вызывает register() в каждом.
+     * Instantiates the plugins and calls register() on each of them.
      */
     public function registerAll(): void
     {
@@ -93,7 +93,7 @@ final class PluginRegistry
     }
 
     /**
-     * Вызывает boot() в каждом плагине, прокидывая Admin manager.
+     * Calls boot() on every plugin, passing the Admin manager in.
      */
     public function bootAll(Admin $admin): void
     {
@@ -105,7 +105,7 @@ final class PluginRegistry
         }
 
         foreach ($this->instances as $name => $instance) {
-            // Регистрации из boot'а тегируются панелью плагина (v1.8 Panels).
+            // What boot() registers is tagged with the plugin's panel.
             $admin->setRegistrationPanel($this->instancePanels[$name] ?? 'admin');
             $instance->boot($admin);
         }
@@ -114,7 +114,7 @@ final class PluginRegistry
     }
 
     /**
-     * Без аргумента — все (BC); с панелью — только её плагины.
+     * Without an argument: all of them; with a panel: that panel's plugins alone.
      *
      * @return array<string, AdminPlugin>
      */

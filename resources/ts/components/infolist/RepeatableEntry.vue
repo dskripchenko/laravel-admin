@@ -1,23 +1,23 @@
 <script setup lang="ts">
 /**
- * RepeatableEntry — read-only коллекция (parный к Field\Repeater).
+ * RepeatableEntry — a read-only collection, the counterpart of Field\Repeater.
  *
- * Backend RepeatableEntry::make('key')->entries([
+ * On the backend: RepeatableEntry::make('key')->entries([
  *   TextEntry::make('field_a')->label('A'),
  *   BadgeEntry::make('flag')->label('Flag')->map([...]),
  * ])->layout('columns')
  *
- * Props (после spread'а из FieldRenderer):
- *   - name: string — ключ в record
+ * The props, after FieldRenderer has spread them:
+ *   - name: string — the key in the record
  *   - label?: string
- *   - entries: Entry[] — список sub-entry-метаданных
- *   - layout?: 'columns' | 'rows' | 'inline' (default 'columns')
- *   - value?: array (если передан напрямую, иначе берётся из record[name])
+ *   - entries: Entry[] — the metadata of the sub-entries
+ *   - layout?: 'columns' | 'rows' | 'inline'; 'columns' by default
+ *   - value?: array — when passed directly; otherwise record[name] is used
  *
- * Рендер:
- *   - 'columns' — html <table> с колонками по entries[]
- *   - 'rows'    — каждый item card, внутри пары label/value
- *   - 'inline'  — chip-list через запятую
+ * The rendering:
+ *   - 'columns' — an HTML <table> with a column per entry
+ *   - 'rows'    — a card per item, holding label/value pairs
+ *   - 'inline'  — a comma-separated list of chips
  */
 import { computed } from 'vue'
 import { tryUseRecord } from './recordContext'
@@ -71,8 +71,8 @@ function resolveComponent(type: string) {
 }
 
 function subProps(entry: EntryMeta, item: Record<string, unknown>) {
-  // Развернём attributes (как FieldRenderer): чтобы preset/meta/map дошли
-  // до sub-component'а на верхнем уровне props.
+  // The attributes are spread, as FieldRenderer does it, so that preset, meta
+  // and map reach the sub-component at the top level of its props.
   const { type: _type, ...rest } = entry
   const attrs = (entry.attributes as Record<string, unknown> | undefined) ?? {}
   return {

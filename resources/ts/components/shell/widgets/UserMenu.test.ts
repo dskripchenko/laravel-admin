@@ -67,12 +67,12 @@ describe('UserMenu', () => {
   it('shows UidAvatar with user name in trigger', async () => {
     useAuthStore().hydrate(mkBootstrap({ user: mkUser() }))
     const wrapper = await mountMenu()
-    // UidAvatar — компонент uid; ищем по data-name либо по тексту инициалов
-    // (в light-mode он рендерит span). Достаточно убедиться, что компонент
-    // отрисован в trigger'е.
+    // UidAvatar is a uid component; we look for it by data-name or by the
+    // text of the initials, which it renders in a span in the light mode. It
+    // is enough to see that the component is drawn inside the trigger.
     const trigger = wrapper.find('.admin-user-menu__trigger')
     expect(trigger.exists()).toBe(true)
-    // UidAvatar для именованного пользователя ставит инициалы AW.
+    // For a named user UidAvatar shows the initials AW.
     expect(trigger.text()).toContain('AW')
   })
 
@@ -85,9 +85,9 @@ describe('UserMenu', () => {
     if (img.exists()) {
       expect(img.attributes('src')).toBe('/me.jpg')
     } else {
-      // UidAvatar может рендерить background-image либо <img> в зависимости от
-      // имплементации. Если <img> не нашли — достаточно что src дошёл до
-      // компонента; проверим через раз отрисованный trigger.
+      // UidAvatar may render a background-image or an <img>, depending on the
+      // implementation. If no <img> is found, it is enough that the src
+      // reached the component, which the rendered trigger shows.
       expect(wrapper.find('.admin-user-menu__trigger').exists()).toBe(true)
     }
   })
@@ -112,15 +112,16 @@ describe('UserMenu logout integration', () => {
     useAuthStore().hydrate(mkBootstrap({ user: mkUser() }))
     mock.onPost('/auth/logout').reply(200, { success: true, payload: {} })
     const wrapper = await mountMenu()
-    // Вызываем напрямую — UidMenu в jsdom без teleport не всегда рендерит
-    // items, но handler уже определён в setup. Достаточно проверить, что
-    // store + router работают как контракт ожидает.
+    // Called directly: under jsdom, without a teleport, UidMenu does not
+    // always render its items, but the handler is defined in setup already. It
+    // is enough to check that the store and the router behave as the contract
+    // expects.
     const auth = useAuthStore()
     await auth.logout()
     await flushPromises()
     expect(auth.user).toBeNull()
-    // pushSpy уже привязан в mountMenu — но вызов router.push идёт из
-    // компонента; здесь проверяем только основные эффекты на store.
+    // pushSpy is bound in mountMenu already, but the router.push comes from
+    // the component; here we check only the main effects on the store.
     wrapper.unmount()
   })
 })

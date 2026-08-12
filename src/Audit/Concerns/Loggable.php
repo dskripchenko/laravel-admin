@@ -10,19 +10,19 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Подключите этот trait к модели чтобы события CRUD автоматически писались
- * в admin_audit_logs.
+ * Apply this trait to a model and its CRUD events are written into
+ * admin_audit_logs by themselves.
  *
- * События:
- *   - created — пишет full `after` снимок
- *   - updated — пишет `before/after` только для изменённых атрибутов
- *   - deleted — пишет `before` снимок
- *   - restored — пишет `after` снимок (если SoftDeletes)
- *   - forceDeleted — пишет `before` снимок (если SoftDeletes)
+ * The events:
+ *   - created — writes the full `after` snapshot
+ *   - updated — writes `before`/`after` for the changed attributes alone
+ *   - deleted — writes the `before` snapshot
+ *   - restored — writes the `after` snapshot, with SoftDeletes
+ *   - forceDeleted — writes the `before` snapshot, with SoftDeletes
  *
- * Атрибуты из `config('admin.audit.excluded_attributes')` (password, tokens
- * и т.п.) автоматически вычищаются. Можно переопределить per-модель через
- * `getAuditExcluded(): array<string>`.
+ * The attributes listed in `config('admin.audit.excluded_attributes')` —
+ * passwords, tokens and the like — are stripped automatically, and a model may
+ * override that with `getAuditExcluded(): array<string>`.
  */
 trait Loggable
 {
@@ -64,7 +64,7 @@ trait Loggable
     }
 
     /**
-     * Атрибуты, которые не должны попадать в changes-снимок.
+     * The attributes that must never reach the changes snapshot.
      *
      * @return list<string>
      */
@@ -104,7 +104,7 @@ trait Loggable
 
         // For update / restore events, skip the AuditLog row entirely when
         // every changed attribute has been filtered out — otherwise the
-        // timeline shows an empty "Изменено" entry that hides the actual
+        // timeline shows an empty "Changed" entry that hides the actual
         // change history (e.g. only updated_at / last_login_at touched).
         if (
             (bool) config('admin.audit.skip_empty_updates', true)

@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\I18n;
 
 /**
- * Перевод пользовательских строк манифеста через JSON-переводы Laravel
- * (`lang/{locale}.json`, ключ — исходная строка). Идемпотентно: без перевода
- * строка возвращается как есть, поэтому host может НЕ оборачивать лейблы в
- * `__()` — сериализация переводит их сама (BL-11).
+ * Translates the manifest's user-facing strings through Laravel's JSON
+ * translations (`lang/{locale}.json`, keyed by the source string). It is
+ * idempotent: without a translation the string comes back as it is, so a host
+ * need NOT wrap its labels in `__()` — the serialization translates them
+ * itself.
  */
 final class Localize
 {
     /**
-     * Брендинг из config('admin.brand') с локализованным copyright/footer
-     * (name/logo не переводятся).
+     * The branding from config('admin.brand'), with the copyright and footer
+     * localized; the name and the logo are not translated.
      *
      * @return array<string, mixed>
      */
@@ -40,9 +41,9 @@ final class Localize
     }
 
     /**
-     * Перевести известные текстовые ключи массива атрибутов (копия, без
-     * мутации исходника): title/help/placeholder/label/trueLabel/falseLabel
-     * + labels в options.
+     * Translates the known text keys of an attribute array — title, help,
+     * placeholder, label, trueLabel, falseLabel and the labels inside options
+     * — returning a copy, without mutating the original.
      *
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
@@ -51,10 +52,10 @@ final class Localize
     {
         foreach ($attributes as $key => $value) {
             $key = (string) $key;
-            // Любой ключ-подпись: title/help/placeholder и всё, что
-            // заканчивается на label (label, keyLabel, trueLabel, addLabel…) —
-            // раньше список был жёстким и мимо него проходили подписи
-            // key-value/repeater/tabs.
+            // Any key that names a caption: title, help, placeholder and
+            // everything ending in label (label, keyLabel, trueLabel,
+            // addLabel…). The list used to be fixed, and the captions of
+            // key-value, repeater and tabs slipped past it.
             $isTextKey = in_array($key, ['title', 'help', 'placeholder'], true)
                 || str_ends_with(mb_strtolower($key), 'label');
 
@@ -71,7 +72,7 @@ final class Localize
     }
 
     /**
-     * @param  array<int|string, mixed>  $options  list<{value, label}> либо мапа value→label
+     * @param  array<int|string, mixed>  $options  A list<{value, label}> or a value → label map
      * @return array<int|string, mixed>
      */
     public static function options(array $options): array

@@ -1,18 +1,20 @@
 /**
- * Formatter cell-значений для ResourceIndexPage.
+ * Formats the cell values of ResourceIndexPage.
  *
- * Backend-side TableColumn presets:
- *   - text       → as-is (string).
- *   - date       → 'd.m.Y' (default).
- *   - datetime   → 'd.m.Y H:i:s' (default).
- *   - money      → '{value} {currency}' с decimals.
- *   - boolean    → trueLabel / falseLabel из meta.
- *   - badge      → текст; стилизация на UI рендере (через slot или CSS-class).
- *   - bytes      → human-readable размер.
- *   - text       → fallback.
+ * The backend's TableColumn presets:
+ *   - text       → as it is, a string.
+ *   - date       → 'd.m.Y' by default.
+ *   - datetime   → 'd.m.Y H:i:s' by default.
+ *   - money      → '{value} {currency}', with decimals.
+ *   - boolean    → the trueLabel or falseLabel from the meta.
+ *   - badge      → the text; the styling happens in the UI, through a slot or
+ *                  a CSS class.
+ *   - bytes      → a human-readable size.
+ *   - text       → the fallback.
  *
- * `auto-format` для колонок без явного preset'а: если значение похоже на ISO
- * datetime (`*_at` или строка с T...Z) — применяется default datetime формат.
+ * Columns with no explicit preset are formatted automatically: a value that
+ * looks like an ISO datetime — the column ends in `_at`, or the string carries
+ * T...Z — gets the default datetime format.
  */
 
 import { trSafe as tr } from '../../stores/i18n'
@@ -40,7 +42,7 @@ export function formatCell(
 ): string {
   if (value === null || value === undefined) return ''
 
-  // Auto-detection ISO datetime для колонок без preset'а.
+  // The automatic detection of an ISO datetime, for the columns with no preset.
   if (!preset && typeof value === 'string' && ISO_DATETIME_RE.test(value)) {
     return formatDateString(value, DEFAULT_DATETIME)
   }
@@ -75,9 +77,9 @@ function safeJson(value: unknown): string {
 }
 
 /**
- * PHP-стиль format strings → JS-Date.
+ * PHP-style format strings applied to a JS Date.
  *
- * Поддерживаемые токены:
+ * The tokens supported:
  *   d → 01-31, m → 01-12, Y → 2026, y → 26
  *   H → 00-23, h → 12-hour, i → minutes, s → seconds
  *   D → Mon-Sun (3-letter), l → full day name, M → Jan, F → January
@@ -105,7 +107,7 @@ function formatDateString(input: string, format: string): string {
     w: String(date.getDay()),
   }
 
-  // Замена с учётом escape '\\' (PHP: backslash escapes the next char).
+  // The replacement honours the '\\' escape, as PHP does: a backslash escapes the next character.
   let out = ''
   for (let i = 0; i < format.length; i++) {
     const ch = format[i]

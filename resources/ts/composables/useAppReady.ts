@@ -3,19 +3,20 @@ import { useManifestStore } from '../stores/manifest'
 import { useMenuStore } from '../stores/menu'
 
 /**
- * Один гейт готовности каркаса: меню и страница появляются вместе.
+ * One readiness gate for the whole shell: the menu and the page appear
+ * together.
  *
- * Замер на живом стенде показал двухтактную загрузку: на 236 мс отрисован
- * топбар с пустым сайдбаром и страница, которой в этой установке нет
- * (HomePage-заглушка «зарегистрируйте DashboardScreen»), и только на 510 мс
- * приходит manifest — меню наполняется, страница подменяется настоящей.
- * Четверть секунды пользователь смотрел на чужой экран, а потом всё
- * скачком переставлялось.
+ * Measured on the live stand, the load came in two beats: at 236 ms a topbar
+ * with an empty sidebar and a page that does not exist in this installation
+ * (the HomePage placeholder saying "register a DashboardScreen"), and only at
+ * 510 ms the manifest — the menu fills in and the real page replaces the
+ * placeholder. For a quarter of a second one looked at the wrong screen, and
+ * then everything jumped into place.
  *
- * Манифест и меню запрашиваются параллельно, поэтому ждать оба дешевле, чем
- * показывать полусобранный интерфейс. Гейт открывается по готовности обоих —
- * либо по страховочному таймауту: зависший запрос меню не имеет права
- * держать страницу вечно.
+ * The manifest and the menu are fetched in parallel, so waiting for both costs
+ * less than showing a half-assembled interface. The gate opens when both are
+ * ready — or on a safety timeout, since a hung menu request has no right to
+ * hold the page forever.
  */
 export const BOOT_GATE_TIMEOUT_MS = 1500
 

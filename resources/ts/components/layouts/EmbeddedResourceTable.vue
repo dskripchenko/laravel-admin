@@ -1,19 +1,22 @@
 <script setup lang="ts">
 /**
- * EmbeddedResourceTable — компактная таблица другого Resource'а, встроенная
- * во вкладку edit-page родителя. Соответствует backend layout-типу
- * `'admin.resource-table'` (см. `core/src/Layout/ResourceTable.php`).
+ * EmbeddedResourceTable — a compact table of another resource, embedded into a
+ * tab of the parent's edit page. It matches the backend layout type
+ * `'admin.resource-table'`; see `core/src/Layout/ResourceTable.php`.
  *
- * Resolution:
- *  - manifest колонки/permissions/editable — из useManifestStore.
- *  - parent record (для FK) — из useResourceFormStore.
- *  - данные — POST `/{resource}/search` с filter `{[foreign_key]: parentId}`.
+ * Where things come from:
+ *  - the columns, permissions and editability from the manifest, through
+ *    useManifestStore.
+ *  - the parent record, for the foreign key, from useResourceFormStore.
+ *  - the data from POST `/{resource}/search`, filtered by
+ *    `{[foreign_key]: parentId}`.
  *
- * Возможности (props.features):
- *  - inline-edit ячеек (всегда — определяется per-column в manifest)
- *  - quick-add: пустая строка-draft + commit (POST /create с FK auto-fill)
- *  - per-row delete (иконка корзины)
- *  - bulk delete (выделение + toolbar)
+ * What it can do, through props.features:
+ *  - edit cells inline — always available, decided per column in the manifest
+ *  - quick-add: an empty draft row that commits through POST /create, with the
+ *    foreign key filled in
+ *  - delete a row, through the bin icon
+ *  - delete in bulk, through the selection and the toolbar
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { Plus, Trash2, Check, X } from 'lucide-vue-next'
@@ -180,7 +183,7 @@ async function bulkDelete(): Promise<void> {
   if (!confirm(tRaw('Удалить :count строк?', { count: selection.value.size }))) return
   const ids = [...selection.value]
   try {
-    // Параллельное удаление: backend пока без bulk endpoint; шлём по одному.
+    // Deleting in parallel: the backend has no bulk endpoint yet, so they go one by one.
     await Promise.all(ids.map((id) => getAdminClient().post(`/${props.resource}/delete`, { id })))
     selection.value = new Set()
     await load()

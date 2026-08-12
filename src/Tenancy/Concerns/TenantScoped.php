@@ -8,17 +8,18 @@ use Dskripchenko\LaravelAdmin\Tenancy\TenantContext;
 use Dskripchenko\LaravelAdmin\Tenancy\TenantScope;
 
 /**
- * Trait для моделей с tenant-scope'ом.
+ * The trait of a tenant-scoped model.
  *
- * При boot:
- *   - добавляет global scope `TenantScope`, который фильтрует все запросы
- *     по `tenant_id = current_tenant->getTenantKey()`;
- *   - hook'ает creating event: автоматически проставляет `tenant_id`
- *     текущего tenant'а в новые записи.
+ * On boot it:
+ *   - adds the `TenantScope` global scope, filtering every query by
+ *     `tenant_id = current_tenant->getTenantKey()`;
+ *   - hooks the creating event, so that new records get the current tenant's
+ *     `tenant_id` by themselves.
  *
- * Имя колонки можно переопределить статическим property `$tenantColumn`
- * (default 'tenant_id'). Если current tenant = null (single-tenant mode),
- * scope не делает ничего — ни фильтрации, ни авто-установки.
+ * The column's name can be overridden with the static `$tenantColumn`
+ * property; it is 'tenant_id' by default. With no current tenant — the
+ * single-tenant mode — the scope does nothing at all: neither filtering nor
+ * filling in.
  */
 trait TenantScoped
 {
@@ -44,8 +45,8 @@ trait TenantScoped
     }
 
     /**
-     * Имя колонки-tenant-fk. Override через статический `$tenantColumn`
-     * на конкретной модели (default `tenant_id`).
+     * The name of the tenant foreign-key column, overridable with a static
+     * `$tenantColumn` on the model; `tenant_id` by default.
      */
     public function getTenantColumn(): string
     {

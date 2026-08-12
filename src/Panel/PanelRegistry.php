@@ -7,13 +7,14 @@ namespace Dskripchenko\LaravelAdmin\Panel;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
 
 /**
- * Реестр панелей + резолв «текущей» панели запроса.
+ * The registry of the panels, and the resolution of a request's "current" one.
  *
- * Текущая панель определяется (по убыванию приоритета):
- *   1. явный setCurrent() (тесты, консольные сценарии);
- *   2. атрибут запроса `admin.panel` (ставится shell-роутом панели);
- *   3. API-версия laravel-api текущего запроса (версия == id панели);
- *   4. дефолтная панель `admin`.
+ * The current panel is decided, in order of precedence, by:
+ *   1. an explicit setCurrent(), in tests and console scenarios;
+ *   2. the request attribute `admin.panel`, set by the panel's shell route;
+ *   3. the laravel-api version of the current request, which equals the
+ *      panel's id;
+ *   4. the default `admin` panel.
  */
 final class PanelRegistry
 {
@@ -69,9 +70,11 @@ final class PanelRegistry
             return $this->get($this->current) ?? $this->default();
         }
 
-        // В консоли request — заглушка из глобалов: атрибуты/route/api-version
-        // пусты, резолв честно падает в дефолт. Отдельной console-ветки не надо
-        // (а в HTTP-тестах runningInConsole() === true — проверка ломала бы их).
+        // In the console the request is a stand-in built from the globals:
+        // the attributes, the route and the API version are all empty, and the
+        // resolution honestly falls through to the default. No separate
+        // console branch is needed — and in HTTP tests runningInConsole() is
+        // true, so such a check would break them.
         if (app()->bound('request')) {
             $request = request();
 
@@ -88,8 +91,8 @@ final class PanelRegistry
                 }
             }
 
-            // Фасад laravel-api аннотирует string, фактически бывает null —
-            // нормализуем к '' (пустая строка панелью не бывает).
+            // laravel-api's facade annotates a string but can return null, so
+            // we normalize to '' — no panel is ever named by an empty string.
             $version = (string) ApiRequest::getApiVersion();
             if ($version !== '' && $this->has($version)) {
                 return $this->all()[$version];
@@ -100,7 +103,7 @@ final class PanelRegistry
     }
 
     /**
-     * Сбрасывает кеш панелей (config изменился в тестах).
+     * Clears the cached panels, for when the config changed during a test.
      */
     public function flush(): void
     {

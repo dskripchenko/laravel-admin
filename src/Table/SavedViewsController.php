@@ -14,21 +14,22 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Универсальный controller сохранённых view'ев — обслуживает все Resource'ы
- * по тому же паттерну, что и ResourceController.
+ * The universal controller of the saved views, serving every resource by the
+ * same pattern ResourceController follows.
  *
- * URL: `/api/admin/{slug}.views/{action}` где slug = resource_slug.
+ * The URL is `/api/admin/{slug}.views/{action}`, where the slug is the
+ * resource's.
  *
- * Регистрация — через ResourceCompiler с дополнительными actions, либо
- * через отдельную регистрацию в AdminApi (выбран второй вариант — отдельный
- * controller key `{slug}_views`).
+ * It could be registered through ResourceCompiler as extra actions, or
+ * separately in AdminApi; the second was chosen, with its own controller key
+ * `{slug}_views`.
  */
 final class SavedViewsController extends ApiController
 {
     public function __construct(private readonly ResourceRegistry $registry) {}
 
     /**
-     * Список сохранённых view'ев для текущего пользователя + глобальные.
+     * The saved views of the current user, plus the global ones.
      *
      * @output object $payload
      *
@@ -60,7 +61,7 @@ final class SavedViewsController extends ApiController
     }
 
     /**
-     * Создать view (owned by current user).
+     * Creates a view, owned by the current user.
      *
      * @input string $name
      * @input array $state
@@ -103,7 +104,7 @@ final class SavedViewsController extends ApiController
     }
 
     /**
-     * Обновить state существующего view'а.
+     * Updates an existing view's state.
      *
      * @input integer $id
      * @input string ?$name
@@ -141,7 +142,7 @@ final class SavedViewsController extends ApiController
     }
 
     /**
-     * Удалить view.
+     * Removes a view.
      *
      * @input integer $id
      *
@@ -170,8 +171,8 @@ final class SavedViewsController extends ApiController
     }
 
     /**
-     * Slug текущего Resource'а — берём из api controller key.
-     * Регистрация: в AdminApi controller key = "{slug}_views".
+     * The current resource's slug, taken from the API controller key, which
+     * AdminApi registers as "{slug}_views".
      */
     private function resourceSlug(): string
     {

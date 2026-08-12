@@ -13,15 +13,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as LaravelTestCase;
 
 /**
- * Базовый TestCase для admin-тестов host-проекта.
+ * The base TestCase of a host project's admin tests.
  *
- * Преимущества над прямым `extends TestCase`:
- *   - RefreshDatabase встроен;
- *   - clearAdminRegistries() в `setUp()` сбрасывает laravel-admin
- *     ResourceRegistry/SettingsRegistry/AdminApi cache между тестами;
- *   - ActsAsAdmin trait для быстрой авторизации.
+ * What it adds over a plain `extends TestCase`:
+ *   - RefreshDatabase is built in;
+ *   - clearAdminRegistries() in `setUp()` resets laravel-admin's
+ *     ResourceRegistry, SettingsRegistry and AdminApi cache between tests;
+ *   - the ActsAsAdmin trait, for logging in quickly.
  *
- * Использование:
+ * Usage:
  *
  *     class UsersResourceTest extends AdminTestCase
  *     {
@@ -45,8 +45,9 @@ abstract class AdminTestCase extends LaravelTestCase
     }
 
     /**
-     * Сбрасывает laravel-admin singleton'ы — критично для тестов с кастомной
-     * регистрацией Resource/Settings (иначе соседние тесты видят друг друга).
+     * Resets laravel-admin's singletons, which matters for the tests that
+     * register their own resources and settings — otherwise neighbouring tests
+     * see one another.
      */
     protected function clearAdminRegistries(): void
     {
@@ -56,7 +57,7 @@ abstract class AdminTestCase extends LaravelTestCase
     }
 
     /**
-     * Зарегистрировать Resource в registry для текущего теста.
+     * Registers a resource in the registry, for the current test.
      *
      * @param  class-string<\Dskripchenko\LaravelAdmin\Resource\Resource>  $class
      */
@@ -67,7 +68,7 @@ abstract class AdminTestCase extends LaravelTestCase
     }
 
     /**
-     * Зарегистрировать SettingsResource в registry для текущего теста.
+     * Registers a SettingsResource in the registry, for the current test.
      *
      * @param  class-string<\Dskripchenko\LaravelAdmin\Settings\SettingsResource>  $class
      */

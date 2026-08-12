@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Auth;
 
 /**
- * Выключена ли учётная запись.
+ * Whether an account is switched off.
  *
- * Признак выключения зависит от модели: у `AdminUser` это `is_active`,
- * у панельных user-моделей — `enabled`. Проверка живёт в одном месте,
- * потому что применяется дважды и обязана давать одинаковый ответ: на входе
- * (AuthController) и на каждом запросе (AdminAuth). Разойдись они — панель
- * пускала бы уволенного внутрь и выкидывала его только следующим запросом.
+ * Which field says so depends on the model: `is_active` on `AdminUser`,
+ * `enabled` on a panel's own user models. The check lives in one place because
+ * it is applied twice and must answer the same way both times — at the login,
+ * in AuthController, and on every request, in AdminAuth. Should the two
+ * diverge, the panel would let a dismissed employee in and throw them out only
+ * on the next request.
  */
 final class AccountState
 {
@@ -20,10 +21,10 @@ final class AccountState
 
     public static function isDisabled(object $user): bool
     {
-        // Модель может закрывать доступ не своим полем, а состоянием того, кому
-        // принадлежит: приостановленный аккаунт, истёкшая подписка, отозванный
-        // договор. Панель об этих правилах не знает и знать не должна — она
-        // только спрашивает.
+        // A model may close access not by a field of its own but by the state
+        // of whoever it belongs to: a suspended account, an expired
+        // subscription, a revoked contract. The panel knows nothing of those
+        // rules and has no business knowing — it only asks.
         if (method_exists($user, 'isDisabledForLogin') && $user->isDisabledForLogin() === true) {
             return true;
         }
@@ -35,9 +36,9 @@ final class AccountState
         foreach (self::FLAGS as $flag) {
             $value = $user->getAttribute($flag);
 
-            // Отсутствие поля — не запрет: у модели может не быть выключателя
-            // вовсе. Запрет — только явно ложное значение, в том числе `0` из
-            // баз без булева типа.
+            // A missing field is not a refusal: the model may have no switch
+            // at all. Only an explicitly false value refuses — `0` included,
+            // for the databases without a boolean type.
             if ($value !== null && ! $value) {
                 return true;
             }

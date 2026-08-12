@@ -1,14 +1,16 @@
 <script setup lang="ts">
 /**
- * LoginPage поверх UID design handoff: centered auth-card 400/440 px на
- * `--uid-surface-base`-фоне с corner-actions (theme + locale toggles).
+ * LoginPage, following the UID design handoff: a centred 400/440 px auth card
+ * on a `--uid-surface-base` background, with the theme and locale toggles in
+ * the corner.
  *
- * Композиция: LoginForm либо TwoFactorForm в зависимости от
- * auth.isChallengePending. Редирект на main завязан на watch
- * (auth.isAuthenticated) — это переживает unmount форм при смене ветки.
+ * It shows either LoginForm or TwoFactorForm, depending on
+ * auth.isChallengePending. The redirect to the main page hangs off a watch on
+ * auth.isAuthenticated, which survives the forms being unmounted as the branch
+ * changes.
  *
- * `?redirect`-query учитывает только относительные пути (защита от
- * open-redirect).
+ * The `?redirect` query is honoured for relative paths alone — that is the
+ * guard against an open redirect.
  */
 import { computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -25,19 +27,19 @@ import { trSafe as tr } from '../../stores/i18n'
 interface Props {
   brandName?: string
   /**
-   * Custom mark (если задан — рендерится вместо BrandLogo). Полезно
-   * host'у с собственным брендом.
+   * A custom mark; when set it is rendered instead of BrandLogo. Useful to a
+   * host with a brand of its own.
    */
   brandMark?: string | null
   brandLogo?: string | null
   homeRouteName?: string
   redirectQueryKey?: string
-  /** URL «Забыли пароль?» — пробрасывается в LoginForm. */
+  /** The "Forgot your password?" URL, passed on to LoginForm. */
   forgotUrl?: string | null
-  /** SSO-link (label + url) — пробрасывается в LoginForm. */
+  /** The SSO link — a label and a url — passed on to LoginForm. */
   ssoLinkLabel?: string | null
   ssoUrl?: string | null
-  /** Показывать ли theme/locale toggle'ы в углу. */
+  /** Whether to show the theme and locale toggles in the corner. */
   showCornerActions?: boolean
 }
 
@@ -57,7 +59,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-// Бренд: явные props перекрывают bootstrap.brand (config('admin.brand')).
+// The brand: the explicit props win over bootstrap.brand (config('admin.brand')).
 const injectedBrand = useBrand()
 const brandName = computed<string>(() => props.brandName ?? injectedBrand.name ?? 'Laravel Admin')
 const brandLogo = computed<string | null>(() => props.brandLogo ?? injectedBrand.logo ?? null)

@@ -1,8 +1,8 @@
 /**
- * Кастомные Error-классы для admin API.
+ * The admin API's own error classes.
  *
- * Все API-ошибки бросаются как ApiError или его подклассы. Потребители
- * могут делать `instanceof ValidationError` для специфичной обработки.
+ * Every API error is thrown as an ApiError or one of its subclasses, so a
+ * consumer can use `instanceof ValidationError` to handle a particular case.
  */
 
 import type { ErrorEnvelope } from './envelope'
@@ -49,14 +49,14 @@ export class ValidationError extends ApiError {
   constructor(payload: ErrorEnvelope['payload']) {
     super(422, payload)
     this.name = 'ValidationError'
-    // Две формы конверта: `messages` шлёт админка, `errors` — laravel-api
-    // своим дефолтным обработчиком ValidationException. Читать одну — значит
-    // при чужой форме молча остаться без ошибок полей: пользователь жмёт
-    // «Сохранить», и форма не отвечает ничем.
+    // The envelope comes in two shapes: the admin sends `messages`, while
+    // laravel-api's default ValidationException handler sends `errors`.
+    // Reading one of them means silently having no field errors when the other
+    // arrives: one presses "Save" and the form answers with nothing at all.
     this.fields = payload.messages ?? payload.errors ?? {}
   }
 
-  /** Первое сообщение из field'а — удобно для toast. */
+  /** The field's first message — handy for a toast. */
   firstFieldMessage(): string | null {
     for (const messages of Object.values(this.fields)) {
       if (messages.length > 0) {
@@ -68,8 +68,8 @@ export class ValidationError extends ApiError {
 }
 
 /**
- * Network-failure (не дошли до сервера). Отдельный класс чтобы UI мог
- * показать «Нет соединения» вместо «500 Server Error».
+ * A network failure — the server was never reached. It is a class of its own
+ * so that the UI can say "No connection" rather than "500 Server Error".
  */
 export class NetworkError extends Error {
   constructor(message = 'Network error') {
@@ -79,7 +79,7 @@ export class NetworkError extends Error {
 }
 
 /**
- * Превращает HTTP-status + envelope в правильный подкласс ApiError.
+ * Turns an HTTP status and an envelope into the right ApiError subclass.
  */
 export function toApiError(status: number, payload: ErrorEnvelope['payload']): ApiError {
   switch (status) {

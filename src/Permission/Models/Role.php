@@ -8,18 +8,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Роль администратора.
+ * An administrator's role.
  *
- * Каждая роль хранит slug + локализованное name + JSON-массив permissions.
- * Назначение пользователю — через polymorphic pivot `admin_role_assignments`,
- * чтобы поддерживать разные модели администраторов (multi-guard).
+ * Each role holds a slug, a localized name and a JSON array of permissions. It
+ * is assigned to a user through the polymorphic `admin_role_assignments`
+ * pivot, so that several administrator models — several guards — are
+ * supported.
  *
  * @property int $id
  * @property string $name
  * @property string $slug
  * @property string|null $description
  * @property list<string> $permissions
- * @property bool $is_system Системные роли (Super Admin) защищены от удаления
+ * @property bool $is_system The system roles, Super Admin among them, cannot be deleted
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
@@ -50,15 +51,15 @@ class Role extends Model
     }
 
     /**
-     * Имеет ли роль конкретный permission. Поддерживает glob-wildcard'ы:
+     * Tells whether the role holds a permission. Glob wildcards work:
      *
-     *   `*`                      — все permissions
-     *   `admin.users.*`          — все sub-keys раздела
-     *   `admin.content.*.view`   — view-доступ к любому контентному ресурсу
-     *   `admin.*.view`           — view ко всему
+     *   `*`                      — every permission
+     *   `admin.users.*`          — every sub-key of a section
+     *   `admin.content.*.view`   — view access to any content resource
+     *   `admin.*.view`           — view access to everything
      *
-     * Реализация — через `fnmatch()`: `*` совпадает с любым содержимым
-     * (включая точки), как POSIX glob без `FNM_PATHNAME`.
+     * It goes through `fnmatch()`, where `*` matches anything at all, dots
+     * included, as POSIX glob does without `FNM_PATHNAME`.
      */
     public function hasPermission(string $key): bool
     {

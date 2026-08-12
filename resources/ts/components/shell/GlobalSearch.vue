@@ -1,13 +1,15 @@
 <script setup lang="ts">
 /**
- * GlobalSearch — командная палитра (⌘K). Два вида результатов:
- *   - «Разделы» — быстрый переход в любой раздел (из menu-store, фильтр
- *     по подстроке label, работает мгновенно, оффлайн).
- *   - записи ресурсов — серверный поиск GET /system/search?q= по всем
- *     searchable-полям (debounce), группировка по ресурсу, переход в карточку.
+ * GlobalSearch — the ⌘K command palette. It shows two kinds of result:
+ *   - the sections, for jumping anywhere in the panel. They come from the menu
+ *     store, are filtered by a substring of the label, and work instantly and
+ *     offline.
+ *   - the resources' records, from the server: a debounced
+ *     GET /system/search?q= across every searchable field, grouped by
+ *     resource, leading to the record's page.
  *
- * Клавиатура: ↑/↓ — навигация, Enter — переход, Esc — закрыть (UidModal).
- * Открывается по ⌘K (AdminShell) или кликом по search-pill топбара.
+ * The keyboard: ↑/↓ navigate, Enter goes, Esc closes the UidModal. It opens on
+ * ⌘K, from AdminShell, or on a click of the topbar's search pill.
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -53,7 +55,7 @@ const open = computed<boolean>({
   set: (v) => emit('update:modelValue', v),
 })
 
-/** Плоский список пунктов меню (рекурсивно) для nav-поиска. */
+/** The menu's items flattened recursively, for the navigation search. */
 function flattenMenu(items: MenuItem[]): MenuItem[] {
   const out: MenuItem[] = []
   for (const it of items) {
@@ -74,7 +76,7 @@ const navGroup = computed<Group | null>(() => {
   return { label: t('admin.search.sections', 'Разделы'), icon: null, items: hits }
 })
 
-/** Все группы для рендера: сначала навигация, затем записи. */
+/** Every group to render: the navigation first, then the records. */
 const groups = computed<Group[]>(() => {
   const g: Group[] = []
   if (navGroup.value) g.push(navGroup.value)
@@ -82,7 +84,7 @@ const groups = computed<Group[]>(() => {
   return g
 })
 
-/** Плоский список ссылок в порядке отображения — для стрелок/Enter. */
+/** The links flattened in display order, for the arrows and Enter. */
 const flatHits = computed<Hit[]>(() => groups.value.flatMap((g) => g.items))
 
 const hasQuery = computed<boolean>(() => query.value.trim().length >= 2)
@@ -120,7 +122,7 @@ async function runSearch(q: string): Promise<void> {
   }
 }
 
-// Индекс пункта в плоском списке для подсветки active.
+// An item's index in the flat list, for highlighting the active one.
 function indexOfHit(group: Group, item: Hit): number {
   let base = 0
   for (const g of groups.value) {
@@ -142,7 +144,7 @@ function onArrow(delta: number): void {
   activeIndex.value = (activeIndex.value + delta + n) % n
 }
 
-// Автофокус + сброс при открытии.
+// Focus and reset when it opens.
 watch(open, (isOpen) => {
   if (isOpen) {
     query.value = ''

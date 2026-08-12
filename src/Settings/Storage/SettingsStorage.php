@@ -5,45 +5,46 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Settings\Storage;
 
 /**
- * Контракт хранилища settings.
+ * The contract of a settings store.
  *
- * Реализации: KeyValueSettingsStorage (admin_settings таблица),
- * EloquentSettingsStorage (отдельная Eloquent-модель с типизированными колонками).
+ * The implementations are KeyValueSettingsStorage, over the admin_settings
+ * table, and EloquentSettingsStorage, over a dedicated Eloquent model with
+ * typed columns.
  *
- * Все методы работают с `group` (namespace) — обычно совпадает со slug'ом
- * SettingsResource'а.
+ * Every method works within a `group` — a namespace, usually the
+ * SettingsResource's slug.
  */
 interface SettingsStorage
 {
     /**
-     * Получить все settings из группы.
+     * Returns every setting of a group.
      *
      * @return array<string, mixed>
      */
     public function all(string $group): array;
 
     /**
-     * Получить одно значение.
+     * Returns a single value.
      */
     public function get(string $group, string $key, mixed $default = null): mixed;
 
     /**
-     * Сохранить bulk-обновление группы. Старые ключи, не упомянутые в $values,
-     * остаются нетронутыми (merge-семантика).
+     * Saves a group in bulk. The existing keys that $values does not mention
+     * are left alone — the semantics are a merge.
      *
      * @param  array<string, mixed>  $values
      */
     public function save(string $group, array $values): void;
 
     /**
-     * Полный ре-set группы — удаляет старые ключи и записывает новые.
+     * Resets a group entirely: the old keys are removed and the new ones written.
      *
      * @param  array<string, mixed>  $values
      */
     public function replace(string $group, array $values): void;
 
     /**
-     * Удалить одно значение.
+     * Removes a single value.
      */
     public function forget(string $group, string $key): void;
 }
