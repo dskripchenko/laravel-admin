@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.24.0
+
+### Fixed
+- **An expired session left the visitor inside a live shell with an empty
+  menu.** The panel's HTTP client has had an `onUnauthenticated` option since
+  the beginning, and nothing ever passed it: a 401 was simply dropped. The
+  shell was already in the browser, the menu and the manifest came back
+  refused, and the panel quietly rendered the home placeholder. Nothing said
+  "sign in again" — a second reload happened to fix it, which no one can be
+  expected to guess.
+
+  A 401 from any panel request now replaces the current route with the login
+  page, carrying the current path as `redirect`. `replace`, not `push`: the
+  empty page must not stay in history, or "back" after signing in would return
+  straight to it. Requests made while already on an auth route are left alone —
+  a 401 is normal there.
+
 ## 1.23.2
 
 ### Fixed

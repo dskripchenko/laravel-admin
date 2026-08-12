@@ -133,9 +133,42 @@ export function createAdminApp(
   const base = options.base ?? deriveBase(bootstrap.baseUrl) ?? '/admin'
 
   // 1. AdminClient
+  /**
+   * Роутер создаётся ПОЗЖЕ клиента, а нужен он клиенту уже сейчас — держим
+   * ссылку в замыкании и заполняем её ниже.
+   */
+  let routerRef: AdminRouter | null = null
+
   const client = createAdminClient({
     baseURL: bootstrap.apiUrl,
     csrfToken: bootstrap.csrf,
+
+    /**
+     * 401 от любого запроса панели — на форму входа.
+     *
+     * Обработчик существовал в опциях клиента с самого начала и НИКЕМ не
+     * передавался: 401 просто отбрасывался. Из-за этого протухшая сессия
+     * оставляла человека в живом каркасе с пустым меню — оболочка уже была
+     * в браузере, а меню и манифест приходили отказом, и панель молча
+     * показывала заглушку главной. Понять, что нужно просто войти заново,
+     * было неоткуда; помогала вторая перезагрузка.
+     *
+     * `replace`, а не `push`: пустая страница не должна остаться в истории —
+     * «назад» после входа возвращал бы ровно в неё.
+     */
+    onUnauthenticated: () => {
+      const r = routerRef
+      if (r === null) return
+
+      const current = r.currentRoute.value
+      // На самой форме входа и на восстановлении пароля 401 — норма.
+      if (current.meta?.kind === 'auth') return
+
+      void r.replace({
+        name: 'admin.login',
+        query: current.fullPath === '/' ? {} : { redirect: current.fullPath },
+      }).catch(() => undefined)
+    },
   })
   setAdminClient(client)
 
@@ -186,6 +219,8 @@ export function createAdminApp(
     authGuard: options.router?.authGuard,
     titleGuard: options.router?.titleGuard,
   })
+  routerRef = router
+
   app.use(router)
 
   // 5.1 Top loading-bar hooks: pending++ при старте навигации, pending--
