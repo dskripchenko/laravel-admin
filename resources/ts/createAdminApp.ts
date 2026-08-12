@@ -133,52 +133,42 @@ export function createAdminApp(
   const base = options.base ?? deriveBase(bootstrap.baseUrl) ?? '/admin'
 
   // 1. AdminClient
-  /**
-   * Роутер создаётся ПОЗЖЕ клиента, а нужен он клиенту уже сейчас — держим
-   * ссылку в замыкании и заполняем её ниже.
-   */
-  let routerRef: AdminRouter | null = null
-
   const client = createAdminClient({
     baseURL: bootstrap.apiUrl,
     csrfToken: bootstrap.csrf,
 
     /**
-     * 401 от любого запроса панели — на форму входа.
+     * 401 от любого запроса панели — на форму входа, полной навигацией.
      *
      * Обработчик существовал в опциях клиента с самого начала и НИКЕМ не
-     * передавался: 401 просто отбрасывался. Из-за этого протухшая сессия
-     * оставляла человека в живом каркасе с пустым меню — оболочка уже была
-     * в браузере, а меню и манифест приходили отказом, и панель молча
-     * показывала заглушку главной. Понять, что нужно просто войти заново,
-     * было неоткуда; помогала вторая перезагрузка.
+     * передавался: 401 просто отбрасывался. Протухшая сессия оставляла
+     * человека в живом каркасе с пустым меню — оболочка уже была в браузере,
+     * а меню и манифест приходили отказом. Помогала вторая перезагрузка, о
+     * чём догадаться неоткуда.
      *
-     * `replace`, а не `push`: пустая страница не должна остаться в истории —
-     * «назад» после входа возвращал бы ровно в неё.
+     * Почему `window.location`, а не роутер. Отказ приходит на самой загрузке,
+     * когда тянутся меню и манифест: роутера может ещё не быть, а если он уже
+     * есть — он занят начальной навигацией, и `replace` ею перебивается.
+     * Проверено на стенде: с роутером человек оставался на прежнем адресе и
+     * видел «404».
+     *
+     * Полная перезагрузка здесь и по существу правильнее: сессия мертва,
+     * состояние в памяти относится к прошлому владельцу вкладки, и тащить его
+     * на форму входа незачем.
      */
     onUnauthenticated: () => {
-      const r = routerRef
+      if (typeof window === 'undefined') return
 
-      // Роутера ещё нет — значит отказ пришёл на самой загрузке, когда
-      // тянутся меню и манифест. Это и есть частый случай: сессия умерла,
-      // оболочка пришла из браузера, а первые же запросы получили отказ.
-      // Уходим обычной навигацией, иначе человек остаётся в пустом каркасе.
-      if (r === null) {
-        if (typeof window !== 'undefined' && ! window.location.pathname.endsWith('/login')) {
-          window.location.assign(`${base}/login`)
-        }
-
+      const path = window.location.pathname
+      // На самой форме входа и на восстановлении пароля 401 — норма.
+      if (path.endsWith('/login') || path.includes('/forgot-password') || path.includes('/reset-password')) {
         return
       }
 
-      const current = r.currentRoute.value
-      // На самой форме входа и на восстановлении пароля 401 — норма.
-      if (current.meta?.kind === 'auth') return
+      const from = window.location.pathname + window.location.search
+      const back = from.startsWith(base) ? from.slice(base.length) || '/' : from
 
-      void r.replace({
-        name: 'admin.login',
-        query: current.fullPath === '/' ? {} : { redirect: current.fullPath },
-      }).catch(() => undefined)
+      window.location.assign(`${base}/login?redirect=${encodeURIComponent(back)}`)
     },
   })
   setAdminClient(client)
@@ -230,8 +220,6 @@ export function createAdminApp(
     authGuard: options.router?.authGuard,
     titleGuard: options.router?.titleGuard,
   })
-  routerRef = router
-
   app.use(router)
 
   // 5.1 Top loading-bar hooks: pending++ при старте навигации, pending--
