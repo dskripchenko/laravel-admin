@@ -1,18 +1,19 @@
 <script setup lang="ts">
 /**
- * Корневой layout admin-панели поверх UidSidebarLayout из @dskripchenko/ui.
+ * The admin panel's root layout, built on UidSidebarLayout from @dskripchenko/ui.
  *
  * Slots:
- *   - sidebar — обычно AdminSidebar (default)
+ *   - sidebar — usually AdminSidebar (default)
  *   - header — AdminTopBar (default)
- *   - default — main-area (host рендерит <RouterView/>)
+ *   - default — the main area (the host renders <RouterView/>)
  *
- * v-model — boolean флаг сворачивания сайдбара (240→56 px, transition в uid).
+ * v-model is the sidebar collapse flag (240 → 56 px, transition lives in uid).
  *
- * Impersonation: prop `impersonation` показывает 32-px amber бейдж над shell'ом
- * с кнопкой выхода — стиль из docs/design_handoff_laravel_admin/app.css:159
- * (.imp-banner). На <html> ставим data-impersonating='true' чтобы корректно
- * сместить sticky-элементы вниз.
+ * Impersonation: the `impersonation` prop shows a 32-px amber badge above the
+ * shell with an exit button — the style comes from
+ * docs/design_handoff_laravel_admin/app.css:159 (.imp-banner). We set
+ * data-impersonating='true' on <html> so that sticky elements shift down
+ * correctly.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -23,14 +24,14 @@ import GlobalSearch from './GlobalSearch.vue'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface ImpersonationData {
-  /** Имя того, в кого вошли. */
+  /** Whom we are logged in as. */
   asName: string
 }
 
 interface BrandData {
   name?: string
   logo?: string | null
-  /** Короткий текстовый mark (1-2 символа) — если нет картинки-logo. */
+  /** A short textual mark (1-2 characters), used when there is no logo image. */
   mark?: string | null
   favicon?: string | null
   copyright?: string | null
@@ -39,14 +40,14 @@ interface BrandData {
 
 interface Props {
   /**
-   * v-model:collapsed — состояние сворачивания. Опционально: если host
-   * не передаёт, AdminShell использует internal ref'ом, чтобы collapse
-   * toggle работал out-of-the-box.
+   * v-model:collapsed — the collapse state. Optional: when the host does not
+   * pass it, AdminShell keeps an internal ref so that the collapse toggle
+   * works out of the box.
    */
   collapsed?: boolean
-  /** Если задано — показывает amber-banner и сдвигает контент. */
+  /** When set, shows the amber banner and shifts the content down. */
   impersonation?: ImpersonationData | null
-  /** Брендинг (name/logo/copyright) из config('admin.brand') (BL-12). */
+  /** Branding (name/logo/copyright) from config('admin.brand'). */
   brand?: BrandData | null
 }
 const props = withDefaults(defineProps<Props>(), {
@@ -56,11 +57,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const brandName = computed<string | undefined>(() => props.brand?.name || undefined)
-// logo — URL картинки; mark — короткий текст. Исторически logo прокидывался
-// в sidebar текстом — теперь это картинка, как на LoginPage.
+// logo is an image URL, mark is a short text. Historically logo was passed
+// into the sidebar as text — now it is an image, the same as on LoginPage.
 const brandLogo = computed<string | null>(() => props.brand?.logo ?? null)
 const brandMark = computed<string | null>(() => props.brand?.mark ?? null)
-// brand.footer → нижняя строка sidebar'а (версия/произвольный текст).
+// brand.footer becomes the sidebar's bottom line: a version or any free text.
 const brandFooter = computed<string | null>(() => props.brand?.footer ?? null)
 const brandCopyright = computed<string | null>(() => props.brand?.copyright ?? null)
 
@@ -69,16 +70,17 @@ const emit = defineEmits<{
   'exit-impersonation': []
 }>()
 
-// Internal fallback state — используется когда host не передал v-model.
+// Internal fallback state, used when the host passes no v-model.
 const internalCollapsed = ref<boolean>(false)
 
 /**
- * Ширина, ниже которой сайдбар превращается в выдвижную шторку поверх
- * контента (`@media (max-width: 768px)` в UidSidebarLayout). Флаг `collapsed`
- * на десктопе означает «узкий сайдбар», а здесь — «шторка закрыта», и это
- * разные вещи: со значением по умолчанию `false` панель на телефоне
- * открывалась с меню поверх всего экрана, а кнопка сворачивания оказывалась
- * под самой шторкой. Поэтому в этом режиме состояние задаётся отдельно.
+ * The width below which the sidebar turns into a drawer sliding over the
+ * content (`@media (max-width: 768px)` inside UidSidebarLayout). On the
+ * desktop the `collapsed` flag means "a narrow sidebar", here it means "the
+ * drawer is closed" — and those are different things: with the default
+ * `false` the panel opened on a phone with the menu covering the whole
+ * screen, and the collapse button ended up underneath that very drawer. So in
+ * this mode the state is set separately.
  */
 const DRAWER_BREAKPOINT = '(max-width: 768px)'
 const isDrawerMode = ref<boolean>(false)
@@ -88,18 +90,18 @@ function applyDrawerMode(matches: boolean): void {
   const wasDrawer = isDrawerMode.value
   isDrawerMode.value = matches
 
-  // Вход в режим шторки — закрываем её: пользователь пришёл читать страницу,
-  // а не меню. Возврат на широкий экран — раскрываем сайдбар обратно, иначе
-  // он останется схлопнутым без всякой причины.
+  // Entering drawer mode closes it: the user came to read the page, not the
+  // menu. Coming back to a wide screen expands the sidebar again — otherwise
+  // it would stay collapsed for no reason at all.
   if (matches && !wasDrawer) onCollapseChange(true)
   if (!matches && wasDrawer) onCollapseChange(false)
 }
 
 const route = useRoute()
 
-// Выбор пункта меню — это переход, после которого шторка обязана уйти:
-// иначе она остаётся поверх только что открытой страницы, и её приходится
-// закрывать руками при каждой навигации.
+// Picking a menu item is a navigation, and the drawer has to go after it:
+// otherwise it stays on top of the page just opened and has to be closed by
+// hand on every single navigation.
 watch(
   () => route.fullPath,
   () => {
@@ -120,7 +122,7 @@ function exitImpersonation(): void {
   emit('exit-impersonation')
 }
 
-// Маркер на <html> — для shell-classes которые делают paddding-top + sticky-offset.
+// A marker on <html>, for the shell classes that do padding-top + sticky-offset.
 const HTML_ATTR = 'data-admin-impersonating'
 
 watch(
@@ -157,7 +159,7 @@ onBeforeUnmount(() => {
   drawerQuery?.removeEventListener('change', onDrawerQueryChange)
 })
 
-// ⌘K / Ctrl+K — глобальное открытие поиска, из любого фокуса.
+// ⌘K / Ctrl+K opens the search globally, from any focus.
 const searchOpen = ref<boolean>(false)
 
 function onGlobalKeydown(e: KeyboardEvent): void {
@@ -235,7 +237,7 @@ onBeforeUnmount(() => {
 
 <style>
 .admin-shell-root[data-admin-impersonating='true'] {
-  /* Sidebar/topbar sticky уже учтут `--admin-page-pad` и offset через CSS-классы. */
+  /* Sidebar/topbar sticky already account for `--admin-page-pad` and the offset through CSS classes. */
   padding-top: 32px;
 }
 :root[data-admin-impersonating='true'] {
@@ -243,16 +245,16 @@ onBeforeUnmount(() => {
 }
 
 /*
- * Full-viewport layout: sidebar и main каждый имеют own scroll контейнер.
- * Window сам не прокручивается (overflow:hidden на корне), вся прокрутка
- * локализована внутри:
- *   - sidebar __nav (свой scroll в списке пунктов когда их больше высоты)
- *   - main-content (правая контентная часть)
+ * Full-viewport layout: the sidebar and the main area each own their scroll
+ * container. The window itself does not scroll (overflow:hidden on the root),
+ * all scrolling is local:
+ *   - sidebar __nav (its own scroll when the items outgrow the height)
+ *   - main-content (the content area on the right)
  *
- * Топбар внутри main всегда виден (flex none / position:sticky top:0).
+ * The topbar inside main is always visible (flex none / position:sticky top:0).
  *
- * Все правила скоупированы в `.admin-shell` чтобы не задеть UidSidebarLayout
- * в других контекстах (storybook UI-kit'а, тесты).
+ * Every rule is scoped to `.admin-shell` so as not to touch UidSidebarLayout
+ * in other contexts (the UI kit's storybook, tests).
  */
 .admin-shell.uid-layout-sidebar {
   height: 100vh;
@@ -267,14 +269,15 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  /* UidSidebar-паттерн несёт border-top 3px; в админ-шелле topbar его не
-     имеет → sidebar-контент был смещён на 3px вниз. Убираем для выравнивания. */
+  /* The UidSidebar pattern carries a 3px border-top; the admin shell's topbar
+     has none, so the sidebar content sat 3px lower. Removed to align them. */
   border-top: none;
 }
 .admin-shell .uid-pattern-sidebar__header {
-  /* Аналогично border-top выше: паттерн несёт border-bottom 1px на header,
-     а admin-topbar — нет → лишний пиксель ломает совмещение горизонталей
-     sidebar-шапки и топбара. В шелле убираем (standalone-кит не трогаем). */
+  /* Same story as the border-top above: the pattern carries a 1px
+     border-bottom on the header and admin-topbar does not, so the extra pixel
+     breaks the alignment between the sidebar header and the topbar. Removed
+     inside the shell; the standalone kit is left alone. */
   border-bottom: none;
 }
 .admin-shell .uid-pattern-sidebar__nav {
@@ -303,7 +306,7 @@ onBeforeUnmount(() => {
   overscroll-behavior: contain;
 }
 
-/* impersonation banner добавляет 32px над shell — корректируем высоту. */
+/* The impersonation banner adds 32px above the shell — adjust the height. */
 .admin-shell-root[data-admin-impersonating='true'] .admin-shell.uid-layout-sidebar,
 .admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__sidebar,
 .admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__main {
@@ -312,10 +315,10 @@ onBeforeUnmount(() => {
 }
 
 /*
- * Main-footer — пустая горизонтальная полоса под content-area. Высоту
- * держит --admin-foot-height (см. styles/admin.css), такую же как у
- * sidebar footer'а — тогда обе нижние линии (border-top main + border-top
- * sidebar) проходят по одной Y, образуя единую горизонталь через весь экран.
+ * The main footer is an empty horizontal strip below the content area. Its
+ * height comes from --admin-foot-height (see styles/admin.css) and matches the
+ * sidebar footer's — so both bottom lines (main's border-top and the
+ * sidebar's) sit at the same Y and form one horizontal across the screen.
  */
 .admin-main-footer {
   height: var(--admin-foot-height, 32px);

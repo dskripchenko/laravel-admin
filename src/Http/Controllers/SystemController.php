@@ -21,10 +21,10 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * `system` controller — actions для bootstrap, manifest, me, menu, locales,
- * permissions, plugins.
+ * The `system` controller — the actions behind bootstrap, manifest, me, menu,
+ * locales, permissions and plugins.
  *
- * См. docs/api/system.md и docs/api/registration.md.
+ * See docs/api/system.md and docs/api/registration.md.
  */
 final class SystemController extends ApiController
 {
@@ -38,10 +38,10 @@ final class SystemController extends ApiController
     ) {}
 
     /**
-     * Получить bootstrap-данные SPA (для xhr-стратегии).
+     * Returns the SPA's bootstrap data, for the xhr strategy.
      *
-     * При стратегии `inline` (default) данные приходят через `<script>`-тег
-     * shell.blade.php и этот action не вызывается.
+     * With the default `inline` strategy the data arrives through the
+     * `<script>` tag in shell.blade.php and this action is never called.
      *
      * @output object  $payload
      * @output string  $payload.csrf
@@ -68,11 +68,11 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Получить полный JSON-манифест admin.
+     * Returns the full admin JSON manifest.
      *
-     * @header string ?$If-None-Match Etag предыдущего ответа.
+     * @header string ?$If-None-Match The ETag of the previous response.
      *
-     * @output object $payload Манифест.
+     * @output object $payload The manifest.
      *
      * @security AdminSession
      * @security AdminBearer
@@ -82,15 +82,16 @@ final class SystemController extends ApiController
      */
     public function manifest(Request $request): JsonResponse
     {
-        // Ключ memo обязан совпадать с тем, чем реально переведено содержимое.
-        // Строки манифеста гоняются через Localize::string() → __(), то есть
-        // через app()->getLocale(), который выставил AdminLocale по полной
-        // цепочке (query → header → user.locale → cookie → Accept-Language).
-        // Заголовок — лишь одно звено этой цепочки: когда он пуст, а локаль
-        // пришла из user.locale, ключ расходился с содержимым, и английский
-        // манифест ложился под ключ `ru`. Под Octane инстанс Manifest живёт
-        // дольше запроса, поэтому следующий русский пользователь получал из
-        // memo чужой английский манифест — вместе с совпадающим ETag.
+        // The memo key must match what the content was actually translated
+        // with. The manifest strings go through Localize::string() → __(),
+        // that is through app()->getLocale(), which AdminLocale set from the
+        // whole chain (query → header → user.locale → cookie →
+        // Accept-Language). The header is only one link of that chain: when it
+        // was empty and the locale came from user.locale, the key diverged
+        // from the content and an English manifest was filed under the key
+        // `ru`. Under Octane the Manifest instance outlives the request, so
+        // the next Russian-speaking user got someone else's English manifest
+        // out of the memo — with a matching ETag to go with it.
         $locale = app()->getLocale();
         $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current();
         $payload = $this->manifest->build($locale, $panel->id);
@@ -105,11 +106,9 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Текущий администратор.
+     * The current administrator.
      *
-     * На фазе P1 возвращает null (auth ещё не подключён). Заполнится в P2.
-     *
-     * @output object ?$payload AdminUserSummary либо null.
+     * @output object ?$payload An AdminUserSummary, or null.
      *
      * @security AdminSession
      * @security AdminBearer
@@ -139,8 +138,9 @@ final class SystemController extends ApiController
             }
         }
 
-        // notifications-table может отсутствовать в host-проекте (default
-        // Laravel-миграция не запущена) — сводим к 0 чтобы shell не падал.
+        // The notifications table may be missing in the host project (the
+        // default Laravel migration was never run) — fall back to 0 so that
+        // the shell does not fall over.
         $unreadNotifications = \Illuminate\Support\Facades\Schema::hasTable('notifications')
             ? \Illuminate\Notifications\DatabaseNotification::query()
                 ->where('notifiable_type', $user->getMorphClass())
@@ -164,10 +164,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Дерево меню сайдбара.
-     *
-     * На фазе P1 — заглушка с фиксированным «Resources» меню из ResourceRegistry.
-     * Полная имплементация (с группами, иконками, badges) — фазы P2/P3.
+     * The sidebar menu tree.
      *
      * @output object $payload
      * @output array  $payload.items
@@ -179,9 +176,10 @@ final class SystemController extends ApiController
      */
     public function menu(Request $request): JsonResponse
     {
-        // Кастомное иерархическое меню (если host зарегистрировал через
-        // Admin::menu()->add(...)). Узлы могут быть произвольно вложены и
-        // содержать MenuNode::resource()/screen() с auto-resolve label/url/permissions.
+        // The custom hierarchical menu, if the host registered one through
+        // Admin::menu()->add(...). Nodes may nest arbitrarily and may hold
+        // MenuNode::resource()/screen(), which auto-resolve the label, the url
+        // and the permissions.
         $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
 
         $custom = [];
@@ -192,9 +190,9 @@ final class SystemController extends ApiController
             self::collectUsedSlugs($serialized, $usedKeys);
         }
 
-        // Auto-fill: добавляем недостающие Resources/custom Screens, если они
-        // ещё не упомянуты в кастомном дереве. По default включено — пользователю
-        // не нужно дублировать каждую Resource в menu()->add().
+        // Auto-fill: add the resources and custom screens that the custom
+        // tree does not mention yet. On by default, so that nobody has to
+        // repeat every resource in menu()->add().
         $auto = [];
         if ($this->menuRegistry->autoFillEnabled($panel)) {
             $auto = $this->buildAutoItems($usedKeys, $panel);
@@ -204,8 +202,8 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Собрать все slug'и Resources/Screens, упомянутые в дереве (рекурсивно).
-     * Используется чтобы auto-fill не дублировал custom-узлы.
+     * Collects, recursively, every resource and screen slug mentioned in the
+     * tree — so that auto-fill does not duplicate the custom nodes.
      *
      * @param  array<string, mixed>  $node
      * @param  array<string, true>  &$used
@@ -215,8 +213,9 @@ final class SystemController extends ApiController
         $key = $node['key'] ?? null;
         if (is_string($key)) {
             $used[$key] = true;
-            // Дополнительно: автоматический ключ MenuNode::resource('users') = 'resource.users'
-            // и url '/r/users' — пометим slug отдельно для матчинга с auto-resources.
+            // MenuNode::resource('users') also produces the automatic key
+            // 'resource.users' and the url '/r/users' — mark the slug
+            // separately so that it matches the auto-added resources.
             if (str_starts_with($key, 'resource.')) {
                 $used[substr($key, strlen('resource.'))] = true;
             } elseif (str_starts_with($key, 'screen.')) {
@@ -233,8 +232,8 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Старая auto-логика — генерит flat-items для всех Resource + Screen,
-     * которые не были упомянуты в кастомном меню. Сохраняет default-поведение.
+     * The older automatic logic: builds flat items for every resource and
+     * screen the custom menu did not mention, preserving the default behaviour.
      *
      * @param  array<string, true>  $used
      * @return list<array<string, mixed>>
@@ -306,7 +305,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Доступные локали admin.
+     * The admin's available locales.
      *
      * @output object $payload
      *
@@ -326,7 +325,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Установить локаль (user.locale + cookie).
+     * Sets the locale, in user.locale and in a cookie.
      *
      * @input string $locale
      *
@@ -358,7 +357,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Группы permissions (для UI матрицы ролей). Заполнится в P2.
+     * The permission groups, for the role matrix in the UI.
      *
      * @output object $payload
      *
@@ -379,7 +378,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Глобальный поиск по всем ресурсам панели (⌘K палитра).
+     * Global search across every resource of the panel — the ⌘K palette.
      *
      * @output object $payload
      * @output string $payload.query
@@ -407,7 +406,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Список зарегистрированных AdminPlugin'ов.
+     * The list of registered AdminPlugins.
      *
      * @output object $payload
      *
@@ -431,7 +430,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Получить текущую тему + список доступных.
+     * Returns the current theme and the list of available ones.
      *
      * @output object $payload
      *
@@ -449,7 +448,7 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Установить тему (cookie для anon + user.theme для залогиненных).
+     * Sets the theme: a cookie for anonymous visitors, user.theme for those logged in.
      *
      * @input string $theme
      *

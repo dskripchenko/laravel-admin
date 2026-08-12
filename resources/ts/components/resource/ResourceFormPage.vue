@@ -1,18 +1,19 @@
 <script setup lang="ts">
 /**
- * ResourceFormPage — unified create/edit page для Resource'а.
+ * ResourceFormPage — one page serving both create and edit for a resource.
  *
- * Архитектура по docs/design_handoff_laravel_admin/screens-shell.jsx
+ * The structure follows docs/design_handoff_laravel_admin/screens-shell.jsx
  * (Resource Form):
- *   - Header: back-breadcrumb + title + status-badge + actions
- *     (Preview / Удалить / Сохранить-primary)
- *   - Body: layout из manifest.fields (LayoutRenderer + provideFormState)
- *   - Sticky save-bar внизу с unsaved-changes hint
+ *   - header: a back breadcrumb, the title, a status badge and the actions
+ *     (Preview / Delete / Save as primary)
+ *   - body: the layout from manifest.fields (LayoutRenderer + provideFormState)
+ *   - a sticky save bar at the bottom with the unsaved-changes hint
  *
- * Mode определяется наличием `id`-prop'а: id=null → create, иначе → edit.
+ * The mode follows the `id` prop: id=null means create, anything else edit.
  *
- * Form-state предоставляется через provideFormState из useResourceFormStore.state.
- * FieldRenderer'ы внутри форм автоматически подхватывают через useFormState.
+ * The form state is exposed through provideFormState from
+ * useResourceFormStore.state; the field renderers inside pick it up through
+ * useFormState on their own.
  */
 import { computed, onMounted, watch } from 'vue'
 import { tRaw } from '../../stores/i18n'
@@ -34,13 +35,13 @@ import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
-  /** Slug ресурса (articles/users/etc). */
+  /** The resource slug: articles, users and so on. */
   slug: string
-  /** ID записи. null/undefined → create-mode; число/строка → edit. */
+  /** The record id. null/undefined means create mode, a number or string means edit. */
   id?: string | number | null
   /**
-   * Override имени router-route для back-redirect после save/delete.
-   * По умолчанию выводится из slug: `admin.resource.{slug}.index`.
+   * Overrides the router route name used to go back after a save or a delete.
+   * By default it is derived from the slug: `admin.resource.{slug}.index`.
    */
   indexRouteName?: string | null
 }
@@ -56,15 +57,16 @@ const router = useRouter()
 const route = useRoute()
 
 /**
- * Defaults для prepareCreate берём из ?query — это позволяет внешним вызывающим
- * (например tree-view "Создать подгруппу") передавать pre-fill значения через
- * URL (`?parent_id=23` → state.parent_id=23). Безопасно — все значения проходят
- * через стандартную валидацию поля при save.
+ * The defaults for prepareCreate come from the query string, which lets
+ * outside callers (the tree view's "create a subgroup", for one) pre-fill
+ * values through the URL: `?parent_id=23` becomes state.parent_id=23. This is
+ * safe — every value still goes through the field's usual validation on save.
  *
- * Числовые query-строки коэрсим к числу: PHP-бэкенд автоматически делает int
- * из numeric-keys в assoc-массивах (Select::options и т.п.), а UidSelect
- * сравнивает option.value === modelValue строго. Без коэрсии '23' !== 23
- * и Select не подсветит pre-fill'нутую опцию.
+ * Numeric query strings are coerced to numbers: the PHP backend turns numeric
+ * keys of associative arrays into ints by itself (Select::options and the
+ * like), while UidSelect compares option.value === modelValue strictly.
+ * Without the coercion '23' !== 23 and Select would not highlight the
+ * pre-filled option.
  */
 function defaultsFromQuery(): Record<string, unknown> {
   const out: Record<string, unknown> = {}
@@ -83,25 +85,27 @@ function defaultsFromQuery(): Record<string, unknown> {
   return out
 }
 
-// provideFormState ОБЯЗАН вызываться в setup() — связываем со store.state.
-// Сам form-context форвардит setField → store.setField (с auto-clear errors).
-// mode статичен для инстанса страницы: id в route → update, иначе create
-// (страница пересоздаётся при смене роута). FieldRenderer по нему скрывает
-// поля с visibility[mode]=false (Field::onCreate(false)/onUpdate(false)).
+// provideFormState MUST be called inside setup(), so we bind it to
+// store.state here. The form context itself forwards setField to
+// store.setField, which clears the errors along the way. The mode is static
+// per page instance: an id in the route means update, anything else create
+// (the page is recreated when the route changes). FieldRenderer uses it to
+// hide fields with visibility[mode]=false — Field::onCreate(false) /
+// Field::onUpdate(false).
 const ctx = provideFormState(
   form.state,
   form.errors,
   props.id !== null && props.id !== undefined ? 'update' : 'create',
 )
 
-// Watcher: при изменениях через ctx.setField (обёртка которой) — синхронизируем
-// в store, чтобы isDirty работало. Поскольку state.value === ctx.state (тот же
-// reactive object — provideFormState не делает копию), мутации видны напрямую
-// в store. setField'у в ctx достаточно.
+// Changes made through ctx.setField are synced back into the store so that
+// isDirty works. Since state.value === ctx.state — the same reactive object,
+// provideFormState makes no copy — the mutations are visible in the store
+// directly, and ctx's setField is enough.
 watch(
   () => form.errors,
   (next) => {
-    // При обновлении store.errors — выкидываем в form-context.
+    // When store.errors changes, push it into the form context.
     ctx.setErrors({ ...next })
   },
 )
@@ -109,9 +113,9 @@ watch(
 const resourceMeta = computed(() => manifest.getResource(props.slug))
 
 /**
- * Запись не найдена (404 на read) в edit/view-режиме: показываем чистый
- * not-found вместо формы с плейсхолдерами (иначе пользователь мог бы
- * заполнить пустую форму удалённой записи и «сохранить»).
+ * The record was not found (a 404 on read) in edit or view mode: show a plain
+ * not-found instead of a form full of placeholders — otherwise one could fill
+ * in the empty form of a deleted record and "save" it.
  */
 const recordNotFound = computed<boolean>(
   () => !form.isCreate
@@ -135,9 +139,10 @@ const layoutNodes = computed<LayoutNode[]>(() => {
 })
 
 /**
- * Backend Field::default() сериализуется в node.defaultValue, но state
- * create-формы стартует пустым — required-select с дефолтом валился бы
- * на «field is required». Сидируем дефолты один раз, когда манифест готов.
+ * The backend's Field::default() is serialized into node.defaultValue, but the
+ * create form's state starts empty — a required select with a default would
+ * fail on "field is required". So the defaults are seeded once, as soon as the
+ * manifest is ready.
  */
 function collectDefaults(nodes: LayoutNode[], out: Record<string, unknown>): void {
   for (const node of nodes) {
@@ -170,7 +175,7 @@ const statusValue = computed<string | null>(() => {
   return typeof v === 'string' ? v : null
 })
 
-/** Подпись статуса — из подписей самого поля; см. statusLabel.ts. */
+/** The status label comes from the field's own labels; see statusLabel.ts. */
 const statusLabel = computed<string | null>(
   () => resolveStatusLabel(layoutNodes.value, statusValue.value),
 )
@@ -213,23 +218,24 @@ async function onSave(): Promise<void> {
   try {
     const newId = await form.save()
     if (form.isCreate) {
-      // create → редирект на edit с новым id (host route'ит).
+      // After a create, redirect to edit with the new id; the host does the routing.
       void router.push({
         name: `admin.resource.${props.slug}.edit`,
         params: { id: newId },
       }).catch(() => undefined)
     }
   } catch {
-    // ValidationError уже превратился в form.errors через store; остальные
-    // ошибки попали в form.error и отрисуются как UidAlert ниже.
+    // A ValidationError has already become form.errors through the store;
+    // every other error landed in form.error and is drawn as a UidAlert below.
   }
 }
 
 /**
- * Auto-derive index route name из slug (`admin.resource.{slug}.index`),
- * если host не передал indexRouteName явно. Manifest может задать
- * `parent_slug` (см. Resource::parentSlug) — тогда back ведёт на index
- * другого ресурса (например TemplateResource → groups для tree-view).
+ * Derives the index route name from the slug
+ * (`admin.resource.{slug}.index`) when the host passed no explicit
+ * indexRouteName. The manifest may set `parent_slug` (see
+ * Resource::parentSlug) — then "back" leads to another resource's index, as
+ * TemplateResource leads to groups for the tree view.
  */
 const resolvedIndexRouteName = computed<string>(() => {
   if (props.indexRouteName) return props.indexRouteName

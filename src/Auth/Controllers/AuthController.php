@@ -28,19 +28,19 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * `auth` controller — login, logout, password-reset, email-verification.
  *
- * 2FA-challenge / impersonation actions добавятся в P2.3 / P2.5 — каждый
- * в своём controller'е (отдельной логикой для security boundary'ев).
+ * The 2FA challenge and impersonation actions each live in their own
+ * controller, with separate logic for the security boundaries.
  *
- * См. docs/api/auth.md.
+ * See docs/api/auth.md.
  */
 final class AuthController extends ApiController
 {
     /**
-     * Аутентификация по email/паролю.
+     * Authentication by email and password.
      *
-     * При включённой и подтверждённой 2FA вместо логина возвращается
-     * `two_factor_required` + `challenge_token` (Cache::5min) — следующий шаг:
-     * `auth/twoFactorChallenge` или `auth/twoFactorRecovery`.
+     * When 2FA is enabled and confirmed, the login is replaced by
+     * `two_factor_required` + `challenge_token` (cached for 5 minutes); the
+     * next step is `auth/twoFactorChallenge` or `auth/twoFactorRecovery`.
      *
      * @input string(email) $email
      * @input string $password
@@ -94,10 +94,10 @@ final class AuthController extends ApiController
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        // Тот же контракт, что и в AdminAuth: is_active — AdminUser,
-        // enabled — панельные user-модели. Проверять только первое значило
-        // отдавать выключенному пользователю сессию и payload «вы вошли»,
-        // который тут же отбирал первый же запрос.
+        // The same contract as in AdminAuth: is_active for AdminUser, enabled
+        // for the panels' own user models. Checking only the first one meant
+        // handing a disabled user a session and a "you are in" payload that
+        // the very next request took away again.
         if (AccountState::isDisabled($user)) {
             return $this->error([
                 'errorKey' => 'account_inactive',
@@ -105,7 +105,7 @@ final class AuthController extends ApiController
             ], Response::HTTP_FORBIDDEN);
         }
 
-        // 2FA gate: если включена, не логиним сразу — отдаём challenge_token.
+        // The 2FA gate: when it is on we do not log in right away, we return a challenge_token.
         if (method_exists($user, 'hasTwoFactorEnabled') && $user->hasTwoFactorEnabled()) {
             $token = Str::random(64);
             Cache::put(
@@ -125,7 +125,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Найти AdminUser по ID через guard provider — возвращает Model+Authenticatable.
+     * Finds an AdminUser by id through the guard provider — returns a Model+Authenticatable.
      */
     private function resolveChallengeUser(int|string $userId): (Authenticatable&Model)|null
     {
@@ -138,8 +138,9 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Сценарий после полной аутентификации (с 2FA или без): логинит, обновляет
-     * last_login, регенерирует session, отдаёт user + redirect_url.
+     * The path taken once authentication is complete, with or without 2FA:
+     * logs in, updates last_login, regenerates the session and returns the
+     * user plus a redirect_url.
      */
     private function completeLogin(Request $request, Authenticatable&Model $user, bool $remember): JsonResponse
     {
@@ -147,8 +148,8 @@ final class AuthController extends ApiController
 
         Auth::guard($guard)->login($user, $remember);
 
-        // Панельные user-модели (v1.8) не обязаны иметь last_login-колонки —
-        // пишем только когда они есть у таблицы.
+        // A panel's own user model is not required to have the last_login
+        // columns, so we write them only when the table has them.
         if (\Illuminate\Support\Facades\Schema::connection($user->getConnectionName())
             ->hasColumn($user->getTable(), 'last_login_at')) {
             $user->forceFill([
@@ -167,10 +168,10 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Подтвердить TOTP-код после login, вернувшего two_factor_required.
+     * Confirms a TOTP code after a login that returned two_factor_required.
      *
      * @input string $challenge_token
-     * @input string $code 6-значный TOTP.
+     * @input string $code A 6-digit TOTP.
      *
      * @output object $payload
      *
@@ -222,7 +223,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Использовать одноразовый recovery-код вместо TOTP.
+     * Uses a one-time recovery code instead of a TOTP.
      *
      * @input string $challenge_token
      * @input string $recovery_code
@@ -273,7 +274,7 @@ final class AuthController extends ApiController
 
         $response = $this->completeLogin($request, $user, (bool) ($challenge['remember'] ?? false));
 
-        // Добавляем recovery_codes_remaining в payload.
+        // Add recovery_codes_remaining to the payload.
         /** @var array<string, mixed> $payload */
         $payload = (array) $response->getData(true)['payload'];
         $payload['recovery_codes_remaining'] = count($remaining);
@@ -282,7 +283,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Выйти из сессии.
+     * Ends the session.
      *
      * @output null $payload
      *
@@ -307,9 +308,10 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Запросить отправку письма для сброса пароля.
+     * Requests a password-reset email.
      *
-     * Ответ всегда успешный (даже если email не найден) — защита от user-enumeration.
+     * The response is always a success, even when the email is unknown — that
+     * is the protection against user enumeration.
      *
      * @input string(email) $email
      *
@@ -335,7 +337,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Сбросить пароль по токену из письма. При успехе — авто-логин.
+     * Resets the password by the token from the email; on success, logs in.
      *
      * @input string(email) $email
      * @input string $token
@@ -387,7 +389,7 @@ final class AuthController extends ApiController
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Авто-логин после успешного reset.
+        // Log the user in after a successful reset.
         $provider = Auth::createUserProvider(
             \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
         );
@@ -405,7 +407,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Подтвердить email по signed-параметрам из письма.
+     * Confirms an email address by the signed parameters from the message.
      *
      * @input integer $id
      * @input string $hash
@@ -460,7 +462,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Повторно отправить письмо для верификации email.
+     * Sends the email-verification message again.
      *
      * @output object $payload
      * @output string $payload.message
@@ -493,7 +495,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Сводный shape AdminUserSummary, который SPA получает в bootstrap/me/login.
+     * The AdminUserSummary shape the SPA receives in bootstrap, me and login.
      *
      * @param  Authenticatable&Model  $user
      * @return array<string, mixed>
@@ -508,19 +510,20 @@ final class AuthController extends ApiController
             'name' => $user->getAttribute('name'),
             'email' => $user->getAttribute('email'),
             'avatar' => $user->getAttribute('avatar'),
-            // Как есть, без подстановки умолчаний — иначе «у пользователя нет
-            // предпочтения» превращается в «пользователь выбрал вот это».
+            // As is, with no defaults substituted — otherwise "the user has
+            // no preference" turns into "the user chose exactly this".
             //
-            // Разница была видна: BootstrapBuilder отдаёт сырое значение, а
-            // здесь подставлялось умолчание, хотя докблок обещает один и тот же
-            // shape. Из-за этого панель у пользователя без сохранённой локали
-            // после ВХОДА уходила в язык по умолчанию, а после F5 возвращалась
-            // к языку браузера: полная загрузка получала null и язык не
-            // трогала, а вход получал 'en' и честно его принимал.
+            // The difference was visible: BootstrapBuilder returns the raw
+            // value while a default was substituted here, even though the
+            // docblock promises one and the same shape. Because of that, a
+            // user with no saved locale got the panel in the default language
+            // after LOGGING IN and back in the browser's language after F5: a
+            // full load received null and left the language alone, while the
+            // login received 'en' and honestly accepted it.
             //
-            // `theme` правится заодно: сейчас SPA тему при входе не принимает,
-            // и подстановка безвредна — но она заряжена ровно на тот день,
-            // когда примет.
+            // `theme` is fixed along the way: the SPA does not accept a theme
+            // on login today, so the substitution is harmless — but it is
+            // primed for precisely the day it does.
             'locale' => $user->getAttribute('locale'),
             'theme' => $user->getAttribute('theme'),
             'twoFactorEnabled' => $twoFactorEnabled,
@@ -529,8 +532,8 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Плоский список permissions залогиненного user'а — для фронтового
-     * AuthGuard'а после `auth/login` / `auth/2fa/verify`.
+     * The flat permission list of the logged-in user, for the frontend
+     * AuthGuard after `auth/login` / `auth/2fa/verify`.
      *
      * @return list<string>
      */
@@ -540,10 +543,10 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Войти под другим админом.
+     * Logs in as another administrator.
      *
-     * Требует permission `admin.impersonate`. Опция `block_higher_powered`
-     * блокирует impersonate юзеров с большим набором прав.
+     * Requires the `admin.impersonate` permission. The `block_higher_powered`
+     * option forbids impersonating users who hold more rights.
      *
      * @input integer $user_id
      *
@@ -587,7 +590,7 @@ final class AuthController extends ApiController
             ], Response::HTTP_FORBIDDEN);
         }
 
-        // Защита от вложенной impersonation.
+        // Guard against nested impersonation.
         if ($manager->isActive()) {
             return $this->error([
                 'errorKey' => 'already_impersonating',
@@ -632,7 +635,7 @@ final class AuthController extends ApiController
     }
 
     /**
-     * Завершить impersonation.
+     * Ends the impersonation.
      *
      * @output object $payload
      *
