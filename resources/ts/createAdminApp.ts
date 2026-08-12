@@ -158,7 +158,18 @@ export function createAdminApp(
      */
     onUnauthenticated: () => {
       const r = routerRef
-      if (r === null) return
+
+      // Роутера ещё нет — значит отказ пришёл на самой загрузке, когда
+      // тянутся меню и манифест. Это и есть частый случай: сессия умерла,
+      // оболочка пришла из браузера, а первые же запросы получили отказ.
+      // Уходим обычной навигацией, иначе человек остаётся в пустом каркасе.
+      if (r === null) {
+        if (typeof window !== 'undefined' && ! window.location.pathname.endsWith('/login')) {
+          window.location.assign(`${base}/login`)
+        }
+
+        return
+      }
 
       const current = r.currentRoute.value
       // На самой форме входа и на восстановлении пароля 401 — норма.

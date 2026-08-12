@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "sign in again" — a second reload happened to fix it, which no one can be
   expected to guess.
 
-  A 401 from any panel request now replaces the current route with the login
-  page, carrying the current path as `redirect`. `replace`, not `push`: the
+  A 401 from any panel request now leads to the login page. If the router
+  already exists, the current route is replaced (carrying the current path as
+  `redirect`); if it does not — and that is the common case, since the refusal
+  usually arrives while the menu and the manifest are still loading — the
+  browser navigates there outright. `replace`, not `push`: the
   empty page must not stay in history, or "back" after signing in would return
   straight to it. Requests made while already on an auth route are left alone —
   a 401 is normal there.
