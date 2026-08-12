@@ -40,6 +40,7 @@ import {
   ResourceViewPage,
 } from './components/resource'
 import { ProfilePage } from './components/profile'
+import { NotificationsPage } from './components/notifications'
 import { DashboardPage } from './components/dashboard'
 
 import { createAdminClient, type AdminClient } from './api/client'
@@ -70,6 +71,9 @@ export interface CreateAdminAppPages {
   forbidden?: Component
   /** 404. По умолчанию NotFoundPage. */
   notFound?: Component
+  /** Уведомления. По умолчанию NotificationsPage. */
+  notifications?: Component
+
   /** Профиль. По умолчанию ProfilePage. */
   profile?: Component
   /** Auth: forgot/reset password. По умолчанию core'овские. */
@@ -206,6 +210,11 @@ export function createAdminApp(
       forbidden: pages.forbidden ?? ForbiddenPage,
       notFound: pages.notFound ?? NotFoundPage,
       profile: pages.profile ?? ProfilePage,
+      // Раньше страница подставлялась ТОЛЬКО если её передал host, а не
+      // передавал никто — адрес `/notifications` отдавал 404 во всех панелях.
+      // Ссылок туда не было, поэтому дыра и не всплывала; посмотреть историю
+      // уведомлений при этом было негде — шторка закрывается по клику.
+      notifications: pages.notifications ?? NotificationsPage,
       forgotPassword: pages.forgotPassword ?? ForgotPasswordPage,
       resetPassword: pages.resetPassword ?? ResetPasswordPage,
       resourceIndex: pages.resourceIndex ?? ResourceIndexPage,

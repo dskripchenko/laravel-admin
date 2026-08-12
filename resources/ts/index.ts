@@ -149,7 +149,7 @@ export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'
 export { ResourceIndexPage, ResourceFormPage, ResourceViewPage } from './components/resource'
 
 // Notifications drawer
-export { NotificationsDrawer } from './components/notifications'
+export { NotificationsDrawer, NotificationsPage } from './components/notifications'
 
 // Profile page
 export { ProfilePage } from './components/profile'

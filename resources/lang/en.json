@@ -313,5 +313,11 @@
     "← Назад": "← Back",
     "← Назад ко входу": "← Back to sign-in",
     "⚠ Plain-значение показывается один раз. Если потеряете — нужно пересоздать.": "⚠ The plain value is shown once. If you lose it, you have to recreate the token.",
-    "запись #:id": "record #:id"
+    "запись #:id": "record #:id",
+    "Прочитано": "Mark as read",
+    "Вперёд": "Forward",
+    "Непрочитанных нет.": "Nothing unread.",
+    "Уведомлений пока нет.": "No notifications yet.",
+    "Всего: :total, непрочитанных: :unread": "Total: :total, unread: :unread",
+    "Страница :page из :last": "Page :page of :last"
 }
