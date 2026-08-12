@@ -1,14 +1,16 @@
 <script setup lang="ts">
 /**
- * AuditTimeline — список изменений конкретной записи.
+ * AuditTimeline — the list of changes to one particular record.
  *
- * Грузит GET /audit/timeline?subject_type={…}&subject_id={…} (см. backend
- * AuditController::timeline) и рендерит вертикальный timeline по дизайну
- * docs/design_handoff_laravel_admin (Resource View → История изменений).
+ * It loads GET /audit/timeline?subject_type={…}&subject_id={…} — see the
+ * backend's AuditController::timeline — and renders a vertical timeline
+ * following docs/design_handoff_laravel_admin (Resource View → change
+ * history).
  *
- * subjectType — Eloquent morph-class модели (например 'App\\Models\\Article'
- * или 'article' если используется map). Если не задан — компонент молча
- * не рендерит timeline (host не включил аудит).
+ * subjectType is the model's Eloquent morph class, 'App\\Models\\Article' for
+ * one, or 'article' when a morph map is in use. Without it the component
+ * quietly renders no timeline at all, since the host has not switched the
+ * audit on.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import {
@@ -37,10 +39,10 @@ interface AuditEntry {
 
 interface Props {
   /**
-   * Eloquent morph-class либо FQCN модели. Может быть пустой строкой /
-   * null — компонент в этом случае не делает запрос и показывает
-   * пустой state. Это нужно чтобы блок «История изменений» был всегда
-   * виден на view-странице даже когда у Resource не задан model-class.
+   * The Eloquent morph class, or the model's FQCN. It may be an empty string
+   * or null, in which case the component makes no request and shows an empty
+   * state — that way the "change history" block stays visible on the view page
+   * even for a resource with no model class.
    */
   subjectType: string | null
   subjectId: string | number
@@ -52,8 +54,8 @@ const loading = ref<boolean>(false)
 const error = ref<Error | null>(null)
 
 async function load(): Promise<void> {
-  // Без subject_type делать запрос бессмысленно — backend ожидает required
-  // строку. Просто показываем пустой state.
+  // Without a subject_type the request is pointless: the backend requires
+  // that string. We simply show the empty state.
   if (!props.subjectType || props.subjectType === '') {
     items.value = []
     loading.value = false
@@ -118,15 +120,16 @@ function hasDiff(entry: AuditEntry): boolean {
 
 function diffSummary(entry: AuditEntry): string {
   // Fall back to the projector's `summary` only when we have no diff details
-  // to render — otherwise the generic "Изменено" hides the actual change set.
+  // to render — otherwise the generic "Changed" hides the actual change set.
   if (hasDiff(entry)) return ''
   return entry.summary ?? ''
 }
 
-// ISO 8601 datetime (e.g. "2026-05-25T11:09:31.000000Z" или "...+03:00").
-// Бэкенд для `before` отдаёт raw-значение из БД (часто ISO с микросекундами),
-// а для `after` — уже отформатированную строку через Carbon (`Y-m-d H:i:s`).
-// Нормализуем оба вида к одному формату, чтобы дифф читался единообразно.
+// An ISO 8601 datetime, e.g. "2026-05-25T11:09:31.000000Z" or "...+03:00".
+// For `before` the backend returns the raw value from the database, often ISO
+// with microseconds, while for `after` it returns a string already formatted
+// by Carbon as `Y-m-d H:i:s`. We normalize both to one format, so that the
+// diff reads consistently.
 const ISO_DATETIME_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/
 
 function formatVal(v: unknown): string {
@@ -284,7 +287,7 @@ function formatVal(v: unknown): string {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* без padding-top: первая строка (аватар 24px) должна совпасть по высоте
+  /* no padding-top: the first line, a 24px avatar, has to match in height
      с event-иконкой 24px в левой колонке — иначе аватар смещён вниз. */
   padding-top: 0;
 }
@@ -294,7 +297,7 @@ function formatVal(v: unknown): string {
   gap: var(--uid-space-2xs);
   flex-wrap: wrap;
 }
-/* Первая строка выровнена по центру с event-иконкой (обе 24px). */
+/* The first line is centred against the event icon; both are 24px. */
 .admin-audit-timeline__row:first-child {
   min-height: 24px;
 }

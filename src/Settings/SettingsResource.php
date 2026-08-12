@@ -10,23 +10,24 @@ use Dskripchenko\LaravelAdmin\Settings\Storage\SettingsStorage;
 use Illuminate\Support\Str;
 
 /**
- * Singleton-ресурс настроек: одна группа из admin_settings, представленная
- * как форма Field'ов.
+ * A singleton settings resource: one group of admin_settings, presented as a
+ * form of fields.
  *
- * Отличие от обычного Resource:
- *   - нет CRUD по записям (одна логическая «запись» = вся группа);
- *   - не требует Eloquent-модели;
- *   - read возвращает map ключ → значение, update сохраняет map обратно
- *     через SettingsStorage.
+ * How it differs from an ordinary resource:
+ *   - there is no CRUD over records; the one logical "record" is the whole
+ *     group;
+ *   - it needs no Eloquent model;
+ *   - read returns a key → value map, and update saves that map back through
+ *     SettingsStorage.
  *
- * Подключение в Admin осуществляется через `Admin::settings([...])`
- * (фаза P11.2), но базовый класс уже работает напрямую.
+ * It is registered with `Admin::settings([...])`, though the base class works
+ * directly too.
  */
 abstract class SettingsResource
 {
     /**
-     * Slug группы (кеbab-case). Default: kebab(class basename без 'Settings'
-     * суффикса).
+     * The group's slug, in kebab case; by default the class basename without
+     * the 'Settings' suffix.
      */
     public static function slug(): string
     {
@@ -42,7 +43,7 @@ abstract class SettingsResource
     }
 
     /**
-     * Permission base. По default'у — `admin.settings.{slug}`.
+     * The permission base; `admin.settings.{slug}` by default.
      */
     public static function permission(): string
     {
@@ -68,7 +69,7 @@ abstract class SettingsResource
     abstract public function fields(): array;
 
     /**
-     * Default-значения для отсутствующих ключей.
+     * The default values of the keys that are not stored.
      *
      * @return array<string, mixed>
      */
@@ -83,7 +84,7 @@ abstract class SettingsResource
     }
 
     /**
-     * Получить текущие значения — мердж storage над defaults.
+     * Returns the current values: the storage merged over the defaults.
      *
      * @return array<string, mixed>
      */
@@ -93,7 +94,7 @@ abstract class SettingsResource
     }
 
     /**
-     * Сохранить значения с предварительной валидацией по rules.
+     * Saves the values, validating them against the rules first.
      *
      * @param  array<string, mixed>  $values
      */
@@ -115,8 +116,8 @@ abstract class SettingsResource
     }
 
     /**
-     * Метаданные для манифеста (та же структура что у Resource::meta(),
-     * но без table/columns/filters).
+     * The metadata for the manifest — the same shape as Resource::meta() but
+     * without the table, the columns and the filters.
      *
      * @return array<string, mixed>
      */

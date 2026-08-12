@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * ResourceController's create and update use it: it pulls the translatable
  * fields out of the payload, where they sit as
- * `{field: {ru: 'Привет', en: 'Hello'}}`, and saves each locale through
+ * `{field: {ru: 'Privet', en: 'Hello'}}`, and saves each locale through
  * TranslationTrait's `Model::saveTranslation`.
  *
  * The Eloquent models themselves have to use `TranslationTrait` for any of

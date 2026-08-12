@@ -1,20 +1,21 @@
 <script setup lang="ts">
 /**
- * TranslatableField — input с табами по локалям для translatable-моделей.
+ * TranslatableField — an input with a tab per locale, for the translatable
+ * models.
  *
- * Backend laravel-translatable хранит переводы в pivot-таблице. Для admin
- * Resource сериализует значение поля как `{ru: '...', en: '...'}`. Этот
- * компонент рендерит таб'ы по локалям и редактирует каждое значение
- * отдельно.
+ * On the backend, laravel-translatable keeps the translations in a pivot
+ * table, and a resource serializes the field's value as `{ru: '...',
+ * en: '...'}`. This component renders a tab per locale and edits each value
+ * separately.
  *
- * Локали:
- *   - resource manifest имеет `meta.locale` + `bootstrap.availableLocales`;
- *   - prop `locales` явно перебивает (для случаев когда модель ограничена
- *     подмножеством локалей).
+ * The locales:
+ *   - the resource manifest has `meta.locale`, and the bootstrap has
+ *     `availableLocales`;
+ *   - the `locales` prop overrides both, for a model limited to a subset.
  *
- * Backend payload — Object keyed by locale. Form-state сохраняет тот же
- * shape; bridge `TranslatableFieldBridge::extract()` извлекает на стороне
- * ResourceController при save.
+ * The backend's payload is an object keyed by locale, the form state keeps the
+ * same shape, and `TranslatableFieldBridge::extract()` pulls it out on
+ * ResourceController's side when saving.
  */
 import { computed, ref } from 'vue'
 import { UidInput } from '@dskripchenko/ui'
@@ -27,9 +28,9 @@ interface Props {
   help?: string | null
   required?: boolean
   placeholder?: string | null
-  /** Override доступных локалей. Default — locale.available. */
+  /** Overrides the available locales; locale.available by default. */
   locales?: string[]
-  /** Использовать textarea вместо input (для длинных полей body/description). */
+  /** Use a textarea instead of an input, for the long fields: body, description. */
   multiline?: boolean
   rows?: number
   disabled?: boolean
@@ -59,7 +60,7 @@ const value = computed<Record<string, string>>(() => {
   if (v && typeof v === 'object' && !Array.isArray(v)) {
     return v as Record<string, string>
   }
-  // Если поле пришло как plain-string (legacy non-translatable), оборачиваем.
+  // A field that arrived as a plain string — an older, non-translatable one — is wrapped.
   if (typeof v === 'string') return { [activeLocale.value]: v }
   return {}
 })
@@ -71,7 +72,7 @@ function update(locale: string, next: string): void {
 }
 
 const errorMsg = computed<string | undefined>(() => {
-  // Backend может возвращать ошибки per-locale (`field.ru` / `field.en`).
+  // The backend may return the errors per locale: `field.ru`, `field.en`.
   const errors = form.errors[props.name]
   if (errors?.[0]) return errors[0]
   for (const loc of availableLocales.value) {

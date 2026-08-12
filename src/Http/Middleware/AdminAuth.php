@@ -16,15 +16,14 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * Проверка аутентификации на admin-guard.
+ * Checks that the request is authenticated on the admin guard.
  *
- * Middleware применяется глобально через `config('admin.middleware.api')`,
- * но уважает `exclude-middleware` декларации в `AdminApi::getMethods()`:
- * если controller или конкретный action декларирует `AdminAuth::class` в
- * `exclude-middleware`, middleware пропускает запрос (для public-эндпоинтов
- * типа auth/login, auth/forgotPassword, auth/resetPassword).
- *
- * Sanctum/Bearer-tokens и 2FA-challenge поддержка появятся в P2.3+.
+ * The middleware applies globally, through `config('admin.middleware.api')`,
+ * but honours the `exclude-middleware` declarations of
+ * `AdminApi::getMethods()`: when a controller or a particular action lists
+ * `AdminAuth::class` there, the request passes through. That is what makes the
+ * public endpoints — auth/login, auth/forgotPassword, auth/resetPassword —
+ * work.
  */
 final class AdminAuth
 {
@@ -48,8 +47,8 @@ final class AdminAuth
 
         $user = Auth::guard($guard)->user();
 
-        // Выключенная учётка гаснет на первом же запросе, а не только на login
-        // (признак выключения — см. AccountState).
+        // A switched-off account goes out on the very next request, not only
+        // at the login; what counts as switched off is AccountState's business.
         if ($user !== null && \Dskripchenko\LaravelAdmin\Auth\AccountState::isDisabled($user)) {
             Auth::guard($guard)->logout();
 
@@ -59,9 +58,11 @@ final class AdminAuth
             ], Response::HTTP_FORBIDDEN);
         }
 
-        // Смена пароля инвалидирует остальные сессии (механика Laravel
-        // AuthenticateSession, но JSON-first): в session хранится hash пароля
-        // на момент входа; не совпал с текущим — сессия чужая/устаревшая.
+        // Changing the password invalidates the other sessions — Laravel's
+        // AuthenticateSession mechanics, done JSON-first: the session stores
+        // the hash of the password as it was at the login, and a mismatch
+        // means the session belongs to someone else, or to an earlier
+        // password.
         if ($user !== null && $request->hasSession()) {
             $key = 'password_hash_'.$guard;
             $hash = (string) $user->getAuthPassword();
@@ -87,15 +88,16 @@ final class AdminAuth
     }
 
     /**
-     * Проверяет, объявлен ли AdminAuth::class в exclude-middleware для текущего
-     * `controller`/`action` запроса.
+     * Tells whether AdminAuth::class is listed in the exclude-middleware of
+     * the request's current `controller` or `action`.
      *
-     * Используется для public-эндпоинтов типа `auth/login`, чтобы они работали
-     * без аутентификации даже когда AdminAuth — часть глобальной api-группы.
+     * That is what lets the public endpoints such as `auth/login` work without
+     * authentication even while AdminAuth is part of the global api group.
      *
-     * Если host-проект сшил admin API c другими версиями (например external-v1)
-     * в одном laravel-api модуле, exclude читается у фактической API-версии
-     * текущего запроса (через ApiModule), а не у фиксированного AdminApi.
+     * When a host project has stitched the admin API together with other
+     * versions — external-v1, say — in one laravel-api module, the exclusion
+     * is read from the API version of the actual request, through ApiModule,
+     * rather than from a fixed AdminApi.
      */
     private function isExcludedForCurrentAction(): bool
     {

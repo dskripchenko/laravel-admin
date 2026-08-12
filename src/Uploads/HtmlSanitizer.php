@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Uploads;
 
 /**
- * Простой HTML-санитайзер на whitelist'е тегов и атрибутов.
+ * A simple HTML sanitizer over a whitelist of tags and attributes.
  *
- * Без сторонних зависимостей (никаких HTMLPurifier / spatie/html-element).
- * Использует DOMDocument + рекурсивный walk.
+ * It has no third-party dependencies — no HTMLPurifier, no
+ * spatie/html-element — and works through DOMDocument and a recursive walk.
  *
- * Цель — защитить от XSS при сохранении Wysiwyg-content'а: вырезает
- * `<script>`, `<style>`, on*-handlers, javascript:-href'ы, неразрешённые теги.
+ * The point is to keep XSS out of saved WYSIWYG content: it strips `<script>`,
+ * `<style>`, the on* handlers, javascript: hrefs and any tag not on the list.
  *
- * Whitelist — список тегов и для каждого — допустимые атрибуты. Дефолт
- * соответствует Tiptap default-extensions из P14.1.
+ * The whitelist names the tags and, for each, the attributes allowed. The
+ * default matches Tiptap's own default extensions.
  */
 final class HtmlSanitizer
 {
@@ -22,14 +22,14 @@ final class HtmlSanitizer
     private array $allowed;
 
     /**
-     * Теги, которые удаляются вместе со всем содержимым (XSS-vector'ы).
+     * The tags removed along with everything inside them — the XSS vectors.
      *
      * @var list<string>
      */
     private const DROP_WITH_CONTENT = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'option', 'meta', 'link'];
 
     /**
-     * @param  array<string, list<string>>|null  $allowed  null = дефолт.
+     * @param  array<string, list<string>>|null  $allowed  null means the default.
      */
     public function __construct(?array $allowed = null)
     {
@@ -37,7 +37,7 @@ final class HtmlSanitizer
     }
 
     /**
-     * Дефолтный whitelist: совпадает с Tiptap StarterKit + image + table.
+     * The default whitelist: Tiptap's StarterKit plus image and table.
      *
      * @return array<string, list<string>>
      */
@@ -75,7 +75,7 @@ final class HtmlSanitizer
         }
 
         $doc = new \DOMDocument;
-        // libxml выбрасывает warnings на неструктурный HTML — глушим.
+        // libxml warns about unstructured HTML; we silence it.
         $previous = libxml_use_internal_errors(true);
         $doc->loadHTML(
             '<?xml encoding="UTF-8"?><div id="__sanitize_root__">'.$html.'</div>',
@@ -101,7 +101,7 @@ final class HtmlSanitizer
 
     private function cleanNode(\DOMNode $node): void
     {
-        // Сначала пройти по детям (snapshot — список меняется при removeChild).
+        // The children first, over a snapshot: removeChild changes the live list.
         $children = [];
         foreach ($node->childNodes as $child) {
             $children[] = $child;
@@ -113,15 +113,15 @@ final class HtmlSanitizer
 
                 if (! isset($this->allowed[$tag])) {
                     if (in_array($tag, self::DROP_WITH_CONTENT, true)) {
-                        // <script>, <style>, <iframe>, ... — XSS-vector'ы,
-                        // удаляем целиком вместе с textContent.
+                        // <script>, <style>, <iframe> and the rest are XSS
+                        // vectors, removed whole along with their text.
                         $child->parentNode?->removeChild($child);
 
                         continue;
                     }
 
-                    // Прочие неразрешённые теги — заменяем на text content
-                    // (теряем visual-обёртку, сохраняем текст).
+                    // Any other disallowed tag is replaced by its text: the
+                    // visual wrapper is lost, the words are kept.
                     $textOnly = $child->ownerDocument?->createTextNode($child->textContent) ?? null;
                     if ($textOnly !== null) {
                         $child->parentNode?->replaceChild($textOnly, $child);
@@ -132,7 +132,7 @@ final class HtmlSanitizer
                     continue;
                 }
 
-                // Допустимые атрибуты — фильтруем.
+                // The attributes are filtered against the list.
                 $allowedAttrs = $this->allowed[$tag];
                 $existingAttrs = [];
                 foreach ($child->attributes as $attr) {
@@ -153,7 +153,7 @@ final class HtmlSanitizer
                     }
                 }
 
-                // Рекурсивно — в детей.
+                // Recurse into the children.
                 $this->cleanNode($child);
             } elseif ($child instanceof \DOMComment) {
                 $child->parentNode?->removeChild($child);

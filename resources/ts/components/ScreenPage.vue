@@ -26,7 +26,7 @@ import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
 import { trSafe as tr } from '../stores/i18n'
 
 interface Props {
-  /** Slug screen'а. Если null — берётся из route.params.slug. */
+  /** The screen's slug; when null it comes from route.params.slug. */
   slug?: string | null
 }
 

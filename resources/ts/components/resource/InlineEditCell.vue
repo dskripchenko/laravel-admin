@@ -1,19 +1,23 @@
 <script setup lang="ts">
 /**
- * InlineEditCell — обёртка над текстом cell'а с double-click → input.
+ * InlineEditCell — a wrapper around a cell's text that turns into an input on
+ * a double click.
  *
- * Backend контракт: POST /{slug}/inlineUpdate body {id, column, value}.
- * Резолв правил валидации backend делает на стороне TableColumn->editable.
+ * The backend contract: POST /{slug}/inlineUpdate with a body of
+ * {id, column, value}. The validation rules are resolved on the backend, in
+ * TableColumn->editable.
  *
- * Поведение:
- *   - Idle: рендерит текст (через slot default).
- *   - Edit: input нужного типа (text/number/select/date/textarea/switcher) с
- *     автофокусом, Enter — save, Esc/Blur — cancel.
- *   - Saving: отключённый input, статус.
+ * How it behaves:
+ *   - idle: it renders the text, through the default slot.
+ *   - editing: an input of the right kind — text, number, select, date,
+ *     textarea, switcher — focused automatically; Enter saves, Esc or a blur
+ *     cancels.
+ *   - saving: the input is disabled and the status is shown.
  *
- * Tип инпута выбирается через prop `inputType`, для select подаются
- * `options: Record<value, label>`. Read-only forced если `editable === false`
- * либо если `rowOverride[column] === false` (per-row override от backend'а).
+ * The kind of input comes from the `inputType` prop, and a select is given
+ * `options: Record<value, label>`. It is forced read-only when
+ * `editable === false`, or when `rowOverride[column] === false` — the
+ * backend's per-row override.
  */
 import { computed, nextTick, ref } from 'vue'
 import { adminToast } from '../../stores/toast'
@@ -26,13 +30,13 @@ interface Props {
   rowId: string | number
   column: string
   value: unknown
-  /** Если false — двойной клик ничего не делает (read-only cell). */
+  /** With false a double click does nothing: the cell is read-only. */
   editable?: boolean
-  /** Тип контрола редактирования. */
+  /** The kind of editing control. */
   inputType?: InlineInputType
-  /** Для inputType='select' — мапа value→label. */
+  /** For inputType='select': the value → label map. */
   options?: Record<string | number, string>
-  /** Per-row override map; если column ∈ override и значение false — read-only. */
+  /** The per-row override map: a column present there with a false value is read-only. */
   rowOverride?: Record<string, boolean>
 }
 const props = withDefaults(defineProps<Props>(), {
@@ -74,7 +78,7 @@ function cancel(): void {
 
 async function commit(): Promise<void> {
   if (!editing.value || saving.value) return
-  // Без изменений — просто закрываем.
+  // Nothing changed, so we simply close.
   if (draft.value === String(props.value ?? '')) {
     editing.value = false
     return

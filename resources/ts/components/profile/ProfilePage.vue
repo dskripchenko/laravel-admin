@@ -1,11 +1,13 @@
 <script setup lang="ts">
 /**
- * ProfilePage — профильный экран по эталону handoff'а (screens-secondary.jsx
- * → Profile). Layout 200px nav / 1fr cards.
+ * ProfilePage — the profile screen, following the handoff
+ * (screens-secondary.jsx → Profile). The layout is 200px of navigation and
+ * 1fr of cards.
  *
- * Slot model: каждая section экспонирует свою карточку. По умолчанию
- * library рендерит общие "Основное" + "Безопасность" (на existing-данных
- * auth.user). Host подмешивает свои "API токены" и "Сессии" через slot'ы.
+ * Each section exposes its own card as a slot. By default the library renders
+ * the shared "General" and "Security" sections, off the data already in
+ * auth.user, and a host adds its own "API tokens" and "Sessions" through the
+ * slots.
  */
 import { computed, ref, watch } from 'vue'
 import {
@@ -23,11 +25,11 @@ import TwoFactorSetup from './TwoFactorSetup.vue'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface Props {
-  /** Заголовок страницы (по умолчанию «Profile»). */
+  /** The page's title; "Profile" by default. */
   title?: string
-  /** Подзаголовок (по умолчанию из handoff'а). */
+  /** The subtitle; taken from the handoff by default. */
   subtitle?: string
-  /** Какая section активна. */
+  /** Which section is active. */
   section?: 'general' | 'security' | 'tokens' | 'sessions' | string
 }
 
@@ -39,9 +41,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:section': [value: string]
-  /** Host реагирует — например запросом /me/uploadAvatar. */
+  /** The host reacts — with a request to /me/uploadAvatar, for instance. */
   'avatar-replace': []
-  /** 2FA disable triggered — host показывает confirmation modal. */
+  /** Disabling 2FA was requested; the host shows a confirmation modal. */
   'two-factor-disable': []
   /** 2FA recovery-codes regenerate. */
   'two-factor-regenerate': []
@@ -66,7 +68,7 @@ function selectSection(id: string): void {
   emit('update:section', id)
 }
 
-// Form-state для general-tab.
+// The form state of the general tab.
 const profile = ref({
   name: auth.user?.name ?? '',
   email: auth.user?.email ?? '',
@@ -81,13 +83,14 @@ const themeOptions = computed(() =>
   theme.available.map((t) => ({ value: t, label: t === 'dark' ? tr('Тёмная') : t === 'light' ? tr('Светлая') : t })),
 )
 
-// Locale / theme применяются мгновенно при изменении select'а — не требуют
-// клика "Сохранить". Это стандартный admin-UX (как в GitHub/Vercel/Linear).
+// The locale and the theme apply the moment the select changes, with no need
+// to press "Save" — which is how admin panels usually behave (GitHub, Vercel,
+// Linear).
 watch(
   () => profile.value.locale,
   (next, prev) => {
     if (next === prev || !next) return
-    // Reload после смены локали — заново бутстрапит меню/манифест/i18n (BL-11).
+    // A reload after the locale changes bootstraps the menu, the manifest and the i18n bag afresh.
     void locale
       .setLocale(next)
       .then(() => {
@@ -113,8 +116,8 @@ function onAvatarReplace(): void {
   emit('avatar-replace')
 }
 
-// Локальный флаг статуса 2FA — обновляется событиями встроенного визарда
-// TwoFactorSetup, чтобы бейдж «Включена/Отключена» реагировал мгновенно.
+// A local flag for the 2FA status, updated by the embedded TwoFactorSetup
+// wizard's events, so that the "Enabled/Disabled" badge reacts at once.
 const twoFAEnabled = ref<boolean>(Boolean(auth.user?.twoFactorEnabled))
 const has2FA = computed(() => twoFAEnabled.value)
 
@@ -251,7 +254,7 @@ function onTwoFactorDisabled(): void {
 <style>
 .admin-profile__layout {
   display: grid;
-  /* minmax(0,1fr), а не 1fr: колонка `1fr` не уже своего содержимого, и
+  /* minmax(0,1fr) rather than 1fr: a `1fr` column is never narrower than its content, and
      широкое поле формы растягивало сетку за пределы экрана. */
   grid-template-columns: 200px minmax(0, 1fr);
   gap: var(--uid-space-lg);
@@ -339,7 +342,7 @@ function onTwoFactorDisabled(): void {
   grid-template-columns: 1fr 1fr;
   gap: var(--uid-space-md);
 }
-/* Телефон: колонки не помещаются рядом. Разделы уезжают в строку над
+/* On a phone the columns do not fit side by side. The sections move into a row above
    содержимым и прокручиваются горизонтально сами — раньше вторая колонка
    просто уходила за край, и видна была только левая часть формы. */
 @media (max-width: 720px) {

@@ -1,13 +1,13 @@
 /**
- * Загрузка bootstrap-payload'а в SPA.
+ * Loads the bootstrap payload into the SPA.
  *
- * Поддерживает обе стратегии:
- *   - 'inline' — читает window.__ADMIN_BOOTSTRAP__ (инжект через
- *     shell.blade при strategy=inline).
- *   - 'xhr' — fetch'ит /api/admin/system/bootstrap.
+ * Both strategies work:
+ *   - 'inline' reads window.__ADMIN_BOOTSTRAP__, injected by shell.blade when
+ *     the strategy is inline.
+ *   - 'xhr' fetches /api/admin/system/bootstrap.
  *
- * Если оба способа не дали результата — throw'ит. SPA должна это поймать
- * и показать full-screen error.
+ * When neither yields anything it throws, and the SPA is expected to catch
+ * that and show a full-screen error.
  */
 
 import type { AdminBootstrap } from '../types/bootstrap'
@@ -15,19 +15,20 @@ import type { AdminClient } from './client'
 import { NetworkError } from './errors'
 
 export interface LoadBootstrapOptions {
-  /** Если задан client — fallback на xhr через него. */
+  /** When a client is given, the xhr fallback goes through it. */
   client?: AdminClient
-  /** Override URL для xhr. Default: '/system/bootstrap'. */
+  /** Overrides the xhr's URL; '/system/bootstrap' by default. */
   xhrUrl?: string
 }
 
 /**
- * Возвращает bootstrap или null если не загрузился.
+ * Returns the bootstrap, or null when it could not be loaded.
  *
- * Порядок:
- *   1. window.__ADMIN_BOOTSTRAP__ (inline-strategy).
- *   2. xhr fetch если передан client.
- *   3. null — caller решает что делать (показать error-screen).
+ * In order:
+ *   1. window.__ADMIN_BOOTSTRAP__, the inline strategy.
+ *   2. an xhr fetch, when a client was given.
+ *   3. null — and the caller decides what to do, such as showing an error
+ *      screen.
  */
 export async function loadBootstrap(
   opts: LoadBootstrapOptions = {},
@@ -43,7 +44,7 @@ export async function loadBootstrap(
       return await opts.client.get<AdminBootstrap>(url)
     } catch (err) {
       if (err instanceof NetworkError) {
-        // Network failure — caller должен показать offline-screen.
+        // A network failure: the caller should show an offline screen.
         return null
       }
       throw err
@@ -54,7 +55,7 @@ export async function loadBootstrap(
 }
 
 /**
- * Прочитать bootstrap из window — только в браузерном контексте.
+ * Reads the bootstrap off window; in a browser context alone.
  */
 export function readInlineBootstrap(): AdminBootstrap | null {
   if (typeof window === 'undefined') return null
@@ -62,9 +63,9 @@ export function readInlineBootstrap(): AdminBootstrap | null {
 }
 
 /**
- * Прочитать CSRF-token из meta-tag (Blade-injection через `csrf_token()`).
+ * Reads the CSRF token from the meta tag Blade injects with `csrf_token()`.
  *
- * Используется как fallback если bootstrap.csrf отсутствует.
+ * It is the fallback for when bootstrap.csrf is missing.
  */
 export function readCsrfFromMeta(): string | null {
   if (typeof document === 'undefined') return null

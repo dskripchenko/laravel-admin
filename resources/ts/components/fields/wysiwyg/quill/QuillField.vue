@@ -1,31 +1,32 @@
 <script setup lang="ts">
 /**
- * QuillField — wrapper над @vueup/vue-quill для field-registry admin'а.
+ * QuillField — the wrapper around @vueup/vue-quill, for the admin's field
+ * registry.
  *
- * Подключение в host-проекте (после createAdminApp):
+ * Wiring it into a host project, after createAdminApp:
  *
  *     import { registerField } from '@dskripchenko/laravel-admin'
  *     import { QuillField } from '@dskripchenko/laravel-admin/quill'
- *     // peer-deps: `@vueup/vue-quill` + `quill` должны быть установлены
+ *     // the peer dependencies `@vueup/vue-quill` and `quill` must be installed
  *     registerField('wysiwyg', QuillField)
  *
- * Если peer-dep не найден на этапе сборки vite — bundler упадёт с
- * "Failed to resolve". Это нормально: subpath /quill явно опциональный,
- * подключайте только если установили peer'ы.
- *
- * CSS темы импортируем здесь — побочный эффект подгружает стили в bundle.
+ * When a peer dependency is missing at build time, vite's bundler fails with
+ * "Failed to resolve". That is expected: the /quill subpath is deliberately
+ * optional, so import it only once the peers are in place.
  */
 import { computed } from 'vue'
-// @ts-expect-error — optional peer-dep, типы доступны только когда host
-// установил `@vueup/vue-quill`. Vite-сборка core помечает пакет как external,
-// поэтому импорт остаётся в runtime и резолвится в host'е.
+// @ts-expect-error — an optional peer dependency, whose types exist only once
+// the host has installed `@vueup/vue-quill`. The core's vite build marks the
+// package as external, so the import survives to runtime and resolves in the
+// host.
 import { QuillEditor, type Delta } from '@vueup/vue-quill'
 import { useFormState } from '../../../render/formState'
 
 /*
- * CSS-темы (snow/bubble) host подключает сам в своём entry — core их не
- * импортирует, иначе vite-сборка core упадёт на резолве путей в
- * node_modules (peer-dep optional, в core node_modules не установлен).
+ * The host imports the CSS themes — snow and bubble — in its own entry. The
+ * core does not, or its vite build would fail resolving the paths inside
+ * node_modules: the peer dependency is optional and is not installed in the
+ * core.
  *
  *     // demo/resources/js/admin.js
  *     import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -39,11 +40,11 @@ interface Props {
   required?: boolean
   placeholder?: string | null
   /**
-   * Quill toolbar config. Принимает `'essential' | 'minimal' | 'full'`
-   * либо raw-конфиг массивом групп.
+   * Quill's toolbar configuration. It takes `'essential' | 'minimal' | 'full'`
+   * or a raw array of groups.
    */
   toolbar?: string | unknown[]
-  /** 'snow' (default toolbar) | 'bubble' (inline) | 'core' (без UI). */
+  /** 'snow' — the default toolbar; 'bubble' — inline; 'core' — no UI at all. */
   theme?: 'snow' | 'bubble' | 'core'
   disabled?: boolean
 }
@@ -63,8 +64,8 @@ const value = computed<string>(() => (form.getField(props.name) as string | unde
 const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
 
 function onUpdate(next: string | Delta): void {
-  // QuillEditor v-model:content по умолчанию отдаёт HTML строку (contentType
-  // = 'html'). На всякий случай — поддерживаем и Delta-объект.
+  // QuillEditor's v-model:content gives an HTML string by default, since
+  // contentType is 'html'. A Delta object is supported too, just in case.
   if (typeof next === 'string') {
     form.setField(props.name, next)
   } else {
@@ -96,7 +97,7 @@ function onUpdate(next: string | Delta): void {
 </template>
 
 <style>
-/* Quill принимает min-height через CSS — снимает дёрганье инициализации. */
+/* Quill takes its min-height from CSS, which removes the jolt on initialization. */
 .admin-field__control--quill .ql-container {
   min-height: 200px;
   font-size: 14px;

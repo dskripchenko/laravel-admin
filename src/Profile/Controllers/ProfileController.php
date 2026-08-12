@@ -20,15 +20,16 @@ use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Профиль текущего администратора: данные, пароль, 2FA setup.
+ * The current administrator's profile: the details, the password, the 2FA
+ * setup.
  *
- * См. контракт docs/api/profile.md. API-токены (Sanctum) реализуются в P15
- * — здесь не подключены, чтобы избежать жёсткой зависимости.
+ * The contract is in docs/api/profile.md. The Sanctum API tokens are optional
+ * and are not wired in here, so as to avoid a hard dependency.
  */
 class ProfileController extends ApiController
 {
     /**
-     * Получить профиль текущего пользователя.
+     * Returns the current user's profile.
      *
      * @output object $payload
      * @output object $payload.user
@@ -56,7 +57,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Обновить профиль (имя, email, локаль, тема).
+     * Updates the profile: the name, email, locale and theme.
      *
      * @input string ?$name
      * @input string(email) ?$email
@@ -99,7 +100,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Сменить пароль с проверкой current_password.
+     * Changes the password, checking current_password first.
      *
      * @input string $current_password
      * @input string $password
@@ -130,8 +131,8 @@ class ProfileController extends ApiController
 
         $user->forceFill(['password' => $request->input('password')])->save();
 
-        // Обновляем session-hash СВОЕЙ сессии — иначе AdminAuth счёл бы её
-        // устаревшей на следующем запросе. Остальные сессии юзера гаснут.
+        // We refresh the hash of OUR OWN session, or AdminAuth would consider
+        // it stale on the next request. The user's other sessions go out.
         if ($request->hasSession()) {
             $request->session()->put(
                 'password_hash_'.\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard(),
@@ -145,7 +146,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Получить статус 2FA.
+     * Returns the 2FA status.
      *
      * @output object $payload
      *
@@ -161,7 +162,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Сгенерировать новый secret + recovery codes (state = pending).
+     * Generates a new secret and recovery codes; the state becomes pending.
      *
      * @output object $payload
      *
@@ -195,7 +196,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Подтвердить 2FA вводом TOTP.
+     * Confirms 2FA with a TOTP code.
      *
      * @input string $code
      *
@@ -237,7 +238,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Отключить 2FA с re-auth по паролю.
+     * Switches 2FA off, re-authenticating by password.
      *
      * @input string $password
      *
@@ -270,7 +271,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Регенерировать recovery codes (с re-auth).
+     * Regenerates the recovery codes, re-authenticating first.
      *
      * @input string $password
      *
@@ -302,14 +303,14 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Список Sanctum-токенов текущего пользователя.
+     * The current user's Sanctum tokens.
      *
      * @output object $payload
      *
      * @security AdminSession
      *
      * @response 200 {ApiTokenListResponse}
-     * @response 404 {NotFoundErrorResponse}  Sanctum не установлен.
+     * @response 404 {NotFoundErrorResponse}  Sanctum is not installed.
      */
     public function tokensList(): JsonResponse
     {
@@ -344,7 +345,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Создать новый Sanctum-токен. Plain-text возвращается ОДИН раз.
+     * Creates a Sanctum token. The plain text is returned ONCE.
      *
      * @input string $name
      * @input array ?$abilities
@@ -401,7 +402,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Удалить Sanctum-токен текущего пользователя.
+     * Removes one of the current user's Sanctum tokens.
      *
      * @input integer $id
      *
@@ -449,7 +450,7 @@ class ProfileController extends ApiController
     }
 
     /**
-     * Текущий пользователь admin-guard. Гарантирован AdminAuth middleware.
+     * The current user of the admin guard; the AdminAuth middleware guarantees one.
      */
     private function currentUser(): Authenticatable&Model
     {

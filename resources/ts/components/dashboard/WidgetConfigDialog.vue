@@ -1,23 +1,24 @@
 <script setup lang="ts">
 /**
- * WidgetConfigDialog — единый dialog для двух use-case'ов:
+ * WidgetConfigDialog — one dialog serving two purposes:
  *
- *   mode='add'      — выбор типа из registry + первичная настройка
- *   mode='configure'— редактирование существующего widget'а (тип фиксирован)
+ *   mode='add'       — pick a type from the registry and set it up
+ *   mode='configure' — edit an existing widget, whose type is fixed
  *
- * Поля:
- *   - title (всегда)
- *   - size 1..12 (всегда)
- *   - type-specific config (зависит от type):
+ * The fields:
+ *   - the title, always
+ *   - the size, 1..12, always
+ *   - the type-specific configuration:
  *       markdown → content
- *       stat/stats → label + value
+ *       stat/stats → label and value
  *       gauge → value (0..100)
- *       chart/bar-chart/donut-chart → labels + datasets[0].data (CSV)
- *       recent-table → resource slug + limit
- *       heatmap → нет настраиваемых (рендерится из data, host'ит backend)
+ *       chart/bar-chart/donut-chart → labels and datasets[0].data, as CSV
+ *       recent-table → the resource slug and the limit
+ *       heatmap → nothing to configure; it is rendered from the data the
+ *                 backend supplies
  *
- * @add  — emit готового WidgetLayoutItem (родитель кладёт в store).
- * @save — emit patch'а для существующего widget'а.
+ * @add  emits a finished WidgetLayoutItem, which the parent puts into the store.
+ * @save emits a patch for an existing widget.
  */
 import { computed, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
@@ -32,13 +33,13 @@ import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   open: boolean
-  /** 'add' — выбор типа; 'configure' — редактирование существующего. */
+  /** 'add' picks a type; 'configure' edits an existing widget. */
   mode?: 'add' | 'configure'
-  /** Initial-state для configure (slug + type + size + config). */
+  /** The initial state of the configure mode: slug, type, size and config. */
   item?: WidgetLayoutItem | null
-  /** Title виджета на момент открытия (для configure-mode из manifest'а). */
+  /** The widget's title when the dialog opened; in configure mode it comes from the manifest. */
   initialTitle?: string
-  /** Скрытые виджеты дашборда — предлагаются к восстановлению (BL-18). */
+  /** The dashboard's hidden widgets, offered for restoring. */
   restorable?: Array<{ slug: string; title: string }>
 }
 const props = withDefaults(defineProps<Props>(), {
@@ -83,7 +84,7 @@ watch(
       selectedType.value = props.item.type ?? ''
       title.value = (cfg.title as string | undefined) ?? props.initialTitle
       size.value = String(props.item.size ?? 6)
-      // Преварительно заполняем type-specific поля.
+      // Pre-fill the type-specific fields.
       markdownContent.value = (cfg.content as string | undefined) ?? markdownContent.value
       const firstStat = (cfg.stats as Array<Record<string, unknown>> | undefined)?.[0]
       if (firstStat) {
@@ -91,7 +92,7 @@ watch(
         statValue.value = String(firstStat.value ?? '')
       }
       gaugeValue.value = String((cfg.value as number | undefined) ?? 50)
-      // Chart labels/values — flatten из cfg.labels / cfg.datasets[0].data.
+      // The chart's labels and values, flattened out of cfg.labels and cfg.datasets[0].data.
       const labels = cfg.labels as string[] | undefined
       const datasets = cfg.datasets as Array<{ data?: number[] }> | undefined
       if (labels && labels.length > 0) chartLabels.value = labels.join(', ')
@@ -99,7 +100,7 @@ watch(
       recentResource.value = (cfg.resource as string | undefined) ?? ''
       recentLimit.value = String(cfg.limit ?? 5)
     } else {
-      // Add-mode: чистый state.
+      // In the add mode the state starts clean.
       selectedType.value = ''
       title.value = ''
       size.value = '6'

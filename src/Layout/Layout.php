@@ -7,21 +7,21 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Абстрактный layout-слой.
+ * The abstract layout layer.
  *
- * Композитный паттерн: layout содержит дочерние layouts/fields/actions
- * (любые `Renderable`). Концретные подклассы (Rows, Columns, Tabs, Block,
- * View, ...) определяют свой `type()` и опциональные props.
+ * It is a composite: a layout holds child layouts, fields and actions — any
+ * `Renderable`. The concrete subclasses (Rows, Columns, Tabs, Block, View and
+ * the rest) define their own `type()` and their optional props.
  *
- * Статические фабрики (`Layout::rows`, `Layout::columns`, ...) — точка входа
- * в DSL; возвращают экземпляры конкретных подклассов.
+ * The static factories (`Layout::rows`, `Layout::columns`, …) are the DSL's
+ * entry point and return instances of those subclasses.
  */
 abstract class Layout implements Renderable
 {
-    /** Стабильный id слоя — для частичных обновлений и cache-ключей. */
+    /** The layer's stable id, for partial updates and cache keys. */
     protected ?string $id = null;
 
-    /** @var array<string, mixed> Type-specific props (название, иконка, ratios, ...). */
+    /** @var array<string, mixed> The type-specific props: a title, an icon, ratios and so on. */
     protected array $props = [];
 
     /** @var list<Renderable> */
@@ -33,7 +33,7 @@ abstract class Layout implements Renderable
     abstract public function type(): string;
 
     /* -----------------------------------------------------------------
-     * Статические фабрики — DSL вход
+     * The static factories — the DSL's entry point
      * ----------------------------------------------------------------- */
 
     /**
@@ -69,7 +69,7 @@ abstract class Layout implements Renderable
     }
 
     /**
-     * Произвольный Vue-компонент с props.
+     * An arbitrary Vue component, with props.
      *
      * @param  array<string, mixed>  $props
      */
@@ -180,7 +180,7 @@ abstract class Layout implements Renderable
     }
 
     /* -----------------------------------------------------------------
-     * Сериализация
+     * Serialization
      * ----------------------------------------------------------------- */
 
     /**
@@ -196,14 +196,15 @@ abstract class Layout implements Renderable
             $children[] = $child->toArray();
         }
 
-        // Frontend layout-компоненты (Rows/Columns/Section/Tabs) ожидают
-        // `items` + type-specific props на верхнем уровне (Vue v-bind=).
-        // Splat'им `props` и алиасим `children → items`. Legacy ключи
-        // `props` / `children` сохраняем для уже-нормализующих consumer'ов
-        // (screen-store).
-        // props несут подписи (labels вкладок, title аккордеона) и уезжают
-        // ДВАЖДЫ: сплэтом на верхний уровень (Vue v-bind=) и ключом `props`
-        // для legacy-consumer'ов. Локализуем один раз до обеих копий.
+        // The frontend layout components (Rows, Columns, Section, Tabs)
+        // expect `items` plus the type-specific props at the top level, for
+        // Vue's v-bind=. So we spread `props` and alias `children` to `items`,
+        // keeping the older `props` and `children` keys for the consumers that
+        // normalize them already, such as the screen store.
+        // The props carry captions — the tabs' labels, an accordion's title —
+        // and travel TWICE: spread to the top level and under the `props` key
+        // for the older consumers. They are localized once, before both
+        // copies.
         $props = \Dskripchenko\LaravelAdmin\I18n\Localize::attributes($this->props);
 
         return [

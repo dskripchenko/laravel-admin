@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
- * TwoFactorSetup — мини-wizard для подключения 2FA TOTP.
+ * TwoFactorSetup — the small wizard that turns TOTP-based 2FA on.
  *
- * State-machine:
- *   idle      — 2FA выключена; кнопка «Включить 2FA».
- *   setup     — backend выдал secret + qr_uri; показываем QR + поле для
- *               подтверждающего 6-значного кода.
- *   confirmed — после успешного twoFactorConfirm: показываем recovery-коды.
- *   enabled   — 2FA уже включена; кнопки «Перегенерировать коды» / «Отключить».
+ * Its states:
+ *   idle      — 2FA is off, and there is an "Enable 2FA" button.
+ *   setup     — the backend issued a secret and a qr_uri; the QR code is shown
+ *               along with the field for the confirming six-digit code.
+ *   confirmed — after a successful twoFactorConfirm: the recovery codes.
+ *   enabled   — 2FA is already on, with "Regenerate the codes" and "Disable".
  *
- * QR рендерится встроенным lean-qr (~3KB, без peer-dep). Host может
- * переопределить через slot `qr-code` (например для брендированной
- * картинки или canvas-варианта).
+ * The QR code is drawn by the bundled lean-qr, about 3 KB and with no peer
+ * dependency. A host may replace it through the `qr-code` slot — for a branded
+ * image or a canvas version, say.
  */
 import { computed, ref } from 'vue'
 import { Copy, ShieldCheck, ShieldOff, RefreshCw } from 'lucide-vue-next'
@@ -22,15 +22,15 @@ import { adminToast } from '../../stores/toast'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
-  /** Включена ли 2FA на момент монтирования (auth.user.twoFactorEnabled). */
+  /** Whether 2FA was on when this mounted — auth.user.twoFactorEnabled. */
   enabled: boolean
 }
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  /** 2FA подтверждена — host обновляет auth.user.twoFactorEnabled. */
+  /** 2FA has been confirmed; the host updates auth.user.twoFactorEnabled. */
   enabled: []
-  /** 2FA отключена. */
+  /** 2FA has been switched off. */
   disabled: []
 }>()
 
@@ -90,7 +90,7 @@ async function confirmCode(): Promise<void> {
 }
 
 async function disable(): Promise<void> {
-  // Бэкенд требует подтверждение паролем — без него кнопка молча 422-илась.
+  // The backend wants the password as confirmation; without it the button quietly returned a 422.
   if (password.value === '') {
     error.value = tr('Введите текущий пароль.')
     return
@@ -157,9 +157,9 @@ async function copyCodes(): Promise<void> {
 const formattedSecret = computed(() => secret.value.match(/.{1,4}/g)?.join(' ') ?? secret.value)
 
 /**
- * Генерируем QR из otpauth-URI через lean-qr. Возвращаем SVG-string,
- * который вставляется через v-html. ECC=M (15%) — оптимум: достаточно
- * для пятен на экране, но без больших data-блоков.
+ * Builds the QR code from the otpauth URI with lean-qr and returns an SVG
+ * string, inserted through v-html. ECC=M, 15%, is the sweet spot: enough for
+ * smudges on a screen without inflating the data blocks.
  */
 const qrSvg = computed<string>(() => {
   if (qrUri.value === '') return ''

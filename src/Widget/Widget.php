@@ -8,28 +8,30 @@ use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 use Illuminate\Support\Str;
 
 /**
- * Абстрактный widget — компонент Dashboard'а.
+ * The abstract widget — a component of a dashboard.
  *
- * Каждый widget имеет:
- *   - `slug` (по умолчанию kebab-class-basename без 'Widget' suffix);
- *   - `widgetType()` — UI-тип (stats/chart/table/markdown/...);
- *   - `data()` — payload для SPA, может быть computed lazy через
- *      data-endpoint (см. WidgetController в P8.3);
- *   - `view()` — конфиг отображения (size, refresh interval, ...).
+ * Every widget has:
+ *   - a `slug`, by default the kebab-cased class basename without the 'Widget'
+ *     suffix;
+ *   - a `widgetType()` — the UI type: stats, chart, table, markdown and so on;
+ *   - a `data()` — the payload for the SPA, which may be computed lazily
+ *     through the data endpoint;
+ *   - a `view()` — the display configuration: the size, the refresh interval
+ *     and the rest.
  *
- * Permission gating и size — общие для всех виджетов.
+ * The permission gating and the size are common to every widget.
  *
  * @phpstan-consistent-constructor
  */
 abstract class Widget implements Renderable
 {
     /**
-     * Размер на dashboard-сетке (1..12 колонок).
+     * The size on the dashboard's grid, in columns, 1..12.
      */
     protected int $size = 6;
 
     /**
-     * Высота на dashboard-сетке (1..6 строк). null = frontend подберёт по type.
+     * The height on the dashboard's grid, in rows, 1..6; null lets the frontend pick by type.
      */
     protected ?int $rowSpan = null;
 
@@ -44,15 +46,15 @@ abstract class Widget implements Renderable
     protected $visibility = true;
 
     /**
-     * UI-тип виджета — stats/chart/recent_list/table/markdown/iframe/heatmap/gauge.
+     * The widget's UI type: stats, chart, recent_list, table, markdown, iframe, heatmap or gauge.
      */
     abstract public function widgetType(): string;
 
     /**
-     * Computed payload — основное содержимое виджета.
+     * The computed payload — the widget's actual content.
      *
-     * Может бросать или возвращать пустой массив, если данные нужно лениво
-     * загрузить через WidgetController.fetch.
+     * It may throw, or return an empty array, when the data is to be loaded
+     * lazily through WidgetController.fetch.
      *
      * @return array<string, mixed>
      */
@@ -81,7 +83,7 @@ abstract class Widget implements Renderable
     }
 
     /**
-     * Размер на dashboard-сетке: 1..12 (12 = full width).
+     * The size on the dashboard's grid: 1..12, where 12 is the full width.
      */
     public function size(int $columns): static
     {
@@ -91,8 +93,9 @@ abstract class Widget implements Renderable
     }
 
     /**
-     * Высота на dashboard-сетке: 1..6 (1 = ~140px, 2 = ~296px и т.д.).
-     * Если не задано — frontend подберёт default по типу (chart=2, stat=1).
+     * The height on the dashboard's grid: 1..6, where 1 is about 140px, 2
+     * about 296px and so on. Left unset, the frontend picks by type: 2 for a
+     * chart, 1 for a stat.
      */
     public function rowSpan(int $rows): static
     {

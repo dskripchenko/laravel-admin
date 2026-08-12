@@ -118,10 +118,10 @@ describe('auth store', () => {
     })
 
     it('подхватывает локаль вошедшего, а не оставляет гостевую', async () => {
-      // Вход идёт XHR'ом без перезагрузки, а locale-store гидрируется один
-      // раз на гостевом bootstrap'е — по Accept-Language браузера. Без этого
-      // панель после входа говорила на языке браузера и переключалась на
-      // язык аккаунта только после F5.
+      // The login is an XHR with no reload, while the locale store is hydrated
+      // once, on the guest bootstrap, from the browser's Accept-Language.
+      // Without this the panel spoke the browser's language after the login
+      // and switched to the account's only after F5.
       const locale = useLocaleStore()
       locale.hydrate(mkBootstrap({ locale: 'en', availableLocales: ['ru', 'en'] }))
       expect(locale.current).toBe('en')
@@ -143,10 +143,11 @@ describe('auth store', () => {
     })
 
     it('выход отпускает локаль — она не достаётся следующему', async () => {
-      // Заголовок X-Admin-Locale стоит в цепочке ВЫШЕ сохранённой настройки
-      // аккаунта: пока вкладка его шлёт, он перебивает настройку. После
-      // выхода это чужая локаль — следующий вошедший в той же вкладке
-      // получил бы язык предшественника, не имея своей настройки.
+      // The X-Admin-Locale header sits ABOVE the account's saved preference in
+      // the chain: while the tab keeps sending it, it overrides that
+      // preference. After a logout it belongs to someone else — the next
+      // person to log in from the same tab would get their predecessor's
+      // language, having no preference of their own.
       const locale = useLocaleStore()
       locale.hydrate(mkBootstrap({ locale: 'en', availableLocales: ['ru', 'en'] }))
 
@@ -273,17 +274,19 @@ describe('auth store', () => {
     })
 
     it('BL-44: гидратация на ru + пустая локаль у пользователя оставляет ru', async () => {
-      // Сценарий с бета-стенда: браузер ru, bootstrap с locale=ru, у учётки в
-      // базе locale=NULL. Панель после входа уходила в английский.
+      // The case from the beta stand: the browser in ru, a bootstrap with
+      // locale=ru, and locale=NULL on the account in the database. After the
+      // login the panel went English.
       //
-      // Этот тест ПРОХОДИЛ и до исправления — и это оказалось самой полезной
-      // его частью: он доказал, что клиент ведёт себя правильно, и увёл поиск
-      // с фронта на бэкенд. Виноват был ответ на вход, подставлявший умолчание
-      // вместо пустого значения (core 1.20.1); SPA честно принимала «выбор
-      // пользователя», которого пользователь не делал.
+      // This test PASSED before the fix too — and that turned out to be the
+      // most useful thing about it: it proved the client behaves correctly and
+      // moved the search from the frontend to the backend. The culprit was the
+      // login response, which substituted a default for an empty value (core
+      // 1.20.1); the SPA honestly accepted a "user's choice" the user had
+      // never made.
       //
-      // Оставлен как страж: если клиентская сторона однажды начнёт
-      // додумывать локаль сама, упадёт здесь.
+      // It stays as a guard: should the client side ever start inventing a
+      // locale of its own, it will fail here.
       const locale = useLocaleStore()
       locale.hydrate(mkBootstrap({ locale: 'ru', availableLocales: ['en', 'ru'] }))
 
@@ -302,8 +305,8 @@ describe('auth store', () => {
 
       expect(locale.current).toBe('ru')
 
-      // И заголовок, которым уйдёт следующий запрос, — тоже ru: именно он
-      // решает, на каком языке приедет меню.
+      // And the header the next request will carry is ru as well: that is what
+      // decides which language the menu arrives in.
       mock.onGet('/probe').reply((config) => {
         expect(config.headers?.['X-Admin-Locale']).toBe('ru')
         return [200, { success: true, payload: {} }]

@@ -1,18 +1,19 @@
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
 /**
- * Подпись статуса для шапки формы ресурса.
+ * The status label in the header of a resource's form.
  *
- * Шапка печатала СЫРОЕ значение (`active`) рядом с полностью русской формой,
- * хотя select двумя строками ниже показывал «Активен». Подписи приходят в
- * манифесте уже переведёнными (`Localize::options`) — переводить нечего,
- * достаточно в них заглянуть.
+ * The header printed the RAW value (`active`) beside a fully translated form,
+ * while the select two lines below showed "Active". The labels arrive in the
+ * manifest already translated, by `Localize::options` — there is nothing to
+ * translate, one only has to look at them.
  *
- * Живёт отдельным модулем, а не внутри SFC, чтобы проверяться тестом: внутри
- * компонента логика была непроверяемой, так дефект и уехал.
+ * It lives in a module of its own rather than inside the SFC so that a test
+ * can reach it: inside the component the logic was uncheckable, which is how
+ * the defect shipped.
  */
 
-/** Ищет поле по имени в дереве произвольной вложенности (вкладки → строки → поля). */
+/** Finds a field by name in a tree of any depth: tabs → rows → fields. */
 export function findFieldNode(
   nodes: LayoutNode[],
   name: string,
@@ -32,12 +33,12 @@ export function findFieldNode(
 }
 
 /**
- * Формат подписей допускает и карту `value => label`, и список
- * `[{value, label}]` — поддержаны оба, иначе часть ресурсов осталась бы с
- * машинным значением.
+ * The labels may come either as a `value => label` map or as a list of
+ * `[{value, label}]` — both are supported, or some resources would be left
+ * with the machine value.
  *
- * Без подходящей подписи возвращается само значение: машинное слово в шапке
- * лучше пустоты — по нему хотя бы видно, в каком состоянии запись.
+ * With no matching label the value itself is returned: a machine word in the
+ * header beats emptiness, since it at least shows what state the record is in.
  */
 export function resolveStatusLabel(
   nodes: LayoutNode[],
@@ -47,11 +48,11 @@ export function resolveStatusLabel(
 
   const field = findFieldNode(nodes, 'status')
 
-  // Подписи лежат в `attributes.options` — там их держит трейт HasOptions.
-  // Верхнеуровневый ключ `options` в сериализации ЕСТЬ, но всегда пустой: он
-  // читает свойство, которого поля не заполняют. Первая версия смотрела туда
-  // и честно ничего не находила, откатываясь к машинному значению — правка
-  // выглядела сделанной и не работала.
+  // The labels sit in `attributes.options`, where the HasOptions trait keeps
+  // them. The top-level `options` key IS present in the serialization but is
+  // always empty: it reads a property the fields never fill in. The first
+  // version looked there, honestly found nothing and fell back to the machine
+  // value — the fix looked done and did not work.
   const attributes = field?.attributes as Record<string, unknown> | undefined
   const options = attributes?.options ?? field?.options
 

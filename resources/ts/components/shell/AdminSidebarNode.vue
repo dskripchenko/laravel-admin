@@ -10,9 +10,9 @@ interface Props {
   item: MenuItem
   depth?: number
   collapsed?: boolean
-  /** Глубина, после которой включается stripe-режим (вместо роста indent). */
+  /** The depth past which the stripe mode replaces a growing indent. */
   stripeAt?: number
-  /** Шаг indent в px на каждый уровень (до stripeAt). */
+  /** How many pixels each level indents by, up to stripeAt. */
   indentStep?: number
 }
 
@@ -32,11 +32,11 @@ const hasChildren = computed(
 const open = ref(false)
 
 function isActive(item: MenuItem): boolean {
-  // Точный match
+  // An exact match
   if (item.routeName && route.name === item.routeName) return true
   if (item.url && route.path === item.url) return true
-  // Prefix match: list-route активна на детальных страницах ресурса
-  // (resource.{slug}.list → .create / .{id}.edit / .{id}.view).
+  // A prefix match: the list route stays active on the resource's detail
+  // pages — resource.{slug}.list covers .create, .{id}.edit and .{id}.view.
   if (item.routeName && typeof route.name === 'string') {
     const base = String(item.routeName).replace(/\.(list|index)$/, '')
     if (route.name.startsWith(base + '.')) return true
@@ -65,16 +65,17 @@ const itemTarget = computed<string | Record<string, unknown> | undefined>(() => 
 })
 
 /**
- * Effectively-applied indent: до stripeAt — растёт; после — фиксируется
- * на уровне stripeAt-1 и переход на stripe-mode (border-left).
+ * The indent actually applied: it grows up to stripeAt, then freezes at
+ * stripeAt-1 and the stripe mode — a left border — takes over.
  */
 const indentDepth = computed(() => Math.min(props.depth, props.stripeAt - 1))
 
 const stripeStep = computed(() => Math.max(0, props.depth - (props.stripeAt - 1)))
 
 /**
- * Цвет stripe-полосы по depth: stair-step alpha от 0.85 до 0.15 c шагом 0.18.
- * Минимум 0.12 чтобы при глубине 5+ stripe оставался видимым.
+ * The stripe's colour by depth: the alpha steps down from 0.85 to 0.15 by
+ * 0.18 at a time, with a floor of 0.12 so that at depth five and beyond the
+ * stripe stays visible.
  */
 const stripeAlpha = computed(() => {
   const step = stripeStep.value
@@ -175,9 +176,10 @@ function toggle(): void {
 }
 
 /*
- * Отступ применяется к самому ряду (item / group-button), не к wrapper'у —
- * иначе ломается hover/active background, который должен растягиваться на
- * полную ширину sidebar'а. Margin внутреннего uid-sidebar-item остаётся.
+ * The indent is applied to the row itself — the item or the group button —
+ * rather than to the wrapper: otherwise the hover and active backgrounds
+ * break, and those must span the sidebar's full width. The inner
+ * uid-sidebar-item keeps its margin.
  */
 .admin-sidebar-node > .admin-sidebar-node__group,
 .admin-sidebar-node > .admin-sidebar-node__leaf {
@@ -185,17 +187,17 @@ function toggle(): void {
 }
 
 /*
- * stripe-mode: рисуем вертикальную полоску слева внутри ряда, через
- * box-shadow inset чтобы не сдвигать текст и не нарушать padding row'а.
- * Цвет — semitransparent primary, alpha управляется --admin-sidebar-stripe-alpha
- * (компонент пересчитывает в зависимости от depth).
+ * The stripe mode draws a vertical bar on the left inside the row, through an
+ * inset box-shadow, so that the text does not shift and the row's padding
+ * stays intact. The colour is a semi-transparent primary, and the alpha comes
+ * from --admin-sidebar-stripe-alpha, which the component recomputes per depth.
  */
 .admin-sidebar-node--stripe > .admin-sidebar-node__group,
 .admin-sidebar-node--stripe > .admin-sidebar-node__leaf {
   box-shadow: inset 2px 0 0 0 var(--admin-sidebar-stripe-color);
 }
 
-/* uid-sidebar-item базовая разметка для button (UidSidebarItem только для leaf'ов) */
+/* The uid-sidebar-item base layout for a button; UidSidebarItem covers the leaves alone */
 .admin-sidebar-node__group {
   width: calc(100% - var(--uid-space-sm) * 2);
   margin: 1px var(--uid-space-sm);
@@ -229,7 +231,7 @@ function toggle(): void {
   flex-direction: column;
 }
 
-/* В collapsed режиме nested-уровни скрываем — sidebar и так компактный. */
+/* While collapsed the nested levels are hidden — the sidebar is compact as it is. */
 .uid-pattern-sidebar--collapsed .admin-sidebar-node__children { display: none; }
 .uid-pattern-sidebar--collapsed .admin-sidebar-node__chev { display: none; }
 </style>

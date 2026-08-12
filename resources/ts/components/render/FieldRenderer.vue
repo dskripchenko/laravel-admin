@@ -1,18 +1,18 @@
 <script setup lang="ts">
 /**
- * FieldRenderer резолвит конкретный field-компонент по `node.type` из реестра
- * и forwards остальные props через v-bind.
+ * FieldRenderer resolves the field component by `node.type` through the
+ * registry and forwards the rest of the props with v-bind.
  *
- * Узлы манифеста имеют форму:
- *   { type: 'text', name: 'title', label: 'Заголовок', required: true, ... }
+ * The manifest's nodes look like:
+ *   { type: 'text', name: 'title', label: 'Title', required: true, ... }
  *
- * Field хранит value через provide/inject form-state — узлу не передаётся
- * `modelValue` напрямую. Это позволяет строить произвольно-глубокие layout'ы
- * без явного proppin'га state'а.
+ * A field keeps its value in the provide/inject form state, so no `modelValue`
+ * is passed to the node directly. That is what lets the layouts nest as deeply
+ * as they like without threading the state through props.
  *
- * Conditional visibility: если `node.reactive = {fieldName: expected}` — поле
- * скрывается пока другое поле формы не совпадёт с `expected` (или с одним
- * из элементов list). Соответствие — `===`.
+ * Conditional visibility: with `node.reactive = {fieldName: expected}` the
+ * field stays hidden until another field of the form matches `expected` — or
+ * one of the values in a list. The comparison is `===`.
  */
 import { computed } from 'vue'
 import { getField } from './registry'
@@ -33,14 +33,15 @@ interface Props {
 const props = defineProps<Props>()
 const component = computed(() => getField(props.node.type))
 
-// Form-state может отсутствовать (если FieldRenderer используется вне формы,
-// например, в Repeater'е c локальным state'ом). В таком случае visibility
-// всегда true — reactive не имеет смысла.
+// There may be no form state at all, when FieldRenderer is used outside a
+// form — inside a Repeater with a state of its own, say. Then the visibility
+// is always true, since `reactive` would mean nothing.
 const form = tryUseFormState()
 
-// Контекстная видимость: backend Field::onCreate(false)/onUpdate(false)
-// сериализуется в node.visibility — скрываем поле, если оно не предназначено
-// для текущего режима формы (mode отсутствует = рендерим всё, BC).
+// Visibility by context: the backend's Field::onCreate(false) and
+// Field::onUpdate(false) are serialized into node.visibility, and we hide a
+// field that is not meant for the form's current mode. With no mode at all,
+// everything is rendered.
 const isContextVisible = computed<boolean>(() => {
   const mode = form?.mode
   if (!mode) return true
@@ -63,9 +64,10 @@ const isReactiveVisible = computed<boolean>(() => {
 })
 
 const fieldProps = computed(() => {
-  // Backend Field::toArray() кладёт type-specific опции в `attributes`
-  // (suggestions, options, multiple, currency и т.п.). Разворачиваем их
-  // на верхний уровень — Field-компоненты ожидают props без обёртки.
+  // The backend's Field::toArray() puts the type-specific options into
+  // `attributes`: suggestions, options, multiple, currency and the rest. We
+  // spread them to the top level, since the field components expect the props
+  // unwrapped.
   const { type: _type, attributes, ...rest } = props.node
   const attrs = (attributes as Record<string, unknown> | undefined) ?? {}
   return { ...rest, ...attrs }

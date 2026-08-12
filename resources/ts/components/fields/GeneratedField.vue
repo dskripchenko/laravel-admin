@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * GeneratedField — строка с автогенерацией криптослучайного значения
- * (токены, secret keys). На create-форме при пустом значении генерирует
- * при монтировании; кнопка «Сгенерировать» перегенерирует вручную.
+ * GeneratedField — a string that generates a cryptographically random value:
+ * tokens, secret keys. On a create form it generates on mount when the value
+ * is empty, and the "Generate" button regenerates it by hand.
  *
- * Генерация ТОЛЬКО через crypto.getRandomValues (без Math.random-fallback —
- * для секретов он недопустим); rejection sampling убирает modulo bias.
- * Если crypto недоступен (экзотика) — автогенерации нет, поле остаётся
- * обычным ручным вводом.
+ * The generation goes through crypto.getRandomValues ONLY — no Math.random
+ * fallback, which will not do for a secret — and rejection sampling removes
+ * the modulo bias. Where crypto is unavailable, which would be exotic, nothing
+ * is generated and the field stays an ordinary manual input.
  */
 import { computed, ref, watch } from 'vue'
 import { UidButton, UidInput } from '@dskripchenko/ui'
@@ -22,11 +22,11 @@ interface Props {
   required?: boolean
   placeholder?: string | null
   disabled?: boolean
-  /** Длина генерируемой строки. */
+  /** The generated string's length. */
   length?: number
-  /** Алфавит генерации. */
+  /** The alphabet it is drawn from. */
   charset?: string
-  /** Автогенерация при монтировании, если значение пусто. */
+  /** Whether to generate on mount when the value is empty. */
   autogenerate?: boolean
 }
 
@@ -49,8 +49,9 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 const cryptoAvailable = typeof globalThis.crypto?.getRandomValues === 'function'
 
 /**
- * Криптослучайная строка без modulo bias: байт принимается только из
- * диапазона, кратного длине алфавита (rejection sampling).
+ * A cryptographically random string free of modulo bias: a byte is accepted
+ * only from the range that is a multiple of the alphabet's length — rejection
+ * sampling.
  */
 function randomString(length: number, charset: string): string {
   const n = charset.length
@@ -82,11 +83,12 @@ function onUpdate(next: string): void {
 }
 
 /*
- * Автогенерация через immediate-watch, а не onMounted: сидирование
- * create-формы (prepareCreate) может перезаписать state ПОСЛЕ монтирования
- * поля и затереть сгенерированное значение (вскрыто браузерным смоуком —
- * jsdom с синхронным provideFormState гонку не ловил). Пустое значение
- * без ручного ввода → генерим снова; ручная очистка (userEdited) — нет.
+ * The generation hangs off an immediate watch rather than onMounted: seeding
+ * the create form, in prepareCreate, may overwrite the state AFTER the field
+ * has mounted and wipe the generated value. A browser smoke test uncovered
+ * that; jsdom, with its synchronous provideFormState, never caught the race.
+ * An empty value that nobody typed into is generated again; one the user
+ * cleared themselves is not.
  */
 watch(
   value,
