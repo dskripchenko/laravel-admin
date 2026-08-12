@@ -18,13 +18,14 @@ use Dskripchenko\LaravelAdmin\Settings\SettingsRegistry;
 use Dskripchenko\LaravelApi\Components\BaseApi;
 
 /**
- * Admin API — описание всех endpoint'ов и shared response templates.
+ * The admin API: every endpoint and the shared response templates.
  *
- * Templates объявляются через `getOpenApiTemplates()` и подхватываются
- * laravel-api при генерации OpenAPI. Метод собирает все темплейты из
- * traits по разделам admin (System / Resources / UI / Sister-packs / Common).
+ * The templates are declared through `getOpenApiTemplates()` and picked up by
+ * laravel-api when it generates the OpenAPI document. That method collects the
+ * templates from the traits of each admin area: System, Resources, UI,
+ * sister packs and Common.
  *
- * См. также docs/api/registration.md и docs/api/schemas.md.
+ * See also docs/api/registration.md and docs/api/schemas.md.
  */
 class AdminApi extends BaseApi
 {
@@ -35,17 +36,17 @@ class AdminApi extends BaseApi
     use AdminApiUiSchemas;
 
     /**
-     * Override BaseApi cache. AdminApi::getMethods() читает ResourceRegistry
-     * динамически — при добавлении/удалении Resource нужна инвалидация
-     * через `clearCache()` (особенно важно в тестах между сценариями).
+     * Overrides BaseApi's cache. AdminApi::getMethods() reads ResourceRegistry
+     * dynamically, so adding or removing a resource calls for an invalidation
+     * through `clearCache()` — which matters most in tests, between scenarios.
      *
      * @var array<string, mixed>
      */
     protected static $preparedMethods = [];
 
     /**
-     * Сбрасывает laravel-api кеш `getPreparedMethods` для AdminApi.
-     * Используется в тестах после Resources::add/clear.
+     * Clears laravel-api's `getPreparedMethods` cache for AdminApi. Used in
+     * tests after Resources::add or Resources::clear.
      */
     public static function clearCache(): void
     {
@@ -53,8 +54,8 @@ class AdminApi extends BaseApi
     }
 
     /**
-     * Панель, которую обслуживает эта API-версия (v1.8 Panels).
-     * Subclasses для дополнительных панелей переопределяют (см. PanelApi).
+     * The panel this API version serves. Subclasses for additional panels
+     * override it — see PanelApi.
      */
     public static function panelId(): string
     {
@@ -62,11 +63,11 @@ class AdminApi extends BaseApi
     }
 
     /**
-     * Включить named-templates для @response.
+     * Turns the named templates for @response on.
      *
-     * Тип не указан намеренно — родитель (OpenApiTrait в BaseApi) объявляет
-     * `public static $useResponseTemplates = false;` без типа. PHP требует
-     * совпадения сигнатур при наследовании.
+     * The type is deliberately omitted: the parent (OpenApiTrait in BaseApi)
+     * declares `public static $useResponseTemplates = false;` without one, and
+     * PHP requires the signatures to match on inheritance.
      *
      * @var bool
      */
@@ -99,10 +100,11 @@ class AdminApi extends BaseApi
                 'actions' => [
                     'login' => [
                         'method' => ['post'],
-                        // Третий параметр — prefix: у безымянных throttle'ов ключ
-                        // = sha1(domain|ip); без префикса счётчик делился бы с
-                        // глобальным ':60,1' (и любыми другими throttle'ами роута)
-                        // и сгорал от обычных API-запросов.
+                        // The third parameter is the prefix: an unnamed
+                        // throttle keys on sha1(domain|ip), so without one the
+                        // counter would be shared with the global ':60,1' —
+                        // and with any other throttle on the route — and would
+                        // burn through on ordinary API requests.
                         'middleware' => [\Illuminate\Routing\Middleware\ThrottleRequests::class.':'.(string) config('admin.auth.login_throttle', '5,1').',auth-'.static::panelId()],
                         'exclude-middleware' => [Middleware\AdminAuth::class],
                     ],
@@ -208,24 +210,27 @@ class AdminApi extends BaseApi
             ],
         ];
 
-        // Динамически добавляем по controller'у на каждый зарегистрированный Resource.
-        // ResourceController — общий FQCN; per-Resource резолв идёт по ApiRequest::getApiControllerKey().
+        // A controller is added dynamically for every registered resource.
+        // ResourceController is the shared FQCN; the per-resource resolution
+        // happens through ApiRequest::getApiControllerKey().
         $registry = app(ResourceRegistry::class);
         $controllers = array_merge($controllers, (new ResourceCompiler)->compile($registry, static::panelId()));
 
-        // Settings: каждый SettingsResource = отдельный controller key 'settings.{slug}'.
+        // Settings: every SettingsResource gets its own controller key, 'settings.{slug}'.
         $settingsRegistry = app(SettingsRegistry::class);
         $controllers = array_merge($controllers, (new SettingsCompiler)->compile($settingsRegistry, static::panelId()));
 
-        // Screens: произвольные Screen-классы (custom forms / pages / dashboards вне CRUD).
-        // GeneratedScreen и DashboardScreen subclasses исключаются (у них свои controllers).
+        // Screens: arbitrary screen classes — custom forms, pages and
+        // dashboards outside of CRUD. The GeneratedScreen and DashboardScreen
+        // subclasses are excluded, having controllers of their own.
         $screenRegistry = app(ScreenRegistry::class);
         $controllers = array_merge($controllers, (new ScreenCompiler)->compile($screenRegistry, static::panelId()));
 
         return [
             'middleware' => [
-                // Глобальный лимит admin-API per-user. 60/мин мало для SPA
-                // (навигация = пачка XHR, дашборд-поллинг, e2e): дефолт 240.
+                // The admin API's global per-user limit. 60 a minute is too
+                // little for an SPA — one navigation is a handful of XHRs,
+                // plus dashboard polling and e2e — so the default is 240.
                 \Illuminate\Routing\Middleware\ThrottleRequests::class.':'
                     .(string) config('admin.api.throttle', '240,1'),
             ],
@@ -234,7 +239,7 @@ class AdminApi extends BaseApi
     }
 
     /**
-     * Объединённый набор response-templates со всех traits.
+     * The combined set of response templates from every trait.
      *
      * @return array<string, array<string, string>>
      */

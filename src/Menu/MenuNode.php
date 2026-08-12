@@ -8,19 +8,19 @@ use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 
 /**
- * Value-object для одного узла sidebar-меню.
+ * The value object of a single sidebar menu node.
  *
- * Поддерживает произвольную вложенность через `children()`. Конкретные
- * URL/label/permissions можно задать вручную (`make()`) либо подставить
- * из ResourceRegistry/ScreenRegistry (`resource()`/`screen()`).
+ * Nodes nest arbitrarily through `children()`. The url, the label and the
+ * permissions can be set by hand (`make()`) or pulled from ResourceRegistry
+ * and ScreenRegistry (`resource()` and `screen()`).
  *
- * Пример:
+ * For example:
  *
  *   $admin->menu()->add(
- *     MenuNode::make('shop', 'Магазин')->icon('store')->children([
+ *     MenuNode::make('shop', 'Shop')->icon('store')->children([
  *       MenuNode::resource('products'),
  *       MenuNode::resource('orders'),
- *       MenuNode::make('analytics', 'Аналитика')->children([
+ *       MenuNode::make('analytics', 'Analytics')->children([
  *         MenuNode::screen('content'),
  *       ]),
  *     ]),
@@ -50,7 +50,7 @@ final class MenuNode
     /** @var list<MenuNode> */
     private array $children = [];
 
-    /** Маркер «резолвить через registry» — используется resource()/screen(). */
+    /** The "resolve through the registry" marker, used by resource() and screen(). */
     private ?string $autoResolve = null;
 
     private ?string $autoSlug = null;
@@ -60,7 +60,7 @@ final class MenuNode
         $this->key = $key;
     }
 
-    /** Произвольный узел (group / link / external). */
+    /** An arbitrary node: a group, a link or an external address. */
     public static function make(string $key, string $label = ''): self
     {
         $instance = new self($key);
@@ -69,7 +69,7 @@ final class MenuNode
         return $instance;
     }
 
-    /** Узел, ссылающийся на ResourceRegistry by slug. */
+    /** A node pointing at ResourceRegistry by slug. */
     public static function resource(string $slug): self
     {
         $instance = new self('resource.'.$slug);
@@ -79,7 +79,7 @@ final class MenuNode
         return $instance;
     }
 
-    /** Узел, ссылающийся на ScreenRegistry by slug. */
+    /** A node pointing at ScreenRegistry by slug. */
     public static function screen(string $slug): self
     {
         $instance = new self('screen.'.$slug);
@@ -90,12 +90,13 @@ final class MenuNode
     }
 
     /**
-     * Узел, ссылающийся на DashboardScreen by slug. URL — /dashboard/{slug},
-     * а не /screens/{slug} (у dashboard'ов отдельный controller/path).
+     * A node pointing at a DashboardScreen by slug. Its url is
+     * /dashboard/{slug} rather than /screens/{slug}, since dashboards have
+     * their own controller and path.
      *
-     * Если хост передал в screen() слаг DashboardScreen — auto-resolve
-     * детектирует это и тоже сгенерит /dashboard/{slug}; этот helper
-     * существует для явности.
+     * When a host passes a DashboardScreen's slug to screen(), the
+     * auto-resolution detects it and produces /dashboard/{slug} too; this
+     * helper exists for the sake of being explicit.
      */
     public static function dashboard(string $slug): self
     {
@@ -210,10 +211,10 @@ final class MenuNode
     }
 
     /**
-     * Сериализация в формат, который ожидает frontend useMenuStore.
+     * Serializes into the shape the frontend's useMenuStore expects.
      *
-     * Если node — auto-resolve, подтягиваем label/url/permissions из
-     * registry'ов. Manual-overrides (label/icon/url/...) перебивают auto.
+     * For an auto-resolving node the label, the url and the permissions are
+     * pulled from the registries; anything set by hand wins over them.
      *
      * @return array<string, mixed>
      */
@@ -228,11 +229,13 @@ final class MenuNode
 
         return [
             'key' => $this->key,
-            // Лейбл резолвится через переводчик ПРИ СЕРИАЛИЗАЦИИ (per-request,
-            // после AdminLocale middleware) — иначе `->label('Клиенты')` брался
-            // бы в локали boot'а плагина (i18n меню, BL-11). Строки без перевода
-            // возвращаются как есть (ключ = fallback); resource-лейблы уже
-            // локализованы Resource::label() и __() к ним идемпотентен.
+            // The label goes through the translator AT SERIALIZATION TIME —
+            // per request, after the AdminLocale middleware — otherwise
+            // `->label('Clients')` would be resolved in the locale of the
+            // plugin's boot. Strings with no translation come back as they
+            // are, the key being the fallback; resource labels have already
+            // been localized by Resource::label(), and __() is idempotent on
+            // them.
             'label' => $this->label === '' ? '' : (string) __($this->label),
             'icon' => $this->icon,
             'url' => $this->url,
@@ -246,8 +249,9 @@ final class MenuNode
     }
 
     /**
-     * Подставляет автоматические значения из registry'ов, если node создан
-     * через resource()/screen(). Не перезаписывает уже заданные поля.
+     * Fills in the automatic values from the registries when the node was
+     * created through resource() or screen(), without overwriting anything
+     * already set.
      */
     private function resolveAuto(ResourceRegistry $resources, ScreenRegistry $screens): void
     {
@@ -285,9 +289,9 @@ final class MenuNode
             }
             $instance = app($class);
 
-            // DashboardScreen имеет отдельный URL /dashboard/{slug} (см.
-            // router/builder.ts buildDashboardRoute). Custom Screens живут
-            // под /screens/{slug}. Auto-detect.
+            // A DashboardScreen has its own url, /dashboard/{slug} (see
+            // buildDashboardRoute in router/builder.ts), while custom screens
+            // live under /screens/{slug}. Detected automatically.
             $isDashboard = $this->autoResolve === 'dashboard'
                 || is_subclass_of($class, \Dskripchenko\LaravelAdmin\Widget\DashboardScreen::class);
 

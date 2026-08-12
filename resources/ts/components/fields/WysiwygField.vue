@@ -1,23 +1,23 @@
 <script setup lang="ts">
 /**
- * WysiwygField — обёртка над `@dskripchenko/wysiwyg` для field-registry.
+ * WysiwygField — the field registry's wrapper around `@dskripchenko/wysiwyg`.
  *
- * Default-фолбэк для type='wysiwyg' в laravel-admin'е. Использует
- * собственный zero-dep editor пакета `@dskripchenko/wysiwyg` (без
- * Tiptap/ProseMirror/Quill peer-deps). CSS темы прокидываются из
- * admin-стилей через CSS-переменные `--dsk-wysiwyg-*`.
+ * It is laravel-admin's default fallback for type='wysiwyg'. The editor is the
+ * package's own, with no dependencies — no Tiptap, ProseMirror or Quill peer
+ * dependencies — and the theme reaches it from the admin styles through the
+ * `--dsk-wysiwyg-*` CSS variables.
  *
- * Image/link toolbar-кнопки эмитят events (DskWysiwyg по-дизайну
- * делегирует UX-операции хосту). Здесь:
- *   image-request → file-picker + upload через `/uploads/image` →
- *                   controller.chain().setImage(url) — инсерт в позицию курсора.
- *   link-request  → prompt() для URL → controller.chain().setLink(url).
+ * The image and link toolbar buttons emit events, since DskWysiwyg delegates
+ * the UX operations to its host by design. Here:
+ *   image-request → a file picker, an upload through `/uploads/image`, then
+ *                   controller.chain().setImage(url), inserting at the caret.
+ *   link-request  → a prompt() for the URL, then controller.chain().setLink(url).
  *
  * Image interactivity:
- *   - click по img → выделение (outline + overlay с corner handles).
- *   - drag corner handle → resize, aspect-locked (Shift — свободный).
- *   - dragstart на selected img → drag-and-drop reorder по block-узлам
- *     с drop-line индикатором.
+ *   - clicking an img selects it: an outline plus an overlay with corner handles.
+ *   - dragging a corner handle resizes it, aspect-locked unless Shift is held.
+ *   - dragstart on a selected img reorders it across the block nodes by drag
+ *     and drop, with a drop-line indicator.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { DskWysiwyg, type EditorController } from '@dskripchenko/wysiwyg'
@@ -34,9 +34,9 @@ interface Props {
   required?: boolean
   placeholder?: string | null
   disabled?: boolean
-  /** Минимальная высота editor-area. */
+  /** The editor area's minimum height. */
   minHeight?: string
-  /** Максимальная высота (после — overflow). */
+  /** The maximum height; past it the area overflows. */
   maxHeight?: string
 }
 
@@ -113,8 +113,8 @@ let host: HTMLElement | null = null
 let cleanupFns: Array<() => void> = []
 
 function dispatchInputOnHost(): void {
-  // Сигналим DskWysiwyg-движку — он слушает 'input' на host и сохраняет
-  // изменения + добавляет history-snapshot.
+  // Signal the DskWysiwyg engine: it listens for 'input' on the host, saves
+  // the change and adds a history snapshot.
   host?.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
@@ -164,7 +164,7 @@ function attachImageInteractions(h: HTMLElement): void {
   cleanupFns.push(() => host?.removeEventListener('click', onHostClick))
 
   const onDocClick = (e: MouseEvent): void => {
-    // Click вне container — снять selection.
+    // A click outside the container clears the selection.
     const t = e.target as HTMLElement | null
     if (containerRef.value && !containerRef.value.contains(t)) clearSelection()
   }
@@ -215,7 +215,7 @@ function attachImageInteractions(h: HTMLElement): void {
     dropLine.value = null
     const target = blockUnderPoint(e.clientX, e.clientY)
     if (!target || target.contains(selectedImg.value)) {
-      // drop в тот же блок (или невалидно) — ничего не делаем.
+      // A drop into the same block, or an invalid one: do nothing.
       return
     }
     const blockRect = target.getBoundingClientRect()
@@ -234,8 +234,8 @@ function attachImageInteractions(h: HTMLElement): void {
   host.addEventListener('dragend', onDragEnd)
   cleanupFns.push(() => host?.removeEventListener('dragend', onDragEnd))
 
-  // MutationObserver: если img удалили извне или изменился — сбрасываем
-  // selection если он не в DOM.
+  // A MutationObserver: when the img is removed or changed from outside, the
+  // selection is dropped if it is no longer in the DOM.
   const mo = new MutationObserver(() => {
     if (selectedImg.value && !host?.contains(selectedImg.value)) clearSelection()
     else refreshOverlayRect()
@@ -246,13 +246,13 @@ function attachImageInteractions(h: HTMLElement): void {
 
 function blockUnderPoint(x: number, y: number): HTMLElement | null {
   if (!host) return null
-  // Скрываем selected img временно, чтобы elementFromPoint не возвращал её саму.
+  // Hide the selected img for a moment, so that elementFromPoint does not return it.
   const prevPe = selectedImg.value?.style.pointerEvents ?? ''
   if (selectedImg.value) selectedImg.value.style.pointerEvents = 'none'
   const el = document.elementFromPoint(x, y) as HTMLElement | null
   if (selectedImg.value) selectedImg.value.style.pointerEvents = prevPe
   if (!el || !host.contains(el)) return null
-  // Поднимаемся к ближайшему block-child host'а.
+  // Walk up to the host's nearest block child.
   let cur: HTMLElement | null = el
   while (cur && cur.parentElement && cur.parentElement !== host) cur = cur.parentElement
   return cur && cur.parentElement === host ? cur : null
@@ -285,14 +285,14 @@ function onResizeMove(e: MouseEvent): void {
   if (!resizing.value || !resizeStart || !selectedImg.value) return
   const dx = e.clientX - resizeStart.mx
   const dy = e.clientY - resizeStart.my
-  // Знак delta зависит от угла: nw/sw — обратный по X; nw/ne — обратный по Y.
+  // The sign of the delta depends on the corner: nw/sw invert X, nw/ne invert Y.
   const sx = (resizing.value === 'nw' || resizing.value === 'sw') ? -1 : 1
   const sy = (resizing.value === 'nw' || resizing.value === 'ne') ? -1 : 1
   let newW = Math.max(24, resizeStart.w + dx * sx)
   let newH = Math.max(24, resizeStart.h + dy * sy)
-  // Aspect-lock default. Shift = свободный.
+  // The aspect ratio is locked by default; Shift frees it.
   if (!e.shiftKey) {
-    // Подгоняем по большему изменению.
+    // Follow whichever side changed more.
     if (Math.abs(dx * sx) >= Math.abs(dy * sy)) newH = newW / resizeStart.aspect
     else newW = newH * resizeStart.aspect
   }
@@ -329,7 +329,7 @@ onBeforeUnmount(() => {
   clearSelection()
 })
 
-// Если value сменилось извне (формы сброс, undo и т.п.) — sync.
+// When the value changes from outside — a form reset, an undo — sync it in.
 watch(value, () => {
   if (selectedImg.value && host && !host.contains(selectedImg.value)) clearSelection()
 })

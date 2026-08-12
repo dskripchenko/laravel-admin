@@ -1,7 +1,7 @@
 /**
- * createAdminRouter — фабрика admin-router'а.
+ * createAdminRouter — the factory of the admin router.
  *
- * Использование:
+ * Usage:
  *
  *     const router = createAdminRouter({
  *       base: '/admin',
@@ -11,8 +11,9 @@
  *     await router.replaceManifestRoutes(manifestStore.manifest)
  *     app.use(router)
  *
- * Library намеренно не делает createWebHistory выбор за host'а — host передаёт
- * объект history (createWebHistory / createWebHashHistory).
+ * The library deliberately does not pick createWebHistory for the host: the
+ * host passes the history object itself (createWebHistory or
+ * createWebHashHistory).
  */
 
 import {
@@ -27,51 +28,52 @@ import { buildRoutesFromManifest, type RouteComponentResolver, type AdminRouteCo
 import { createAuthGuard, createTitleGuard, type AuthGuardOptions, type TitleGuardOptions } from './guards'
 
 export interface AdminRouterOptions {
-  /** Base URL admin-панели. По умолчанию '/admin'. */
+  /** The admin panel's base URL; '/admin' by default. */
   base?: string
-  /** History-implementation. По умолчанию createWebHistory(base). */
+  /** The history implementation; createWebHistory(base) by default. */
   history?: RouterHistory
-  /** Component resolver для resource/screen/settings/dashboard роутов. */
+  /** The component resolver for the resource, screen, settings and dashboard routes. */
   components: RouteComponentResolver & {
     /** Login. */
     login: AdminRouteComponent
-    /** Главная (либо overview-dashboard). */
+    /** The home page, or the overview dashboard. */
     home: AdminRouteComponent
     /** 403 forbidden. */
     forbidden: AdminRouteComponent
     /** 404 not found. */
     notFound: AdminRouteComponent
-    /** Страница профиля. */
+    /** The profile page. */
     profile?: AdminRouteComponent
-    /** Страница уведомлений. */
+    /** The notifications page. */
     notifications?: AdminRouteComponent
     /** Forgot password. */
     forgotPassword?: AdminRouteComponent
-    /** Reset password (по token + email из query). */
+    /** Password reset, by the token and email from the query. */
     resetPassword?: AdminRouteComponent
   }
-  /** Дополнительные руты сверху динамики. */
+  /** Extra routes added on top of the dynamic ones. */
   extraRoutes?: RouteRecordRaw[]
-  /** Опции auth-guard. */
+  /** The auth guard's options. */
   authGuard?: AuthGuardOptions
-  /** Опции title-guard. */
+  /** The title guard's options. */
   titleGuard?: TitleGuardOptions
 }
 
 /**
- * Расширенный Router с возможностью пере-построить динамические роуты.
+ * A Router extended with the ability to rebuild the dynamic routes.
  */
 export interface AdminRouter extends Router {
   /**
-   * Пере-собрать динамические роуты из manifest'а.
-   * Удаляет старые admin.resource.* / admin.screen.* / admin.settings.* / admin.dashboard.*
-   * и заменяет на актуальные. Полезно при перезагрузке manifest'а.
+   * Rebuilds the dynamic routes from the manifest: the old
+   * admin.resource.* / admin.screen.* / admin.settings.* / admin.dashboard.*
+   * are removed and replaced with the current ones. Useful when the manifest
+   * is reloaded.
    */
   replaceManifestRoutes(manifest: AdminManifest | null): void
 }
 
 /**
- * Префиксы dynamic-роутов которые подменяются при replaceManifestRoutes.
+ * The prefixes of the dynamic routes that replaceManifestRoutes swaps out.
  */
 const DYNAMIC_NAME_PREFIXES = [
   'admin.resource.',
@@ -145,15 +147,15 @@ export function createAdminRouter(opts: AdminRouterOptions): AdminRouter {
     })
   }
 
-  // Catch-all 404 кладём в конец — vue-router matches in order и динамика
-  // может быть добавлена позже через addRoute.
+  // The catch-all 404 goes last: vue-router matches in order, and the dynamic
+  // routes may be added later through addRoute.
   //
-  // requiresAuth здесь не про защиту данных (их отдаёт бэкенд), а про
-  // достоверность ответа: роуты ресурсов существуют только после манифеста,
-  // а гостю манифест не грузится вовсе. Без этого флага гость, зашедший по
-  // прямой ссылке на `/r/templates`, попадал в catch-all и получал «404 —
-  // страницы нет» вместо формы входа: раздел выглядел несуществующим, хотя
-  // на деле требовал авторизации.
+  // requiresAuth here is not about protecting the data — the backend does that
+  // — but about the answer being truthful: the resource routes exist only
+  // after the manifest, and a guest never loads the manifest at all. Without
+  // this flag a guest following a direct link to `/r/templates` landed in the
+  // catch-all and got "404 — no such page" instead of the login form: the
+  // section looked non-existent when in fact it merely required signing in.
   const notFoundRoute: RouteRecordRaw = {
     path: '/:pathMatch(.*)*',
     name: 'admin.notFound',
@@ -170,7 +172,7 @@ export function createAdminRouter(opts: AdminRouterOptions): AdminRouter {
   router.afterEach(createTitleGuard(opts.titleGuard))
 
   router.replaceManifestRoutes = (manifest: AdminManifest | null): void => {
-    // Удаляем все старые динамические роуты по name.
+    // Remove every old dynamic route by name.
     const allRoutes = router.getRoutes()
     for (const route of allRoutes) {
       if (isDynamicRouteName(route.name)) {
@@ -178,7 +180,7 @@ export function createAdminRouter(opts: AdminRouterOptions): AdminRouter {
       }
     }
 
-    // Удаляем catch-all чтобы потом добавить его обратно последним.
+    // Remove the catch-all, to add it back last.
     if (router.hasRoute('admin.notFound')) {
       router.removeRoute('admin.notFound')
     }

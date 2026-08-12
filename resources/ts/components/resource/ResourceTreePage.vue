@@ -1,21 +1,24 @@
 <script setup lang="ts">
 /**
- * ResourceTreePage — tree-screen для иерархических Resource'ов.
- * Активируется когда `manifest.resource.view_mode === 'tree'` (автодетект по
- * Eloquent self-ref relations или `--tree` флаг при генерации). Альтернатива
- * стандартному ResourceIndexPage с UidTable.
+ * ResourceTreePage — the tree screen of hierarchical resources.
  *
- * Композиция:
- *   - Page header (title + count + create button)
- *   - Minimal toolbar: search + expand-all/collapse-all dropdown
- *   - Selected-node toolbar (заменяет search при selectedCount > 0):
- *     Edit / View / Delete для одной выбранной ноды
- *   - UidTreeView с TreeNode[] (key/label/children) из POST /{slug}/tree
- *   - States: loading / empty / error
+ * It kicks in when `manifest.resource.view_mode === 'tree'`, which is detected
+ * from the Eloquent self-references or forced by the `--tree` flag during
+ * generation. It is the alternative to the usual ResourceIndexPage with its
+ * UidTable.
  *
- * UX: один клик по ноде = select (отдельный from toolbar action); двойной
- * клик = navigate to edit. Иконки и actions per-node не отображаем — это
- * требует расширения UidTreeItem (out of scope для v1).
+ * What it is made of:
+ *   - the page header: the title, the count and the create button
+ *   - a minimal toolbar: search plus an expand-all/collapse-all dropdown
+ *   - the selected-node toolbar, which replaces the search once something is
+ *     selected: edit, view and delete for that one node
+ *   - a UidTreeView over the TreeNode[] (key/label/children) from POST /{slug}/tree
+ *   - the loading, empty and error states
+ *
+ * The interaction: one click on a node selects it — separately from the
+ * toolbar's actions — and a double click navigates to its edit page. Per-node
+ * icons and actions are not shown; that would need UidTreeItem extended, which
+ * is out of scope for v1.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -65,14 +68,14 @@ interface TreeNode {
   children?: TreeNode[]
   record?: Record<string, unknown>
   /**
-   * Если задан — навигация edit/view/delete уходит в другой Resource по
-   * этому slug (используется для cross-resource leaf'ов, см.
-   * Resource::treeExtraLeaves). Default — текущий props.slug.
+   * When set, the edit, view and delete navigation goes to another resource by
+   * this slug — used by the cross-resource leaves, see
+   * Resource::treeExtraLeaves. It defaults to the current props.slug.
    */
   slug?: string
   /**
-   * Per-node контекстные actions (см. Resource::treeNodeActions). Рендерятся
-   * в toolbar при выборе узла.
+   * The per-node contextual actions (see Resource::treeNodeActions). They are
+   * rendered in the toolbar once a node is selected.
    */
   actions?: TreeNodeAction[]
 }
@@ -144,10 +147,11 @@ function collapseAll(): void {
 
 const selectedNodeKey = computed(() => selectedKeys.value[0] ?? null)
 
-// Cross-resource навигация: для leaf-узлов из treeExtraLeaves (например
-// шаблонов в дереве групп) backend кладёт `slug` и реальный id записи в
-// `record.id`. Иначе берём текущий props.slug и selectedNodeKey (id основного
-// ресурса). Это позволяет одной tree-странице вести на edit разных ресурсов.
+// Cross-resource navigation: for the leaves coming from treeExtraLeaves —
+// templates inside a tree of groups, say — the backend puts a `slug` and the
+// record's real id into `record.id`. Otherwise we use the current props.slug
+// and selectedNodeKey, the main resource's id. That lets a single tree page
+// lead to the edit pages of different resources.
 function findNode(list: TreeNode[], key: string | number): TreeNode | null {
   for (const n of list) {
     if (n.key === key) return n
@@ -165,8 +169,8 @@ const selectedSlug = computed<string>(() => selectedNode.value?.slug ?? props.sl
 const selectedRecordId = computed<string | number | null>(() => {
   const node = selectedNode.value
   if (!node) return null
-  // Для cross-resource leaf'а реальный id берём из record.id, а не из node.key
-  // (key может быть составным, типа "tpl:1").
+  // For a cross-resource leaf the real id comes from record.id rather than
+  // node.key, which may be composite — "tpl:1" and the like.
   const recId = node.record?.id
   if (typeof recId === 'string' || typeof recId === 'number') return recId
   return node.key
@@ -195,9 +199,9 @@ const selectedNodeActions = computed<TreeNodeAction[]>(
 )
 
 /**
- * Подставляет в `params` значения из записи: `{id}` → record.id и т.п.
- * Все остальные ключи остаются как есть. Используется ниже для построения
- * query при navigate-action'е.
+ * Substitutes values from the record into `params`: `{id}` becomes record.id
+ * and so on, while every other key is left as it is. Used below to build the
+ * query of a navigate action.
  */
 function resolveActionParams(
   params: Record<string, string | number> | undefined,
@@ -242,8 +246,9 @@ async function deleteSelected(): Promise<void> {
   }
 }
 
-// Поиск дебаунсим: при изменении строки заново фетчим (сервер фильтрует
-// по searchableFields). Можно было локально, но серверу проще и масштабнее.
+// The search is debounced: every change refetches, and the server filters by
+// searchableFields. It could have been done locally, but the server's way is
+// simpler and scales further.
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 watch(search, () => {
   if (searchTimer !== null) clearTimeout(searchTimer)
@@ -401,7 +406,7 @@ onMounted(load)
   min-height: 240px;
 }
 
-/* Аккуратное представление tree: убираем focus-outline (жирная teal-рамка),
+/* A tidier tree: the focus outline — a heavy teal frame — is removed,
    выделение selected делаем неагрессивным — лёгкий бэкграунд + цветной
    акцент только на тексте/иконке, без border. `:deep()` нужен потому что
    стили scoped'нуты, а .uid-tree-* приходит из @dskripchenko/ui. */

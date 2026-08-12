@@ -8,22 +8,22 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 
 /**
- * Регистрирует свежесгенерированный Resource/Screen/Widget в host'е:
- *   - либо в существующий AdminPlugin (предпочтительно)
- *   - либо в AppServiceProvider::boot()
+ * Registers a freshly generated resource, screen or widget in the host:
+ *   - in an existing AdminPlugin, preferably
+ *   - or in AppServiceProvider::boot()
  *
- * Также добавляет MenuNode::resource()/screen()/dashboard() в Admin::menu()
- * если host явно использует MenuRegistry.
+ * It also adds MenuNode::resource()/screen()/dashboard() to Admin::menu() when
+ * the host uses MenuRegistry explicitly.
  *
- * Идемпотентно: если уже добавлено — skip.
+ * Idempotent: anything already registered is skipped.
  */
 final class AdminPluginUpdater
 {
     public function __construct(private readonly Filesystem $files) {}
 
     /**
-     * Регистрирует Resource в host-проекте. Возвращает путь к
-     * модифицированному файлу (для отчёта команды).
+     * Registers a resource in the host project and returns the path of the
+     * file it changed, for the command's report.
      *
      * @return array{path: string, action: 'updated'|'unchanged'|'created'}
      */
@@ -33,7 +33,7 @@ final class AdminPluginUpdater
     }
 
     /**
-     * Регистрирует Screen в host-проекте.
+     * Registers a screen in the host project.
      *
      * @return array{path: string, action: 'updated'|'unchanged'|'created'}
      */
@@ -43,8 +43,8 @@ final class AdminPluginUpdater
     }
 
     /**
-     * Добавляет node в Admin::menu()->add(...). Если плагин не использует
-     * MenuRegistry — добавит первым вызовом.
+     * Adds a node through Admin::menu()->add(...). When the plugin does not
+     * use MenuRegistry yet, this becomes its first such call.
      *
      * @return array{path: string, action: 'updated'|'unchanged'}
      */
@@ -59,8 +59,8 @@ final class AdminPluginUpdater
             return ['path' => $plugin, 'action' => 'unchanged'];
         }
 
-        // Найдём `boot(Admin $admin)` или `function boot(...)` метод и
-        // вставим $admin->menu()->add(... );
+        // Find the `boot(Admin $admin)` — or any `function boot(...)` —
+        // method and insert $admin->menu()->add(...) into it.
         $modified = $this->insertIntoBoot($contents, '        '.$code);
 
         if ($modified === $contents) {
@@ -73,7 +73,7 @@ final class AdminPluginUpdater
     }
 
     /**
-     * Добавляет use-statement в plugin-файл, если ещё нет.
+     * Adds a use statement to the plugin file unless it is already there.
      */
     public function ensureImport(string $path, string $fqcn): void
     {
@@ -92,12 +92,12 @@ final class AdminPluginUpdater
     }
 
     /**
-     * Найти существующий plugin-class в app/Admin/, иначе сгенерировать
-     * новый AdminPlugin и зарегистрировать в config('admin.plugins').
+     * Finds an existing plugin class in app/Admin/, or generates a new
+     * AdminPlugin and registers it in config('admin.plugins').
      */
     private function findOrCreatePlugin(): string
     {
-        // Поиск в стандартных местах
+        // Look in the usual places
         $candidates = [
             base_path('app/Admin/AdminPlugin.php'),
             base_path('app/Admin/DemoPlugin.php'),
@@ -109,7 +109,7 @@ final class AdminPluginUpdater
             }
         }
 
-        // Найти любой AdminPlugin-implementor в app/Admin/
+        // Find any AdminPlugin implementor in app/Admin/
         $base = base_path('app/Admin');
         if (is_dir($base)) {
             $iter = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($base));
@@ -124,7 +124,7 @@ final class AdminPluginUpdater
             }
         }
 
-        // Fallback: создать stub plugin
+        // Fall back to creating a stub plugin
         return $this->createStubPlugin();
     }
 
@@ -157,7 +157,7 @@ final class AdminPlugin implements AdminPluginContract
 
     public function register(): void
     {
-        // Custom permissions / settings регистрируются здесь.
+        // Custom permissions and settings are registered here.
     }
 
     public function boot(Admin $admin): void
@@ -173,7 +173,7 @@ PHP;
     }
 
     /**
-     * Вставка FQCN в `$admin->resources([...])` или `$admin->screen([...])`.
+     * Inserts an FQCN into `$admin->resources([...])` or `$admin->screen([...])`.
      *
      * @param  'resources'|'screen'  $kind
      * @return array{path: string, action: 'updated'|'unchanged'|'created'}
@@ -186,10 +186,10 @@ PHP;
         $shortClass = $this->shortName($fqcn);
         $useLine = "use {$fqcn};";
 
-        // Уже импортирован?
+        // Imported already?
         $needImport = ! str_contains($contents, $useLine);
 
-        // Уже зарегистрирован?
+        // Registered already?
         $needle = $shortClass.'::class';
         if (str_contains($contents, $needle)) {
             return ['path' => $plugin, 'action' => 'unchanged'];
@@ -199,8 +199,8 @@ PHP;
             $contents = $this->insertImport($contents, $useLine);
         }
 
-        // Найти `$admin->resources([...])` или `$admin->screen([...])` и добавить.
-        // Если такого вызова нет — добавить новый перед закрытием boot().
+        // Find `$admin->resources([...])` or `$admin->screen([...])` and add
+        // to it. When there is no such call, add a new one before boot() closes.
         $callPattern = $kind === 'resources'
             ? '/\$admin->resources\(\[(.*?)\]\)/s'
             : '/\$admin->screen\(\[(.*?)\]\)/s';
@@ -235,11 +235,11 @@ PHP;
     }
 
     /**
-     * Вставляет use-line после последнего существующего `use` в namespace-блоке.
+     * Inserts a use line after the last existing `use` of the namespace block.
      */
     private function insertImport(string $contents, string $useLine): string
     {
-        // Найдём последний use в начале файла.
+        // Find the last use at the top of the file.
         if (preg_match_all('/^use [^;]+;/m', $contents, $matches, PREG_OFFSET_CAPTURE)) {
             $last = end($matches[0]);
             $pos = $last[1] + strlen($last[0]);
@@ -247,12 +247,12 @@ PHP;
             return substr($contents, 0, $pos)."\n".$useLine.substr($contents, $pos);
         }
 
-        // Иначе после namespace.
+        // Failing that, right after the namespace.
         return preg_replace('/(namespace [^;]+;\n)/', "$1\n".$useLine."\n", $contents, 1) ?? $contents;
     }
 
     /**
-     * Вставляет строчку в конец метода `boot(...)`.
+     * Inserts a line at the end of the `boot(...)` method.
      */
     private function insertIntoBoot(string $contents, string $line): string
     {
