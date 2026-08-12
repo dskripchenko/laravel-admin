@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Schemas;
 
 /**
- * Common response templates: универсальные envelope-ответы и ошибки,
- * плюс building blocks (типовые объекты, переиспользуемые в других схемах).
+ * The common response templates: the generic envelopes and errors, plus the
+ * building blocks — the typical objects other schemas reuse.
  *
- * Включён в AdminApi.
+ * Included in AdminApi.
  */
 trait AdminApiCommonSchemas
 {
@@ -20,10 +20,10 @@ trait AdminApiCommonSchemas
         return [
 
             /* ------------------------------------------------------------------
-             * Envelope-обёртки
+             * The envelopes
              * ------------------------------------------------------------------ */
 
-            // 200 OK с пустым payload: { success: true, payload: null }
+            // 200 OK with an empty payload: { success: true, payload: null }
             'SuccessResponse' => [
                 'success' => 'boolean!',
                 'payload' => 'object',                              // nullable
@@ -62,19 +62,20 @@ trait AdminApiCommonSchemas
                 'message' => 'string',
             ],
 
-            // 304 Not Modified — без тела. Объявлено только для @response 304 {NotModifiedResponse}.
+            // 304 Not Modified, with no body. Declared only for @response 304 {NotModifiedResponse}.
             'NotModifiedResponse' => [
-                // empty body; etag в заголовке
+                // An empty body; the etag is in the header
             ],
 
-            // 200 OK с типовой "скачать файл" семантикой (Content-Disposition: attachment).
+            // 200 OK with the usual "download a file" semantics (Content-Disposition: attachment).
             'FileDownloadResponse' => [
-                // body — бинарный файл, OpenAPI описан как application/octet-stream через
-                // глобальный consumes/produces; @output здесь не описывается.
+                // The body is a binary file; OpenAPI describes it as
+                // application/octet-stream through the global consumes and
+                // produces, so there is no @output here.
             ],
 
             /* ------------------------------------------------------------------
-             * Ошибки
+             * The errors
              * ------------------------------------------------------------------ */
 
             'ValidationErrorResponse' => [
@@ -116,7 +117,7 @@ trait AdminApiCommonSchemas
                 'payload' => '@SimpleErrorPayload',
             ],
 
-            // 409 Conflict для optimistic concurrency: содержит свежий record.
+            // 409 Conflict for optimistic concurrency: it carries the fresh record.
             'ConflictResponse' => [
                 'success' => 'boolean!',
                 'payload' => '@ConflictPayload',
@@ -127,18 +128,18 @@ trait AdminApiCommonSchemas
                 'current' => 'object',                              // свежее состояние записи
             ],
 
-            // Универсальный shape простой ошибки.
+            // The generic shape of a simple error.
             'SimpleErrorPayload' => [
                 'errorKey' => 'string!',
                 'message' => 'string!',
             ],
 
             /* ------------------------------------------------------------------
-             * Building blocks: переиспользуемые объекты, на которые ссылаются
-             * остальные templates через @-references.
+             * The building blocks: the reusable objects the other templates
+             * point at through @-references.
              * ------------------------------------------------------------------ */
 
-            // Сводный пользовательский summary, возвращается из system.me, auth.login и т.д.
+            // The user summary, returned from system.me, auth.login and the rest.
             'AdminUserSummary' => [
                 'id' => 'integer!',
                 'name' => 'string!',
@@ -154,7 +155,7 @@ trait AdminApiCommonSchemas
                 'name' => 'string!',
             ],
 
-            // Запись audit-журнала.
+            // An entry of the audit log.
             'AuditLogEntry' => [
                 'id' => 'integer!',
                 'user' => '@AuditUserRef',
@@ -174,7 +175,7 @@ trait AdminApiCommonSchemas
                 'email' => 'string(email)!',
             ],
 
-            // Описание поля (формы) — для manifest и для resource.meta.
+            // A form field's description, for the manifest and for resource.meta.
             'FieldSchema' => [
                 'name' => 'string!',
                 'type' => 'string!',
@@ -198,7 +199,7 @@ trait AdminApiCommonSchemas
                 'endpoint' => 'string!',
             ],
 
-            // Описание колонки таблицы.
+            // A table column's description.
             'ColumnSchema' => [
                 'name' => 'string!',
                 'label' => 'string!',
@@ -220,7 +221,7 @@ trait AdminApiCommonSchemas
                 'validation' => 'array!',
             ],
 
-            // Описание фильтра.
+            // A filter's description.
             'FilterSchema' => [
                 'name' => 'string!',
                 'label' => 'string!',
@@ -230,7 +231,7 @@ trait AdminApiCommonSchemas
                 'multiple' => 'boolean!',
             ],
 
-            // Описание action'а.
+            // An action's description.
             'ActionSchema' => [
                 'name' => 'string!',
                 'label' => 'string!',
@@ -249,7 +250,7 @@ trait AdminApiCommonSchemas
                 'title' => 'string!',
             ],
 
-            // Описание layout-слоя (рекурсивная структура).
+            // A layout node's description; the structure is recursive.
             'LayoutSchema' => [
                 'id' => 'string!',
                 'type' => 'string!',                             // rows|columns|tabs|accordion|modal|drawer|block|table|metrics|chart|wizard|infolist|view|wrapper
@@ -257,7 +258,7 @@ trait AdminApiCommonSchemas
                 'children' => '@LayoutSchema[]',                     // вложенные слои
             ],
 
-            // Запись меню сайдбара.
+            // An entry of the sidebar menu.
             'MenuItem' => [
                 'key' => 'string!',
                 'label' => 'string!',
@@ -268,7 +269,7 @@ trait AdminApiCommonSchemas
                 'order' => 'integer!',
             ],
 
-            // Группа permissions.
+            // A group of permissions.
             'PermissionGroup' => [
                 'name' => 'string!',
                 'items' => '@PermissionItem[]',
@@ -278,7 +279,7 @@ trait AdminApiCommonSchemas
                 'label' => 'string!',
             ],
 
-            // Описание зарегистрированного AdminPlugin.
+            // A registered AdminPlugin's description.
             'PluginManifest' => [
                 'id' => 'string!',
                 'version' => 'string!',
@@ -286,7 +287,7 @@ trait AdminApiCommonSchemas
             ],
 
             /* ------------------------------------------------------------------
-             * Пагинация (мета-блок, переиспользуемый везде)
+             * Pagination — the meta block reused everywhere
              * ------------------------------------------------------------------ */
 
             'PaginationMeta' => [

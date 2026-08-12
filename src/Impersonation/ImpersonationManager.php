@@ -10,22 +10,22 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 /**
- * Менеджер impersonation-сессии.
+ * Manages an impersonation session.
  *
- * Хранит ID оригинального админа в session под ключом `admin_impersonator_id`,
- * пока активна impersonation. start()/stop() переключают авторизованного
- * пользователя на admin-guard'е.
+ * While an impersonation is active it keeps the original administrator's id in
+ * the session under `admin_impersonator_id`. start() and stop() switch the
+ * authenticated user on the admin guard.
  *
- * Power-check: при `block_higher_powered=true` запрещает войти под юзером,
- * у которого больше permissions, чем у текущего (защита от privilege-escalation
- * через impersonation).
+ * The power check: with `block_higher_powered=true` it forbids impersonating
+ * a user who holds more permissions than the current one — a guard against
+ * escalating privileges through impersonation.
  */
 final class ImpersonationManager
 {
     public const SESSION_KEY = 'admin_impersonator_id';
 
     /**
-     * Включена ли impersonation в конфиге.
+     * Tells whether impersonation is enabled in the config.
      */
     public function enabled(): bool
     {
@@ -33,7 +33,7 @@ final class ImpersonationManager
     }
 
     /**
-     * Permission, которым нужно владеть, чтобы запускать impersonation.
+     * The permission one must hold to start an impersonation.
      */
     public function requiredPermission(): string
     {
@@ -41,7 +41,7 @@ final class ImpersonationManager
     }
 
     /**
-     * Активна ли impersonation сейчас.
+     * Tells whether an impersonation is active right now.
      */
     public function isActive(): bool
     {
@@ -49,7 +49,7 @@ final class ImpersonationManager
     }
 
     /**
-     * ID оригинального (impersonator) пользователя.
+     * The id of the original user — the impersonator.
      */
     public function impersonatorId(): int|string|null
     {
@@ -60,9 +60,10 @@ final class ImpersonationManager
     }
 
     /**
-     * Запустить impersonation: залогинить под `$target`, сохранить ID оригинала.
+     * Starts an impersonation: logs in as `$target` and stores the original's
+     * id.
      *
-     * Гарантирует, что impersonator уже аутентифицирован.
+     * It guarantees that the impersonator is authenticated already.
      */
     public function start(Authenticatable&Model $impersonator, Authenticatable&Model $target): void
     {
@@ -70,16 +71,18 @@ final class ImpersonationManager
 
         Session::put(self::SESSION_KEY, $impersonator->getKey());
         Auth::guard($guard)->login($target);
-        // Сессия легитимно сменила юзера — обновляем hash для AdminAuth
-        // (иначе session-invalidation счёл бы её устаревшей).
+        // The session changed its user legitimately, so we refresh the hash
+        // for AdminAuth — otherwise the session invalidation would consider it
+        // stale.
         Session::put('password_hash_'.$guard, (string) $target->getAuthPassword());
     }
 
     /**
-     * Остановить impersonation, вернуть оригинала.
+     * Stops the impersonation and brings the original user back.
      *
-     * Возвращает Authenticatable оригинала или null если оригинал не найден
-     * (был удалён) — в этом случае сессию также очищаем, но логин не делаем.
+     * Returns the original's Authenticatable, or null when the original is
+     * gone — deleted since. In that case the session is cleared too, but
+     * nobody is logged in.
      */
     public function stop(): ?Authenticatable
     {
@@ -104,12 +107,12 @@ final class ImpersonationManager
     }
 
     /**
-     * Заблокировать impersonation целевого юзера, у которого больше прав,
-     * чем у impersonator'а (если включено `block_higher_powered`).
+     * Blocks impersonating a target who holds more rights than the
+     * impersonator, when `block_higher_powered` is on.
      *
-     * Сравнение по числу permissions: суррогатно, но защищает от обхода RBAC.
-     * Wildcards (*, admin.users.*) интерпретируются буквально — кто их имеет,
-     * считается «выше».
+     * The comparison counts permissions: a proxy measure, but one that keeps
+     * RBAC from being walked around. Wildcards (*, admin.users.*) are taken
+     * literally — whoever holds them counts as "higher".
      */
     public function isHigherPowered(Authenticatable&Model $impersonator, Authenticatable&Model $target): bool
     {
@@ -125,12 +128,12 @@ final class ImpersonationManager
         $imp = (array) $impersonator->getAllPermissions();
         $tgt = (array) $target->getAllPermissions();
 
-        // Если у impersonator'а есть `*` — он всегда выше или равен.
+        // An impersonator holding `*` is always higher or equal.
         if (in_array('*', $imp, true)) {
             return false;
         }
 
-        // У target есть permissions, которых нет у impersonator'а?
+        // Does the target hold permissions the impersonator does not?
         return count(array_diff($tgt, $imp)) > 0;
     }
 

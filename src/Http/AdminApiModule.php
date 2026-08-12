@@ -8,17 +8,19 @@ use Dskripchenko\LaravelApi\Components\BaseApi;
 use Dskripchenko\LaravelApi\Components\BaseModule;
 
 /**
- * Admin API module — точка входа для laravel-api.
+ * The admin API module — laravel-api's entry point.
  *
- * Переопределяет несколько методов BaseModule, чтобы admin-API:
- *   - жил под собственным префиксом `api/admin` (config: admin.api_path);
- *   - не имел `{version}` сегмента в URL (паттерн `{controller}/{action}`);
- *   - имел собственный middleware-стек (config: admin.middleware.api).
+ * It overrides a few of BaseModule's methods so that the admin API:
+ *   - lives under its own prefix, `api/admin` (config: admin.api_path);
+ *   - has no `{version}` segment in the URL (the pattern is
+ *     `{controller}/{action}`);
+ *   - has a middleware stack of its own (config: admin.middleware.api).
  *
- * Версия одна — `admin` — и не экспонируется в URL (внутренний контракт
- * core↔SPA, см. ARCHITECTURE.md п.13.12). v1.8.1: класс открыт для
- * наследования — host-модули, сшивающие admin с собственными версиями,
- * мержат `parent::getApiVersionList()` (панели приходят автоматически).
+ * There is a single version — `admin` — and it is not exposed in the URL; it
+ * is the internal contract between the core and the SPA, see ARCHITECTURE.md
+ * §13.12. The class is open for extension: host modules that stitch the admin
+ * together with versions of their own merge
+ * `parent::getApiVersionList()`, and the panels come along automatically.
  */
 class AdminApiModule extends BaseModule
 {
@@ -44,9 +46,10 @@ class AdminApiModule extends BaseModule
     }
 
     /**
-     * Возвращает FQCN текущей API-версии. Для admin — единственная: `admin`.
-     * Если `$version` не задана (например, до парсинга URL), резолвим через
-     * ApiRequest, иначе fallback на 'admin'.
+     * Returns the FQCN of the current API version; for the admin there is
+     * only one, `admin`. When `$version` is not set — before the URL is
+     * parsed, say — it is resolved through ApiRequest, falling back to
+     * 'admin'.
      */
     public function getApi(?string $version = null): ?string
     {
@@ -60,14 +63,15 @@ class AdminApiModule extends BaseModule
     }
 
     /**
-     * Префикс laravel-api маршрутов. Default 'api' — стандарт laravel-api.
-     * Финальный URL получается `/{prefix}/{version}/{controller}/{action}`,
-     * где version='admin' = /api/admin/{controller}/{action} — exactly то,
-     * что задумано в `config('admin.api_path')`.
+     * The prefix of the laravel-api routes; 'api' by default, as laravel-api
+     * has it. The final URL becomes
+     * `/{prefix}/{version}/{controller}/{action}`, and with version='admin'
+     * that is /api/admin/{controller}/{action} — exactly what
+     * `config('admin.api_path')` intends.
      *
-     * Если host-проект использует свой префикс laravel-api (например, 'api/v1'),
-     * админ окажется под ним: `/api/v1/admin/...`. Чтобы избежать конфликта,
-     * сохраняем глобальный default 'api'.
+     * When a host project uses its own laravel-api prefix ('api/v1', say), the
+     * admin ends up underneath it: `/api/v1/admin/...`. To avoid the clash we
+     * keep the global default of 'api'.
      */
     public function getApiPrefix(): string
     {
@@ -75,9 +79,9 @@ class AdminApiModule extends BaseModule
     }
 
     /**
-     * Стандартный URI-паттерн laravel-api с {version}.
+     * laravel-api's standard URI pattern, {version} included.
      *
-     * Версия `admin` фигурирует в URL как сегмент после prefix:
+     * The `admin` version appears in the URL as the segment after the prefix:
      * `/api/admin/{controller}/{action}`.
      */
     public function getApiUriPattern(): string
@@ -90,11 +94,12 @@ class AdminApiModule extends BaseModule
      */
     public function getApiMiddleware(): array
     {
-        // laravel-api регистрирует middleware-ГРУППУ один раз на boot'е —
-        // это общий базовый стек для всех панелей (config admin.middleware.api;
-        // его мидлвары panel-aware через Panels::currentGuard()). Панельные
-        // ДОПОЛНЕНИЯ объявляются в admin.panels.{id}.middleware.api и
-        // мержатся в global-middleware методов PanelApi::getMethods().
+        // laravel-api registers the middleware GROUP once at boot: it is the
+        // common base stack of every panel (config admin.middleware.api, whose
+        // middleware are panel-aware through Panels::currentGuard()). A
+        // panel's own ADDITIONS are declared in
+        // admin.panels.{id}.middleware.api and merged into the global
+        // middleware of PanelApi::getMethods().
         /** @var array<int, mixed> $middleware */
         $middleware = (array) config('admin.middleware.api', []);
 

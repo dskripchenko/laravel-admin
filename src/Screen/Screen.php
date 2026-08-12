@@ -10,23 +10,24 @@ use Dskripchenko\LaravelAdmin\Support\Repository;
 use Illuminate\Support\Str;
 
 /**
- * Абстрактный Screen — controller + view-model + commandBar в одном классе.
+ * The abstract screen — a controller, a view model and a command bar in one
+ * class.
  *
- * Lifecycle одного запроса:
- *   1. `query(...$params)` — собирает state как Repository.
- *   2. `name()` / `description()` / `permission()` / `commandBar()` — meta.
- *   3. `layout()` — массив Layout-объектов, описывающих страницу.
- *   4. command-методы (любые public-методы class'а с любыми именами,
- *      кроме зарезервированных) — вызываются через `runMethod` action
- *      контроллера (см. docs/api/screens.md).
+ * The lifecycle of one request:
+ *   1. `query(...$params)` assembles the state as a Repository.
+ *   2. `name()`, `description()`, `permission()` and `commandBar()` give the meta.
+ *   3. `layout()` returns the Layout objects describing the page.
+ *   4. the command methods — any public method of the class, under any name
+ *      but the reserved ones — are called through the controller's `runMethod`
+ *      action, see docs/api/screens.md.
  *
- * Подклассы переопределяют abstract `query()` и `layout()`. Зарезервированные
- * имена (нельзя использовать как command-method): query, layout, name,
- * description, permission, commandBar, compile, slug.
+ * Subclasses override the abstract `query()` and `layout()`. The reserved
+ * names, which cannot serve as command methods, are: query, layout, name,
+ * description, permission, commandBar, compile and slug.
  */
 abstract class Screen
 {
-    /** @var list<string> Имена методов, недоступных как command. */
+    /** @var list<string> The method names that cannot be used as commands. */
     private const RESERVED_METHODS = [
         'query',
         'layout',
@@ -41,9 +42,9 @@ abstract class Screen
     ];
 
     /**
-     * Уникальный slug Screen'а. По умолчанию kebab-case от class-basename
-     * без суффикса `Screen`. Используется как имя controller'а в admin-API
-     * (URL: `/api/admin/{slug}/{action}`).
+     * The screen's unique slug. By default it is the kebab-case of the class
+     * basename without the `Screen` suffix. It doubles as the controller's
+     * name in the admin API, where the URL is `/api/admin/{slug}/{action}`.
      */
     public static function slug(): string
     {
@@ -66,8 +67,8 @@ abstract class Screen
     }
 
     /**
-     * Список permission-ключей. null = только аутентификация. Массив = все
-     * перечисленные permissions требуются для доступа.
+     * The permission keys. null means authentication alone is enough; an
+     * array means every listed permission is required.
      *
      * @return list<string>|string|null
      */
@@ -77,7 +78,7 @@ abstract class Screen
     }
 
     /**
-     * Кнопки/ссылки в шапке Screen'а. По умолчанию пусто.
+     * The buttons and links in the screen's header; empty by default.
      *
      * @return list<Action>
      */
@@ -87,23 +88,25 @@ abstract class Screen
     }
 
     /**
-     * Описывает state Screen'а — данные, которые видны во всех Layout/Field.
+     * Describes the screen's state — the data every layout and field sees.
      *
      * @return Repository|array<string, mixed>
      */
     abstract public function query(mixed ...$params): Repository|array;
 
     /**
-     * Описывает структуру страницы.
+     * Describes the page's structure.
      *
      * @return list<Layout>
      */
     abstract public function layout(): array;
 
     /**
-     * Можно ли вызывать публичный метод как command (через runMethod action).
+     * Tells whether a public method may be called as a command, through the
+     * runMethod action.
      *
-     * Защищает от случайного вызова query/layout/permission/etc. через API.
+     * It guards against calling query, layout, permission and the rest through
+     * the API by accident.
      */
     final public function isCallableMethod(string $method): bool
     {
@@ -129,8 +132,8 @@ abstract class Screen
     }
 
     /**
-     * Скомпилировать Screen в snapshot для отдачи через `state` action.
-     * См. docs/api/screens.md → `{slug}.state`.
+     * Compiles the screen into the snapshot the `state` action returns.
+     * See docs/api/screens.md → `{slug}.state`.
      *
      * @return array{
      *     state: array<string, mixed>,
@@ -173,12 +176,14 @@ abstract class Screen
     }
 
     /**
-     * Считает etag только от state-level данных (state/name/description/permissions).
+     * Computes the etag from the state-level data alone: state, name,
+     * description and permissions.
      *
-     * Layout/command_bar НЕ включаются в etag — они содержат не-детерминированные
-     * id (random_bytes), но и меняются только при изменении кода Screen'а
-     * (отслеживается через Manifest::version()). На стороне клиента etag
-     * сравнивается для понимания «state изменился, пере-fetch'ить».
+     * The layout and the command bar are NOT part of the etag — they contain
+     * non-deterministic ids (random_bytes), and they only change when the
+     * screen's code does, which Manifest::version() already tracks. On the
+     * client the etag answers one question: has the state changed, should this
+     * be refetched.
      *
      * @param  array<string, mixed>  $payload
      */

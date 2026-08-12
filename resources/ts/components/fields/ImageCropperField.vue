@@ -1,24 +1,29 @@
 <script setup lang="ts">
 /**
- * ImageCropperField — нативный canvas-cropper для FileUpload-варианта
- * `image_cropper` (backend `Field\ImageCropper`).
+ * ImageCropperField — a native canvas cropper for the `image_cropper` flavour
+ * of a file upload (the backend's `Field\ImageCropper`).
  *
- * Три состояния:
- *   empty    — drop-zone + file-picker.
- *   picked   — выбран файл, идёт crop. <canvas> с picture + draggable
- *              crop-rect, кнопки «Применить» / «Отмена».
- *   uploaded — preview + name/mime + «Заменить» / «Удалить».
+ * Three states:
+ *   empty    — a drop zone and a file picker.
+ *   picked   — a file has been chosen and is being cropped: a <canvas> with the
+ *              picture and a draggable crop rectangle, plus the "Apply" and
+ *              "Cancel" buttons.
+ *   uploaded — a preview with the name and the mime type, plus "Replace" and
+ *              "Remove".
  *
- * Алгоритм:
- *  - При выборе → URL.createObjectURL → <img>.onload → отскейлить под
- *    контейнер (max 500×400), нарисовать в canvas.
- *  - Crop-rect инициализируется по aspectRatio (если задан) внутри картинки.
- *  - Mouse: drag на body — двигает; drag на 4 угла — ресайз с aspect-lock.
- *  - На «Применить»: маппим screen-rect → source-rect, drawImage в новый
- *    canvas размером outputWidth×outputHeight (если заданы), toBlob, upload
- *    через POST /uploads/image. Ответ кладём в form-state.
+ * How it works:
+ *  - On selection: URL.createObjectURL → <img>.onload → scale to fit the
+ *    container (500×400 at most) → draw into the canvas.
+ *  - The crop rectangle starts out following aspectRatio, when one is set,
+ *    inside the picture.
+ *  - The mouse: dragging the body moves it, dragging one of the four corners
+ *    resizes it with the aspect ratio locked.
+ *  - On "Apply": the screen rectangle is mapped onto the source rectangle,
+ *    drawImage paints into a new canvas of outputWidth×outputHeight when those
+ *    are set, then toBlob and an upload through POST /uploads/image. The answer
+ *    goes into the form state.
  *
- * Value shape (form-state): null | {disk, path, url, name, size, mime}.
+ * The value's shape in the form state: null | {disk, path, url, name, size, mime}.
  */
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { Image as ImageIcon, Replace, X, Check } from 'lucide-vue-next'
@@ -42,7 +47,7 @@ interface Props {
   label?: string | null
   help?: string | null
   required?: boolean
-  // attributes из backend Field\ImageCropper (flattened FieldRenderer'ом)
+  // The attributes from the backend's Field\ImageCropper, flattened by FieldRenderer
   accept?: string | null
   maxSize?: number | null
   aspectRatio?: number | null
@@ -78,13 +83,13 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const dragOver = ref(false)
 const uploading = ref(false)
 
-// «picked» state: исходное изображение + crop-rect в screen-space.
+// The "picked" state: the source image plus the crop rectangle in screen space.
 const sourceImage = ref<HTMLImageElement | null>(null)
 const sourceUrl = ref<string | null>(null)
 // scale = screenSize / sourceSize.
 const displayScale = ref(1)
 const displaySize = ref({ w: 0, h: 0 })
-// crop-rect в DISPLAY coords (от 0,0 верхнего угла канваса).
+// The crop rectangle in DISPLAY coordinates, from the canvas's top-left 0,0.
 const crop = ref({ x: 0, y: 0, w: 100, h: 100 })
 
 const containerMaxW = 500
@@ -144,7 +149,7 @@ function fitImage(): void {
 
 function initCrop(): void {
   const { w, h } = displaySize.value
-  // По умолчанию — максимально большой rect с заданным aspect, центрирован.
+  // By default: the largest rectangle of the given aspect ratio, centred.
   if (aspect.value !== null) {
     let rw = w
     let rh = rw / aspect.value
@@ -190,7 +195,7 @@ function onDrag(e: MouseEvent): void {
     return
   }
 
-  // resize: считаем новые границы как функцию того, какой угол двигается.
+  // Resizing: the new bounds follow from which corner is being dragged.
   let l = s.cx, t = s.cy, r = s.cx + s.cw, b = s.cy + s.ch
   if (dragMode.value === 'nw') { l = s.cx + dx; t = s.cy + dy }
   if (dragMode.value === 'ne') { r = s.cx + s.cw + dx; t = s.cy + dy }
@@ -205,21 +210,21 @@ function onDrag(e: MouseEvent): void {
   let nw = r - l
   let nh = b - t
 
-  // aspect lock — подгоняем меньшую сторону к большей.
+  // The aspect lock fits the smaller side to the larger one.
   if (aspect.value !== null) {
     const a = aspect.value
-    // Решаем какую сторону держать фиксированной (по большему изменению).
+    // Decide which side to hold fixed, by whichever changed more.
     if (Math.abs(nw - s.cw) >= Math.abs(nh - s.ch)) {
       nh = nw / a
     } else {
       nw = nh * a
     }
-    // Перенаправим anchor — фиксируем противоположный угол.
+    // Move the anchor: the opposite corner is the one held in place.
     if (dragMode.value === 'nw') { l = r - nw; t = b - nh }
     if (dragMode.value === 'ne') { t = b - nh }
     if (dragMode.value === 'sw') { l = r - nw }
-    // se: l/t остаются на месте, w/h меняются
-    // Обрезаем чтобы не вылезть за границы.
+    // For 'se' the left and top stay put while the width and height change.
+    // Clamp so as not to run past the edges.
     if (l < 0) { nw += l; l = 0; nh = nw / a; t = (dragMode.value === 'nw' || dragMode.value === 'ne') ? b - nh : t }
     if (t < 0) { nh += t; t = 0; nw = nh * a; l = (dragMode.value === 'nw' || dragMode.value === 'sw') ? r - nw : l }
     if (l + nw > ds.w) { nw = ds.w - l; nh = nw / a }
@@ -254,8 +259,8 @@ async function applyCrop(): Promise<void> {
   if (!ctx) { adminToast.error(tr('Canvas недоступен.')); return }
   ctx.drawImage(src, sx, sy, sw, sh, 0, 0, outW, outH)
 
-  // Сохраняем как PNG по умолчанию (lossless), для JPEG/WEBP — по mime;
-  // в v1 — png + quality для прозрачности.
+  // Saved as PNG by default, which is lossless; JPEG and WEBP follow the mime
+  // type. In v1 it is png plus a quality setting, for transparency.
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, 'image/png', props.quality ?? 0.92),
   )

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 /**
- * Sidebar admin-каркаса поверх UidSidebar/UidSidebarGroup/UidSidebarItem.
+ * The admin shell's sidebar, built on UidSidebar, UidSidebarGroup and
+ * UidSidebarItem.
  *
- * Источник данных — useMenuStore (groupedItems, отфильтрованные по permission'ам
- * через auth.hasAnyPermission). UidSidebarItem поддерживает вложенный icon-slot
- * + active + badge — маппим прямо из MenuItem.
+ * The data comes from useMenuStore — groupedItems, already filtered by
+ * permission through auth.hasAnyPermission. UidSidebarItem supports a nested
+ * icon slot plus active and badge, and those map straight from a MenuItem.
  *
- * Brand-row сверху + опциональный tenant-block + footer с версией/docs —
- * по эталону docs/design_handoff_laravel_admin/screens-shell.jsx (Sidebar).
+ * A brand row on top, an optional tenant block and a footer with the version
+ * and the docs link, following
+ * docs/design_handoff_laravel_admin/screens-shell.jsx (Sidebar).
  */
 import { computed } from 'vue'
 import { UidSidebar, UidSidebarGroup, UidSkeleton } from '@dskripchenko/ui'
@@ -18,20 +20,20 @@ import BrandLogo from './BrandLogo.vue'
 
 interface Props {
   collapsed?: boolean
-  /** Заголовок бренда. */
+  /** The brand's title. */
   brandName?: string
   /**
-   * Custom mark (если задан — рендерится вместо BrandLogo). Полезно
-   * host-проекту с собственным логотипом.
+   * A custom mark; when set it is rendered instead of BrandLogo. Useful to a
+   * host project with a logo of its own.
    */
   brandMark?: string | null
-  /** URL картинки-логотипа (приоритетнее brandMark/BrandLogo). */
+  /** The logo image's URL; it wins over brandMark and BrandLogo. */
   brandLogo?: string | null
-  /** Named-route для click'а по brand-row. */
+  /** The named route a click on the brand row leads to. */
   homeRouteName?: string
-  /** Тенант / workspace — опционально показывается под брендом. */
+  /** The tenant or workspace, optionally shown below the brand. */
   tenant?: { label: string; name: string } | null
-  /** Версия + ссылка на docs в footer'е. */
+  /** The version and the docs link in the footer. */
   version?: string | null
   docsUrl?: string | null
 }
@@ -52,13 +54,15 @@ const menu = useMenuStore()
 const groups = computed(() => menu.groupedItems)
 
 /**
- * Пока каркас не готов, вместо пунктов — их силуэт: пустая колонка рядом с
- * отрисованным топбаром читается как «меню сломалось», а не «сейчас будет».
- * Гейт общий со страницей, поэтому меню и содержимое появляются вместе.
+ * Until the shell is ready the items are replaced by their silhouette: an
+ * empty column next to a drawn topbar reads as "the menu broke", not as "it is
+ * about to arrive". The gate is shared with the page, so the menu and the
+ * content appear together.
  */
 const appReady = useAppReady()
-// Если пункты уже есть (host задал их напрямую или ответ пришёл раньше
-// манифеста) — прятать готовые данные за силуэтом незачем.
+// When the items are already there — the host set them directly, or the
+// answer arrived before the manifest — there is no point hiding ready data
+// behind a silhouette.
 const ready = computed(() => appReady.value || menu.isLoaded)
 </script>
 
@@ -121,7 +125,7 @@ const ready = computed(() => appReady.value || menu.isLoaded)
 </template>
 
 <style>
-/* Силуэт меню на время загрузки каркаса — по геометрии пунктов. */
+/* The menu's silhouette while the shell loads, following the items' geometry. */
 .admin-sidebar-boot {
   display: flex;
   flex-direction: column;
@@ -130,11 +134,11 @@ const ready = computed(() => appReady.value || menu.isLoaded)
 }
 
 /*
- * Sidebar header выровнен по AdminTopBar (height: 56px + 1px border).
- * Padding у uid-pattern-sidebar__header обнулён — brand занимает ровно
- * одну строку шапки. Border-bottom UI-kit'а оставляем — он совпадает
- * по Y с border-bottom топбара, образуя единую горизонталь над nav
- * и контентной частью.
+ * The sidebar header is aligned with AdminTopBar: 56px of height plus a 1px
+ * border. The padding of uid-pattern-sidebar__header is zeroed, so the brand
+ * occupies exactly one header row. The UI kit's border-bottom stays — it sits
+ * at the same Y as the topbar's and forms one horizontal above the nav and the
+ * content.
  */
 .uid-pattern-sidebar__header:has(.admin-sidebar-brand) {
   padding: 0;
@@ -202,9 +206,10 @@ const ready = computed(() => appReady.value || menu.isLoaded)
 .admin-sidebar-tenant b { color: var(--uid-text-primary); font-weight: 500; }
 .admin-sidebar-foot {
   /*
-   * Высота строго через --admin-foot-height — совпадает с .admin-main-footer
-   * (см. AdminShell.vue), чтобы border-top sidebar foot и border-top main
-   * footer проходили по одной Y и давали единую горизонталь под экраном.
+   * The height comes strictly from --admin-foot-height and matches
+   * .admin-main-footer (see AdminShell.vue), so that the sidebar foot's
+   * border-top and the main footer's sit at the same Y and give one horizontal
+   * beneath the screen.
    */
   height: var(--admin-foot-height, 32px);
   padding: 0 16px;
