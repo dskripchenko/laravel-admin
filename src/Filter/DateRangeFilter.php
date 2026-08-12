@@ -7,10 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
- * Range-фильтр по дате (between).
+ * A date range filter, translating into a BETWEEN.
  *
- * Принимает `{from, to}` строки в формате `Y-m-d` (или ISO). NULL `from`/`to`
- * означает «без нижней/верхней границы».
+ * It takes `{from, to}` as `Y-m-d` (or ISO) strings. A null `from` or `to`
+ * means there is no lower or upper bound.
  *
  * URL: `?filters[created_at][from]=2024-01-01&filters[created_at][to]=2024-12-31`
  */

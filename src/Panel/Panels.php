@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Panel;
 
 /**
- * Статический доступ к панельному контексту (v1.8 Panels).
+ * Static access to the panel context.
  *
- * `Panels::currentGuard()` — замена прямых чтений `config('admin.auth.guard')`:
- * для однопанельных хостов возвращает то же значение (BC), в многопанельных —
- * guard панели текущего запроса.
+ * `Panels::currentGuard()` replaces reading `config('admin.auth.guard')`
+ * directly: for a single-panel host it returns the same value, and for a
+ * multi-panel one the guard of the current request's panel.
  */
 final class Panels
 {

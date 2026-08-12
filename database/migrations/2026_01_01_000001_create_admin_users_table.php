@@ -7,12 +7,12 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Создание базовой таблицы admin_users.
+ * Creates the base admin_users table.
  *
- * Публикуется только при `config('admin.auth.strategy')` = 'dedicated'. В
- * shared-режиме админ использует существующую таблицу users host-проекта.
+ * It is published only when `config('admin.auth.strategy')` is 'dedicated'; in
+ * the shared mode the admin uses the host project's existing users table.
  *
- * 2FA-колонки добавит отдельная миграция на фазе P2.
+ * The 2FA columns are added by a separate migration.
  */
 return new class extends Migration
 {

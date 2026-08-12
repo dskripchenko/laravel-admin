@@ -211,7 +211,7 @@ describe('ResourceFormPage', () => {
     const primary = wrapper.findAll('button').find((b) => b.text() === 'Создать')
     await primary!.trigger('click')
     await flushPromises()
-    // Ошибки обновляются в store; UidInput через FormState получит error.
+    // The errors are updated in the store; UidInput picks them up through FormState.
     expect(form.errors.title).toEqual(['Required'])
   })
 
@@ -224,12 +224,12 @@ describe('ResourceFormPage', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Запись не найдена')
-    // Ни Сохранить, ни Удалить — нельзя случайно «пересоздать» удалённую запись.
+    // Neither Save nor Delete: a deleted record must not be "recreated" by accident.
     const saveBtn = wrapper.findAll('button').find((b) => b.text() === 'Сохранить')
     const delBtn = wrapper.findAll('button').find((b) => b.text() === 'Удалить')
     expect(saveBtn).toBeUndefined()
     expect(delBtn).toBeUndefined()
-    // Форма-body не рендерится.
+    // The form's body is not rendered.
     expect(wrapper.find('.admin-resource-form__body').exists()).toBe(false)
   })
 })

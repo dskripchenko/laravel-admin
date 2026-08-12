@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Action;
 
 /**
- * Кнопка в commandBar/row, привязанная к command-методу Screen/Resource.
+ * A button in a command bar or a row, bound to a command method of a screen
+ * or a resource.
  *
- * `Button::make('Сохранить')->method('save')` — при клике SPA шлёт POST на
- * текущий controller с body `{method: 'save', state, parameters}`.
+ * With `Button::make('Save')->method('save')`, a click makes the SPA POST to
+ * the current controller with a body of `{method: 'save', state, parameters}`.
  */
 final class Button extends Action
 {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * Заглушка для произвольных Screen-роутов из manifest'а.
- * Host'ы переопределяют через createAdminApp({ pages: { screen: MyScreen } })
- * и кастомным компонентом рендерят `route.params.slug` через любой template.
+ * The stand-in for the manifest's arbitrary screen routes.
+ * Hosts override it through createAdminApp({ pages: { screen: MyScreen } })
+ * and render `route.params.slug` from a component of their own.
  */
 import { computed } from 'vue'
 import { tRaw } from '../stores/i18n'

@@ -7,10 +7,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Таблица ролей admin.
+ * The table of the admin roles.
  *
- * `permissions` — JSON-массив permission-keys (с поддержкой wildcard `*`).
- * `is_system` — защита от удаления системных ролей (Super Admin).
+ * `permissions` is a JSON array of permission keys, wildcards `*` included.
+ * `is_system` protects the system roles, Super Admin among them, from being
+ * deleted.
  */
 return new class extends Migration
 {

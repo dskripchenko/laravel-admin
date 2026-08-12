@@ -7,13 +7,14 @@ namespace Dskripchenko\LaravelAdmin\Export;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * JSON Lines / JSON Array экспортёр (без зависимостей).
+ * The JSON Lines / JSON array exporter, with no dependencies.
  *
- * config('admin.exports.json.lines', false) — если true, рендерит NDJSON
- * (одна запись на строку, удобно для импорта в Splunk/jq), иначе single
- * JSON-array.
+ * With config('admin.exports.json.lines', false) set to true it renders NDJSON
+ * — one record per line, handy for feeding Splunk or jq — and otherwise a
+ * single JSON array.
  *
- * Использует генератор → memory-friendly для больших датасетов.
+ * It works off a generator, which keeps the memory use modest on large data
+ * sets.
  */
 final class JsonExporter implements Exporter
 {

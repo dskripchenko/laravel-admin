@@ -7,11 +7,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Polymorphic pivot между ролями и любой моделью админа.
+ * The polymorphic pivot between the roles and any administrator model.
  *
- * Позволяет назначать роли как нашему AdminUser (dedicated-режим), так и
- * host-овской User-модели (shared-режим) без жёсткой завязки на конкретный
- * FQCN.
+ * It lets roles be assigned both to our AdminUser, in the dedicated mode, and
+ * to the host's own User model, in the shared one, without tying anything to a
+ * particular FQCN.
  */
 return new class extends Migration
 {

@@ -7,9 +7,10 @@ import { useManifestStore } from '../stores/manifest'
 import { useMenuStore } from '../stores/menu'
 
 /**
- * Гейт готовности каркаса: до него страница не рендерится вовсе, иначе
- * пользователь четверть секунды смотрит на чужой экран (HomePage-заглушку)
- * и пустое меню, а потом всё скачком подменяется.
+ * The shell's readiness gate: before it the page is not rendered at all —
+ * otherwise one spends a quarter of a second looking at the wrong screen (the
+ * HomePage placeholder) and an empty menu, and then everything is swapped out
+ * at once.
  */
 const Probe = defineComponent({
   setup() {

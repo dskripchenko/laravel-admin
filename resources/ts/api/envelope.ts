@@ -1,10 +1,10 @@
 /**
- * Контракт ответов laravel-api: каждое тело — `{success, payload}`.
+ * The response contract of laravel-api: every body is `{success, payload}`.
  *
  * Success: `{success: true, payload: {...}}`
  * Error:   `{success: false, payload: {errorKey, message, ...}}`
  *
- * Helper'ы здесь — для type-narrowing'а в потребителях.
+ * The helpers here exist to narrow the types on the consumer's side.
  */
 
 export interface SuccessEnvelope<T = unknown> {
@@ -17,7 +17,7 @@ export interface ErrorEnvelope {
   payload: {
     errorKey: string
     message: string
-    /** Ошибки по полям. `errors` — форма laravel-api, `messages` — админки. */
+    /** The per-field errors: `errors` is laravel-api's shape, `messages` is the admin's. */
     messages?: Record<string, string[]>
     errors?: Record<string, string[]>
     [key: string]: unknown

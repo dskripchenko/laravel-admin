@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * KeyValueEntry — словарь {key: value} как UidDescriptionList.
- * Source: prop.value (Record) либо record[name].
+ * KeyValueEntry — a {key: value} dictionary rendered as a UidDescriptionList.
+ * The source is prop.value, a Record, or record[name].
  */
 import { computed } from 'vue'
 import { UidDescriptionList, UidDescriptionItem } from '@dskripchenko/ui'
@@ -33,7 +33,7 @@ const items = computed<Array<[string, unknown]>>(() => {
 
 function formatValue(v: unknown): string {
   if (v === null || v === undefined) return '—'
-  // Booleans (and 0/1 placeholders for them) read as "Да" / "Нет" so a
+  // Booleans (and 0/1 placeholders for them) read as "Yes" / "No" so a
   // permission-style {slug: true} map renders as a clean list of
   // allowed items, not literal "true" tokens.
   if (typeof v === 'boolean') return v ? tr('Да') : tr('Нет')

@@ -16,11 +16,11 @@ interface Props {
   name?: string
   label?: string
   value?: string | number | null
-  /** Заместитель пустого значения. */
+  /** What stands in for an empty value. */
   placeholder?: string
-  /** Применить mono-font (например для ID/UUID). */
+  /** Use a monospaced font, for an id or a UUID, say. */
   mono?: boolean
-  /** Preset форматтер: datetime/date/money/boolean/bytes. */
+  /** The preset formatter: datetime, date, money, boolean or bytes. */
   preset?: string
   meta?: Record<string, unknown>
 }

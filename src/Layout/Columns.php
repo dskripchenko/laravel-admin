@@ -7,10 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Горизонтальное деление: несколько колонок side-by-side.
+ * A horizontal split: several columns side by side.
  *
- * Опциональные ratio для CSS-grid (`->ratios([1, 2])`). Без ratios —
- * равные колонки.
+ * The ratios for the CSS grid are optional (`->ratios([1, 2])`); without them
+ * the columns are equal.
  */
 final class Columns extends Layout
 {
@@ -31,7 +31,7 @@ final class Columns extends Layout
     }
 
     /**
-     * @param  list<int|string>  $ratios  CSS-grid template-columns значения.
+     * @param  list<int|string>  $ratios  The values of the CSS grid's template-columns.
      */
     public function ratios(array $ratios): self
     {

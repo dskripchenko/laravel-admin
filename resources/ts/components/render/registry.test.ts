@@ -78,9 +78,9 @@ describe('component registry', () => {
   it('builtin bundle covers backend snake_case fieldType() strings', async () => {
     const { registerBuiltinComponents } = await import('./builtin')
     registerBuiltinComponents()
-    // Backend Field::fieldType() — snake_case (см. core/src/Field/*.php);
-    // регрессия: были зарегистрированы только dash-алиасы и relation_select
-    // рендерился UnknownField-заглушкой.
+    // The backend's Field::fieldType() is snake_case; see core/src/Field/*.php.
+    // The regression: only the dashed aliases were registered, and
+    // relation_select was drawn by the UnknownField stub.
     for (const t of ['relation_select', 'morph_switcher', 'tree_select', 'date_range', 'color']) {
       expect(hasField(t)).toBe(true)
     }
@@ -96,7 +96,7 @@ describe('host registrations are not clobbered by builtins', () => {
     const { registerBuiltinComponents } = await import('./builtin')
     registerBuiltinComponents()
     expect(getField('repeater')).toBe(HostStub)
-    // не-переопределённые типы регистрируются как обычно
+    // the types that were not overridden are registered as usual
     expect(hasField('text')).toBe(true)
   })
 })

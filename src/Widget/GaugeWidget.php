@@ -7,8 +7,8 @@ namespace Dskripchenko\LaravelAdmin\Widget;
 use InvalidArgumentException;
 
 /**
- * Gauge (полу-круг или donut) — индикатор одного значения в диапазоне min..max
- * с цветовыми зонами (например, низкий/средний/высокий).
+ * A gauge — a half-circle or a donut — showing one value within a min..max
+ * range, with coloured zones such as low, medium and high.
  */
 class GaugeWidget extends Widget
 {
@@ -47,7 +47,7 @@ class GaugeWidget extends Widget
     }
 
     /**
-     * Цветовые зоны. Например:
+     * The coloured zones. For example:
      *
      *     ->threshold(0, 50, 'green')
      *     ->threshold(50, 80, 'yellow')

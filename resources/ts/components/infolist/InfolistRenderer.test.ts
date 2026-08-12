@@ -126,8 +126,8 @@ describe('InfolistRenderer', () => {
         node: { type: 'rows', kind: 'entry', name: 'x' },
       },
     })
-    // 'rows' зарегистрирован как layout, но kind:entry форсит entry-registry
-    // → нет такого entry → UnknownEntry
+    // 'rows' is registered as a layout, but kind:entry forces the entry
+    // registry — there is no such entry, hence UnknownEntry
     expect(w.text()).toContain('rows')
   })
   it('BadgeEntry maps colors variant and localizes label', () => {
@@ -143,10 +143,10 @@ describe('InfolistRenderer', () => {
         },
       },
     })
-    // Отображается локализованная подпись, не сырое значение.
+    // The localized label is shown, not the raw value.
     expect(wrapper.text()).toContain('Активен')
     expect(wrapper.text()).not.toContain('active')
-    // success-variant применён (класс бэйджа).
+    // The success variant is applied — the badge's class.
     expect(wrapper.html()).toMatch(/badge.*success|success.*badge/)
   })
 

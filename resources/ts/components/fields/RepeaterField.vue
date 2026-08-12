@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * RepeaterField — list<Record> из повторяющихся групп под-полей (backend
- * Field\Repeater, fieldType 'repeater'). Каждый item редактируется во
- * вложенной под-форме (NestedFieldsGroup — собственный form-state).
+ * RepeaterField — a list<Record> of repeating groups of sub-fields (the
+ * backend's Field\Repeater, fieldType 'repeater'). Each item is edited in a
+ * nested sub-form, NestedFieldsGroup, which owns its form state.
  */
 import { computed, ref, watch } from 'vue'
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-vue-next'

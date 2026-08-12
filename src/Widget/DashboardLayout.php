@@ -10,9 +10,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 /**
  * Persisted per-user dashboard customization.
  *
- * Хранит порядок и размер виджетов для конкретного пользователя на конкретном
- * dashboard'е (по `dashboard_key`). Если для пользователя нет записи —
- * возвращается дефолтный layout из самого DashboardScreen.
+ * It stores the order and the size of the widgets for one user on one
+ * dashboard, keyed by `dashboard_key`. When there is no row for that user, the
+ * DashboardScreen's own default layout is returned.
  *
  * @property int $id
  * @property string $dashboard_key

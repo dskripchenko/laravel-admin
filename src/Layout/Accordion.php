@@ -7,10 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Аккордеон — коллекция collapsible секций.
+ * An accordion — a collection of collapsible sections.
  *
- * Items хранятся как list<{title, children, defaultOpen?}>. По умолчанию все
- * закрыты; multi-mode позволяет открыть несколько одновременно (default: single).
+ * The items are stored as a list<{title, children, defaultOpen?}>. They all
+ * start closed; the multi mode allows several to be open at once, and the
+ * default is single.
  */
 final class Accordion extends Layout
 {

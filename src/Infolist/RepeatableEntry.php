@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 /**
- * Display коллекции — пар к Field\Repeater. Каждый item рендерится через
- * вложенные entries.
+ * Displays a collection — the counterpart of Field\Repeater. Each item is
+ * rendered through the nested entries.
  */
 final class RepeatableEntry extends Entry
 {
@@ -29,7 +29,7 @@ final class RepeatableEntry extends Entry
     }
 
     /**
-     * Layout одного item'а: 'rows' (default) | 'columns' | 'inline'.
+     * One item's layout: 'rows' (the default), 'columns' or 'inline'.
      */
     public function layout(string $layout): static
     {

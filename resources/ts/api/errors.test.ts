@@ -56,10 +56,10 @@ describe('errors', () => {
 
   it('ApiError uses fallback message from status when payload.message empty', () => {
     const err = toApiError(500, { errorKey: 'server', message: '' })
-    // payload.message пустой → message в Error должен быть `API error 500`.
-    // Конструктор использует `?? message ?? \`API error ${status}\``.
-    // Здесь message пустой строкой — так что будет '' и не fallback.
-    // Это точное поведение для документирования, а не баг.
+    // payload.message is empty, so Error's message should be `API error 500`.
+    // The constructor uses `?? message ?? \`API error ${status}\``.
+    // Here message is an empty string, so it stays '' and no fallback kicks in.
+    // That is the exact behaviour, documented rather than a bug.
     expect(err.status).toBe(500)
   })
 })

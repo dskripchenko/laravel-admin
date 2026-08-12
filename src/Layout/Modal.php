@@ -7,10 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Modal — overlay-окно поверх текущего screen'а.
+ * A modal — a window overlaying the current screen.
  *
- * SPA рендерит как dialog: close-кнопка, optional title/footer, размер.
- * Открывается через Action или ScreenRouter.
+ * The SPA renders it as a dialog: a close button, an optional title and
+ * footer, a size. It is opened by an action or by ScreenRouter.
  */
 final class Modal extends Layout
 {

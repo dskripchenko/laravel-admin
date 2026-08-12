@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Columns: 12-колоночный grid поверх UidGrid из @dskripchenko/ui.
- * Каждый item.span (1..cols) задаёт ширину; default равные доли.
+ * Columns: a twelve-column grid over UidGrid from @dskripchenko/ui.
+ * Each item.span (1..cols) sets its width; by default the shares are equal.
  */
 import { computed } from 'vue'
 import { UidGrid } from '@dskripchenko/ui'
@@ -10,9 +10,9 @@ import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
 interface Props {
   items: LayoutNode[]
-  /** Зазор между ячейками (CSS, token или px). */
+  /** The gap between the cells: CSS, a token or pixels. */
   gap?: string
-  /** Сколько колонок в гриде (default 12). */
+  /** How many columns the grid has; 12 by default. */
   cols?: number
 }
 

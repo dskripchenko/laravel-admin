@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * Markdown widget — простой preformatted-блок. Для production хост может
- * подкинуть свой widget с marked/MDX через registerWidget('markdown', ...).
+ * The markdown widget — a plain preformatted block. In production a host may
+ * supply its own with marked or MDX, through registerWidget('markdown', ...).
  *
- * Тут — fallback с базовым форматированием через line-break preserve.
+ * What is here is the fallback: basic formatting that preserves line breaks.
  */
 import { UidCard } from '@dskripchenko/ui'
 

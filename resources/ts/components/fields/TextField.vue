@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * TextField — wrapper над UidInput из @dskripchenko/ui. Двусторонняя связь
- * с form-state через provideFormState/useFormState. Тип input'а (text/email/
- * url/password/tel/search) пробрасывается как `type`.
+ * TextField — a wrapper around UidInput from @dskripchenko/ui, bound both ways
+ * to the form state through provideFormState and useFormState. The input's
+ * type — text, email, url, password, tel, search — is passed on as `type`.
  */
 import { computed } from 'vue'
 import { UidInput } from '@dskripchenko/ui'

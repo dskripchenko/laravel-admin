@@ -7,10 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Семантическая обёртка без визуального оформления.
+ * A semantic wrapper with no styling of its own.
  *
- * Полезна для группировки нескольких children в одно условие visibility/permission,
- * либо как точка ре-использования custom Vue-компонента-обёртки.
+ * It is useful for putting several children under one visibility or permission
+ * condition, or as the place to reuse a custom Vue wrapper component.
  *
  * @method $this className(string $class)
  */

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Action;
 
 /**
- * Группировка нескольких action'ов под одну dropdown-кнопку.
+ * Groups several actions under one dropdown button.
  *
- * Для row-actions с большим набором операций: «Ещё...» с пунктами
- * Restore/ForceDelete/Replicate/Audit Trail/...
+ * It suits row actions with a long list of operations: a "More…" holding
+ * Restore, ForceDelete, Replicate, Audit Trail and the rest.
  *
- * Visibility и permissions проверяются для каждой вложенной action'ы
- * отдельно — пустой dropdown скрывается целиком на UI.
+ * The visibility and the permissions are checked for each nested action
+ * separately, and an empty dropdown is hidden altogether in the UI.
  */
 final class DropDown extends Action
 {

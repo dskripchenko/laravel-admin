@@ -8,10 +8,10 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Регистр всех зарегистрированных Screen-классов.
+ * The registry of every registered screen class.
  *
- * Singleton, биндится в DI как Screen\ScreenRegistry. Resolver — slug → FQCN.
- * `Admin::screen($class)` под капотом дёргает `add($class)`.
+ * A singleton, bound in the container as Screen\ScreenRegistry; it resolves a
+ * slug to an FQCN. `Admin::screen($class)` calls `add($class)` underneath.
  */
 final class ScreenRegistry
 {
@@ -78,7 +78,7 @@ final class ScreenRegistry
     }
 
     /**
-     * Без аргумента — все экраны (BC); с панелью — только её скоуп.
+     * Without an argument: every screen; with a panel: that panel's scope alone.
      *
      * @return array<string, class-string<Screen>>
      */

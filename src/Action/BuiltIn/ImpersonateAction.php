@@ -7,10 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Action\BuiltIn;
 use Dskripchenko\LaravelAdmin\Action\Button;
 
 /**
- * Войти под другим админом через `auth.startImpersonation`.
+ * Logs in as another administrator, through `auth.startImpersonation`.
  *
- * Используется на row-action в users-Resource'е. Permission по умолчанию —
- * `admin.impersonate` (см. config('admin.auth.impersonation.permission')).
+ * It is used as a row action in the users resource. The permission defaults to
+ * `admin.impersonate`; see config('admin.auth.impersonation.permission').
  */
 final class ImpersonateAction
 {

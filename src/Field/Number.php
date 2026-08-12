@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Числовое поле с min/max/step.
+ * A numeric field with min, max and step.
  *
- * SPA рендерит как `<input type="number">`. Валидация автоматически
- * добавит `numeric`/`integer` при экспорте через ValidationRulesExporter.
+ * The SPA renders it as `<input type="number">`. The validation gains
+ * `numeric` or `integer` automatically when ValidationRulesExporter exports
+ * it.
  *
  * @method $this min(int|float $min)
  * @method $this max(int|float $max)
@@ -24,7 +25,7 @@ final class Number extends Field
     }
 
     /**
-     * Целочисленный режим. По умолчанию float.
+     * The integer mode; floats by default.
      */
     public function integer(bool $integer = true): static
     {

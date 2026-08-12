@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Layout;
 
 /**
- * Произвольный Vue-компонент по имени с props.
+ * An arbitrary Vue component, by name, with props.
  *
- * Точка расширения для кастомных layout'ов: пользователь регистрирует
- * Vue-компонент в SPA по имени, layout рендерится через `<component :is>`.
+ * The extension point for custom layouts: one registers a Vue component in the
+ * SPA under a name, and the layout is rendered through `<component :is>`.
  */
 final class View extends Layout
 {

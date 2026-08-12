@@ -9,10 +9,11 @@ use Dskripchenko\LaravelAdmin\Action\Button;
 use Dskripchenko\LaravelAdmin\Layout\Rows;
 
 /**
- * Форма редактирования существующей записи.
+ * The form editing an existing record.
  *
- * `query($id)` загружает запись из Resource::modelQuery() и кладёт в state.
- * Если запись не найдена — кидает 404. Save идёт через ResourceController.update.
+ * `query($id)` loads the record through Resource::modelQuery() and puts it
+ * into the state; a record that is not there gives a 404. The save goes
+ * through ResourceController.update.
  */
 final class GeneratedEditScreen extends GeneratedScreen
 {

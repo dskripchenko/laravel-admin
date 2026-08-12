@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Widget;
 
 /**
- * Статический Markdown-блок для onboarding'а / описания / changelog'а.
+ * A static markdown block, for onboarding notes, a description or a changelog.
  *
- * Контент задаётся либо строкой, либо callable (для динамической генерации).
- * SPA рендерит markdown в HTML.
+ * Its content is either a string or a callable, for generating it on the fly.
+ * The SPA renders the markdown into HTML.
  */
 class MarkdownWidget extends Widget
 {

@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * «Последние N» — список свежих записей какой-то модели.
+ * "The latest N" — a list of a model's most recent records.
  *
- * Конфиг: модель, количество, колонки для отображения, optional link на view.
+ * It is configured with the model, the count, the columns to show and an
+ * optional link to the view page.
  */
 class RecentListWidget extends Widget
 {
@@ -66,8 +67,8 @@ class RecentListWidget extends Widget
     }
 
     /**
-     * Resource slug, на который вести по клику (формирует URL вида
-     * /admin/resources/{slug}/{id}).
+     * The resource slug a click leads to; it forms a URL of the shape
+     * /admin/resources/{slug}/{id}.
      */
     public function linkTo(string $resourceSlug): static
     {

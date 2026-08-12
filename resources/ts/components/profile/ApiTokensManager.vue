@@ -3,12 +3,12 @@
  * ApiTokensManager — управление personal-access tokens.
  *
  * Backend endpoints:
- *   GET  /profile/tokensList            — { tokens: [{id, name, last_used_at, created_at}] }
+ *   GET  /profile/tokensList           — { tokens: [{id, name, last_used_at, created_at}] }
  *   POST /profile/tokenCreate {name}   — { token: 'plain', id, name }
  *   POST /profile/tokenRevoke {id}     — success
  *
- * Plain-token показывается ОДИН раз сразу после создания. Дальше — только
- * id и метаданные.
+ * The plain token is shown ONCE, right after it is created; after that only
+ * the id and the metadata remain.
  */
 import { onMounted, ref } from 'vue'
 import { Copy, Plus, Trash2 } from 'lucide-vue-next'

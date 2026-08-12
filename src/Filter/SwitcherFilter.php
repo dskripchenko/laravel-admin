@@ -7,10 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
- * Boolean-фильтр для tri-state UI: `null` (любое), `true`, `false`.
+ * A boolean filter for a tri-state UI: `null` for any, `true`, `false`.
  *
- * `Filter\Switcher::for('is_active')` — три состояния:
- *   - `null` / отсутствует → нет фильтрации.
+ * `Filter\Switcher::for('is_active')` has three states:
+ *   - `null` or absent → no filtering at all.
  *   - `true` / `1` / `'true'` → `WHERE is_active = 1`.
  *   - `false` / `0` / `'false'` → `WHERE is_active = 0`.
  */

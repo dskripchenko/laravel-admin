@@ -9,10 +9,10 @@ use Dskripchenko\LaravelAdmin\Action\Button;
 use Dskripchenko\LaravelAdmin\Layout\Rows;
 
 /**
- * Форма создания записи Resource'а.
+ * The form creating a resource's record.
  *
- * compile() возвращает field-описания и пустой state — фактическое создание
- * идёт через ResourceController.create.
+ * compile() returns the field descriptions and an empty state; the record
+ * itself is created through ResourceController.create.
  */
 final class GeneratedCreateScreen extends GeneratedScreen
 {

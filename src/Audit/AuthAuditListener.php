@@ -13,10 +13,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Events\Dispatcher;
 
 /**
- * Слушатели Laravel Auth events с записью в audit-log.
+ * The listeners of Laravel's auth events, recording them in the audit log.
  *
- * Реагирует только если `admin.audit.log_auth_events` = true и event
- * относится к admin-guard (config admin.auth.guard).
+ * They react only when `admin.audit.log_auth_events` is true and the event
+ * belongs to the admin guard (config admin.auth.guard).
  */
 final class AuthAuditListener
 {
@@ -85,7 +85,7 @@ final class AuthAuditListener
         }
         $expected = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
 
-        // Failed/Login/Logout: $guard != null. Если guard'а нет — не наш event.
+        // Failed, Login and Logout all carry a $guard; without one the event is not ours.
         return $guard === null || $guard === $expected;
     }
 

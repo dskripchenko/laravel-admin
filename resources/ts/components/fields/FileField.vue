@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
- * FileField — простой uploader без crop UI. Используется для `file` /
- * `image` fieldType'ов. Single-file (multiple временно out of scope).
+ * FileField — a plain uploader with no cropping UI, used by the `file` and
+ * `image` field types. One file at a time; multiple is out of scope for now.
  *
- * State shape (form-state value):
+ * The value's shape in the form state:
  *   null | { disk, path, url, name, size, mime }
  *
- * Загрузка: POST /uploads/upload (или /uploads/image для image: true) с
- * FormData через AdminClient (axios with CSRF + cookies из config).
+ * The upload is a POST to /uploads/upload — or /uploads/image when image: true
+ * — with FormData, through AdminClient: axios with the CSRF token and the
+ * cookies from the config.
  */
 import { computed, ref } from 'vue'
 import { Upload, X } from 'lucide-vue-next'

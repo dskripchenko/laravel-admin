@@ -7,7 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 
 /**
- * Один шаг внутри Wizard'а.
+ * One step inside a wizard.
  */
 final class Step extends Layout
 {
@@ -43,8 +43,8 @@ final class Step extends Layout
     }
 
     /**
-     * Validation rules для inputs шага. Wizard блокирует переход вперёд
-     * если шаг не валиден.
+     * The validation rules of the step's inputs. The wizard blocks the move
+     * forward while the step is invalid.
      *
      * @param  array<string, list<string>>  $rules
      */

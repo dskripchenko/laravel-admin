@@ -1,8 +1,8 @@
 /**
- * Composable для read-only record-контекста, передаваемого Infolist'ом.
+ * The composable behind the read-only record context an infolist passes down.
  *
- * Контейнер (ResourceViewPage) вызывает `provideRecord(record)`, entry-
- * компоненты — `useRecord()` для чтения значения.
+ * The container — ResourceViewPage — calls `provideRecord(record)`, and the
+ * entry components call `useRecord()` to read the values.
  */
 
 import { inject, provide, type InjectionKey } from 'vue'

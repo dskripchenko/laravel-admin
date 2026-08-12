@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * Overlay с action-кнопками поверх widget'а в edit-mode:
- *   ☰ — drag-handle для пересортировки
- *   ⚙ — настройки widget'а
- *   × — удалить
+ * The overlay of action buttons on top of a widget in the edit mode:
+ *   ☰ — the drag handle for reordering
+ *   ⚙ — the widget's settings
+ *   × — remove
  */
 import { GripVertical, Settings, X } from 'lucide-vue-next'
 import { UidIcon } from '@dskripchenko/ui'

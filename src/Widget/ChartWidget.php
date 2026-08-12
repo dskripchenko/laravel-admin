@@ -7,10 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Widget;
 use InvalidArgumentException;
 
 /**
- * Универсальный chart-виджет: line/bar/pie/doughnut/area/radar.
+ * The general-purpose chart widget: line, bar, pie, doughnut, area, radar.
  *
- * Конкретный chart-engine (Chart.js/ApexCharts/...) выбирается на стороне SPA.
- * Backend шлёт нормализованную структуру: labels[], datasets[].
+ * Which charting engine draws it — Chart.js, ApexCharts, another — is the
+ * SPA's choice. The backend sends a normalized structure: labels[] and
+ * datasets[].
  */
 class ChartWidget extends Widget
 {

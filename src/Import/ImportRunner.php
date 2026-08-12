@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
- * Запускает импорт-процесс синхронно.
+ * Runs an import synchronously.
  *
- * Для async-варианта зарегистрировать через AllowlistRegistrar и вызывать
- * через DelayedProcessController.run.
+ * For the asynchronous version, register it through AllowlistRegistrar and
+ * call it through DelayedProcessController.run.
  */
 final class ImportRunner
 {

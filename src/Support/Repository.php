@@ -8,13 +8,13 @@ use ArrayAccess;
 use Illuminate\Support\Arr;
 
 /**
- * State-репозиторий с dot-notation доступом.
+ * A state repository with dot-notation access.
  *
- * Используется как state контейнер для Screen/Resource: `query()` возвращает
- * Repository, layout/field читают значения по dot-notation
+ * It is the state container of a screen or a resource: `query()` returns a
+ * Repository, and the layouts and fields read the values by dot notation
  * (`addresses.0.city`).
  *
- * Тонкая обёртка над `Illuminate\Support\Arr::get/set/has/forget`.
+ * A thin wrapper around `Illuminate\Support\Arr::get/set/has/forget`.
  *
  * @implements ArrayAccess<string, mixed>
  */

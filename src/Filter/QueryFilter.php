@@ -7,12 +7,12 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
- * Произвольный callable-фильтр.
+ * An arbitrary callable filter.
  *
  * `QueryFilter::for('legacy_status')->using(fn ($q, $value) => $q->where(...))`.
  *
- * Удобен для нестандартных полей: фильтрация через relation, raw SQL,
- * complex conditions. UI-тип задаётся отдельно через `as($uiType)`.
+ * It suits the unusual cases: filtering through a relation, raw SQL, compound
+ * conditions. The UI's control type is set separately, with `as($uiType)`.
  */
 final class QueryFilter extends Filter
 {
@@ -27,7 +27,7 @@ final class QueryFilter extends Filter
     }
 
     /**
-     * Тип UI-control'а: 'input' | 'switcher' | 'date_range' | 'options' | 'custom'.
+     * The UI control's type: 'input' | 'switcher' | 'date_range' | 'options' | 'custom'.
      */
     public function as(string $uiType): static
     {

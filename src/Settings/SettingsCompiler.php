@@ -7,11 +7,12 @@ namespace Dskripchenko\LaravelAdmin\Settings;
 use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
 
 /**
- * Компилирует SettingsRegistry в массив `controllers` для AdminApi::getMethods().
+ * Compiles SettingsRegistry into the `controllers` array of
+ * AdminApi::getMethods().
  *
- * Каждый зарегистрированный SettingsResource превращается в controller key
- * `settings_{slug}` (underscore — `.` в Laravel routing'е требует
- * дополнительного constraint'а) с тремя actions: meta/read/update.
+ * Every registered SettingsResource becomes the controller key
+ * `settings_{slug}` — an underscore, because a `.` in Laravel's routing needs
+ * an extra constraint — with three actions: meta, read and update.
  */
 final class SettingsCompiler
 {

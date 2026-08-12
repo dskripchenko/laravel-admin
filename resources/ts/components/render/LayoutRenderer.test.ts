@@ -76,7 +76,7 @@ describe('LayoutRenderer', () => {
     })
     expect(wrapper.text()).toContain('First')
     expect(wrapper.text()).toContain('Second')
-    // Хотя бы один input для активной вкладки.
+    // At least one input for the active tab.
     expect(wrapper.findAll('input').length).toBeGreaterThan(0)
   })
 
@@ -94,8 +94,9 @@ describe('LayoutRenderer', () => {
         node: { type: 'rows', kind: 'field', name: 'x' },
       },
     })
-    // type 'rows' зарегистрирован как layout, но kind:field форсит FieldRenderer
-    // → нет field-компонента 'rows' → UnknownField fallback (UidAlert).
+    // The type 'rows' is registered as a layout, but kind:field forces
+    // FieldRenderer — there is no 'rows' field component, so the UnknownField
+    // fallback (a UidAlert) shows up.
     expect(wrapper.text()).toContain('rows')
   })
 

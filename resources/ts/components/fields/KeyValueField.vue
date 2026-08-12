@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
- * KeyValueField — редактор Record<string, string> (backend Field\KeyValue,
- * fieldType 'key_value'). Хранит объект; UI — строки «ключ / значение»
- * с добавлением и удалением. `allowedKeys` превращает key-инпут в datalist.
+ * KeyValueField — the editor of a Record<string, string> (the backend's
+ * Field\KeyValue, fieldType 'key_value'). It stores an object and shows rows
+ * of "key / value" that can be added and removed. `allowedKeys` turns the key
+ * input into a datalist.
  */
 import { computed, ref, watch } from 'vue'
 import { Plus, X } from 'lucide-vue-next'
@@ -51,7 +52,7 @@ function fromState(): Pair[] {
 
 const pairs = ref<Pair[]>(fromState())
 
-// Внешние изменения state (load записи) → пересобираем строки.
+// A change to the state from outside — a record being loaded — rebuilds the rows.
 watch(
   () => form.getField(props.name),
   () => {

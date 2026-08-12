@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * Toggle между light/dark поверх @dskripchenko/ui. Использует topbar
- * icon-button-стиль (.admin-topbar__icon-btn) для визуальной согласованности
- * с остальными widget'ами в баре.
+ * The light/dark toggle, built on @dskripchenko/ui. It uses the topbar's
+ * icon-button style (.admin-topbar__icon-btn) so as to look of a piece with
+ * the other widgets in the bar.
  */
 import { computed } from 'vue'
 import { Moon, Sun } from 'lucide-vue-next'

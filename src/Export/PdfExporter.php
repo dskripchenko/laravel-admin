@@ -8,10 +8,11 @@ use Dskripchenko\LaravelAdmin\Export\Pdf\PdfRenderer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * PDF-экспорт через PdfRenderer (MpdfRenderer / DompdfRenderer / custom).
+ * The PDF export, through a PdfRenderer: MpdfRenderer, DompdfRenderer or one
+ * of your own.
  *
- * HTML собирается простой таблицей; для кастомного шаблона — реализовать
- * собственный Exporter с blade view.
+ * The HTML is assembled as a plain table; for a custom template, write your
+ * own exporter around a Blade view.
  */
 final class PdfExporter implements Exporter
 {

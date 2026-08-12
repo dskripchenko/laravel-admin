@@ -9,10 +9,11 @@ use Dskripchenko\LaravelAdmin\Action\Link;
 use Dskripchenko\LaravelAdmin\Layout\Infolist;
 
 /**
- * Read-only страница записи через Resource::infolist().
+ * A record's read-only page, built from Resource::infolist().
  *
- * compile($id) загружает запись и кладёт её в state. Layout — Infolist с
- * entries из Resource::infolist(). Кнопки в commandBar: Edit/Delete/Назад.
+ * compile($id) loads the record and puts it into the state. The layout is an
+ * infolist of the entries from Resource::infolist(), and the command bar holds
+ * Edit, Delete and Back.
  */
 final class GeneratedViewScreen extends GeneratedScreen
 {

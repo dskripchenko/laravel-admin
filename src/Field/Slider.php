@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Slider — числовое поле с UI-ползунком.
+ * A slider — a numeric field with a UI handle.
  *
- * Совместим с обычным числовым input — backend получает число; UI решает
- * отрендерить как slider с min/max/step.
+ * It is compatible with an ordinary numeric input: the backend receives a
+ * number, and the UI chooses to draw it as a slider with min, max and step.
  */
 final class Slider extends Field
 {
@@ -39,7 +39,7 @@ final class Slider extends Field
     }
 
     /**
-     * Тики на ползунке.
+     * The ticks along the slider.
      *
      * @param  array<int|string, string>  $marks  value => label
      */

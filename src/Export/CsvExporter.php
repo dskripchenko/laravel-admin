@@ -7,10 +7,10 @@ namespace Dskripchenko\LaravelAdmin\Export;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * CSV экспортёр через fputcsv (без внешних зависимостей).
+ * The CSV exporter, built on fputcsv, with no external dependencies.
  *
- * Параметры — из config('admin.exports.csv'): delimiter (default `;`),
- * enclosure, BOM (UTF-8 для Excel).
+ * Its parameters come from config('admin.exports.csv'): the delimiter, `;` by
+ * default, the enclosure, and the UTF-8 BOM for Excel.
  */
 final class CsvExporter implements Exporter
 {

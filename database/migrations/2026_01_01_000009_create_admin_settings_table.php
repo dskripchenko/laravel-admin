@@ -13,16 +13,16 @@ return new class extends Migration
         Schema::create('admin_settings', function (Blueprint $table): void {
             $table->id();
 
-            // Группа (ключ Resource'а / namespace).
+            // The group: a resource's key, or a namespace.
             $table->string('group')->index();
 
-            // Ключ внутри группы (имя поля).
+            // The key inside that group — the field's name.
             $table->string('key');
 
-            // Значение в JSON (поддерживает любые типы: string/int/array/bool/null).
+            // The value as JSON, so any type fits: string, int, array, bool, null.
             $table->json('value')->nullable();
 
-            // Опциональный owner для per-user/per-tenant settings.
+            // An optional owner, for per-user or per-tenant settings.
             $table->nullableMorphs('owner');
 
             $table->timestamps();

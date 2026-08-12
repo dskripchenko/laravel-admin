@@ -7,10 +7,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Добавляет 2FA-колонки к таблице admin_users.
+ * Adds the 2FA columns to the admin_users table.
  *
- * `two_factor_secret` и `two_factor_recovery_codes` хранятся encrypted
- * через Eloquent cast (см. AdminUser::casts()).
+ * `two_factor_secret` and `two_factor_recovery_codes` are stored encrypted,
+ * through an Eloquent cast — see AdminUser::casts().
  */
 return new class extends Migration
 {

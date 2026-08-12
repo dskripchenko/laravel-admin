@@ -7,8 +7,9 @@ namespace Dskripchenko\LaravelAdmin\Field;
 use Dskripchenko\LaravelAdmin\Field\Concerns\HasOptions;
 
 /**
- * Combobox — Select с автодополнением и возможностью ввести произвольное
- * значение (creatable). На SPA рисуется как input + dropdown.
+ * A combobox — a select with autocompletion that also accepts an arbitrary
+ * value, which makes it creatable. The SPA draws it as an input plus a
+ * dropdown.
  */
 final class Combobox extends Field
 {
@@ -20,7 +21,7 @@ final class Combobox extends Field
     }
 
     /**
-     * Разрешить ввод значений вне списка options.
+     * Allows values outside the list of options.
      */
     public function creatable(bool $creatable = true): static
     {

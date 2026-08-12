@@ -7,11 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Export;
 use InvalidArgumentException;
 
 /**
- * Registry экспортёров по format-key.
+ * The registry of exporters, keyed by format.
  *
- * Default содержит CsvExporter; XlsxExporter / PdfExporter регистрируются
- * conditionally в AdminServiceProvider при наличии соответствующих
- * composer-пакетов (openspout, mpdf, dompdf).
+ * By default it holds CsvExporter; XlsxExporter and PdfExporter are registered
+ * conditionally, in AdminServiceProvider, when the matching Composer packages
+ * are installed — openspout, mpdf, dompdf.
  */
 final class ExporterRegistry
 {

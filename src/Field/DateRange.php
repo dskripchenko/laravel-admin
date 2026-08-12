@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Range date picker — две даты (from/to).
+ * A range date picker — two dates, from and to.
  *
- * Сериализация: state как `{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}`.
- * SPA сам обеспечивает валидность (from <= to) на UI.
+ * It serializes into `{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}`, and the SPA
+ * keeps from <= to in the UI itself.
  */
 final class DateRange extends Field
 {
@@ -32,7 +32,7 @@ final class DateRange extends Field
     }
 
     /**
-     * Готовые пресеты ('today', 'last_7_days', ...) — UI-shortcut.
+     * The ready-made presets ('today', 'last_7_days', …) — shortcuts in the UI.
      *
      * @param  list<string>  $presets
      */

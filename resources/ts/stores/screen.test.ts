@@ -74,7 +74,7 @@ describe('useScreenStore', () => {
     const root = s.layout[0]
     expect(root.type).toBe('rows')
     expect((root.items as unknown[])).toHaveLength(2)
-    // props распакованы на верхний уровень (gap)
+    // the props are unpacked to the top level (gap)
     expect(root.gap).toBe('8px')
   })
 
@@ -125,11 +125,11 @@ describe('useScreenStore', () => {
     await s.load('contact')
     s.lastMessage = 'Импортировано'
 
-    // reload того же экрана (res.refresh) message не трогает
+    // reloading the same screen (res.refresh) leaves the message alone
     await s.load('contact')
     expect(s.lastMessage).toBe('Импортировано')
 
-    // другой экран — баннер прошлого не должен пережить навигацию
+    // another screen: the previous banner must not survive the navigation
     await s.load('other')
     expect(s.lastMessage).toBeNull()
   })

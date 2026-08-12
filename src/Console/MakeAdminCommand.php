@@ -15,10 +15,11 @@ use Throwable;
 /**
  * `php artisan admin:user [name] [email] [password]`
  *
- * Создаёт администратора. Без аргументов — interactive (Laravel Prompts).
+ * Creates an administrator. Without arguments it runs interactively, through
+ * Laravel Prompts.
  *
- * `--super` назначает системную роль Super Admin (permissions `['*']`;
- * создаётся идемпотентно по slug `super-admin`).
+ * `--super` assigns the Super Admin system role, whose permissions are
+ * `['*']`; it is created idempotently by the slug `super-admin`.
  */
 final class MakeAdminCommand extends Command
 {

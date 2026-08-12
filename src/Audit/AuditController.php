@@ -9,12 +9,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Чтение audit-лога: список + timeline по конкретному subject.
+ * Reading the audit log: the list, and the timeline of a particular subject.
  */
 final class AuditController extends ApiController
 {
     /**
-     * Список последних событий с фильтрами.
+     * The list of recent events, with filters.
      *
      * @input string ?$subject_type
      * @input integer ?$subject_id
@@ -78,7 +78,7 @@ final class AuditController extends ApiController
     }
 
     /**
-     * Полный timeline по конкретному subject (model + id).
+     * The full timeline of a particular subject — a model and an id.
      *
      * @input string $subject_type
      * @input integer $subject_id

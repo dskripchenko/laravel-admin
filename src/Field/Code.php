@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Поле для редактирования кода (Monaco/CodeMirror на стороне SPA).
+ * A field for editing code, drawn by Monaco or CodeMirror on the SPA's side.
  *
- * Конкретный редактор подключается на фронте — backend только декларирует
- * language/theme/height. Полный список языков — у SPA-обёртки.
+ * Which editor that is, the frontend decides; the backend only declares the
+ * language, the theme and the height. The full list of languages belongs to
+ * the SPA's wrapper.
  *
  * @method $this height(int|string $height)
  */

@@ -7,11 +7,12 @@ namespace Dskripchenko\LaravelAdmin\Action;
 use Dskripchenko\LaravelAdmin\Field\Field;
 
 /**
- * Action, которое открывает modal с формой полей перед submit'ом.
+ * An action that opens a modal with a form of fields before it submits.
  *
- * SPA показывает Modal с переданными $fields, после submit'а вызывает
- * server-side method с собранным payload'ом. Полезно для actions с
- * параметрами: «Отправить уведомление», «Изменить статус с reason'ом».
+ * The SPA shows a modal built from the given $fields and, once it is
+ * submitted, calls the server-side method with the collected payload. It suits
+ * the actions that take parameters: "Send a notification", "Change the status
+ * with a reason".
  */
 final class ModalAction extends Action
 {

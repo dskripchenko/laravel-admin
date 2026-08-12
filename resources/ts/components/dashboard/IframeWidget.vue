@@ -4,9 +4,10 @@ import { UidCard } from '@dskripchenko/ui'
 import { trSafe as tr } from '../../stores/i18n'
 
 /**
- * Backend IframeWidget::data() — {src, height, sandbox}. Host отвечает за
- * allowedHosts-валидацию src на своей стороне; sandbox-атрибут пробрасываем
- * как есть (default backend'а: allow-scripts allow-same-origin).
+ * The backend's IframeWidget::data() gives {src, height, sandbox}. Validating
+ * the src against the allowed hosts is the host's business; the sandbox
+ * attribute is passed through as it is, and the backend's default is
+ * allow-scripts allow-same-origin.
  */
 interface Props {
   title?: string

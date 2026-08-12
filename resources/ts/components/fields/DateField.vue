@@ -9,9 +9,9 @@ interface Props {
   help?: string | null
   required?: boolean
   /**
-   * Тип input'а: 'date' (default), 'datetime-local', 'time'.
-   * UidDatePicker внутри обрабатывает формат через свои props; для совместимости
-   * со старым API оставляем prop.
+   * The input's type: 'date' by default, or 'datetime-local' or 'time'.
+   * UidDatePicker handles the format through its own props inside; the prop
+   * stays for compatibility with the older API.
    */
   inputType?: 'date' | 'datetime-local' | 'time'
   min?: string | null

@@ -7,10 +7,11 @@ namespace Dskripchenko\LaravelAdmin\Field;
 use DateTimeInterface;
 
 /**
- * Date picker (день/месяц/год).
+ * A date picker: day, month and year.
  *
- * format — формат хранения и парсинга на backend (default ISO 'Y-m-d'). UI-формат
- * управляется отдельно через `displayFormat()` (вывод/ввод на стороне SPA).
+ * `format` is how the value is stored and parsed on the backend, ISO 'Y-m-d'
+ * by default. The UI's own format is set separately, through
+ * `displayFormat()`, and governs what the SPA shows and accepts.
  */
 final class DatePicker extends Field
 {

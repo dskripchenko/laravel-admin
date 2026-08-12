@@ -13,13 +13,13 @@ return new class extends Migration
         Schema::create('admin_dashboard_layouts', function (Blueprint $table): void {
             $table->id();
 
-            // ID dashboard'а — соответствует Layout/Dashboard::key().
+            // The dashboard's id, matching Layout/Dashboard::key().
             $table->string('dashboard_key')->index();
 
-            // Owner — обычно AdminUser; nullable для shared/global layouts.
+            // The owner, usually an AdminUser; nullable for the shared and global layouts.
             $table->nullableMorphs('owner');
 
-            // Сериализованный массив виджетов в порядке отображения:
+            // The serialized array of widgets, in the order they are shown:
             //   [{slug, size, position, hidden?}, ...]
             $table->json('widgets');
 

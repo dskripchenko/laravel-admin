@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * ResetPasswordPage — форма сброса пароля по token + email из ссылки в письме.
- * URL: /admin/reset-password?token=...&email=... (параметры из query).
+ * ResetPasswordPage — the password-reset form, working off the token and email
+ * from the link in the message.
+ * The URL is /admin/reset-password?token=...&email=..., taken from the query.
  *
- * Backend: POST /auth/resetPassword {token, email, password, password_confirmation}.
+ * The backend: POST /auth/resetPassword {token, email, password, password_confirmation}.
  */
 import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -14,7 +15,7 @@ import { useBrand } from '../../composables/useBrand'
 import BrandLogo from '../shell/BrandLogo.vue'
 import { trSafe as tr } from '../../stores/i18n'
 
-// Бренд из bootstrap.brand (config('admin.brand')) — как на LoginPage.
+// The brand comes from bootstrap.brand (config('admin.brand')), as on LoginPage.
 const brand = useBrand()
 
 interface Props {

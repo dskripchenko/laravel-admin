@@ -15,11 +15,11 @@ return new class extends Migration
             $table->string('resource_slug')->index();
             $table->string('name');
 
-            // Кому принадлежит view: null = глобальный (видим всем).
+            // Whom the view belongs to; null means global, visible to everyone.
             $table->nullableMorphs('owner');
 
-            // Сериализованное состояние таблицы: filters, sort, columns,
-            // per_page, q (поиск).
+            // The table's serialized state: filters, sort, columns, per_page
+            // and q, the search.
             $table->json('state');
 
             $table->boolean('is_default')->default(false)->index();
