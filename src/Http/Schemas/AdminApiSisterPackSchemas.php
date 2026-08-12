@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Schemas;
 
 /**
- * Templates для actions sister-pack'ов: laravel-admin-search, laravel-admin-health.
+ * The templates of the sister packs' actions: laravel-admin-search and
+ * laravel-admin-health.
  *
- * Эти templates объявлены в core admin для удобства документации API. В реальной
- * сборке sister-pack'и регистрируют свои getOpenApiTemplates() через AdminPlugin
- * (контракт см. ARCHITECTURE.md п.5.23). Этот трейт остаётся для случаев, когда
- * sister-pack ещё не подключён, но в OpenAPI всё равно хочется видеть полный
- * контракт.
+ * They are declared in the core admin for the API documentation's convenience.
+ * In a real build the sister packs register their own getOpenApiTemplates()
+ * through AdminPlugin — the contract is in ARCHITECTURE.md §5.23. This trait
+ * remains for the cases where a sister pack is not installed yet but the
+ * OpenAPI document should still show the full contract.
  */
 trait AdminApiSisterPackSchemas
 {

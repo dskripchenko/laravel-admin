@@ -6,8 +6,9 @@ import { formatCell } from '../resource/cellFormat'
 import { trSafe as tr } from '../../stores/i18n'
 
 /**
- * Backend RecentListWidget::data() отдаёт columns как `[{column, label}]`,
- * но UidTable ожидает `{key, label}`. Конвертируем here.
+ * The backend's RecentListWidget::data() returns the columns as
+ * `[{column, label}]` while UidTable expects `{key, label}`, so they are
+ * converted here.
  */
 interface BackendColumn {
   column?: string
@@ -21,7 +22,7 @@ interface Props {
   columns?: Array<BackendColumn | UidTableColumn>
   rows?: Record<string, unknown>[]
   emptyText?: string
-  /** Resource slug из RecentListWidget::linkTo() — клик по строке ведёт в карточку. */
+  /** The resource slug from RecentListWidget::linkTo(); a click on a row opens that record. */
   linkTo?: string | null
 }
 
@@ -53,10 +54,10 @@ const normalizedColumns = computed<UidTableColumn[]>(() =>
 )
 
 /**
- * RecentListWidget не шлёт preset'ы колонок — но formatCell сам узнаёт
- * ISO-дату и приводит её к `d.m.Y H:i:s`. Без этого прохода виджет
- * показывал сырой `2026-08-05T03:03:44.000000Z`, тогда как список
- * ресурса той же датой рисует `05.08.2026 03:03:44`.
+ * RecentListWidget sends no column presets, but formatCell recognizes an ISO
+ * date by itself and renders it as `d.m.Y H:i:s`. Without this pass the widget
+ * showed a raw `2026-08-05T03:03:44.000000Z`, while the resource's own list
+ * draws the same date as `05.08.2026 03:03:44`.
  */
 const formattedRows = computed<Record<string, unknown>[]>(() =>
   props.rows.map((row) => {

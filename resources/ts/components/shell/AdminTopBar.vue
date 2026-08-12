@@ -1,14 +1,15 @@
 <script setup lang="ts">
 /**
- * Admin top bar поверх UID-токенов. Структура из docs/design_handoff_laravel_admin/
- * screens-shell.jsx (Topbar): collapse-toggle / breadcrumbs / spacer /
- * search-pill / bell / theme / locale / avatar.
+ * The admin top bar, built on the UID tokens. Its structure comes from
+ * docs/design_handoff_laravel_admin/screens-shell.jsx (Topbar): the collapse
+ * toggle, the breadcrumbs, a spacer, the search pill, the bell, the theme, the
+ * locale and the avatar.
  *
- * Slots:
- *   - actions — host может вставить дополнительные actions перед widget'ами
- *   - search — кастомизация ⌘K command-palette pill (по умолчанию — статичный
- *     placeholder; host сверху поднимет UidCommand или свой)
- *   - breadcrumbs — переопределить хлебные крошки
+ * The slots:
+ *   - actions — a host may insert extra actions before the widgets
+ *   - search — customizes the ⌘K command-palette pill; the default is a static
+ *     placeholder, and a host puts UidCommand or its own on top
+ *   - breadcrumbs — replaces the breadcrumbs
  */
 import { computed } from 'vue'
 import { PanelLeft, Search } from 'lucide-vue-next'
@@ -25,9 +26,9 @@ interface Crumb {
 }
 
 interface Props {
-  /** Хлебные крошки. Последний элемент — текущая страница (без to). */
+  /** The breadcrumbs. The last one is the current page and carries no `to`. */
   breadcrumbs?: Crumb[]
-  /** Показывать кнопку collapse сайдбара (только в shell-layout'е). */
+  /** Whether to show the sidebar's collapse button; only inside the shell layout. */
   showCollapseToggle?: boolean
 }
 

@@ -95,11 +95,11 @@ describe('ResourceViewPage', () => {
     })
     const wrapper = await mountPage()
     await flushPromises()
-    // Заголовок берётся из record.title (приоритет над "Resource: #id").
+    // The title comes from record.title, which wins over "Resource: #id".
     expect(wrapper.find('.admin-page__title').text()).toBe('Old')
-    // UID-метка рядом со статусом.
+    // The UID label next to the status.
     expect(wrapper.find('.admin-resource-view__uid').text()).toContain('7')
-    // Back-link на index с лейблом ресурса.
+    // The back link to the index, carrying the resource's label.
     expect(wrapper.find('.admin-resource-view__back').text()).toContain('Статьи')
   })
 
@@ -109,14 +109,14 @@ describe('ResourceViewPage', () => {
     })
     const wrapper = await mountPage()
     await flushPromises()
-    // Edit — основная кнопка.
+    // Edit is the primary button.
     expect(
       wrapper.findAll('button').map((b) => b.text()),
     ).toContain('Редактировать')
-    // Trigger more-menu существует.
+    // The trigger of the "more" menu is there.
     const triggers = wrapper.findAll('[aria-label="Действия"]')
     expect(triggers.length).toBe(1)
-    // Открываем menu — UidMenu делает Teleport в body, ищем через document.
+    // Opening the menu: UidMenu teleports into the body, so we look through document.
     await triggers[0].trigger('click')
     await flushPromises()
     expect(document.body.textContent ?? '').toContain('Удалить')
@@ -144,7 +144,7 @@ describe('ResourceViewPage', () => {
     mock.onGet('/articles/read').networkError()
     const wrapper = await mountPage()
     await flushPromises()
-    // form.error.message либо 'Network Error' либо fallback из шаблона
+    // form.error.message is either 'Network Error' or the template's fallback
     expect(wrapper.find('.uid-alert').exists()).toBe(true)
   })
 })

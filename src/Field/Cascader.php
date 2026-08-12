@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Каскадный выбор: 2-3 связанных dropdown'а (страна → регион → город).
+ * A cascading selection: two or three linked dropdowns — country → region →
+ * city.
  *
- * State хранится как list<value> длиной levels (по одному value на уровень).
- * Каждый уровень имеет свой displayLabel (название этапа на UI).
+ * The state is a list<value> as long as there are levels, one value per level.
+ * Each level has its own displayLabel, the step's name in the UI.
  */
 final class Cascader extends Field
 {
@@ -28,7 +29,7 @@ final class Cascader extends Field
     }
 
     /**
-     * Полный nested-tree options для всех уровней.
+     * The full nested tree of options, for every level.
      *
      * @param  list<array{value: mixed, label: string, children?: array<int, mixed>}>  $tree
      */
@@ -40,7 +41,7 @@ final class Cascader extends Field
     }
 
     /**
-     * Разделитель в displayed value: 'Россия / Москва / Москва'.
+     * The separator of the displayed value: 'Russia / Moscow / Moscow'.
      */
     public function separator(string $separator): static
     {
@@ -50,7 +51,7 @@ final class Cascader extends Field
     }
 
     /**
-     * Включить ?q= search по всем уровням.
+     * Turns on the ?q= search across every level.
      */
     public function searchable(bool $searchable = true): static
     {

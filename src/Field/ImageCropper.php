@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * ImageCropper — расширение FileUpload с обрезкой на UI до загрузки.
+ * ImageCropper — a FileUpload extended with cropping in the UI before the
+ * upload.
  *
- * SPA крипает картинку на клиенте (canvas) и шлёт уже обрезанную.
- * aspectRatio задаёт W:H (например, 16/9 = 1.7777, 1 = квадрат).
+ * The SPA crops the picture on the client, in a canvas, and sends the cropped
+ * result. aspectRatio sets W:H — 16/9 = 1.7777, and 1 is a square.
  */
 final class ImageCropper extends FileUpload
 {
@@ -18,7 +19,7 @@ final class ImageCropper extends FileUpload
     }
 
     /**
-     * Соотношение сторон. null = свободное.
+     * The aspect ratio; null leaves it free.
      */
     public function aspectRatio(?float $ratio): static
     {
@@ -28,7 +29,7 @@ final class ImageCropper extends FileUpload
     }
 
     /**
-     * Минимальный crop-area в px.
+     * The smallest crop area, in pixels.
      */
     public function minCrop(int $width, int $height): static
     {
@@ -39,7 +40,7 @@ final class ImageCropper extends FileUpload
     }
 
     /**
-     * Финальный размер выгружаемой картинки (resize after crop).
+     * The final size of the uploaded image — a resize after the crop.
      */
     public function outputSize(int $width, int $height): static
     {
@@ -50,7 +51,7 @@ final class ImageCropper extends FileUpload
     }
 
     /**
-     * Качество JPG/WEBP (0..1).
+     * The JPG/WEBP quality, from 0 to 1.
      */
     public function quality(float $quality): static
     {

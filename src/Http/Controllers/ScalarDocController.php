@@ -11,14 +11,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Замена для default ApiDocumentationController из laravel-api.
+ * The replacement for laravel-api's default ApiDocumentationController.
  *
- * Default — Swagger UI; здесь — Scalar UI (более современный, читаемый,
- * с поддержкой dark mode из коробки). Скрипт подгружается с CDN
- * (jsdelivr) лениво.
+ * The default is Swagger UI; this is Scalar UI — newer, easier to read, with
+ * dark mode out of the box. Its script is loaded lazily from a CDN, jsdelivr.
  *
- * OpenAPI spec собирается стандартным laravel-api механизмом: для каждой
- * версии — `BaseApi::getOpenApiConfig` пишется в storage, отдаётся URL.
+ * The OpenAPI spec is assembled by laravel-api's usual machinery: for each
+ * version `BaseApi::getOpenApiConfig` is written into storage and served by
+ * URL.
  */
 final class ScalarDocController
 {

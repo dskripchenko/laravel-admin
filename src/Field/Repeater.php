@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Повторяющийся набор полей — для HasMany inline-edit или произвольного
- * массива однотипных объектов.
+ * A repeating set of fields — for editing a HasMany inline, or any array of
+ * objects of one shape.
  *
- * State хранится как list<array<string, mixed>>, где каждый item — это
- * сабмит формы из переданных $fields. SPA рендерит как набор «карточек»
- * с кнопками add/duplicate/remove/reorder.
+ * The state is a list<array<string, mixed>>, where each item is the submission
+ * of a form built from the given $fields. The SPA renders it as a set of cards
+ * with add, duplicate, remove and reorder buttons.
  *
  * @method $this collapsible(bool $collapsible = true)
  * @method $this collapsed(bool $collapsed = true)
@@ -71,7 +71,7 @@ final class Repeater extends Field
     }
 
     /**
-     * Default-state для нового item'а.
+     * The default state of a new item.
      *
      * @param  array<string, mixed>  $values
      */

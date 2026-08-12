@@ -1,13 +1,13 @@
 /**
- * Глобальный registry AdminClient'а для Pinia stores.
+ * The global registry of the AdminClient, for the Pinia stores.
  *
- * Stores не получают client через параметры — это сильно усложняет API
- * (`useAuthStore(client)` каждый раз). Вместо этого client регистрируется
- * один раз при bootstrap'е приложения через `setAdminClient()`, и stores
- * читают его через `getAdminClient()`.
+ * The stores do not take the client as a parameter — that would make the API
+ * much clumsier, with `useAuthStore(client)` every single time. Instead the
+ * client is registered once, while the application bootstraps, through
+ * `setAdminClient()`, and the stores read it with `getAdminClient()`.
  *
- * Это singleton-pattern — допустим в случае admin-SPA, потому что
- * client всегда один на весь жизненный цикл.
+ * It is a singleton, which is acceptable for an admin SPA: there is only ever
+ * one client for the whole lifetime.
  */
 
 import type { AdminClient } from '../api/client'

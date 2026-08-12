@@ -18,14 +18,15 @@ use function Laravel\Prompts\text;
 /**
  * `php artisan admin:make-screen`
  *
- * Wizard для кастомного Screen'а. Запускается без аргументов.
+ * The wizard behind a custom screen. It is started without arguments.
  *
- *   1. Имя (label) и slug
- *   2. Описание
- *   3. Поля state'а (через multiselect: text/email/textarea/select/...)
- *   4. Permission
- *   5. Команды для commandBar (Submit/Cancel/Reload/...)
- *   6. (опц.) добавить в меню под parent
+ *   1. The label and the slug
+ *   2. The description
+ *   3. The state's fields, through a multiselect: text, email, textarea,
+ *      select and so on
+ *   4. The permission
+ *   5. The commands of the command bar: Submit, Cancel, Reload and the rest
+ *   6. Optionally, a menu entry under a parent
  */
 final class MakeScreenCommand extends Command
 {
@@ -208,7 +209,7 @@ final class MakeScreenCommand extends Command
 {$rulesBlock}
         ])->validate();
 
-        // TODO: реальная логика отправки/сохранения
+        // TODO: the actual sending and saving
 
         return [
             'message' => 'Отправлено',

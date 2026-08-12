@@ -11,12 +11,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Запуск и отслеживание async-actions.
+ * Starting and following async actions.
  *
- * Endpoints:
- *   - run(entity, method, params?) — создаёт DelayedProcess, валидируя через
- *     AllowlistRegistrar.
- *   - status(uuid) — текущее состояние process'а (status/progress/data/error).
+ * The endpoints:
+ *   - run(entity, method, params?) creates a DelayedProcess, validating it
+ *     against AllowlistRegistrar.
+ *   - status(uuid) returns the process's current state: status, progress, data
+ *     and error.
  */
 final class DelayedProcessController extends ApiController
 {
@@ -25,7 +26,7 @@ final class DelayedProcessController extends ApiController
     ) {}
 
     /**
-     * Запустить async-action.
+     * Starts an async action.
      *
      * @input string $entity
      * @input string $method
@@ -78,7 +79,7 @@ final class DelayedProcessController extends ApiController
     }
 
     /**
-     * Получить статус running process'а.
+     * Returns the status of a running process.
      *
      * @input string $uuid
      *

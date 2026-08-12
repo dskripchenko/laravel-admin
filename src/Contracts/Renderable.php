@@ -5,22 +5,23 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Contracts;
 
 /**
- * Сериализуемый в JSON-схему UI-элемент.
+ * A UI element that serializes into a JSON schema.
  *
- * Реализуется Layout и Field. SPA получает дерево {type, props, children} и
- * рендерит соответствующий компонент через LayoutRenderer / FieldRenderer.
+ * Layout and Field implement it. The SPA receives a tree of
+ * {type, props, children} and draws the matching component through
+ * LayoutRenderer or FieldRenderer.
  */
 interface Renderable
 {
     /**
-     * Сериализация в JSON-friendly массив для SPA.
+     * Serializes into a JSON-friendly array for the SPA.
      *
      * @return array<string, mixed>
      */
     public function toArray(): array;
 
     /**
-     * Видимость элемента (canSee / onCreate / onUpdate флаги).
+     * The element's visibility — the canSee, onCreate and onUpdate flags.
      */
     public function isVisible(): bool;
 }

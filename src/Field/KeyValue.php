@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Поле для редактирования ассоциативного массива (state: <string, mixed>).
+ * A field for editing an associative array; the state is <string, mixed>.
  *
- * UI: таблица из строк `[key, value]` с кнопками add/remove. Для
- * предсказуемых ключей — лучше использовать Group; KeyValue — для
- * произвольных метаданных, settings, env-style configs.
+ * The UI is a table of `[key, value]` rows with add and remove buttons. When
+ * the keys are known in advance, Group is the better fit; KeyValue is for
+ * arbitrary metadata, settings and env-style configuration.
  */
 final class KeyValue extends Field
 {
@@ -47,7 +47,7 @@ final class KeyValue extends Field
     }
 
     /**
-     * Ограничить ключи списком (для constrained metadata).
+     * Restricts the keys to a list, for constrained metadata.
      *
      * @param  list<string>  $allowed
      */

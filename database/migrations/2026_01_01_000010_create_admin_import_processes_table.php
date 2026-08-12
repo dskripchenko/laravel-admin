@@ -13,31 +13,31 @@ return new class extends Migration
         Schema::create('admin_import_processes', function (Blueprint $table): void {
             $table->id();
 
-            // Resource slug куда импортируем.
+            // The slug of the resource being imported into.
             $table->string('resource_slug')->index();
 
-            // Кто запустил.
+            // Who started it.
             $table->nullableMorphs('owner');
 
-            // Путь к загруженному файлу (storage disk default из config).
+            // The path of the uploaded file, on the default disk from the config.
             $table->string('source_path');
 
             // CSV column → Field name mapping.
             $table->json('mapping');
 
-            // Статус: pending/running/completed/failed.
+            // The status: pending, running, completed or failed.
             $table->string('status')->default('pending')->index();
 
-            // Прогресс.
+            // The progress.
             $table->unsignedInteger('processed_count')->default(0);
             $table->unsignedInteger('created_count')->default(0);
             $table->unsignedInteger('updated_count')->default(0);
             $table->unsignedInteger('error_count')->default(0);
 
-            // Ошибки построчно: [{row: int, error: string}].
+            // The errors, line by line: [{row: int, error: string}].
             $table->json('errors')->nullable();
 
-            // Связанный delayed_process uuid.
+            // The uuid of the related delayed process.
             $table->string('process_uuid')->nullable()->index();
 
             $table->timestamp('started_at')->nullable();

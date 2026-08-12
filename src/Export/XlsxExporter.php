@@ -10,14 +10,14 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * XLSX экспорт через openspout.
+ * The XLSX export, through openspout.
  *
- * Регистрируется conditionally в AdminServiceProvider только при наличии
- * пакета `openspout/openspout`. Если пакета нет — этот класс не будет
- * подгружен и в формат-list'е будет только csv.
+ * AdminServiceProvider registers it only when the `openspout/openspout`
+ * package is installed; without it this class is never loaded and the format
+ * list holds csv alone.
  *
- * openspout пишет потоково — масштабируется на сотни тысяч rows без
- * заметного memory footprint'а.
+ * openspout writes in a stream, so it scales to hundreds of thousands of rows
+ * without a noticeable memory footprint.
  */
 final class XlsxExporter implements Exporter
 {

@@ -8,11 +8,12 @@ use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Inline-таблица связанных записей (HasMany / BelongsToMany).
+ * An inline table of related records, over a HasMany or a BelongsToMany.
  *
- * SPA рендерит как таблицу с кнопками add/remove. Сам CRUD над связанными
- * записями не делается через этот Field — сериализация для read/write идёт
- * через relation на родительской модели (Resource::with() + sync-логика).
+ * The SPA renders it as a table with add and remove buttons. CRUD over the
+ * related records does not go through this field: reading and writing are
+ * serialized through the relation on the parent model — Resource::with() plus
+ * the sync logic.
  *
  * @method $this addable(bool $addable = true)
  * @method $this removable(bool $removable = true)
@@ -25,7 +26,7 @@ final class RelationTable extends Field
     }
 
     /**
-     * Имя relation на родительской модели (например, 'comments' для User->comments()).
+     * The relation's name on the parent model — 'comments' for User->comments(), say.
      */
     public function relation(string $relationName): static
     {
@@ -58,7 +59,7 @@ final class RelationTable extends Field
     }
 
     /**
-     * Eager-loading relations при подгрузке.
+     * The relations to eager-load.
      *
      * @param  list<string>  $relations
      */
@@ -70,7 +71,7 @@ final class RelationTable extends Field
     }
 
     /**
-     * Pivot-поля для BelongsToMany (отображаются как доп.колонки).
+     * The pivot fields of a BelongsToMany, shown as extra columns.
      *
      * @param  list<string>  $fields
      */

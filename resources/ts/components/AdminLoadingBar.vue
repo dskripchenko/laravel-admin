@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * Top loading bar (как у YouTube/GitHub/Vercel).
+ * The top loading bar, of the kind YouTube, GitHub and Vercel have.
  *
- * Реактивно отображает useNavigationStore.isLoading. Indeterminate-anim
- * (CSS keyframes) — slide bar слева направо в бесконечном цикле пока
- * pending > 0.
+ * It follows useNavigationStore.isLoading reactively. The indeterminate
+ * animation is CSS keyframes: the bar slides left to right in an endless loop
+ * while pending > 0.
  *
- * Hide-delay 120ms: если pending быстро спадает к 0, bar успевает
- * мигнуть в полный размер вместо instant-cutoff.
+ * The 120ms hide delay lets the bar flash to its full size when pending drops
+ * to zero quickly, instead of being cut off instantly.
  */
 import { computed, ref, watch } from 'vue'
 import { useNavigationStore } from '../stores/navigation'
@@ -15,7 +15,7 @@ import { trSafe as tr } from '../stores/i18n'
 
 const nav = useNavigationStore()
 
-// Soft-hide: bar остаётся 120ms после end() для плавности.
+// A soft hide: the bar lingers for 120ms after end(), for smoothness.
 const visible = ref<boolean>(false)
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -89,7 +89,7 @@ const cls = computed(() => ({
   }
 }
 
-/* Reduced-motion: статичный bar 60% width. */
+/* Reduced motion: a static bar at 60% width. */
 @media (prefers-reduced-motion: reduce) {
   .admin-loading-bar--visible::before {
     animation: none;

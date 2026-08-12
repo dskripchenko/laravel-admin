@@ -1,13 +1,13 @@
 /**
- * Реестр infolist-entry-компонентов.
+ * The registry of the infolist entry components.
  *
- * Аналог field-registry, но для read-only display'я. Узлы манифеста имеют
- * форму:
- *   { type: 'text', name: 'title', label: 'Заголовок', value?: '...' }
- * либо без явного `value` — тогда entry извлекает `record[name]` из
- * provide'нутого `record`.
+ * It mirrors the field registry, but for a read-only display. The manifest's
+ * nodes look like:
+ *   { type: 'text', name: 'title', label: 'Title', value?: '...' }
+ * or come without an explicit `value`, in which case the entry takes
+ * `record[name]` from the provided `record`.
  *
- * Host регистрирует кастомные entry через `registerInfolistEntry()` /
+ * A host registers its own entries through `registerInfolistEntry()` or a
  * `registerInfolistEntries()` bundle.
  */
 

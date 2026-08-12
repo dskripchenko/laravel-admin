@@ -29,8 +29,8 @@ const baseBootstrap: AdminBootstrap = {
 
 describe('createAdminApp', () => {
   beforeEach(() => {
-    // axios-mock через vi.mock не нужен — manifest.load() ловит ошибки и
-    // не падает (skipManifestLoad избежит реальный fetch).
+    // No axios mock through vi.mock is needed: manifest.load() catches its
+    // errors and does not fall over, and skipManifestLoad avoids a real fetch.
   })
 
   it('создаёт app + router + client из bootstrap', () => {
@@ -54,7 +54,7 @@ describe('createAdminApp', () => {
 
   it('гидрирует stores из bootstrap (theme, locale)', () => {
     const { app } = createAdminApp(baseBootstrap, { skipManifestLoad: true })
-    // Pinia должна быть подключена, app должен быть готов к mount.
+    // Pinia must be installed and the app must be ready to mount.
     expect(app._context.config.globalProperties).toBeDefined()
   })
 
@@ -70,12 +70,12 @@ describe('createAdminApp', () => {
   })
 
   it('manifest load НЕ запускается если user=null в bootstrap (login-flow)', async () => {
-    // Когда host рендерит /admin/login без user'а — manifest.load() должен
-    // подождать появления user'а через watch() после успешного login.
-    // Используем skipManifestLoad: false но с anonymous bootstrap.
+    // When the host renders /admin/login with no user, manifest.load() must
+    // wait for the user to appear, through a watch(), after a successful
+    // login. We use skipManifestLoad: false with an anonymous bootstrap.
     const anonBootstrap = { ...baseBootstrap, user: null }
     const { router } = createAdminApp(anonBootstrap)
-    // Сразу после mount manifest store пустой и dynamic routes отсутствуют.
+    // Right after the mount the manifest store is empty and there are no dynamic routes.
     const dynamicRouteNames = router
       .getRoutes()
       .map((r) => r.name)

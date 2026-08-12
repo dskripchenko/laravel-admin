@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Строка с автогенерацией криптослучайного значения на create-форме
- * (токены, secret keys). SPA генерирует через crypto.getRandomValues
- * при монтировании (если значение пусто) + кнопка «Сгенерировать».
+ * A string that generates a cryptographically random value on a create form —
+ * tokens, secret keys. The SPA generates it with crypto.getRandomValues on
+ * mount, when the value is empty, and offers a "Generate" button.
  */
 final class Generated extends Field
 {
@@ -17,7 +17,7 @@ final class Generated extends Field
     }
 
     /**
-     * Длина генерируемой строки (default 32).
+     * The generated string's length; 32 by default.
      */
     public function length(int $length): static
     {
@@ -27,7 +27,7 @@ final class Generated extends Field
     }
 
     /**
-     * Алфавит генерации (default a-zA-Z0-9).
+     * The alphabet used; a-zA-Z0-9 by default.
      */
     public function charset(string $charset): static
     {
@@ -37,7 +37,7 @@ final class Generated extends Field
     }
 
     /**
-     * Автогенерация при монтировании, если значение пусто (default true).
+     * Whether to generate on mount when the value is empty; true by default.
      */
     public function autogenerate(bool $on = true): static
     {

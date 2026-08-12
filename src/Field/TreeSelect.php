@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Иерархический выбор — категории, рубрики, organizational tree.
+ * A hierarchical selection — categories, sections, an organizational tree.
  *
- * Источник дерева — массив `tree([...])` или Eloquent-модель с self-relation
- * (`parent_id` колонка). State хранится как value (single) или list<value> (multi).
+ * The tree comes either from a `tree([...])` array or from an Eloquent model
+ * with a self-relation through a `parent_id` column. The state is a single
+ * value, or a list<value> when multiple.
  */
 final class TreeSelect extends Field
 {
@@ -18,7 +19,7 @@ final class TreeSelect extends Field
     }
 
     /**
-     * Дерево как nested list:
+     * The tree as a nested list:
      *   [{value, label, children: [{value, label, ...}]}, ...]
      *
      * @param  list<array{value: mixed, label: string, children?: array<int, mixed>}>  $tree
@@ -31,7 +32,7 @@ final class TreeSelect extends Field
     }
 
     /**
-     * Подгрузить дерево из Eloquent-модели с self-referencing parent_id.
+     * Loads the tree from an Eloquent model with a self-referencing parent_id.
      *
      * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
      */
@@ -60,8 +61,8 @@ final class TreeSelect extends Field
     }
 
     /**
-     * Разрешить выбор parent-узлов (default true). Если false — selectable
-     * только листья.
+     * Whether the parent nodes may be selected; true by default. With false,
+     * only the leaves are selectable.
      */
     public function selectableParents(bool $selectable = true): static
     {

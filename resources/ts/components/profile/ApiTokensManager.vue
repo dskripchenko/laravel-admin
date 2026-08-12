@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * ApiTokensManager — управление personal-access tokens.
+ * ApiTokensManager — managing the personal access tokens.
  *
  * Backend endpoints:
  *   GET  /profile/tokensList           — { tokens: [{id, name, last_used_at, created_at}] }

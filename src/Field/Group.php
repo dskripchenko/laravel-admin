@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Визуальная группа полей с заголовком/описанием.
+ * A visual group of fields, with a title and a description.
  *
- * В отличие от Layout::block(), Group — это field-уровневая обёртка: имеет
- * `name`, попадает в state и валидируется как объект (Laravel rule `array`).
- * Используется когда нужны вложенные поля в одной структуре state'а:
+ * Unlike Layout::block(), a Group is a field-level wrapper: it has a `name`,
+ * it appears in the state and it is validated as an object, through Laravel's
+ * `array` rule. Use it when the state needs nested fields in one structure:
  *
  *     'address' => [
  *         'city' => '...',
@@ -37,7 +37,7 @@ final class Group extends Field
     }
 
     /**
-     * Layout вложенных полей: 'rows' (default) | 'columns' | 'inline'.
+     * The nested fields' layout: 'rows' (the default), 'columns' or 'inline'.
      */
     public function layout(string $layout): static
     {

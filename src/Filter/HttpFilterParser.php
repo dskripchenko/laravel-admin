@@ -7,9 +7,9 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Http\Request;
 
 /**
- * Парсер `?filters[...]` из HTTP-запроса в нормализованный массив.
+ * Parses the `?filters[...]` of an HTTP request into a normalized array.
  *
- * Поддерживает обе формы:
+ * Every form is supported:
  *   1. Map: `?filters[email]=ivan&filters[is_active]=1` →
  *      `['email' => 'ivan', 'is_active' => '1']`
  *   2. List: `?filters[][column]=email&filters[][value]=ivan` →
@@ -17,8 +17,8 @@ use Illuminate\Http\Request;
  *   3. Range/object: `?filters[created_at][from]=...&filters[created_at][to]=...` →
  *      `['created_at' => ['from' => '...', 'to' => '...']]`
  *
- * Также читает `?q=<text>` для глобального full-text search'а — это
- * НЕ filter, но возвращается отдельным ключом для удобства controller'ов.
+ * It also reads `?q=<text>`, the global full-text search. That is NOT a
+ * filter, but it comes back under its own key for the controllers' convenience.
  */
 final class HttpFilterParser
 {
@@ -46,7 +46,7 @@ final class HttpFilterParser
     }
 
     /**
-     * Свободный текст для глобального search'а.
+     * The free text of the global search.
      */
     public static function searchTerm(Request $request): string
     {

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Тэги — список произвольных строк.
+ * Tags — a list of arbitrary strings.
  *
- * State хранится как list<string>. Подсказки `suggestions(...)` отображаются
- * в dropdown'е; они не ограничивают ввод (creatable=true).
+ * The state is a list<string>. The `suggestions(...)` appear in a dropdown but
+ * do not restrict what can be typed: this field is always creatable.
  */
 final class TagsInput extends Field
 {
@@ -28,9 +28,9 @@ final class TagsInput extends Field
     }
 
     /**
-     * Группированные подсказки для dropdown'а: каждая группа имеет label
-     * и список items. Frontend TagsField рендерит заголовки групп, если
-     * это поле непустое (имеет приоритет над flat `suggestions`).
+     * The grouped suggestions of the dropdown: every group has a label and a
+     * list of items. The frontend's TagsField renders the group headings when
+     * this is not empty, and it wins over the flat `suggestions`.
      *
      * @param  list<array{label: string, items: list<string>}>  $groups
      */
@@ -49,7 +49,7 @@ final class TagsInput extends Field
     }
 
     /**
-     * Разделитель ввода (Enter / запятая / точка с запятой). Default: Enter.
+     * The input separator: Enter, a comma or a semicolon. Enter by default.
      */
     public function separator(string $separator): static
     {

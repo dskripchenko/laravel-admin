@@ -7,15 +7,17 @@ namespace Dskripchenko\LaravelAdmin\Filter;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
- * Абстрактный URL-driven фильтр.
+ * The abstract URL-driven filter.
  *
- * Контракт:
- *   - `for($field)` — задаёт целевое поле модели/колонку.
- *   - `apply(Builder, value)` — применяет фильтр к Eloquent-builder'у.
- *   - `toArray()` — сериализация для манифеста SPA (тип, label, опции).
+ * The contract:
+ *   - `for($field)` names the model's field or column.
+ *   - `apply(Builder, value)` applies the filter to an Eloquent builder.
+ *   - `toArray()` serializes it for the SPA's manifest: the type, the label,
+ *     the options.
  *
- * Поведение по-умолчанию: equality / LIKE / null-comparison через `apply()`
- * подклассов. URL-вид: `?filters[email]=ivan` либо в JSON body для search-action.
+ * By default the subclasses' `apply()` does an equality, a LIKE or a null
+ * comparison. In a URL it looks like `?filters[email]=ivan`, or it travels in
+ * the JSON body of the search action.
  *
  * @phpstan-consistent-constructor
  */

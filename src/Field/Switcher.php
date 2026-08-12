@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Toggle-switch для boolean-поля.
+ * The toggle switch of a boolean field.
  *
- * Класс называется `Switcher`, а не `Switch` — `switch` зарезервирован PHP
- * как ключевое слово (PHP 8.5 разрешает в namespace, но IDE/static analyzers
- * могут на это ругаться).
+ * The class is called `Switcher` rather than `Switch` because `switch` is a
+ * reserved word in PHP. PHP 8.5 allows it inside a namespace, but IDEs and
+ * static analyzers may still complain.
  */
 final class Switcher extends Field
 {
@@ -19,7 +19,7 @@ final class Switcher extends Field
     }
 
     /**
-     * Размер на UI: 'sm' | 'md' | 'lg'.
+     * The size in the UI: 'sm' | 'md' | 'lg'.
      */
     public function size(string $size): static
     {
@@ -29,7 +29,7 @@ final class Switcher extends Field
     }
 
     /**
-     * Подписи on/off у переключателя.
+     * The switch's on and off labels.
      */
     public function labels(string $on, string $off): static
     {

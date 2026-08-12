@@ -7,13 +7,14 @@ namespace Dskripchenko\LaravelAdmin\DelayedProcess;
 use InvalidArgumentException;
 
 /**
- * Whitelist разрешённых {entity::method} пар для запуска через async-action API.
+ * The whitelist of the {entity::method} pairs the async-action API may run.
  *
- * Без этого SPA мог бы инстанцировать любой класс — security risk. Регистрируем
- * явно, какие handler'ы разрешены, и проверяем при запуске async-action.
+ * Without it the SPA could instantiate any class at all, which is a security
+ * risk. We register the permitted handlers explicitly and check them when an
+ * async action starts.
  *
- * Регистрация — через `Admin::allowAsync($entity, $method)` или из плагина
- * (AdminPlugin::boot).
+ * The registration goes through `Admin::allowAsync($entity, $method)` or from
+ * a plugin's AdminPlugin::boot.
  */
 final class AllowlistRegistrar
 {
@@ -35,8 +36,8 @@ final class AllowlistRegistrar
         }
         $this->allowed[$entity] = $existing;
 
-        // Синхронизация с delayed-process config'ом — он валидирует через
-        // собственный список allowed_entities в ProcessFactory::make.
+        // Kept in sync with the delayed-process config, which validates
+        // against its own allowed_entities list in ProcessFactory::make.
         $configured = (array) config('delayed-process.allowed_entities', []);
         if (! in_array($entity, $configured, true)) {
             $configured[] = $entity;

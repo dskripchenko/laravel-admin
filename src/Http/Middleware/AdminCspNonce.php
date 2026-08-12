@@ -9,15 +9,15 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Генерирует CSP-nonce для inline-скриптов SPA-shell.
+ * Generates the CSP nonce of the SPA shell's inline scripts.
  *
- * Стратегия inline (config admin.bootstrap.strategy = 'inline') инжектит
- * window.__ADMIN_BOOTSTRAP__ в shell.blade. Чтобы strict-CSP-проекты
- * не были обязаны включать 'unsafe-inline', мы генерируем nonce
- * на каждый запрос и кладём его в request attributes.
+ * The inline strategy (config admin.bootstrap.strategy = 'inline') injects
+ * window.__ADMIN_BOOTSTRAP__ into shell.blade. So that projects with a strict
+ * CSP are not forced to allow 'unsafe-inline', we generate a nonce per request
+ * and put it into the request's attributes.
  *
- * Host-проект отвечает за добавление nonce в Content-Security-Policy
- * заголовок (через свой middleware/security headers пакет).
+ * Adding that nonce to the Content-Security-Policy header is the host
+ * project's business, through its own middleware or security-headers package.
  */
 final class AdminCspNonce
 {

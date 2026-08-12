@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Markdown editor с предпросмотром.
+ * A markdown editor with a preview.
  *
- * Конкретный editor (CodeMirror/EasyMDE/...) выбирается на стороне SPA;
- * backend хранит plain markdown-string. Конкретный rendering markdown'а
- * (для view-режима / Infolist) не делается на этом уровне.
+ * Which editor that is — CodeMirror, EasyMDE, another — the SPA decides; the
+ * backend stores a plain markdown string. Rendering that markdown, for the
+ * view mode or an infolist, is not this level's business.
  */
 final class Markdown extends Field
 {
@@ -40,8 +40,8 @@ final class Markdown extends Field
     }
 
     /**
-     * Разрешить загрузку картинок drag-n-drop в editor.
-     * Endpoint загрузки берётся из uploads-stack (фаза P5+).
+     * Allows dragging images into the editor. The upload endpoint comes from
+     * the uploads stack.
      */
     public function uploadImages(bool $upload = true): static
     {
