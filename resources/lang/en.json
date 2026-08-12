@@ -319,5 +319,6 @@
     "Непрочитанных нет.": "Nothing unread.",
     "Уведомлений пока нет.": "No notifications yet.",
     "Всего: :total, непрочитанных: :unread": "Total: :total, unread: :unread",
-    "Страница :page из :last": "Page :page of :last"
+    "Страница :page из :last": "Page :page of :last",
+    "Все уведомления": "All notifications"
 }

@@ -13,6 +13,7 @@
  *   - Hover показывает кнопку '×' (destroy)
  */
 import { computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { UidButton, UidDrawer, UidTabs, UidTab, UidTabPanel } from '@dskripchenko/ui'
 import { useNotificationsStore, type NotificationFilter, type NotificationItem } from '../../stores/notifications'
 import { trSafe as tr } from '../../stores/i18n'
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 }>()
 
 const notifications = useNotificationsStore()
+const router = useRouter()
 
 function setOpen(v: boolean): void {
   emit('update:open', v)
@@ -52,6 +54,12 @@ async function setFilter(filter: NotificationFilter | string | number): Promise<
   await notifications
     .load(filter as NotificationFilter, 1)
     .catch(() => undefined)
+}
+
+/** Полный список: шторку закрываем, иначе она останется поверх страницы. */
+async function openAll(): Promise<void> {
+  notifications.closeDrawer()
+  await router.push({ name: 'admin.notifications' }).catch(() => undefined)
 }
 
 async function markAllRead(): Promise<void> {
@@ -178,6 +186,15 @@ function relTime(iso: string | null): string {
         </ul>
       </UidTabPanel>
     </UidTabs>
+
+    <!--
+      Ссылка на полный список. Без неё страница уведомлений существует, но
+      найти её неоткуда: шторка показывает последние и закрывается по клику,
+      а адрес нужно знать наизусть.
+    -->
+    <div class="admin-notifs__more">
+      <a href="#" @click.prevent="openAll">{{ tr('Все уведомления') }}</a>
+    </div>
   </UidDrawer>
 </template>
 
@@ -301,5 +318,10 @@ function relTime(iso: string | null): string {
 .admin-notifs__close:hover {
   background: var(--uid-surface-hover);
   color: var(--uid-text-primary);
+}
+.admin-notifs__more {
+  padding: 10px 14px;
+  border-top: 1px solid var(--uid-color-border, #e5e7eb);
+  font-size: 13px;
 }
 </style>
