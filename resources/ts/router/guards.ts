@@ -1,30 +1,30 @@
 /**
- * Router-guards: auth + permissions.
+ * The router guards: authentication and permissions.
  *
- * Логика:
- *   1. Если route.meta.requiresAuth и пользователь не залогинен → /login
- *      с ?redirect=...
- *   2. Если у user'а есть pendingChallenge (2FA) — все защищённые роуты
- *      редиректят на /login (challenge-form там).
- *   3. Если route.meta.permissions заданы — проверяем hasAnyPermission().
- *      Нет ни одного → /forbidden (или роут с name='admin.forbidden').
+ * The logic:
+ *   1. When route.meta.requiresAuth is set and nobody is logged in, go to
+ *      /login with ?redirect=...
+ *   2. When the user has a pendingChallenge (2FA), every protected route
+ *      redirects to /login, where the challenge form lives.
+ *   3. When route.meta.permissions is set, hasAnyPermission() decides; none of
+ *      them means /forbidden (or the route named 'admin.forbidden').
  *
- * Guards используют useAuthStore — но НЕ берут client напрямую: всё через
- * permissions/isAuthenticated/pendingChallenge state. Stores должны быть
- * захайдрейчены до setup'а router'а.
+ * The guards use useAuthStore but never touch the client directly: everything
+ * goes through the permissions, isAuthenticated and pendingChallenge state.
+ * The stores must be hydrated before the router is set up.
  */
 
 import type { RouteLocationNormalized, RouteLocationRaw } from 'vue-router'
 import { trSafe } from '../stores/i18n'
 import { useAuthStore } from '../stores/auth'
 
-/** Тип возвращаемого значения guard'а — true (passthrough) либо redirect-target. */
+/** What a guard returns: true to pass through, or a redirect target. */
 type GuardResult = boolean | RouteLocationRaw
 
 /**
- * Простая 3-арг функция (то что router.beforeEach принимает).
- * Не используем NavigationGuardWithThis<undefined>, т.к. она требует
- * `this: undefined` что неудобно для прямого вызова в тестах.
+ * A plain three-argument function, which is what router.beforeEach accepts. We
+ * do not use NavigationGuardWithThis<undefined> because it demands
+ * `this: undefined`, which is awkward when calling it directly from tests.
  */
 type SimpleGuard = (
   to: RouteLocationNormalized,
@@ -33,21 +33,21 @@ type SimpleGuard = (
 ) => GuardResult
 
 export interface AuthGuardOptions {
-  /** Имя login-роута. По умолчанию 'admin.login'. */
+  /** The name of the login route; 'admin.login' by default. */
   loginRouteName?: string
-  /** Имя роута 403-страницы. По умолчанию 'admin.forbidden'. */
+  /** The name of the 403 page's route; 'admin.forbidden' by default. */
   forbiddenRouteName?: string
   /**
-   * Имя query-параметра для возврата на исходную страницу после login.
-   * По умолчанию 'redirect'.
+   * The name of the query parameter that carries the page to return to after
+   * the login; 'redirect' by default.
    */
   redirectQueryKey?: string
 }
 
 /**
- * Создаёт beforeEach guard. Pinia должна быть activeInstance к моменту
- * вызова guard'а (router.beforeEach срабатывает на каждой навигации,
- * включая первую — Pinia уже должна быть установлена).
+ * Creates the beforeEach guard. Pinia must be the active instance by the time
+ * the guard runs: router.beforeEach fires on every navigation, the first one
+ * included, so Pinia has to be installed already.
  */
 export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
   const loginRouteName = opts.loginRouteName ?? 'admin.login'
@@ -55,7 +55,7 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
   const redirectQueryKey = opts.redirectQueryKey ?? 'redirect'
 
   return (to: RouteLocationNormalized) => {
-    // Login-роут всегда доступен.
+    // The login route is always reachable.
     if (to.name === loginRouteName) {
       return true
     }
@@ -70,7 +70,7 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
       }
     }
 
-    // Залогиненный, но в процессе 2FA — нельзя ходить никуда кроме login.
+    // Logged in but in the middle of 2FA: nowhere to go but the login.
     if (auth.isChallengePending) {
       return {
         name: loginRouteName,
@@ -78,7 +78,7 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
       }
     }
 
-    // Permission-check. ANY-логика (хотя бы одно permission совпало).
+    // The permission check, with ANY semantics: one match is enough.
     const permissionsMeta = to.meta?.permissions
     if (Array.isArray(permissionsMeta) && permissionsMeta.length > 0) {
       const allowed = auth.hasAnyPermission(permissionsMeta as string[])
@@ -92,18 +92,19 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
 }
 
 export interface TitleGuardOptions {
-  /** Шаблон заголовка. {title} — meta.title, {brand} — название бренда. */
+  /** The title template: {title} is meta.title, {brand} is the brand's name. */
   template?: string
-  /** Имя бренда. */
+  /** The brand's name. */
   brand?: string
-  /** Default title если в meta нет. */
+  /** The title to use when meta carries none. */
   fallback?: string
 }
 
 /**
- * Создаёт afterEach hook, обновляющий document.title.
+ * Creates the afterEach hook that updates document.title.
  *
- * Шаблон по умолчанию: '{title} · {brand}' если оба, иначе один из.
+ * The default template is '{title} · {brand}' when both are there, and
+ * whichever one is present otherwise.
  */
 export function createTitleGuard(
   opts: TitleGuardOptions = {},
@@ -114,8 +115,8 @@ export function createTitleGuard(
 
   return (to) => {
     if (typeof document === 'undefined') return
-    // meta.title уезжает в document.title — единственная точка,
-    // где переводятся заголовки всех системных маршрутов.
+    // meta.title goes into document.title — the single place where the titles
+    // of all the system routes are translated.
     const t = trSafe((to.meta?.title as string | undefined) ?? fallback)
     let title: string
     if (template) {

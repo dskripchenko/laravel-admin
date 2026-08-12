@@ -8,11 +8,11 @@ use Dskripchenko\LaravelAdmin\Contracts\Renderable;
 use Dskripchenko\LaravelAdmin\I18n\Localize;
 
 /**
- * Абстрактный базовый класс всех Field-виджетов.
+ * The abstract base class of every field widget.
  *
- * Fluent API через `__call`: любой неопределённый метод сохраняется в
- * `attributes[]` (без значения = `true`, с одним = это значение, с массивом
- * = массив). Это позволяет писать:
+ * The fluent API goes through `__call`: any method that is not defined is
+ * stored in `attributes[]` — with no argument it becomes `true`, with one it
+ * becomes that value, with several it becomes an array. That lets one write:
  *
  *     Input::make('email')
  *         ->title('Email')
@@ -20,9 +20,8 @@ use Dskripchenko\LaravelAdmin\I18n\Localize;
  *         ->required()
  *         ->type('email');
  *
- * Конкретные подклассы переопределяют `type()` и могут добавлять named
- * методы (для лучшего IDE-автокомплита) — те будут вызывать те же
- * `attributes[]`-сеттеры.
+ * Concrete subclasses override `type()` and may add named methods for better
+ * IDE completion — those end up calling the same `attributes[]` setters.
  *
  * @phpstan-consistent-constructor
  *
@@ -40,7 +39,7 @@ abstract class Field implements Renderable
     /** @var array<string, mixed> */
     protected array $attributes = [];
 
-    /** @var array<string, mixed> Опции, type-specific (options для select, mask для input, ...). */
+    /** @var array<string, mixed> Type-specific options: options for a select, a mask for an input, and so on. */
     protected array $options = [];
 
     /** @var list<string|array<string, mixed>> Laravel-style validation rules. */
@@ -58,16 +57,17 @@ abstract class Field implements Renderable
     protected ?bool $onView = null;
 
     /**
-     * Type-имя для SPA-renderer'а (input/select/switch/...).
+     * The type name for the SPA renderer: input, select, switch and so on.
      *
-     * Намеренно НЕ называется `type()` — у Field есть fluent-сеттер `->type('email')`
-     * для HTML input-type, который проходит через __call. Если бы абстракт назывался
-     * `type()`, getter и setter конфликтовали бы.
+     * It is deliberately NOT called `type()`: Field has a fluent setter
+     * `->type('email')` for the HTML input type, which goes through __call. Had
+     * the abstract method been named `type()`, the getter and the setter would
+     * have collided.
      */
     abstract public function fieldType(): string;
 
     /* -----------------------------------------------------------------
-     * Создание
+     * Construction
      * ----------------------------------------------------------------- */
 
     public static function make(string $name): static
@@ -89,7 +89,7 @@ abstract class Field implements Renderable
      * ----------------------------------------------------------------- */
 
     /**
-     * Catch-all сеттер. Любой неизвестный метод сохраняется в attributes.
+     * The catch-all setter: any unknown method is stored in the attributes.
      *
      * @param  list<mixed>  $args
      */
@@ -105,11 +105,11 @@ abstract class Field implements Renderable
     }
 
     /**
-     * Ширина поля в 12-колоночной сетке RowsLayout.
+     * The field's width in RowsLayout's twelve-column grid.
      *
-     * По умолчанию (без вызова) поле занимает полную ширину строки.
-     * Если хотя бы один Field в RowsLayout имеет span — RowsLayout
-     * переключается в grid-12 mode (UidGrid).
+     * By default — when this is never called — the field takes the whole width
+     * of its row. As soon as at least one field in a RowsLayout has a span, the
+     * layout switches into the twelve-column grid mode (UidGrid).
      */
     public function span(int $cols): static
     {
@@ -119,11 +119,11 @@ abstract class Field implements Renderable
     }
 
     /**
-     * Поле видимо только когда другое поле формы имеет указанное значение.
-     * Несколько вызовов — условия объединяются по «И». Значение может быть
-     * скаляром (строгий ===) либо list (any-of).
+     * Makes the field visible only while another field of the form holds the
+     * given value. Several calls are combined with AND. The value may be a
+     * scalar, compared strictly, or a list, meaning any-of.
      *
-     * Использование:
+     * Usage:
      *   Input::make('config_root')->visibleWhen('driver', 'local')
      *   Input::make('s3_endpoint')->visibleWhen('driver', ['s3', 'minio'])
      */
@@ -137,7 +137,7 @@ abstract class Field implements Renderable
         return $this;
     }
 
-    /** Установить значение field (initial state формы). */
+    /** Sets the field's value — the form's initial state. */
     public function default(mixed $value): static
     {
         $this->defaultValue = $value;
@@ -146,7 +146,7 @@ abstract class Field implements Renderable
     }
 
     /**
-     * Тип-specific опции (например, options для select).
+     * The type-specific options, such as a select's options.
      *
      * @param  array<string, mixed>  $options
      */
@@ -216,7 +216,7 @@ abstract class Field implements Renderable
     }
 
     /**
-     * Применяется ли field в указанном контексте (create/update/view).
+     * Tells whether the field applies in the given context: create, update or view.
      */
     public function appliesTo(string $context): bool
     {
@@ -229,7 +229,7 @@ abstract class Field implements Renderable
     }
 
     /* -----------------------------------------------------------------
-     * Чтение
+     * Reading
      * ----------------------------------------------------------------- */
 
     public function getAttribute(string $name, mixed $default = null): mixed
@@ -259,7 +259,7 @@ abstract class Field implements Renderable
     }
 
     /* -----------------------------------------------------------------
-     * Сериализация
+     * Serialization
      * ----------------------------------------------------------------- */
 
     /**
@@ -267,8 +267,8 @@ abstract class Field implements Renderable
      */
     public function toArray(): array
     {
-        // Пользовательские строки переводятся при сериализации (BL-11) —
-        // host не обязан оборачивать лейблы в __().
+        // The user-facing strings are translated during serialization, so the
+        // host does not have to wrap its labels in __().
         $placeholder = $this->attributes['placeholder'] ?? null;
         $help = $this->attributes['help'] ?? null;
 
@@ -280,8 +280,9 @@ abstract class Field implements Renderable
             'placeholder' => is_string($placeholder) ? Localize::string($placeholder) : $placeholder,
             'help' => is_string($help) ? Localize::string($help) : $help,
             'required' => (bool) ($this->attributes['required'] ?? false),
-            // В манифест едут только строковые правила: object-rules
-            // (Rule::unique и т.п.) не JSON-сериализуемы и нужны только валидатору.
+            // Only string rules go into the manifest: object rules
+            // (Rule::unique and the like) are not JSON-serializable and are
+            // needed by the validator alone.
             'rules' => array_values(array_filter($this->rules, 'is_string')),
             'options' => Localize::options($this->options),
             'visibility' => [

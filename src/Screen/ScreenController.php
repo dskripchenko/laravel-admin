@@ -11,25 +11,25 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Универсальный controller для произвольных Screen.
+ * The universal controller behind any screen.
  *
- * URL: `/api/admin/{slug}/{action}` где `slug` — Screen::slug().
+ * The URL is `/api/admin/{slug}/{action}`, where `slug` is Screen::slug().
  *
- * Реализует два action'а:
+ * It implements two actions:
  *   - GET  /state           → compile()
- *   - POST /runMethod       → диспатч command-методов Screen
+ *   - POST /runMethod       → dispatches the screen's command methods
  *
- * Per-Screen middleware/permission привязываются через ScreenCompiler.
+ * Per-screen middleware and permissions are attached by ScreenCompiler.
  */
 final class ScreenController extends ApiController
 {
     public function __construct(private readonly ScreenRegistry $registry) {}
 
     /**
-     * Скомпилировать снапшот Screen'а: state + layout + commandBar + meta.
+     * Compiles a screen snapshot: state, layout, command bar and meta.
      *
-     * Принимает произвольные query-параметры — они проксируются в Screen::query()
-     * как именованные аргументы (whitelist'а нет, Screen сам валидирует).
+     * It accepts arbitrary query parameters and passes them into Screen::query()
+     * as named arguments — there is no whitelist, the screen validates them.
      *
      * @output object $payload
      *
@@ -49,20 +49,20 @@ final class ScreenController extends ApiController
     }
 
     /**
-     * Вызвать command-метод Screen'а.
+     * Calls one of the screen's command methods.
      *
-     * Формат body:
+     * The body looks like:
      *   {
      *     "method": "send",
-     *     "payload": {...form-state...},  // опц.
-     *     "parameters": [..]              // опц., если метод принимает позиционные аргументы
+     *     "payload": {...form-state...},  // optional
+     *     "parameters": [..]              // optional, when the method takes positional arguments
      *   }
      *
-     * Метод должен быть public, не static, не входить в RESERVED_METHODS.
-     * Возвращаемое значение метода:
-     *   - JsonResponse  → проксируется как есть
-     *   - array         → завернётся в `success(...)`
-     *   - null/void     → success(['ok' => true])
+     * The method must be public, must not be static and must not be one of
+     * RESERVED_METHODS. What it returns is treated as follows:
+     *   - a JsonResponse → passed through as is
+     *   - an array       → wrapped into `success(...)`
+     *   - null or void   → success(['ok' => true])
      *
      * @input string $method
      * @input object|null $payload
@@ -98,12 +98,13 @@ final class ScreenController extends ApiController
 
         $args = self::resolveArguments($request);
 
-        // Метод экрана объявляет параметр (обычно `array $state`), а запрос мог
-        // прийти без `payload` — от интегратора, из curl, из опечатки в коде.
-        // Раньше это давало ArgumentCountError и голую пятисотку на каждой
-        // кнопке каждого экрана; теперь либо подставляем пустое состояние (это
-        // ровно «нажали кнопку на пустой форме», и метод сам ответит
-        // валидацией), либо честно говорим, чего не хватает.
+        // A screen method declares a parameter, usually `array $state`, while
+        // the request may well arrive without a `payload` — from an
+        // integrator, from curl, from a typo in the code. That used to produce
+        // an ArgumentCountError and a bare 500 on every button of every
+        // screen; now we either substitute an empty state (which is exactly
+        // "the button was pressed on an empty form", and the method answers
+        // with its own validation) or say plainly what is missing.
         $required = (new \ReflectionMethod($screen, $method))->getNumberOfRequiredParameters();
         if (count($args) < $required) {
             if ($required === 1 && $args === []) {
@@ -130,11 +131,12 @@ final class ScreenController extends ApiController
     }
 
     /**
-     * Дефолтный shape payload'а ответа runMethod (см. ScreenMethodPayload schema).
+     * The default shape of runMethod's response payload — see the
+     * ScreenMethodPayload schema.
      *
-     * Разрешённые ключи: state, layouts, alerts, redirect_url, refresh,
-     * download_url, message. Всё остальное складывается в `extra`, чтобы
-     * Screen-методы могли возвращать произвольные данные без потери совместимости.
+     * The allowed keys are state, layouts, alerts, redirect_url, refresh,
+     * download_url and message. Everything else goes into `extra`, so that
+     * screen methods can return arbitrary data without breaking compatibility.
      *
      * @param  array<string, mixed>  $result
      * @return array<string, mixed>
@@ -182,9 +184,9 @@ final class ScreenController extends ApiController
     }
 
     /**
-     * Резолвит позиционные аргументы для command-метода:
-     *   - если в body есть массив `parameters` — берём их
-     *   - иначе fallback: один аргумент = `payload` (объект состояния формы)
+     * Resolves the positional arguments of a command method:
+     *   - when the body carries a `parameters` array, those are used
+     *   - otherwise a single argument is passed: `payload`, the form's state
      *
      * @return list<mixed>
      */
@@ -205,8 +207,8 @@ final class ScreenController extends ApiController
     }
 
     /**
-     * Передаём в `state` action GET-параметры, которые не являются
-     * служебными (`_`), как массив значений в Screen::query().
+     * Passes the non-internal GET parameters — everything but `_` — into
+     * Screen::query() as an array of values.
      *
      * @return list<mixed>
      */

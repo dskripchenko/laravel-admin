@@ -1,16 +1,18 @@
 /**
- * useResourceFormStore — state для Resource Create/Edit/View screens.
+ * useResourceFormStore — the state of a resource's create, edit and view
+ * screens.
  *
- * Управляет:
- *   - mode ('create' | 'edit' | 'view')
- *   - record (raw из API), state (working copy в form-state, но мы держим
- *     reference на initial для unsaved-changes detection)
- *   - errors (field-keyed) — устанавливаются при ValidationError
- *   - loading/saving/deleting — для disable submit / show spinner
- *   - dirty (computed) — есть ли несохранённые изменения
+ * It holds:
+ *   - the mode ('create' | 'edit' | 'view')
+ *   - the record as the API returned it, and the state — the working copy in
+ *     the form state, alongside a reference to the initial values for
+ *     unsaved-changes detection
+ *   - the field-keyed errors, set from a ValidationError
+ *   - loading, saving and deleting, which disable the submit and show spinners
+ *   - dirty (computed): whether there are unsaved changes
  *
- * Endpoints (laravel-admin contract):
- *   GET    /{slug}/read         — fetch one (id в query)
+ * The endpoints, per the laravel-admin contract:
+ *   GET    /{slug}/read         — fetches one record, with the id in the query
  *   POST   /{slug}/create
  *   POST   /{slug}/update
  *   POST   /{slug}/delete
@@ -25,12 +27,12 @@ import { useManifestStore } from './manifest'
 export type FormMode = 'create' | 'edit' | 'view'
 
 interface ReadResponse {
-  // backend ResourceController::read возвращает payload {record}.
+  // The backend's ResourceController::read returns a payload of {record}.
   record: Record<string, unknown>
 }
 
 interface SaveResponse {
-  // backend create/update возвращает payload {record, redirect_url, message}.
+  // The backend's create and update return {record, redirect_url, message}.
   record?: Record<string, unknown>
   id?: string | number
   redirect_url?: string
@@ -42,12 +44,12 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
   const mode = ref<FormMode>('create')
   const recordId = ref<string | number | null>(null)
 
-  /** Текущее состояние формы — мутируется через setField. */
+  /** The form's current state, mutated through setField. */
   const state = ref<Record<string, unknown>>({})
-  /** Snapshot изначальных значений (после load) — для dirty-detection. */
+  /** A snapshot of the initial values, taken after the load, for dirty detection. */
   const initial = ref<Record<string, unknown>>({})
 
-  /** Field-keyed errors. Очищаются при successful save. */
+  /** The field-keyed errors; cleared on a successful save. */
   const errors = ref<Record<string, string[]>>({})
 
   const loading = ref(false)
@@ -60,14 +62,14 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
   const isView = computed(() => mode.value === 'view')
   const hasError = computed(() => error.value !== null)
 
-  /** Dirty: state отличается от initial хотя бы по одному ключу. */
+  /** Dirty means the state differs from the initial values in at least one key. */
   const isDirty = computed(() => {
     const a = state.value
     const b = initial.value
     const keys = new Set([...Object.keys(a), ...Object.keys(b)])
     for (const k of keys) {
       if (!Object.is(a[k], b[k])) {
-        // Простое сравнение скаляров; объекты/массивы сравниваем JSON-сериализацией.
+        // Scalars are compared directly; objects and arrays through their JSON.
         if (typeof a[k] === 'object' || typeof b[k] === 'object') {
           if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) return true
         } else {
@@ -78,7 +80,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     return false
   })
 
-  /** In-place мутация reactive-объекта — сохраняет identity для provide/inject. */
+  /** An in-place mutation of the reactive object: it keeps the identity provide/inject relies on. */
   function replaceObject(target: Record<string, unknown>, next: Record<string, unknown>): void {
     for (const k of Object.keys(target)) delete target[k]
     Object.assign(target, next)
@@ -95,7 +97,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     recordId.value = null
   }
 
-  /** Подготовить store для create-mode на ресурсе. */
+  /** Prepares the store for create mode on a resource. */
   function prepareCreate(resourceSlug: string, defaults: Record<string, unknown> = {}): void {
     slug.value = resourceSlug
     mode.value = 'create'
@@ -106,7 +108,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     error.value = null
   }
 
-  /** Загрузить запись для edit либо view-режима. */
+  /** Loads a record for the edit or the view mode. */
   async function load(
     resourceSlug: string,
     id: string | number,
@@ -134,11 +136,11 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     }
   }
 
-  /** Установить значение поля (через FormState composable обычно). */
+  /** Sets a field's value — usually through the FormState composable. */
   function setField(name: string, value: unknown): void {
     state.value[name] = value
     if (errors.value[name]) {
-      // Очищаем ошибку конкретного поля при изменении (стандартный UX).
+      // Clear that field's error as it changes, as one expects.
       const next = { ...errors.value }
       delete next[name]
       errors.value = next
@@ -150,9 +152,10 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
   }
 
   /**
-   * Засеять дефолты полей (Field::default() из манифеста) на create-форме.
-   * Пишет и в state, и в initial — дефолт не считается «несохранённым
-   * изменением». Уже заданные значения (query-prefill) не трогает.
+   * Seeds the fields' defaults (Field::default() from the manifest) on a
+   * create form. It writes both into the state and into the initial values, so
+   * that a default does not count as an unsaved change. Values that are
+   * already set — a query pre-fill — are left alone.
    */
   function seedDefaults(values: Record<string, unknown>): void {
     for (const [name, value] of Object.entries(values)) {
@@ -168,8 +171,8 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
   }
 
   /**
-   * Сохранить. На create — POST /create; на edit — POST /update с id.
-   * Возвращает new id (для post-create редиректа).
+   * Saves: POST /create in create mode, POST /update with the id in edit mode.
+   * Returns the new id, for the redirect after a create.
    */
   async function save(): Promise<string | number> {
     if (!slug.value) throw new Error('useResourceFormStore.save() before slug set')
@@ -192,18 +195,18 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
           : { id: recordId.value, ...state.value }
 
       const res = await client.post<SaveResponse>(url, payload)
-      // Backend отдаёт `record: {id, ...}`. Старый формат `{id}` тоже поддерживаем.
+      // The backend returns `record: {id, ...}`; the older `{id}` shape is still accepted.
       const newId = (res.record?.id ?? res.id) as string | number | undefined
       if (newId === undefined) {
         throw new Error('save: backend response does not contain record.id')
       }
       recordId.value = newId
-      // После успешного save обновим initial = state, чтобы dirty=false.
+      // After a successful save, initial becomes the state so that dirty is false.
       replaceObject(initial.value, { ...state.value })
       mode.value = 'edit'
-      // DB-driven options полей сериализованы в манифест — после мутации
-      // сбрасываем его кэш, иначе селекты (родитель группы и т.п.)
-      // протухают до полной перезагрузки страницы.
+      // The fields' DB-driven options are serialized into the manifest, so
+      // after a mutation we drop its cache — otherwise the selects (a group's
+      // parent and the like) stay stale until a full page reload.
       void useManifestStore().refresh().catch(() => undefined)
       return newId
     } catch (err) {
@@ -220,7 +223,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     }
   }
 
-  /** Удалить текущую запись (только в edit-mode). */
+  /** Deletes the current record; edit mode only. */
   async function destroy(): Promise<void> {
     if (!slug.value || recordId.value === null) {
       throw new Error('Nothing to delete')

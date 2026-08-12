@@ -1,18 +1,18 @@
 <script setup lang="ts">
 /**
- * TagsField — input для list<string> с chip'ами и free-form вводом.
+ * TagsField — an input for a list<string>, with chips and free-form entry.
  *
- * Backend Field-класс — Dskripchenko\LaravelAdmin\Field\TagsInput с
- * fieldType()='tags'. Frontend builtin-registry маппит 'tags' сюда.
+ * The backend field class is Dskripchenko\LaravelAdmin\Field\TagsInput with
+ * fieldType()='tags'; the frontend's builtin registry maps 'tags' here.
  *
- * Особенности:
- *   - Free input: Enter / separator (`,` или ';') добавляют новый chip,
- *     даже если такого нет в suggestions — это критично для wildcard'ов
- *     ('admin.content.*') и других произвольных ключей.
- *   - Suggestions: backend кладёт `attributes.suggestions: string[]`. При
- *     наличии — рендерим dropdown с фильтром по введённому query.
- *   - Backspace на пустом input удаляет последний chip.
- *   - Click на chip × удаляет.
+ * What it does:
+ *   - Free input: Enter or a separator (`,` or ';') adds a new chip even when
+ *     it is not among the suggestions — which matters for wildcards
+ *     ('admin.content.*') and other arbitrary keys.
+ *   - Suggestions: the backend puts `attributes.suggestions: string[]` there;
+ *     when it does, a dropdown filtered by the typed query is rendered.
+ *   - Backspace on an empty input removes the last chip.
+ *   - Clicking a chip's × removes it.
  */
 import { computed, nextTick, ref, watch } from 'vue'
 import { X } from 'lucide-vue-next'
@@ -31,18 +31,18 @@ interface Props {
   help?: string | null
   required?: boolean
   placeholder?: string | null
-  /** Плоский список подсказок (compat-вариант). */
+  /** A flat list of suggestions, kept for compatibility. */
   suggestions?: string[]
   /**
-   * Группированные подсказки. Когда заданы — dropdown рендерится с
-   * заголовками групп. Имеет приоритет над `suggestions`.
+   * Grouped suggestions. When they are set, the dropdown is rendered with
+   * group headings; they take precedence over `suggestions`.
    */
   suggestionsByGroup?: SuggestionGroup[]
-  /** Лимит количества тегов. */
+  /** The maximum number of tags. */
   maxItems?: number
   /**
-   * Дополнительный разделитель (помимо Enter). Например `,` или `;`.
-   * При вводе одного из этих символов value до него превращается в chip.
+   * An additional separator besides Enter, such as `,` or `;`. Typing one of
+   * these turns whatever precedes it into a chip.
    */
   separator?: string
   disabled?: boolean
@@ -77,9 +77,9 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
 const dropdownRef = ref<HTMLElement | null>(null)
 
-// Dropdown teleport'ируется в body и позиционируется через usePopover —
-// иначе любой ancestor с overflow: hidden обрезает выпадающий список (видно
-// в формах: правый край подсказок уезжает за карточку).
+// The dropdown is teleported into the body and positioned through usePopover:
+// otherwise any ancestor with overflow: hidden clips it — visible in the
+// forms, where the right edge of the suggestions runs off the card.
 const { floatingStyle, update: updatePopover } = usePopover(containerRef, dropdownRef, {
   placement: 'bottom-start',
   offset: 4,
@@ -92,12 +92,12 @@ function syncContainerWidth(): void {
 
 const dropdownStyle = computed(() => ({
   ...floatingStyle.value,
-  // Ширину dropdown'а привязываем к ширине chip-инпута — стандартный combobox-UX.
+  // The dropdown's width follows the chip input's — standard combobox behaviour.
   minWidth: containerWidth.value > 0 ? `${containerWidth.value}px` : 'auto',
 }))
 
 function setTags(next: string[]): void {
-  // Дедуплицируем + лимит.
+  // Deduplicate and apply the limit.
   const seen = new Set<string>()
   const out: string[] = []
   for (const t of next) {
@@ -151,7 +151,7 @@ function onKeydown(e: KeyboardEvent): void {
 
 function onInput(e: Event): void {
   const v = (e.target as HTMLInputElement).value
-  // Обработка separator-символа: если есть — обрезаем до него и коммитим.
+  // Handling the separator character: cut at it and commit what came before.
   if (props.separator && v.includes(props.separator)) {
     const parts = v.split(props.separator)
     const completed = parts.slice(0, -1).map((p) => p.trim()).filter(Boolean)
@@ -165,9 +165,9 @@ function onInput(e: Event): void {
 const activeIdx = ref<number>(-1)
 
 /**
- * Если backend передал suggestionsByGroup — рендерим с заголовками групп,
- * иначе — flat list. Формируем единый отфильтрованный массив для индексной
- * навигации стрелками (activeIdx указывает на index в `filteredFlat`).
+ * When the backend passed suggestionsByGroup we render group headings,
+ * otherwise a flat list. Either way we build one filtered array so that arrow
+ * navigation can work by index — activeIdx points into `filteredFlat`.
  */
 const grouped = computed<boolean>(
   () => Array.isArray(props.suggestionsByGroup) && props.suggestionsByGroup.length > 0,
@@ -199,7 +199,7 @@ const filteredFlat = computed<string[]>(() => {
     .slice(0, 200)
 })
 
-/** Сколько групп выше текущего item'а (для shift при index лookup). */
+/** How many group headings sit above the current item, to shift the index lookup. */
 function isItemActive(globalIdx: number): boolean {
   return globalIdx === activeIdx.value
 }
@@ -218,7 +218,7 @@ function onSelectSuggestion(s: string): void {
 }
 
 function onBlur(): void {
-  // delay чтобы успел сработать click по dropdown'у
+  // A delay, so that a click on the dropdown still lands
   window.setTimeout(() => {
     focused.value = false
     if (query.value.trim() !== '') {
@@ -227,8 +227,8 @@ function onBlur(): void {
   }, 120)
 }
 
-// При открытии dropdown'а (focus + есть подсказки) — пересчитываем позицию
-// и подписываемся на scroll/resize; при закрытии — отписываемся.
+// When the dropdown opens — focus plus some suggestions — we recompute the
+// position and subscribe to scroll and resize; on close we unsubscribe.
 watch(
   () => focused.value && filteredFlat.value.length > 0,
   async (isOpen) => {
@@ -415,7 +415,7 @@ watch(
   color: var(--uid-text-primary);
 }
 .admin-tags__dropdown {
-  /* Position берём из usePopover (Teleport в body) — top/left/transform
+  /* The position comes from usePopover, since this is teleported into the body — top/left/transform
      приходят inline через :style. Здесь только визуальный стиль. */
   z-index: var(--uid-z-popover, 1000);
   margin: 0;

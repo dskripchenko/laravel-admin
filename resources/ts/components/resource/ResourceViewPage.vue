@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * ResourceViewPage — read-only зеркало form-страницы по дизайну
+ * ResourceViewPage — the read-only mirror of the form page, following
  * docs/design_handoff_laravel_admin (Resource View):
  *
  *   ← Articles                                Edit … (more menu)
@@ -8,11 +8,11 @@
  *   ● Status badge · A-{id}
  *
  *   ┌──────────────────────────────┬─────────────────┐
- *   │ Card "Основные данные"        │ Card "Метрики"  │
+ *   │ Card "Main data"             │ Card "Metrics"  │
  *   │ Infolist (manifest.infolist) │ <slot=sidebar>  │
  *   ├──────────────────────────────┤                 │
- *   │ Card "История изменений"      │                 │
- *   │ AuditTimeline                 │                 │
+ *   │ Card "Change history"        │                 │
+ *   │ AuditTimeline                │                 │
  *   └──────────────────────────────┴─────────────────┘
  */
 import { computed, onMounted, watch } from 'vue'
@@ -39,22 +39,22 @@ import { trSafe as tr } from '../../stores/i18n'
 interface Props {
   slug: string
   id: string | number
-  /** Имя router-route для перехода в edit. */
+  /** The name of the router route leading to the edit page. */
   editRouteName?: string
   /**
-   * Override имени router-route для back-link / возврата после delete.
-   * По умолчанию выводится из slug: `admin.resource.{slug}.index`. Если
-   * у host'а собственное имя — передаётся явно.
+   * Overrides the router route name behind the back link and the return after
+   * a delete. By default it is derived from the slug as
+   * `admin.resource.{slug}.index`; a host with its own name passes it here.
    */
   indexRouteName?: string | null
   /**
-   * Override Eloquent morph-class. По умолчанию резолвится из
+   * Overrides the Eloquent morph class. By default it is resolved from
    * `manifest.resources[slug].subject_type` (Resource::meta()).
    */
   auditSubjectType?: string | null
-  /** Поле в record, по которому считать status badge. По умолчанию `status`. */
+  /** The record's field the status badge is built from; `status` by default. */
   statusField?: string
-  /** Префикс UID-метки рядом со статусом. Например 'A-' даёт 'A-1284'. */
+  /** The prefix of the UID label next to the status: 'A-' gives 'A-1284'. */
   uidPrefix?: string
 }
 
@@ -82,14 +82,14 @@ const layoutNodes = computed<InfolistNode[]>(
 )
 
 /**
- * subject_type для AuditTimeline. Берём в порядке приоритета:
- *   1. props.auditSubjectType (host явно задал) — даже null допустим как
- *      explicit "не показывать".
- *   2. manifest.resources[slug].subject_type — backend Resource::meta()
- *      кладёт morph-alias / FQCN модели.
+ * The subject_type for AuditTimeline, in order of precedence:
+ *   1. props.auditSubjectType, set by the host — null counts as an explicit
+ *      "do not show".
+ *   2. manifest.resources[slug].subject_type, where the backend's
+ *      Resource::meta() puts the morph alias or the model's FQCN.
  *
- * Если оба пусты — timeline не рендерится (Resource без модели либо
- * morph-class не известен фронту).
+ * When both are empty the timeline is not rendered at all: the resource has no
+ * model, or the frontend does not know its morph class.
  */
 const resolvedSubjectType = computed<string | null>(() => {
   if (props.auditSubjectType !== null) return props.auditSubjectType
@@ -97,9 +97,9 @@ const resolvedSubjectType = computed<string | null>(() => {
 })
 
 /**
- * Default metrics: created_at / updated_at / created_by из record.
- * Показываем всегда если у записи есть хоть одно из этих полей —
- * стандартные timestamps Eloquent есть у большинства моделей.
+ * The default metrics — created_at, updated_at and created_by from the record.
+ * They are shown whenever the record has at least one of those fields, and
+ * Eloquent's standard timestamps are on most models.
  */
 interface MetricRow {
   label: string
@@ -134,8 +134,8 @@ const defaultMetrics = computed<MetricRow[]>(() => {
   return rows
 })
 const recordTitle = computed<string>(() => {
-  // Запись может иметь поле `title` / `name` / `label` — пробуем по очереди.
-  // Otherwise fall back to "{ResourceLabel}: запись #{id}".
+  // The record may carry a `title`, a `name` or a `label` — we try them in
+  // turn, and fall back to "{ResourceLabel}: record #{id}".
   const r = form.state as Record<string, unknown>
   const t = r.title ?? r.name ?? r.label
   if (typeof t === 'string' && t.length > 0) return t
@@ -153,7 +153,7 @@ const statusValue = computed<string | null>(() => {
 })
 
 /**
- * Маппинг status-значения → визуальный variant. Расширяемо через CSS:
+ * Maps a status value to a visual variant. Extensible through CSS:
  * `.admin-status-badge[data-status="custom"] { ... }`.
  */
 const STATUS_VARIANT: Record<string, string> = {
@@ -175,9 +175,9 @@ function statusVariant(s: string): string {
 }
 
 /**
- * Header more-actions — показываем те же `actions[]` из manifest'а что
- * и в index page; здесь они применяются к одной записи (id). Реальный
- * endpoint POST `/{slug}/action/{key}` с body {ids:[id]}.
+ * The header's "more" actions are the same `actions[]` from the manifest as on
+ * the index page; here they apply to a single record. The endpoint behind them
+ * is POST `/{slug}/action/{key}` with a body of {ids:[id]}.
  */
 interface HeaderAction {
   key: string
@@ -222,11 +222,11 @@ watch(
 )
 
 /**
- * Имя index-роута для back-link и redirect после delete. Default —
- * `admin.resource.{slug}.index` (зарегистрирован buildResourceRoutes).
- * Manifest может задать `parent_slug` (см. Resource::parentSlug) — тогда
- * back ведёт на index другого ресурса. Prop indexRouteName имеет
- * максимальный приоритет.
+ * The index route's name, for the back link and the redirect after a delete.
+ * It defaults to `admin.resource.{slug}.index`, registered by
+ * buildResourceRoutes. The manifest may set `parent_slug` (see
+ * Resource::parentSlug), and then back leads to another resource's index. The
+ * indexRouteName prop wins over everything.
  */
 const resolvedIndexRouteName = computed<string>(() => {
   if (props.indexRouteName) return props.indexRouteName
@@ -237,7 +237,7 @@ const resolvedIndexRouteName = computed<string>(() => {
 
 function onBack(): void {
   router.push({ name: resolvedIndexRouteName.value }).catch(() => {
-    // Fallback на path-based push если route не найден.
+    // Fall back to a path-based push when the route is not found.
     void router.push(`/r/${props.slug}`)
   })
 }
