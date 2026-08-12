@@ -1,17 +1,18 @@
 /**
- * buildRoutesFromManifest — превращает AdminManifest в массив RouteRecordRaw.
+ * buildRoutesFromManifest turns an AdminManifest into an array of
+ * RouteRecordRaw.
  *
- * Маппинг:
+ * The mapping:
  *   - resource{slug}      → /r/{slug}                         (index)
  *                           /r/{slug}/create                  (create)
  *                           /r/{slug}/:id/edit                (edit)
- *                           /r/{slug}/:id                     (view, опционально)
+ *                           /r/{slug}/:id                     (view, optional)
  *   - screen{slug}        → /screens/{slug}
  *   - settings{slug}      → /settings/{slug}
  *   - dashboard{slug}     → /dashboard/{slug}
  *
- * Component'ы передаются через resolver — host-проект решает, что отрисовать.
- * Это позволяет library не тащить рендереры внутрь себя жёстко.
+ * The components come from a resolver, so the host project decides what to
+ * draw and the library carries no renderers of its own.
  */
 
 import type { RouteRecordRaw } from 'vue-router'
@@ -23,19 +24,19 @@ import type {
   ManifestSettingsMeta,
 } from '../stores/manifest'
 
-/** Vue Component либо async-loader (для code-splitting). */
+/** A Vue component, or an async loader for code splitting. */
 export type AdminRouteComponent = Component | (() => Promise<Component>)
 
 export interface RouteMeta {
-  /** Требует залогиненного пользователя. */
+  /** Requires a logged-in user. */
   requiresAuth?: boolean
-  /** Permissions, нужные для входа. ANY-логика (хотя бы одно совпадение). */
+  /** The permissions required to enter, with ANY semantics: one match is enough. */
   permissions?: string[]
-  /** Заголовок страницы (рендерим в <title> через router.afterEach). */
+  /** The page's title, rendered into <title> by router.afterEach. */
   title?: string
-  /** Тип админ-роута — для UI breadcrumbs/active-state. */
+  /** The admin route's kind, for the breadcrumbs and the active state in the UI. */
   kind?: 'resource' | 'screen' | 'settings' | 'dashboard' | 'system' | 'auth'
-  /** Slug сущности из манифеста — для извлечения мета внутри компонента. */
+  /** The entity's slug from the manifest, so the component can find its meta. */
   slug?: string
 }
 
@@ -45,10 +46,10 @@ declare module 'vue-router' {
 }
 
 /**
- * Resolver компонентов для динамических роутов.
+ * The component resolver of the dynamic routes.
  *
- * Host-проект передаёт конкретные Vue-компоненты для каждой роли.
- * Library не зависит от конкретных view'ов.
+ * The host project supplies a Vue component for each role, and the library
+ * depends on no particular views.
  */
 export interface RouteComponentResolver {
   resourceIndex: AdminRouteComponent
@@ -61,10 +62,11 @@ export interface RouteComponentResolver {
 }
 
 /**
- * Извлекает permissions из meta'ы ресурса / скрина / settings'а.
+ * Extracts the permissions from a resource's, a screen's or a settings page's
+ * meta.
  *
- * resource.permissions = { view: 'admin.users.view', ... } → ['admin.users.view']
- * (для index используется view; для create/edit — соответственно).
+ * resource.permissions = { view: 'admin.users.view', ... } → ['admin.users.view'],
+ * where the index uses view and create and edit use their own.
  */
 function pickResourcePermission(
   resource: ManifestResourceMeta,
@@ -104,9 +106,9 @@ function buildResourceRoutes(
         title: resource.label,
         permissions: pickResourcePermission(resource, 'view'),
       },
-      // slug передаётся в page-component'ы как prop. Конкретный slug запекаем в
-      // function-mode, чтобы page видел его одинаково и через named-route, и через
-      // path-routing (без params).
+      // The slug reaches the page components as a prop. It is baked in
+      // through the function mode, so that the page sees the same thing
+      // whether it was reached by name or by path, where there are no params.
       props: { slug },
     },
     {
@@ -133,7 +135,7 @@ function buildResourceRoutes(
         title: `${resource.label}: редактирование`,
         permissions: pickResourcePermission(resource, 'update'),
       },
-      // slug запекаем, id из route-params.
+      // The slug is baked in, the id comes from the route params.
       props: (route) => ({ slug, id: route.params.id }),
     },
     {

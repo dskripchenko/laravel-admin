@@ -1,7 +1,7 @@
 /**
- * Default-bundle с минимальным набором builtin-компонентов.
+ * The default bundle, with the minimal set of built-in components.
  *
- * Использование:
+ * Usage:
  *
  *     import { registerBuiltinComponents } from '@dskripchenko/laravel-admin'
  *     registerBuiltinComponents()
@@ -33,13 +33,13 @@ import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 
 /**
- * TextField с предустановленным `type` инпута.
+ * A TextField with the input's `type` preset.
  *
- * Backend-поля `password`/`email`/`url`/`tel`/`search` рендерились одним и
- * тем же TextField, а тот по умолчанию ставит `type="text"` — то есть
- * `Password::make()` показывал секрет открытым текстом, а мобильная
- * клавиатура не подстраивалась под email и телефон. Тип берётся из ключа
- * реестра; явный `inputType` из атрибутов поля по-прежнему главнее.
+ * The backend's `password`, `email`, `url`, `tel` and `search` fields were all
+ * rendered by the same TextField, which defaults to `type="text"` — so
+ * `Password::make()` showed the secret in the clear, and the mobile keyboard
+ * did not adjust for an email or a phone number. The type now comes from the
+ * registry key; an explicit `inputType` in the field's attributes still wins.
  */
 type TextInputType = 'text' | 'email' | 'url' | 'password' | 'tel' | 'search'
 
@@ -48,8 +48,8 @@ function textFieldOfType(inputType: TextInputType) {
     name: `TextField${inputType.charAt(0).toUpperCase()}${inputType.slice(1)}`,
     inheritAttrs: false,
     setup(_props, { attrs }) {
-      // Пропсы приходят через attrs (компонент их не объявляет), поэтому
-      // h() не может вывести тип — сужаем явно.
+      // The props arrive through attrs, since the component does not declare
+      // them, so h() cannot infer the type — we narrow it explicitly.
       const props = { ...attrs, inputType: (attrs.inputType as TextInputType | undefined) ?? inputType }
 
       return () => h(TextField, props as unknown as InstanceType<typeof TextField>['$props'])
@@ -58,8 +58,8 @@ function textFieldOfType(inputType: TextInputType) {
 }
 
 /**
- * Builtin-компоненты НЕ перекрывают уже зарегистрированные host'ом:
- * registerField(...) до createAdminApp() имеет приоритет.
+ * The built-in components do NOT override what the host registered:
+ * a registerField(...) before createAdminApp() wins.
  */
 function registerAbsent(
   bundle: { fields?: Record<string, unknown>; layouts?: Record<string, unknown> },
@@ -75,8 +75,8 @@ function registerAbsent(
 export function registerBuiltinComponents(): void {
   registerAbsent({
     fields: {
-      // Backend Field-классы из dskripchenko/laravel-admin отдают эти fieldType()
-      // строки. Соответствие см. core/src/Field/{Input,TextArea,Select,...}.php.
+      // The backend field classes of dskripchenko/laravel-admin return these
+      // fieldType() strings; see core/src/Field/{Input,TextArea,Select,...}.php.
       input: TextField,
       text: TextField,
       email: textFieldOfType('email'),
@@ -88,8 +88,8 @@ export function registerBuiltinComponents(): void {
       hidden: TextField,
       label: TextField,
       textarea: TextAreaField,
-      // WYSIWYG default — собственный @dskripchenko/wysiwyg (zero-dep,
-      // ~7 KB gzip). Host может перебить:
+      // The default WYSIWYG is our own @dskripchenko/wysiwyg: no
+      // dependencies, about 7 KB gzipped. A host may override it:
       //   import { QuillField } from '@dskripchenko/laravel-admin/quill'
       //   registerField('wysiwyg', QuillField)
       wysiwyg: WysiwygField,
@@ -102,12 +102,14 @@ export function registerBuiltinComponents(): void {
       combobox: SelectField,
       radio: SelectField,
       tags: TagsField,
-      // Translatable: backend Field\TranslatableInput → fieldType()='translatable'.
-      // Хранит value как Record<locale, string>; UI показывает табы по локалям.
+      // Translatable: the backend's Field\TranslatableInput has
+      // fieldType()='translatable'. The value is a Record<locale, string>, and
+      // the UI shows a tab per locale.
       translatable: TranslatableField,
       'translatable-text': TranslatableField,
-      // Backend fieldType() отдаёт snake_case — регистрируем именно его;
-      // dash-варианты оставлены как исторические алиасы для host-кода.
+      // The backend's fieldType() returns snake_case, so that is what we
+      // register; the dashed variants remain as historical aliases for host
+      // code.
       morph_switcher: SelectField,
       'morph-switcher': SelectField,
       relation_select: SelectField,
@@ -131,7 +133,7 @@ export function registerBuiltinComponents(): void {
       file: FileField,
       image: FileField,
       image_cropper: ImageCropperField,
-      // Составные поля (backlog ROADMAP): рендерились UnknownField.
+      // The composite fields, which used to be drawn by UnknownField.
       key_value: KeyValueField,
       repeater: RepeaterField,
     'generated-field': GeneratedField,

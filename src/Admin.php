@@ -14,13 +14,11 @@ use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Illuminate\Contracts\Foundation\Application;
 
 /**
- * Manager — точка входа всех публичных API пакета.
+ * The manager — the entry point of every public API of the package.
  *
- * Доступен через фасад Admin:: либо app(Admin::class).
- * На фазе скаффолда содержит только заготовки методов для основных
- * регистрационных API. По мере реализации фаз методы наполняются.
+ * It is reached through the Admin:: facade or app(Admin::class).
  *
- * Примеры (после полной реализации):
+ * For example:
  *   Admin::resources([UserResource::class]);
  *   Admin::screen('dashboard', DashboardScreen::class);
  *   Admin::permissions([...]);
@@ -38,9 +36,9 @@ final class Admin
     private array $plugins = [];
 
     /**
-     * Панель, в которую пишут registration-методы. PluginRegistry ставит её
-     * перед boot'ом плагинов каждой панели; для однопанельных хостов всегда
-     * 'admin' (BC).
+     * The panel the registration methods write into. PluginRegistry sets it
+     * before booting each panel's plugins; for a single-panel host it is always
+     * 'admin'.
      */
     private string $registrationPanel = 'admin';
 
@@ -52,7 +50,7 @@ final class Admin
     ) {}
 
     /**
-     * Регистрирует группы permissions.
+     * Registers groups of permissions.
      *
      * @param  ItemPermission|list<ItemPermission>  $items
      */
@@ -68,9 +66,9 @@ final class Admin
     }
 
     /**
-     * Панельный контекст регистрации (v1.8 Panels). Все последующие
-     * registration-вызовы (resources/screen/menu/widgets/permissions)
-     * тегируются этой панелью.
+     * Sets the panel context of the registration. Every registration call
+     * that follows — resources, screen, menu, widgets, permissions — is tagged
+     * with this panel.
      */
     public function setRegistrationPanel(string $panel): self
     {
@@ -91,7 +89,7 @@ final class Admin
     }
 
     /**
-     * Регистрирует Screen-класс. Можно передать массив — будут зарегистрированы все.
+     * Registers a screen class, or an array of them.
      *
      * @param  class-string<Screen>|list<class-string<Screen>>  $class
      */
@@ -115,7 +113,7 @@ final class Admin
     }
 
     /**
-     * Resolve Screen-instance по slug'у через контейнер.
+     * Resolves a screen instance by slug, through the container.
      */
     public function resolveScreen(string $slug): ?Screen
     {
@@ -131,7 +129,7 @@ final class Admin
     }
 
     /**
-     * Регистрирует список Resource-классов.
+     * Registers a list of resource classes.
      *
      * @param  list<class-string<ResourceBase>>  $classes
      */
@@ -151,7 +149,7 @@ final class Admin
     }
 
     /**
-     * Resolve Resource-instance по slug'у через контейнер.
+     * Resolves a resource instance by slug, through the container.
      */
     public function resolveResource(string $slug): ?ResourceBase
     {
@@ -159,7 +157,7 @@ final class Admin
     }
 
     /**
-     * Регистрирует AdminPlugin.
+     * Registers an AdminPlugin.
      *
      * @param  class-string  $class
      */
@@ -179,7 +177,7 @@ final class Admin
     }
 
     /**
-     * Регистрирует Widget-классы.
+     * Registers widget classes.
      *
      * @param  class-string[]  $classes
      */
@@ -192,7 +190,7 @@ final class Admin
     }
 
     /**
-     * Без аргумента — виджеты всех панелей (BC); с панелью — только её.
+     * Without an argument: the widgets of every panel; with one: only that panel's.
      *
      * @return class-string[]
      */
@@ -211,9 +209,9 @@ final class Admin
     }
 
     /**
-     * Доступ к MenuRegistry — fluent API для построения иерархического меню.
+     * Access to MenuRegistry — the fluent API for building a hierarchical menu.
      *
-     *   $admin->menu()->add(MenuNode::make('shop', 'Магазин')->children([...]));
+     *   $admin->menu()->add(MenuNode::make('shop', 'Shop')->children([...]));
      *   $admin->menu()->under('shop', [MenuNode::resource('products')]);
      */
     public function menu(): MenuRegistry
