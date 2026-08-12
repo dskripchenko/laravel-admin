@@ -19,25 +19,25 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Универсальный controller, обслуживающий все зарегистрированные Resource'ы.
+ * The single controller serving every registered resource.
  *
- * laravel-api для каждого зарегистрированного Resource добавляет запись в
- * `getMethods() → controllers → {slug}` со ссылкой на этот класс. Когда
- * приходит запрос `/api/admin/admin/{slug}/{action}`, laravel-api
- * инстанцирует `ResourceController` через DI. Внутри метод `currentResource()`
- * читает `ApiRequest::getApiControllerKey()` (= {slug}) и резолвит Resource
- * из ResourceRegistry.
+ * For each registered resource laravel-api adds an entry to
+ * `getMethods() → controllers → {slug}` pointing at this class. When a request
+ * arrives at `/api/admin/admin/{slug}/{action}`, laravel-api instantiates
+ * `ResourceController` through DI; inside, `currentResource()` reads
+ * `ApiRequest::getApiControllerKey()` (which is the slug) and resolves the
+ * resource from ResourceRegistry.
  *
- * Реализованные actions для P1.10: meta, search, read, create, update, delete.
- * Расширенные (restore, replicate, reorder, inlineEdit, view, audit, ...) —
- * фазы P3+, см. ARCHITECTURE.md п.12.
+ * Actions implemented in P1.10: meta, search, read, create, update, delete.
+ * The extended ones — restore, replicate, reorder, inlineEdit, view, audit and
+ * so on — belong to P3 and later; see ARCHITECTURE.md §12.
  */
 final class ResourceController extends ApiController
 {
     public function __construct(private readonly ResourceRegistry $registry) {}
 
     /**
-     * Получить метаданные ресурса (поля, колонки, фильтры, actions).
+     * Returns the resource metadata: fields, columns, filters, actions.
      *
      * @output object $payload Resource meta.
      *
@@ -52,7 +52,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Compile GeneratedListScreen — описание list-страницы.
+     * Compiles GeneratedListScreen — the description of the list page.
      *
      * @output object $payload
      *
@@ -66,10 +66,10 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Описание страницы-дерева ресурса.
+     * The description of the resource's tree page.
      *
-     * Отдаёт разметку иерархического списка; сами узлы забираются
-     * отдельным действием `tree`.
+     * Returns the layout of the hierarchical list; the nodes themselves are
+     * fetched by the separate `tree` action.
      *
      * @output object $payload
      *
@@ -83,13 +83,15 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Иерархическое дерево записей ресурса (self-ref parent_id).
+     * The hierarchical tree of the resource's records, by self-referencing
+     * parent_id.
      *
-     * Возвращает уже свёрнутое дерево `data: TreeNode[]`. Применяет filters
-     * и `?q=` поиск как `search()`, но без пагинации — для UI-tree-навигации
-     * нужны все ветки сразу (eager-load всего адъяцентного списка одним
-     * SELECT). На моделях с десятками тысяч узлов host должен либо разбивать
-     * Resource на под-деревья, либо переопределить tree() в подклассе.
+     * Returns an already assembled tree as `data: TreeNode[]`. Filters and the
+     * `?q=` search apply exactly as in `search()`, but there is no pagination:
+     * tree navigation needs every branch at once, so the whole adjacency list
+     * is loaded in a single SELECT. On models with tens of thousands of nodes
+     * a host should either split the resource into sub-trees or override
+     * `tree()` in a subclass.
      *
      * @input array $filters
      * @input string $q
@@ -142,10 +144,11 @@ final class ResourceController extends ApiController
             ->get()
             ->all();
 
-        // Pre-tree hook: ресурс может потребовать дополнительные id основной
-        // модели (например, предков matching leaf'ов из treeExtraLeaves —
-        // см. GroupResource::treeAdditionalRowIds). Подмешиваем их в выборку
-        // одним дополнительным SELECT, чтобы tree сохранял parent-цепочку.
+        // Pre-tree hook: a resource may ask for extra ids of the main model —
+        // the ancestors of matching leaves from treeExtraLeaves, say; see
+        // GroupResource::treeAdditionalRowIds. They are mixed into the
+        // selection with one more SELECT so that the tree keeps its parent
+        // chain intact.
         if ($searchTerm !== null) {
             $extraIds = $resource->treeAdditionalRowIds($searchTerm);
             if ($extraIds !== []) {
@@ -164,8 +167,8 @@ final class ResourceController extends ApiController
 
         $extraLeaves = $resource->treeExtraLeaves($rows, $searchTerm);
 
-        // Per-node actions (см. Resource::treeNodeActions) — собираем мапу
-        // row-id → actions[]. В buildTree её цепляем к node.actions.
+        // Per-node actions (see Resource::treeNodeActions): a map of row id →
+        // actions, attached to node.actions inside buildTree.
         $actionsByRowId = [];
         foreach ($rows as $row) {
             $actions = $resource->treeNodeActions($row);
@@ -200,10 +203,10 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Свернуть плоский набор Eloquent-моделей в TreeNode[] по адъяцентному
-     * списку. Узлы, чей parent отфильтрован (например, поиском по дочернему
-     * лейблу), всплывают в корень — иначе матчи скрылись бы под недоступным
-     * предком.
+     * Folds a flat set of Eloquent models into TreeNode[] by their adjacency
+     * list. A node whose parent was filtered out — by a search matching a
+     * child's label, for instance — floats up to the root; otherwise the match
+     * would hide under an ancestor that is not there.
      *
      * @param  list<\Illuminate\Database\Eloquent\Model>  $rows
      * @param  array<int|string, list<array<string, mixed>>>  $extraLeaves  parent_id → leaves
@@ -238,8 +241,8 @@ final class ResourceController extends ApiController
             }
         }
 
-        // Дополнительные leaf-узлы из treeExtraLeaves (например шаблоны под
-        // группами). Добавляем после основных children, чтобы группы шли первыми.
+        // Extra leaves from treeExtraLeaves — templates under groups, say.
+        // They come after the real children so that groups are listed first.
         if ($extraLeaves !== []) {
             foreach ($byId as $id => &$node) {
                 if (isset($extraLeaves[$id])) {
@@ -285,7 +288,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Compile GeneratedEditScreen с подгрузкой записи по id.
+     * Compiles GeneratedEditScreen, loading the record by id.
      *
      * @input integer $id
      *
@@ -319,7 +322,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Compile GeneratedViewScreen — read-only display через Infolist.
+     * Compiles GeneratedViewScreen — the read-only display built on Infolist.
      *
      * @input integer $id
      *
@@ -352,7 +355,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Получить список записей с filters/sort/pagination.
+     * Returns a list of records with filters, sorting and pagination.
      *
      * @input integer ?$page
      * @input integer ?$per_page
@@ -372,7 +375,8 @@ final class ResourceController extends ApiController
         $resource = $this->currentResource();
         $query = $resource->indexQuery();
 
-        // Filters: { filters: [{column, operator, value}] } либо { filters: { col: value } }
+        // Filters arrive either as { filters: [{column, operator, value}] }
+        // or as { filters: { col: value } }.
         $filterInputs = HttpFilterParser::parse($request);
         foreach ($resource->resolvedFilters() as $filter) {
             /** @var Filter $filter */
@@ -419,8 +423,9 @@ final class ResourceController extends ApiController
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        // Group-by: если передан group_by — собираем counts по уникальным значениям.
-        // Pagination над group'ами не делаем — фронт получает все group'ы для текущего фильтра.
+        // Grouping: when group_by is given, counts are collected per distinct
+        // value. Groups are not paginated — the frontend receives all of them
+        // for the current filter.
         $groups = null;
         $groupBy = (string) $request->input('group_by', '');
         if ($groupBy !== '') {
@@ -461,9 +466,9 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Для каждой row + каждой editable-колонки спрашивает Resource::editableForRow.
-     * Если хоть один override === false — добавляет `_editable` map в данные row.
-     * Row без override-флагов остаётся как есть.
+     * Asks Resource::editableForRow for every row and every editable column.
+     * If at least one override says false, an `_editable` map is added to the
+     * row's data. A row with no overrides is left untouched.
      *
      * @param  list<\Illuminate\Database\Eloquent\Model>  $items
      * @return list<array<string, mixed>>
@@ -500,7 +505,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Получить одну запись по id.
+     * Returns a single record by id.
      *
      * @input integer $id
      *
@@ -539,9 +544,9 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Создать запись.
+     * Creates a record.
      *
-     * Конкретные `@input`-поля определяются Resource::fields().
+     * Which `@input` fields there are is decided by Resource::fields().
      *
      * @output object $payload
      *
@@ -580,7 +585,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Обновить запись.
+     * Updates a record.
      *
      * @input integer $id
      *
@@ -631,10 +636,10 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Универсальный потоковый экспорт списка в любой зарегистрированный формат.
+     * Streaming export of the list into any registered format.
      *
-     * @input string ?$format  csv|xlsx|pdf — default csv. Должен быть
-     *                          зарегистрирован в ExporterRegistry.
+     * @input string ?$format  csv|xlsx|pdf — csv by default. The format must be
+     *                          registered in ExporterRegistry.
      * @input array ?$filters
      * @input string ?$q
      * @input array ?$columns
@@ -644,7 +649,7 @@ final class ResourceController extends ApiController
      * @security AdminSession
      *
      * @response 200 {ResourceExportResponse}
-     * @response 422 {ValidationErrorResponse} Format не поддержан.
+     * @response 422 {ValidationErrorResponse} The format is not supported.
      */
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
     {
@@ -693,7 +698,7 @@ final class ResourceController extends ApiController
             $columns[$col->name()] = (string) ($arr['label'] ?? $col->name());
         }
 
-        // Generator chunks для memory-friendly экспорта.
+        // Generator chunks keep the export memory-friendly.
         $rowGenerator = (function () use ($query): \Generator {
             foreach ($query->cursor() as $model) {
                 yield $model->toArray();
@@ -708,11 +713,11 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Drag-n-drop reorder: bulk update позиций нескольких записей в одной
-     * транзакции.
+     * Drag-and-drop reordering: a bulk update of several positions in one
+     * transaction.
      *
-     * Принимает `items: [{id, position}]`. Resource должен иметь
-     * `reorderable() === true` и `reorderColumn()` колонку.
+     * Takes `items: [{id, position}]`. The resource must have
+     * `reorderable() === true` and a `reorderColumn()`.
      *
      * @input array $items
      *
@@ -735,7 +740,7 @@ final class ResourceController extends ApiController
         $resource = $this->currentResource();
         $actionKey = $data['key'];
 
-        // Ищем Action с name == $actionKey среди Resource->actions().
+        // Find the action whose name equals $actionKey among Resource->actions().
         $action = null;
         foreach ($resource->actions() as $a) {
             if ($a->name() === $actionKey) {
@@ -750,7 +755,7 @@ final class ResourceController extends ApiController
             ], 404);
         }
 
-        // Resolve method'а на самом resource'е (BulkAction->method('archive')).
+        // Resolve the method on the resource itself, e.g. BulkAction->method('archive').
         $methodName = $action->toArray()['attributes']['method'] ?? null;
         if (! is_string($methodName) || ! method_exists($resource, $methodName)) {
             return $this->error([
@@ -759,13 +764,13 @@ final class ResourceController extends ApiController
             ], 501);
         }
 
-        // Вызов: $resource->{method}(array $ids, array $payload).
+        // The call is $resource->{method}(array $ids, array $payload).
         try {
             $result = $resource->{$methodName}($data['ids'], (array) ($data['payload'] ?? []));
         } catch (ActionFailedException $e) {
-            // Отказ по делу: действие отработало и сообщает, почему не вышло.
-            // Пятисотка здесь означала бы, что сломалась панель, — и будила бы
-            // дежурного из-за неверно введённого порта.
+            // A refusal on the merits: the action ran and is explaining why it
+            // could not finish. A 500 here would mean the panel itself broke —
+            // and would wake somebody up over a mistyped port number.
             return $this->error([
                 'errorKey' => 'action_failed',
                 'message' => $e->getMessage(),
@@ -817,7 +822,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Клонировать запись.
+     * Clones a record.
      *
      * @input integer $id
      *
@@ -860,7 +865,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Восстановить soft-deleted запись.
+     * Restores a soft-deleted record.
      *
      * @input integer $id
      *
@@ -870,7 +875,7 @@ final class ResourceController extends ApiController
      *
      * @response 200 {ResourceRestoredResponse}
      * @response 404 {NotFoundErrorResponse}
-     * @response 422 {ValidationErrorResponse} Resource не поддерживает SoftDeletes.
+     * @response 422 {ValidationErrorResponse} The resource does not use SoftDeletes.
      */
     public function restore(Request $request): JsonResponse
     {
@@ -906,7 +911,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Окончательное удаление soft-deleted записи.
+     * Deletes a soft-deleted record for good.
      *
      * @input integer $id
      *
@@ -947,11 +952,11 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Builder с включёнными trashed для restore/forceDelete.
+     * A builder that includes trashed rows, for restore and forceDelete.
      *
-     * SoftDeletes trait добавляет SoftDeletingScope глобально; снимаем его,
-     * чтобы запрос видел и trashed-записи. Это эквивалент `->withTrashed()`,
-     * но не требует scope-magic methods на Builder'е.
+     * The SoftDeletes trait adds SoftDeletingScope globally; removing it lets
+     * the query see trashed records too. Equivalent to `->withTrashed()`, but
+     * without relying on the builder's scope magic.
      */
     private function withTrashedQuery(Resource $resource): \Illuminate\Database\Eloquent\Builder
     {
@@ -960,7 +965,7 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Удалить запись (soft, если SoftDeletes; иначе hard).
+     * Deletes a record — softly when the model uses SoftDeletes, otherwise for good.
      *
      * @input integer $id
      *
@@ -994,11 +999,11 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Inline-edit одной ячейки в таблице.
+     * Inline editing of a single table cell.
      *
-     * Принимает {id, column, value}; ищет column в Resource::columns(), берёт
-     * editable.validation rules, валидирует, обновляет одну колонку. Если
-     * column не editable — 422.
+     * Takes {id, column, value}, finds the column in Resource::columns(), takes
+     * its editable.validation rules, validates and updates that one column.
+     * A column that is not editable answers 422.
      *
      * @input integer $id
      * @input string $column
@@ -1053,10 +1058,10 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Summary-агрегаты по текущему фильтру (sum/avg/count/min/max).
+     * Summary aggregates over the current filter: sum, avg, count, min, max.
      *
-     * Возвращает map column => {sum?, avg?, ...} по тем колонкам, у которых
-     * Resource::columns()->summary([...]) объявлен.
+     * Returns a map of column => {sum?, avg?, …} for the columns that declare
+     * `Resource::columns()->summary([...])`.
      *
      * @output object $payload
      *
@@ -1069,7 +1074,7 @@ final class ResourceController extends ApiController
         $resource = $this->currentResource();
         $query = $resource->indexQuery();
 
-        // Применяем те же filters, что и в search.
+        // The same filters as in search are applied.
         $filterInputs = HttpFilterParser::parse($request);
         foreach ($resource->resolvedFilters() as $filter) {
             $value = $filterInputs[$filter->field()] ?? null;
@@ -1097,8 +1102,8 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Найти конфиг editable для колонки. Возвращает null если колонки
-     * нет или она не editable.
+     * Finds the editable config of a column. Returns null when the column does
+     * not exist or is not editable.
      *
      * @return array<string, mixed>|null
      */
@@ -1151,9 +1156,9 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Маппит SQL-exception в human-friendly validation-payload.
-     * Покрывает: 23505 (unique), 23502 (not-null), 23503 (FK). По умолчанию
-     * — generic «Не удалось сохранить запись».
+     * Maps an SQL exception onto a human-readable validation payload.
+     * Covers 23505 (unique), 23502 (not-null) and 23503 (foreign key); anything
+     * else falls back to a generic "could not save the record".
      *
      * @return array<string, mixed>
      */
@@ -1210,7 +1215,7 @@ final class ResourceController extends ApiController
             ];
         }
 
-        // Fallback: не показываем raw SQL в prod-mode
+        // Fallback: never show raw SQL in production.
         $userMessage = config('app.debug')
             ? "DB error [{$sqlState}]: {$message}"
             : 'Не удалось сохранить запись. Обратитесь к администратору.';
@@ -1232,9 +1237,9 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * На update unique-правила без явного except исключают текущую запись —
-     * иначе запись конфликтует сама с собой. Поддержаны строковая форма
-     * (`unique:table,column`) и Rule::unique() объекты.
+     * On update, unique rules without an explicit `except` exclude the record
+     * being edited — otherwise it collides with itself. Both the string form
+     * (`unique:table,column`) and Rule::unique() objects are handled.
      *
      * @param  array<string, list<mixed>>  $rulesByField
      * @return array<string, list<mixed>>
@@ -1263,8 +1268,8 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Прогоняет HTML через HtmlSanitizer для всех Wysiwyg-полей,
-     * у которых shouldSanitize() = true.
+     * Runs the HTML of every Wysiwyg field with shouldSanitize() = true
+     * through HtmlSanitizer.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

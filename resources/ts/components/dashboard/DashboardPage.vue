@@ -1,20 +1,20 @@
 <script setup lang="ts">
 /**
- * DashboardPage — 12-col grid из widget'ов с поддержкой edit-mode.
+ * DashboardPage — a 12-column grid of widgets with an edit mode.
  *
- * Источник widget'ов:
- *   - Manifest.dashboards (host-side declared, через DashboardScreen).
- *   - Per-user persisted layout (DashboardLayout / dashboard store) —
- *     накладывается поверх manifest'ной декларации: переупорядочение,
- *     resize, hidden, удаление + user-added widgets через AddWidget.
+ * Where the widgets come from:
+ *   - Manifest.dashboards, declared on the host side through DashboardScreen.
+ *   - The per-user persisted layout (DashboardLayout / the dashboard store),
+ *     laid over that declaration: reordering, resizing, hiding, removing, plus
+ *     user-added widgets from AddWidget.
  *
- * Edit-mode:
- *   1. «Редактировать» в toolbar → editMode=true. На каждом widget'е
- *      появляются [☰][⚙][×] (см. WidgetActionsOverlay).
- *   2. Drag-handle ☰ позволяет менять порядок (HTML5 drag).
- *   3. Resize-handle ↘ в правом-нижнем углу — изменяет span (1..12).
- *   4. + Add widget → AddWidgetDialog → store.addWidget.
- *   5. «Сохранить» → POST /dashboard/save с draft. «Отменить» → restore.
+ * Edit mode:
+ *   1. "Edit" in the toolbar sets editMode. Every widget grows a
+ *      [☰][⚙][×] overlay — see WidgetActionsOverlay.
+ *   2. The ☰ handle reorders widgets through HTML5 drag.
+ *   3. The ↘ handle in the bottom-right corner changes the span, 1..12.
+ *   4. "+ Add widget" opens AddWidgetDialog and calls store.addWidget.
+ *   5. "Save" POSTs the draft to /dashboard/save; "Cancel" restores it.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -69,14 +69,15 @@ const manifest = useManifestStore()
 const dashboardStore = useDashboardStore()
 const i18n = useI18nStore()
 const tr = (s: string): string => i18n.tr(s)
-// Router в standalone-тестах может отсутствовать — useRoute() в этом случае
-// возвращает undefined (без RouterPlugin). Делаем фоллбэк на пустой объект.
+// In standalone tests there may be no router, and useRoute() then returns
+// undefined — no RouterPlugin. Fall back to an empty object.
 const route = useRoute() as ReturnType<typeof useRoute> | undefined
 
 /**
- * Slug резолвится в три шага: props → route.meta.slug → route.params.slug.
- * route.meta — основной источник для default-host'а (см. router/builder.ts
- * buildDashboardRoute), который не передаёт props в компонент.
+ * The slug is resolved in three steps: props → route.meta.slug →
+ * route.params.slug. route.meta is the main source for the default host (see
+ * buildDashboardRoute in router/builder.ts), which passes no props to the
+ * component.
  */
 const resolvedSlug = computed<string | undefined>(() => {
   if (props.slug) return props.slug
@@ -87,8 +88,9 @@ const resolvedSlug = computed<string | undefined>(() => {
   return undefined
 })
 const t = (key: string, fallback: string): string => {
-  // Если backend lang-bag прислал нужный ключ — используем; иначе ru-fallback.
-  // Это позволяет постепенно мигрировать без breaking changes.
+  // Use the key when the backend's language bag has it, otherwise fall back
+  // to the source string. That is what makes a gradual migration possible
+  // without breaking anything.
   return i18n.has(key) ? i18n.t(key) : fallback
 }
 
@@ -101,8 +103,8 @@ const dashboard = computed<DashboardManifest | null>(() => {
 
 const manifestWidgets = computed<WidgetNode[]>(() => {
   if (props.widgets) return props.widgets
-  // refreshedWidgets — свежие data после смены period (через /dashboard/widgets).
-  // Имеют приоритет над manifest'ным snapshot'ом.
+  // refreshedWidgets holds the data fetched after a period change through
+  // /dashboard/widgets. It takes priority over the manifest snapshot.
   if (refreshedWidgets.value !== null) return refreshedWidgets.value
   return dashboard.value?.widgets ?? []
 })
@@ -115,11 +117,13 @@ const resolvedSubtitle = computed(
 )
 
 /**
- * Финальный список виджетов с применённым per-user layout'ом:
- *   - manifest widgets индексируются по slug;
- *   - draft layout (из store) задаёт порядок, size, hidden;
- *   - user-added (есть type/config, но нет manifest-исходника) рендерятся как самостоятельные;
- *   - manifest widget'ы которых нет в draft — добавляются в конец (новые в коде).
+ * The final list of widgets with the per-user layout applied:
+ *   - manifest widgets are indexed by slug;
+ *   - the draft layout from the store decides order, size and hidden state;
+ *   - user-added ones (they have a type and config but no manifest original)
+ *     render on their own;
+ *   - manifest widgets missing from the draft are appended at the end — those
+ *     are the ones newly added in code.
  */
 const renderedWidgets = computed<Array<{ node: WidgetNode; layoutSlug: string }>>(() => {
   const bySlug = new Map<string, WidgetNode>()
@@ -133,21 +137,22 @@ const renderedWidgets = computed<Array<{ node: WidgetNode; layoutSlug: string }>
 
   if (draft.length > 0) {
     for (const item of draft) {
-      // ВАЖНО: помечаем slug как «обработан» в bySlug ДО проверки hidden.
-      // Иначе hidden-override на manifest-widget'е не сработает: skip-continue
-      // оставит slug в bySlug, и второй проход добавит manifest-widget назад.
+      // IMPORTANT: mark the slug as handled in bySlug BEFORE the hidden
+      // check. Otherwise a hidden override on a manifest widget does nothing:
+      // the skip would leave the slug in bySlug, and the second pass would add
+      // the widget straight back.
       const baseManifest = bySlug.get(item.slug) ?? null
       bySlug.delete(item.slug)
       if (item.hidden) continue
       let node: WidgetNode | null = null
       if (baseManifest !== null) {
-        // Manifest-widget с per-user override size.
+        // A manifest widget with a per-user size override.
         node = {
           ...baseManifest,
           size: item.size ?? (baseManifest as Record<string, unknown>).size ?? 12,
         } as WidgetNode
       } else if (item.type) {
-        // User-added widget — рендерится по type + config.
+        // A user-added widget — rendered from its type and config.
         const cfg = (item.config ?? {}) as Record<string, unknown>
         node = {
           slug: item.slug,
@@ -159,12 +164,12 @@ const renderedWidgets = computed<Array<{ node: WidgetNode; layoutSlug: string }>
       }
       if (node) out.push({ node, layoutSlug: item.slug })
     }
-    // Новые manifest-widgets (которых ещё нет в persisted layout'е).
+    // Manifest widgets that are not in the persisted layout yet.
     for (const [slug, w] of bySlug.entries()) {
       out.push({ node: w, layoutSlug: slug })
     }
   } else {
-    // Нет draft'а — рендерим manifest как есть.
+    // No draft — render the manifest as it is.
     for (const w of manifestWidgets.value) {
       out.push({ node: w, layoutSlug: String((w as Record<string, unknown>).slug ?? '') })
     }
@@ -180,12 +185,13 @@ function spanFor(w: WidgetNode): number {
 }
 
 /**
- * Высота виджета в grid-rows (1..6). Источник:
- *   1. draft-item.config.rowSpan (per-user override)
- *   2. node.rowSpan / node.row_span (manifest default)
- *   3. fallback по типу: chart/heatmap/recent_list/markdown = 2, stat/gauge = 1
+ * Widget height in grid rows, 1..6. Taken from:
+ *   1. draft-item.config.rowSpan — the per-user override
+ *   2. node.rowSpan / node.row_span — the manifest default
+ *   3. a per-type fallback: chart/heatmap/recent_list/markdown = 2,
+ *      stat/gauge = 1
  *
- * Высота в px = grid-auto-rows (140) × rowSpan + gap × (rowSpan - 1).
+ * The height in px is grid-auto-rows (140) × rowSpan + gap × (rowSpan − 1).
  */
 function rowSpanFor(layoutSlug: string, w: WidgetNode): number {
   const draftItem = dashboardStore.draft.find((it) => it.slug === layoutSlug)
@@ -194,7 +200,7 @@ function rowSpanFor(layoutSlug: string, w: WidgetNode): number {
   const fromNode = (w as Record<string, unknown>).rowSpan
     ?? (w as Record<string, unknown>).row_span
   if (typeof fromNode === 'number') return Math.max(1, Math.min(6, fromNode))
-  // Default по типу — крупные визуализации шире, stat'ы компактные.
+  // The per-type default: big visualisations are taller, stats are compact.
   const type = String((w as Record<string, unknown>).type ?? '')
   if (type === 'stats' || type === 'stat') return 1
   if (type === 'gauge') return 2
@@ -212,14 +218,14 @@ const periods = computed(() => [
   { key: 'all', label: t('admin.dashboard.period.all', 'Всё время') },
 ])
 const selectedPeriod = ref<string>('30d')
-/** Свежие widget data полученные через /dashboard/widgets?period=. */
+/** Fresh widget data fetched through /dashboard/widgets?period=. */
 const refreshedWidgets = ref<WidgetNode[] | null>(null)
 
 async function setPeriod(key: string, close: () => void): Promise<void> {
   selectedPeriod.value = key
   emit('change-period', key)
   close()
-  // BL-16: персистим выбор per-user (fire-and-forget) — переживёт reload.
+  // Persist the choice per user, fire-and-forget, so it survives a reload.
   const slug = resolvedSlug.value
   if (slug) void dashboardStore.savePeriod(slug, key)
   await refetchPeriod()
@@ -236,14 +242,14 @@ async function refetchPeriod(): Promise<void> {
     )
     refreshedWidgets.value = result.widgets
   } catch {
-    // silent — оставляем manifest-данные.
+    // Silent: keep the manifest data.
   }
 }
 
 // === Auto-refresh polling ===
-// Каждый Widget может иметь refresh: number в секундах (Widget::refresh()).
-// Запускаем единый setInterval с минимальным refresh-ом из widgets;
-// каждый tick дергает /dashboard/widgets и обновляет refreshedWidgets.
+// A widget may declare `refresh` in seconds (Widget::refresh()). We run a
+// single setInterval at the smallest refresh among the widgets; every tick
+// hits /dashboard/widgets and updates refreshedWidgets.
 let pollingTimer: ReturnType<typeof setInterval> | null = null
 
 const minRefreshSec = computed<number>(() => {
@@ -271,15 +277,15 @@ function stopPolling(): void {
     pollingTimer = null
   }
 }
-// Перезапускаем polling если minRefreshSec изменился (новые виджеты).
+// Restart the polling when minRefreshSec changes — new widgets arrived.
 watch(
   () => minRefreshSec.value,
   () => startPolling(),
 )
 
-// Lifecycle: загрузить manifest (если ещё нет) + открыть dashboard в store
-// для подтягивания persisted layout'а. Watch на изменения slug — для
-// корректной работы при навигации между разными dashboards в SPA.
+// Lifecycle: load the manifest if it is not there yet, and open the dashboard
+// in the store so the persisted layout is pulled in. The watch on the slug
+// keeps navigation between different dashboards working inside the SPA.
 onMounted(async () => {
   if (manifest.manifest === null) {
     await manifest.load().catch(() => undefined)
@@ -287,7 +293,7 @@ onMounted(async () => {
   const slug = resolvedSlug.value
   if (slug) {
     await dashboardStore.openDashboard(slug).catch(() => undefined)
-    // BL-16: восстановить персистентный per-user период.
+    // Restore the period this user had chosen.
     if (dashboardStore.period) {
       selectedPeriod.value = dashboardStore.period
       await refetchPeriod()
@@ -334,8 +340,9 @@ function closeDialog(): void {
 }
 
 function onEnterEdit(): void {
-  // Пустой draft (persisted layout'а ещё нет) сидируем текущим merged-видом:
-  // без этого первый save отправлял widgets:[] и падал на required-валидации.
+  // An empty draft — no persisted layout yet — is seeded with the current
+  // merged view. Without this the first save sent widgets:[] and failed the
+  // required validation.
   if (dashboardStore.draft.length === 0) {
     dashboardStore.seedDraft(
       renderedWidgets.value.map(({ node, layoutSlug }) => ({
@@ -351,7 +358,7 @@ function onCancelEdit(): void {
   dashboardStore.cancelEdit()
 }
 async function onResetLayout(): Promise<void> {
-  // Сброс к дефолтному layout'у дашборда (persisted-запись удаляется).
+  // Reset to the dashboard's default layout: the persisted record is deleted.
   if (!confirm(t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'))) return
   await dashboardStore.resetToDefault().catch(() => undefined)
 }
@@ -360,9 +367,10 @@ async function onSaveLayout(): Promise<void> {
 }
 
 function onRemoveWidget(layoutSlug: string): void {
-  // Manifest-widget нельзя удалить из draft насовсем: рендер-мерж вернёт его
-  // обратно (widgets без layout-записи дорисовываются в конец). Поэтому для
-  // manifest — всегда hidden-override; полное удаление — только для user-added.
+  // A manifest widget cannot be dropped from the draft for good: the render
+  // merge brings it back, since widgets with no layout record are appended at
+  // the end. So a manifest widget always gets a hidden override; outright
+  // removal is only for user-added ones.
   const isManifest = manifestWidgets.value.some(
     (w) => String((w as Record<string, unknown>).slug ?? '') === layoutSlug,
   )
@@ -381,8 +389,8 @@ function onRemoveWidget(layoutSlug: string): void {
 function onConfigureWidget(layoutSlug: string): void {
   ensureDraftReflectsRendered()
   const draftItem = dashboardStore.draft.find((it) => it.slug === layoutSlug) ?? null
-  // Для manifest-widget'ов (которые ещё не попали в draft) собираем
-  // initial-state из renderedWidgets — там уже посчитанный node.
+  // For manifest widgets that have not reached the draft yet, the initial
+  // state is taken from renderedWidgets — the node there is already resolved.
   const rendered = renderedWidgets.value.find((r) => r.layoutSlug === layoutSlug)
   const node = rendered?.node as Record<string, unknown> | undefined
   dialogItem.value = draftItem ?? {
@@ -400,9 +408,9 @@ function onAddWidget(item: WidgetLayoutItem): void {
 }
 
 /**
- * Скрытые (hidden-override) виджеты — для секции восстановления
- * в диалоге добавления (BL-18). Title берём из manifest'а, для
- * user-added — из config.title, иначе slug.
+ * Widgets hidden by an override — the "restore" section of the add dialog.
+ * The title comes from the manifest; for user-added ones from config.title,
+ * and failing that the slug.
  */
 const restorableWidgets = computed<Array<{ slug: string; title: string }>>(() => {
   const bySlug = new Map<string, WidgetNode>()
@@ -429,10 +437,10 @@ function onRestoreWidget(slug: string): void {
 function onSaveConfig(patch: Partial<WidgetLayoutItem>): void {
   if (!dialogItem.value) return
   const slug = dialogItem.value.slug
-  // Если widget ещё не в draft — добавляем; иначе patch.
+  // A widget not yet in the draft is added; otherwise it is patched.
   const inDraft = dashboardStore.draft.some((it) => it.slug === slug)
   if (inDraft) {
-    // merge config с предыдущим (а не replace).
+    // Merge the config with the previous one rather than replacing it.
     const existing = dashboardStore.draft.find((it) => it.slug === slug)
     dashboardStore.updateWidget(slug, {
       ...patch,
@@ -447,18 +455,19 @@ function onSaveConfig(patch: Partial<WidgetLayoutItem>): void {
   }
 }
 
-// === Drag-reorder (нативный HTML5) ===
+// === Drag reordering, native HTML5 ===
 const dragSourceIdx = ref<number | null>(null)
-/** Idx, на который указывает drop-indicator при hover'е во время drag. */
+/** The index the drop indicator points at while dragging over a cell. */
 const dragOverIdx = ref<number | null>(null)
 /**
- * При нативном HTML5 drag e.target в `dragstart` равен ELEMENT'у с draggable=true
- * (в нашем случае — admin-dashboard__cell), а НЕ внутренней кнопке drag-handle.
- * Поэтому проверка closest('[data-drag-handle]') в самом dragstart всегда null.
+ * In native HTML5 drag the `dragstart` target is the element carrying
+ * draggable=true — here admin-dashboard__cell — and NOT the inner drag handle.
+ * A closest('[data-drag-handle]') check inside dragstart is therefore always
+ * null.
  *
- * Решение: pointerdown срабатывает ДО dragstart и его e.target — innermost
- * element (svg/button). Сохраняем флаг — был ли pointerdown на drag-handle.
- * dragstart смотрит на этот флаг.
+ * The way round it: pointerdown fires BEFORE dragstart and its target IS the
+ * innermost element (the svg or the button). We remember whether pointerdown
+ * landed on a drag handle, and dragstart consults that flag.
  */
 const dragInitiated = ref<boolean>(false)
 function onPointerDown(e: PointerEvent): void {
@@ -473,8 +482,8 @@ function onDragStart(idx: number, e: DragEvent): void {
   if (!dashboardStore.editMode) return
   if (e.dataTransfer === null) return
   if (!dragInitiated.value) {
-    // pointerdown был не на drag-handle (например, на самом виджете) —
-    // запрещаем drag, иначе любой клик в edit-mode тащил бы карточку.
+    // pointerdown was not on a drag handle — on the widget body, say — so the
+    // drag is refused. Otherwise any click in edit mode would drag the card.
     e.preventDefault()
     return
   }
@@ -483,7 +492,7 @@ function onDragStart(idx: number, e: DragEvent): void {
   e.dataTransfer.setData('text/plain', String(idx))
 }
 function onDragEnd(): void {
-  // Сбрасываем флаги — независимо от исхода drag'а.
+  // Clear the flags whichever way the drag ended.
   dragInitiated.value = false
   dragSourceIdx.value = null
   dragOverIdx.value = null
@@ -497,8 +506,8 @@ function onDragOver(toIdx: number, e: DragEvent): void {
 function onDrop(toIdx: number, e: DragEvent): void {
   e.preventDefault()
   if (!dashboardStore.editMode || dragSourceIdx.value === null) return
-  // Reorder в store. Если widget не в draft — сначала "поднимаем" его
-  // из manifest'а, чтобы layout сохранил позицию.
+  // Reorder in the store. A widget absent from the draft is lifted out of the
+  // manifest first, so that the layout keeps its position.
   const sourceIdx = dragSourceIdx.value
   ensureDraftReflectsRendered()
   dashboardStore.moveWidget(sourceIdx, toIdx)
@@ -507,13 +516,14 @@ function onDrop(toIdx: number, e: DragEvent): void {
 }
 
 /**
- * Перед drag/resize гарантируем, что текущий rendered порядок отражён
- * в store.draft (иначе reorder работает на пустом draft'е и теряет
- * manifest widget'ы).
+ * Before a drag or a resize, make sure the currently rendered order is
+ * reflected in store.draft — otherwise the reorder operates on an empty draft
+ * and loses the manifest widgets.
  */
 function ensureDraftReflectsRendered(): void {
-  // renderedWidgets не содержит hidden-виджеты — их записи сохраняем отдельно,
-  // иначе пересборка draft'а молча «воскрешает» скрытые (BL-18).
+  // renderedWidgets holds no hidden widgets, so their records are preserved
+  // separately: rebuilding the draft without them would quietly resurrect
+  // everything the user had hidden.
   const hiddenItems = dashboardStore.draft.filter((it) => it.hidden === true)
   if (dashboardStore.draft.length === renderedWidgets.value.length + hiddenItems.length) return
   const items: WidgetLayoutItem[] = renderedWidgets.value.map(({ node, layoutSlug }, idx) => {
@@ -530,7 +540,7 @@ function ensureDraftReflectsRendered(): void {
   dashboardStore.setDraft([...items, ...hiddenItems.map((it) => ({ ...it }))])
 }
 
-// === Resize via mouse (по двум осям: ширина-cols и высота-rows) ===
+// === Mouse resize, on both axes: width in columns, height in rows ===
 const ROW_HEIGHT_PX = 140
 const ROW_GAP_PX = 16 // совпадает с --uid-space-md (по grid gap)
 
@@ -572,7 +582,7 @@ function onResizeMove(e: MouseEvent): void {
   const dx = Math.round((e.clientX - resizing.value.startX) / colWidth)
   const nextSpan = Math.max(1, Math.min(12, resizing.value.startSpan + dx))
 
-  // Y-axis → rows span (1..6). Шаг = ROW_HEIGHT_PX + ROW_GAP_PX.
+  // The Y axis maps to a row span of 1..6; one step is ROW_HEIGHT_PX + ROW_GAP_PX.
   const rowStep = ROW_HEIGHT_PX + ROW_GAP_PX
   const dy = Math.round((e.clientY - resizing.value.startY) / rowStep)
   const nextRowSpan = Math.max(1, Math.min(6, resizing.value.startRowSpan + dy))
@@ -596,8 +606,9 @@ function onResizeEnd(): void {
 }
 
 function onExport(): void {
-  // BL-17: экспорт текущего среза дашборда (виджеты + их данные + период)
-  // в JSON-файл. Host может слушать 'export' для своего формата.
+  // Export the current slice of the dashboard — widgets, their data and the
+  // period — into a JSON file. A host may listen to 'export' and write its own
+  // format instead.
   emit('export')
   if (typeof window === 'undefined' || typeof document === 'undefined') return
 
@@ -753,20 +764,20 @@ function onExport(): void {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   /*
-   * grid-auto-rows фиксированный — иначе rowSpan не имеет смысла.
-   * Шаг 140px подобран чтобы 1 row помещал минимальный stat-card,
-   * 2 rows — chart/table, 3+ — расширенные виджеты.
+   * grid-auto-rows is fixed — otherwise rowSpan would mean nothing. The 140px
+   * step is chosen so that one row fits the smallest stat card, two rows fit a
+   * chart or a table, and three or more fit the larger widgets.
    */
   grid-auto-rows: 140px;
   gap: var(--uid-space-md);
 }
 /*
- * Узкий экран: двенадцать колонок на 390px превращают виджеты в вертикальные
- * полоски, а те, что справа, уезжают за край — их не прочитать и не
- * прокрутить, потому что хост прячет переполнение. Ниже порога шторки
- * (768px, как в UidSidebarLayout) виджеты идут в одну колонку, а высота
- * ряда перестаёт быть фиксированной: содержимое в 140px не укладывается,
- * когда ширина втрое меньше расчётной.
+ * Narrow screens: twelve columns across 390px turn the widgets into vertical
+ * strips, and the ones on the right run off the edge — unreadable and
+ * unscrollable, because the host hides the overflow. Below the drawer
+ * threshold (768px, the same as UidSidebarLayout) the widgets go into a single
+ * column and the row height stops being fixed: the content does not fit into
+ * 140px when the width is a third of what it was designed for.
  */
 @media (max-width: 768px) {
   .admin-dashboard__grid {
@@ -786,11 +797,11 @@ function onExport(): void {
 .admin-dashboard__grid--editing .admin-dashboard__cell:hover {
   outline-color: var(--uid-accent);
 }
-/* Источник drag — полупрозрачный, чтобы было видно куда уйдёт. */
+/* The dragged source goes translucent, so it is clear where it will land. */
 .admin-dashboard__cell--dragging {
   opacity: 0.45;
 }
-/* Cell под курсором при drag — подсвечен accent-полосой как drop-target. */
+/* The cell under the cursor is marked with an accent bar as the drop target. */
 .admin-dashboard__cell--drop-target {
   outline: 2px solid var(--uid-color-primary, var(--uid-accent, #14b8a6)) !important;
   outline-offset: -2px;
@@ -804,11 +815,11 @@ function onExport(): void {
   flex-direction: column;
 }
 /*
- * Внутренний WidgetRenderer + любой content виджета должны заполнить
- * полную высоту cell'а. Все потомки flex-стретчатся; UidCard внутри
- * виджет-компонентов получает height:100% через `.admin-widget`-класс
- * (используется во всех широко-распространённых виджетах) ИЛИ напрямую
- * через `.uid-card`/`.uid-stat` flex-fallback.
+ * The inner WidgetRenderer and whatever the widget draws must fill the cell's
+ * full height. All descendants stretch through flex; the UidCard inside widget
+ * components gets height:100% either through the `.admin-widget` class, used
+ * by all the common widgets, or directly through the `.uid-card`/`.uid-stat`
+ * flex fallback.
  */
 .admin-dashboard__cell > * {
   flex: 1 1 auto;
@@ -823,8 +834,8 @@ function onExport(): void {
   flex-direction: column;
 }
 /*
- * UidCard's __body — основной контент карточки. Растягиваем чтобы
- * chart/markdown/table заполняли вертикально доступное пространство.
+ * UidCard's __body holds the card's main content. It is stretched so that a
+ * chart, markdown or table fills the vertical space available.
  */
 .admin-dashboard__cell .uid-card__body,
 .admin-dashboard__cell .admin-widget__body {
@@ -834,9 +845,9 @@ function onExport(): void {
   flex-direction: column;
 }
 /*
- * cursor: default на cell — дёргать карточку можно только за [☰]-handle
- * (см. WidgetActionsOverlay). Это позволяет в edit-mode по-прежнему
- * взаимодействовать с интерактивными элементами внутри виджета.
+ * cursor: default on the cell — a card is dragged only by its [☰] handle, see
+ * WidgetActionsOverlay. That keeps the interactive elements inside a widget
+ * usable while edit mode is on.
  */
 .admin-dashboard__resize {
   position: absolute;
@@ -850,7 +861,8 @@ function onExport(): void {
   z-index: 4;
   border-radius: 2px;
   /*
-   * Прозрачная зона hit-test'а слегка больше, чтобы было удобнее ловить.
+   * The transparent hit area is a little larger, so the handle is easier to
+   * catch.
    */
 }
 .admin-dashboard__resize:hover {
