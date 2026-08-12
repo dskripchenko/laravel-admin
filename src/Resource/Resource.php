@@ -20,13 +20,13 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Абстрактный Resource — точка входа в CRUD-конструктор.
+ * The abstract Resource — the entry point of the CRUD builder.
  *
- * Один Resource описывает list (columns + filters) + form (fields) +
- * permissions + actions. Под капотом ResourceCompiler разворачивает его в
- * laravel-api controller со slug = `static::slug()`.
+ * One Resource describes a list (columns + filters), a form (fields),
+ * permissions and actions. Under the hood ResourceCompiler expands it into a
+ * laravel-api controller with slug = `static::slug()`.
  *
- * Подклассы декларируют:
+ * Subclasses declare:
  *
  *     final class UserResource extends Resource
  *     {
@@ -46,7 +46,7 @@ use RuntimeException;
 abstract class Resource
 {
     /**
-     * FQCN Eloquent-модели. Обязательно переопределяется в подклассе.
+     * FQCN of the Eloquent model. A subclass must override it.
      *
      * @var class-string<Model>
      */
@@ -57,7 +57,7 @@ abstract class Resource
     public static ?string $group = null;
 
     /**
-     * Slug — kebab-case от basename без 'Resource' suffix.
+     * Slug — the basename in kebab-case, without the 'Resource' suffix.
      */
     public static function slug(): string
     {
@@ -70,8 +70,8 @@ abstract class Resource
     }
 
     /**
-     * Базовый permission-key. По умолчанию `admin.{slug}`. Конкретные actions
-     * наследуют: `<base>.view`, `.create`, `.update`, `.delete`, ...
+     * The base permission key, `admin.{slug}` by default. Individual actions
+     * derive from it: `<base>.view`, `.create`, `.update`, `.delete`, …
      */
     public static function permission(): string
     {
@@ -79,7 +79,7 @@ abstract class Resource
     }
 
     /**
-     * Человекочитаемая метка Resource'а (для меню и manifest).
+     * Human-readable label of the resource — for the menu and the manifest.
      */
     public static function label(): string
     {
@@ -92,11 +92,11 @@ abstract class Resource
     }
 
     /* -----------------------------------------------------------------
-     * Декларация (для подклассов)
+     * Declaration (for subclasses)
      * ----------------------------------------------------------------- */
 
     /**
-     * Поля формы.
+     * Form fields.
      *
      * @return list<Field>
      */
@@ -106,7 +106,7 @@ abstract class Resource
     }
 
     /**
-     * Колонки list-таблицы.
+     * Columns of the list table.
      *
      * @return list<TableColumn>
      */
@@ -116,7 +116,7 @@ abstract class Resource
     }
 
     /**
-     * Фильтры.
+     * Filters.
      *
      * @return list<Filter>
      */
@@ -126,7 +126,7 @@ abstract class Resource
     }
 
     /**
-     * Action'ы (commandBar, row, bulk).
+     * Actions — command bar, per row and bulk.
      *
      * @return list<Action>
      */
@@ -136,7 +136,7 @@ abstract class Resource
     }
 
     /**
-     * Поля для ?q= search.
+     * Fields the `?q=` search runs over.
      *
      * @return list<string>
      */
@@ -153,9 +153,9 @@ abstract class Resource
     }
 
     /**
-     * Сериализация записи для SPA (read/create/update-ответы: record/state).
-     * Host переопределяет для virtual-полей формы — например, распаковать
-     * JSON-колонку в плоские поля (обратная сторона fillModel).
+     * Serialises a record for the SPA (the record/state of read/create/update
+     * responses). A host overrides this for virtual form fields — to unpack a
+     * JSON column into flat fields, say: the other side of fillModel.
      *
      * @return array<string, mixed>
      */
@@ -165,10 +165,10 @@ abstract class Resource
     }
 
     /**
-     * Заголовок записи для глобального поиска / быстрых ссылок. Default —
-     * первое непустое из name/title/label/email/slug, иначе первое
-     * searchable-поле, иначе `#{id}`. Host переопределяет для кастомного
-     * представления.
+     * The record's title for global search and quick links. By default the
+     * first non-empty of name/title/label/email/slug, otherwise the first
+     * searchable field, otherwise `#{id}`. A host overrides it for its own
+     * presentation.
      */
     public function recordTitle(Model $row): string
     {
@@ -190,8 +190,9 @@ abstract class Resource
     }
 
     /**
-     * Вторичная строка записи в результатах поиска (например email/slug/status).
-     * Возвращает null если подходящего атрибута нет либо он дублирует заголовок.
+     * The record's secondary line in search results — email/slug/status and
+     * the like. Returns null when no suitable attribute exists, or when the
+     * one found merely repeats the title.
      */
     public function recordSubtitle(Model $row): ?string
     {
@@ -207,7 +208,7 @@ abstract class Resource
     }
 
     /**
-     * Whitelist для eager-loading из ?with[]=... и Resource::with().
+     * Allowed relations for eager loading via `?with[]=…` and `Resource::with()`.
      *
      * @return list<string>
      */
@@ -217,12 +218,12 @@ abstract class Resource
     }
 
     /**
-     * Per-row override для inline-edit. Возвращает false если конкретную
-     * ячейку конкретной строки нельзя редактировать (например, "свой email
-     * можно, чужой нет"). Default — true, что эквивалентно column-wide
-     * `editable()` без дополнительных правил.
+     * Per-row override for inline editing. Returns false when this particular
+     * cell of this particular row must not be edited — "your own email yes,
+     * somebody else's no". The default is true, which is the same as a
+     * column-wide `editable()` with no further rules.
      *
-     * Вызывается ResourceController::search() для каждой editable-колонки.
+     * Called by ResourceController::search() for every editable column.
      */
     public function editableForRow(Model $row, string $column): bool
     {
@@ -230,7 +231,8 @@ abstract class Resource
     }
 
     /**
-     * Базовый query для list-экрана (без фильтров — те применяются ResourceCompiler'ом).
+     * The base query of the list screen. Without filters — those are applied
+     * by ResourceCompiler.
      */
     public function indexQuery(): Builder
     {
@@ -238,7 +240,7 @@ abstract class Resource
     }
 
     /**
-     * Базовый query для read/update/delete.
+     * The base query for read/update/delete.
      */
     public function modelQuery(): Builder
     {
@@ -255,10 +257,11 @@ abstract class Resource
     }
 
     /**
-     * Validation rules для контекста create/update.
+     * Validation rules for the create/update context.
      *
-     * Берёт явные `Field::rules()`-декларации и дополняет их type-specific
-     * implicit-rules (numeric/email/file/array/...) через ValidationRulesExporter.
+     * Takes the explicit `Field::rules()` declarations and adds the implicit
+     * type-specific ones (numeric/email/file/array/…) through
+     * ValidationRulesExporter.
      *
      * @return array<string, list<string>>
      */
@@ -268,11 +271,11 @@ abstract class Resource
     }
 
     /**
-     * Hook для маппинга валидированных данных формы в модель.
+     * Hook for mapping validated form data onto the model.
      *
-     * Default: forceFill всё что пришло. Override в Resource'ах, которые
-     * имеют производные поля (например JSON-блок `config` собирается из
-     * плоских `config_*` инпутов; см. StorageDiskResource).
+     * By default it forceFills whatever arrived. Override it in resources with
+     * derived fields — where a JSON `config` block is assembled from flat
+     * `config_*` inputs, for instance; see StorageDiskResource.
      *
      * @param  array<string, mixed>  $data
      */
@@ -282,15 +285,14 @@ abstract class Resource
     }
 
     /**
-     * Кастомная структура формы для контекста create/update.
+     * A custom form structure for the create/update context.
      *
-     * Возвращает список Renderable (Field или Layout), который заменит
-     * дефолтный flat-Rows layout в Generated*Screen. Если возвращает
-     * пустой массив — используется дефолт (Rows из filterFieldsBy).
+     * Returns a list of Renderable (Field or Layout) that replaces the default
+     * flat Rows layout in Generated*Screen. An empty array means the default
+     * is used (Rows built by filterFieldsBy).
      *
-     * Все Field-объекты, упомянутые в этом дереве, должны быть теми же
-     * instance'ами, что и в `fields()` — иначе validation/persistence
-     * их не увидит.
+     * Every Field mentioned in this tree must be the SAME instance as in
+     * `fields()` — otherwise validation and persistence will not see it.
      *
      * @return list<\Dskripchenko\LaravelAdmin\Contracts\Renderable>
      */
@@ -300,9 +302,9 @@ abstract class Resource
     }
 
     /**
-     * Serializes form-fields для manifest. Если `formLayout('update')`
-     * возвращает дерево Renderable — сериализуем его (Tabs/Rows/...);
-     * иначе — плоский список Field'ов.
+     * Serialises the form fields for the manifest. When `formLayout('update')`
+     * returns a Renderable tree it is serialised as is (Tabs/Rows/…);
+     * otherwise a flat list of fields is produced.
      *
      * @return list<array<string, mixed>>
      */
@@ -320,16 +322,16 @@ abstract class Resource
     }
 
     /**
-     * Раскладка создания — только если она ОТЛИЧАЕТСЯ от раскладки правки.
+     * The create layout — only when it DIFFERS from the edit one.
      *
-     * `formLayout()` принимает контекст с самого начала, но ядро звало его
-     * всегда с `'update'`: параметр был объявлен и не значил ничего, а форма
-     * создания получала вкладки, которым нечего показать до сохранения
-     * записи — пустые «API», «Ассистент», «Превью».
+     * `formLayout()` has taken a context from the start, but the core always
+     * called it with `'update'`: the parameter was declared and meant nothing,
+     * and the create form got tabs with nothing to show until the record
+     * exists — empty "API", "Assistant", "Preview".
      *
-     * Ключ не добавляется, когда раскладки совпадают: манифест возят каждым
-     * бутстрапом, и второй экземпляр дерева полей ради ресурсов, которым это
-     * не нужно, — лишний вес на каждой загрузке панели.
+     * The key is omitted when the two layouts match: the manifest travels with
+     * every bootstrap, and a second copy of the field tree for resources that
+     * do not need it is weight on every panel load.
      *
      * @return list<array<string, mixed>>|null
      */
@@ -337,10 +339,10 @@ abstract class Resource
     {
         $create = $this->serializeFormFields('create');
 
-        // Сравниваются деревья БЕЗ `id`: он генерируется на каждый экземпляр
-        // layout'а, поэтому две сериализации одного и того же дерева никогда
-        // не равны буквально. Первая версия сравнивала как есть и слала
-        // вторую копию всем ресурсам подряд.
+        // The trees are compared WITHOUT `id`: it is generated per layout
+        // instance, so two serialisations of the same tree are never equal
+        // literally. The first version compared them as they came and sent a
+        // second copy to every resource alike.
         return self::withoutIds($create) === self::withoutIds($this->serializeFormFields('update'))
             ? null
             : $create;
@@ -364,11 +366,11 @@ abstract class Resource
     }
 
     /* -----------------------------------------------------------------
-     * Сериализация для манифеста
+     * Serialisation for the manifest
      * ----------------------------------------------------------------- */
 
     /**
-     * Метаданные для манифеста и для resource.meta action.
+     * Metadata for the manifest and for the resource.meta action.
      *
      * @return array<string, mixed>
      */
@@ -381,9 +383,10 @@ abstract class Resource
             'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string(static::label()),
             'icon' => static::$icon,
             'group' => \Dskripchenko\LaravelAdmin\I18n\Localize::string(static::$group),
-            // Eloquent morph-class модели — нужен фронту для AuditTimeline
-            // (subject_type в /audit/timeline endpoint'е). Если modelClass
-            // зарегистрирован в morphMap — отдаём alias, иначе FQCN.
+            // The model's Eloquent morph class — the frontend needs it for
+            // AuditTimeline (`subject_type` in the /audit/timeline endpoint).
+            // When the class is registered in the morphMap the alias is sent,
+            // otherwise the FQCN.
             'subject_type' => isset(static::$model)
                 ? (array_search(
                     static::$model,
@@ -402,11 +405,11 @@ abstract class Resource
                 'reorder' => $base.'.reorder',
             ],
             'fields' => $this->serializeFormFields(),
-            // Отсутствует, когда создание и правка выглядят одинаково.
+            // Absent when create and edit look the same.
             'create_fields' => $this->serializeCreateFormFields(),
             'columns' => array_map(static fn (TableColumn $c): array => $c->toArray(), $this->columns()),
-            // infolist: используется ResourceViewPage для read-only display.
-            // Default — TextEntry per field (см. Resource::infolist).
+            // infolist: used by ResourceViewPage for the read-only display.
+            // Default — a TextEntry per field, see Resource::infolist.
             'infolist' => array_map(static fn (Entry $e): array => $e->toArray(), $this->infolist()),
             'filters' => $this->compiledFilters(),
             'actions' => array_map(static fn (Action $a): array => $a->toArray(), $this->actions()),
@@ -432,9 +435,9 @@ abstract class Resource
     }
 
     /**
-     * Сериализованные фильтры с автоматическим добавлением TrashedFilter
-     * для SoftDeletes-моделей. Host может явно прописать `TrashedFilter::for(...)`
-     * в filters() — тогда auto-inject не дублирует.
+     * Serialised filters, with TrashedFilter added automatically for
+     * SoftDeletes models. A host may declare `TrashedFilter::for(...)` in
+     * `filters()` explicitly — then the auto-injection does not duplicate it.
      *
      * @return list<array<string, mixed>>
      */
@@ -444,10 +447,11 @@ abstract class Resource
     }
 
     /**
-     * Фактический набор фильтр-ОБЪЕКТОВ (declared + авто-инжект TrashedFilter
-     * для SoftDeletes). Единый источник и для манифеста (compiledFilters), и
-     * для применения в search — иначе auto-trashed показывался в UI, но не
-     * применялся (search шёл по filters(), без него).
+     * The actual set of filter OBJECTS: declared ones plus the auto-injected
+     * TrashedFilter for SoftDeletes. One source both for the manifest
+     * (compiledFilters) and for applying them in search — otherwise the
+     * auto-trashed filter was shown in the UI and never applied, because
+     * search went through `filters()`, which does not contain it.
      *
      * @return list<Filter>
      */
@@ -470,7 +474,7 @@ abstract class Resource
     }
 
     /**
-     * Поддерживает ли модель Eloquent SoftDeletes — детектится через trait_uses.
+     * Whether the model supports Eloquent SoftDeletes — detected via trait_uses.
      */
     public static function supportsSoftDeletes(): bool
     {
@@ -486,7 +490,7 @@ abstract class Resource
     }
 
     /**
-     * Можно ли клонировать запись через ResourceController.replicate.
+     * Whether a record may be cloned through ResourceController.replicate.
      */
     public function replicable(): bool
     {
@@ -516,7 +520,7 @@ abstract class Resource
     }
 
     /**
-     * Можно ли менять порядок записей drag-n-drop'ом.
+     * Whether records may be reordered by dragging.
      */
     public function reorderable(): bool
     {
@@ -524,13 +528,13 @@ abstract class Resource
     }
 
     /**
-     * Доступны ли сохранённые представления списка — именованные наборы
-     * фильтров, сортировки и видимых колонок.
+     * Whether saved list views are available — named sets of filters, sorting
+     * and visible columns.
      *
-     * Выключено по умолчанию: возможность заводит четыре маршрута на ресурс,
-     * а осмысленна она на длинных списках, которые действительно фильтруют.
-     * Раньше маршруты появлялись у каждого ресурса поголовно — включая те,
-     * где сохранять нечего.
+     * Off by default: the feature adds four routes per resource, and it only
+     * makes sense on long lists that people actually filter. Those routes used
+     * to appear for every resource alike — including the ones with nothing
+     * worth saving.
      */
     public function savedViews(): bool
     {
@@ -538,7 +542,7 @@ abstract class Resource
     }
 
     /**
-     * Можно ли импортировать данные через 4-step Import Wizard.
+     * Whether data may be imported through the four-step import wizard.
      */
     public function importable(): bool
     {
@@ -546,8 +550,9 @@ abstract class Resource
     }
 
     /**
-     * Форматы экспорта списка (пусто = экспорт скрыт). По умолчанию CSV;
-     * read-only ресурсы (аудит) могут вернуть [] чтобы убрать кнопку.
+     * Export formats of the list; empty hides the export entirely. CSV by
+     * default — read-only resources such as the audit log may return [] to
+     * drop the button.
      *
      * @return list<string>
      */
@@ -557,7 +562,7 @@ abstract class Resource
     }
 
     /**
-     * Имя колонки, отвечающей за порядок (default `position`).
+     * Name of the column that holds the order, `position` by default.
      */
     public function reorderColumn(): string
     {
@@ -565,11 +570,12 @@ abstract class Resource
     }
 
     /**
-     * FK-колонка self-references для иерархического ресурса (default `parent_id`
-     * через автодетект по Eloquent relations). null — ресурс плоский.
+     * The self-referencing FK column of a hierarchical resource; `parent_id`
+     * by default, auto-detected from the Eloquent relations. null means the
+     * resource is flat.
      *
-     * Override в подклассе чтобы силой включить tree-режим (`return 'parent_id'`)
-     * или отключить его при наличии relations (`return null`).
+     * Override it in a subclass to force tree mode (`return 'parent_id'`) or
+     * to switch it off even though the relations are there (`return null`).
      */
     public function hierarchyParentKey(): ?string
     {
@@ -577,8 +583,8 @@ abstract class Resource
     }
 
     /**
-     * `'tree'` если ресурс иерархический, иначе `'list'`. Определяет какой
-     * Generated*Screen компилирует ResourceController на `/r/{slug}` маршруте.
+     * `'tree'` for a hierarchical resource, otherwise `'list'`. Decides which
+     * Generated*Screen ResourceController compiles for the `/r/{slug}` route.
      */
     public function viewMode(): string
     {
@@ -586,11 +592,11 @@ abstract class Resource
     }
 
     /**
-     * Slug ресурса, чей index используется как "родительский" контекст —
-     * куда возвращает кнопка «Назад» с form/view-страниц. Default null
-     * (back ведёт на собственный index). Применяется когда ресурс показан
-     * как leaf другого tree-view: например TemplateResource живёт под
-     * GroupResource'ом в дереве, и back должен возвращать к дереву групп.
+     * Slug of the resource whose index serves as the "parent" context — where
+     * the Back button of a form or view page returns to. Null by default: back
+     * leads to the resource's own index. Used when a resource is shown as a
+     * leaf of another tree: TemplateResource lives under GroupResource in the
+     * tree, and Back must return to the tree of groups.
      */
     public function parentSlug(): ?string
     {
@@ -598,20 +604,20 @@ abstract class Resource
     }
 
     /**
-     * Контекстные actions, прикрепляемые к каждой ноде tree-view. Возвращает
-     * массив deskriptor'ов — frontend (ResourceTreePage) рендерит их в
-     * toolbar выбранного узла. Default — пусто.
+     * Context actions attached to every node of the tree view. Returns a list
+     * of descriptors; the frontend (ResourceTreePage) renders them in the
+     * toolbar of the selected node. Empty by default.
      *
-     * Каждый descriptor:
-     *   - `id` (string)            — уникальный id внутри узла
-     *   - `label` (string)         — отображаемый текст
-     *   - `icon` (?string)         — lucide-имя иконки (kebab-case)
-     *   - `variant` (?string)      — primary|secondary|ghost (default secondary)
-     *   - `kind` ('navigate')      — пока единственный поддерживаемый
-     *   - `to` (array)             — `{ slug, screen, params }`, params
-     *                                подставляются как query при переходе.
-     *                                `{id}` плейсхолдер заменяется на id
-     *                                текущей записи.
+     * Each descriptor:
+     *   - `id` (string)            — unique within the node
+     *   - `label` (string)         — the text shown
+     *   - `icon` (?string)         — lucide icon name, kebab-case
+     *   - `variant` (?string)      — primary|secondary|ghost (secondary by default)
+     *   - `kind` ('navigate')      — the only kind supported so far
+     *   - `to` (array)             — `{ slug, screen, params }`; params become
+     *                                the query string of the transition, and
+     *                                the `{id}` placeholder is replaced with
+     *                                the current record's id.
      *
      * @return list<array<string, mixed>>
      */
@@ -621,14 +627,13 @@ abstract class Resource
     }
 
     /**
-     * Pre-tree hook: дополнительные id основной модели, которые надо
-     * подмешать в выборку tree-view. Применяется когда tree-search должен
-     * учитывать вложенные leaf-узлы из другого Resource'а — например,
-     * GroupResource при поиске возвращает id групп, в которые попали
-     * matching templates (вместе с их предками), чтобы шаблон-leaf
-     * визуально оказался под своей группой.
+     * Pre-tree hook: extra ids of the main model to mix into the tree-view
+     * selection. Used when a tree search has to account for leaf nodes coming
+     * from another resource — GroupResource, searching, returns the ids of the
+     * groups that hold matching templates (together with their ancestors), so
+     * that a template leaf appears under its own group.
      *
-     * Default — пустой массив.
+     * Empty by default.
      *
      * @return list<int|string>
      */
@@ -638,24 +643,23 @@ abstract class Resource
     }
 
     /**
-     * Дополнительные leaf-узлы для tree-view, привязанные по parent_id
-     * к узлам основного ресурса. Используется для отображения записей
-     * другого Resource'а внутри текущего дерева — например шаблоны
-     * под своей группой в дереве групп.
+     * Extra leaf nodes for the tree view, attached to the nodes of the main
+     * resource by parent_id. Used to show records of another resource inside
+     * the current tree — templates under their group in the tree of groups.
      *
-     * `$searchTerm` (если не null) — текущий tree-search; leaves следует
-     * отфильтровать по нему, чтобы поиск находил вложенные записи.
+     * `$searchTerm`, when not null, is the current tree search; the leaves
+     * should be filtered by it so that the search finds nested records.
      *
-     * Каждый leaf — массив с теми же полями что node (`key`, `label`,
-     * `record`) плюс опционально:
-     *   - `slug` — slug чужого Resource'а для cross-navigation
-     *     (ResourceTreePage будет вести на `/admin/r/{slug}/{id}/edit`).
-     *   - `kind` — свободный маркер для frontend-логики.
+     * Each leaf is an array with the same keys as a node (`key`, `label`,
+     * `record`) plus, optionally:
+     *   - `slug` — slug of the other resource, for cross-navigation
+     *     (ResourceTreePage will link to `/admin/r/{slug}/{id}/edit`).
+     *   - `kind` — a free-form marker for frontend logic.
      *
-     * Default — пустой массив (нет дополнительных leaf'ов).
+     * Empty by default: no extra leaves.
      *
-     * @param  list<Model>  $rows  Записи основного ресурса, попавшие в tree
-     * @param  ?string  $searchTerm  Текущий поисковой запрос (null если нет)
+     * @param  list<Model>  $rows  Records of the main resource that made it into the tree
+     * @param  ?string  $searchTerm  The current search term, null when there is none
      * @return array<int|string, list<array<string, mixed>>> parent_id → leaves
      */
     public function treeExtraLeaves(array $rows, ?string $searchTerm = null): array
@@ -669,9 +673,9 @@ abstract class Resource
     private static array $hierarchyDetectCache = [];
 
     /**
-     * Автодетект FK self-reference по конвенции:
-     *  - метод `parent()` возвращает BelongsTo на ту же модель → берём foreignKey
-     *  - метод `children()` возвращает HasMany на ту же модель → берём foreignKey
+     * Auto-detects the self-referencing FK by convention:
+     *  - `parent()` returns a BelongsTo to the same model → take its foreignKey
+     *  - `children()` returns a HasMany to the same model → take its foreignKey
      *
      * @param  class-string<Model>|null  $model
      */
@@ -695,7 +699,7 @@ abstract class Resource
                     $key = $rel->getForeignKeyName();
                 }
             } catch (\Throwable) {
-                // Метод parent() с другой сигнатурой — игнорируем.
+                // A parent() with a different signature — ignored.
             }
         }
 
@@ -706,7 +710,7 @@ abstract class Resource
                     $key = $rel->getForeignKeyName();
                 }
             } catch (\Throwable) {
-                // children() не Eloquent-relation — игнорируем.
+                // children() is not an Eloquent relation — ignored.
             }
         }
 
@@ -714,19 +718,19 @@ abstract class Resource
     }
 
     /**
-     * Hook для контроля копируемых полей при replicate.
+     * Hook for controlling which fields are copied on replicate.
      *
-     * Default: Eloquent `Model::replicate()` (копирует все атрибуты кроме
-     * primary key и timestamps). Override в подклассе для regenerate'а
-     * уникальных полей (slug + ' (copy)', uuid и т.д.).
+     * By default Eloquent's `Model::replicate()` — every attribute except the
+     * primary key and the timestamps. Override it in a subclass to regenerate
+     * unique fields: slug + ' (copy)', a fresh uuid and so on.
      */
     public function replicate(Model $original): Model
     {
         $copy = $original->replicate();
 
-        // Если есть title/name — добавим '(копия)' suffix чтобы избежать
-        // нарушения unique-индексов на демо-уровне. Hook decorate'тся в
-        // подклассах под конкретные поля.
+        // When a title/name exists, append a '(copy)' suffix to avoid
+        // breaking unique indexes at the demo level. Subclasses decorate this
+        // hook for their own fields.
         foreach (['name', 'title', 'slug'] as $col) {
             if ($copy->getAttribute($col) !== null) {
                 $copy->setAttribute($col, $copy->getAttribute($col).' (копия)');
@@ -737,8 +741,8 @@ abstract class Resource
     }
 
     /**
-     * Интервал автообновления list-таблицы в секундах. null = не обновлять.
-     * Например, 30 — таблица ре-fetch'ит данные каждые 30 секунд.
+     * Auto-refresh interval of the list table, in seconds; null means never.
+     * With 30, the table re-fetches its data every 30 seconds.
      */
     public function polling(): ?int
     {
@@ -746,13 +750,13 @@ abstract class Resource
     }
 
     /**
-     * Read-only entries для GeneratedViewScreen.
+     * Read-only entries for GeneratedViewScreen.
      *
-     * Default: TextEntry для каждого поля из fields() с тем же label, кроме
-     * `switch`-полей (Switcher) — те рендерятся как IconEntry с
-     * локализованными Да/Нет, чтобы view-страница не показывала «true»/«false»
-     * для boolean-флагов. Override в подклассе если нужна кастомизация
-     * (BadgeEntry для статусов, ImageEntry для аватаров и т.д.).
+     * By default a TextEntry per field from `fields()` with the same label,
+     * except `switch` fields: those render as an IconEntry with a localised
+     * Yes/No, so that the view page does not show «true»/«false» for boolean
+     * flags. Override it in a subclass when you need something else — a
+     * BadgeEntry for statuses, an ImageEntry for avatars and so on.
      *
      * @return list<Entry>
      */

@@ -1,18 +1,19 @@
 <script setup lang="ts">
 /**
- * ResourceIndexPage — list-screen для одного Resource'а из manifest'а.
- * Архитектура по docs/design_handoff_laravel_admin/screens-shell.jsx (Resource List).
+ * ResourceIndexPage — the list screen of one resource from the manifest.
+ * Laid out after docs/design_handoff_laravel_admin/screens-shell.jsx
+ * (Resource List).
  *
- * Композиция:
- *   - Page header (title + count + actions cluster)
- *   - Filter bar с search + chips
- *   - Bulk toolbar (заменяет filter bar при selectedCount > 0)
- *   - UidTable с manifest.columns
- *   - States: loading (UidSkeleton ×8) / empty (UidEmptyState) / error (UidErrorState)
- *   - UidPagination внизу
+ * Composition:
+ *   - page header (title + count + the cluster of actions)
+ *   - filter bar with search and chips
+ *   - bulk toolbar, which replaces the filter bar once something is selected
+ *   - UidTable fed by manifest.columns
+ *   - states: loading (UidSkeleton ×8) / empty (UidEmptyState) / error
+ *   - UidPagination at the bottom
  *
- * Host рендерит page через router. resource-slug приходит из props (либо
- * из route.params).
+ * The host renders the page through the router; the resource slug arrives in
+ * props or from route.params.
  */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -54,32 +55,35 @@ const i18n = useI18nStore()
 const tr = (s: string): string => i18n.tr(s)
 
 /**
- * Строка с подстановками: ключ — исходная фраза, значения по имени.
+ * A string with placeholders: the key is the whole phrase, the values are
+ * named.
  *
- * Склейка через шаблонную строку не переводится в принципе — переводчику
- * достаётся кусок без начала и конца. Здесь ключ целый, а числа и названия
- * подставляются, поэтому в другом языке порядок слов может быть иным.
+ * A sentence glued together from a template literal cannot be translated at
+ * all — the translator receives a fragment with no beginning and no end. Here
+ * the key stays whole and the numbers and names are substituted, so another
+ * language may order the words differently.
  */
 const tRaw = (s: string, replace: Record<string, string | number>): string => i18n.t(s, replace)
 /**
- * Локальная обёртка над t() с graceful fallback на ru-string.
- * Это позволяет постепенный sweep: пока bootstrap.translations не наполнен,
- * UI показывает ru-defaults; когда host публикует lang-bag — подменяется
- * на переводы.
+ * A local wrapper over t() that falls back to the source string.
+ *
+ * This is what makes a gradual sweep possible: while bootstrap.translations is
+ * empty the UI shows the source text, and once the host publishes its language
+ * bag the translations take over.
  */
 const tt = (key: string, fallback: string, replace?: Record<string, string | number>): string =>
   i18n.has(key) ? i18n.t(key, replace) : fallback
 
 interface Props {
-  /** Slug ресурса (users/articles/etc). */
+  /** Resource slug: users, articles and so on. */
   slug: string
-  /** Заголовок страницы. Если не задан — берётся из manifest'а. */
+  /** Page title. Taken from the manifest when not given. */
   title?: string | null
-  /** Подпись под заголовком (например "Аналитика контента"). */
+  /** The line under the title, e.g. "Content analytics". */
   subtitle?: string | null
-  /** Текст primary-кнопки «Создать». */
+  /** Text of the primary “Create” button. */
   createLabel?: string
-  /** Имя router-route для action «Создать». */
+  /** Router route name behind the “Create” action. */
   createRouteName?: string | null
 }
 
@@ -91,13 +95,13 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  /** Bulk-action triggered с текущим Set'ом id. */
+  /** A bulk action fired with the current set of ids. */
   'bulk-action': [action: string, ids: Array<string | number>]
-  /** Click на row — host решает (push edit / open view). */
+  /** Row click — the host decides: push edit, open view. */
   'row-click': [row: Record<string, unknown>]
-  /** Header-action: import — host вешает обработчик загрузки CSV/JSON. */
+  /** Header action: import — the host attaches the CSV/JSON upload handler. */
   'import': []
-  /** Header more-menu action — произвольный ключ из additional-items. */
+  /** Header more-menu action — any key from additional-items. */
   'header-action': [action: string]
 }>()
 
@@ -113,10 +117,10 @@ const displayTitle = computed(
 )
 
 /**
- * Auto-derive create route name. Резервный вариант — стандартный pattern
- * из router/builder.ts (`admin.resource.{slug}.create`). Кнопка "Создать"
- * рендерится если route действительно зарегистрирован — у read-only
- * Resource'а его не будет (backend не отдаст create permission).
+ * Derives the create route name. The fallback is the standard pattern from
+ * router/builder.ts (`admin.resource.{slug}.create`). The "Create" button is
+ * rendered only when that route really exists — a read-only resource has none,
+ * because the backend does not grant the create permission.
  */
 const resolvedCreateRouteName = computed<string | null>(() => {
   if (props.createRouteName !== null) {
@@ -127,9 +131,9 @@ const resolvedCreateRouteName = computed<string | null>(() => {
 })
 
 /**
- * Header actions из manifest.actions — Resource->actions() в backend.
- * Каждый node имеет {key, label, icon?, confirm?, ...}. Рендерятся в
- * more-menu (...). По клику вызываем onCustomAction → POST на
+ * Header actions from manifest.actions — `Resource->actions()` on the backend.
+ * Every node carries {key, label, icon?, confirm?, …} and renders in the
+ * more-menu. A click calls onCustomAction, which POSTs to
  * /{slug}/action/{key}.
  */
 interface HeaderAction {
@@ -137,7 +141,7 @@ interface HeaderAction {
   label: string
   confirm?: string
   icon?: string
-  /** true — действие оперирует выбранными строками (position row/bulk). */
+  /** true when the action operates on selected rows (row or bulk position). */
   needsSelection: boolean
   destructive?: boolean
 }
@@ -151,22 +155,24 @@ const allActions = computed<HeaderAction[]>(() => {
         label: String(a.label ?? a.name ?? a.key ?? ''),
         confirm: typeof a.confirm === 'string' ? a.confirm : undefined,
         icon: typeof a.icon === 'string' ? a.icon : undefined,
-        // row/bulk-действия применяются к выбранным записям (провижининг,
-        // suspend, drop …) — без выбора запускать нечего.
+        // Row and bulk actions apply to the selected records — provisioning,
+        // suspend, drop and so on. With nothing selected there is nothing to
+        // run them against.
         needsSelection: position.includes('row') || position.includes('bulk'),
         destructive: Boolean(a.destructive),
       }
     })
     .filter((a) => a.key !== '' && a.label !== '')
 })
-// Глобальные (не требующие выбора) — в ⋯ меню; selection-действия — в
-// bulk-панели (появляется при выборе строк).
+// Global actions — the ones needing no selection — live in the ⋯ menu;
+// selection actions live in the bulk toolbar, which appears once rows are
+// picked.
 const headerActions = computed<HeaderAction[]>(() => allActions.value.filter((a) => !a.needsSelection))
 const selectionActions = computed<HeaderAction[]>(() => allActions.value.filter((a) => a.needsSelection))
 
 async function onCustomAction(action: HeaderAction): Promise<void> {
-  // selection-действия требуют выбора (защита, хотя кнопки и так только в
-  // bulk-панели); глобальные — запускаются без выбора.
+  // Selection actions require a selection — a guard, even though their
+  // buttons only exist in the bulk toolbar; global ones run without it.
   if (action.needsSelection && !index.hasSelection) {
     adminToast.error(tr('Сначала выберите записи.'))
     return
@@ -177,8 +183,8 @@ async function onCustomAction(action: HeaderAction): Promise<void> {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
-    // Backend контракт: POST /{slug}/action body {key, ids[], payload?}.
-    // Action резолвится через Resource->actions() по name.
+    // The backend contract: POST /{slug}/action with {key, ids[], payload?}.
+    // The action is resolved by name through `Resource->actions()`.
     const result = await client.post<{ affected?: number; message?: string }>(
       `/${props.slug}/action`,
       {
@@ -200,7 +206,7 @@ async function onCustomAction(action: HeaderAction): Promise<void> {
 }
 
 const bulkDeleting = ref(false)
-/** Массовое удаление выбранных строк — последовательные /delete по каждому id. */
+/** Bulk delete of the selected rows — a /delete per id, one after another. */
 async function onBulkDelete(): Promise<void> {
   const ids = [...index.selection]
   if (ids.length === 0) return
@@ -215,7 +221,7 @@ async function onBulkDelete(): Promise<void> {
         await client.post(`/${props.slug}/delete`, { id })
         ok++
       } catch {
-        /* пропускаем упавшие, продолжаем остальные */
+        /* skip the ones that failed, carry on with the rest */
       }
     }
     index.clearSelection()
@@ -231,13 +237,14 @@ async function onBulkDelete(): Promise<void> {
 }
 
 /**
- * Export — POST /{slug}/export?format=csv|json|xlsx|pdf. Backend
- * ExporterRegistry резолвит format. Ответ blob, скачиваем через <a download>.
+ * Export — POST /{slug}/export?format=csv|json|xlsx|pdf. The backend's
+ * ExporterRegistry resolves the format; the response is a blob, downloaded
+ * through an `<a download>`.
  *
- * Доступные форматы зависят от установленных composer-пакетов:
- *   - csv / json — всегда (без deps)
+ * Which formats are available depends on the composer packages installed:
+ *   - csv / json — always, no dependencies
  *   - xlsx       — openspout/openspout
- *   - pdf        — mpdf/mpdf или dompdf/dompdf
+ *   - pdf        — mpdf/mpdf or dompdf/dompdf
  */
 async function onExport(format: string = 'csv'): Promise<void> {
   emit('header-action', 'export')
@@ -267,8 +274,8 @@ async function onExport(format: string = 'csv'): Promise<void> {
 }
 
 /**
- * Import — file picker → POST multipart на /{slug}/import. После успеха
- * перезагружаем list. Если backend не поддерживает — alert.
+ * Import — a file picker, then a multipart POST to /{slug}/import. On success
+ * the list is reloaded; when the backend does not support it, an alert.
  */
 const importInput = ref<HTMLInputElement | null>(null)
 function onImportClick(): void {
@@ -276,15 +283,15 @@ function onImportClick(): void {
   importInput.value?.click()
 }
 /**
- * Default import flow поверх Dskripchenko\LaravelAdmin\Import\ImportController:
+ * The default import flow over Dskripchenko\LaravelAdmin\Import\ImportController:
  *   1. POST /import/upload (file + resource=slug) → uploadId
  *   2. POST /import/preview → auto-mapping (headers ↔ fields)
  *   3. POST /import/start (uploadId + mapping) → processId
- *   4. polling /import/status?processId=… до status === 'done' | 'failed'
+ *   4. poll /import/status?processId=… until status is 'done' or 'failed'
  *
- * Auto-mapping автоматически связывает имена колонок CSV/JSON со своими
- * Resource-полями. Host может перехватить @import до этого flow и открыть
- * собственный wizard.
+ * The auto-mapping matches CSV/JSON column names against the resource's own
+ * fields. A host may intercept @import before this flow and open a wizard of
+ * its own.
  */
 async function onImportFileChange(e: Event): Promise<void> {
   const input = e.target as HTMLInputElement
@@ -304,7 +311,7 @@ async function onImportFileChange(e: Event): Promise<void> {
       uploadForm,
     )
 
-    // 2. Preview (для auto-mapping)
+    // 2. Preview — this is where the auto-mapping happens
     const preview = await client.post<{ mapping: Record<string, string> }>(
       '/import/preview',
       { resource: props.slug, upload_id: uploaded.upload_id },
@@ -350,7 +357,8 @@ async function pollImportStatus(
   client: { get<T>(url: string): Promise<T> },
   processId: string,
 ): Promise<ImportStatus> {
-  // Polling каждые 800ms, но не дольше 90 секунд (сырая защита от вечного loop'а).
+  // Poll every 800 ms, but no longer than 90 seconds — a crude guard against
+  // looping forever.
   const deadline = Date.now() + 90_000
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 800))
@@ -365,41 +373,43 @@ async function pollImportStatus(
 const ACTIONS_KEY = '__row_actions__'
 const REORDER_KEY = '__row_reorder__'
 
-/** Resource поддерживает reorder если features.reorderable=true. */
+/** The resource supports reordering when features.reorderable is true. */
 const isReorderable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   return features.reorderable === true
 })
 
-/** Resource поддерживает create если features.creatable !== false (default true). */
+/** The resource supports creation unless features.creatable is false; true by default. */
 const isCreatable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   return features.creatable !== false
 })
 
-/** Resource поддерживает edit если features.editable !== false. Если false — скрываем edit/delete actions. */
+/** The resource supports editing unless features.editable is false — then the
+ * edit and delete actions are hidden. */
 const isEditable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   return features.editable !== false
 })
 
 /**
- * Сохранённые представления — только при features.savedViews (default false).
- * Без флага бэкенд маршрутов не заводит, и запрос списка ушёл бы в 404.
+ * Saved views — only when features.savedViews is on; off by default. Without
+ * the flag the backend registers no routes, and asking for the list would land
+ * in a 404.
  */
 const hasSavedViews = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   return features.savedViews === true
 })
 
-/** Import доступен только при features.importable (default false). */
+/** Import is available only when features.importable is on; off by default. */
 const isImportable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   return features.importable === true
 })
 
-/** Форматы экспорта из features.exportable — показываем только реально
- * поддерживаемые (иначе пункты xlsx/pdf вели в никуда). */
+/** Export formats come from features.exportable: only the ones actually
+ * supported are shown, otherwise the xlsx/pdf entries led nowhere. */
 const exportFormats = computed<string[]>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   const list = Array.isArray(features.exportable) ? (features.exportable as string[]) : ['csv']
@@ -422,10 +432,10 @@ const columns = computed<UidTableColumn[]>(() => {
     }
   })
     .filter((c) => c.key)
-    // Применяем visibility-state из toolbar'а (Колонки): если явно false —
-    // колонку не рендерим. По умолчанию (отсутствует в map) считаем visible.
+    // Apply the visibility state from the toolbar's "Columns" control: an
+    // explicit false hides the column. Absent from the map means visible.
     .filter((c) => columnVisibility.value[c.key] !== false)
-  // Если Resource reorderable — впереди колонка с drag-handle.
+  // A reorderable resource gets a drag-handle column in front.
   const head: UidTableColumn[] = isReorderable.value
     ? [{
         key: REORDER_KEY,
@@ -435,9 +445,9 @@ const columns = computed<UidTableColumn[]>(() => {
         width: '32px',
       }]
     : []
-  // Хвостовая колонка с per-row actions (Просмотр / Редактировать / Удалить).
-  // ResourceIndexPage добавляет её всегда — host может скрыть через
-  // useShowActions=false (TODO prop).
+  // The trailing column of per-row actions: view, edit, delete.
+  // ResourceIndexPage always adds it; a host will be able to hide it through
+  // useShowActions=false once that prop exists.
   return [
     ...head,
     ...mapped,
@@ -451,16 +461,16 @@ const columns = computed<UidTableColumn[]>(() => {
   ]
 })
 
-// Колоночная meta (preset / format / currency / editable / etc.) из manifest'а.
-// Используется для formatCell (datetime → 'd.m.Y H:i:s', money → '{val} {ccy}')
-// + InlineEditCell проверяет editable.
+// Per-column metadata from the manifest: preset, format, currency, editable
+// and so on. formatCell uses it (datetime → 'd.m.Y H:i:s', money →
+// '{val} {ccy}'), and InlineEditCell checks `editable`.
 function columnIsEditable(key: string): boolean {
   const cols = resourceMeta.value?.columns ?? []
   for (const c of cols) {
     const col = c as Record<string, unknown>
     const k = String(col.key ?? col.name ?? '')
     if (k === key) {
-      // Backend кладёт editable как объект {rules:...} или null.
+      // The backend sends `editable` either as an object {rules: …} or null.
       return col.editable !== null && col.editable !== undefined
     }
   }
@@ -503,7 +513,7 @@ const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta }>>
 })
 
 function renderCell(key: string, slotProps: unknown): string {
-  // UidTable scoped-slot передаёт {row: actualRow}.
+  // The UidTable scoped slot passes {row: actualRow}.
   const row = (slotProps as { row?: Record<string, unknown> } | undefined)?.row
   const value = row?.[key]
   const m = columnMeta.value[key]
@@ -514,15 +524,16 @@ function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
   return (slotProps as { row?: Record<string, unknown> } | undefined)?.row
 }
 
-/** Колонка-ссылка (preset 'link', см. TableColumn::asLink). */
+/** A link column — preset 'link', see TableColumn::asLink. */
 function columnIsLink(key: string): boolean {
   return columnMeta.value[key]?.preset === 'link'
 }
 
 /**
- * Резолв href для link-колонки: шаблон из meta.template с плейсхолдерами
- * `{field}` (значение поля строки) и `:value` (значение ячейки). Пусто —
- * если поле отсутствует/null (тогда ссылка не рендерится, остаётся текст).
+ * Resolves the href of a link column: the template from meta.template, with
+ * `{field}` standing for a field of the row and `:value` for the cell's own
+ * value. Empty when the field is missing or null — then no link is rendered
+ * and the plain text remains.
  */
 function linkHref(key: string, slotProps: unknown): string {
   const row = rowFromSlot(slotProps) ?? {}
@@ -531,7 +542,7 @@ function linkHref(key: string, slotProps: unknown): string {
   const href = tpl
     .replace(/\{(\w+)\}/g, (_m, f: string) => String(row[f] ?? ''))
     .replace(/:value/g, String(row[key] ?? ''))
-  // если остались нерезолвленные плейсхолдеры или пусто — ссылки нет
+  // Unresolved placeholders left, or nothing at all — then there is no link
   return href.includes('{') || href === '' ? '' : href
 }
 
@@ -540,11 +551,11 @@ function linkTarget(key: string): string | undefined {
 }
 
 /**
- * Показывать ли filter-toolbar:
- *   - если есть данные → всегда (search + фильтры внутри);
- *   - если данных нет, но есть активный search/filter → ДА (чтобы пользователь
- *     мог сбросить и снова увидеть items);
- *   - если данных нет и фильтры/поиск пустые → НЕТ (initial empty state).
+ * Whether to show the filter toolbar:
+ *   - there is data → always, since search and filters live inside it;
+ *   - no data but a search or filter is active → YES, so that the visitor can
+ *     clear it and see the items again;
+ *   - no data and nothing applied → NO, this is the initial empty state.
  */
 const hasActiveFilters = computed<boolean>(
   () => index.search !== '' || Object.keys(index.filters).length > 0,
@@ -553,7 +564,7 @@ const showFilterBar = computed<boolean>(
   () => !index.isEmpty || hasActiveFilters.value,
 )
 
-// Filter / column / view state — toolbar делегирует это сюда.
+// Filter, column and view state — the toolbar delegates all of it here.
 const manifestFilters = computed(
   () => (resourceMeta.value?.filters ?? []) as unknown as Array<Record<string, unknown>>,
 )
@@ -580,18 +591,18 @@ async function onResetFilters(): Promise<void> {
 }
 async function onGroupBy(col: string | null): Promise<void> {
   groupByCol.value = col
-  // Backend может или не может поддерживать group-by — пробрасываем
-  // в search payload как `group_by`. Если не поддерживается — просто
-  // игнорируется. Cast через unknown-bridge т.к. IndexParams strict.
+  // The backend may or may not support grouping — we pass it in the search
+  // payload as `group_by`, and an unsupported backend simply ignores it. The
+  // cast goes through `unknown` because IndexParams is strict.
   await index.load({ group_by: col } as unknown as Parameters<typeof index.load>[0])
 }
 function onColumnsVisibility(next: Record<string, boolean>): void {
   columnVisibility.value = next
 }
 /**
- * Saved views: state + load + apply/delete. Backend — SavedViewsController,
- * URL pattern /{slug}_views/{action}. Active view хранится локально и
- * подсвечивается в scope-dropdown'е.
+ * Saved views: state, loading, applying and deleting. The backend is
+ * SavedViewsController with the URL pattern /{slug}_views/{action}. The active
+ * view is kept locally and highlighted in the scope dropdown.
  */
 interface SavedViewItem {
   id: number
@@ -614,8 +625,8 @@ async function loadSavedViews(): Promise<void> {
     const result = await client.get<{ data: SavedViewItem[] }>(`/${props.slug}_views/list`)
     savedViews.value = result.data ?? []
   } catch {
-    // Тихо — endpoint опционален. Возможно ресурс без permission или backend
-    // не зарегистрировал views.
+    // Silently: the endpoint is optional. The resource may lack the
+    // permission, or the backend may not have registered views at all.
     savedViews.value = []
   }
 }
@@ -674,8 +685,8 @@ async function onSaveView(label: string): Promise<void> {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
-    // Backend: ResourceCompiler регистрирует controller key `{slug}_views`,
-    // SavedViewsController::create — POST /{slug}_views/create.
+    // Backend: ResourceCompiler registers the controller key `{slug}_views`,
+    // and SavedViewsController::create answers POST /{slug}_views/create.
     // Validation: {name: required string, state: required array, is_default?}
     const result = await client.post<{ view: SavedViewItem }>(
       `/${props.slug}_views/create`,
@@ -690,7 +701,7 @@ async function onSaveView(label: string): Promise<void> {
         },
       },
     )
-    // Сразу актуализируем локальный список и помечаем view активным.
+    // Refresh the local list right away and mark the view as active.
     if (result?.view) {
       activeViewId.value = result.view.id
     }
@@ -713,8 +724,10 @@ const totalLabel = computed(() => {
 })
 
 /**
- * Русская плюрализация для "записей". Backend локаль RU; для других локалей
- * host может пропатчить через slot `subtitle`.
+ * Russian pluralisation of "records". The source language is Russian; for
+ * other locales the three forms are translated separately and collapse
+ * correctly, and a host can override the whole line through the `subtitle`
+ * slot.
  */
 function pluralRecords(n: number): string {
   const mod10 = n % 10
@@ -725,12 +738,12 @@ function pluralRecords(n: number): string {
 }
 
 /**
- * Live-status: timestamp последнего успешного load + "tick" каждые 30s,
- * чтобы текст "обновлено 1 мин назад" реально обновлялся без re-load.
+ * Live status: the timestamp of the last successful load plus a tick every 30
+ * seconds, so that "updated a minute ago" actually moves without a reload.
  *
- * lastLoadedAt = null до первой удачи; после успешного store.load() ставим
- * Date.now(). Используем watch на index.loading: переход true → false без
- * error = успех.
+ * `lastLoadedAt` stays null until the first success, then holds Date.now().
+ * Success is detected by watching index.loading: a true → false transition
+ * with no error.
  */
 const lastLoadedAt = ref<number | null>(null)
 const tick = ref<number>(0)
@@ -755,11 +768,12 @@ onUnmounted(() => {
 })
 
 const liveStatus = computed<string | null>(() => {
-  // tick — dependency для re-compute. Без него computed замёрзнет на initial value.
+  // `tick` is a dependency of this computed. Without it the value would
+  // freeze at whatever it was first.
   void tick.value
   if (lastLoadedAt.value === null) return null
   const diffSec = Math.floor((Date.now() - lastLoadedAt.value) / 1000)
-  // Меньше минуты — данные «свежие», не отвлекаем индикатором.
+  // Under a minute the data is fresh — no need to distract with an indicator.
   if (diffSec < 60) return null
   const min = Math.floor(diffSec / 60)
   if (min < 60) return tr('обновлено :min мин назад').replace(':min', String(min))
@@ -769,7 +783,7 @@ const liveStatus = computed<string | null>(() => {
 })
 
 const scopeLabel = computed<string>(() => {
-  // Активный view → его имя; иначе "Все {ресурс в lowercase}".
+  // An active view shows its own name; otherwise "All {resource, lowercased}".
   if (activeViewId.value !== null) {
     const v = savedViews.value.find((x) => x.id === activeViewId.value)
     if (v) return v.name
@@ -779,28 +793,29 @@ const scopeLabel = computed<string>(() => {
 })
 
 /**
- * Обёртка над index.load — увеличивает navigation pending counter
- * (top loading-bar) на время запроса. router.beforeEach уже инкрементирует
- * counter при start navigation; этот wrap держит bar до конца data-fetch'а.
+ * A wrapper over index.load that raises the navigation pending counter — the
+ * top loading bar — for the duration of the request. router.beforeEach already
+ * increments it when navigation starts; this wrapper keeps the bar up until
+ * the data has actually arrived.
  */
 async function loadWithProgress(): Promise<void> {
   nav.start()
   try {
     await index.load()
   } catch {
-    // silent; ошибка отображается в hasError state
+    // Silent: the error surfaces through the hasError state.
   } finally {
     nav.end()
   }
 }
 
 /**
- * Mount-init: setSlug + load data.
+ * Mount-time init: set the slug and load the data.
  *
- * При SPA navigation от router.push первичный data-fetch также делается
- * в router.beforeResolve (см. createAdminApp.ts) — он держит navigation
- * в pending пока данные не пришли. Здесь load всё равно вызываем как
- * resilient fallback (direct page mount, page reload, test).
+ * On SPA navigation from router.push the first fetch also happens in
+ * router.beforeResolve (see createAdminApp.ts), which keeps the navigation
+ * pending until the data arrives. The load here stays as a resilient fallback:
+ * a direct mount, a page reload, a test.
  */
 onMounted(async () => {
   index.setSlug(props.slug)
@@ -823,9 +838,9 @@ watch(
 )
 
 async function onSortKeyUpdate(key: string | null): Promise<void> {
-  // UidTable управляет своим 3-режимным cycle; здесь только применяем итог.
-  // sortDirection приходит отдельным событием — apply через setSort одним
-  // вызовом (после nextTick — Vue batches событий).
+  // UidTable runs its own three-state cycle; here we only apply the outcome.
+  // sortDirection arrives as a separate event, so setSort is called once,
+  // after nextTick, since Vue batches the events.
   await nextTick()
   await index.setSort(key, index.sortDirection)
 }
@@ -854,8 +869,8 @@ function inlineRowId(slotProps: unknown): string | number {
 
 function onRowClick(row: Record<string, unknown>): void {
   emit('row-click', row)
-  // По умолчанию click по строке открывает view-screen записи.
-  // Host может перехватить через @row-click и сделать e.preventDefault.
+  // By default a row click opens the record's view screen. A host can
+  // intercept it through @row-click and call preventDefault.
   const id = rowId(row)
   if (id !== null) {
     void router.push({ name: `admin.resource.${props.slug}.view`, params: { id: String(id) } })
@@ -898,7 +913,7 @@ async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<v
   }
 }
 
-/** Soft-deleted rows имеют непустой `deleted_at`. */
+/** Soft-deleted rows carry a non-empty `deleted_at`. */
 function isTrashed(row: Record<string, unknown>): boolean {
   return row.deleted_at !== null && row.deleted_at !== undefined
 }
@@ -941,8 +956,8 @@ function onRowDragStart(idx: number, e: DragEvent): void {
 function onRowDragOver(idx: number, e: DragEvent): void {
   if (!isReorderable.value || dragRowIdx.value === null) return
   e.preventDefault()
-  // Определяем сторону по mid-Y current cell'а — drop-line будет либо
-  // выше, либо ниже текущей строки.
+  // The side is decided by the mid-Y of the current cell: the drop line goes
+  // either above or below the row.
   const target = e.currentTarget as HTMLElement | null
   if (target) {
     const rect = target.getBoundingClientRect()
@@ -958,13 +973,14 @@ async function onRowDrop(toIdx: number, e: DragEvent): Promise<void> {
   e.preventDefault()
   if (!isReorderable.value || dragRowIdx.value === null) return
   const fromIdx = dragRowIdx.value
-  // adjusted = вставка после строки (insertion-index в уже-удалённом array).
+  // `adjusted` is the insertion index after the row, counted in the array
+  // the dragged item has already been removed from.
   const adjusted = dragOverSide.value === 'after' ? toIdx + 1 : toIdx
   const finalIdx = adjusted > fromIdx ? adjusted - 1 : adjusted
   dragRowIdx.value = null
   dragOverRowIdx.value = null
   if (fromIdx === finalIdx) return
-  // Локальный reorder для мгновенного отклика.
+  // Reorder locally first, so the response is instant.
   const items = [...index.items]
   const [moved] = items.splice(fromIdx, 1)
   items.splice(finalIdx, 0, moved)
@@ -1393,12 +1409,12 @@ async function retryLoad(): Promise<void> {
   flex-direction: column;
   gap: var(--uid-space-sm);
   margin-top: var(--uid-space-md);
-  /* min-height предотвращает layout-collapse при первом mount'е,
+  /* min-height keeps the layout from collapsing on the first mount,
      когда slowLoading ещё false (быстрый запрос — placeholder пустой). */
   min-height: 320px;
 }
 
-/* Drag-handle для reorderable resource'а — первая колонка. */
+/* Drag handle of a reorderable resource — the first column. */
 .admin-resource-index__row-drag {
   position: relative;
   display: inline-flex;
@@ -1415,9 +1431,9 @@ async function retryLoad(): Promise<void> {
   color: var(--uid-text-primary);
 }
 .admin-resource-index__row-drag:active { cursor: grabbing; }
-/* Полупрозрачная исходная строка во время drag (приём из Notion/Linear). */
+/* The source row goes translucent while dragging — borrowed from Notion and Linear. */
 .admin-resource-index__row-drag--ghost { opacity: 0.4; }
-/* Линия-индикатор drop'а — extends на всю ширину строки через ::before
+/* The drop indicator line, stretched across the row through ::before
    (положение absolute относительно td.admin-resource-index__row-drag,
    left:-9999 чтобы перекрыть ширину таблицы). */
 .admin-resource-index__row-drag--drop-before::before,
@@ -1434,7 +1450,7 @@ async function retryLoad(): Promise<void> {
 .admin-resource-index__row-drag--drop-before::before { top: -1px; }
 .admin-resource-index__row-drag--drop-after::before { bottom: -1px; }
 
-/* Row actions: View / Edit / Delete иконки в последней колонке таблицы. */
+/* Row actions: the view, edit and delete icons in the last column. */
 .admin-resource-index__row-actions {
   display: flex;
   align-items: center;
@@ -1469,7 +1485,7 @@ async function retryLoad(): Promise<void> {
   margin-top: var(--uid-space-xl);
 }
 .admin-resource-index__table {
-  /* table визуально приклеена к filter-bar / bulk-toolbar сверху —
+  /* The table is visually glued to the filter bar or bulk toolbar above it —
      убираем gap, скругляем только нижние углы у table-wrap'а. */
   margin-top: 0;
 }
@@ -1480,10 +1496,10 @@ async function retryLoad(): Promise<void> {
 }
 
 /*
- * Compact-mode table: уменьшаем padding td/th под --admin-row-h:32px и
- * font-size 13px. Оригинальный UidTable ставит padding:12px — для compact
- * это много. Переопределяем точечно внутри admin-resource-index'а чтобы
- * не задеть UidTable в других контекстах (storybook, custom widgets).
+ * Compact table mode: the td/th padding is reduced to fit --admin-row-h:32px
+ * and a 13px font. The stock UidTable uses padding:12px, which is too much
+ * here. The override is scoped to admin-resource-index so that UidTable stays
+ * untouched elsewhere — storybook, custom widgets.
  */
 .admin-resource-index__table .uid-table__td,
 .admin-resource-index__table .uid-table__th {
@@ -1494,12 +1510,12 @@ async function retryLoad(): Promise<void> {
 }
 
 /*
- * Cell truncate — 1 строка с ellipsis, max-width адекватный (320px по
- * умолчанию). Long-words переносятся внутри ограничения макс. до 3 строк
- * (line-clamp) на случай когда host переопределит white-space через slot.
+ * Cell truncation: one line with an ellipsis and a sane max-width, 320px by
+ * default. Long words wrap within that limit up to three lines (line-clamp),
+ * in case a host overrides white-space through a slot.
  *
- * Tooltip с полным значением — нативный browser-tooltip через title=
- * атрибут (см. ResourceIndexPage.vue cell renderer).
+ * The full value is shown by the native browser tooltip through the `title`
+ * attribute — see the cell renderer above.
  */
 .admin-cell-truncate {
   display: inline-block;
@@ -1562,7 +1578,7 @@ async function retryLoad(): Promise<void> {
 }
 .admin-filter-bar__spacer { flex: 1; }
 
-/* Bulk toolbar — dark zinc-900 surface, заменяет filter bar */
+/* Bulk toolbar — a dark zinc-900 surface that replaces the filter bar */
 .admin-bulk-toolbar {
   display: flex;
   align-items: center;
