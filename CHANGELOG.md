@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.25.2
+
+### Fixed
+- **The drawer link of 1.25.1 went into a component nobody renders.** There
+  were two `NotificationsDrawer.vue` in the tree: the live one under `shell/`,
+  which `AdminApp` mounts, and a twin under `notifications/` — exported
+  publicly, covered by tests, and rendered nowhere. The edit landed in the
+  twin, its test stayed green, and the panel did not change.
+
+  The twin is gone, the public export now points at the live component, and its
+  test moved with it — the live drawer had never had one, which is exactly how
+  a dead duplicate survives.
+
 ## 1.25.1
 
 ### Added

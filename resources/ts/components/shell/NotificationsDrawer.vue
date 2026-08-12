@@ -13,6 +13,7 @@
  * в pinia store (см. stores/notifications.ts).
  */
 import { computed, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   AlertTriangle,
   Check,
@@ -32,6 +33,7 @@ import {
 import { trSafe as tr } from '../../stores/i18n'
 
 const notifications = useNotificationsStore()
+const router = useRouter()
 
 const isOpen = computed<boolean>(() => notifications.isOpen)
 
@@ -70,6 +72,12 @@ async function onItemClick(item: NotificationItem): Promise<void> {
 async function onDelete(item: NotificationItem, e: MouseEvent): Promise<void> {
   e.stopPropagation()
   await notifications.destroy(item.id).catch(() => undefined)
+}
+
+/** Полный список: шторку закрываем, иначе она останется поверх страницы. */
+async function openAll(): Promise<void> {
+  close()
+  await router.push({ name: 'admin.notifications' }).catch(() => undefined)
 }
 
 function close(): void {
@@ -282,6 +290,15 @@ onUnmounted(() => {
               </li>
             </ol>
           </div>
+
+          <!--
+            Ссылка на полный список. Без неё страница уведомлений существует, а
+            найти её неоткуда: шторка показывает последние и закрывается по
+            клику, адрес пришлось бы знать наизусть.
+          -->
+          <footer class="admin-notif-drawer__ft">
+            <a href="#" @click.prevent="openAll">{{ tr('Все уведомления') }}</a>
+          </footer>
         </aside>
       </div>
     </Transition>
@@ -575,5 +592,10 @@ onUnmounted(() => {
 .admin-notif-drawer-enter-from .admin-notif-drawer__panel,
 .admin-notif-drawer-leave-to .admin-notif-drawer__panel {
   transform: translateX(100%);
+}
+.admin-notif-drawer__ft {
+  padding: 10px 16px;
+  border-top: 1px solid var(--uid-color-border, #e5e7eb);
+  font-size: 13px;
 }
 </style>
