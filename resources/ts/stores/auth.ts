@@ -1,16 +1,16 @@
 /**
- * Auth store: текущий user, permissions, login/logout/2FA flow.
+ * The auth store: the current user, the permissions, the login/logout/2FA flow.
  *
- * Wildcard в permissions:
- *   - `*` — полный доступ ко всему.
- *   - `admin.users.*` — доступ ко всем admin.users.{view,create,update,delete}.
+ * Wildcards in permissions:
+ *   - `*` — full access to everything.
+ *   - `admin.users.*` — access to every admin.users.{view,create,update,delete}.
  *
- * 2FA flow:
- *   1. login() с верными creds + 2FA включена → success: false +
- *      errorKey: 'two_factor_required' + challenge_token. State переходит в
- *      `pendingChallenge`.
- *   2. UI показывает 2FA-форму. twoFactorChallenge(code) или
- *      twoFactorRecovery(recovery_code) → success login flow.
+ * The 2FA flow:
+ *   1. login() with valid credentials and 2FA enabled returns success: false
+ *      plus errorKey: 'two_factor_required' and a challenge_token. The state
+ *      moves to `pendingChallenge`.
+ *   2. The UI shows the 2FA form. twoFactorChallenge(code) or
+ *      twoFactorRecovery(recovery_code) completes the login.
  */
 
 import { defineStore } from 'pinia'
@@ -39,24 +39,24 @@ export const useAuthStore = defineStore('admin-auth', () => {
   const isAuthenticated = computed(() => user.value !== null)
   const isChallengePending = computed(() => pendingChallenge.value !== null)
 
-  /** Заполнить store из bootstrap-payload'а (стартовая инициализация). */
+  /** Fills the store from the bootstrap payload — the initial setup. */
   function hydrate(bootstrap: AdminBootstrap): void {
     user.value = bootstrap.user
     permissions.value = bootstrap.permissions
   }
 
   /**
-   * Локаль вошедшего — из его же ответа сервера.
+   * The locale of whoever just logged in, taken from the server's own answer.
    *
-   * Логин делается XHR'ом без перезагрузки страницы, а locale-store был
-   * гидрирован один раз, на гостевом bootstrap'е — то есть по
-   * Accept-Language браузера. Сохранённая настройка пользователя
-   * подхватывалась только при следующей полной загрузке, и панель после
-   * входа говорила на языке браузера, а после F5 — на языке аккаунта.
+   * The login is an XHR with no page reload, while the locale store was
+   * hydrated once, on the guest bootstrap — that is, from the browser's
+   * Accept-Language. The user's saved preference was only picked up on the
+   * next full load, so the panel spoke the browser's language right after the
+   * login and the account's language after F5.
    *
-   * Ставим ДО присвоения user: на его появление подписан загрузчик
-   * манифеста, и заголовок X-Admin-Locale должен быть уже правильным —
-   * иначе манифест приедет на чужом языке.
+   * We set it BEFORE assigning the user: the manifest loader is subscribed to
+   * the user appearing, and the X-Admin-Locale header must already be right —
+   * otherwise the manifest arrives in the wrong language.
    */
   function adoptUserLocale(next: AdminUser | null): void {
     const locale = next?.locale
@@ -67,22 +67,22 @@ export const useAuthStore = defineStore('admin-auth', () => {
       if (localeStore.current === locale) return
       localeStore.applyLocal(locale)
     } catch {
-      // Локаль пользователя вне available-списка либо store ещё не поднят —
-      // не повод ронять вход.
+      // The user's locale is outside the available list, or the store is not
+      // up yet — neither is a reason to break the login.
     }
   }
 
   /**
-   * Проверить permission. Поддерживает wildcards:
-   *   - `*` — даёт доступ всем.
-   *   - `admin.users.*` — даёт доступ ко всем admin.users.X.
+   * Checks a permission. Wildcards are supported:
+   *   - `*` — grants everything.
+   *   - `admin.users.*` — grants every admin.users.X.
    */
   function hasPermission(key: string): boolean {
     if (permissions.value.includes('*')) return true
     if (permissions.value.includes(key)) return true
-    // Glob-маски зеркалят backend Role::hasPermission (fnmatch): '*'
-    // матчит любые символы, включая точки — поддерживаются и хвостовые
-    // ('admin.users.*'), и серединные ('printable.*.view') шаблоны.
+    // The glob masks mirror the backend's Role::hasPermission (fnmatch): '*'
+    // matches any characters, dots included, so both trailing
+    // ('admin.users.*') and middle ('printable.*.view') patterns work.
     return permissions.value.some((permission) => {
       if (!permission.includes('*')) return false
       const pattern = permission
@@ -102,11 +102,11 @@ export const useAuthStore = defineStore('admin-auth', () => {
   }
 
   /**
-   * POST /auth/login. При 2FA-required envelope success:false +
-   * errorKey:'two_factor_required' конвертируется interceptor'ом в ApiError;
-   * мы ловим его, переходим в challenge-mode и возвращаем 'two_factor_required'.
-   * На полный success — заполняем user и возвращаем 'authenticated'.
-   * На реальную ошибку — throw'ит ApiError выше.
+   * POST /auth/login. On a 2FA-required envelope the interceptor turns
+   * success:false + errorKey:'two_factor_required' into an ApiError; we catch
+   * it, switch to challenge mode and return 'two_factor_required'. On a full
+   * success we fill in the user and return 'authenticated'. A real error is
+   * rethrown as an ApiError.
    */
   async function login(payload: LoginPayload): Promise<'authenticated' | 'two_factor_required'> {
     const client = getAdminClient()
@@ -137,7 +137,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
     }
   }
 
-  /** POST /auth/twoFactorChallenge. Завершает login. */
+  /** POST /auth/twoFactorChallenge. Completes the login. */
   async function twoFactorChallenge(code: string): Promise<void> {
     if (pendingChallenge.value === null) {
       throw new Error('No pending 2FA challenge')
@@ -152,7 +152,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
     pendingChallenge.value = null
   }
 
-  /** POST /auth/twoFactorRecovery. Использует recovery-код вместо TOTP. */
+  /** POST /auth/twoFactorRecovery. Uses a recovery code instead of a TOTP. */
   async function twoFactorRecovery(recoveryCode: string): Promise<{ remaining: number }> {
     if (pendingChallenge.value === null) {
       throw new Error('No pending 2FA challenge')
@@ -171,12 +171,12 @@ export const useAuthStore = defineStore('admin-auth', () => {
     return { remaining: result.recovery_codes_remaining }
   }
 
-  /** Сбросить pending challenge — для возврата на login-форму. */
+  /** Drops the pending challenge, to get back to the login form. */
   function cancelChallenge(): void {
     pendingChallenge.value = null
   }
 
-  /** POST /auth/logout. Чистит store. */
+  /** POST /auth/logout. Clears the store. */
   async function logout(): Promise<void> {
     const client = getAdminClient()
     try {
@@ -185,12 +185,12 @@ export const useAuthStore = defineStore('admin-auth', () => {
       user.value = null
       permissions.value = []
       pendingChallenge.value = null
-      // Локаль вышедшего не должна достаться следующему: заголовок стоит
-      // в цепочке выше сохранённой настройки аккаунта.
+      // The locale of whoever just left must not reach the next person: the
+      // header sits above the account's saved preference in the chain.
       try {
         useLocaleStore().release()
       } catch {
-        // Store недоступен (тесты без Pinia) — выход важнее уборки.
+        // The store is unavailable (tests without Pinia) — logging out matters more than tidying up.
       }
     }
   }

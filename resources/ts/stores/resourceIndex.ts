@@ -1,16 +1,18 @@
 /**
- * useResourceIndexStore — list-page state для одного Resource'а.
+ * useResourceIndexStore — the list page's state for a single resource.
  *
- * Поддерживает:
- *   - items + pagination meta из envelope payload
- *   - filters (typed Record<string, unknown>) — отправляются как query
- *   - sort (key + direction)
- *   - selection (Set<row-id>) для bulk-actions; tri-state header-checkbox
- *   - loading/error состояния (UI рендерит UidSkeleton/UidErrorState)
+ * It carries:
+ *   - the items and the pagination meta from the envelope payload
+ *   - the filters (a typed Record<string, unknown>), sent as the query
+ *   - the sort (key and direction)
+ *   - the selection (a Set of row ids) for bulk actions, with a tri-state
+ *     header checkbox
+ *   - the loading and error states, which the UI renders as UidSkeleton and
+ *     UidErrorState
  *
- * Один store-instance переиспользуется на разных Resource-страницах через
- * `useResourceIndexStore(slug)` с явным `setSlug` — это даёт чистый reset
- * между resource'ами.
+ * One store instance is reused across the resource pages through
+ * `useResourceIndexStore(slug)` with an explicit `setSlug`, which gives a
+ * clean reset between resources.
  */
 
 import { defineStore } from 'pinia'
@@ -43,7 +45,7 @@ interface ListResponse {
 const DEFAULT_META: IndexMeta = { page: 1, per_page: 20, total: 0, last_page: 1 }
 
 export const useResourceIndexStore = defineStore('admin-resource-index', () => {
-  /** Текущий resource-slug (urls/users/posts/etc). */
+  /** The current resource slug: urls, users, posts and so on. */
   const slug = ref<string | null>(null)
 
   const items = ref<Array<Record<string, unknown>>>([])
@@ -51,10 +53,10 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
 
   const loading = ref(false)
   /**
-   * `slowLoading` = true только если loading длится > SLOW_LOADING_DELAY мс.
-   * UI использует это для skeleton — чтобы быстрые ответы (<200мс) не
-   * мерцали 'data → skeleton → data'. Если запрос быстрый, skeleton
-   * никогда не показывается.
+   * `slowLoading` turns true only when the loading lasts longer than
+   * SLOW_LOADING_DELAY ms. The UI draws its skeleton off this, so that fast
+   * responses (under 200ms) do not flicker 'data → skeleton → data'. When the
+   * request is quick, the skeleton never appears.
    */
   const slowLoading = ref(false)
   const error = ref<Error | null>(null)
@@ -66,7 +68,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
   const sortKey = ref<string | null>(null)
   const sortDirection = ref<SortDirection>(null)
 
-  /** Set ID-шников выбранных строк (bulk-actions). */
+  /** The set of selected row ids, for the bulk actions. */
   const selection = ref<Set<string | number>>(new Set())
 
   const isEmpty = computed(() => !loading.value && error.value === null && items.value.length === 0)
@@ -74,7 +76,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
   const hasSelection = computed(() => selection.value.size > 0)
   const hasError = computed(() => error.value !== null)
 
-  /** Tri-state: 'all' / 'mixed' / 'none' для header-checkbox. */
+  /** Tri-state for the header checkbox: 'all' / 'mixed' / 'none'. */
   const selectionState = computed<'all' | 'mixed' | 'none'>(() => {
     if (selection.value.size === 0) return 'none'
     if (items.value.length === 0) return 'none'
@@ -82,17 +84,17 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     return allSelected ? 'all' : 'mixed'
   })
 
-  /** Извлекает ID строки. По умолчанию — поле `id`; host может переопределить. */
+  /** Extracts a row's id. The `id` field by default; the host may override it. */
   function rowId(row: Record<string, unknown>): string | number {
     return (row.id ?? row.key ?? '') as string | number
   }
 
   /**
-   * Сменить ресурс — сброс state'а.
+   * Switches to another resource, resetting the state.
    *
-   * `loading=true` ставится сразу, чтобы в окне между setSlug() и load() не
-   * рендерилась EmptyState ("Нет данных") — это вызывало flicker при
-   * navigation между Resource'ами.
+   * `loading=true` is set right away so that the window between setSlug() and
+   * load() does not render the empty state ("No data") — that flickered while
+   * navigating between resources.
    */
   function setSlug(next: string | null): void {
     if (slug.value === next) return
@@ -118,19 +120,20 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
       page: override.page ?? meta.value.page,
       per_page: override.per_page ?? meta.value.per_page,
     }
-    // Free-text: backend ждёт `q`. См. HttpFilterParser::searchTerm.
+    // Free text: the backend expects `q`. See HttpFilterParser::searchTerm.
     const ss = override.search ?? search.value
     if (ss) params.q = ss
 
-    // Order: массив {column, direction}. Backend читает `order[]` через input('order').
-    // Если direction === null → не добавляем order (3-режимная sort: off).
+    // Order is an array of {column, direction}; the backend reads `order[]`
+    // through input('order'). With direction === null we add no order at all —
+    // that is the "off" step of the three-way sort.
     const sk = override.sort ?? sortKey.value
     const dir = override.direction ?? sortDirection.value
     if (sk && dir !== null) {
       params.order = [{ column: sk, direction: dir }]
     }
 
-    // Filters: map-style {column: value} — HttpFilterParser auto-detect режим 1.
+    // Filters go map-style, {column: value} — mode 1 of HttpFilterParser's auto-detection.
     const f = override.filters ?? filters.value
     const filtersMap: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(f)) {
@@ -142,14 +145,14 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     return params
   }
 
-  /** Загрузить страницу. Без аргументов — текущие фильтры/сортировка/page. */
+  /** Loads a page. Without arguments it uses the current filters, sort and page. */
   async function load(override: IndexParams = {}): Promise<void> {
     if (!slug.value) {
       throw new Error('useResourceIndexStore.load() called before setSlug()')
     }
     loading.value = true
     error.value = null
-    // Debounced flag для skeleton: true только если запрос длится > 200мс.
+    // The debounced flag behind the skeleton: true only when the request takes over 200ms.
     if (slowLoadingTimer !== null) clearTimeout(slowLoadingTimer)
     slowLoadingTimer = setTimeout(() => {
       slowLoading.value = true
@@ -157,9 +160,9 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     try {
       const client = getAdminClient()
       const body = buildParams(override)
-      // Backend ResourceController.search: POST /{slug}/search.
-      // Тело — параметры (фильтры/сортировка/пагинация). Возвращает
-      // {data, meta:{page,per_page,total,last_page,...}}.
+      // The backend's ResourceController.search: POST /{slug}/search. The
+      // body carries the parameters — filters, sort, pagination — and the
+      // answer is {data, meta:{page,per_page,total,last_page,...}}.
       const res = await client.post<ListResponse>(`/${slug.value}/search`, body)
       items.value = res.data
       meta.value = res.meta
@@ -205,8 +208,8 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
   }
 
   /**
-   * 3-режимная sort. Click по same key → asc → desc → off (sort=null).
-   * Click по другому key → asc.
+   * A three-way sort. Clicking the same key walks asc → desc → off
+   * (sort=null); clicking another key starts at asc.
    */
   async function toggleSort(key: string): Promise<void> {
     if (sortKey.value === key) {
@@ -237,7 +240,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     selection.value = next
   }
 
-  /** Toggle: выделить все на странице если что-то не выбрано, иначе очистить. */
+  /** A toggle: select everything on the page unless it is all selected already, otherwise clear. */
   function toggleAllOnPage(): void {
     if (selectionState.value === 'all') {
       selection.value = new Set()
@@ -252,7 +255,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     selection.value = new Set()
   }
 
-  /** Проверить выбор конкретной строки. */
+  /** Tells whether a particular row is selected. */
   function isSelected(id: string | number): boolean {
     return selection.value.has(id)
   }

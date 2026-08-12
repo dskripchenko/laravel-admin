@@ -5,27 +5,27 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 /**
- * Преобразует список Field-объектов в Laravel-style validation rules,
- * применимые в `Request::validate(...)`.
+ * Turns a list of Field objects into Laravel-style validation rules fit for
+ * `Request::validate(...)`.
  *
- * Работает в две стадии:
- *   1. Берёт явно объявленные `$field->getRules()`.
- *   2. Дополняет их type-specific implicit-rules:
- *      - number/slider → `numeric`, `integer` (если ->integer()), `min:`/`max:` из attributes
- *      - email-input (->type('email')) → `email`
- *      - date/date_range/time → `date` или `date_format`
- *      - file → `file`/`image`, `mimes:`, `max:` (KB), `array` для multiple, `between:0,maxFiles`
- *      - select/checkbox/radio с multiple → `array`
- *      - color → `regex:/^#?[0-9a-f]{3,8}$/i` (для hex)
+ * It works in two stages:
+ *   1. It takes the explicitly declared `$field->getRules()`.
+ *   2. It fills them out with type-specific implicit rules:
+ *      - number/slider → `numeric`, `integer` (when ->integer()), `min:`/`max:` from the attributes
+ *      - an email input (->type('email')) → `email`
+ *      - date/date_range/time → `date` or `date_format`
+ *      - file → `file`/`image`, `mimes:`, `max:` (KB), `array` for multiple, `between:0,maxFiles`
+ *      - select/checkbox/radio with multiple → `array`
+ *      - color → `regex:/^#?[0-9a-f]{3,8}$/i` for hex
  *
- * Цель — чтобы Resource::validationRules() не требовал ручного дублирования
- * limits на UI-side и backend-side.
+ * The point is that Resource::validationRules() should not have to repeat the
+ * limits by hand on both the UI side and the backend side.
  */
 final class ValidationRulesExporter
 {
     /**
      * @param  list<Field>  $fields
-     * @param  string  $context  create|update|view — фильтрует по appliesTo()
+     * @param  string  $context  create|update|view — filters by appliesTo()
      * @return array<string, list<mixed>>
      */
     public static function export(array $fields, string $context = 'create'): array
@@ -37,16 +37,16 @@ final class ValidationRulesExporter
             }
             $rules = self::rulesFor($field);
             if ($rules === []) {
-                // Поле должно попасть в validate(), иначе Laravel срежет
-                // его из $data — даже если бэкенд хочет получить значение
-                // как-есть. Default — `nullable` (без явных ограничений).
+                // The field has to reach validate(), otherwise Laravel drops
+                // it from $data — even when the backend wants the value as it
+                // is. The default is `nullable`, with no explicit limits.
                 $rules = ['nullable'];
             }
             $result[$field->name()] = $rules;
 
-            // Файловые поля: SPA работает upload-first (FileField.vue грузит
-            // через /uploads/upload и кладёт в форму {disk, path, ...}), и
-            // нужен контракт на эту форму значения.
+            // File fields: the SPA is upload-first (FileField.vue uploads
+            // through /uploads/upload and puts {disk, path, ...} into the
+            // form), so that shape of the value needs a contract.
             if ($field->fieldType() === 'file') {
                 $prefix = ($field->getAttribute('multiple') ?? false) === true
                     ? $field->name().'.*'
@@ -66,19 +66,20 @@ final class ValidationRulesExporter
     {
         $all = $field->getRules();
         $explicit = self::onlyStringRules($all);
-        // Object-rules (Rule::unique() и т.п.) идут в валидатор как есть —
-        // раньше экспортёр молча их отбрасывал и они не работали вовсе.
+        // Object rules (Rule::unique() and friends) go into the validator as
+        // they are — the exporter used to drop them silently, so they did not
+        // work at all.
         $objects = array_values(array_filter($all, static fn ($r): bool => ! is_string($r)));
         $implicit = self::implicitRulesByType($field);
 
-        // required attribute сам по себе подтягивает rule (на случай если
-        // rules([...]) перетёрли массив после required()).
+        // The required attribute pulls in the rule by itself, in case
+        // rules([...]) overwrote the array after required().
         if (($field->getAttribute('required') ?? false) === true
             && ! in_array('required', $explicit, true)) {
             $explicit[] = 'required';
         }
 
-        // explicit имеет приоритет; добавляем только те implicit, что не дублируют префикс.
+        // The explicit rules win; we add only the implicit ones that do not repeat a prefix.
         $merged = $explicit;
         foreach ($implicit as $rule) {
             if (! self::ruleAlreadyApplied($explicit, $rule)) {
@@ -90,8 +91,8 @@ final class ValidationRulesExporter
     }
 
     /**
-     * Из mixed-rules берём только string-rules. Object/array-rules экспортёр
-     * пропускает — они едут в Laravel напрямую через rules().
+     * Out of the mixed rules we take only the string ones. Object and array
+     * rules are skipped here — they go to Laravel directly through rules().
      *
      * @param  list<string|array<string, mixed>>  $rules
      * @return list<string>
@@ -192,19 +193,21 @@ final class ValidationRulesExporter
                 $rules[] = 'max:'.$attrs['maxFiles'];
             }
 
-            // Каждый элемент массива тоже проверяем — это идёт через name.* в Laravel,
-            // но здесь экспортёр возвращает rules для name напрямую. Каждый-элемент
-            // правило ставит реализатор отдельно при необходимости.
+            // The array's elements are checked too — in Laravel that goes
+            // through name.*, while the exporter here returns the rules for
+            // name itself. A per-element rule is added separately by whoever
+            // needs one.
             return $rules;
         }
 
-        // Upload-first: SPA никогда не шлёт multipart в create/update — файл
-        // уже загружен через /uploads/upload, а в форме едет {disk, path}.
-        // Правила `file`/`mimes` здесь отклоняли ровно ту форму значения,
-        // которую панель и отправляет: создание записи с файловым полем не
-        // могло пройти валидацию вовсе (найдено OptionsIntegrityTest
-        // printable на файлах шрифтов). Размер и тип проверяются при самой
-        // загрузке (/uploads/upload) и доменной логикой fillModel.
+        // Upload-first: the SPA never sends multipart on create or update —
+        // the file has already gone through /uploads/upload and the form
+        // carries {disk, path}. The `file` and `mimes` rules rejected exactly
+        // the shape of value the panel sends, so creating a record with a file
+        // field could not pass validation at all (found by printable's
+        // OptionsIntegrityTest on font files). The size and the type are
+        // checked during the upload itself (/uploads/upload) and by fillModel's
+        // domain logic.
         $rules[] = 'array';
 
         return $rules;
@@ -237,7 +240,7 @@ final class ValidationRulesExporter
     }
 
     /**
-     * Проверяет, есть ли уже правило с тем же префиксом (`min:`, `max:`).
+     * Tells whether a rule with the same prefix (`min:`, `max:`) is already there.
      *
      * @param  list<string>  $existing
      */

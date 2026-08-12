@@ -24,25 +24,26 @@ use function Laravel\Prompts\warning;
 /**
  * `php artisan admin:make-section`
  *
- * Главный мастер для создания нового раздела в админке. Запускается без
- * аргументов — все вводы интерактивно через Laravel Prompts.
+ * The main wizard for adding a new section to the admin panel. It is started
+ * without arguments — everything is entered interactively through Laravel
+ * Prompts.
  *
- * Шаги:
- *   1. Имя раздела (label) и singular
- *   2. Источник: Eloquent-модель (auto-discover) ИЛИ DB-таблица
- *   3. Анализ schema + relations
- *   4. Выбор полей формы (multiselect)
- *   5. Выбор колонок таблицы
- *   6. Permission base
- *   7. Иконка
- *   8. Меню — добавить как корневой / под существующий parent
- *   9. (опц.) создать Role с этими permissions
+ * The steps:
+ *   1. The section's label and its singular form
+ *   2. The source: an Eloquent model (auto-discovered) OR a database table
+ *   3. Analysis of the schema and the relations
+ *   4. Picking the form fields (multiselect)
+ *   5. Picking the table columns
+ *   6. The permission base
+ *   7. The icon
+ *   8. The menu — as a root item or under an existing parent
+ *   9. Optionally, a role carrying these permissions
  *
- * На выходе:
+ * What comes out:
  *   - app/Admin/Resources/{Name}Resource.php
- *   - Регистрация в app/Admin/AdminPlugin.php (создаётся если нет)
- *   - Admin::menu()->add(MenuNode::resource(...)) добавлено
- *   - (опц.) Role с permissions admin.{slug}.{view,create,update,delete}
+ *   - a registration in app/Admin/AdminPlugin.php, created if missing
+ *   - an Admin::menu()->add(MenuNode::resource(...)) entry
+ *   - optionally a role with the permissions admin.{slug}.{view,create,update,delete}
  */
 final class MakeSectionCommand extends Command
 {
@@ -64,7 +65,7 @@ final class MakeSectionCommand extends Command
             ."permissions и пункт меню.\n"
             .'На любом шаге можно отменить (Ctrl+C).');
 
-        // === 1. Метаданные ===
+        // === 1. Metadata ===
         $singular = text(
             label: 'Singular label (например: Article)',
             placeholder: 'Article',
@@ -76,7 +77,7 @@ final class MakeSectionCommand extends Command
             required: true,
         );
 
-        // === 2. Источник ===
+        // === 2. The source ===
         $sourceType = select(
             label: 'Источник данных',
             options: [
@@ -101,11 +102,11 @@ final class MakeSectionCommand extends Command
         $modelClass = $analysis['model'] ?? null;
         $tableName = $analysis['table'];
 
-        // === 3. Поля и колонки ===
+        // === 3. Fields and columns ===
         $columns = $analysis['columns'] ?? [];
         $relations = $analysis['relations'] ?? [];
 
-        // RelationSelect display подбираем сразу через introspector
+        // The RelationSelect display column is chosen right away through the introspector
         $relations = array_map(function (array $rel) use ($schema): array {
             if ($rel['type'] === 'BelongsTo' && $rel['related'] !== null) {
                 $rel['display'] = $schema->pickDisplayColumn($rel['related']);
@@ -153,13 +154,13 @@ final class MakeSectionCommand extends Command
             default: $this->guessIcon($plural),
         );
 
-        // === 6. Group (опц.) ===
+        // === 6. Group (optional) ===
         $group = text(
             label: 'Группа в sidebar (пусто — без группы)',
             default: '',
         );
 
-        // === 7. Меню ===
+        // === 7. The menu ===
         $addMenu = confirm(label: 'Добавить в меню?', default: true);
         $menuParent = '';
         if ($addMenu) {
@@ -194,12 +195,12 @@ final class MakeSectionCommand extends Command
         $namespace = 'App\\Admin\\Resources';
         $className = $writer->classNameFor($singular, 'Resource');
 
-        // Если таблица без модели — генерим её сначала
+        // A table with no model: generate the model first
         if ($modelClass === null) {
             $modelClass = $this->ensureModel($tableName, $analysis, $writer, $files);
         }
 
-        // Подготовить strings для stub'а
+        // Prepare the strings for the stub
         $fieldsBlock = $this->buildFieldsBlock(
             $columns, $relations, $inferrer, $selectedFormColumns,
         );
@@ -211,8 +212,9 @@ final class MakeSectionCommand extends Command
 
         $extraImports = $this->buildExtraImports($columns, $relations);
 
-        // Hierarchy autodetect: BelongsTo на ту же модель (parent_id self-ref).
-        // --tree принудительно включает tree-режим даже если детект промахнулся.
+        // Hierarchy autodetection: a BelongsTo pointing at the same model, a
+        // parent_id self-reference. --tree forces the tree mode on even when
+        // the detection missed.
         $hierarchyKey = $this->detectHierarchyKey($relations, $modelClass);
         $treeMode = $hierarchyKey !== null || (bool) $this->option('tree');
         if ($treeMode && $hierarchyKey === null) {
@@ -256,12 +258,12 @@ final class MakeSectionCommand extends Command
         }
         info("✓ Создан: {$target}");
 
-        // Регистрация в plugin
+        // Registration in the plugin
         $resourceFqcn = $namespace.'\\'.$className;
         $reg = $updater->registerResource($resourceFqcn);
         info("✓ Plugin: {$reg['path']} ({$reg['action']})");
 
-        // Меню
+        // The menu
         if ($addMenu) {
             $updater->ensureImport($reg['path'], 'Dskripchenko\\LaravelAdmin\\Menu\\MenuNode');
             $menu = $updater->addMenuNode('resource', $slug, $menuParent ?: null);
@@ -306,7 +308,7 @@ final class MakeSectionCommand extends Command
         );
 
         $analysis = $schema->analyzeModel($picked);
-        // Объединяем data из таблицы (для типов) с relations из модели
+        // Merge the table's data, which carries the types, with the model's relations
         $tableAnalysis = $schema->analyzeTable($analysis['table']);
         $analysis = array_merge($analysis, [
             'columns' => $tableAnalysis['columns'],
@@ -344,7 +346,7 @@ final class MakeSectionCommand extends Command
     }
 
     /**
-     * Если таблица без модели — генерируем простую stub-модель.
+     * When a table has no model, generate a simple stub model for it.
      *
      * @param  array<string, mixed>  $analysis
      */
@@ -465,7 +467,7 @@ final class MakeSectionCommand extends Command
     }
 
     /**
-     * Собирает use-statement'ы для использованных Field/Filter-классов.
+     * Collects the use statements for the Field and Filter classes in play.
      *
      * @param  list<array<string, mixed>>  $columns
      * @param  list<array<string, mixed>>  $relations
@@ -478,7 +480,7 @@ final class MakeSectionCommand extends Command
             $type = strtolower($col['type']);
             $name = strtolower($col['name']);
 
-            // По name-pattern'ам:
+            // By name patterns:
             if (in_array($name, ['avatar', 'image', 'photo', 'cover', 'logo'], true)
                 || str_ends_with($name, '_image') || str_ends_with($name, '_file')
                 || in_array($name, ['file', 'attachment', 'document'], true)) {
@@ -491,7 +493,7 @@ final class MakeSectionCommand extends Command
                 $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Wysiwyg';
             }
 
-            // По типам:
+            // By type:
             if (in_array($type, ['boolean', 'bool', 'tinyint(1)'], true)) {
                 $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Switcher';
                 $needed[] = 'Dskripchenko\\LaravelAdmin\\Filter\\BaseSwitcherFilter';
@@ -531,7 +533,7 @@ final class MakeSectionCommand extends Command
             }
         }
 
-        // Hidden — для skipped columns
+        // Hidden fields, for the skipped columns
         $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Hidden';
 
         $needed = array_values(array_unique($needed));
@@ -556,8 +558,9 @@ final class MakeSectionCommand extends Command
     }
 
     /**
-     * Ищет BelongsTo-relation на ту же модель (self-ref → иерархия).
-     * Возвращает имя FK-колонки (`parent_id` и т.п.) или null.
+     * Looks for a BelongsTo relation pointing at the same model — a
+     * self-reference, and so a hierarchy. Returns the foreign-key column's
+     * name (`parent_id` and the like) or null.
      *
      * @param  list<array{name: string, type: string, related: ?class-string, foreign_key: ?string}>  $relations
      */

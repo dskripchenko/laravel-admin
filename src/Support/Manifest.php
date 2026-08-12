@@ -11,17 +11,18 @@ use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Settings\SettingsRegistry;
 
 /**
- * Сборщик JSON-манифеста admin для SPA.
+ * Builds the admin's JSON manifest for the SPA.
  *
- * Манифест содержит схемы всех Resource'ов / Screen'ов (без секретных
- * данных) и используется SPA для:
- *   - резолвинга роутов /admin/resources/{slug} и /admin/screens/{slug}
- *   - построения формы/таблицы из FieldSchema/ColumnSchema/FilterSchema
- *   - проверки UI-permissions
+ * The manifest holds the schemas of every resource and screen — nothing
+ * secret — and the SPA uses it to:
+ *   - resolve the /admin/resources/{slug} and /admin/screens/{slug} routes
+ *   - build the form and the table out of FieldSchema/ColumnSchema/FilterSchema
+ *   - check the UI permissions
  *
- * Manifest version — sha256 от сериализованного payload + admin version +
- * locale + permissions hash юзера. Этот хэш отдаётся в ETag и в bootstrap'е
- * (manifestVersion), SPA сравнивает и кэширует.
+ * The manifest version is a sha256 of the serialized payload plus the admin
+ * version, the locale and a hash of the user's permissions. That hash is
+ * returned in the ETag and in the bootstrap (manifestVersion); the SPA
+ * compares it and caches accordingly.
  */
 final class Manifest
 {
@@ -33,22 +34,22 @@ final class Manifest
     ) {}
 
     /**
-     * Memo собранных манифестов на время жизни инстанса. Убирает двойную
-     * сборку bootstrap'а (version() внутри звал полный build(), затем
-     * /manifest строил ещё раз).
+     * A memo of the assembled manifests, for the lifetime of the instance. It
+     * removes the double build during bootstrap, where version() called a full
+     * build() and /manifest then built it again.
      *
-     * Инстанс живёт РОВНО запрос: биндинг `scoped()`, не `singleton()`.
-     * Раньше здесь стояло «singleton = один HTTP-запрос в FPM» — под Octane
-     * это неверно, воркер переживает запрос, и memo становится межзапросным
-     * кэшем по ключу, который может не описывать всё, от чего зависит
-     * содержимое.
+     * The instance lives EXACTLY one request: the binding is `scoped()`, not
+     * `singleton()`. It used to say here that "a singleton is one HTTP request
+     * under FPM" — which is wrong under Octane, where the worker outlives the
+     * request and the memo becomes a cross-request cache keyed by something
+     * that may not describe everything the content depends on.
      *
      * @var array<string, array<string, mixed>>
      */
     private array $built = [];
 
     /**
-     * Сбросить memo (для тестов, мутирующих реестры между сборками).
+     * Clears the memo, for tests that mutate the registries between builds.
      */
     public function flush(): void
     {
@@ -56,16 +57,15 @@ final class Manifest
     }
 
     /**
-     * Собрать manifest для текущего пользователя и локали.
+     * Builds the manifest for the current user and locale.
      *
-     * На P1 фильтрация по permissions ещё не делается — все resource'ы видны.
-     * На P2 будет приниматься AdminUser и фильтроваться.
+     * There is no permission filtering yet — every resource is visible.
      *
      * @return array<string, mixed>
      */
     public function build(string $locale = 'ru', ?string $panel = null): array
     {
-        // v1.8 Panels: null — манифест дефолтной панели (BC).
+        // Panels: null means the default panel's manifest, kept for backward compatibility.
         $panel ??= 'admin';
         $memoKey = $locale.'|'.$panel;
         if (isset($this->built[$memoKey])) {
@@ -81,9 +81,9 @@ final class Manifest
             $resourcesPayload[] = ResourceManifest::describe($resource);
         }
 
-        // В `screens` попадают только custom Screen-ы. GeneratedScreen
-        // (внутри Resource) и DashboardScreen имеют отдельные controllers
-        // и собственные секции в манифесте (`resources` / `dashboards`).
+        // Only custom screens go into `screens`. GeneratedScreen (inside a
+        // resource) and DashboardScreen have their own controllers and their
+        // own sections of the manifest: `resources` and `dashboards`.
         $screensPayload = [];
         foreach ($this->screens->all($panel) as $slug => $class) {
             if (is_subclass_of($class, \Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen::class)) {
@@ -113,16 +113,17 @@ final class Manifest
             $settingsPayload[] = $settings->meta();
         }
 
-        // Dashboards: каждый DashboardScreen экспортируется как
-        // { slug, label, description, widgets[] } для frontend
-        // DashboardPage (slug в manifest.dashboards). widgets — выход
-        // Widget::toArray() — `{kind, slug, type, title, size, ...}`,
-        // фронт-renderer резолвит через registry по полю `type`.
+        // Dashboards: every DashboardScreen is exported as
+        // { slug, label, description, widgets[] } for the frontend's
+        // DashboardPage, keyed by slug in manifest.dashboards. The widgets are
+        // the output of Widget::toArray() — `{kind, slug, type, title, size,
+        // ...}` — and the frontend renderer resolves them through its registry
+        // by the `type` field.
         $dashboardsPayload = [];
         foreach ($this->screens->all($panel) as $slug => $class) {
-            // ScreenRegistry хранит class-strings; resolve через container,
-            // чтобы DI инжектил зависимости (если у конкретного DashboardScreen
-            // есть конструктор с типизированными аргументами).
+            // ScreenRegistry stores class strings; we resolve them through
+            // the container so that DI injects the dependencies, in case a
+            // particular DashboardScreen has a typed constructor.
             if (! is_subclass_of($class, \Dskripchenko\LaravelAdmin\Widget\DashboardScreen::class)) {
                 continue;
             }
@@ -163,7 +164,7 @@ final class Manifest
     }
 
     /**
-     * Хэш манифеста — детерминированный, основан на содержимом + версии admin.
+     * The manifest hash: deterministic, built from the content and the admin version.
      *
      * @param  array<string, mixed>  $payload
      */
@@ -175,7 +176,7 @@ final class Manifest
     }
 
     /**
-     * Текущая версия манифеста (без полной сборки) — для cheap ETag-сравнения.
+     * The manifest's current version, without a full build — for a cheap ETag comparison.
      */
     public function version(string $locale = 'ru', ?string $panel = null): string
     {

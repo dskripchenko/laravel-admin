@@ -1,19 +1,22 @@
 /**
- * useScreenStore — state для произвольных Screen (custom forms / pages вне CRUD).
+ * useScreenStore — the state of an arbitrary screen: custom forms and pages
+ * outside of CRUD.
  *
- * Управляет:
- *   - slug + state (working copy формы — провайдится через provideFormState)
- *   - layout / commandBar / name / description (snapshot из backend `state` action)
- *   - errors (field-keyed) — устанавливаются при ValidationError из runMethod
- *   - loading / running — UX-флаги
+ * It holds:
+ *   - the slug and the state (the form's working copy, exposed through
+ *     provideFormState)
+ *   - the layout, command bar, name and description — the snapshot from the
+ *     backend's `state` action
+ *   - the field-keyed errors, set from a ValidationError out of runMethod
+ *   - the loading and running UX flags
  *
- * Endpoints (laravel-admin contract):
- *   GET    /{slug}/state              — compile() snapshot
- *   POST   /{slug}/runMethod          — диспатч command-метода
+ * The endpoints, per the laravel-admin contract:
+ *   GET    /{slug}/state              — the compile() snapshot
+ *   POST   /{slug}/runMethod          — dispatches a command method
  *
- * Не кэширует ответы между slug'ами — переключение на другой screen
- * сбрасывает state. Сохранение dirty между screen'ами не нужно (custom
- * forms обычно atomic submit, не resume-able black box).
+ * Nothing is cached between slugs: switching to another screen resets the
+ * state. Keeping a dirty state across screens is not needed — custom forms are
+ * usually an atomic submit, not a resumable black box.
  */
 
 import { defineStore } from 'pinia'
@@ -72,11 +75,11 @@ export const useScreenStore = defineStore('admin-screen', () => {
   const permissions = ref<string[]>([])
   const etag = ref<string | null>(null)
 
-  /** Working copy формы — провайдится через provideFormState. */
+  /** The form's working copy, exposed through provideFormState. */
   const state = ref<Record<string, unknown>>({})
-  /** Initial state из последнего state-fetch'а (для reset). */
+  /** The initial state from the last state fetch, used by reset. */
   const initial = ref<Record<string, unknown>>({})
-  /** Field-keyed errors из ValidationException. */
+  /** The field-keyed errors from a ValidationException. */
   const errors = ref<Record<string, string[]>>({})
 
   const loading = ref(false)
@@ -86,18 +89,18 @@ export const useScreenStore = defineStore('admin-screen', () => {
 
   const hasError = computed(() => error.value !== null)
 
-  /** In-place мутация — сохраняет identity для provide/inject reactive proxy. */
+  /** An in-place mutation: it keeps the identity of the provide/inject reactive proxy. */
   function replaceObject(target: Record<string, unknown>, next: Record<string, unknown>): void {
     for (const k of Object.keys(target)) delete target[k]
     Object.assign(target, next)
   }
 
   /**
-   * Нормализует layout-tree для frontend LayoutRenderer'а.
+   * Normalizes the layout tree for the frontend's LayoutRenderer.
    *
-   * Backend Layout::toArray() кладёт детей в `children`, frontend layout-компоненты
-   * (Rows/Columns/Section/Tabs) ждут `items`. Делаем алиас рекурсивно — без
-   * мутации backend-формата.
+   * The backend's Layout::toArray() puts the children into `children`, while
+   * the frontend layout components (Rows, Columns, Section, Tabs) expect
+   * `items`. We alias it recursively, without mutating the backend format.
    */
   function normalizeLayoutTree(nodes: ScreenLayoutNode[]): ScreenLayoutNode[] {
     return nodes.map((node) => normalizeLayoutNode(node))
@@ -114,8 +117,9 @@ export const useScreenStore = defineStore('admin-screen', () => {
         typeof child === 'object' && child !== null ? normalizeLayoutNode(child) : child,
       )
     }
-    // Backend кладёт type-specific поля в `props`. Распакуем их на верхний
-    // уровень — frontend layouts читают props напрямую как props компонента.
+    // The backend puts the type-specific fields into `props`. We unpack them
+    // to the top level, since the frontend layouts read them directly as the
+    // component's props.
     if (node.props && typeof node.props === 'object') {
       Object.assign(next, node.props)
     }
@@ -139,10 +143,11 @@ export const useScreenStore = defineStore('admin-screen', () => {
     lastMessage.value = null
   }
 
-  /** Загрузить screen-snapshot. */
+  /** Loads the screen snapshot. */
   async function load(screenSlug: string, params?: Record<string, unknown>): Promise<void> {
-    // Переход на ДРУГОЙ экран сбрасывает баннер прошлого; reload того же
-    // экрана (res.refresh после runMethod) — нет, иначе съест свежий message.
+    // Moving to ANOTHER screen clears the previous banner; reloading the same
+    // screen (res.refresh after runMethod) does not, or it would swallow the
+    // message that just arrived.
     if (slug.value !== screenSlug) {
       lastMessage.value = null
     }
@@ -173,10 +178,10 @@ export const useScreenStore = defineStore('admin-screen', () => {
   }
 
   /**
-   * Диспатчит command-метод Screen'а. Передаёт текущий state как `payload`.
-   * При success — обновляет state из ответа, ставит lastMessage.
-   * При ValidationError — заполняет errors.
-   * При прочей ошибке — ставит error и пробрасывает.
+   * Dispatches one of the screen's command methods, passing the current state
+   * as `payload`. On success it updates the state from the answer and sets
+   * lastMessage; on a ValidationError it fills in the errors; on anything else
+   * it sets error and rethrows.
    */
   async function runMethod(
     method: string,
@@ -210,10 +215,10 @@ export const useScreenStore = defineStore('admin-screen', () => {
         lastMessage.value = res.message
       }
       if (res.download_url && typeof document !== 'undefined') {
-        // Сервер отдаёт файл по signed-URL (Content-Disposition: attachment) —
-        // триггерим скачивание программным анкором. Поле было объявлено в
-        // контракте, но не обрабатывалось: кнопки «Скачать…» экранов молча
-        // не работали.
+        // The server hands the file over at a signed URL, with
+        // Content-Disposition: attachment, so we trigger the download through
+        // a programmatic anchor. The field was declared in the contract but
+        // never handled: the screens' "Download…" buttons quietly did nothing.
         const a = document.createElement('a')
         a.href = res.download_url
         a.rel = 'noopener'
@@ -222,7 +227,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
         a.remove()
       }
       if (res.refresh) {
-        // Сервер попросил перезагрузить snapshot — делаем lazy reload.
+        // The server asked for the snapshot to be reloaded — do it lazily.
         await load(slug.value).catch(() => undefined)
       }
       return res

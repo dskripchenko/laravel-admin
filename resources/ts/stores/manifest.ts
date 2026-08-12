@@ -1,12 +1,13 @@
 /**
- * Manifest store: lazy-load JSON-манифеста админки + кеширование по version.
+ * The manifest store: it lazy-loads the admin's JSON manifest and caches it by
+ * version.
  *
- * Manifest содержит описание всех Resource'ов, Screen'ов, Settings'ов,
- * Plugin'ов. SPA загружает один раз на старте и переиспользует.
+ * The manifest describes every resource, screen, settings page and plugin. The
+ * SPA loads it once at start-up and reuses it.
  *
- * ETag-based 304 Not Modified backend-side — фронт ничего особенного не
- * делает (axios + browser handle If-None-Match). Свежий version записывается
- * в lastVersion для cheap-сравнения.
+ * The 304 Not Modified handling is ETag-based on the backend side, so the
+ * frontend does nothing special — axios and the browser handle If-None-Match.
+ * The fresh version is written into lastVersion for cheap comparisons.
  */
 
 import { defineStore } from 'pinia'
@@ -14,8 +15,9 @@ import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
 
 /**
- * Узел manifest'а с обязательным `type`. Совместим с LayoutNode/FieldNode/
- * InfolistNode — позволяет передавать массив прямо в renderer без cast'а.
+ * A manifest node with a mandatory `type`. It is compatible with LayoutNode,
+ * FieldNode and InfolistNode, so an array can go straight into a renderer
+ * without a cast.
  */
 export interface ManifestNode extends Record<string, unknown> {
   type: string
@@ -27,18 +29,19 @@ export interface ManifestResourceMeta {
   icon?: string
   group?: string | null
   /**
-   * Eloquent morph-class либо FQCN модели — нужен AuditTimeline'у как
-   * `subject_type` параметр для /audit/timeline endpoint'а.
+   * The Eloquent morph class or the model's FQCN — AuditTimeline needs it as
+   * the `subject_type` parameter of the /audit/timeline endpoint.
    */
   subject_type?: string | null
   permissions: Record<string, string>
   fields: ManifestNode[]
   /**
-   * Раскладка формы СОЗДАНИЯ. Приходит только когда отличается от `fields` —
-   * например, у ресурса, чьи вкладки нечем наполнить до сохранения записи.
+   * The layout of the CREATE form. It only arrives when it differs from
+   * `fields` — for a resource whose tabs have nothing to show before the
+   * record is saved, say.
    */
   create_fields?: ManifestNode[]
-  /** Read-only entries для view-page. Default — auto-generated из fields(). */
+  /** The read-only entries of the view page. By default they are generated from fields(). */
   infolist?: ManifestNode[]
   columns: ManifestNode[]
   filters: ManifestNode[]
@@ -48,9 +51,9 @@ export interface ManifestResourceMeta {
   view_mode?: 'list' | 'tree'
   hierarchy_parent_key?: string | null
   /**
-   * Slug ресурса, чей index используется как "back" контекст для form/view
-   * страниц. Default null (back ведёт на собственный index). См.
-   * Resource::parentSlug() на бэкенде.
+   * The slug of the resource whose index serves as the "back" context of the
+   * form and view pages. null by default, meaning back leads to this
+   * resource's own index. See Resource::parentSlug() on the backend.
    */
   parent_slug?: string | null
   features: Record<string, unknown>
@@ -88,16 +91,17 @@ export const useManifestStore = defineStore('admin-manifest', () => {
   const loading = ref(false)
   const error = ref<Error | null>(null)
   /**
-   * Boot-resolution gate. true как только начальный flow "load manifest →
-   * replaceManifestRoutes → router.replace(currentFullPath)" завершён,
-   * либо если manifest заведомо не нужен (login flow / skipManifestLoad).
+   * The boot-resolution gate. It turns true as soon as the initial "load
+   * manifest → replaceManifestRoutes → router.replace(currentFullPath)" flow
+   * is over, or when the manifest is known to be unnecessary (the login flow,
+   * skipManifestLoad).
    *
-   * AdminApp.vue использует этот флаг чтобы скрыть NotFoundPage пока не
-   * закончился initial re-resolve — иначе deep-link reload даёт вспышку
-   * 404 между первым match'ем catch-all и последующим router.replace.
+   * AdminApp.vue uses this flag to hide NotFoundPage until the initial
+   * re-resolve has finished — otherwise reloading a deep link flashes a 404
+   * between the first catch-all match and the router.replace that follows.
    *
-   * Проставляется createAdminApp.loadAndApply() в finally — точное место,
-   * где route уже re-resolved, а manifest либо загружен, либо упал ошибкой.
+   * It is set in createAdminApp.loadAndApply()'s finally — exactly where the
+   * route has been re-resolved and the manifest has either loaded or failed.
    */
   const bootResolved = ref(false)
 
@@ -121,23 +125,25 @@ export const useManifestStore = defineStore('admin-manifest', () => {
   }
 
   /**
-   * Загрузить manifest. Если уже загружен — возвращает cached.
-   * Force=true принудительно обновит с сервера.
+   * Loads the manifest, returning the cached one when it is already there.
+   * force=true refetches from the server.
    */
   /**
-   * Сбросить кэш манифеста (обнуляет). Использовать ТОЛЬКО когда текущий
-   * манифест точно не рендерится (иначе форма/таблица потеряют layout до
-   * перефетча) — для фонового обновления есть `refresh()`.
+   * Drops the cached manifest, clearing it. Use this ONLY when the current
+   * manifest is certainly not being rendered — otherwise a form or a table
+   * loses its layout until the refetch. For a background update there is
+   * `refresh()`.
    */
   function invalidate(): void {
     manifest.value = null
   }
 
   /**
-   * Фоново обновить манифест, НЕ обнуляя текущий: `load(true)` заменяет
-   * `manifest.value` атомарно только по приходу свежего ответа, поэтому
-   * открытая форма/таблица не теряет layout. Вызывается после мутаций
-   * ресурсов (DB-driven options селектов протухают иначе). Fire-and-forget.
+   * Updates the manifest in the background WITHOUT clearing the current one:
+   * `load(true)` replaces `manifest.value` atomically and only once the fresh
+   * response arrives, so an open form or table keeps its layout. Called after
+   * resource mutations, since the DB-driven options of selects go stale
+   * otherwise. Fire-and-forget.
    */
   function refresh(): Promise<AdminManifest> {
     return load(true)
