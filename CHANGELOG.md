@@ -5,6 +5,44 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.25.1
+
+### Added
+- **The drawer links to the notifications page.** Without it the page existed
+  and stayed unreachable — the same hole in a new shape: the drawer shows the
+  latest ones and closes on click, and the address had to be known by heart.
+
+## 1.25.0
+
+### Added
+- **A notifications page, and the `/notifications` route that finally exists.**
+  The route was registered only when a host passed a component for it, and no
+  host ever did: the address answered 404 in every panel. Nothing linked there,
+  so the hole stayed invisible — but there was also nowhere to look through the
+  history: the topbar drawer shows the latest ones and closes on click.
+
+  The page is now the default, so the address works everywhere. It carries what
+  a drawer should not: filters (all / unread / read), pagination, per-item and
+  bulk "mark as read", and absolute timestamps — «3 days ago» on page two does
+  not answer the question the reader has.
+
+## 1.24.2
+
+### Fixed
+- **The 401 redirect of 1.24.0, third attempt — the one that works.** Going
+  through the router failed twice: the refusal arrives while the menu and the
+  manifest are still loading, so the router may not exist yet, and when it does
+  it is busy with the initial navigation and swallows the replace. On a stand
+  the visitor stayed on the old address looking at a 404. Now the browser
+  navigates outright, which is also the more honest answer: the session is
+  dead, and whatever is in memory belongs to the tab's previous owner.
+
+## 1.24.1
+
+### Fixed
+- An attempt to cover the case where the router does not exist yet. Superseded
+  by 1.24.2 — see there for why the router was the wrong tool entirely.
+
 ## 1.24.0
 
 ### Fixed
