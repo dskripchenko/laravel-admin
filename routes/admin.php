@@ -9,10 +9,11 @@ use Illuminate\Support\Facades\Route;
 | Admin routes
 |--------------------------------------------------------------------------
 |
-| Эти роуты регистрируются в AdminServiceProvider под префиксом config('admin.path')
-| и опциональным доменом config('admin.domain'). Тут добавляются только роуты
-| публичной части (login/forgot-password) и SPA-оболочки. JSON API регистрируется
-| отдельно через laravel-api -> AdminApiModule.
+| These routes are registered in AdminServiceProvider under the
+| config('admin.path') prefix and the optional config('admin.domain') domain.
+| Only the routes of the public part (login/forgot-password) and of the SPA
+| shell are added here. The JSON API is registered separately, through
+| laravel-api -> AdminApiModule.
 |
 */
 

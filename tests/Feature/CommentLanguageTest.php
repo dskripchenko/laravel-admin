@@ -27,8 +27,12 @@ $countRussian = static function (string $path): int {
     $n = 0;
 
     foreach (explode("\n", (string) file_get_contents($path)) as $line) {
+        // `|` is the Laravel config docblock: the whole section header and its
+        // explanation sit on lines starting with it, and while they were not
+        // counted `config/admin.php` read as clean with 37 Russian lines in it.
         $t = ltrim($line);
-        if (! str_starts_with($t, '//') && ! str_starts_with($t, '*') && ! str_starts_with($t, '/*') && ! str_starts_with($t, '#')) {
+        if (! str_starts_with($t, '//') && ! str_starts_with($t, '*') && ! str_starts_with($t, '/*')
+            && ! str_starts_with($t, '#') && ! str_starts_with($t, '|')) {
             continue;
         }
         $prose = preg_replace('/"[^"]*"|\'[^\']*\'|`[^`]*`|«[^»]*»/u', '', $line);

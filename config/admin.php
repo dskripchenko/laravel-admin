@@ -6,7 +6,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | URL и домен
+    | The URL and the domain
     |--------------------------------------------------------------------------
     */
 
@@ -25,8 +25,9 @@ return [
     |--------------------------------------------------------------------------
     | Auth — multi-guard
     |--------------------------------------------------------------------------
-    | strategy: 'dedicated' — собственный guard 'admin' + модель AdminUser
-    |           'shared'    — переиспользуем существующий guard host-проекта
+    | strategy: 'dedicated' — an 'admin' guard of our own plus the AdminUser
+    |                        model
+    |           'shared'    — we reuse the host project's existing guard
     */
 
     'auth' => [
@@ -62,7 +63,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Сессия
+    | The session
     |--------------------------------------------------------------------------
     */
 
@@ -101,7 +102,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Bootstrap-стратегия SPA
+    | The SPA bootstrap strategy
     |--------------------------------------------------------------------------
     */
 
@@ -111,7 +112,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Branding и UI
+    | Branding and the UI
     |--------------------------------------------------------------------------
     */
 
@@ -128,20 +129,21 @@ return [
     ],
 
     /*
-    | Плашка установки: короткое объявление над панелью.
+    | The installation banner: a short announcement above the panel.
     |
-    | Рисуется оболочкой, а не приложением, и это осознанно. Объявление такого
-    | рода — свойство УСТАНОВКИ, а не экрана: «это демонстрационный стенд»,
-    | «данные стираются», «идёт миграция». Оно должно быть видно и тогда, когда
-    | SPA не поднялась, — именно в такие моменты человеку важнее всего понимать,
-    | куда он попал.
+    | It is drawn by the shell rather than by the application, and that is
+    | deliberate. An announcement of this kind is a property of the
+    | INSTALLATION, not of a screen: "this is a demo stand", "the data is
+    | wiped", "a migration is under way". It must be visible even when the SPA
+    | has failed to come up — those are exactly the moments when a person most
+    | needs to understand where they have landed.
     |
-    | `text` пуст — плашки нет вовсе, разметка не печатается.
+    | When `text` is empty there is no banner at all and no markup is printed.
     |
-    | `countdown_to` — момент времени (ISO-8601), до которого идёт обратный
-    | отсчёт. Значение динамическое, поэтому задавать его в конфиге напрямую
-    | нельзя: закэшированный конфиг заморозил бы его навсегда. Host-приложение
-    | выставляет его посреди запроса — например middleware'ом.
+    | `countdown_to` is the moment in time (ISO-8601) the countdown runs to. The
+    | value is dynamic, so it cannot be put into the config directly: a cached
+    | config would freeze it forever. The host application sets it in the middle
+    | of a request — through a middleware, for instance.
     */
     'notice' => [
         'text' => env('ADMIN_NOTICE'),
@@ -161,9 +163,10 @@ return [
     |--------------------------------------------------------------------------
     | OpenAPI / Scalar
     |--------------------------------------------------------------------------
-    | `scalar_script` — URL Scalar-бандла. По умолчанию внешний CDN (jsdelivr);
-    | host-проект может задать локальный self-host путь для окружений без
-    | доступа к CDN (`/vendor/scalar/api-reference.js`).
+    | `scalar_script` is the URL of the Scalar bundle. An external CDN
+    | (jsdelivr) by default; a host project may set a local self-hosted path for
+    | environments with no access to a CDN
+    | (`/vendor/scalar/api-reference.js`).
     */
     'openapi' => [
         'ui' => env('ADMIN_OPENAPI_UI', 'scalar'),
@@ -237,7 +240,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Pagination и uploads (defaults)
+    | Pagination and uploads (the defaults)
     |--------------------------------------------------------------------------
     */
 
@@ -261,7 +264,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Экспорт
+    | Export
     |--------------------------------------------------------------------------
     */
 
@@ -287,7 +290,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Manifest-кэш
+    | The manifest cache
     |--------------------------------------------------------------------------
     */
 
@@ -301,23 +304,23 @@ return [
     | SPA frontend assets
     |--------------------------------------------------------------------------
     |
-    | Host-проект собирает SPA-bundle через Vite и указывает его пути одним
-    | из двух способов:
+    | The host project builds the SPA bundle with Vite and states its paths in
+    | one of two ways:
     |
-    | 1. Явный список (минимум):
+    | 1. An explicit list (the minimum):
     |     'assets' => [
     |         'css' => ['/build/admin.css'],
     |         'js'  => ['/build/admin.js'],
     |     ]
     |
-    | 2. Vite manifest (автоматический resolve через `public/build/manifest.json`):
+    | 2. A Vite manifest (resolved automatically through `public/build/manifest.json`):
     |     'assets' => [
     |         'vite_manifest' => public_path('build/manifest.json'),
     |         'vite_entry'    => 'resources/js/admin.js',
     |         'vite_base_url' => '/build/',
     |     ]
     |
-    | ShellController сам определит режим по наличию `vite_manifest` ключа.
+    | ShellController picks the mode itself, by the presence of the `vite_manifest` key.
     */
 
     'assets' => [
@@ -336,17 +339,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Panels (v1.8) — дополнительные панели
+    | Panels (v1.8) — the additional panels
     |--------------------------------------------------------------------------
-    | Каждая панель — независимая поверхность: свой mount-путь (включая ''
-    | — корень сайта), свой guard/provider, своя API-версия laravel-api
-    | (/api/{id}/...), свои middleware-стеки и набор плагинов. Top-level
-    | ключи этого конфига образуют неявную дефолтную панель `admin`.
+    | Every panel is an independent surface: its own mount path ('' meaning
+    | the site's root), its own guard and provider, its own laravel-api version
+    | (/api/{id}/...), its own middleware stacks and its own set of plugins. The
+    | top-level keys of this config form the implicit default panel `admin`.
     |
     | 'panels' => [
     |     'client' => [
-    |         'path' => '',                       // mount-префикс ('' = корень)
-    |         'exclude_prefixes' => ['api', 'admin'], // не проглатывать чужие пути
+    |         'path' => '',                       // the mount prefix ('' = the root)
+    |         'exclude_prefixes' => ['api', 'admin'], // do not swallow other paths
     |         'auth' => [
     |             'strategy' => 'dedicated',
     |             'guard' => 'client',
@@ -358,8 +361,9 @@ return [
     |         'api' => App\Admin\ClientApi::class, // extends Panel\PanelApi
     |         'middleware' => [
     |             'shell' => ['web', AdminLocale::class, AdminCspNonce::class],
-    |             // api — ДОПОЛНЕНИЯ к общему базовому стеку admin.middleware.api
-    |             // (он panel-aware: guard резолвится от панели запроса)
+    |             // api — ADDITIONS to the shared base stack
+    |             // admin.middleware.api (which is panel-aware: the guard is
+    |             // resolved from the request's panel)
     |             'api' => [SomePanelMiddleware::class],
     |         ],
     |         'plugins' => [App\Admin\ClientPanelPlugin::class],
