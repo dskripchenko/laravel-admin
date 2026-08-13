@@ -67,6 +67,19 @@ async function mountPage(props: Record<string, unknown> = {}) {
   })
 }
 
+/** The same, but the router comes back too — for checking where a save leads. */
+async function mountPageWithRouter(props: Record<string, unknown> = {}) {
+  const router = mkRouter()
+  await router.push('/r/articles/create')
+  await router.isReady()
+  const wrapper = mount(ResourceFormPage, {
+    props: { slug: 'articles', ...props },
+    global: { plugins: [router] },
+  })
+
+  return { wrapper, router }
+}
+
 describe('ResourceFormPage', () => {
   let mock: MockAdapter
 
@@ -173,6 +186,30 @@ describe('ResourceFormPage', () => {
     await flushPromises()
 
     expect(captured).toMatchObject({ id: 5, title: 'NEW' })
+  })
+
+  it('после создания уводит на страницу правки новой записи', async () => {
+    // The redirect was written here from the start and never fired: `save()`
+    // switches the store to 'edit' itself, so the check after it was always
+    // false. The record was created, the address still said /create, and
+    // pressing "Save" again created a second one.
+    mock.onPost('/articles/create').reply(200, {
+      success: true,
+      payload: { record: { id: 42, title: 'Новая' } },
+    })
+
+    const { wrapper, router } = await mountPageWithRouter()
+    await flushPromises()
+    const form = useResourceFormStore()
+    form.setField('title', 'Новая')
+    await flushPromises()
+
+    const saveBtn = wrapper.findAll('button').find((b) => b.text() === 'Сохранить')
+    await saveBtn!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('admin.resource.articles.edit')
+    expect(router.currentRoute.value.params.id).toBe('42')
   })
 
   it('delete: confirm + redirect to index', async () => {

@@ -233,6 +233,7 @@ export {
   TextAreaField,
   NumberField,
   SelectField,
+  ComboboxField,
   CheckboxField,
   DateField,
   UnknownField,

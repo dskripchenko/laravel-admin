@@ -6,6 +6,7 @@ import TextField from './TextField.vue'
 import TextAreaField from './TextAreaField.vue'
 import NumberField from './NumberField.vue'
 import SelectField from './SelectField.vue'
+import ComboboxField from './ComboboxField.vue'
 import CheckboxField from './CheckboxField.vue'
 import DateField from './DateField.vue'
 
@@ -145,5 +146,26 @@ describe('Field state integration', () => {
     mount(Captured)
     ctx!.setField('title', 'NEW')
     expect(initial.title).toBe('NEW')
+  })
+})
+
+describe('ComboboxField', () => {
+  it('показывает сохранённое значение, которого нет в подсказках', () => {
+    // A record whose value nobody suggested must not open empty: that reads as
+    // data loss, and the value is legitimate — the list is a hint, not a rule.
+    const w = wrap(
+      ComboboxField,
+      { model: 'своя-модель:7b' },
+      { name: 'model', options: [{ value: 'claude-opus-5', label: 'Claude Opus 5' }] },
+    )
+
+    const input = w.find('input')
+    expect((input.element as HTMLInputElement).value).toContain('своя-модель:7b')
+  })
+
+  it('свободный ввод разрешён по умолчанию', () => {
+    const w = wrap(ComboboxField, { model: '' }, { name: 'model', options: [] })
+
+    expect(w.findComponent({ name: 'UidCombobox' }).props('allowCreate')).toBe(true)
   })
 })

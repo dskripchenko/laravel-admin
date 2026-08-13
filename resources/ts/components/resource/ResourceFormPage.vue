@@ -215,10 +215,16 @@ watch(
 )
 
 async function onSave(): Promise<void> {
+  // The mode is read BEFORE saving: `save()` switches the store to 'edit'
+  // itself, so a check afterwards is always false — and the redirect written
+  // right here never fired. The record was created, the address still said
+  // /create, and pressing "Save" again created a second one.
+  const wasCreate = form.isCreate
+
   try {
     const newId = await form.save()
-    if (form.isCreate) {
-      // After a create, redirect to edit with the new id; the host does the routing.
+    if (wasCreate) {
+      // After a create, go to edit with the new id; the host does the routing.
       void router.push({
         name: `admin.resource.${props.slug}.edit`,
         params: { id: newId },

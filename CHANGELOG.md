@@ -5,6 +5,22 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.29.0
+
+### Fixed
+- **After creating a record the panel stayed on `/create`.** The redirect to the
+  new record's edit page had been written in `ResourceFormPage` from the start
+  and never fired: `save()` switches the store to 'edit' itself, so the check
+  right after it was always false. The record was created, the address still
+  said "create", and pressing "Save" again created a second one.
+
+- **`Combobox` was drawn as an ordinary select.** The field type was mapped to
+  `SelectField`, so its suggestions worked and typing a value of one's own did
+  not — while the class had shipped `creatable()` all along, changing nothing.
+  There is a component of its own now, over `UidCombobox`: the list is a hint,
+  anything typed in is kept, and a saved value outside the list is shown rather
+  than silently dropped from the input.
+
 ## 1.28.0
 
 ### Added

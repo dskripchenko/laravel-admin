@@ -13,6 +13,7 @@ import TextField from '../fields/TextField.vue'
 import TextAreaField from '../fields/TextAreaField.vue'
 import NumberField from '../fields/NumberField.vue'
 import SelectField from '../fields/SelectField.vue'
+import ComboboxField from '../fields/ComboboxField.vue'
 import CheckboxField from '../fields/CheckboxField.vue'
 import DateField from '../fields/DateField.vue'
 import TagsField from '../fields/TagsField.vue'
@@ -99,7 +100,7 @@ export function registerBuiltinComponents(): void {
       slider: NumberField,
       rating: NumberField,
       select: SelectField,
-      combobox: SelectField,
+      combobox: ComboboxField,
       radio: SelectField,
       tags: TagsField,
       // Translatable: the backend's Field\TranslatableInput has
