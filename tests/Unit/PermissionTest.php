@@ -72,6 +72,27 @@ it('Role::hasPermission supports prefix wildcard like admin.users.*', function (
     expect($role->hasPermission('admin.orders.view'))->toBeFalse();
 });
 
+it('Role::hasPermission не падает на нестроковой записи', function (): void {
+    // The column is a JSON list of strings, but nothing enforces that: a seed,
+    // an import or a hand-written row can put anything in there. Such an entry
+    // used to reach str_contains() and take the panel down with a TypeError —
+    // a 500 on every request of a user holding that role, out of a check that
+    // should merely have answered "no".
+    $role = new Role(['permissions' => ['admin.users.view', 1, null, ['nested'], true]]);
+
+    expect($role->hasPermission('admin.users.view'))->toBeTrue();
+    expect($role->hasPermission('admin.users.delete'))->toBeFalse();
+});
+
+it('Role::hasPermission не трактует карту «ключ => значение» как выдачу', function (): void {
+    // A map of this shape looks like an obvious intent to grant, and guessing
+    // at it would hand out access off a format we neither document nor
+    // validate. In a permission check the safe direction is "no".
+    $role = new Role(['permissions' => ['admin.users.view' => 1, 'admin.users.delete' => 0]]);
+
+    expect($role->hasPermission('admin.users.view'))->toBeFalse();
+});
+
 it('AdminUser uses HasAdminAccess trait via roles', function (): void {
     // admin_roles and admin_role_assignments are already created by the migrations.
     $admin = AdminUser::create([

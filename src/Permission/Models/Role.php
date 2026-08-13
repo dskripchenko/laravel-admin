@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $name
  * @property string $slug
  * @property string|null $description
- * @property list<string> $permissions
+ * @property array<array-key, mixed> $permissions A JSON list of permission strings — by convention, not by enforcement: see hasPermission()
  * @property bool $is_system The system roles, Super Admin among them, cannot be deleted
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
@@ -63,7 +63,21 @@ class Role extends Model
      */
     public function hasPermission(string $key): bool
     {
-        $permissions = (array) $this->permissions;
+        // The column is a JSON list of strings, but nothing enforces that: a
+        // seed, an import or a hand-written row can put anything in there. A
+        // non-string used to reach str_contains() and take the whole panel down
+        // with a TypeError — a 500 on every request of a user holding that
+        // role, from a permission check that should merely have said "no".
+        //
+        // Such an entry is skipped rather than interpreted. A map of the
+        // `['printable.templates' => 1]` shape looks like an obvious intent to
+        // grant, and guessing at it would GRANT access off a format we neither
+        // document nor validate. In a permission check the safe direction is
+        // "no".
+        $permissions = array_values(array_filter(
+            (array) $this->permissions,
+            static fn (mixed $granted): bool => is_string($granted),
+        ));
 
         if (in_array('*', $permissions, true)) {
             return true;

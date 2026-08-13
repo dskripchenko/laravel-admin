@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.27.1
+
+### Fixed
+- **A non-string in a role's permissions took the panel down.** The column is a
+  JSON list of strings by convention, and nothing enforces it: a seed, an
+  import or a hand-written row can put anything in there. Such an entry reached
+  `str_contains()` and raised a TypeError — a 500 on every request of every
+  user holding that role, out of a check that should merely have answered "no".
+
+  Such entries are now skipped rather than interpreted. A map of the
+  `['admin.users.view' => 1]` shape looks like an obvious intent to grant, and
+  guessing at it would hand out access off a format that is neither documented
+  nor validated; in a permission check the safe direction is "no".
+
+  The property's PHPDoc said `list<string>` — an assumption about the database
+  rather than a fact about it. It now states what actually arrives.
+
 ## 1.27.0
 
 ### Changed
