@@ -8,8 +8,13 @@
  * the shared "General" and "Security" sections, off the data already in
  * auth.user, and a host adds its own "API tokens" and "Sessions" through the
  * slots.
+ *
+ * A tab the host does NOT fill is not shown at all. It used to be listed
+ * unconditionally, and clicking it produced a developer's note — "the library
+ * does not implement this section" — in the face of the end user. A host that
+ * has moved its credentials elsewhere should not have to keep a dead tab.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useSlots, watch } from 'vue'
 import {
   UidAvatar,
   UidBadge,
@@ -55,18 +60,38 @@ const auth = useAuthStore()
 const theme = useThemeStore()
 const locale = useLocaleStore()
 
-const navItems = [
+const slots = useSlots()
+
+// "General" and "Security" are the library's own; the rest belong to whoever
+// fills them.
+const navItems = computed(() => [
   { id: 'general', label: tr('Основное'), icon: 'user' },
   { id: 'security', label: tr('Безопасность'), icon: 'shield' },
-  { id: 'tokens', label: tr('API токены'), icon: 'key' },
-  { id: 'sessions', label: tr('Сессии'), icon: 'monitor' },
-]
+  ...(slots.tokens ? [{ id: 'tokens', label: tr('API токены'), icon: 'key' }] : []),
+  ...(slots.sessions ? [{ id: 'sessions', label: tr('Сессии'), icon: 'monitor' }] : []),
+])
 
-const localSection = ref(props.section)
+/**
+ * An address may name a section this host does not provide — an old link to a
+ * tab that has since moved elsewhere. Opening "General" is a better answer than
+ * a card explaining that the library does not implement the section.
+ */
+function known(id: string): string {
+  return navItems.value.some((item) => item.id === id) ? id : 'general'
+}
+
+const localSection = ref(known(props.section))
 function selectSection(id: string): void {
   localSection.value = id
   emit('update:section', id)
 }
+
+watch(
+  () => props.section,
+  (next) => {
+    localSection.value = known(next)
+  },
+)
 
 // The form state of the general tab.
 const profile = ref({

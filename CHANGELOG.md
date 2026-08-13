@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.27.0
+
+### Changed
+- **A profile tab a host does not fill is no longer shown.** `ProfilePage`
+  listed "API tokens" and "Sessions" unconditionally, and clicking a tab whose
+  slot nobody had filled produced a developer's note in the face of the end
+  user: "the library does not implement this section — the project wires it in
+  through a slot". A host that keeps its credentials elsewhere had no way to
+  drop the tab.
+
+  The two host tabs now appear only when the corresponding slot is provided.
+  The library's own sections — "General" and "Security" — are unaffected.
+
+- **An address naming an absent section opens "General".** A link to
+  `?section=tokens` kept in someone's bookmarks used to land on that same
+  developer's note once the host stopped providing the slot.
+
 ## 1.26.0
 
 ### Added

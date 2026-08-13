@@ -48,10 +48,29 @@ describe('ProfilePage', () => {
     expect(w.find('.admin-page__title').text()).toBe('Profile')
   })
 
-  it('renders 4 nav items', () => {
+  it('renders only the library sections when the host fills no slots', () => {
     const w = mount(ProfilePage)
     const items = w.findAll('.admin-profile__nav-item').map((b) => b.text())
+    expect(items).toEqual(['Основное', 'Безопасность'])
+  })
+
+  it('renders 4 nav items when the host fills both slots', () => {
+    const w = mount(ProfilePage, {
+      slots: { tokens: '<div />', sessions: '<div />' },
+    })
+    const items = w.findAll('.admin-profile__nav-item').map((b) => b.text())
     expect(items).toEqual(['Основное', 'Безопасность', 'API токены', 'Сессии'])
+  })
+
+  it('a section the host does not provide falls back to General', () => {
+    // An old link to a tab that has moved elsewhere: a card saying "the library
+    // does not implement this section" is a developer's note, not an answer to
+    // the person who followed the link.
+    const w = mount(ProfilePage, { props: { section: 'tokens' } })
+    expect(w.findAll('.admin-profile__nav-item').map((b) => b.text()))
+      .toEqual(['Основное', 'Безопасность'])
+    expect(w.text()).not.toContain('библиотекой не реализован')
+    expect(w.find('.admin-profile__card-title').text()).toContain('Профиль')
   })
 
   it('General section is active by default and shows user fields', () => {
