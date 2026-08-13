@@ -62,6 +62,12 @@ const layoutNodes = computed<LayoutNode[]>(() =>
 )
 const isReady = computed(() => !screen.loading && resolvedSlug.value !== '')
 
+// An in-panel address goes through the router: a full page load would throw
+// away the screen's state and, on a slow stand, look like the panel restarting.
+const messageLinkIsInternal = computed(
+  () => screen.lastMessageLink?.url?.startsWith('/') ?? false,
+)
+
 onMounted(async () => {
   if (resolvedSlug.value) {
     await screen.load(resolvedSlug.value).catch(() => undefined)
@@ -141,6 +147,25 @@ function actionVariant(action: ScreenAction): 'primary' | 'danger' | 'ghost' | '
       role="status"
     >
       {{ screen.lastMessage }}
+      <!-- A screen that starts background work has somewhere to send the
+           person — the job's own page. Without the link the message names a
+           place and leaves finding it to the reader. -->
+      <router-link
+        v-if="messageLinkIsInternal"
+        class="admin-screen-page__alert-link"
+        :to="screen.lastMessageLink!.url"
+      >
+        {{ screen.lastMessageLink!.label }}
+      </router-link>
+      <a
+        v-else-if="screen.lastMessageLink"
+        class="admin-screen-page__alert-link"
+        :href="screen.lastMessageLink.url"
+        target="_blank"
+        rel="noopener"
+      >
+        {{ screen.lastMessageLink.label }}
+      </a>
     </UidAlert>
 
     <div v-if="screen.loading" class="admin-screen-page__loading">
@@ -162,6 +187,12 @@ function actionVariant(action: ScreenAction): 'primary' | 'danger' | 'ghost' | '
   margin: 4px 0 0;
   font-size: var(--uid-font-size-sm);
   color: var(--uid-text-secondary);
+}
+.admin-screen-page__alert-link {
+  margin-left: 6px;
+  font-weight: 600;
+  text-decoration: underline;
+  color: inherit;
 }
 .admin-screen-page__alert {
   margin-bottom: var(--uid-space-md);

@@ -68,6 +68,32 @@ it('POST /runMethod dispatches command method with payload', function (): void {
     expect(TestContactScreen::$sent[0]['email'])->toBe('foo@example.com');
 });
 
+it('runMethod отдаёт ссылку рядом с сообщением', function (): void {
+    // A screen that starts background work has somewhere to send the person —
+    // the job's own page. Without the link the message names a place and
+    // leaves finding it to the reader.
+    $response = $this->postJson('/api/admin/test-contact/runMethod', [
+        'method' => 'sendWithLink',
+        'payload' => [],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('payload.message_link'))
+        ->toBe(['url' => '/r/jobs/7', 'label' => 'Открыть задание']);
+});
+
+it('полузаполненная ссылка до панели не доезжает', function (): void {
+    // A link without a label renders as a control with no name — worse than no
+    // link at all, because it looks broken rather than absent.
+    $response = $this->postJson('/api/admin/test-contact/runMethod', [
+        'method' => 'sendWithBrokenLink',
+        'payload' => [],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('payload.message_link'))->toBeNull();
+});
+
 it('POST /runMethod returns 422 on validation failure', function (): void {
     $response = $this->postJson('/api/admin/test-contact/runMethod', [
         'method' => 'send',

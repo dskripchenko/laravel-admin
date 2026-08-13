@@ -82,4 +82,28 @@ final class TestContactScreen extends Screen
             'alerts' => [['type' => 'success', 'message' => 'OK']],
         ];
     }
+
+    /**
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    public function sendWithLink(array $state): array
+    {
+        return [
+            'message' => 'Задача поставлена',
+            'message_link' => ['url' => '/r/jobs/7', 'label' => 'Открыть задание'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    public function sendWithBrokenLink(array $state): array
+    {
+        return [
+            'message' => 'Задача поставлена',
+            'message_link' => ['url' => '/r/jobs/7'],
+        ];
+    }
 }

@@ -97,7 +97,45 @@ describe('useScreenStore', () => {
     const result = await s.runMethod('send')
     expect(result.message).toBe('Отправлено')
     expect(s.lastMessage).toBe('Отправлено')
+    expect(s.lastMessageLink).toBeNull()
     expect(s.errors).toEqual({})
+  })
+
+  it('runMethod запоминает ссылку рядом с сообщением', async () => {
+    // A screen that starts background work has somewhere to send the person —
+    // the job's own page. Without the link the message names a place and
+    // leaves finding it to the reader.
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onPost('/contact/runMethod').reply(200, {
+      success: true,
+      payload: {
+        message: 'Задача поставлена',
+        message_link: { url: '/r/ai-tasks/7', label: 'Открыть задание' },
+      },
+    })
+
+    const s = useScreenStore()
+    await s.load('contact')
+    await s.runMethod('send')
+
+    expect(s.lastMessageLink).toEqual({ url: '/r/ai-tasks/7', label: 'Открыть задание' })
+  })
+
+  it('следующий вызов без ссылки её убирает', async () => {
+    // Otherwise a link from the previous run would hang under a message it has
+    // nothing to do with.
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onPost('/contact/runMethod').reply(200, {
+      success: true,
+      payload: { message: 'Готово' },
+    })
+
+    const s = useScreenStore()
+    await s.load('contact')
+    s.lastMessageLink = { url: '/r/ai-tasks/1', label: 'Старое' }
+    await s.runMethod('send')
+
+    expect(s.lastMessageLink).toBeNull()
   })
 
   it('runMethod populates errors on ValidationError (422)', async () => {

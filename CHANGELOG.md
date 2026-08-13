@@ -5,6 +5,20 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.28.0
+
+### Added
+- **A screen's message can carry a link.** A screen that starts background work
+  had only a sentence to answer with: "the job is queued, the result will
+  appear over there". Where "over there" is, the reader had to work out for
+  themselves — and a failure was never mentioned at all.
+
+  `runMethod` now accepts `message_link: {url, label}` next to `message`. An
+  in-panel address goes through the router, an external one opens in a new tab.
+  A half-filled link — a url without a label, or the other way round — is
+  dropped rather than rendered: a control with no name looks broken, which is
+  worse than no control.
+
 ## 1.27.1
 
 ### Fixed

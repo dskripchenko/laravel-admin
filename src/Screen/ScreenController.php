@@ -135,15 +135,16 @@ final class ScreenController extends ApiController
      * ScreenMethodPayload schema.
      *
      * The allowed keys are state, layouts, alerts, redirect_url, refresh,
-     * download_url and message. Everything else goes into `extra`, so that
-     * screen methods can return arbitrary data without breaking compatibility.
+     * download_url, message and message_link. Everything else goes into
+     * `extra`, so that screen methods can return arbitrary data without
+     * breaking compatibility.
      *
      * @param  array<string, mixed>  $result
      * @return array<string, mixed>
      */
     private static function normalizeMethodPayload(array $result): array
     {
-        $known = ['state', 'layouts', 'alerts', 'redirect_url', 'refresh', 'download_url', 'message'];
+        $known = ['state', 'layouts', 'alerts', 'redirect_url', 'refresh', 'download_url', 'message', 'message_link'];
 
         $payload = [
             'state' => (object) ($result['state'] ?? []),
@@ -153,6 +154,11 @@ final class ScreenController extends ApiController
             'refresh' => (bool) ($result['refresh'] ?? false),
             'download_url' => $result['download_url'] ?? null,
             'message' => (string) ($result['message'] ?? 'OK'),
+            // Where the message leads: a screen that starts background work
+            // has somewhere to send the person — the job's own page. Shaped
+            // rather than passed through, so a half-filled link never reaches
+            // the panel as a dead control.
+            'message_link' => self::normalizeMessageLink($result['message_link'] ?? null),
         ];
 
         $extra = array_diff_key($result, array_flip($known));
@@ -161,6 +167,25 @@ final class ScreenController extends ApiController
         }
 
         return $payload;
+    }
+
+    /**
+     * @return array{url: string, label: string}|null
+     */
+    private static function normalizeMessageLink(mixed $link): ?array
+    {
+        if (! is_array($link)) {
+            return null;
+        }
+
+        $url = $link['url'] ?? null;
+        $label = $link['label'] ?? null;
+
+        if (! is_string($url) || $url === '' || ! is_string($label) || $label === '') {
+            return null;
+        }
+
+        return ['url' => $url, 'label' => $label];
     }
 
     private function currentScreen(): Screen|JsonResponse

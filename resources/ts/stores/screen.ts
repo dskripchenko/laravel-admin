@@ -56,9 +56,21 @@ export interface ScreenStateSnapshot {
   etag: string
 }
 
+/** A link offered alongside a screen's message — see `lastMessageLink`. */
+export interface ScreenMessageLink {
+  url: string
+  label: string
+}
+
 export interface ScreenMethodResult {
   state?: Record<string, unknown>
   message?: string
+  /**
+   * Where the message leads. A screen that starts background work has
+   * somewhere to send the person — the job's own page — and a bare sentence
+   * leaves them to find it by themselves.
+   */
+  message_link?: ScreenMessageLink | null
   alerts?: Array<{ type: string; message: string; duration_ms?: number }>
   redirect_url?: string | null
   refresh?: boolean
@@ -86,6 +98,8 @@ export const useScreenStore = defineStore('admin-screen', () => {
   const running = ref(false)
   const error = ref<Error | null>(null)
   const lastMessage = ref<string | null>(null)
+  /** Set together with `lastMessage`; cleared everywhere it is. */
+  const lastMessageLink = ref<ScreenMessageLink | null>(null)
 
   const hasError = computed(() => error.value !== null)
 
@@ -141,6 +155,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     running.value = false
     error.value = null
     lastMessage.value = null
+    lastMessageLink.value = null
   }
 
   /** Loads the screen snapshot. */
@@ -150,6 +165,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     // message that just arrived.
     if (slug.value !== screenSlug) {
       lastMessage.value = null
+    lastMessageLink.value = null
     }
     slug.value = screenSlug
     loading.value = true
@@ -198,6 +214,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     error.value = null
     errors.value = {}
     lastMessage.value = null
+    lastMessageLink.value = null
 
     try {
       const client = getAdminClient()
@@ -213,6 +230,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
       }
       if (res.message) {
         lastMessage.value = res.message
+        lastMessageLink.value = res.message_link ?? null
       }
       if (res.download_url && typeof document !== 'undefined') {
         // The server hands the file over at a signed URL, with
@@ -278,6 +296,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     running,
     error,
     lastMessage,
+    lastMessageLink,
     // getters
     hasError,
     // actions
