@@ -60,7 +60,7 @@ $sources = static function (): array {
             continue;
         }
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.'/'.$dir));
-        foreach (new RegexIterator($it, '/\.(php|ts|js|mjs|cjs|vue)$/') as $file) {
+        foreach (new RegexIterator($it, '/\.(php|ts|js|mjs|cjs|vue|py)$/') as $file) {
             $rel = str_replace($root.'/', '', (string) $file);
             if (str_contains($rel, '/node_modules/')) {
                 continue;
@@ -69,7 +69,7 @@ $sources = static function (): array {
         }
     }
 
-    foreach ((array) glob($root.'/*.{php,js,mjs,cjs,ts}', GLOB_BRACE) as $file) {
+    foreach ((array) glob($root.'/*.{php,js,mjs,cjs,ts,py}', GLOB_BRACE) as $file) {
         $out[] = str_replace($root.'/', '', (string) $file);
     }
     sort($out);
