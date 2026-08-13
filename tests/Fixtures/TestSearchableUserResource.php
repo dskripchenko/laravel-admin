@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 
 /**
- * Resource с searchable-колонками для тестов глобального поиска (GlobalSearch).
+ * A resource with searchable columns, for the global search tests.
  *
  * @internal
  */

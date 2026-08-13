@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Минимальная Eloquent-модель для тестов Resource'а.
+ * A minimal Eloquent model for the resource tests.
  *
  * @internal
  */

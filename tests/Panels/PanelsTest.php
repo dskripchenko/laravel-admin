@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Panel\PanelRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
 
-// ── Реестр панелей ─────────────────────────────────────────────────────────
+// -- The panel registry -----------------------------------------------------
 
 it('registers the default panel plus configured panels', function (): void {
     $registry = app(PanelRegistry::class);
@@ -25,7 +25,7 @@ it('registers a dedicated auth guard for the extra panel', function (): void {
         ->and(config('auth.passwords.test_client_users'))->not->toBeNull();
 });
 
-// ── Скоупинг реестров ──────────────────────────────────────────────────────
+// -- Scoping the registries -------------------------------------------------
 
 it('scopes plugin registrations to their panel', function (): void {
     $resources = app(ResourceRegistry::class);
@@ -51,7 +51,7 @@ it('builds a panel-scoped manifest', function (): void {
         ->and($admin['version'])->not->toBe($client['version']);
 });
 
-// ── Shell-роуты ────────────────────────────────────────────────────────────
+// -- The shell routes -------------------------------------------------------
 
 it('serves the client panel shell at the site root', function (): void {
     $response = $this->get('/');
@@ -72,16 +72,17 @@ it('keeps the default admin shell and bootstrap intact', function (): void {
 });
 
 it('root panel catch-all does not swallow excluded prefixes', function (): void {
-    // Прямой /admin обслуживается панелью admin (см. тест выше). Исключённый
-    // префикс api не перехватывается root-панелью: /api/client/... доходит
-    // до laravel-api (401 от AdminAuth, а не HTML shell).
+    // A direct /admin is served by the admin panel (see the test above). The
+    // excluded api prefix is not intercepted by the root panel:
+    // /api/client/... reaches laravel-api (a 401 from AdminAuth rather than the
+    // HTML shell).
     $response = $this->getJson('/api/client/system/me');
 
     $response->assertStatus(401);
     expect($response->headers->get('content-type'))->toContain('application/json');
 });
 
-// ── Guards и API-поверхности ───────────────────────────────────────────────
+// -- The guards and the API surfaces ----------------------------------------
 
 it('authenticates the client panel via its own guard', function (): void {
     $user = TestPanelClientUser::create([
@@ -96,7 +97,7 @@ it('authenticates the client panel via its own guard', function (): void {
     $me->assertOk();
     expect($me->json('payload.email'))->toBe('client@example.com');
 
-    // Сессия client-guard'а не даёт доступа к admin-API.
+    // A client-guard session grants no access to the admin API.
     $this->getJson('/api/admin/system/me')->assertStatus(401);
 });
 
@@ -119,7 +120,7 @@ it('exposes panel resources only in the panel api surface', function (): void {
     TestPanelProjectModel::create(['name' => 'P1']);
     $this->getJson('/api/client/test-panel-projects/meta')->assertOk();
 
-    // В admin-версии этого контроллера нет вовсе (панельная компиляция).
+    // The admin version has no such controller at all (the per-panel compilation).
     $admin = AdminUser::create([
         'name' => 'Root', 'email' => 'root2@example.com', 'password' => 'secret',
     ]);
@@ -171,7 +172,7 @@ it('logs a client user in through the panel login endpoint', function (): void {
 
     $login->assertOk();
     $this->getJson('/api/client/system/me')->assertOk();
-    // Логин в client-панель не даёт admin-сессии.
+    // Signing in to the client panel does not give an admin session.
     $this->getJson('/api/admin/system/me')->assertStatus(401);
 });
 
@@ -183,9 +184,10 @@ it('refuses a disabled panel user at login, not one request later', function ():
         'enabled' => false,
     ]);
 
-    // Выключатель обещает «войти нельзя». Пуская такого пользователя внутрь и
-    // выкидывая его на первом же запросе, панель показала бы ему успешный
-    // логин с правами — а отключают учётку обычно уволенному сотруднику.
+    // The switch promises "signing in is impossible". By letting such a user in
+    // and throwing them out on the very first request, the panel would show them
+    // a successful login with permissions — and an account is usually disabled
+    // for an employee who has been let go.
     $login = $this->postJson('/api/client/auth/login', [
         'email' => 'disabled@example.com',
         'password' => 'secret-password',
@@ -205,8 +207,9 @@ it('модель может закрыть вход сама — состоян�
         'owner_suspended' => true,
     ]);
 
-    // Учётка включена, пароль верный — но аккаунт, которому она принадлежит,
-    // приостановлен. Панель этих правил не знает, поэтому спрашивает модель.
+    // The account is enabled and the password is correct — but the account it
+    // belongs to is suspended. The panel does not know those rules, so it asks
+    // the model.
     $login = $this->postJson('/api/client/auth/login', [
         'email' => 'owner-suspended@example.com',
         'password' => 'secret-password',
@@ -222,7 +225,7 @@ it('panel login throttles use independent buckets', function (): void {
     Illuminate\Support\Facades\RateLimiter::clear('auth-admin'.$sig);
     Illuminate\Support\Facades\RateLimiter::clear('auth-client'.$sig);
 
-    // Попытки в клиентскую панель не должны сжигать лимит админской.
+    // Attempts against the client panel must not burn the admin panel's limit.
     for ($i = 0; $i < 5; $i++) {
         $this->postJson('/api/client/auth/login', [
             'email' => 'nobody@example.com', 'password' => 'wrong',
@@ -250,8 +253,9 @@ it('login payload gives wildcard permissions to hasAccess-only panel users', fun
     ]);
 
     $login->assertOk();
-    // Контракт панельных моделей — только hasAccess(); без wildcard SPA-гарды
-    // отправляли бы пользователя в /forbidden на каждом permission-роуте.
+    // The contract of the panel models is hasAccess() only; without the
+    // wildcard the SPA guards would send the user to /forbidden on every
+    // permission route.
     expect($login->json('payload.permissions'))->toBe(['*']);
 });
 

@@ -99,7 +99,7 @@ it('ImportPreviewService throws on unsupported extension', function (): void {
 it('ImportPreviewService reads XLSX via openspout', function (): void {
     expect(class_exists(OpenSpout\Reader\XLSX\Reader::class))->toBeTrue();
 
-    // Сгенерируем временный XLSX
+    // Generate a temporary XLSX
     Storage::fake('local');
     $writer = new OpenSpout\Writer\XLSX\Writer;
     $tmpPath = sys_get_temp_dir().'/test-import-'.uniqid().'.xlsx';

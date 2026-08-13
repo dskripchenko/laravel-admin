@@ -5,8 +5,8 @@ declare(strict_types=1);
 use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 
-// Фикстуры (TestUserResource, TestResourceUserModel) — в tests/Fixtures/
-// (autoload через composer classmap).
+// The fixtures (TestUserResource, TestResourceUserModel) live in tests/Fixtures/
+// (autoloaded through the composer classmap).
 
 it('Resource has slug pluralized from class name', function (): void {
     expect(TestUserResource::slug())->toBe('test-users');
@@ -53,7 +53,7 @@ it('Resource indexQuery returns same as modelQuery by default', function (): voi
 it('Resource throws when $model is not set', function (): void {
     $anonymous = new class extends Resource
     {
-        // нет static $model
+        // there is no static $model
     };
 
     expect(fn () => $anonymous->modelQuery())

@@ -7,7 +7,8 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Resource с transformRecord-override — распаковка virtual-полей (см. hook).
+ * A resource with a transformRecord override — it unpacks the virtual fields
+ * (see the hook).
  *
  * @internal
  */

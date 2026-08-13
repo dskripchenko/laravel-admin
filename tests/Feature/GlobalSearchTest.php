@@ -55,8 +55,9 @@ it('GlobalSearch service matches across searchable fields, case-insensitive', fu
     expect($groups[0]['label'])->toBe('Пользователи');
 
     $titles = collect($groups[0]['items'])->pluck('title')->all();
-    // «Ромашка Клиент» (по name через транслит? нет — по email romashka@)
-    // и «Berry» (email roman@corp.io) — оба матчат "roma" в email.
+    // "Ромашка Клиент" (by name through transliteration? no — by the email
+    // romashka@) and "Berry" (the email roman@corp.io) — both match "roma" in
+    // the email.
     expect($titles)->toContain('Ромашка Клиент');
     expect($titles)->toContain('Berry');
     expect($titles)->not->toContain('Одуванчик');
@@ -65,7 +66,7 @@ it('GlobalSearch service matches across searchable fields, case-insensitive', fu
 it('GlobalSearch item carries id + url to the record card', function (): void {
     actingAdmin();
 
-    // 'дуванчик' — lowercase substring, совпадает и на sqlite (посимвольно).
+    // 'дуванчик' is a lowercase substring and matches on sqlite too (character by character).
     $groups = app(GlobalSearch::class)->search('дуванчик');
     $item = $groups[0]['items'][0];
 

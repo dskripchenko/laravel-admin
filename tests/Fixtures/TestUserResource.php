@@ -9,7 +9,7 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 
 /**
- * Demo Resource для unit/feature тестов.
+ * A demo resource for the unit and feature tests.
  *
  * @internal
  */

@@ -24,7 +24,7 @@ it('extract pulls translatable values out of payload by reference', function ():
         'title' => ['ru' => 'Привет', 'en' => 'Hello'],
         'description' => ['ru' => 'Описание'],
     ]);
-    // Translatable keys удалены из payload.
+    // The translatable keys are removed from the payload.
     expect($payload)->toBe(['untouched' => 'simple-string']);
 });
 
@@ -35,7 +35,7 @@ it('extract skips non-array values for translatable fields', function (): void {
         $payload,
     );
     expect($extracted)->toBe([]);
-    // payload очищен в любом случае
+    // the payload is cleared either way
     expect($payload)->not->toHaveKey('title');
 });
 
@@ -73,7 +73,7 @@ it('saveAll silently skips models without saveTranslation method', function (): 
         protected $table = 'test';
     };
 
-    // Должно не throw'нуть.
+    // It must not throw.
     TranslatableFieldBridge::saveAll($plainModel, [
         'title' => ['ru' => 'Привет'],
     ]);
@@ -87,12 +87,12 @@ it('saveAll silently skips when no Language-rows exist', function (): void {
     {
         public function saveTranslation(string $field, ?string $value, mixed $language = null): void
         {
-            // Не должна быть вызвана — у нас нет Language с code='ru'.
+            // It must not be called — we have no Language with code='ru'.
             throw new RuntimeException('should not be called');
         }
     };
 
-    // Без Language-row для 'ru' — saveAll skip'ает.
+    // Without a Language row for 'ru' saveAll skips.
     TranslatableFieldBridge::saveAll($model, ['title' => ['ru' => 'Привет']]);
     expect(true)->toBeTrue();
 });

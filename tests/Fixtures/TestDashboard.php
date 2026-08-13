@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Widget\MarkdownWidget;
 use Dskripchenko\LaravelAdmin\Widget\Widget;
 
 /**
- * Тестовый Dashboard для unit/feature-тестов.
+ * A test dashboard for the unit and feature tests.
  *
  * @internal
  */

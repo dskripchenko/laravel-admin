@@ -84,7 +84,7 @@ it('MenuRegistry::under inserts children into parent by key (recursive search)',
             MenuNode::make('catalog', 'Каталог'),
         ]),
     );
-    // catalog — глубоко вложенный — найдётся через recursive search.
+    // catalog is deeply nested and is found through the recursive search.
     $registry->under('catalog', [
         MenuNode::make('products', 'Товары')->url('/r/products'),
     ]);
@@ -143,8 +143,8 @@ it('GET /system/menu auto-fills missing screens by default', function (): void {
     /** @var MenuRegistry $registry */
     $registry = app(MenuRegistry::class);
     $registry->add(MenuNode::make('shop', 'Магазин'));
-    // Auto-fill ON: TestContactScreen должен попасть в результат как
-    // отдельный root-item, потому что в кастомном дереве его нет.
+    // Auto-fill is ON: TestContactScreen must end up in the result as a
+    // separate root item, because it is not in the custom tree.
 
     $response = $this->getJson('/api/admin/system/menu');
     $response->assertOk();
@@ -194,7 +194,7 @@ it('MenuNode::toArray translates the label through the translator per-request (B
 
     expect($arr['label'])->toBe('Clients EN');
 
-    // Незамапленный лейбл — возвращается как есть (ключ = fallback).
+    // An unmapped label is returned as is (the key is the fallback).
     $raw = MenuNode::make('r', 'Просто текст')->toArray(app(ResourceRegistry::class), app(ScreenRegistry::class));
     expect($raw['label'])->toBe('Просто текст');
 });

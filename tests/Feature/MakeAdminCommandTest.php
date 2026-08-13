@@ -57,7 +57,7 @@ it('assigns the system Super Admin role with --super', function (): void {
     $role = Dskripchenko\LaravelAdmin\Permission\Models\Role::where('slug', 'super-admin')->firstOrFail();
     expect($role->is_system)->toBeTrue();
 
-    // Идемпотентность роли: второй запуск не создаёт дубль.
+    // The role is idempotent: a second run creates no duplicate.
     $this->artisan('admin:user', [
         'name' => 'Root2', 'email' => 'root-super2@example.com', 'password' => 'secret-pass',
         '--super' => true,

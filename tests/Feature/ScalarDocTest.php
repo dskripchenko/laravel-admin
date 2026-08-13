@@ -26,12 +26,12 @@ it('Scalar doc page is rendered with CSP nonce on script tags', function (): voi
 });
 
 it('config admin.openapi.ui controls Scalar registration logic', function (): void {
-    // Default 'scalar' — route уже зарегистрирован в boot'е.
+    // The default 'scalar' — the route is already registered at boot.
     expect((string) config('admin.openapi.ui', 'scalar'))->toBe('scalar');
 
-    // Меняем config — реальная перерегистрация требует bootstrap'а свежего
-    // приложения. Логика registerScalarDoc() guard'ится этим флагом, проверим
-    // его поведение в новой Application.
+    // We change the config — a real re-registration requires bootstrapping a
+    // fresh application. The registerScalarDoc() logic is guarded by this flag,
+    // so we check its behaviour in a new Application.
     $app = new Illuminate\Foundation\Application(__DIR__);
     $app['config'] = new Illuminate\Config\Repository([
         'admin' => ['openapi' => ['ui' => 'swagger']],
@@ -43,8 +43,8 @@ it('Scalar doc passes $sources from API versions', function (): void {
     $response = $this->get('/api/admin/doc');
     $html = $response->getContent();
 
-    // 'admin' = laravel-api version slug; в data-url виден spec-файл,
-    // в data-configuration — sources с slug='admin'.
+    // 'admin' is the laravel-api version slug; the spec file is visible in
+    // data-url, and data-configuration holds the sources with slug='admin'.
     expect($html)->toContain('admin.json');
 });
 
@@ -58,10 +58,10 @@ it('Scalar script URL is configurable and falls back with raw spec links', funct
 
     $html = $this->get('/api/admin/doc')->assertOk()->getContent();
 
-    // Скрипт грузится с настроенного (локального) URL, не с жёсткого CDN.
+    // The script loads from the configured (local) URL rather than a hardcoded CDN.
     expect($html)->toContain('src="/vendor/scalar/api-reference.js"');
     expect($html)->not->toContain('cdn.jsdelivr.net');
-    // Fallback-блок со ссылками на сырые спеки присутствует.
+    // The fallback block with links to the raw specs is present.
     expect($html)->toContain('api-doc-fallback');
     expect($html)->toContain('OpenAPI');
 });

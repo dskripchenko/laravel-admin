@@ -8,7 +8,7 @@ use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
-    // Гарантируем, что таблица под TestResourceUserModel создана.
+    // We make sure the table behind TestResourceUserModel is created.
     if (! Schema::hasTable('users')) {
         Schema::create('users', function ($t): void {
             $t->id();

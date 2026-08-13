@@ -4,23 +4,24 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import { resolve } from 'node:path'
 
 /**
- * Vite library config для @dskripchenko/laravel-admin.
+ * The Vite library config for @dskripchenko/laravel-admin.
  *
- * Multi-entry: основной bundle + два subpath-bundle'а для опциональных
- * WYSIWYG-полей (quill / tinymce). Host-проект устанавливает peer-deps
- * только тех редакторов, которыми пользуется.
+ * Multi-entry: the main bundle plus two subpath bundles for the optional WYSIWYG
+ * fields (quill / tinymce). A host project installs the peer deps only of the
+ * editors it actually uses.
  *
- * - vue() — SFC compiler
- * - visualizer() — bundle stats-отчёт `dist/stats.html` (запускается только
- *   при `ANALYZE=1 npm run build`)
+ * - vue() — the SFC compiler
+ * - visualizer() — the bundle stats report `dist/stats.html` (runs only under
+ *   `ANALYZE=1 npm run build`)
  *
- * .d.ts-файлы генерируются отдельно через `vue-tsc --emitDeclarationOnly`
- * в `npm run build` (это убирает зависимость от vite-plugin-dts →
- * @microsoft/api-extractor → ajv@8 conflict с eslint).
+ * The .d.ts files are generated separately through
+ * `vue-tsc --emitDeclarationOnly` in `npm run build` (which removes the
+ * dependency on vite-plugin-dts → @microsoft/api-extractor → the ajv@8 conflict
+ * with eslint).
  *
- * `cssFileName: 'style'` фиксирует имя CSS как `style.css` (Vite 7 по
- * умолчанию использует lib.name → `laravel-admin.css`, но host'ы уже
- * импортируют через `@dskripchenko/laravel-admin/style.css` через exports).
+ * `cssFileName: 'style'` pins the CSS name as `style.css` (Vite 7 uses lib.name
+ * by default → `laravel-admin.css`, but the hosts already import it as
+ * `@dskripchenko/laravel-admin/style.css` through the exports).
  */
 export default defineConfig({
   plugins: [
@@ -51,8 +52,8 @@ export default defineConfig({
       cssFileName: 'style',
     },
     rollupOptions: {
-      // Все peer-зависимости host'а — external. Regex-paths покрывают
-      // sub-imports (например `@tiptap/extension-image`).
+      // Every peer dependency of the host is external. The regex paths cover
+      // the sub-imports (`@tiptap/extension-image`, for instance).
       external: [
         'vue',
         'vue-router',
@@ -62,8 +63,8 @@ export default defineConfig({
         /^@dskripchenko\/wysiwyg($|\/)/,
         /^@tiptap\//,
         'marked',
-        // WYSIWYG peer-deps: используются TinymceField/QuillField, поставляются
-        // host-проектом через peer-dep.
+        // The WYSIWYG peer deps: used by TinymceField/QuillField and supplied by
+        // the host project as peer dependencies.
         '@tinymce/tinymce-vue',
         'tinymce',
         '@vueup/vue-quill',

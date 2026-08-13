@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Resource с replicable=true и кастомным replicate() override'ом.
+ * A resource with replicable=true and a custom replicate() override.
  *
  * @internal
  */
@@ -23,7 +23,7 @@ final class TestReplicableResource extends Resource
     public function replicate(Model $original): Model
     {
         $copy = parent::replicate($original);
-        // Demonstration: regenerate email с timestamp suffix.
+        // A demonstration: regenerate the email with a timestamp suffix.
         $copy->setAttribute('email', 'copy-'.uniqid().'@example.com');
 
         return $copy;

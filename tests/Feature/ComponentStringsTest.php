@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 /**
- * Строки Vue-компонентов ядра.
+ * The strings of the core's Vue components.
  *
- * До 12.08.2026 их переводили выборочно: 94 строки в 32 файлах шли мимо
- * переводчика, и на английской панели соседствовали «Delete» и «Развернуть».
- * Хуже, чем неудобно: выглядит недоделанным ровно там, где всё остальное
- * переведено.
+ * Until 12.08.2026 they were translated selectively: 94 strings across 32 files
+ * went past the translator, and on an English panel "Delete" stood next to
+ * "Развернуть". Worse than inconvenient: it looks unfinished exactly where
+ * everything else is translated.
  *
- * Правило держится с двух сторон, потому что нарушить его можно двумя
- * способами: строку забыли обернуть — либо обернули, но не перевели. Второе
- * хуже: выглядит сделанным.
+ * The rule is held from two sides, because it can be broken in two ways: the
+ * string was not wrapped, or it was wrapped but not translated. The second is
+ * worse: it looks done.
  */
 $vueFiles = static function (): array {
     $out = [];
@@ -26,8 +26,8 @@ $vueFiles = static function (): array {
 };
 
 /**
- * Отрезает хвостовой `//`-комментарий, не трогая `//` внутри строк и адресов
- * (`https://`).
+ * Cuts off a trailing `//` comment without touching a `//` inside strings and
+ * addresses (`https://`).
  */
 function self_strip_trailing_comment(string $line): string
 {
@@ -57,7 +57,7 @@ function self_strip_trailing_comment(string $line): string
     return $line;
 }
 
-/** Строки с кириллицей ВНЕ комментариев и вне переводчика. */
+/** The strings with Cyrillic OUTSIDE the comments and outside the translator. */
 $unwrapped = static function (string $source): array {
     $out = [];
     $inBlock = false;
@@ -81,18 +81,18 @@ $unwrapped = static function (string $source): array {
         if (! preg_match('/[а-яА-Я]/u', $line)) {
             continue;
         }
-        // Хвостовой комментарий отрезаем и смотрим, осталась ли кириллица в
-        // САМОМ коде. Простая проверка «строка начинается с //» здесь не
-        // годится: `label: '',  // лейбл уже в шапке` — код и комментарий в
-        // одной строке, и кириллица только во втором.
+        // We cut off the trailing comment and look at whether any Cyrillic is
+        // left in the CODE itself. A simple "the line starts with //" check is
+        // no good here: `label: '',  // лейбл уже в шапке` — the code and the
+        // comment share a line and the Cyrillic is only in the latter.
         $code = self_strip_trailing_comment($t);
         if (! preg_match('/[а-яА-Я]/u', $code)) {
             continue;
         }
-        // Вырезаем ВЫЗОВЫ переводчика и смотрим, что осталось. Простое
-        // «в строке есть tr( — пропускаем» прощало соседа: в
-        // `x ? tRaw(...) : 'Привет'` вторая ветка уезжала непереведённой, и
-        // тест этого не видел. Проверено сломом.
+        // We cut out the translator's CALLS and look at what is left. A simple
+        // "the line contains tr( — skip it" forgave the neighbour: in
+        // `x ? tRaw(...) : 'Привет'` the second branch went out untranslated and
+        // the test did not see it. Verified by breaking it.
         $code = (string) preg_replace('/\\btt?(?:r|Raw)?\\([^)]*\\)/u', '', $code);
         if (! preg_match('/[а-яА-Я]/u', $code)) {
             continue;
@@ -134,9 +134,9 @@ it('каждая обёрнутая строка переведена на ан�
 });
 
 it('ключи tt() есть в словарях, иначе всплывает русский запасной вариант', function () use ($vueFiles): void {
-    // `tt(key, fallback)` отдаёт fallback, когда ключа нет. Значит отсутствие
-    // ключа выглядит как работающий перевод — и всплывает только на чужом
-    // языке. Четыре таких нашлись при первой же сплошной проверке.
+    // `tt(key, fallback)` returns the fallback when the key is missing. So a
+    // missing key looks like a working translation — and surfaces only in
+    // another language. Four of those turned up in the very first full sweep.
     $ru = (string) file_get_contents(__DIR__.'/../../resources/lang/ru/admin.php');
     $en = (string) file_get_contents(__DIR__.'/../../resources/lang/en/admin.php');
     $missing = [];

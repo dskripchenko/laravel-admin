@@ -6,9 +6,10 @@ use Dskripchenko\LaravelAdmin\Resource\ResourceController;
 use Illuminate\Database\QueryException;
 
 /**
- * dbExceptionToValidation обязан класть field-ошибки в ключ `messages` —
- * SPA (ValidationError.fields) читает payload.messages; ключ `errors`
- * фронт молча игнорировал и DB-нарушения не подсвечивали поля.
+ * dbExceptionToValidation must put the field errors under the `messages` key —
+ * the SPA (ValidationError.fields) reads payload.messages; the `errors` key was
+ * silently ignored by the frontend and DB violations did not highlight the
+ * fields.
  */
 function dbExceptionPayload(string $sqlState, string $message): array
 {

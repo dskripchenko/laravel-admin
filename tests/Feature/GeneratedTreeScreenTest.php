@@ -10,7 +10,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * treeScreen и tree endpoint'ы для иерархических Resource'ов.
+ * The treeScreen and tree endpoints of hierarchical resources.
  */
 beforeEach(function (): void {
     /** @var ResourceRegistry $rr */
@@ -104,7 +104,7 @@ it('does not register tree actions for non-hierarchical resources', function ():
         $t->timestamps();
     });
 
-    // Действия дерева не регистрируются вовсе: роутов нет, а не ошибка.
+    // The tree actions are not registered at all: there are no routes rather than an error.
     $this->postJson('/api/admin/test-users/tree')->assertStatus(404);
     $this->getJson('/api/admin/test-users/treeScreen')->assertStatus(404);
 });

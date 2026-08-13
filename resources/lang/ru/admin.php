@@ -5,8 +5,8 @@ declare(strict_types=1);
 /**
  * Admin SPA translations — RU (default).
  *
- * Структура: namespace `admin::*` → SPA t('admin.*') key.
- * Frontend useI18nStore.t() ↔ backend BootstrapBuilder->loadTranslations().
+ * The structure: the `admin::*` namespace → the SPA's t('admin.*') key.
+ * The frontend useI18nStore.t() ↔ the backend BootstrapBuilder->loadTranslations().
  */
 return [
     'common' => [

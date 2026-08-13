@@ -8,10 +8,10 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 
 /**
- * Resource для testing /{slug}/action endpoint'а.
+ * A resource for testing the /{slug}/action endpoint.
  *
- * Объявляет BulkAction 'archive' и 'publish', которые делегируют
- * methodName на Resource ($this->archive($ids) / $this->publish($ids)).
+ * It declares the bulk actions 'archive' and 'publish', which delegate through
+ * methodName to the resource ($this->archive($ids) / $this->publish($ids)).
  *
  * @internal
  */
@@ -63,7 +63,7 @@ final class TestActionResource extends Resource
         ];
     }
 
-    /** Helper-method для BulkAction archive: помечает status='archived'. */
+    /** A helper method for the archive bulk action: it marks status='archived'. */
     public function archive(array $ids, array $payload = []): int
     {
         return TestResourceUserModel::query()
@@ -78,7 +78,7 @@ final class TestActionResource extends Resource
             ->update(['status' => 'published']);
     }
 
-    /** Отказ по делу: действие отработало и объясняет, почему не вышло. */
+    /** A refusal on the merits: the action ran and explains why it did not work out. */
     public function checkLink(array $ids, array $payload = []): int
     {
         throw new Dskripchenko\LaravelAdmin\Resource\ActionFailedException(
@@ -86,7 +86,7 @@ final class TestActionResource extends Resource
         );
     }
 
-    /** Настоящая поломка — она обязана остаться пятисоткой. */
+    /** A real breakage — it must stay a 500. */
     public function explode(array $ids, array $payload = []): int
     {
         throw new LogicException('внутренняя ошибка');

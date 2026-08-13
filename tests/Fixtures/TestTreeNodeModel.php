@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Иерархическая Eloquent-модель для tests TreeScreen / hierarchy autodetect.
+ * A hierarchical Eloquent model for the TreeScreen and hierarchy-autodetect
+ * tests.
  *
  * @internal
  */

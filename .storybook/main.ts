@@ -1,11 +1,11 @@
 import type { StorybookConfig } from '@storybook/vue3-vite'
 
 /**
- * Витрина компонентов ядра панели.
+ * The showcase of the panel core's components.
  *
- * Смысл — посмотреть экран на любой ширине без поднятого бэкенда и без
- * данных: именно так вскрываются дефекты раскладки, которых не видно на
- * разработческом мониторе. Истории лежат рядом с компонентами.
+ * The point is to look at a screen at any width without a running backend and
+ * without data: that is exactly how the layout defects invisible on a
+ * developer's monitor come out. The stories live next to the components.
  */
 const config: StorybookConfig = {
   stories: ['../resources/ts/**/*.stories.@(ts|tsx)'],
@@ -13,8 +13,8 @@ const config: StorybookConfig = {
     name: '@storybook/vue3-vite',
     options: {},
   },
-  // Правки в токенах ui подхватываются без пересборки: витрина — это
-  // инструмент разработки, а не поставляемый артефакт.
+  // Edits to the ui tokens are picked up without a rebuild: the showcase is a
+  // development tool rather than a shipped artifact.
   core: { disableTelemetry: true },
 }
 

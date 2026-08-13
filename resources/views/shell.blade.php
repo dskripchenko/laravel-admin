@@ -71,9 +71,9 @@
                         var left = Math.max(0, Math.floor((until - Date.now()) / 1000));
                         var m = Math.floor(left / 60), s = left % 60;
                         el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-                        // Дойдя до нуля, отсчёт останавливается и НЕ уходит в
-                        // минус: момент наступил, а что дальше — решает не эта
-                        // страница.
+                        // Having reached zero the countdown stops and does NOT
+                        // go negative: the moment has come, and what happens
+                        // next is not for this page to decide.
                         if (left > 0) setTimeout(tick, 1000);
                     }
                     tick();

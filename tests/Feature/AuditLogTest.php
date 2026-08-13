@@ -22,8 +22,8 @@ beforeEach(function (): void {
         'password' => 'secret',
     ]);
 
-    // AdminUser сам Loggable — чистим логи от события создания admin'а
-    // чтобы тесты ассертили только нужные события.
+    // AdminUser is Loggable itself — we clear the logs of the admin-creation
+    // event so that the tests assert only the events they care about.
     AuditLog::query()->delete();
 });
 
@@ -152,8 +152,9 @@ it('records exactly one login and one logout row per real auth cycle', function 
     config()->set('admin.audit.log_auth_events', true);
     AuditLog::query()->delete();
 
-    // SessionGuard сам диспатчит Login/Logout — контроллер не должен
-    // дублировать события (дубли давали по две audit-строки на вход/выход).
+    // SessionGuard dispatches Login/Logout itself — the controller must not
+    // duplicate the events (the duplicates gave two audit rows per sign-in and
+    // sign-out).
     $this->postJson('/api/admin/auth/login', [
         'email' => $this->admin->email,
         'password' => 'secret',
@@ -173,9 +174,9 @@ it('resolveTypeLabel: config map wins, else class_basename, else null (BL-4)', f
 
     // config map
     expect(AuditLog::resolveTypeLabel(AdminUser::class))->toBe('Администратор');
-    // fallback → class_basename для незамапленного класса
+    // the fallback → class_basename for an unmapped class
     expect(AuditLog::resolveTypeLabel('App\\Models\\TemplateVariable'))->toBe('TemplateVariable');
-    // null/пусто → null (login без subject)
+    // null/empty → null (a login has no subject)
     expect(AuditLog::resolveTypeLabel(null))->toBeNull();
     expect(AuditLog::resolveTypeLabel(''))->toBeNull();
 });

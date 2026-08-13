@@ -4,9 +4,9 @@ import '@dskripchenko/ui/styles/all.css'
 import '../resources/ts/styles/admin.css'
 
 /**
- * Размеры экранов те же, что проверяет CI printable: телефон 402×874
- * (iPhone 17 Pro), планшет 768 и рабочий стол. Совпадение намеренное —
- * дефект, найденный в витрине, воспроизводится тестом и наоборот.
+ * The screen sizes are the same ones printable's CI checks: a phone at 402×874
+ * (iPhone 17 Pro), a tablet at 768 and a desktop. The match is deliberate — a
+ * defect found in the showcase reproduces in a test and the other way round.
  */
 const preview: Preview = {
   parameters: {
@@ -34,8 +34,9 @@ const preview: Preview = {
   },
   decorators: [
     (story, context) => {
-      // Тема панели живёт атрибутом на корне — тем же способом, что и в
-      // приложении, иначе витрина показывала бы не то, что печатает панель.
+      // The panel's theme lives as an attribute on the root — the same way as
+      // in the application, otherwise the showcase would show something other
+      // than what the panel renders.
       document.documentElement.dataset.theme = context.globals.theme
       return { components: { story }, template: '<story />' }
     },

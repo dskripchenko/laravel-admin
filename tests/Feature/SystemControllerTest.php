@@ -15,8 +15,8 @@ beforeEach(function (): void {
     $sr = app(ScreenRegistry::class);
     $sr->clear();
 
-    // Все system-actions защищены AdminAuth middleware. На P1 для тестов
-    // создаём админа на лету.
+    // Every system action is protected by the AdminAuth middleware. In P1 we
+    // create an admin on the fly for the tests.
     $admin = AdminUser::create([
         'name' => 'Test Admin',
         'email' => 'admin-test-'.uniqid().'@example.com',
@@ -26,7 +26,7 @@ beforeEach(function (): void {
 });
 
 it('serves /api/admin/system/bootstrap', function (): void {
-    // Pest default Accept-Language может быть 'en' — фиксируем явно ru.
+    // Pest's default Accept-Language may be 'en' — we pin ru explicitly.
     $response = $this->withoutExceptionHandling()->getJson('/api/admin/system/bootstrap', [
         Dskripchenko\LaravelAdmin\Theme\LocaleResolver::HEADER => 'ru',
     ]);
@@ -95,7 +95,7 @@ it('serves /api/admin/system/menu listing registered resources', function (): vo
 });
 
 it('serves /api/admin/system/locales', function (): void {
-    // testing default Accept-Language даёт 'en' — фиксируем явно.
+    // The testing default Accept-Language gives 'en' — we pin it explicitly.
     $response = $this->getJson('/api/admin/system/locales', [
         Dskripchenko\LaravelAdmin\Theme\LocaleResolver::HEADER => 'ru',
     ]);
@@ -121,7 +121,7 @@ it('serves /api/admin/system/plugins', function (): void {
 });
 
 it('admin api throttle is config-driven (default 240,1)', function (): void {
-    // Роуты регистрируются на boot — проверяем декларацию getMethods().
+    // The routes are registered at boot — we check the getMethods() declaration.
     $mw = implode('|', Dskripchenko\LaravelAdmin\Http\AdminApi::getMethods()['middleware']);
     expect($mw)->toContain(':240,1');
 

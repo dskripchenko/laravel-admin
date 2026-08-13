@@ -8,8 +8,9 @@ use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Resource с per-row editable override — для проверки _editable инъекции.
- * Row, имя которой содержит '(locked)', помечается не-editable на колонку `name`.
+ * A resource with a per-row editable override — to check the _editable
+ * injection. A row whose name contains '(locked)' is marked non-editable for the
+ * `name` column.
  *
  * @internal
  */

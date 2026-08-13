@@ -9,7 +9,7 @@ use Dskripchenko\LaravelAdmin\Models\AdminUser;
 use Dskripchenko\LaravelAdmin\Permission\Models\Role;
 
 /**
- * Простой handler для async-action тестов.
+ * A simple handler for the async-action tests.
  */
 final class TestAsyncHandler
 {

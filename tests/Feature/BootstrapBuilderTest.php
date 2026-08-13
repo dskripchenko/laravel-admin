@@ -28,8 +28,9 @@ it('build returns full payload for guest', function (): void {
     expect($payload['unread_notifications_count'])->toBe(0);
     expect($payload['baseUrl'])->toContain('/admin');
     expect($payload['apiUrl'])->toContain('/api/admin');
-    // Гостю манифест не собирается (login-странице не нужен; сборка манифеста
-    // исполняет resource-код хоста до аутентификации).
+    // No manifest is assembled for a guest (the login page does not need one,
+    // and assembling a manifest runs the host's resource code before
+    // authentication).
     expect($payload['manifestVersion'])->toBeNull();
 });
 

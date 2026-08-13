@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
 
 /**
- * Test-AdminUser с подключённым Sanctum HasApiTokens.
- * В production host-проект подключает HasApiTokens напрямую к своей модели.
+ * A test AdminUser with Sanctum's HasApiTokens attached.
+ * In production a host project attaches HasApiTokens to its own model directly.
  */
 final class TestApiTokensAdminUser extends AdminUser
 {

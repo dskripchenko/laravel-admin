@@ -8,7 +8,7 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 
 /**
- * Resource для тестов inline-edit + summary.
+ * A resource for the inline-edit and summary tests.
  *
  * @internal
  */

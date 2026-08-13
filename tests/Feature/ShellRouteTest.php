@@ -55,7 +55,7 @@ it('resolves css/js from a Vite manifest', function (): void {
 
     $response->assertOk();
     $assets = $response->viewData('assets');
-    // shared chunk visited первым (depth-first по imports), потом entry.
+    // The shared chunk is visited first (depth-first through the imports), then the entry.
     expect($assets['js'])->toBe([
         '/build/assets/shared-BBB.js',
         '/build/assets/admin-AAA.js',
@@ -77,16 +77,16 @@ it('returns empty assets when neither config-list nor vite-manifest provided', f
 });
 
 /*
- * Плашка установки.
+ * The installation banner.
  *
- * Рисуется оболочкой, а не приложением: объявление вроде «данные стираются
- * каждый час» — свойство установки, и человеку важнее всего увидеть его
- * именно тогда, когда SPA не поднялась.
+ * It is drawn by the shell rather than by the application: an announcement such
+ * as "the data is wiped every hour" is a property of the installation, and it
+ * matters most to a person exactly when the SPA has failed to come up.
  */
 
 it('без текста не печатает плашку вовсе', function (): void {
-    // Пустая плашка на каждой странице каждой установки — это разметка,
-    // которая ничего не значит, и место, где однажды окажется чужой текст.
+    // An empty banner on every page of every installation is markup that means
+    // nothing, and a place where someone else's text will end up one day.
     config()->set('admin.notice.text', null);
 
     $html = (string) $this->get('/admin')->getContent();
@@ -103,9 +103,9 @@ it('печатает текст плашки, когда он задан', funct
 });
 
 it('отсчёт ведётся от серверной метки, а не от часов посетителя', function (): void {
-    // Часы у посетителей расходятся, и «осталось 40 минут», посчитанное по
-    // ним, означало бы что угодно. Сервер называет момент, браузер считает
-    // разницу.
+    // Visitors' clocks disagree, and "40 minutes left" computed from them would
+    // mean anything at all. The server names the moment, the browser computes
+    // the difference.
     $until = now()->addMinutes(17)->toIso8601String();
     config()->set('admin.notice.text', 'Сброс стенда');
     config()->set('admin.notice.countdown_to', $until);
@@ -126,8 +126,8 @@ it('без момента отсчёта не печатает ни размет
 });
 
 it('плашка стоит выше приложения, а не внутри него', function (): void {
-    // Внутри #admin-app её снесло бы первым же рендером SPA — ровно тогда,
-    // когда она нужна.
+    // Inside #admin-app it would be wiped by the SPA's very first render —
+    // exactly when it is needed.
     config()->set('admin.notice.text', 'Стенд');
 
     $html = (string) $this->get('/admin')->getContent();

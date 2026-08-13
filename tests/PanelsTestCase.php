@@ -8,9 +8,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Окружение с ДВУМЯ панелями: дефолтная `admin` (легаси-конфиг) + `client`
- * на корне сайта со своим guard'ом/API/плагином — конфиг задаётся ДО boot'а
- * провайдеров, поэтому guards/роуты/API-версии поднимаются штатным путём.
+ * An environment with TWO panels: the default `admin` (the legacy config) plus
+ * `client` at the site's root with a guard, an API and a plugin of its own — the
+ * config is set BEFORE the providers boot, so the guards, the routes and the API
+ * versions come up the regular way.
  */
 abstract class PanelsTestCase extends TestCase
 {
@@ -38,7 +39,7 @@ abstract class PanelsTestCase extends TestCase
                         \Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
                         \Dskripchenko\LaravelAdmin\Http\Middleware\AdminCspNonce::class,
                     ],
-                    // api-extras не нужны: базовый стек admin.middleware.api общий.
+                    // No api extras are needed: the base admin.middleware.api stack is shared.
                     'api' => [],
                 ],
                 'plugins' => [\TestPanelClientPlugin::class],
@@ -56,10 +57,10 @@ abstract class PanelsTestCase extends TestCase
                 $table->string('name');
                 $table->string('email')->unique();
                 $table->string('password');
-                // Панельные user-модели выключаются через `enabled`
-                // (у AdminUser это `is_active`) — оба поля запирают вход.
+                // The panels' user models are disabled through `enabled` (for
+                // AdminUser that is `is_active`) — both fields lock the door.
                 $table->boolean('enabled')->default(true);
-                // Состояние владельца учётки — для хука isDisabledForLogin.
+                // The state of the account's owner — for the isDisabledForLogin hook.
                 $table->boolean('owner_suspended')->default(false);
                 $table->timestamps();
             });

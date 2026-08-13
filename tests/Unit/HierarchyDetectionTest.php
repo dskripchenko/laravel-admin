@@ -5,8 +5,8 @@ declare(strict_types=1);
 use Dskripchenko\LaravelAdmin\Resource\Resource;
 
 /**
- * Тестирует автодетект Resource::hierarchyParentKey() через self-ref
- * Eloquent relations.
+ * Tests the autodetection in Resource::hierarchyParentKey() through self-
+ * referencing Eloquent relations.
  */
 it('detects parent_id via parent() BelongsTo on self', function (): void {
     $resource = new TestTreeNodeResource;

@@ -28,7 +28,7 @@ it('inline bootstrap script uses nonce when strategy=inline', function (): void 
     $response = $this->get('/admin');
     $html = $response->getContent();
 
-    // Должен быть <script nonce="..."> с window.__ADMIN_BOOTSTRAP__
+    // There must be a <script nonce="..."> holding window.__ADMIN_BOOTSTRAP__
     expect($html)->toContain('window.__ADMIN_BOOTSTRAP__');
     expect($html)->toMatch('/<script\s+nonce="[A-Za-z0-9+\/=]+"\s*>\s*\n?\s*window\.__ADMIN_BOOTSTRAP__/');
 });

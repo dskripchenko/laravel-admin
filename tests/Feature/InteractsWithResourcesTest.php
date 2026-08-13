@@ -111,7 +111,7 @@ it('postResourceAction routes to custom action', function (): void {
 
 it('resourceUrl uses configured api_path', function (): void {
     config()->set('admin.api_path', 'api/admin');
-    // Косвенно через фактический endpoint:
+    // Indirectly, through the actual endpoint:
     $response = $this->getResourceMeta('test-users');
     $response->assertOk();
 });

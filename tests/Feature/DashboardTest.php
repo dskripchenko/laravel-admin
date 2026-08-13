@@ -35,7 +35,7 @@ it('DashboardScreen applies persisted layout (reorder + size)', function (): voi
         'widgets' => [
             ['slug' => 'markdown', 'size' => 12, 'position' => 0],
             ['slug' => 'test-stats-a', 'size' => 4, 'position' => 1],
-            // 'test-stats-b' опущен — попадёт в конец как «новый».
+            // 'test-stats-b' is omitted — it lands at the end as a "new" one.
         ],
     ]);
 
@@ -43,12 +43,12 @@ it('DashboardScreen applies persisted layout (reorder + size)', function (): voi
     $compiled = $screen->compile();
     $children = $compiled['layout'][0]['children'];
     expect($children)->toHaveCount(3);
-    // Markdown widget — первым с size=12.
+    // The markdown widget comes first with size=12.
     expect($children[0]['slug'])->toBe('markdown');
     expect($children[0]['size'])->toBe(12);
     expect($children[1]['slug'])->toBe('test-stats-a');
     expect($children[1]['size'])->toBe(4);
-    // 'test-stats-b' — в конце, без override size.
+    // 'test-stats-b' is at the end, with no size override.
     expect($children[2]['slug'])->toBe('test-stats-b');
 });
 
@@ -151,14 +151,14 @@ it('dashboard.get returns saved layout for current user only', function (): void
 });
 
 it('dashboard.savePeriod persists per-user period and get returns it (BL-16)', function (): void {
-    // до сохранения — период null
+    // before a save the period is null
     expect($this->getJson('/api/admin/dashboard/get?key=test')->json('payload.period'))->toBeNull();
 
     $this->postJson('/api/admin/dashboard/savePeriod', ['key' => 'test', 'period' => '90d'])
         ->assertOk()
         ->assertJsonPath('payload.period', '90d');
 
-    // персистентно и возвращается в get
+    // it persists and comes back from get
     expect($this->getJson('/api/admin/dashboard/get?key=test')->json('payload.period'))->toBe('90d');
 });
 

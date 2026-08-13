@@ -95,7 +95,7 @@ it('does not register restore for a resource without SoftDeletes', function (): 
     });
 
     $r = TestResourceUserModel::create(['name' => 'X']);
-    // Действие не регистрируется вовсе: роут отсутствует, а не отвечает ошибкой.
+    // The action is not registered at all: the route is absent rather than answering with an error.
     $response = $this->postJson('/api/admin/test-users/restore', ['id' => $r->id]);
     $response->assertStatus(404);
 });
@@ -139,7 +139,7 @@ it('admin without restore permission gets 403', function (): void {
         'email' => 'np-'.uniqid().'@example.com',
         'password' => 'p',
     ]);
-    // Только view permission.
+    // Only the view permission.
     $role = Role::create([
         'name' => 'V', 'slug' => 'v-'.uniqid(),
         'permissions' => ['admin.test-soft-deletes.view'],
@@ -159,20 +159,20 @@ it('search endpoint applies the auto-injected trashed filter (regression BL-27)'
     $dead = TestSoftDeleteUserModel::create(['name' => 'dead-1']);
     $dead->delete();
 
-    // По умолчанию (without) — только живые.
+    // By default (without) only the live ones.
     $def = $this->postJson('/api/admin/test-soft-deletes/search', ['page' => 1]);
     $names = collect($def->json('payload.data'))->pluck('name');
     expect($names)->toContain('alive-1')->not->toContain('dead-1');
 
-    // filters[trashed]=only — раньше игнорировалось (auto-trashed был только
-    // в манифесте, а search шёл по filters()). Теперь применяется.
+    // filters[trashed]=only used to be ignored (auto-trashed lived only in the
+    // manifest while the search went through filters()). Now it is applied.
     $only = $this->postJson('/api/admin/test-soft-deletes/search', [
         'page' => 1, 'filters' => ['trashed' => 'only'],
     ]);
     $onlyNames = collect($only->json('payload.data'))->pluck('name');
     expect($onlyNames)->toContain('dead-1')->not->toContain('alive-1');
 
-    // with — и живые, и удалённые.
+    // with covers both the live and the deleted ones.
     $withNames = collect($this->postJson('/api/admin/test-soft-deletes/search', [
         'page' => 1, 'filters' => ['trashed' => 'with'],
     ])->json('payload.data'))->pluck('name');

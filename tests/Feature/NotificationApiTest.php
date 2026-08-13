@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
- * Простая notification для тестов.
+ * A simple notification for the tests.
  */
 final class TestSimpleNotification extends Notification
 {

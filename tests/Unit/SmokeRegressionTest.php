@@ -7,12 +7,12 @@ use Dskripchenko\LaravelAdmin\Field\Field;
 use Dskripchenko\LaravelAdmin\Layout\Layout;
 
 /**
- * Smoke-regression tests: для каждого concrete Field/Layout/Action
- * проверяем что класс инстанцируется + toArray() не бросает.
+ * Smoke regression tests: for every concrete Field/Layout/Action we check that
+ * the class instantiates and that toArray() does not throw.
  *
- * Не покрывает business-логику (для этого есть точечные тесты per-class),
- * но ловит regression'ы: переименованный родительский метод, опечатка
- * сигнатуры, breaking-change в зависимостях.
+ * It does not cover the business logic (there are targeted per-class tests for
+ * that) but it catches regressions: a renamed parent method, a typo in a
+ * signature, a breaking change in a dependency.
  */
 
 /**
@@ -80,10 +80,12 @@ it('все Field поддерживают canSee + isVisible round-trip', functi
 })->with(admin_field_classes());
 
 /**
- * Layout factories: ключ = label, значение = list[class, factory-closure].
+ * The layout factories: the key is the label, the value is
+ * list[class, factory closure].
  *
- * Pest 3 при array-with-string-keys использует ключ как dataset-label
- * и unwraps значение как arguments — поэтому factory передаём callable'ом.
+ * With string-keyed arrays Pest 3 uses the key as the dataset label and unwraps
+ * the value as the arguments — which is why the factory is passed as a
+ * callable.
  *
  * @return array<string, array{0: class-string<Layout>, 1: Closure(): Layout}>
  */

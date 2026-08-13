@@ -56,7 +56,7 @@ it('Resource::infolist defaults to TextEntry per field', function (): void {
     $resource = new TestUserResource;
     $entries = $resource->infolist();
 
-    // 3 поля в TestUserResource: name, email, password.
+    // Three fields in TestUserResource: name, email, password.
     expect($entries)->toHaveCount(3);
     foreach ($entries as $e) {
         expect($e->toArray()['type'])->toBe('text');

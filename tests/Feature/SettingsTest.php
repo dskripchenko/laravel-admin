@@ -152,9 +152,9 @@ it('settings update gated by admin.settings.{slug}.update permission', function 
     $user->assignRole($role);
     $this->actingAs($user->refresh(), 'admin');
 
-    // Чтение разрешено.
+    // Reading is allowed.
     $this->getJson('/api/admin/settings_test-brand/read')->assertOk();
-    // Обновление — 403.
+    // Updating gives a 403.
     $this->postJson('/api/admin/settings_test-brand/update', [
         'values' => ['site_name' => 'X'],
     ])->assertStatus(403);

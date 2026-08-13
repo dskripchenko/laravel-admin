@@ -82,7 +82,7 @@ it('list returns own + global views', function (): void {
         'owner_type' => $this->admin->getMorphClass(),
         'owner_id' => $this->admin->id,
     ]);
-    // Чужой view
+    // Someone else's view
     $other = AdminUser::create([
         'name' => 'Other',
         'email' => 'other-'.uniqid().'@example.com',
@@ -189,10 +189,10 @@ it('admin without view permission gets 403 for SavedViews', function (): void {
 });
 
 /**
- * Возможность включается флагом ресурса — как replicable/reorderable.
+ * The feature is switched on by a resource flag — like replicable/reorderable.
  *
- * Раньше четыре маршрута заводились у каждого ресурса поголовно, включая те,
- * где сохранять нечего: карта API росла на ровном месте.
+ * Four routes used to be created for every resource without exception,
+ * including those with nothing to save: the API map grew out of nowhere.
  */
 it('без флага ресурса маршруты представлений не заводятся', function (): void {
     /** @var ResourceRegistry $rr */

@@ -65,7 +65,7 @@ it('PdfExporter generates PDF with %PDF- header', function (): void {
     $response->sendContent();
     $body = ob_get_clean();
 
-    // PDF начинается с "%PDF-".
+    // A PDF starts with "%PDF-".
     expect(substr($body, 0, 5))->toBe('%PDF-');
 });
 
@@ -108,7 +108,7 @@ it('config driver=dompdf falls back to mpdf when dompdf missing', function (): v
     /** @var ExporterRegistry $registry */
     $registry = app(ExporterRegistry::class);
 
-    // dompdf не установлен в dev (только mpdf), fallback подберёт mpdf
+    // dompdf is not installed in dev (only mpdf), the fallback picks mpdf
     if (! class_exists(Dompdf\Dompdf::class)) {
         expect($registry->has('pdf'))->toBeTrue();
     } else {

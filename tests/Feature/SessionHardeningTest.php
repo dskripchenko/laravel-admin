@@ -18,13 +18,13 @@ it('invalidates the session when the password changes elsewhere', function (): v
         'email' => $admin->email, 'password' => 'initial-pass',
     ])->assertOk();
 
-    // Первый запрос сохраняет hash в сессию.
+    // The first request stores the hash in the session.
     $this->getJson('/api/admin/system/me')->assertOk();
 
-    // Пароль меняется вне этой сессии (админ через ресурс / tinker).
+    // The password is changed outside this session (an admin through the resource, or tinker).
     $admin->forceFill(['password' => 'brand-new-pass'])->save();
-    // В тестах guard кэширует юзера в памяти процесса — сбрасываем, как
-    // это было бы между реальными HTTP-запросами.
+    // In tests the guard caches the user in the process's memory — we reset it
+    // the way it would happen between real HTTP requests.
     app('auth')->forgetGuards();
 
     $r = $this->getJson('/api/admin/system/me');
@@ -46,7 +46,7 @@ it('keeps the own session alive after profile password change', function (): voi
         'password_confirmation' => 'brand-new-pass',
     ])->assertOk();
 
-    // Своя сессия жива.
+    // Our own session is alive.
     $this->getJson('/api/admin/system/me')->assertOk();
 });
 

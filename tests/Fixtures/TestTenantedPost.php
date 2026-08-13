@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Tenant value-object для тестов.
+ * A tenant value object for the tests.
  *
  * @internal
  */
@@ -30,7 +30,7 @@ final class TestTenant implements Tenant
 }
 
 /**
- * Eloquent-модель с TenantScoped для теста фильтрации.
+ * An Eloquent model with TenantScoped, for the filtering test.
  *
  * @internal
  */

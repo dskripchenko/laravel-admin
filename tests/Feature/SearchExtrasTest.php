@@ -81,8 +81,8 @@ it('export respects ?columns selection', function (): void {
     $response = $this->get('/api/admin/test-editables/export?format=csv&columns[]=name&columns[]=amount');
     $body = $response->streamedContent();
 
-    // Header не должен содержать 'Status' (если бы в TestEditableResource он не был
-    // переименован, label = 'Status').
+    // The header must not contain 'Status' (had it not been renamed in
+    // TestEditableResource, the label would be 'Status').
     expect($body)->toContain('Name');
     expect($body)->toContain('Amount');
     expect($body)->not->toContain('Status');
@@ -93,8 +93,9 @@ it('export applies filter from ?filters[] before stream', function (): void {
     TestResourceUserModel::create(['name' => 'Bob', 'status' => 'active']);
     TestResourceUserModel::create(['name' => 'Charlie', 'status' => 'banned']);
 
-    // У TestEditableResource нет фильтров — проверим что вообще все три появятся.
-    // Цель теста: убедиться что endpoint работает с filters параметром (без ошибок).
+    // TestEditableResource has no filters — we check that all three show up at
+    // all. The goal of the test is to make sure the endpoint works with the
+    // filters parameter (without errors).
     $response = $this->get('/api/admin/test-editables/export?format=csv');
     $body = $response->streamedContent();
     expect(substr_count($body, "\n"))->toBeGreaterThanOrEqual(3); // header + 3 rows

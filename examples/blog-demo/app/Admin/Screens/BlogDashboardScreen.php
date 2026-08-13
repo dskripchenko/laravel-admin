@@ -48,7 +48,7 @@ final class BlogDashboardScreen extends DashboardScreen
                 ->title('Подсказки')
                 ->size(4)
                 ->content(<<<'MD'
-                    ### Полезные ссылки
+                    ### Useful links
 
                     - [Документация](/admin/docs)
                     - [API Reference](/api/admin/doc)

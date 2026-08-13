@@ -10,7 +10,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Проверка state-actions для GeneratedScreens — listScreen/createScreen/editScreen.
+ * Checking the state actions of the generated screens —
+ * listScreen/createScreen/editScreen.
  */
 beforeEach(function (): void {
     /** @var ResourceRegistry $rr */

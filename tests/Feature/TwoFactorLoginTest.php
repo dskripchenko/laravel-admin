@@ -28,7 +28,7 @@ it('login returns two_factor_required when 2FA is enabled', function (): void {
     expect($response->json('payload.errorKey'))->toBe('two_factor_required');
     expect($response->json('payload.challenge_token'))->toBeString();
     expect(strlen($response->json('payload.challenge_token')))->toBe(64);
-    // Не залогинены до challenge'а.
+    // Not signed in before the challenge.
     expect($this->app['auth']->guard('admin')->check())->toBeFalse();
 });
 
@@ -38,7 +38,7 @@ it('login still succeeds when 2FA secret is set but not confirmed', function ():
         'email' => 'pending@example.com',
         'password' => 'secret',
         'two_factor_secret' => Base32::generateSecret(),
-        // two_factor_confirmed_at IS NULL → 2FA не активна
+        // two_factor_confirmed_at IS NULL → the 2FA is not active
     ]);
 
     $response = $this->postJson('/api/admin/auth/login', [
@@ -78,7 +78,7 @@ it('twoFactorChallenge: completes login on valid TOTP code', function (): void {
     expect($response->json('success'))->toBeTrue();
     expect($response->json('payload.user.email'))->toBe('totp@example.com');
     expect($this->app['auth']->guard('admin')->check())->toBeTrue();
-    // Challenge token инвалидируется.
+    // The challenge token is invalidated.
     expect(Cache::get("admin:2fa:challenge:{$token}"))->toBeNull();
 });
 
@@ -144,7 +144,7 @@ it('twoFactorRecovery: consumes a recovery code and logs in', function (): void 
     expect($response->json('payload.recovery_codes_remaining'))->toBe(1);
     expect($this->app['auth']->guard('admin')->check())->toBeTrue();
 
-    // Использованный код удалён из БД.
+    // The used code is deleted from the database.
     $admin = AdminUser::where('email', 'rec@example.com')->first();
     expect($admin->two_factor_recovery_codes)->toBe(['cccccc-dddddd']);
 });

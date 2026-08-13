@@ -83,7 +83,7 @@ it('does not register reorder when resource is not reorderable', function (): vo
     $response = $this->postJson('/api/admin/test-users/reorder', [
         'items' => [['id' => 1, 'position' => 0]],
     ]);
-    // Действие не регистрируется вовсе: роут отсутствует, а не отвечает ошибкой.
+    // The action is not registered at all: the route is absent rather than answering with an error.
     $response->assertStatus(404);
 });
 

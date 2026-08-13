@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Filter\SwitcherFilter;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Минимальная Eloquent-модель для тестов фильтров.
+ * A minimal Eloquent model for the filter tests.
  *
  * @internal
  */

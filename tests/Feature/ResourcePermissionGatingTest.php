@@ -10,8 +10,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * AdminAccess middleware привязывается к каждому Resource-action автоматически.
- * Здесь проверяем, что без соответствующего permission'а endpoint отдаёт 403.
+ * The AdminAccess middleware is attached to every resource action automatically.
+ * Here we check that without the corresponding permission the endpoint answers
+ * with a 403.
  */
 beforeEach(function (): void {
     /** @var ResourceRegistry $rr */

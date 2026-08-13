@@ -24,8 +24,9 @@
             'showSidebar' => true,
             'sources' => $sources,
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        // URL Scalar-бандла конфигурируем: host-проект может self-host'ить его
-        // локально (напр. для окружений без доступа к внешнему CDN).
+        // The URL of the Scalar bundle is configurable: a host project may
+        // self-host it locally (for environments with no access to an external
+        // CDN, for instance).
         $scalarScript = (string) config('admin.openapi.scalar_script', 'https://cdn.jsdelivr.net/npm/@scalar/api-reference');
     @endphp
 

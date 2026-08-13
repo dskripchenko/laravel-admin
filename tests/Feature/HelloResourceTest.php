@@ -11,18 +11,19 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * End-to-end smoke-test «Hello, Resource».
+ * The end-to-end "Hello, Resource" smoke test.
  *
- * Регистрирует TestUserResource в ResourceRegistry, поднимает users-таблицу,
- * и проходит полный CRUD через JSON-API:
+ * It registers TestUserResource in the ResourceRegistry, raises the users table
+ * and goes through the full CRUD over the JSON API:
  *   POST /api/admin/test-users/create
  *   POST /api/admin/test-users/search
  *   GET  /api/admin/test-users/read?id=N
  *   POST /api/admin/test-users/update
  *   POST /api/admin/test-users/delete
  *
- * Это закрывает Phase P1 — backbone доказал, что от регистрации Resource'а
- * до работы CRUD-эндпоинтов через laravel-api всё цепляется автоматически.
+ * This closes phase P1 — the backbone proved that everything from registering a
+ * resource to working CRUD endpoints hooks up automatically through
+ * laravel-api.
  */
 beforeEach(function (): void {
     /** @var ResourceRegistry $rr */
@@ -32,7 +33,7 @@ beforeEach(function (): void {
 
     AdminApi::clearCache();
 
-    // Поднимаем таблицу для TestResourceUserModel.
+    // Raise the table for TestResourceUserModel.
     Schema::create('users', function (Blueprint $table): void {
         $table->id();
         $table->string('name');
@@ -41,8 +42,8 @@ beforeEach(function (): void {
         $table->timestamps();
     });
 
-    // Аутентификация. Даём super-роль с `*`, чтобы пройти AdminAccess
-    // на всех Resource-actions (Permission gating проверяется отдельно).
+    // Authentication. We grant a super role with `*` to get past AdminAccess on
+    // every resource action (the permission gating is checked separately).
     $admin = AdminUser::create([
         'name' => 'E2E Admin',
         'email' => 'e2e-admin-'.uniqid().'@example.com',

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// SPA shell — отлавливает все остальные пути под префиксом
+// The SPA shell — catches every remaining path under the prefix
 Route::get('{any?}', Dskripchenko\LaravelAdmin\Http\Controllers\ShellController::class)
     ->where('any', '.*')
     ->middleware(config('admin.middleware.shell'))

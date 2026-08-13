@@ -10,10 +10,11 @@ use Dskripchenko\LaravelAdmin\Screen\Screen;
 use Dskripchenko\LaravelAdmin\Support\Repository;
 
 /**
- * Тестовый Screen — кастомная форма обратной связи.
+ * A test screen — a custom feedback form.
  *
- * Демонстрирует: query/state, layout с Rows+Input/Textarea, commandBar c
- * Button::method('send'), command-метод send($state) с валидацией и ответом.
+ * It demonstrates: query/state, a layout with Rows plus Input/Textarea, a
+ * commandBar with Button::method('send'), and the command method send($state)
+ * with validation and a response.
  *
  * @internal
  */

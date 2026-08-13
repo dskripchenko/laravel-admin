@@ -105,14 +105,14 @@ it('AdminLocale middleware sets app locale from resolver', function (): void {
     ]);
     $this->actingAs($admin, 'admin');
 
-    // notifications-table может отсутствовать — для system.me нужен Schema guard,
-    // он уже есть в P15.2.
+    // The notifications table may be missing — system.me needs a Schema guard,
+    // and it is already there since P15.2.
     $this->getJson('/api/admin/system/me');
     expect(app()->getLocale())->toBe('de');
 });
 
 it('system.locales returns available + current', function (): void {
-    // testing default Accept-Language может быть 'en' — указываем явно ru.
+    // The testing default Accept-Language may be 'en' — we state ru explicitly.
     $response = $this->getJson('/api/admin/system/locales', [
         LocaleResolver::HEADER => 'ru',
     ]);
@@ -141,10 +141,11 @@ it('system.setLocale rejects unknown locale with 422', function (): void {
 });
 
 it('ответ панели объявляет Vary по всем источникам локали', function (): void {
-    // Шелл несёт инлайн-bootstrap со строками, манифест — подписи ресурсов.
-    // Без Vary обратный прокси или CDN перед панелью раздаст язык одного
-    // посетителя другому. Cookie здесь не перестраховка: два из пяти
-    // источников — куки (сессия с user.locale и admin_locale).
+    // The shell carries an inline bootstrap with the strings, the manifest
+    // carries the resources' labels. Without a Vary a reverse proxy or a CDN in
+    // front of the panel will hand one visitor's language to another. The cookie
+    // here is not over-caution: two of the five sources are cookies (the session
+    // with user.locale, and admin_locale).
     $vary = $this->get('/admin')->headers->get('Vary');
 
     expect($vary)->not->toBeNull('шелл не объявляет Vary');

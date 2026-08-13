@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Field\Number;
 use Dskripchenko\LaravelAdmin\Settings\SettingsResource;
 
 /**
- * Тестовый SettingsResource: бренд-настройки сайта.
+ * A test SettingsResource: the site's brand settings.
  *
  * @internal
  */

@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Screen\Screen;
 use Dskripchenko\LaravelAdmin\Support\Repository;
 
 /**
- * Тестовый Screen с permission gate.
+ * A test screen with a permission gate.
  *
  * @internal
  */

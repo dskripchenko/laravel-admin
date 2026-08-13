@@ -7,8 +7,9 @@ use Dskripchenko\LaravelAdmin\Field\Select;
 use Illuminate\Support\Facades\Lang;
 
 /**
- * BL-11: пользовательские строки переводятся при сериализации через
- * JSON-переводы (ключ — исходная строка) — host не оборачивает лейблы в __().
+ * BL-11: the user-facing strings are translated during serialization through the
+ * JSON translations (the key is the source string) — a host does not wrap its
+ * labels in __().
  */
 it('переводит label/help/placeholder и options при сериализации поля', function (): void {
     Lang::addLines([

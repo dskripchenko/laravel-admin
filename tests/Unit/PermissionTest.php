@@ -73,7 +73,7 @@ it('Role::hasPermission supports prefix wildcard like admin.users.*', function (
 });
 
 it('AdminUser uses HasAdminAccess trait via roles', function (): void {
-    // admin_roles + admin_role_assignments уже созданы миграциями.
+    // admin_roles and admin_role_assignments are already created by the migrations.
     $admin = AdminUser::create([
         'name' => 'Test',
         'email' => 'test-perm-'.uniqid().'@example.com',

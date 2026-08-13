@@ -52,7 +52,7 @@ it('asLink with string template', function (): void {
 });
 
 it('asLink template supports {field} row-placeholder', function (): void {
-    // Ссылка из appended-атрибута строки (сериализуемо, без замыканий).
+    // A link taken from the row's appended attribute (serializable, no closures).
     $arr = TableColumn::make('filename')
         ->asLink('{signed_download_url}', '_blank')
         ->toArray();

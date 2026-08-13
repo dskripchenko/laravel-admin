@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Иерархическая модель с кастомным FK (не `parent_id`) — для проверки
- * что автодетект Resource::hierarchyParentKey() читает FK из самой
- * relation-декларации, а не предполагает имя.
+ * A hierarchical model with a custom FK (not `parent_id`) — to check that the
+ * autodetection in Resource::hierarchyParentKey() reads the FK from the relation
+ * declaration itself rather than assuming the name.
  *
  * @internal
  */

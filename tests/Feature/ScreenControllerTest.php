@@ -81,9 +81,9 @@ it('POST /runMethod returns 422 on validation failure', function (): void {
 });
 
 it('POST /runMethod without payload behaves like an empty form, not a 500', function (): void {
-    // Метод объявляет `array $state`; запрос без `payload` приходит от
-    // интегратора, из curl, из опечатки в коде. Раньше это давало
-    // ArgumentCountError и пятисотку на каждой кнопке каждого экрана.
+    // The method declares `array $state`; a request without a `payload` comes
+    // from an integrator, from curl, from a typo in the code. This used to give
+    // an ArgumentCountError and a 500 on every button of every screen.
     $response = $this->postJson('/api/admin/test-contact/runMethod', [
         'method' => 'send',
     ]);
@@ -113,7 +113,7 @@ it('Screen permission gates state action', function (): void {
     $registry->add(TestProtectedScreen::class);
     AdminApi::clearCache();
 
-    // Юзер без permission'а видит 403.
+    // A user without the permission sees a 403.
     $user = AdminUser::create([
         'name' => 'V', 'email' => 'v-'.uniqid().'@example.com', 'password' => 'p',
     ]);

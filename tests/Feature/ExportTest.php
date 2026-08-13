@@ -122,7 +122,7 @@ it('XlsxExporter generates XLSX with correct mime', function (): void {
     $response->sendContent();
     $body = ob_get_clean();
 
-    // XLSX начинается с PK (zip header).
+    // An XLSX starts with PK (the zip header).
     expect(substr($body, 0, 2))->toBe('PK');
 });
 
@@ -151,8 +151,9 @@ it('export action returns 422 for unknown format', function (): void {
 });
 
 it('exportCsv больше не регистрируется — остался один export', function (): void {
-    // Алиас дублировал export(format=csv) на каждом ресурсе: лишняя операция
-    // в спеке и второй путь к тому же коду. Панель звала только export.
+    // The alias duplicated export(format=csv) on every resource: a superfluous
+    // operation in the spec and a second path to the same code. The panel called
+    // only export.
     $response = $this->get('/api/admin/test-users/exportCsv');
 
     $response->assertNotFound();

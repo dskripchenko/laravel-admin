@@ -7,12 +7,13 @@ use Dskripchenko\LaravelAdmin\Layout\Rows;
 use Dskripchenko\LaravelAdmin\Resource\Resource;
 
 /**
- * `formLayout($context)` наконец что-то значит.
+ * `formLayout($context)` finally means something.
  *
- * Параметр объявлен с самого начала, но ядро звало метод ВСЕГДА с `'update'`:
- * форма создания получала раскладку правки со всеми её вкладками, включая те,
- * которым до сохранения записи нечего показать. Пустая вкладка выглядит
- * поломкой, хотя показывать ей просто нечего.
+ * The parameter was declared from the very beginning, but the core ALWAYS called
+ * the method with `'update'`: the creation form received the edit layout with
+ * all of its tabs, including those that have nothing to show before the row is
+ * saved. An empty tab looks like a breakage even though it simply has nothing to
+ * show.
  */
 class CtxResource extends Resource
 {
@@ -38,7 +39,7 @@ class CtxResource extends Resource
             $byName[$f->name()] = $f;
         }
 
-        // На создании второго поля нет — ему нечего показать до сохранения.
+        // On creation the second field is absent — it has nothing to show before a save.
         return $context === 'create'
             ? [Rows::make([$byName['title']])]
             : [Rows::make([$byName['title'], $byName['extra']])];
@@ -76,7 +77,7 @@ it('раскладка создания уезжает в манифест от�
 });
 
 it('одинаковые раскладки не возят второй копией', function (): void {
-    // Манифест едет каждым бутстрапом: лишнее дерево полей у ресурсов, которым
-    // это не нужно, — вес на каждой загрузке панели.
+    // The manifest travels with every bootstrap: an extra field tree on the
+    // resources that do not need one is weight on every load of the panel.
     expect((new SameCtxResource)->meta()['create_fields'])->toBeNull();
 });

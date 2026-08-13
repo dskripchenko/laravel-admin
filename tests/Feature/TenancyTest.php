@@ -93,12 +93,12 @@ it('TenantScope: current tenant null → no filtering (single-tenant mode)', fun
     $context->withTenant(new TestTenant(1, 'A'), fn () => TestTenantedPost::create(['title' => 'X1']));
     $context->withTenant(new TestTenant(2, 'B'), fn () => TestTenantedPost::create(['title' => 'X2']));
 
-    // resolver current = null после beforeEach
+    // the resolver's current is null after beforeEach
     expect(TestTenantedPost::count())->toBe(2);
 });
 
 it('TenantScoped::creating без current tenant — tenant_id остаётся NULL', function (): void {
-    // Делаем колонку nullable для этого теста.
+    // Make the column nullable for this test.
     Schema::table('tenanted_posts', function (Blueprint $t): void {
         $t->unsignedInteger('tenant_id')->nullable()->change();
     });

@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as AuthUser;
 
 /**
- * Фикстуры фичи Panels (v1.8): вторая панель `client` на корне сайта
- * со своим guard'ом, ресурсом, плагином и API-версией.
+ * The fixtures of the Panels feature (v1.8): a second panel, `client`, at the
+ * site's root with a guard, a resource, a plugin and an API version of its own.
  *
  * @internal
  */
@@ -27,16 +27,17 @@ final class TestPanelClientUser extends AuthUser
 
     protected $hidden = ['password'];
 
-    // AdminAccess ищет публичный hasAccess (shared-strategy контракт) —
-    // тестовый клиентский пользователь имеет полный доступ в своей панели.
+    // AdminAccess looks for a public hasAccess (the shared-strategy contract) —
+    // the test client user has full access within their own panel.
     public function hasAccess(string $permission): bool
     {
         return true;
     }
 
     /**
-     * Хук «модель сама закрывает вход»: здесь — по признаку в поле, в жизни
-     * это состояние владельца (приостановленный клиент, истёкшая подписка).
+     * The "the model closes the door itself" hook: here it goes by a flag in a
+     * field, in real life it is the owner's state (a suspended client, an
+     * expired subscription).
      */
     public function isDisabledForLogin(): bool
     {

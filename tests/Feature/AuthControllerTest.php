@@ -180,9 +180,9 @@ it('does not burn the login throttle with ordinary api traffic', function (): vo
         'password' => 'super-secret',
     ]);
 
-    // Общий api-throttle (:60,1) инкрементит свой счётчик на каждый запрос;
-    // до фикса он делил ключ с логинным ':5,1' и логин 429-ил после
-    // нескольких ЛЮБЫХ api-запросов с того же IP.
+    // The shared api throttle (:60,1) increments its own counter on every
+    // request; before the fix it shared a key with the login's ':5,1' and the
+    // login 429'd after a handful of ANY api requests from the same IP.
     for ($i = 0; $i < 6; $i++) {
         $this->getJson('/api/admin/system/locales')->assertOk();
     }
@@ -199,10 +199,11 @@ it('does not burn the login throttle with ordinary api traffic', function (): vo
 });
 
 it('login consumes exactly one throttle hit per request', function (): void {
-    // Дубль был: laravel-api вешает per-action middleware на route, а
-    // RunActionMiddleware гонял их же вторым Pipeline'ом — каждый запрос
-    // съедал 2+ попытки и 429 приходил на 3-м логине вместо 6-го.
-    // TestCase глобально выключает throttle — здесь возвращаем.
+    // There used to be a duplicate: laravel-api attaches the per-action
+    // middleware to the route while RunActionMiddleware ran the very same ones
+    // through a second pipeline — every request ate 2+ attempts and the 429 came
+    // on the 3rd login instead of the 6th. The TestCase switches throttling off
+    // globally — here we put it back.
     $this->withMiddleware(Illuminate\Routing\Middleware\ThrottleRequests::class);
 
     $key = 'auth-admin'.sha1('|127.0.0.1');
@@ -216,14 +217,16 @@ it('login consumes exactly one throttle hit per request', function (): void {
 });
 
 /*
- * BL-44: shape пользователя одинаков в bootstrap и в ответе на вход.
+ * BL-44: the user's shape is the same in the bootstrap and in the sign-in
+ * response.
  *
- * Докблок `serializeUser` обещает «сводный shape, который SPA получает в
- * bootstrap/me/login», но `locale` и `theme` там подставлялись из конфига,
- * тогда как BootstrapBuilder отдаёт сырые значения. Расхождение было видно
- * глазами: панель у пользователя без сохранённой локали после ВХОДА уходила
- * в язык по умолчанию, а после F5 возвращалась к языку браузера. Полная
- * загрузка получала null и язык не трогала, вход получал 'en' и принимал.
+ * The `serializeUser` docblock promises "the combined shape the SPA receives in
+ * bootstrap/me/login", yet `locale` and `theme` were substituted there from the
+ * config while BootstrapBuilder returns the raw values. The discrepancy was
+ * visible to the eye: for a user with no saved locale the panel went to the
+ * default language after a SIGN-IN and came back to the browser's language after
+ * an F5. A full load received null and did not touch the language, a sign-in
+ * received 'en' and accepted it.
  */
 
 it('вход не выдаёт умолчание за выбор пользователя', function (): void {
@@ -243,7 +246,7 @@ it('вход не выдаёт умолчание за выбор пользов
 });
 
 it('сохранённые значения по-прежнему отдаются', function (): void {
-    // Обратная сторона: правка не должна перестать отдавать реальный выбор.
+    // The other side: the fix must not stop returning the real choice.
     config(['admin.ui.default_locale' => 'en']);
     AdminUser::create([
         'name' => 'С выбором', 'email' => 'withpref@example.com',
@@ -259,8 +262,8 @@ it('сохранённые значения по-прежнему отдаютс
 });
 
 it('вход и bootstrap описывают пользователя одинаково', function (): void {
-    // Суть дефекта была не в самом умолчании, а в РАСХОЖДЕНИИ двух
-    // сериализаторов одного и того же shape.
+    // The essence of the defect was not the default itself but the DIVERGENCE
+    // of two serializers of one and the same shape.
     config(['admin.ui.default_locale' => 'en']);
     AdminUser::create([
         'name' => 'Сверка', 'email' => 'compare@example.com',

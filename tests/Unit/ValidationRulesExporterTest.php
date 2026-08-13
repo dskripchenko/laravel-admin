@@ -70,11 +70,11 @@ it('TimePicker adds date_format rule based on format', function (): void {
 });
 
 it('FileUpload single валидируется как upload-first {disk, path}', function (): void {
-    // SPA не шлёт multipart в create/update: файл уже загружен через
-    // /uploads/upload, в форме едет {disk, path}. Правила file/mimes здесь
-    // отклоняли ровно ту форму значения, которую панель и отправляет, —
-    // создание записи с файловым полем не проходило валидацию вовсе.
-    // Размер и тип проверяются в самом /uploads/upload.
+    // The SPA does not send multipart on create/update: the file is already
+    // uploaded through /uploads/upload and the form carries {disk, path}. The
+    // file/mimes rules here rejected exactly the shape of the value the panel
+    // sends — creating a row with a file field did not pass validation at all.
+    // The size and the type are checked inside /uploads/upload itself.
     $rules = ValidationRulesExporter::export([
         FileUpload::make('avatar')->image()->maxSize(2048)->accept('image/png,image/jpeg'),
     ]);
@@ -109,8 +109,9 @@ it('Select single (no multiple) does not add array', function (): void {
         Select::make('country')->options(['ru', 'en']),
     ]);
 
-    // Single-select без явных rules получает дефолтный nullable (чтобы
-    // validate() не срезал поле), но НЕ array — array только для multiple.
+    // A single select with no explicit rules gets the default nullable (so that
+    // validate() does not cut the field out) but NOT array — array is only for
+    // multiple.
     expect($rules['country'])->toBe(['nullable']);
     expect($rules['country'])->not->toContain('array');
 });
@@ -151,7 +152,7 @@ it('does not duplicate min/max from explicit and implicit', function (): void {
         Number::make('age')->min(0)->max(120)->rules(['min:5', 'max:150']),
     ]);
 
-    // Explicit имеет приоритет — implicit min/max не должны добавиться.
+    // An explicit rule wins — the implicit min/max must not be added.
     expect($rules['age'])->toContain('min:5');
     expect($rules['age'])->toContain('max:150');
     expect($rules['age'])->not->toContain('min:0');
@@ -163,8 +164,8 @@ it('fields with no rules get a nullable default so validate() keeps them', funct
         Input::make('comment'), // Input без type, без required, без rules
     ]);
 
-    // Дефолтный nullable — иначе Laravel validate() срежет поле из $data,
-    // даже если бэкенд хочет получить значение как-есть.
+    // The default nullable — otherwise Laravel's validate() cuts the field out
+    // of $data even when the backend wants the value as is.
     expect($rules)->toHaveKey('comment');
     expect($rules['comment'])->toBe(['nullable']);
 });

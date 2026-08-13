@@ -76,7 +76,7 @@ it('startImpersonation: 403 when impersonating yourself', function (): void {
 it('startImpersonation: blocks higher-powered target when option enabled', function (): void {
     config()->set('admin.auth.impersonation.block_higher_powered', true);
 
-    // Target имеет permission admin.users.delete, у impersonator'а нет.
+    // The target has the admin.users.delete permission, the impersonator does not.
     $bigRole = Role::create([
         'name' => 'Big',
         'slug' => 'big-'.uniqid(),
@@ -92,7 +92,7 @@ it('startImpersonation: blocks higher-powered target when option enabled', funct
 });
 
 it('startImpersonation: 403 when already impersonating (no nesting)', function (): void {
-    // Target тоже с правом impersonate, иначе следующий вызов упадёт на permission-check.
+    // The target also holds the impersonate right, otherwise the next call fails the permission check.
     $impRole = Role::firstWhere('slug', 'like', 'imp-role-%')
         ?? Role::create(['name' => 'I', 'slug' => 'i', 'permissions' => ['admin.impersonate']]);
     $this->target->assignRole($impRole);

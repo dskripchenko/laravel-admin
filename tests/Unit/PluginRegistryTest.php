@@ -94,8 +94,8 @@ it('AdminServiceProvider boot() reads admin.plugins config', function (): void {
     $registry = app(PluginRegistry::class);
     $registry->clear();
 
-    // Имитация boot-фазы (тесты Testbench запускают её до app boot, поэтому
-    // вручную дёргаем bootPlugins-эквивалент).
+    // A simulation of the boot phase (the Testbench tests run it before the app
+    // boots, so we trigger the bootPlugins equivalent by hand).
     $registry->addMany([TestSamplePlugin::class]);
     $registry->bootAll(app(Admin::class));
 

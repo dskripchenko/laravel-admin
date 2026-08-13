@@ -167,7 +167,7 @@ it('AdminPluginUpdater createStubPlugin creates valid PHP', function (): void {
     $files = new Filesystem;
     $updater = new AdminPluginUpdater($files);
 
-    // Имитируем отсутствие plugin'а — addMenuNode создаст stub.
-    // Но мы тестируем in-memory без реальной FS-записи в base_path.
+    // We simulate a missing plugin — addMenuNode will create a stub. But we
+    // test in memory, without a real filesystem write into base_path.
     expect($updater)->toBeInstanceOf(AdminPluginUpdater::class);
 });

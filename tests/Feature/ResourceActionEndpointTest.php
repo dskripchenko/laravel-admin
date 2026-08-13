@@ -92,9 +92,9 @@ it('action endpoint resolves second declared BulkAction independently', function
 it('отказ действия по делу — 422 с человеческим текстом, а не пятисотка', function (): void {
     $a = TestResourceUserModel::create(['name' => 'A', 'status' => 'draft']);
 
-    // Проверка соединения, не достучавшаяся до сервера, — законный ответ
-    // действия. Пятисотка означала бы, что сломалась панель, и мониторинг
-    // будил бы дежурного из-за неверно введённого пользователем порта.
+    // A connection check that failed to reach the server is a legitimate answer
+    // of the action. A 500 would mean the panel itself broke, and the monitoring
+    // would wake the on-call over a port the user mistyped.
     $response = $this->postJson('/api/admin/test-actions/action', [
         'key' => 'check-link',
         'ids' => [$a->id],

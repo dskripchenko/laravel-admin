@@ -8,7 +8,7 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Resource с Wysiwyg-полем для тестов санитизации.
+ * A resource with a WYSIWYG field, for the sanitization tests.
  *
  * @internal
  */
@@ -36,7 +36,7 @@ final class TestArticleResource extends Resource
 }
 
 /**
- * Trusted-вариант с отключённой санитизацией (advanced use).
+ * The trusted variant with the sanitization switched off (advanced use).
  *
  * @internal
  */

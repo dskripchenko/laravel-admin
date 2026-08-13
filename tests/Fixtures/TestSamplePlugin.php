@@ -6,7 +6,7 @@ use Dskripchenko\LaravelAdmin\Admin;
 use Dskripchenko\LaravelAdmin\Plugin\AdminPlugin;
 
 /**
- * Простой test-plugin: регистрирует TestUserResource при boot.
+ * A simple test plugin: it registers TestUserResource at boot.
  *
  * @internal
  */
@@ -39,7 +39,7 @@ final class TestSamplePlugin implements AdminPlugin
 }
 
 /**
- * Второй plugin для теста дубликата имён.
+ * A second plugin, for the duplicate-name test.
  *
  * @internal
  */

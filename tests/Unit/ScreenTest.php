@@ -8,7 +8,7 @@ use Dskripchenko\LaravelAdmin\Screen\Screen;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Repository;
 
-// Фикстура TestDashboardScreen — в tests/Fixtures/ (composer classmap).
+// The TestDashboardScreen fixture lives in tests/Fixtures/ (the composer classmap).
 
 it('Screen has slug derived from class name', function (): void {
     expect(TestDashboardScreen::slug())->toBe('test-dashboard');

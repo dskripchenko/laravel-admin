@@ -100,7 +100,7 @@ it('import.start creates ImportProcess and runs synchronously', function (): voi
 });
 
 it('import.start records error_count for invalid rows', function (): void {
-    // 3 rows: 1 валидная, 2 без required email.
+    // 3 rows: 1 valid, 2 without the required email.
     Storage::disk('local')->put('imports/users.csv', "name,email,password\nA,a@example.com,p\nB,,p\nC,,p\n");
 
     $response = $this->postJson('/api/admin/import/start', [

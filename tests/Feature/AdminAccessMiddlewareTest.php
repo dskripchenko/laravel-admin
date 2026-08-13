@@ -8,8 +8,8 @@ use Dskripchenko\LaravelAdmin\Permission\Models\Role;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function (): void {
-    // Таблицы admin_roles + admin_role_assignments уже созданы миграциями
-    // через AdminServiceProvider::loadMigrationsFrom().
+    // The admin_roles and admin_role_assignments tables are already created by
+    // the migrations through AdminServiceProvider::loadMigrationsFrom().
 
     Route::group(['middleware' => ['web']], function (): void {
         Route::get('/test/protected', fn () => response()->json(['ok' => true]))
@@ -103,7 +103,7 @@ it('AdminAccess: passes through when permission string is empty', function (): v
         ->middleware([AdminAccess::class])
         ->name('test.empty');
 
-    // Без авторизации
+    // Without authorization
     $response = $this->getJson('/test/empty');
     $response->assertOk();
 });

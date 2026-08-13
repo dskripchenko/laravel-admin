@@ -1,13 +1,13 @@
 /**
- * Flat config для ESLint 10.
+ * The flat config for ESLint 10.
  *
- * Tier'ы:
- *   1. JS-base (eslint:recommended) — core rules
- *   2. TypeScript (typescript-eslint) — typed-aware checks для resources/ts/**
- *   3. Vue (eslint-plugin-vue@10) — SFC parser + vue rules
- *   4. Prettier-compat — отключает formatting rules конфликтующие с
- *      reasonable defaults (chosen over автоформатирование, чтобы не плодить
- *      шум в diff'ах)
+ * The tiers:
+ *   1. JS base (eslint:recommended) — the core rules
+ *   2. TypeScript (typescript-eslint) — typed-aware checks for resources/ts/**
+ *   3. Vue (eslint-plugin-vue@10) — the SFC parser plus the vue rules
+ *   4. Prettier compat — switches off the formatting rules that conflict with
+ *      reasonable defaults (chosen over autoformatting so as not to breed noise
+ *      in the diffs)
  */
 
 import js from '@eslint/js'
@@ -70,14 +70,14 @@ export default [
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',
-      // Тесты часто содержат inline mock-components (Stub компонент,
-      // Provider, Reader, Captured) — это норма для unit-тестов.
+      // Tests often hold inline mock components (a Stub component, Provider,
+      // Reader, Captured) — that is the norm for unit tests.
       'vue/one-component-per-file': 'off',
       'vue/require-prop-types': 'off',
     },
   },
 
-  // 6. Prettier compat — должна быть последней.
+  // 6. Prettier compat — must come last.
   prettier,
 
   // Ignored paths

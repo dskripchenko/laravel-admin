@@ -9,7 +9,7 @@ use Dskripchenko\LaravelAdmin\Screen\Screen;
 use Dskripchenko\LaravelAdmin\Support\Repository;
 
 /**
- * Demo Screen для unit/feature тестов.
+ * A demo screen for the unit and feature tests.
  *
  * @internal
  */

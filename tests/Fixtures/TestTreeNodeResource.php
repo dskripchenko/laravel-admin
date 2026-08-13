@@ -7,7 +7,7 @@ use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 
 /**
- * Resource для tests иерархического дерева.
+ * A resource for the hierarchical-tree tests.
  *
  * @internal
  */

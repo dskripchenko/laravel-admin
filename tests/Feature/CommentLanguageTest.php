@@ -3,18 +3,25 @@
 declare(strict_types=1);
 
 /**
- * Комментарии в коде — по-английски.
+ * Comments in the code are written in English.
  *
- * Долг был накоплен исторически: на 12.08.2026 — 3930 строк в 399 файлах.
- * Разом он не переводился, поэтому тест держал не ноль, а записанный уровень
- * (`tests/comment-debt.json`): файл не мог стать хуже, новый файл обязан был
- * быть чистым, а переведённый фиксировался на новом уровне.
+ * The debt was accumulated historically: on 12.08.2026 it was 3930 lines across
+ * 399 files. It was not translated in one go, so the test used to hold not zero
+ * but the recorded level (`tests/comment-debt.json`): a file could not get
+ * worse, a new file had to be clean, and a translated one was pinned at its new
+ * level.
  *
- * 12.08.2026 долг закрыт целиком — храповик стал обычным запретом, а база
- * долга удалена за ненадобностью.
+ * On 12.08.2026 the debt was closed in full — the ratchet became an ordinary ban
+ * and the debt baseline was deleted as no longer needed.
  *
- * Правило и исключения: см. память feedback_code_comments_english. Коротко:
- * `docs/**`, ADR и тексты тестовых сообщений остаются на русском.
+ * The rule and its exceptions: see the memory feedback_code_comments_english. In
+ * short: `docs/**`, the ADRs and the texts of the test messages stay in Russian.
+ */
+/**
+ * A QUOTATION is not prose. An English comment may cite a Russian string — a
+ * label the defect is addressed by, a search query, a value from a fixture — and
+ * translating the citation would lose what it points at. So quoted spans are cut
+ * out before the check; whatever Cyrillic is left is the comment's own text.
  */
 $countRussian = static function (string $path): int {
     $n = 0;
@@ -24,7 +31,8 @@ $countRussian = static function (string $path): int {
         if (! str_starts_with($t, '//') && ! str_starts_with($t, '*') && ! str_starts_with($t, '/*') && ! str_starts_with($t, '#')) {
             continue;
         }
-        if (preg_match('/[а-яА-Я]/u', $line)) {
+        $prose = preg_replace('/"[^"]*"|\'[^\']*\'|`[^`]*`|«[^»]*»/u', '', $line);
+        if (preg_match('/[а-яА-Я]/u', (string) $prose)) {
             $n++;
         }
     }
@@ -32,18 +40,33 @@ $countRussian = static function (string $path): int {
     return $n;
 };
 
+/**
+ * Everything a developer reads, not only the package's own code: the tests, the
+ * fixtures, the blade views and the root-level configs count too. The narrow
+ * list they used to be missing from let a translated `src/**` read as a closed
+ * debt while 335 lines were still sitting in `tests/**` and the build configs.
+ */
 $sources = static function (): array {
     $root = dirname(__DIR__, 2);
     $out = [];
+    $dirs = ['config', 'database', 'resources', 'routes', 'src', 'tests', '.storybook'];
 
-    foreach (['src', 'resources/ts', 'config', 'database'] as $dir) {
+    foreach ($dirs as $dir) {
         if (! is_dir($root.'/'.$dir)) {
             continue;
         }
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.'/'.$dir));
-        foreach (new RegexIterator($it, '/\.(php|ts|vue)$/') as $file) {
-            $out[] = str_replace($root.'/', '', (string) $file);
+        foreach (new RegexIterator($it, '/\.(php|ts|js|mjs|cjs|vue)$/') as $file) {
+            $rel = str_replace($root.'/', '', (string) $file);
+            if (str_contains($rel, '/node_modules/')) {
+                continue;
+            }
+            $out[] = $rel;
         }
+    }
+
+    foreach ((array) glob($root.'/*.{php,js,mjs,cjs,ts}', GLOB_BRACE) as $file) {
+        $out[] = str_replace($root.'/', '', (string) $file);
     }
     sort($out);
 
