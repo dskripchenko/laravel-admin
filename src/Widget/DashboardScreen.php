@@ -97,11 +97,14 @@ abstract class DashboardScreen extends Screen
      */
     private function effectiveWidgets(): array
     {
-        $declared = $this->widgets();
+        // Deduplicated by slug, the screen's own instance winning: a host that
+        // places a plugin's widget itself — with its own title or size — must
+        // not then get a second copy of it appended.
         $declaredBySlug = [];
-        foreach ($declared as $w) {
-            $declaredBySlug[$w::slug()] = $w;
+        foreach ([...$this->widgets(), ...$this->pluginWidgets()] as $w) {
+            $declaredBySlug[$w::slug()] ??= $w;
         }
+        $declared = array_values($declaredBySlug);
 
         $persisted = $this->loadPersistedLayout();
 
@@ -134,6 +137,43 @@ abstract class DashboardScreen extends Screen
         }
 
         return array_values(array_filter($result, fn (Widget $w): bool => $this->isWidgetVisible($w)));
+    }
+
+    /**
+     * The widgets the plugins registered through `$admin->widgets([...])`.
+     *
+     * Until 1.30 that registry had no reader at all: a pack could register a
+     * widget and it would never appear anywhere, which is how the queue-depth
+     * widget of laravel-admin-jobs came to be written twice. A dashboard of the
+     * current panel picks them up automatically, after its own — the host
+     * declares what its screen is about, a plugin adds to the end.
+     *
+     * Resolved through the container, so a widget may take its data source as a
+     * constructor dependency. One that cannot be built is skipped: a plugin
+     * with a broken binding must not take the dashboard down.
+     *
+     * @return list<Widget>
+     */
+    private function pluginWidgets(): array
+    {
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        $widgets = [];
+
+        foreach (app(\Dskripchenko\LaravelAdmin\Admin::class)->getWidgets($panel) as $class) {
+            try {
+                $widget = app($class);
+            } catch (\Throwable $e) {
+                report($e);
+
+                continue;
+            }
+
+            if ($widget instanceof Widget) {
+                $widgets[] = $widget;
+            }
+        }
+
+        return $widgets;
     }
 
     /**

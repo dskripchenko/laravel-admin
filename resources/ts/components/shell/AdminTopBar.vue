@@ -2,8 +2,8 @@
 /**
  * The admin top bar, built on the UID tokens. Its structure comes from
  * docs/design_handoff_laravel_admin/screens-shell.jsx (Topbar): the collapse
- * toggle, the breadcrumbs, a spacer, the search pill, the bell, the theme, the
- * locale and the avatar.
+ * toggle, the breadcrumbs, a spacer, the search pill, the status indicators,
+ * the bell, the theme, the locale and the avatar.
  *
  * The slots:
  *   - actions — a host may insert extra actions before the widgets
@@ -17,6 +17,7 @@ import { UidIcon } from '@dskripchenko/ui'
 import ThemeToggle from './widgets/ThemeToggle.vue'
 import LocaleSwitcher from './widgets/LocaleSwitcher.vue'
 import NotificationBell from './widgets/NotificationBell.vue'
+import StatusIndicators from './widgets/StatusIndicators.vue'
 import UserMenu from './widgets/UserMenu.vue'
 import { trSafe as tr } from '../../stores/i18n'
 
@@ -91,6 +92,7 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
     </slot>
 
     <slot name="actions" />
+    <StatusIndicators />
     <NotificationBell />
     <ThemeToggle />
     <LocaleSwitcher />

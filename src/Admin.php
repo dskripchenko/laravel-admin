@@ -32,6 +32,13 @@ final class Admin
     /** @var array<string, class-string[]> panel id => widget classes */
     private array $widgets = [];
 
+    /**
+     * The status indicators of the top bar, per panel.
+     *
+     * @var array<string, class-string[]>
+     */
+    private array $statusIndicators = [];
+
     /** @var class-string[] */
     private array $plugins = [];
 
@@ -187,6 +194,42 @@ final class Admin
         $this->widgets[$panel] = array_unique([...($this->widgets[$panel] ?? []), ...$classes]);
 
         return $this;
+    }
+
+    /**
+     * Registers the classes of the top bar's status indicators.
+     *
+     * The panel draws them, the plugin answers what to draw — see
+     * {@see Status\StatusIndicator}. Registered,
+     * not placed: whether an installation wants a dot in its header is the
+     * host's call, and it turns them off by not registering the plugin.
+     *
+     * @param  class-string[]  $classes
+     */
+    public function statusIndicators(array $classes): self
+    {
+        $panel = $this->registrationPanel;
+        $this->statusIndicators[$panel] = array_unique([
+            ...($this->statusIndicators[$panel] ?? []),
+            ...$classes,
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * Without an argument: the indicators of every panel; with one: only that
+     * panel's.
+     *
+     * @return class-string[]
+     */
+    public function getStatusIndicators(?string $panel = null): array
+    {
+        if ($panel !== null) {
+            return $this->statusIndicators[$panel] ?? [];
+        }
+
+        return array_values(array_unique(array_merge(...array_values($this->statusIndicators) ?: [[]])));
     }
 
     /**

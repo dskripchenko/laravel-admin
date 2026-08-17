@@ -5,6 +5,29 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.30.0
+
+### Added
+- **Status indicators in the top bar.** A pack now has somewhere to say that
+  something is wrong: `$admin->statusIndicators([...])` plus the
+  `Status\StatusIndicator` interface, exposed through `system.status` and drawn
+  by the panel itself. A pack does not have to ship a Vue build of its own to
+  put a dot in the header. Nothing is drawn while everything is `ok` — a green
+  dot per plugin is decoration nobody reads — and an indicator that throws is
+  dropped from the response rather than taking the header down.
+
+  A separate endpoint rather than a field of the manifest: the manifest is
+  cached by ETag and meant to survive being stale, and a health check that needs
+  a hard refresh to be trusted is worse than none.
+
+### Fixed
+- **Widgets registered by plugins never appeared anywhere.** `$admin->widgets()`
+  had been there since the widget subsystem landed and nothing ever read it, so
+  a pack could register a widget and see nothing. Any `DashboardScreen` of the
+  panel now appends them after its own, resolved through the container (a widget
+  may take its data source as a constructor dependency), deduplicated by slug so
+  a host that placed one itself does not get a second copy.
+
 ## 1.29.0
 
 ### Fixed

@@ -91,6 +91,7 @@ class AdminApi extends BaseApi
                     'setLocale' => ['method' => ['post'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                     'permissions' => ['method' => ['get']],
                     'plugins' => ['method' => ['get']],
+                    'status' => ['method' => ['get']],
                     'theme' => ['method' => ['get'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                     'setTheme' => ['method' => ['post'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                 ],

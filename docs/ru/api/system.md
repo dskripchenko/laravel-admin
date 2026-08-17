@@ -1,6 +1,6 @@
 # API: System
 
-Контроллер `system` — bootstrap, manifest, profile-summary, menu, locales, permissions, plugins, notifications, audit.
+Контроллер `system` — bootstrap, manifest, profile-summary, menu, locales, permissions, plugins, status, notifications, audit.
 
 > Конвенции — [conventions.md](conventions.md). Регистрация — [registration.md](registration.md).
 
@@ -24,6 +24,7 @@ URL: `api/admin/system/{action}`. Все actions требуют `AdminSession` �
         'locales'                    => ['method' => ['get']],
         'permissions'                => ['method' => ['get']],
         'plugins'                    => ['method' => ['get']],
+        'status'                     => ['method' => ['get']],
         'notifications'              => ['method' => ['get']],
         'notificationsRead'          => ['method' => ['post']],
         'notificationsMarkAllRead'   => ['method' => ['post']],
@@ -212,6 +213,42 @@ public function permissions(Request $request): JsonResponse;
  */
 public function plugins(Request $request): JsonResponse;
 ```
+
+### `system.status`
+
+Состояние индикаторов верхней панели. Отдельный экшен, а не поле манифеста:
+манифест кэшируется по ETag и рассчитан на устаревание — форма панели меняется
+на деплое. Статус меняется сам по себе, и проверка здоровья, которой нужен
+hard-refresh, хуже отсутствующей.
+
+Индикаторы регистрирует хост или плагин — `$admin->statusIndicators([...])`,
+классы реализуют `Dskripchenko\LaravelAdmin\Status\StatusIndicator`. Упавший
+индикатор выбрасывается из ответа (и уходит в `report()`), а не роняет запрос:
+сломанная диагностика не должна утаскивать за собой шапку.
+
+```php
+/**
+ * Состояние индикаторов верхней панели.
+ *
+ * @output object $payload
+ * @output array  $payload.indicators Список.
+ * @output string $payload.indicators[].key Идентификатор, например admin.health.
+ * @output string $payload.indicators[].status ok|warning|error|unknown.
+ * @output string $payload.indicators[].label Короткая подпись рядом с точкой.
+ * @output string ?$payload.indicators[].detail Текст всплывающей подсказки.
+ * @output string ?$payload.indicators[].url Куда ведёт клик.
+ *
+ * @security AdminSession
+ * @security AdminBearer
+ * @response 200 {StatusResponse}
+ */
+public function status(Request $request): JsonResponse;
+```
+
+Фронт (`StatusIndicators.vue`) опрашивает экшен раз в минуту и **не рисует
+`ok`**: зелёная точка на плагин — украшение, которое никто не читает, шапка
+говорит только когда что-то не так. Недоступный экшен тоже молчит — он падает
+на каждом рестарте деплоя.
 
 ---
 

@@ -415,6 +415,57 @@ final class SystemController extends ApiController
      *
      * @response 200 {PluginsResponse}
      */
+    /**
+     * The state of the top bar's status indicators.
+     *
+     * A separate action rather than a field of the manifest on purpose: the
+     * manifest is cached by ETag and is meant to be stale-tolerant — the shape
+     * of the panel changes on deploy. Status is the opposite kind of data: it
+     * changes on its own, without anyone deploying anything, and a health check
+     * one has to hard-refresh to trust is worse than no health check.
+     *
+     * An indicator that throws is dropped, not raised: these are diagnostics,
+     * and a broken diagnostic must not take the header down with it.
+     *
+     * @output object $payload
+     *
+     * @security AdminAuth
+     *
+     * @response 200 {StatusResponse}
+     */
+    public function status(Request $request): JsonResponse
+    {
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        $indicators = [];
+
+        foreach ($this->admin->getStatusIndicators($panel) as $class) {
+            try {
+                /** @var \Dskripchenko\LaravelAdmin\Status\StatusIndicator $indicator */
+                $indicator = app($class);
+
+                // Deliberately widened: the declared shape is a promise from a
+                // third-party class, and the checks below exist precisely for
+                // the implementation that does not keep it.
+                /** @var array<string, mixed> $state */
+                $state = $indicator->state();
+
+                $indicators[] = [
+                    'key' => $indicator->key(),
+                    'status' => in_array($state['status'] ?? null, ['ok', 'warning', 'error', 'unknown'], true)
+                        ? $state['status']
+                        : 'unknown',
+                    'label' => (string) ($state['label'] ?? ''),
+                    'detail' => isset($state['detail']) ? (string) $state['detail'] : null,
+                    'url' => isset($state['url']) ? (string) $state['url'] : null,
+                ];
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $this->success(['indicators' => $indicators]);
+    }
+
     public function plugins(Request $request): JsonResponse
     {
         $plugins = [];

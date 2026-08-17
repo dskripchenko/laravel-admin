@@ -120,6 +120,44 @@ it('serves /api/admin/system/plugins', function (): void {
     expect($response->json('payload.plugins'))->toBeArray();
 });
 
+it('serves /api/admin/system/status', function (): void {
+    app(Dskripchenko\LaravelAdmin\Admin::class)->statusIndicators([StatusIndicatorStub::class]);
+
+    $response = $this->getJson('/api/admin/system/status');
+
+    $response->assertOk();
+    expect($response->json('payload.indicators'))->toBe([[
+        'key' => 'test.stub',
+        'status' => 'warning',
+        'label' => 'Проверки',
+        'detail' => '2 из 5 не прошли',
+        'url' => '/health',
+    ]]);
+});
+
+it('drops an indicator that throws instead of failing the request', function (): void {
+    app(Dskripchenko\LaravelAdmin\Admin::class)->statusIndicators([
+        BrokenStatusIndicatorStub::class,
+        StatusIndicatorStub::class,
+    ]);
+
+    $response = $this->getJson('/api/admin/system/status');
+
+    // A broken diagnostic must not take the header down with it: the working
+    // one still answers.
+    $response->assertOk();
+    expect($response->json('payload.indicators'))->toHaveCount(1);
+    expect($response->json('payload.indicators.0.key'))->toBe('test.stub');
+});
+
+it('falls back to unknown for a status outside the vocabulary', function (): void {
+    app(Dskripchenko\LaravelAdmin\Admin::class)->statusIndicators([WildStatusIndicatorStub::class]);
+
+    $response = $this->getJson('/api/admin/system/status');
+
+    expect($response->json('payload.indicators.0.status'))->toBe('unknown');
+});
+
 it('admin api throttle is config-driven (default 240,1)', function (): void {
     // The routes are registered at boot — we check the getMethods() declaration.
     $mw = implode('|', Dskripchenko\LaravelAdmin\Http\AdminApi::getMethods()['middleware']);
@@ -137,3 +175,48 @@ it('login throttle is config-driven (config existed but was hardcoded)', functio
     expect(implode('|', $auth['login']['middleware']))->toContain(':9,2,auth-admin');
     expect(implode('|', $auth['twoFactorChallenge']['middleware']))->toContain(':9,2,auth-admin');
 });
+
+final class StatusIndicatorStub implements Dskripchenko\LaravelAdmin\Status\StatusIndicator
+{
+    public function key(): string
+    {
+        return 'test.stub';
+    }
+
+    public function state(): array
+    {
+        return [
+            'status' => 'warning',
+            'label' => 'Проверки',
+            'detail' => '2 из 5 не прошли',
+            'url' => '/health',
+        ];
+    }
+}
+
+final class BrokenStatusIndicatorStub implements Dskripchenko\LaravelAdmin\Status\StatusIndicator
+{
+    public function key(): string
+    {
+        return 'test.broken';
+    }
+
+    public function state(): array
+    {
+        throw new RuntimeException('база недоступна');
+    }
+}
+
+final class WildStatusIndicatorStub implements Dskripchenko\LaravelAdmin\Status\StatusIndicator
+{
+    public function key(): string
+    {
+        return 'test.wild';
+    }
+
+    /** @return array<string, mixed> */
+    public function state(): array
+    {
+        return ['status' => 'на грани', 'label' => 'Что-то'];
+    }
+}

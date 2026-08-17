@@ -27,6 +27,32 @@ it('DashboardScreen::layout returns Dashboard with declared widgets by default',
     expect($compiled['layout'][0]['props']['key'])->toBe('test-dashboard');
 });
 
+it('DashboardScreen picks up widgets registered by plugins', function (): void {
+    app(Dskripchenko\LaravelAdmin\Admin::class)->widgets([PluginRegisteredWidget::class]);
+
+    $compiled = (new TestDashboard)->compile();
+    $slugs = array_map(
+        static fn (array $child): string => (string) ($child['slug'] ?? ''),
+        $compiled['layout'][0]['children'],
+    );
+
+    // Registered, not declared: the pack has no access to the host's dashboard
+    // class, and until this the registry had no reader at all.
+    expect($slugs)->toContain('plugin-registered');
+});
+
+it('does not duplicate a plugin widget the screen placed itself', function (): void {
+    app(Dskripchenko\LaravelAdmin\Admin::class)->widgets([PluginRegisteredWidget::class]);
+
+    $compiled = (new DashboardWithPluginWidget)->compile();
+    $slugs = array_map(
+        static fn (array $child): string => (string) ($child['slug'] ?? ''),
+        $compiled['layout'][0]['children'],
+    );
+
+    expect(array_count_values($slugs)['plugin-registered'] ?? 0)->toBe(1);
+});
+
 it('DashboardScreen applies persisted layout (reorder + size)', function (): void {
     DashboardLayout::create([
         'dashboard_key' => 'test-dashboard',
@@ -174,3 +200,24 @@ it('dashboard.savePeriod does not clobber an existing layout (BL-16)', function 
     expect($get->json('payload.period'))->toBe('7d');
     expect($get->json('payload.layout'))->toHaveCount(1); // layout сохранён
 });
+
+class PluginRegisteredWidget extends Dskripchenko\LaravelAdmin\Widget\StatsOverviewWidget
+{
+    public static function slug(): string
+    {
+        return 'plugin-registered';
+    }
+}
+
+final class DashboardWithPluginWidget extends Dskripchenko\LaravelAdmin\Widget\DashboardScreen
+{
+    public static function slug(): string
+    {
+        return 'dashboard-with-plugin-widget';
+    }
+
+    public function widgets(): array
+    {
+        return [(new PluginRegisteredWidget)->title('Свой заголовок')];
+    }
+}
