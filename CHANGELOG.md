@@ -5,6 +5,17 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.31.1
+
+### Fixed
+- **`any` and `null` are not types this markup has** — the tail of 1.31.0's
+  cleanup. Five tags named them and became `string` in the spec without a word:
+  the inline-update value is documented as the string it arrives as, and the
+  four actions that answer with an empty envelope now say that instead.
+
+  With this, `api:lint` over the installation the audit started from reports no
+  errors and no warnings, down from 1204 and 63.
+
 ## 1.31.0
 
 ### Fixed
@@ -37,13 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     optional.
   - **Login declared two 200 responses**, and the second replaced the first, so
     the spec described the 2FA case and lost the ordinary login.
-  - **`any` and `null` are not types here either.** The inline-update value is
-    documented as the string it arrives as, and the actions that answer with an
-    empty envelope say so, instead of naming a type that turns into `string`
-    behind the author's back.
-
-  What is left after this is zero: `api:lint` over the same installation reports
-  no errors and no warnings, down from 1204 and 63.
 
 ## 1.30.0
 
