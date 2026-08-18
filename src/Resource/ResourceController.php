@@ -1011,7 +1011,9 @@ final class ResourceController extends ApiController
      *
      * @input integer $id
      * @input string $column
-     * @input any $value
+     * @input string $value As typed; the server casts it to the column's own
+     *                     type. `any` is not a type this markup has — it became
+     *                     `string` in the spec anyway, silently.
      *
      * @output object $payload
      *

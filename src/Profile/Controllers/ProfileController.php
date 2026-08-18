@@ -106,7 +106,7 @@ class ProfileController extends ApiController
      * @input string $password
      * @input string $password_confirmation
      *
-     * @output null $payload
+     * @output object $payload Empty: the action answers with the envelope alone
      *
      * @security AdminSession
      *
@@ -242,7 +242,7 @@ class ProfileController extends ApiController
      *
      * @input string $password
      *
-     * @output null $payload
+     * @output object $payload Empty: the action answers with the envelope alone
      *
      * @security AdminSession
      *
@@ -406,7 +406,7 @@ class ProfileController extends ApiController
      *
      * @input integer $id
      *
-     * @output null $payload
+     * @output object $payload Empty: the action answers with the envelope alone
      *
      * @security AdminSession
      *

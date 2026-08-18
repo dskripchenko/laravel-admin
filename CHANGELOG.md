@@ -37,6 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     optional.
   - **Login declared two 200 responses**, and the second replaced the first, so
     the spec described the 2FA case and lost the ordinary login.
+  - **`any` and `null` are not types here either.** The inline-update value is
+    documented as the string it arrives as, and the actions that answer with an
+    empty envelope say so, instead of naming a type that turns into `string`
+    behind the author's back.
+
+  What is left after this is zero: `api:lint` over the same installation reports
+  no errors and no warnings, down from 1204 and 63.
 
 ## 1.30.0
 

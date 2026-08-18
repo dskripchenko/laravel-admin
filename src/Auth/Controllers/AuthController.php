@@ -286,7 +286,7 @@ final class AuthController extends ApiController
     /**
      * Ends the session.
      *
-     * @output null $payload
+     * @output object $payload Empty: the action answers with the envelope alone
      *
      * @security AdminSession
      * @security AdminBearer
