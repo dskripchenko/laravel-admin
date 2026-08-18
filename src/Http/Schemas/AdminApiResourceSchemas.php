@@ -17,6 +17,103 @@ trait AdminApiResourceSchemas
         return [
 
             /* ------------------------------------------------------------------
+             * The resource endpoints whose @response named a template nobody
+             * declared — see the note in AdminApiSystemSchemas.
+             *
+             * The five screen responses share one shape: every one of them
+             * returns a compiled screen, and a screen is a screen whether it
+             * lists, creates or edits. Describing them as five different things
+             * would invent a difference the code does not have.
+             * ------------------------------------------------------------------ */
+
+            'ResourceListScreenResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ScreenStatePayload',
+            ],
+            'ResourceTreeScreenResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ScreenStatePayload',
+            ],
+            'ResourceCreateScreenResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ScreenStatePayload',
+            ],
+            'ResourceEditScreenResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ScreenStatePayload',
+            ],
+            'ResourceViewScreenResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ScreenStatePayload',
+            ],
+
+            'ResourceTreeResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceTreePayload',
+            ],
+            'ResourceTreePayload' => [
+                'data' => 'array! The nodes, nested by the parent column',
+                'meta' => '@ResourceTreeMeta',
+            ],
+            'ResourceTreeMeta' => [
+                'total' => 'integer!',
+                'max_depth' => 'integer!',
+                'parent_key' => 'string!',
+                'label_column' => 'string!',
+            ],
+
+            'ResourceReorderedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceReorderedPayload',
+            ],
+            'ResourceReorderedPayload' => [
+                'count' => 'integer! How many rows were given a new position',
+                'message' => 'string!',
+            ],
+
+            'ResourceReplicatedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceReplicatedPayload',
+            ],
+            'ResourceReplicatedPayload' => [
+                'record' => 'object! The copy, transformed as the resource renders records',
+                'redirect_url' => 'string! Where the panel opens the copy for editing',
+                'message' => 'string!',
+            ],
+
+            'ResourceForceDeletedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceForceDeletedPayload',
+            ],
+            'ResourceForceDeletedPayload' => [
+                'id' => 'mixed! The identifier of the row that is now gone for good',
+                'message' => 'string!',
+            ],
+
+            'ResourceInlineUpdatedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceInlineUpdatedPayload',
+            ],
+            'ResourceInlineUpdatedPayload' => [
+                'record' => 'object! The whole row, so the table can redraw it',
+                'column' => 'string! The column that was edited',
+                'value' => 'mixed! Its value as stored, which may differ from what was typed',
+            ],
+
+            'ResourceSummaryResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceSummaryPayload',
+            ],
+            'ResourceSummaryPayload' => [
+                'summary' => 'object! The aggregates the resource declares, keyed by column',
+            ],
+
+            'ConflictErrorResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@SimpleErrorPayload',
+            ],
+
+            /* ------------------------------------------------------------------
              * Resource: meta / search / read / create / update / delete
              * ------------------------------------------------------------------ */
 

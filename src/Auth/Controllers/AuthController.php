@@ -50,10 +50,15 @@ final class AuthController extends ApiController
      * @output object $payload.user
      * @output string $payload.redirect_url
      *
-     * @security Public
+     * Two different bodies share the 200 here, and the markup cannot say
+     * "one of": a second `@response 200` silently replaced the first, so the
+     * published spec described only the 2FA case and lost the ordinary login
+     * altogether. The common outcome is documented as the response; the other
+     * is described by the paragraph above and by `TwoFactorRequiredResponse`,
+     * which stays in `components.schemas` for a client to match against even
+     * though no `@response` can now point at it.
      *
      * @response 200 {LoginResponse}
-     * @response 200 {TwoFactorRequiredResponse}
      * @response 401 {InvalidCredentialsResponse}
      * @response 403 {AccountInactiveResponse}
      * @response 422 {ValidationErrorResponse}
@@ -175,8 +180,6 @@ final class AuthController extends ApiController
      *
      * @output object $payload
      *
-     * @security Public
-     *
      * @response 200 {LoginResponse}
      * @response 401 {InvalidTwoFactorResponse}
      */
@@ -229,8 +232,6 @@ final class AuthController extends ApiController
      * @input string $recovery_code
      *
      * @output object $payload
-     *
-     * @security Public
      *
      * @response 200 {RecoveryLoginResponse}
      * @response 401 {InvalidRecoveryCodeResponse}
@@ -318,8 +319,6 @@ final class AuthController extends ApiController
      * @output object $payload
      * @output string $payload.message
      *
-     * @security Public
-     *
      * @response 200 {GenericMessageResponse}
      * @response 422 {ValidationErrorResponse}
      * @response 429 {ThrottledResponse}
@@ -347,8 +346,6 @@ final class AuthController extends ApiController
      * @output object $payload
      * @output object $payload.user
      * @output string $payload.redirect_url
-     *
-     * @security Public
      *
      * @response 200 {LoginResponse}
      * @response 422 {ValidationErrorResponse}
@@ -415,8 +412,6 @@ final class AuthController extends ApiController
      * @output object $payload
      * @output string $payload.message
      * @output string $payload.redirect_url
-     *
-     * @security Public
      *
      * @response 200 {GenericMessageResponse}
      * @response 422 {ValidationErrorResponse}

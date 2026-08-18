@@ -331,8 +331,6 @@ final class SystemController extends ApiController
      *
      * @output object $payload
      *
-     * @security Public
-     *
      * @response 200 {LocaleUpdatedResponse}
      * @response 422 {ValidationErrorResponse}
      */
@@ -429,7 +427,7 @@ final class SystemController extends ApiController
      *
      * @output object $payload
      *
-     * @security AdminAuth
+     * @security AdminSession
      *
      * @response 200 {StatusResponse}
      */
@@ -485,8 +483,6 @@ final class SystemController extends ApiController
      *
      * @output object $payload
      *
-     * @security Public
-     *
      * @response 200 {ThemeStateResponse}
      */
     public function theme(Request $request, \Dskripchenko\LaravelAdmin\Theme\ThemeManager $themes): JsonResponse
@@ -504,8 +500,6 @@ final class SystemController extends ApiController
      * @input string $theme
      *
      * @output object $payload
-     *
-     * @security Public
      *
      * @response 200 {ThemeUpdatedResponse}
      * @response 422 {ValidationErrorResponse}

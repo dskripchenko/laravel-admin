@@ -65,8 +65,8 @@ final class ScreenController extends ApiController
      *   - null or void   → success(['ok' => true])
      *
      * @input string $method
-     * @input object|null $payload
-     * @input array|null $parameters
+     * @input object ?$payload
+     * @input array ?$parameters
      *
      * @output object $payload
      *

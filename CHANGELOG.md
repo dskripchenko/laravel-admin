@@ -5,6 +5,39 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.31.0
+
+### Fixed
+- **The published spec referenced schemes and templates it never defined.**
+  Found by `api:lint`, shipped with laravel-api 5.7.0, on its first run over a
+  real installation: 1204 dangling references from a couple of dozen causes,
+  multiplied by every resource and every panel.
+
+  Nothing was broken in the panel, and that is the point — an unresolved `$ref`
+  is not a syntax error, so `GET /api/doc` kept returning a document that
+  validates. It broke for whoever generated a client from it, or opened it in
+  Swagger UI and tried to authenticate.
+
+  - **88 `@security` tags pointed at nothing.** `AdminSession` and `AdminBearer`
+    were used from the first release and declared nowhere:
+    `getOpenApiSecurityDefinitions()` was never overridden, so
+    `components.securitySchemes` was empty. Both are declared now — a session
+    cookie (its name read from the application, so a renamed cookie does not
+    make the spec lie) and a bearer token from the profile.
+  - **`@security Public` is gone.** OpenAPI says "no authentication" by an
+    operation having no security, not by a scheme with that name; nine tags
+    named a scheme that could never exist.
+  - **33 response templates were named and not declared.** All of them are now
+    written from what the controllers actually return, rather than guessed.
+    Export points at the already-declared `FileDownloadResponse`: its
+    `@output file` never parsed — the generator wants a variable — and was
+    dropped in silence, leaving the operation with no response schema at all.
+  - **`object|null` and `array|null`** are not types this markup has; both
+    silently became `string`. Written as `?$variable`, which is how it says
+    optional.
+  - **Login declared two 200 responses**, and the second replaced the first, so
+    the spec described the 2FA case and lost the ordinary login.
+
 ## 1.30.0
 
 ### Added

@@ -644,11 +644,15 @@ final class ResourceController extends ApiController
      * @input string ?$q
      * @input array ?$columns
      *
-     * @output file
+     * The body is the file itself, so there is nothing to describe field by
+     * field: `@output file` never parsed — the generator wants a variable — and
+     * was dropped in silence, leaving the operation with no response schema at
+     * all. FileDownloadResponse says the same thing and is a template that
+     * exists.
      *
      * @security AdminSession
      *
-     * @response 200 {ResourceExportResponse}
+     * @response 200 {FileDownloadResponse}
      * @response 422 {ValidationErrorResponse} The format is not supported.
      */
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse

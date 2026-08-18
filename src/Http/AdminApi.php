@@ -240,6 +240,44 @@ class AdminApi extends BaseApi
     }
 
     /**
+     * The security schemes the docblocks name.
+     *
+     * They were used from the first release and declared nowhere: 88 `@security`
+     * tags across the panel's controllers pointed at schemes
+     * `components.securitySchemes` never defined. The spec stayed valid — an
+     * unresolved scheme name is not a syntax error — and anything generating a
+     * client from it produced calls that could not authenticate. Found by
+     * `api:lint` from laravel-api 5.7.0.
+     *
+     * Two schemes, because the panel accepts exactly two kinds of caller: a
+     * browser carrying the session cookie, and a program carrying a personal
+     * token issued in the profile.
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function getOpenApiSecurityDefinitions(): array
+    {
+        return [
+            'AdminSession' => [
+                'type' => 'apiKey',
+                'in' => 'cookie',
+                // Read from the application rather than written out: an
+                // installation that renames its session cookie would otherwise
+                // publish a spec describing a cookie it does not send.
+                'name' => (string) config('session.cookie', 'laravel_session'),
+                'description' => 'The panel\'s session cookie, as the browser sends it after a login. '
+                    .'Requests carrying it are also subject to CSRF protection.',
+            ],
+            'AdminBearer' => [
+                'type' => 'http',
+                'scheme' => 'bearer',
+                'description' => 'A personal API token issued in the profile (laravel/sanctum). '
+                    .'For programs; a browser session does not need it.',
+            ],
+        ];
+    }
+
+    /**
      * The combined set of response templates from every trait.
      *
      * @return array<string, array<string, string>>

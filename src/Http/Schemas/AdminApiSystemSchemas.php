@@ -17,6 +17,199 @@ trait AdminApiSystemSchemas
         return [
 
             /* ------------------------------------------------------------------
+             * The endpoints whose @response named a template nobody declared.
+             *
+             * Found by `api:lint` from laravel-api 5.7.0: the docblocks named
+             * 33 templates that did not exist, so the published spec carried
+             * `$ref`s into nothing — valid OpenAPI that no generated client can
+             * follow. The shapes below are read off the controllers, not
+             * guessed: each mirrors what the action actually returns.
+             * ------------------------------------------------------------------ */
+
+            'LocaleUpdatedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@LocaleUpdatedPayload',
+            ],
+            'LocaleUpdatedPayload' => [
+                'locale' => 'string! The locale now in force; also set as a cookie',
+            ],
+
+            'ThemeStateResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ThemeStatePayload',
+            ],
+            'ThemeStatePayload' => [
+                'current' => 'string!',
+                'default' => 'string!',
+                'available' => 'array! The theme names this installation offers',
+            ],
+
+            'ThemeUpdatedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ThemeUpdatedPayload',
+            ],
+            'ThemeUpdatedPayload' => [
+                'theme' => 'string! The theme now in force; also set as a cookie',
+            ],
+
+            'StatusResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@StatusPayload',
+            ],
+            'StatusPayload' => [
+                'indicators' => '@StatusIndicatorState[] Empty while every indicator reports ok',
+            ],
+            'StatusIndicatorState' => [
+                'key' => 'string! A stable identifier, admin.health and the like',
+                'status' => 'string! ok|warning|error|unknown',
+                'label' => 'string! A word or two, drawn beside the dot',
+                'detail' => 'string The tooltip',
+                'url' => 'string Where a click leads, when there is somewhere to go',
+            ],
+
+            'SettingsReadResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@SettingsReadPayload',
+            ],
+            'SettingsReadPayload' => [
+                'values' => 'object! Key to value, as stored',
+            ],
+
+            'SettingsUpdatedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@SettingsUpdatedPayload',
+            ],
+            'SettingsUpdatedPayload' => [
+                'values' => 'object! Re-read after the write, not echoed back',
+                'message' => 'string!',
+            ],
+
+            'AuditTimelineResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@AuditTimelinePayload',
+            ],
+            'AuditTimelinePayload' => [
+                'data' => 'array! Entries grouped into a timeline by AuditTimelineProjector',
+            ],
+
+            'DelayedProcessRunResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@DelayedProcessRunPayload',
+            ],
+            'DelayedProcessRunPayload' => [
+                'uuid' => 'string(uuid)! The handle to ask about later',
+                'status' => 'string! new|running|done|failed|cancelled|expired',
+            ],
+
+            'DelayedProcessStatusResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@DelayedProcessStatus',
+            ],
+
+            'UploadResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@UploadPayload',
+            ],
+            'UploadPayload' => [
+                'disk' => 'string The disk it landed on; null when nothing was sent',
+                'path' => 'string',
+                'url' => 'string',
+                'name' => 'string The original file name',
+                'size' => 'integer!',
+                'mime' => 'string',
+            ],
+
+            'ImportStartResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ImportProcessPayload',
+            ],
+            'ImportStatusResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ImportProcessPayload',
+            ],
+            'ImportProcessPayload' => [
+                'process' => 'object! The import process as ImportController::serialize() renders it',
+            ],
+
+            'NotificationListResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@NotificationListPayload',
+            ],
+            'NotificationListPayload' => [
+                'data' => '@AdminNotification[]',
+                'meta' => '@PaginationMeta',
+            ],
+
+            'NotificationUnreadResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@NotificationUnreadPayload',
+            ],
+            'NotificationUnreadPayload' => [
+                'count' => 'integer!',
+                'data' => '@AdminNotification[] The most recent unread ones',
+            ],
+
+            'NotificationMarkResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@NotificationMarkPayload',
+            ],
+            'NotificationMarkPayload' => [
+                'id' => 'string(uuid)!',
+                'unread_count' => 'integer! Recounted after the write',
+            ],
+
+            'NotificationMarkAllResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@NotificationMarkAllPayload',
+            ],
+            'NotificationMarkAllPayload' => [
+                'updated' => 'integer! How many were still unread',
+                'unread_count' => 'integer!',
+            ],
+
+            'SavedViewListResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@SavedViewListPayload',
+            ],
+            'SavedViewListPayload' => [
+                'data' => '@SavedViewListItem[]',
+            ],
+            'SavedViewListItem' => [
+                'id' => 'integer!',
+                'name' => 'string!',
+                'state' => 'object! The filters, sorting and columns the view restores',
+                'is_default' => 'boolean!',
+                'owned' => 'boolean! False for a view shared with everyone',
+            ],
+
+            'DashboardLayoutResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@DashboardLayoutPayload',
+            ],
+            'DashboardLayoutPayload' => [
+                'layout' => 'array The per-user arrangement; null when never customised',
+                'period' => 'string 7d|30d|90d|all',
+            ],
+
+            'DashboardLayoutSavedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@DashboardLayoutSavedPayload',
+            ],
+            'DashboardLayoutSavedPayload' => [
+                'id' => 'integer!',
+                'widgets' => '@WidgetLayoutItem[]',
+            ],
+
+            'DashboardWidgetsResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@DashboardWidgetsPayload',
+            ],
+            'DashboardWidgetsPayload' => [
+                'widgets' => '@WidgetInstance[]',
+                'period' => 'string! 7d|30d|90d|all',
+            ],
+
+            /* ------------------------------------------------------------------
              * system.*
              * ------------------------------------------------------------------ */
 
