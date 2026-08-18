@@ -64,6 +64,57 @@
 
 ## Открыто
 
+### OpenAPI-спека ссылается на то, чего нет
+
+Найдено 18.08.2026 первым же прогоном `api:lint` (laravel-api 5.7.0) на
+printable. Спека панели, которую отдаёт `GET /api/doc`, ссылается на схемы
+безопасности и шаблоны ответов, не определённые нигде.
+
+Корень маленький, множитель большой. В докблоках контроллеров ядра стоят
+четыре схемы — `AdminSession` (612 упоминаний), `AdminBearer` (216),
+`Public` (18), `AdminAuth` (2), — а `getOpenApiSecurityDefinitions()` в
+`AdminApi` не переопределён вовсе, то есть определений ноль. И 26 шаблонов
+ответа, которых нет среди 208 объявленных:
+
+```
+AuditTimelineResponse, DashboardLayoutResponse, DashboardLayoutSavedResponse,
+DashboardWidgetsResponse, DelayedProcessRunResponse, DelayedProcessStatusResponse,
+ImportStartResponse, ImportStatusResponse, LocaleUpdatedResponse,
+NotificationListResponse, NotificationMarkAllResponse, NotificationMarkResponse,
+NotificationUnreadResponse, ResourceCreateScreenResponse, ResourceEditScreenResponse,
+ResourceExportResponse, ResourceForceDeletedResponse, ResourceInlineUpdatedResponse,
+ResourceListScreenResponse, ResourceReorderedResponse, ResourceSummaryResponse,
+ResourceViewScreenResponse, StatusResponse, ThemeStateResponse, ThemeUpdatedResponse,
+UploadResponse
+```
+
+`ResourceListScreenResponse` и соседи по `Resource*` умножаются на каждый
+ресурс приложения, `AdminSession` — на каждое действие, и всё это ещё раз на
+каждую панель. Отсюда 1204 ошибки на printable при паре десятков настоящих
+причин. `StatusResponse` — свежий, приехал вместе с `system.status` в 1.30.0.
+
+Почему это не заметили: `@response 200 {Нечто}` с неопределённым шаблоном даёт
+`$ref: '#/components/schemas/Нечто'` в спеку, которая **остаётся валидной по
+схеме OpenAPI** — ломается только у того, кто по ней генерирует клиент или
+открывает её в Swagger UI. Панель работает, тесты зелёные.
+
+Порядок работ:
+
+1. Объявить схемы в `AdminApi::getOpenApiSecurityDefinitions()`. `AdminSession`
+   — cookie-сессия, `AdminBearer` — токен в заголовке; `Public` и `AdminAuth`
+   разобрать отдельно: `Public` по смыслу означает «схема не нужна», и
+   правильнее либо убрать тег, либо завести пустой `security: []`, а
+   `AdminAuth` (2 места) похож на опечатку в имени.
+2. Дописать 26 шаблонов в `getOpenApiTemplates()`. Половина — `Resource*`,
+   у них общая форма, так что это не 26 независимых описаний.
+3. Заодно: 33 тега `@output file` без переменной (генератор молча выбрасывает —
+   у экспорта в итоге нет схемы ответа) и 61 union-тип вроде `object|null`,
+   которые этот DSL не понимает и превращает в `string`.
+4. Поставить `php artisan api:lint --strict` в CI printable, чтобы регресс не
+   вернулся. Проверка не требует ничего, кроме загруженного приложения.
+
+Воспроизведение: `php artisan api:lint --json` в printable.
+
 ### Витрина компонентов — публикация
 
 Storybook подключён и собирается на CI (`npm run storybook` — порт 6007,
