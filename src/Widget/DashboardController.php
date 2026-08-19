@@ -103,6 +103,13 @@ class DashboardController extends ApiController
      *
      * @input string $key
      * @input array $widgets
+     * @input string $widgets[].slug
+     * @input integer ?$widgets[].size Columns, 1..12
+     * @input integer ?$widgets[].position
+     * @input boolean ?$widgets[].hidden
+     * @input string ?$widgets[].type Needed by user-added widgets, which carry
+     *                     a key of their own rather than one from the manifest
+     * @input object ?$widgets[].config The widget's own settings, if it has any
      *
      * @output object $payload
      *

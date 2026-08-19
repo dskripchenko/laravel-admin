@@ -5,6 +5,34 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.31.2
+
+### Fixed
+- **A docblock had drifted one method up.** The one describing `reorder()` sat
+  above `action()`, and `reorder()` had none at all. Everything followed from
+  that: the bulk-action endpoint documented `items` while requiring `ids`, said
+  nothing about the required `key` or the optional `payload`, and declared the
+  neighbour's `ResourceReorderedResponse` — `{count, message}` — while returning
+  `{affected, message}`.
+
+  A client written from that specification would send `items` and be told the
+  required `ids` was missing. Both methods now describe themselves, and the
+  response points at `AffectedResponse`, which was already declared and unused.
+
+- **Fields that were validated and undocumented.** `dashboard.save` accepted six
+  `widgets.*` keys — the whole shape of a layout entry — and described none of
+  them; `profile.tokenCreate` said nothing about the type of an `abilities`
+  element.
+
+  Found by comparing `$request->validate([...])` against the `@input` tags. It
+  is a different failure from the dangling references of 1.31.0: here the markup
+  is valid and wrong, and nothing but a comparison can see it — the rules and
+  the docblock are each impeccable on their own.
+
+  An element of a scalar array (`ids.*`, `abilities.*`) is said in prose: it has
+  no form of its own in this markup, and a tag the generator drops silently is
+  worse than a sentence that is read.
+
 ## 1.31.1
 
 ### Fixed

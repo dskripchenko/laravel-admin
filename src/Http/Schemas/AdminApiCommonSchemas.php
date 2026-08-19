@@ -36,6 +36,7 @@ trait AdminApiCommonSchemas
             ],
             'AffectedPayload' => [
                 'affected' => 'integer!',
+                'message' => 'string! What was applied, in words',
             ],
 
             // { success: true, payload: { message: string } }

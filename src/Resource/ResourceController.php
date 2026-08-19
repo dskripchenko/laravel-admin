@@ -717,20 +717,32 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Drag-and-drop reordering: a bulk update of several positions in one
-     * transaction.
+     * Applies one of the resource's own bulk actions to the selected records.
      *
-     * Takes `items: [{id, position}]`. The resource must have
-     * `reorderable() === true` and a `reorderColumn()`.
+     * The action is found by `key` among those the resource declares;
+     * `payload` carries whatever that action asks for.
      *
-     * @input array $items
+     * The docblock that used to stand here described `reorder()` — it had
+     * drifted one method up, and with it the wrong parameter name (`items`
+     * instead of `ids`), two undocumented required fields and a response
+     * template belonging to the neighbour. A client written from that
+     * specification would send `items` and be told the required `ids` is
+     * missing.
+     *
+     * @input array $ids Identifiers of the records; at least one. Each element
+     *                   is required — a scalar array's element has no tag of
+     *                   its own here
+     * @input string $key The action, as the resource declares it
+     * @input array ?$payload The action's own arguments, when it takes any
      *
      * @output object $payload
      *
      * @security AdminSession
      *
-     * @response 200 {ResourceReorderedResponse}
+     * @response 200 {AffectedResponse}
+     * @response 404 {NotFoundErrorResponse} The resource declares no such action
      * @response 422 {ValidationErrorResponse}
+     * @response 501 The action is declared and the resource has no method for it
      */
     public function action(Request $request): JsonResponse
     {
@@ -792,6 +804,24 @@ final class ResourceController extends ApiController
         ]);
     }
 
+    /**
+     * Drag-and-drop reordering: a bulk update of several positions in one
+     * transaction.
+     *
+     * Takes `items: [{id, position}]`. The resource must have
+     * `reorderable() === true` and a `reorderColumn()`.
+     *
+     * @input array $items
+     * @input mixed $items[].id
+     * @input integer $items[].position
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceReorderedResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
     public function reorder(Request $request): JsonResponse
     {
         $data = $request->validate([
