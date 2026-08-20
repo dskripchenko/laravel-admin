@@ -31,8 +31,24 @@ interface Indicator {
 /** How often to re-ask, in ms. A minute: this is a header, not a monitor. */
 const POLL_MS = 60_000
 
+/**
+ * The last answer, kept for the tab.
+ *
+ * A minute between requests is what a mounted header costs; a full page load
+ * used to cost one on top of it, and a session that reloads — a sweep, a test
+ * suite, anyone working through a list of records by URL — paid per
+ * navigation. Measured on a real stand: 110 status requests in two minutes,
+ * near a quarter of all panel traffic, enough to push the whole run through
+ * the API's rate limit and turn unrelated screens red.
+ *
+ * The cache holds the freshness promise rather than weakening it: an answer
+ * younger than a minute is reused, and the next request is scheduled for when
+ * that minute is up, not a minute after the reload.
+ */
+type CachedStatus = { at: number; indicators: Indicator[] }
+
 const indicators = ref<Indicator[]>([])
-let timer: ReturnType<typeof setInterval> | null = null
+let timer: ReturnType<typeof setTimeout> | null = null
 
 const icons: Record<StatusLevel, Component> = {
   ok: CircleCheck,
@@ -48,26 +64,73 @@ const icons: Record<StatusLevel, Component> = {
  */
 const visible = computed<Indicator[]>(() => indicators.value.filter((i) => i.status !== 'ok'))
 
+/** Per panel: the service panel and a client panel are different answers. */
+function cacheKey(): string {
+  const base = getAdminClient().raw.defaults.baseURL ?? 'admin'
+
+  return `admin.status:${base}`
+}
+
+function readCache(): CachedStatus | null {
+  try {
+    const raw = sessionStorage.getItem(cacheKey())
+    if (raw === null) return null
+
+    const parsed = JSON.parse(raw) as CachedStatus
+
+    return typeof parsed?.at === 'number' && Array.isArray(parsed?.indicators) ? parsed : null
+  } catch {
+    // Storage can be unavailable (private mode, a locked-down browser) and its
+    // contents can be anything. Neither is a reason for a header to fail.
+    return null
+  }
+}
+
+function writeCache(value: Indicator[]): void {
+  try {
+    sessionStorage.setItem(cacheKey(), JSON.stringify({ at: Date.now(), indicators: value }))
+  } catch {
+    // Nothing to do and nothing to say: the cache is an optimisation.
+  }
+}
+
 async function load(): Promise<void> {
   try {
     const client = getAdminClient()
     const response = await client.get<{ indicators: Indicator[] }>('/system/status')
     indicators.value = Array.isArray(response?.indicators) ? response.indicators : []
+    writeCache(indicators.value)
   } catch {
     // A status endpoint that is unreachable says nothing rather than shouting:
     // it fails on every deploy restart, and a header that cries wolf during a
-    // deploy is a header people learn to ignore.
+    // deploy is a header people learn to ignore. The cache is left alone —
+    // a failed request is not news about the system.
     indicators.value = []
   }
 }
 
+function schedule(delay: number): void {
+  timer = setTimeout(() => {
+    void load().then(() => schedule(POLL_MS))
+  }, delay)
+}
+
 onMounted(() => {
-  void load()
-  timer = setInterval(() => void load(), POLL_MS)
+  const cached = readCache()
+  const age = cached === null ? Number.POSITIVE_INFINITY : Date.now() - cached.at
+
+  if (cached !== null && age >= 0 && age < POLL_MS) {
+    indicators.value = cached.indicators
+    schedule(POLL_MS - age)
+
+    return
+  }
+
+  void load().then(() => schedule(POLL_MS))
 })
 
 onBeforeUnmount(() => {
-  if (timer !== null) clearInterval(timer)
+  if (timer !== null) clearTimeout(timer)
   timer = null
 })
 

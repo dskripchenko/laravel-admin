@@ -12,6 +12,7 @@ describe('StatusIndicators', () => {
   let mock: MockAdapter
 
   beforeEach(() => {
+    sessionStorage.clear()
     setActivePinia(createPinia())
     const client = createAdminClient({ baseURL: 'http://api.test' })
     setAdminClient(client)
@@ -92,5 +93,69 @@ describe('StatusIndicators', () => {
     wrapper.unmount()
     await vi.advanceTimersByTimeAsync(120_000)
     expect(mock.history.get.length).toBe(2)
+  })
+
+  // The defect this guards: the header asked on every mount, and a session that
+  // reloads pages — a panel sweep, an e2e run, anyone walking a list by URL —
+  // paid one request per navigation. On a real stand that came to a quarter of
+  // all panel traffic and pushed the run past the API's rate limit, failing
+  // screens that had nothing to do with it.
+  it('does not ask again on a remount within the minute', async () => {
+    reply([{ key: 'admin.health', status: 'error', label: 'Проверки' }])
+
+    const first = mount(StatusIndicators, { global })
+    await flushPromises()
+    first.unmount()
+
+    const asked = mock.history.get.length
+    expect(asked).toBe(1)
+
+    const second = mount(StatusIndicators, { global })
+    await flushPromises()
+
+    expect(mock.history.get.length).toBe(asked)
+    expect(second.find('[data-testid="status-admin.health"]').exists()).toBe(true)
+  })
+
+  it('asks again once the cached answer is a minute old', async () => {
+    reply([{ key: 'admin.health', status: 'error', label: 'Проверки' }])
+
+    const first = mount(StatusIndicators, { global })
+    await flushPromises()
+    first.unmount()
+
+    // Aged by hand rather than by waiting: the point is the age of the answer,
+    // not the passage of time.
+    const key = Object.keys(sessionStorage).find((k) => k.startsWith('admin.status:'))!
+    const cached = JSON.parse(sessionStorage.getItem(key)!)
+    sessionStorage.setItem(key, JSON.stringify({ ...cached, at: cached.at - 61_000 }))
+
+    mount(StatusIndicators, { global })
+    await flushPromises()
+
+    expect(mock.history.get.length).toBe(2)
+  })
+
+  it('keeps the last good answer when a request fails', async () => {
+    reply([{ key: 'admin.health', status: 'error', label: 'Проверки' }])
+
+    const first = mount(StatusIndicators, { global })
+    await flushPromises()
+    first.unmount()
+
+    const key = Object.keys(sessionStorage).find((k) => k.startsWith('admin.status:'))!
+    const before = sessionStorage.getItem(key)
+
+    mock.reset()
+    mock.onGet('/system/status').reply(500)
+    sessionStorage.setItem(key, JSON.stringify({ ...JSON.parse(before!), at: Date.now() - 61_000 }))
+
+    mount(StatusIndicators, { global })
+    await flushPromises()
+
+    // A failed request is not news about the system: it must not be written
+    // down as one.
+    const after = JSON.parse(sessionStorage.getItem(key)!)
+    expect(after.indicators).toHaveLength(1)
   })
 })
