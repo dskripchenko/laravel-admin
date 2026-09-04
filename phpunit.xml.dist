@@ -18,6 +18,9 @@
         <testsuite name="Panels">
             <directory>tests/Panels</directory>
         </testsuite>
+        <testsuite name="Host">
+            <directory>tests/Host</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

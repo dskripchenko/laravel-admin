@@ -31,7 +31,8 @@ translated_at: 2026-05-08
 
 ```
 HTTP request (Laravel)
-  └── AdminApiModule (laravel-api)
+  └── AdminApiModule (laravel-api) — RunVersionMiddleware выбирает стек на каждом запросе:
+      стек панели для `admin` и панелей, собственный стек BaseApi для версий хоста
        └── AdminApi::getMethods()
             ├── system / auth / profile / dashboard / audit / ...
             ├── resources (компилируется per-Resource через ResourceCompiler)

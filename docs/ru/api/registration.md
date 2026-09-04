@@ -332,8 +332,8 @@ Public-actions (`auth.login`, `auth.forgotPassword`, `auth.resetPassword`) ук�
 
 | Уровень | Где задаётся | Когда применяется |
 |---|---|---|
-| Global (Laravel) | `config('admin.middleware.api')` | на весь `Route::group` |
-| Module | `AdminApiModule::middleware()` | на весь `/api/admin/*` |
+| Module | `AdminApiModule::getApiMiddleware()` | на все маршруты модуля; это только `CaptureApiRequest` + `RunVersionMiddleware` |
+| Panel stack | `config('admin.middleware.api')` | на версии-панели (`admin` и `admin.panels.*`), запускается `RunVersionMiddleware` на рантайме |
 | Api version | `AdminApi::getMethods() → 'middleware'` | на все controllers версии |
 | Controller | `getMethods() → 'controllers' → {slug} → 'middleware'` | на все actions controller'а |
 | Action | `getMethods() → 'controllers' → {slug} → 'actions' → {name} → 'middleware'` | на конкретный action |
@@ -347,6 +347,38 @@ Public-actions (`auth.login`, `auth.forgotPassword`, `auth.resetPassword`) ук�
     'middleware'         => [ThrottleRequests::class . ':5,1'],
 ],
 ```
+
+### Host-модуль со своими версиями
+
+`AdminApiModule` открыт для наследования: хост-модуль мержит
+`parent::getApiVersionList()` и добавляет версии приложения рядом с панелями.
+
+```php
+final class AppApiModule extends AdminApiModule
+{
+    public function getApiVersionList(): array
+    {
+        return [
+            ...parent::getApiVersionList(),   // admin + панели
+            'v1' => Api\V1::class,            // публичный API приложения
+        ];
+    }
+}
+```
+
+Стек панели (`admin.middleware.api`: сессия, CSRF, `AdminAuth`) на такие
+версии **не распространяется**. Для них действует контракт laravel-api: глобальные,
+контроллерные и экшенные middleware из `getMethods()` класса версии, и ничего
+из админки. Выбор делает `RunVersionMiddleware` на каждом запросе, а не при
+регистрации маршрутов — группа middleware у laravel-api одна на модуль и
+собирается один раз при boot, под Octane воркер грузится однажды, и выбор «по
+версии из URL» на этапе boot был бы выбором первого запроса для всех
+последующих.
+
+Если версии приложения нужна локаль панели или сессия, она объявляет это сама:
+`'middleware' => [AdminLocale::class]` в `getMethods()`. `exclude-middleware`
+с элементами стека панели (`'web'`, `AdminAuth::class`) в не-панельной версии
+больше не нужен — вырезать нечего.
 
 ---
 

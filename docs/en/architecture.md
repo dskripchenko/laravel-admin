@@ -30,7 +30,8 @@ the deep, low-level architecture see also `docs/ARCHITECTURE.md` (RU,
 
 ```
 HTTP request (Laravel)
-  └── AdminApiModule (laravel-api)
+  └── AdminApiModule (laravel-api) — RunVersionMiddleware picks the stack per request:
+      the panel stack for `admin` and the panels, the BaseApi's own for a host's versions
        └── AdminApi::getMethods()
             ├── system / auth / profile / dashboard / audit / ...
             ├── resources (compiled per-Resource via ResourceCompiler)

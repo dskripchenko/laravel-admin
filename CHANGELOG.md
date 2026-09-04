@@ -5,6 +5,34 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.32.0
+
+### Исправлено
+
+- **Стек админки навешивался на все версии API хост-приложения.** Модуль
+  объявлен открытым для наследования: хост мержит `parent::getApiVersionList()`
+  и ставит свои версии рядом с панелями. Но `getApiMiddleware()` отдавал
+  `admin.middleware.api` безусловно, а laravel-api регистрирует его одной
+  группой на каждый маршрут модуля — и публичный `api/v1/*` с bearer-токеном
+  получал 401 от `AdminAuth` раньше, чем до него доходил собственный
+  middleware, а CSRF из `web` резал его POST'ы. Найдено интеграционным тестом
+  хост-проекта на Sanctum.
+
+  Выбирать стек по версии из URL при регистрации маршрутов было бы починкой
+  под FPM и тишиной под Octane: воркер грузится однажды, и группа осталась бы
+  выбором первого запроса для всех следующих. Поэтому группа теперь не зависит
+  от запроса — `CaptureApiRequest` и `RunVersionMiddleware`, — а выбор делается
+  на каждом запросе: панели (`admin`, `admin.panels.*`) получают стек из
+  `admin.middleware.api`, прочие версии — контракт laravel-api, middleware
+  своего класса `BaseApi` через `RunActionMiddleware`, и ничего из админки.
+  `exclude-middleware` маршрута действует и внутри вложенного стека, так что
+  `auth/login` по-прежнему проходит мимо `AdminAuth`.
+
+  Для версий хоста это смена поведения: `AdminLocale` и сессия к ним больше не
+  приходят сами, кто ими пользовался — объявляет в `getMethods()` версии.
+  Воспроизведено фикстурой host-модуля (`tests/Host`): без правки четыре из
+  пяти проверок красные.
+
 ## 1.31.3
 
 ### Исправлено

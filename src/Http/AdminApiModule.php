@@ -90,19 +90,25 @@ class AdminApiModule extends BaseModule
     }
 
     /**
+     * laravel-api registers this as ONE middleware group, once, at boot — so
+     * it must not depend on the request: under Octane the worker boots once
+     * and would keep the first request's choice for every version after it.
+     *
+     * The group therefore holds two things only: CaptureApiRequest, which
+     * fills the BaseApiRequest the version is read from, and
+     * RunVersionMiddleware, which picks the stack per request — the panel
+     * stack (config admin.middleware.api) for `admin` and the panels, the
+     * BaseApi class's own middleware for the versions a host module adds. A
+     * panel's ADDITIONS are declared in admin.panels.{id}.middleware.api and
+     * merged into the global middleware of PanelApi::getMethods().
+     *
      * @return array<int, mixed>
      */
     public function getApiMiddleware(): array
     {
-        // laravel-api registers the middleware GROUP once at boot: it is the
-        // common base stack of every panel (config admin.middleware.api, whose
-        // middleware are panel-aware through Panels::currentGuard()). A
-        // panel's own ADDITIONS are declared in
-        // admin.panels.{id}.middleware.api and merged into the global
-        // middleware of PanelApi::getMethods().
-        /** @var array<int, mixed> $middleware */
-        $middleware = (array) config('admin.middleware.api', []);
-
-        return $middleware;
+        return [
+            Middleware\CaptureApiRequest::class,
+            Middleware\RunVersionMiddleware::class,
+        ];
     }
 }

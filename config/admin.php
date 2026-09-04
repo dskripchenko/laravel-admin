@@ -85,6 +85,11 @@ return [
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminCspNonce::class,
         ],
         'api' => [
+            // The stack of the PANELS — `admin` and admin.panels.* — run per
+            // request by RunVersionMiddleware. A version a host module adds
+            // next to the panels does not get it: it keeps the middleware its
+            // own BaseApi class declares.
+            //
             // The admin API is session-based rather than stateless, so it
             // uses the `web` middleware group for StartSession,
             // EncryptCookies and CSRF. Headless bearer tokens through Sanctum
