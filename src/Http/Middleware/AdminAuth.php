@@ -59,6 +59,15 @@ final class AdminAuth
             ], Response::HTTP_FORBIDDEN);
         }
 
+        // Not logged out: in the shared strategy the session is the site's
+        // own, and a plain user keeps it — they just do not get the admin.
+        if ($user !== null && ! \Dskripchenko\LaravelAdmin\Auth\PanelAccess::allows($user)) {
+            return response()->json([
+                'success' => false,
+                'payload' => ['errorKey' => 'forbidden', 'message' => __('Нет доступа к панели администратора')],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         // Changing the password invalidates the other sessions — Laravel's
         // AuthenticateSession mechanics, done JSON-first: the session stores
         // the hash of the password as it was at the login, and a mismatch

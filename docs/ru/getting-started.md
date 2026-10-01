@@ -29,7 +29,13 @@ php artisan admin:install
 `admin:install` публикует `config/admin.php` и миграции, публикует готовую
 сборку фронтенда в `public/vendor/admin`, запускает `migrate` и создаёт
 первого администратора. Появятся таблицы `admin_users`, `admin_roles`,
-`admin_settings`, `audit_logs`, `dashboard_layouts` и несколько других.
+`admin_settings`, `admin_audit_logs`, `admin_dashboard_layouts` и несколько
+других.
+
+Подключаете админку к приложению, где уже есть пользователи? С
+`php artisan admin:install --shared` они входят своими обычными учётками
+вместо отдельной таблицы `admin_users` — см.
+[подключение к существующему приложению](integration.md).
 
 Node и сборка не нужны: пакет поставляет SPA админки уже собранной.
 `admin:install` также предлагает добавить `php artisan admin:publish` в
@@ -73,10 +79,11 @@ php artisan admin:user --super
 
 ## Первый ресурс
 
-Сгенерировать заготовку:
+Сгенерировать заготовку интерактивным мастером — он спросит названия,
+модель (или таблицу), колонки формы и таблицы, право и иконку:
 
 ```bash
-php artisan admin:make-resource ArticleResource
+php artisan admin:make-resource
 ```
 
 Или написать вручную:
@@ -148,6 +155,9 @@ public function boot(): void
 
 ## Дальше
 
+- [Подключение к существующему приложению](integration.md) — ваши
+  пользователи, путь и домен, прокси, несколько панелей, свой модуль
+  laravel-api, обновление и типичные проблемы.
 - [Иерархическое меню](concepts/menu.md) — заменить auto-fill явным
   деревом навигации.
 - [Custom Screens](concepts/screens.md) — non-CRUD страницы (формы,

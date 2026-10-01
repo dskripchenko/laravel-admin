@@ -45,7 +45,7 @@ final class Panel
         return new self(
             id: 'admin',
             path: (string) config('admin.path', 'admin'),
-            apiPath: (string) config('admin.api_path', 'api/admin'),
+            apiPath: self::defaultApiPath(),
             guard: (string) ($auth['guard'] ?? 'admin'),
             auth: $auth,
             middleware: (array) config('admin.middleware', []),
@@ -70,7 +70,7 @@ final class Panel
             id: $id,
             path: (string) ($config['path'] ?? $id),
             // laravel-api's version equals the panel's id: /api/{id}/{controller}/{action}.
-            apiPath: (string) ($config['api_path'] ?? 'api/'.$id),
+            apiPath: (string) ($config['api_path'] ?? self::apiPathFor($id)),
             guard: (string) ($auth['guard'] ?? $id),
             auth: $auth,
             middleware: (array) ($config['middleware'] ?? []),
@@ -78,6 +78,34 @@ final class Panel
             apiClass: $apiClass,
             excludePrefixes: array_values(array_filter((array) ($config['exclude_prefixes'] ?? []), 'is_string')),
         );
+    }
+
+    /**
+     * Where a panel's API is actually served: laravel-api mounts every
+     * version — and a panel's version is its id — at
+     * `/{laravel-api.prefix}/{version}/{controller}/{action}`.
+     */
+    public static function apiPathFor(string $id): string
+    {
+        $prefix = trim((string) config('laravel-api.prefix', 'api'), '/');
+
+        return $prefix === '' ? $id : $prefix.'/'.$id;
+    }
+
+    /**
+     * The default panel's API path: `admin.api_path` when the host set it,
+     * otherwise derived from laravel-api's prefix. Deriving it keeps the SPA
+     * and the routes in step when a host moves its laravel-api prefix
+     * (`api/v1`, say): the routes move with the prefix, and a fixed
+     * `api/admin` would send the SPA to a 404.
+     */
+    public static function defaultApiPath(): string
+    {
+        $configured = config('admin.api_path');
+
+        return is_string($configured) && trim($configured, '/') !== ''
+            ? trim($configured, '/')
+            : self::apiPathFor('admin');
     }
 
     /**

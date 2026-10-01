@@ -24,6 +24,11 @@ use function Laravel\Prompts\text;
  *  4. offers to add `admin:publish` to composer.json's post-update-cmd, so the
  *     frontend follows package updates.
  *
+ * With `--shared` the administrators are the application's own users: the
+ * config is pointed at the default guard, its provider, model and password
+ * broker, and a migration adding the admin's columns to that users table is
+ * published next to the others.
+ *
  * Every question has a flag, so it also runs non-interactively.
  */
 final class InstallCommand extends Command
@@ -33,6 +38,7 @@ final class InstallCommand extends Command
      */
     protected $signature = 'admin:install
                             {--custom-build : Build the frontend with the host\'s Vite instead of the prebuilt bundle}
+                            {--shared : Sign in the application\'s existing users instead of a separate admin_users table}
                             {--force : Overwrite published config and migrations}
                             {--no-migrate : Do not run the migrations}
                             {--no-user : Do not offer to create the first administrator}
@@ -52,6 +58,10 @@ final class InstallCommand extends Command
         $this->publish('admin-config', 'Config');
         $this->publish('admin-migrations', 'Migrations');
 
+        if ($this->option('shared')) {
+            $this->configureShared($files);
+        }
+
         if ($this->option('custom-build')) {
             $this->wireCustomBuild($files);
         } else {
@@ -64,7 +74,7 @@ final class InstallCommand extends Command
         }
 
         if (! $this->option('no-user') && $this->confirms('Create the first administrator?', true)) {
-            $this->createAdmin();
+            $this->option('shared') ? $this->createSharedAdmin() : $this->createAdmin();
         }
 
         $this->newLine();
@@ -180,6 +190,92 @@ final class InstallCommand extends Command
         $composer['scripts']['post-update-cmd'] = array_values($hooks);
         $files->put($path, json_encode($composer, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
         $this->components->task('composer.json post-update-cmd', fn (): bool => true);
+    }
+
+    /**
+     * Points config('admin.auth') at the host's default guard and publishes
+     * the users-table migration. The values come from config/auth.php, so a
+     * renamed guard or a custom user model is picked up as is.
+     */
+    private function configureShared(Filesystem $files): void
+    {
+        $guard = (string) config('auth.defaults.guard', 'web');
+        $provider = (string) config("auth.guards.{$guard}.provider", 'users');
+        $model = ltrim((string) config("auth.providers.{$provider}.model", 'App\\Models\\User'), '\\');
+        $broker = (string) config('auth.defaults.passwords', $provider);
+
+        $this->components->task('config/admin.php: shared strategy', function () use ($files, $guard, $provider, $model, $broker): bool {
+            $path = config_path('admin.php');
+            if (! $files->exists($path)) {
+                return false;
+            }
+            $source = str_replace(
+                [
+                    "env('ADMIN_AUTH_STRATEGY', 'dedicated')",
+                    "env('ADMIN_GUARD', 'admin')",
+                    "env('ADMIN_PROVIDER', 'admin_users')",
+                    "'model' => Dskripchenko\\LaravelAdmin\\Models\\AdminUser::class,",
+                    "'password_broker' => 'admin_users',",
+                ],
+                [
+                    "env('ADMIN_AUTH_STRATEGY', 'shared')",
+                    "env('ADMIN_GUARD', '{$guard}')",
+                    "env('ADMIN_PROVIDER', '{$provider}')",
+                    "'model' => \\{$model}::class,",
+                    "'password_broker' => '{$broker}',",
+                ],
+                (string) $files->get($path),
+            );
+            $files->put($path, $source);
+
+            return str_contains($source, "env('ADMIN_AUTH_STRATEGY', 'shared')");
+        });
+
+        // The rest of this run — the migration, the first administrator —
+        // must already see the new values.
+        config([
+            'admin.auth.strategy' => 'shared',
+            'admin.auth.guard' => $guard,
+            'admin.auth.provider' => $provider,
+            'admin.auth.model' => $model,
+            'admin.auth.password_broker' => $broker,
+        ]);
+        app(\Dskripchenko\LaravelAdmin\Panel\PanelRegistry::class)->flush();
+
+        $this->publish('admin-shared-migrations', 'Migration: admin columns on the users table');
+
+        if (! $this->modelHasAdminAccess($model)) {
+            $this->newLine();
+            $this->line("  Add the admin traits to {$model}:");
+            $this->line('    use \Dskripchenko\LaravelAdmin\Permission\Concerns\HasAdminAccess;');
+            $this->line('    use \Dskripchenko\LaravelAdmin\Auth\Concerns\HasAdminTwoFactor;');
+        }
+    }
+
+    private function modelHasAdminAccess(string $model): bool
+    {
+        return class_exists($model)
+            && in_array(\Dskripchenko\LaravelAdmin\Permission\Concerns\HasAdminAccess::class, class_uses_recursive($model), true);
+    }
+
+    /**
+     * In the shared strategy the first administrator is usually someone who
+     * already has an account; admin:user grants them the role, or creates a
+     * new user when the email is unknown.
+     */
+    private function createSharedAdmin(): void
+    {
+        $model = (string) config('admin.auth.model');
+        if (! $this->modelHasAdminAccess($model)) {
+            $this->components->warn("No administrator yet: add the traits to {$model} first.");
+            $this->line('  Then grant the role to an existing user: php artisan admin:user you@example.com --super');
+
+            return;
+        }
+
+        $email = text('Email of the first administrator (an existing user, or a new one)', required: true, validate: fn (string $v) => filter_var($v, FILTER_VALIDATE_EMAIL) === false ? 'Not a valid email' : null);
+
+        $this->call('admin:user', ['name' => $email, '--super' => true]);
     }
 
     private function createAdmin(): void

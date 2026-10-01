@@ -27,7 +27,13 @@ php artisan admin:install
 `admin:install` publishes `config/admin.php` and the migrations, publishes
 the prebuilt frontend to `public/vendor/admin`, runs `migrate` and creates
 the first administrator. It creates `admin_users`, `admin_roles`,
-`admin_settings`, `audit_logs`, `dashboard_layouts` and a few more tables.
+`admin_settings`, `admin_audit_logs`, `admin_dashboard_layouts` and a few
+more tables.
+
+Adding the admin to an application that already has users? With
+`php artisan admin:install --shared` they sign in with their usual accounts
+instead of a separate `admin_users` table — see
+[Adding the admin to an existing application](integration.md).
 
 No Node and no build step are needed: the package ships the admin SPA
 already built. `admin:install` also offers to add
@@ -71,10 +77,12 @@ Visit `/admin/login` with these credentials. The path comes from
 
 ## Your first Resource
 
-Generate a skeleton:
+Generate a skeleton with the interactive wizard — it asks for the labels,
+the model (or a table), the form and table columns, the permission and the
+icon:
 
 ```bash
-php artisan admin:make-resource ArticleResource
+php artisan admin:make-resource
 ```
 
 Or write it by hand:
@@ -146,6 +154,9 @@ That's it. List/create/edit/view screens are generated automatically:
 
 ## Next steps
 
+- [Adding the admin to an existing application](integration.md) — your
+  existing users, path and domain, proxies, several panels, your own
+  laravel-api module, upgrading and troubleshooting.
 - [Hierarchical menu](concepts/menu.md) — replace auto-fill with explicit
   navigation tree.
 - [Custom Screens](concepts/screens.md) — non-CRUD pages (forms, reports).

@@ -446,5 +446,6 @@
     "Обновление…": "Updating…",
     "Недопустимый период: :period": "Invalid period: :period",
     "Нет доступа к дашборду": "You have no access to this dashboard",
-    "За :n дн.": "Last :n days"
+    "За :n дн.": "Last :n days",
+    "Нет доступа к панели администратора": "You do not have access to the admin panel"
 }
