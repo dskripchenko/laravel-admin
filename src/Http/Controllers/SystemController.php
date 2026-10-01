@@ -378,6 +378,10 @@ final class SystemController extends ApiController
     /**
      * Global search across every resource of the panel — the ⌘K palette.
      *
+     * A query shorter than two characters returns no groups.
+     *
+     * @input string ?$q The text to look for
+     *
      * @output object $payload
      * @output string $payload.query
      * @output array  $payload.groups
@@ -385,7 +389,7 @@ final class SystemController extends ApiController
      * @security AdminSession
      * @security AdminBearer
      *
-     * @response 200 {SuccessResponse}
+     * @response 200 {GlobalSearchResponse}
      */
     public function search(Request $request, \Dskripchenko\LaravelAdmin\Support\GlobalSearch $search): JsonResponse
     {

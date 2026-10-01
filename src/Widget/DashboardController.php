@@ -223,6 +223,20 @@ class DashboardController extends ApiController
         ]);
     }
 
+    /**
+     * Forgets the current user's layout, so the dashboard falls back to its
+     * declared default.
+     *
+     * @input string $key The dashboard
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {DashboardLayoutResetResponse}
+     * @response 401 {UnauthenticatedErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
     public function reset(Request $request): JsonResponse
     {
         $request->validate(['key' => ['required', 'string']]);

@@ -25,7 +25,7 @@
     "require": {
         "php": "^8.2",
         "ext-json": "*",
-        "dskripchenko/laravel-api": "^5.1.1",
+        "dskripchenko/laravel-api": "^5.11",
         "dskripchenko/laravel-delayed-process": "^2.0",
         "dskripchenko/laravel-translatable": "^2.0",
         "dskripchenko/php-array-helper": "^1.1",

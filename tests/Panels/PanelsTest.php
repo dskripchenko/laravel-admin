@@ -259,6 +259,16 @@ it('login payload gives wildcard permissions to hasAccess-only panel users', fun
     expect($login->json('payload.permissions'))->toBe(['*']);
 });
 
+it('documents a panel resource\'s fields in that panel\'s spec', function (): void {
+    // The schema method resolves the slug in the panel the Api class serves —
+    // the client panel's resource is not registered in the admin panel.
+    $spec = TestPanelClientApi::getOpenApiConfig('client');
+    $schema = $spec['paths']['/client/test-panel-projects/create']['post']['requestBody']['content']['application/json']['schema'];
+
+    expect(array_keys($schema['properties']))->toBe(['name'])
+        ->and($schema['required'])->toBe(['name']);
+});
+
 it('один экран может служить нескольким панелям', function (): void {
     // The trap this closes: `panels` held ONE panel per slug, so registering
     // the same screen into a second panel silently moved it out of the first.

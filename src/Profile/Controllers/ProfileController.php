@@ -350,9 +350,8 @@ class ProfileController extends ApiController
      * Creates a Sanctum token. The plain text is returned ONCE.
      *
      * @input string $name
-     * @input array ?$abilities A list of strings; an element of a scalar array
-     *                     has no form of its own in this markup, so its type is
-     *                     said here rather than in a tag the generator drops
+     * @input array ?$abilities What the token may do; every ability by default
+     * @input string $abilities[] One ability
      * @input integer ?$expires_in_days
      *
      * @output object $payload

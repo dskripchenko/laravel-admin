@@ -123,7 +123,13 @@ UploadResponse
 
 Воспроизведение: `php artisan api:lint --json` в printable.
 
-### Разметка API расходится с валидацией
+### Разметка API расходится с валидацией — ЗАКРЫТО (Unreleased, ветка stage-3/openapi)
+
+> `action`, `dashboard/save`, `tokenCreate` поправлены ещё в 1.31.x–1.33.0;
+> остатки (`abilities[]`, required в `widgets[].slug`, `payload` как object,
+> недокументированный `dashboard/reset`, `q` в `system/search`) закрыты
+> вместе с записью ниже. Регресс ловит правило `input.undeclared` из
+> laravel-api 5.11 и `tests/Feature/OpenApiSpecCompletenessTest.php`.
 
 Найдено 19.08.2026 сверкой правил `$request->validate([...])` с тегами `@input`.
 Это **не** то, что чинил `api:lint` в 1.31.x: там ссылки вели в никуда, здесь
@@ -183,7 +189,18 @@ UploadResponse
 глазами. Это же ложится и в 0.6.0 плагина (`laravel-api-idea/docs/roadmap.md`),
 но там она увидит расхождение лишь у того, кто открыл файл.
 
-### Панельные `create`/`update` не описывают ни одного поля
+### Панельные `create`/`update` не описывают ни одного поля — ЗАКРЫТО (Unreleased, ветка stage-3/openapi)
+
+> laravel-api 5.11 передаёт в `@input [method]` `OperationContext` (версия,
+> класс Api, ключ контроллера, действие); ядро отвечает
+> `ResourceController::operationSchema()` / `SettingsController::operationSchema()`
+> поверх `fields()` + `validationRules()`. Описаны create/update, а также
+> filters/order/columns/format у search/summary/tree/export, `key`/`ids` у
+> action, reorder, inlineUpdate, values у settings. На фикстурах тестов:
+> операций без входа было 65 из 189, стало 47 (все — GET-чтения и действия
+> без тела); `api:lint` — 0 замечаний. Охрана: `OpenApiSpecCompletenessTest`
+> (поля каждого create/update ⊇ ключей validationRules, ни одного висячего
+> `$ref`, lint чистый) и правило `input.undeclared`.
 
 Найдено 20.08.2026 замером спеки printable. Третья запись про одно и то же
 требование, и самая крупная: в 1.31.x чинились ссылки в никуда, 19.08 —

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Settings;
 
+use Dskripchenko\LaravelAdmin\Http\OpenApi\ResourceOperationSchema;
 use Dskripchenko\LaravelAdmin\Settings\Storage\SettingsStorage;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
+use Dskripchenko\LaravelApi\Services\OpenApi\OperationContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -61,7 +63,11 @@ final class SettingsController extends ApiController
     /**
      * Saves the values through resource->write().
      *
+     * The keys of `values` are the group's fields, as validationRules() checks
+     * them.
+     *
      * @input object $values
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -81,6 +87,29 @@ final class SettingsController extends ApiController
             'values' => $resource->read($this->storage),
             'message' => 'Saved',
         ]);
+    }
+
+    /**
+     * The input schema of one operation on one settings group, for the spec.
+     *
+     * Not an action: laravel-api calls it while generating the OpenAPI
+     * document and tells it which route it is describing — the controller key
+     * is `settings_{slug}`.
+     *
+     * @return array<string, mixed>
+     */
+    public function operationSchema(OperationContext $operation): array
+    {
+        if ($operation->actionKey !== 'update' || ! str_starts_with($operation->controllerKey, 'settings_')) {
+            return [];
+        }
+
+        $panel = method_exists($operation->apiClass, 'panelId')
+            ? (string) $operation->apiClass::panelId()
+            : null;
+        $resource = $this->registry->resolve(substr($operation->controllerKey, strlen('settings_')), $panel);
+
+        return $resource === null ? [] : ResourceOperationSchema::forSettings($resource);
     }
 
     private function currentSettings(): SettingsResource

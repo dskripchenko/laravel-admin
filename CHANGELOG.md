@@ -5,6 +5,44 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **The OpenAPI document describes every resource's input.** One
+  `ResourceController` serves every resource, so the fields of `create` and
+  `update` were known only at runtime and the spec showed those operations with
+  no body at all. They now declare `@input [operationSchema]`, which
+  laravel-api 5.11 calls once per route with the resource slug and panel in an
+  `OperationContext`; the schema is built from `Resource::fields()` and
+  `validationRules()` — types, formats, `required`, `nullable`, enums from
+  options and `in:`/`Rule::in`/`Rule::enum`, min/max/between/size as the bound
+  that fits the type, a flagless `regex:` as `pattern`, `confirmed` twins,
+  translatable values per locale, the `{disk, path}` shape of file fields.
+  The same mechanism documents the resource-specific parts of `search`,
+  `summary`, `tree` and `export` (filters by field, sortable columns,
+  exportable columns, registered formats, `group_by`), `action` (`key` as an
+  enum of dispatchable actions, `ids`), `reorder`, `inlineUpdate` (editable
+  columns) and the `values` of a settings group's `update`.
+- `Dskripchenko\LaravelAdmin\Http\OpenApi\RulesSchema` — validation rules plus
+  fields to an OpenAPI object schema; `ResourceOperationSchema` — the
+  per-resource operation schemas.
+
+### Fixed
+
+- `system/search` documents its `q` parameter and a `GlobalSearchResponse`
+  template instead of the generic `SuccessResponse`.
+- `dashboard/reset` had no docblock at all: it now documents `key`, its
+  security scheme and a `DashboardLayoutResetResponse`.
+- `profile/tokenCreate` documents `abilities` as a list of strings and
+  `dashboard/save` marks the required `widgets[].slug` (both through
+  laravel-api 5.11's nested notation).
+- `action` documents `payload` as an object, not an array.
+
+### Changed
+
+- Requires `dskripchenko/laravel-api` `^5.11`.
+
 ## 1.33.0
 
 ### Added
