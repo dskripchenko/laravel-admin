@@ -180,7 +180,6 @@
     "vue-tsc": "^2"
   },
   "dependencies": {
-    "@dskripchenko/laravel-admin": "^1.8.0",
     "lean-qr": "^2.7.1"
   }
 }
