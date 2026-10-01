@@ -82,6 +82,39 @@ describe('DashboardPage', () => {
     expect(w.findAll('.admin-dashboard__cell')).toHaveLength(1)
   })
 
+  function withDashboard(extra: Record<string, unknown>): void {
+    const manifest = useManifestStore()
+    manifest.manifest = {
+      version: 'v1',
+      locale: 'ru',
+      resources: [],
+      screens: [],
+      settings: [],
+      dashboards: [{ slug: 'main', label: 'Главный', widgets: [], ...extra }] as never,
+      plugins: [],
+      permissions: [],
+    }
+  }
+
+  it('hides the period switcher when the dashboard offers no periods', () => {
+    withDashboard({ periods: [] })
+    const w = mount(DashboardPage, { props: { slug: 'main' } })
+    expect(w.find('[data-testid="dash-period"]').exists()).toBe(false)
+  })
+
+  it('shows the dashboard\'s own periods and starts from its default', () => {
+    withDashboard({ periods: ['7d', '14d'], period: '14d' })
+    const w = mount(DashboardPage, { props: { slug: 'main' } })
+    const trigger = w.find('[data-testid="dash-period"]')
+    expect(trigger.exists()).toBe(true)
+    expect(trigger.text()).toContain('14')
+  })
+
+  it('keeps the standard switcher for a page built from props', () => {
+    const w = mount(DashboardPage, { props: { widgets: [] } })
+    expect(w.find('[data-testid="dash-period"]').text()).toContain('30')
+  })
+
   it('renders UnknownWidget for missing widget type', () => {
     clearWidgetRegistry()
     const w = mount(DashboardPage, {

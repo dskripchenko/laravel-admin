@@ -9,6 +9,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The OpenAPI document describes every resource's input.** One
+  `ResourceController` serves every resource, so the fields of `create` and
+  `update` were known only at runtime and the spec showed those operations with
+  no body at all. They now declare `@input [operationSchema]`, which
+  laravel-api 5.11 calls once per route with the resource slug and panel in an
+  `OperationContext`; the schema is built from `Resource::fields()` and
+  `validationRules()` — types, formats, `required`, `nullable`, enums from
+  options and `in:`/`Rule::in`/`Rule::enum`, min/max/between/size as the bound
+  that fits the type, a flagless `regex:` as `pattern`, `confirmed` twins,
+  translatable values per locale, the `{disk, path}` shape of file fields.
+  The same mechanism documents the resource-specific parts of `search`,
+  `summary`, `tree` and `export` (filters by field, sortable columns,
+  exportable columns, registered formats, `group_by`), `action` (`key` as an
+  enum of dispatchable actions, `ids`), `reorder`, `inlineUpdate` (editable
+  columns) and the `values` of a settings group's `update`.
+
+- `Dskripchenko\LaravelAdmin\Http\OpenApi\RulesSchema` — validation rules plus
+  fields to an OpenAPI object schema; `ResourceOperationSchema` — the
+  per-resource operation schemas.
+
+### Changed
+
+- Requires `dskripchenko/laravel-api` `^5.11`.
+
+### Fixed
+
+- `system/search` documents its `q` parameter and a `GlobalSearchResponse`
+  template instead of the generic `SuccessResponse`.
+
+- `dashboard/reset` had no docblock at all: it now documents `key`, its
+  security scheme and a `DashboardLayoutResetResponse`.
+
+- `profile/tokenCreate` documents `abilities` as a list of strings and
+  `dashboard/save` marks the required `widgets[].slug` (both through
+  laravel-api 5.11's nested notation).
+
+- `action` documents `payload` as an object, not an array.
+
+## 1.35.0
+
+### Security
+
+- **Shared strategy: every site user could open the admin.** With
+  `strategy=shared` any account of the host's guard logged in, and a user
+  already signed in to the site was signed in to the admin API too. Now a
+  user needs at least one admin role (or `canAccessAdmin()`): the login
+  answers 403 `forbidden`, the API answers 403 to such a site session without
+  logging it out, and the shell treats the user as a guest.
+
+### Added
+
+- **The shared strategy works out of the box.** `admin:install --shared`
+  points `config/admin.php` at the application's default guard, its provider,
+  user model and password broker, and publishes a migration
+  (`admin-shared-migrations` tag) that adds the admin's columns — `locale`,
+  `theme`, `is_active`, `last_login_*`, `two_factor_*` — to that users table,
+  skipping the ones it already has. New `HasAdminTwoFactor` trait gives a host
+  model the 2FA casts and `hasTwoFactorEnabled()` (`AdminUser` now uses it).
+
+- `admin:user alice@example.com --super` grants Super Admin to an existing
+  user instead of failing on the taken email.
+
+- A model may define `canAccessAdmin(string $panelId): bool` to decide who
+  enters a panel.
+
+- Docs: [Adding the admin to an existing application](docs/en/integration.md)
+  (en, ru) — installer footprint and undo, dedicated vs shared, path/domain/API
+  prefix, sessions, CSRF, proxies, panels, a host laravel-api module, roles,
+  frontend, upgrading and troubleshooting.
+
+### Fixed
+
+- **`admin:user` failed on a users table without the admin's columns**
+  (`is_active`, `locale`, `theme`) — the shared strategy's case. It now fills
+  only the columns the table has, and speaks English.
+
+- **The SPA ignored a moved laravel-api prefix.** The admin API is served at
+  `/{laravel-api.prefix}/admin`, but the SPA was given a fixed `api/admin`, so
+  a host with `'prefix' => 'api/v1'` got a 404 on every call.
+  `admin.api_path` (`ADMIN_API_PATH`) now defaults to that prefix, and panels'
+  API paths follow it too.
+
+- **An admin mounted at the root of its domain swallowed its own API**
+  (`ADMIN_PATH=` with `ADMIN_DOMAIN`): the shell's catch-all answered
+  `/api/admin/*` with HTML. A root panel now always excludes the API prefix.
+
+- README: the testing helpers, the locale resolver steps and the bundle size
+  were out of date; getting started named a non-existent `admin:make-resource`
+  argument and old table names. `hasAccess()` takes a single permission in the
+  permissions docs (`hasAnyAccess`/`hasAllAccess` for lists).
+
+## 1.34.0
+
+### Security
+
+- **Dashboard and widget permissions were not enforced.** Any logged-in user
+  received every dashboard in the manifest, with the computed data of every
+  widget, and could call the `/api/admin/dashboard/*` endpoints for any of
+  them — `DashboardScreen::permission()`, `Widget::permission()` and
+  `Widget::canSee()` were ignored everywhere except the unused `layout()`
+  path. Now a dashboard the user may not open is left out of the manifest and
+  the menu, and `dashboard/get`, `save`, `savePeriod`, `reset` and `widgets`
+  answer `403` for it (`404` for a dashboard of another panel). A widget the
+  user may not see is dropped before its `data()` is called, so its queries
+  never run, and a saved per-user layout can no longer bring it back. Every
+  permission listed is required, as in `AdminAccess`; a user model without
+  `hasAccess()` holds none. Work a dashboard does in `widgets()` itself,
+  outside a widget's `data()`, still runs for everyone who may open it.
+
+### Added
+
 - **Listener layouts: reactive forms.** `Layout::listener($children)->listen([...])`
   re-renders part of a form on the server whenever the watched fields change.
   Children are a list or `fn (array $state): array`; an optional
@@ -29,24 +140,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Standalone actions.** `Action::standalone()` and `Action::requiresSelection()`: a command bar or header action now runs without a selection (no `ids`, the method gets `[]`); a row or bulk action still needs at least one id, and a `BulkAction` always does. The SPA and the `/{slug}/action` validation follow the same rule.
 - **`useConfirm()` / `confirmDialog()`** — a panel-wide confirmation dialog (mounted by `AdminApp`); the remaining `window.confirm` calls (dashboard reset, token revoke, 2FA disable, embedded table, tree and form deletes, the screen context fallback) use it.
 - **The stats widget shows every stat** of a `StatsOverviewWidget` as a responsive row of cards, each with its own label, value, trend, color and icon.
-- **The OpenAPI document describes every resource's input.** One
-  `ResourceController` serves every resource, so the fields of `create` and
-  `update` were known only at runtime and the spec showed those operations with
-  no body at all. They now declare `@input [operationSchema]`, which
-  laravel-api 5.11 calls once per route with the resource slug and panel in an
-  `OperationContext`; the schema is built from `Resource::fields()` and
-  `validationRules()` — types, formats, `required`, `nullable`, enums from
-  options and `in:`/`Rule::in`/`Rule::enum`, min/max/between/size as the bound
-  that fits the type, a flagless `regex:` as `pattern`, `confirmed` twins,
-  translatable values per locale, the `{disk, path}` shape of file fields.
-  The same mechanism documents the resource-specific parts of `search`,
-  `summary`, `tree` and `export` (filters by field, sortable columns,
-  exportable columns, registered formats, `group_by`), `action` (`key` as an
-  enum of dispatchable actions, `ids`), `reorder`, `inlineUpdate` (editable
-  columns) and the `values` of a settings group's `update`.
-- `Dskripchenko\LaravelAdmin\Http\OpenApi\RulesSchema` — validation rules plus
-  fields to an OpenAPI object schema; `ResourceOperationSchema` — the
-  per-resource operation schemas.
+- **The dashboard period reaches the widgets.** A widget reads the selected
+  period through `$this->dashboardContext()` — a `DashboardContext` with
+  `period`, `days()`, `from()`, `to()` and `constrain($query, $column)` — in
+  `data()`. `RecentListWidget` and `TableWidget` get `withinPeriod($column)`.
+  `DashboardScreen::periods()` and `defaultPeriod()` choose the periods; by
+  default the switcher is shown only when a widget depends on the period
+  (`periodAware()`, `withinPeriod()` or reading the context) or the screen
+  reads `period()`/`periodDays()` in `widgets()`. Periods are `all` or a number
+  of days (`14d`). The manifest entry of a dashboard now carries `permission`,
+  `periods` and `period`.
 
 ### Changed
 
@@ -54,7 +157,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The markdown widget renders its content with the built-in safe markdown renderer; the markdown typography moved to the shared stylesheet.
 - Menu items with equal `order` keep the order they were added in (the sidebar no longer re-sorts them alphabetically); auto-filled items come sorted from the server.
 - Console commands (`admin:user`, `admin:make-*`) speak English.
-- Requires `dskripchenko/laravel-api` `^5.11`.
 
 ### Fixed
 
@@ -62,15 +164,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   being flattened into the tab's items.
 - A screen method that returns no `message` no longer shows an "OK" banner; the `admin:make-screen` stub returns a single message.
 - Screen alerts accept `level`/`variant` as aliases of `type`, so a `success` alert is a success toast.
-- `system/search` documents its `q` parameter and a `GlobalSearchResponse`
-  template instead of the generic `SuccessResponse`.
-- `dashboard/reset` had no docblock at all: it now documents `key`, its
-  security scheme and a `DashboardLayoutResetResponse`.
-- `profile/tokenCreate` documents `abilities` as a list of strings and
-  `dashboard/save` marks the required `widgets[].slug` (both through
-  laravel-api 5.11's nested notation).
-- `action` documents `payload` as an object, not an array.
-
+- Widgets registered by plugins through `$admin->widgets([...])` reach the
+  SPA: the manifest and `dashboard/widgets` built dashboards from `widgets()`
+  alone, so the registry was only read by `layout()`, which the SPA never
+  calls.
+- The period switcher changed nothing on most dashboards: the period was sent
+  to the server, but only a screen reading `periodDays()` in `widgets()` could
+  use it — widgets had no way to read it. Switching to another dashboard no longer keeps the
+  previous dashboard's refreshed widgets on screen, and a saved period the
+  dashboard no longer offers is ignored.
 
 ## 1.33.0
 

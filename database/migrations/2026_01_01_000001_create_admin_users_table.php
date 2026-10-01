@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Creates the base admin_users table.
  *
- * It is published only when `config('admin.auth.strategy')` is 'dedicated'; in
- * the shared mode the admin uses the host project's existing users table.
+ * It runs in either strategy. In the shared one the admin signs in the host's
+ * own users instead, and this table simply stays empty — so `admin.auth.table`
+ * must keep naming a table of its own there, never the host's `users`.
  *
  * The 2FA columns are added by a separate migration.
  */

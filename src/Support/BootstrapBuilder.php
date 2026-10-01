@@ -138,8 +138,7 @@ final class BootstrapBuilder
      */
     private function serializeUser(): ?array
     {
-        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
-        $user = Auth::guard($guard)->user();
+        $user = $this->adminUser();
         if (! $user instanceof Model) {
             return null;
         }
@@ -162,8 +161,7 @@ final class BootstrapBuilder
      */
     private function userPermissions(): array
     {
-        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
-        $user = Auth::guard($guard)->user();
+        $user = $this->adminUser();
         if (! $user instanceof Model) {
             return [];
         }
@@ -177,8 +175,7 @@ final class BootstrapBuilder
             return 0;
         }
 
-        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
-        $user = Auth::guard($guard)->user();
+        $user = $this->adminUser();
         if (! $user instanceof Model) {
             return 0;
         }
@@ -188,5 +185,21 @@ final class BootstrapBuilder
             ->where('notifiable_id', $user->getKey())
             ->whereNull('read_at')
             ->count();
+    }
+
+    /**
+     * The logged-in user of the panel's guard, or null when there is none or
+     * they may not enter the panel — in the shared strategy a plain site user
+     * is a guest to the admin, see PanelAccess.
+     */
+    private function adminUser(): ?Model
+    {
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
+        $user = Auth::guard($guard)->user();
+        if (! $user instanceof Model || ! \Dskripchenko\LaravelAdmin\Auth\PanelAccess::allows($user)) {
+            return null;
+        }
+
+        return $user;
     }
 }

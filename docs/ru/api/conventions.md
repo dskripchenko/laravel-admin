@@ -14,7 +14,7 @@
 Пример: https://example.com/api/admin/users/search
 ```
 
-- `admin.api_path` (default `api/admin`) — из `config/admin.php`. Полный путь от корня хоста, **не вложен** в `admin.path` (где живёт SPA-shell).
+- `admin.api_path` — по умолчанию `{laravel-api.prefix}/admin`, то есть `api/admin`: маршруты API регистрирует laravel-api под своим префиксом, и SPA получает тот же путь. Полный путь от корня хоста, **не вложен** в `admin.path` (где живёт SPA-shell). См. [подключение к существующему приложению](../integration.md#3-путь-домен-api-сессии-прокси).
 - `{controller}` и `{action}` — **только эти два сегмента**. Никаких `{id}`, `{slug}`, `{relation}` в URL.
 - Все параметры (id, фильтры, сортировка, реляции, нагрузки) идут через **Request body** (JSON для POST/PATCH/PUT/DELETE) или **query-string** (для GET).
 - HTTP-метод (`GET`/`POST`/`PATCH`/`PUT`/`DELETE`) задаётся в `getMethods()` через `'method' => ['post']`. Для action'ов с одним методом — массив из одного значения.

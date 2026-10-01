@@ -29,6 +29,8 @@ class RecentListWidget extends Widget
 
     private ?string $linkResourceSlug = null;
 
+    private ?string $periodColumn = null;
+
     public function widgetType(): string
     {
         return 'recent_list';
@@ -78,6 +80,17 @@ class RecentListWidget extends Widget
     }
 
     /**
+     * Shows only the records inside the dashboard's selected period, by a
+     * timestamp column. Off by default: the widget ignores the period.
+     */
+    public function withinPeriod(string $column = 'created_at'): static
+    {
+        $this->periodColumn = $column;
+
+        return $this->periodAware();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function data(): array
@@ -93,6 +106,10 @@ class RecentListWidget extends Widget
 
         /** @var Builder<Model> $query */
         $query = $modelClass::query();
+        if ($this->periodColumn !== null) {
+            $query = $this->dashboardContext()->constrain($query, $this->periodColumn);
+        }
+
         $rows = $query
             ->orderBy($this->orderColumn, $this->orderDirection)
             ->limit($this->limit)

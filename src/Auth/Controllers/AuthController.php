@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Auth\Controllers;
 
 use Dskripchenko\LaravelAdmin\Auth\AccountState;
+use Dskripchenko\LaravelAdmin\Auth\PanelAccess;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\RecoveryCodes;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
 use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
@@ -107,6 +108,15 @@ final class AuthController extends ApiController
             return $this->error([
                 'errorKey' => 'account_inactive',
                 'message' => __('Учётная запись отключена'),
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        // In the shared strategy a site user is not an administrator by
+        // default; see PanelAccess.
+        if (! PanelAccess::allows($user)) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => __('Нет доступа к панели администратора'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -391,7 +401,8 @@ final class AuthController extends ApiController
             \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
         );
         $user = $provider?->retrieveByCredentials(['email' => $data['email']]);
-        if ($user instanceof Authenticatable && $user instanceof Model) {
+        if ($user instanceof Authenticatable && $user instanceof Model
+            && ! AccountState::isDisabled($user) && PanelAccess::allows($user)) {
             Auth::guard($guard)->login($user);
         }
 

@@ -87,7 +87,8 @@ of that request. A label that is already translated is returned as it is.
 
 ```php
 $user->hasAccess('admin.articles.update');   // true / false
-$user->hasAccess(['admin.articles.update', 'admin.articles.delete']);  // OR
+$user->hasAnyAccess(['admin.articles.update', 'admin.articles.delete']);  // OR
+$user->hasAllAccess(['admin.articles.update', 'admin.articles.delete']);  // AND
 ```
 
 In Blade / Vue (manifest exposes user permissions to SPA):

@@ -237,7 +237,7 @@ trait AdminApiSystemSchemas
             ],
             'DashboardWidgetsPayload' => [
                 'widgets' => '@WidgetInstance[]',
-                'period' => 'string! 7d|30d|90d|all',
+                'period' => 'string!',
             ],
 
             /* ------------------------------------------------------------------
