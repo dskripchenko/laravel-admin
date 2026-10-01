@@ -8,7 +8,9 @@ use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Field\Field;
 use Dskripchenko\LaravelAdmin\Field\ValidationRulesExporter;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
+use Dskripchenko\LaravelAdmin\Infolist\ColorEntry;
 use Dskripchenko\LaravelAdmin\Infolist\Entry;
+use Dskripchenko\LaravelAdmin\Infolist\FieldEntry;
 use Dskripchenko\LaravelAdmin\Infolist\IconEntry;
 use Dskripchenko\LaravelAdmin\Infolist\TextEntry;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
@@ -45,6 +47,15 @@ use RuntimeException;
  */
 abstract class Resource
 {
+    /**
+     * The field types the default infolist() shows through a FieldEntry: the
+     * SPA has a dedicated read-only view for each of them.
+     */
+    protected const FIELD_VIEW_TYPES = [
+        'markdown', 'code', 'rating', 'radio', 'tree_select', 'cascader',
+        'date_range', 'morph_switcher', 'group',
+    ];
+
     /**
      * FQCN of the Eloquent model. A subclass must override it.
      *
@@ -753,10 +764,18 @@ abstract class Resource
      * Read-only entries for GeneratedViewScreen.
      *
      * By default a TextEntry per field from `fields()` with the same label,
-     * except `switch` fields: those render as an IconEntry with a localised
-     * Yes/No, so that the view page does not show «true»/«false» for boolean
-     * flags. Override it in a subclass when you need something else — a
-     * BadgeEntry for statuses, an ImageEntry for avatars and so on.
+     * except:
+     *  - `switch` fields render as an IconEntry with a localised Yes/No, so
+     *    that the view page does not show «true»/«false» for boolean flags;
+     *  - `color` fields render as a ColorEntry, a swatch with the value;
+     *  - the fields whose value means little as plain text — markdown, code,
+     *    rating, radio, tree_select, cascader, date_range, morph_switcher,
+     *    group — render as a FieldEntry, drawn by the SPA's view of that
+     *    field type;
+     *  - `hidden` fields are left out.
+     *
+     * Override it in a subclass when you need something else — a BadgeEntry
+     * for statuses, an ImageEntry for avatars and so on.
      *
      * @return list<Entry>
      */
@@ -766,13 +785,19 @@ abstract class Resource
         foreach ($this->fields() as $field) {
             $name = $field->name();
             $label = (string) ($field->getAttributes()['title'] ?? $name);
-            $entries[] = match ($field->fieldType()) {
-                'switch' => IconEntry::make($name)
+            $type = $field->fieldType();
+            if ($type === 'hidden') {
+                continue;
+            }
+            $entries[] = match (true) {
+                $type === 'switch' => IconEntry::make($name)
                     ->label($label)
                     ->trueLabel((string) __('admin.common.yes'))
                     ->falseLabel((string) __('admin.common.no'))
                     ->trueIcon('check-circle-2')
                     ->falseIcon('x-circle'),
+                $type === 'color' => ColorEntry::make($name)->label($label),
+                in_array($type, static::FIELD_VIEW_TYPES, true) => FieldEntry::fromField($field),
                 default => TextEntry::make($name)->label($label),
             };
         }

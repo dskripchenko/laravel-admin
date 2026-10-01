@@ -14,6 +14,21 @@ import BadgeEntry from './BadgeEntry.vue'
 import IconEntry from './IconEntry.vue'
 import KeyValueEntry from './KeyValueEntry.vue'
 import RepeatableEntry from './RepeatableEntry.vue'
+import ColorEntry from './ColorEntry.vue'
+import ImageEntry from './ImageEntry.vue'
+import MapEntry from './MapEntry.vue'
+import RelationEntry from './RelationEntry.vue'
+import FieldEntry from './FieldEntry.vue'
+import MarkdownEntry from './MarkdownEntry.vue'
+import CodeEntry from './CodeEntry.vue'
+import RatingEntry from './RatingEntry.vue'
+import OptionEntry from './OptionEntry.vue'
+import TreeSelectEntry from './TreeSelectEntry.vue'
+import CascaderEntry from './CascaderEntry.vue'
+import DateRangeEntry from './DateRangeEntry.vue'
+import MorphEntry from './MorphEntry.vue'
+import GroupEntry from './GroupEntry.vue'
+import HiddenEntry from './HiddenEntry.vue'
 
 export function registerBuiltinInfolistEntries(): void {
   registerInfolistEntries({
@@ -26,6 +41,12 @@ export function registerBuiltinInfolistEntries(): void {
     'key-value': KeyValueEntry,
     // Repeatable: a collection of objects with nested entries — a table, cards or inline.
     repeatable: RepeatableEntry,
+    color: ColorEntry,
+    image: ImageEntry,
+    map: MapEntry,
+    relation: RelationEntry,
+    // A serialized form field, drawn by the entry registered under its type.
+    field: FieldEntry,
     // The mapping from the backend's Field::fieldType() to TextEntry for the
     // view mode. A host may override it with
     // registerInfolistEntry('wysiwyg', WysiwygEntry).
@@ -36,23 +57,25 @@ export function registerBuiltinInfolistEntries(): void {
     tel: TextEntry,
     search: TextEntry,
     slug: TextEntry,
-    hidden: TextEntry,
+    hidden: HiddenEntry,
     label: TextEntry,
     textarea: TextEntry,
     wysiwyg: TextEntry,
-    markdown: TextEntry,
-    code: TextEntry,
+    markdown: MarkdownEntry,
+    code: CodeEntry,
     number: TextEntry,
     slider: TextEntry,
-    rating: TextEntry,
+    rating: RatingEntry,
     select: TextEntry,
     combobox: TextEntry,
-    radio: TextEntry,
+    radio: OptionEntry,
     tags: TextEntry,
-    'morph-switcher': TextEntry,
-    relation: TextEntry,
-    cascader: TextEntry,
-    'tree-select': TextEntry,
+    morph_switcher: MorphEntry,
+    'morph-switcher': MorphEntry,
+    cascader: CascaderEntry,
+    tree_select: TreeSelectEntry,
+    'tree-select': TreeSelectEntry,
+    group: GroupEntry,
     checkbox: TextEntry,
     switch: TextEntry,
     switcher: TextEntry,
@@ -60,9 +83,10 @@ export function registerBuiltinInfolistEntries(): void {
     date: TextEntry,
     datetime: TextEntry,
     datepicker: TextEntry,
-    'date-range': TextEntry,
+    date_range: DateRangeEntry,
+    'date-range': DateRangeEntry,
     time: TextEntry,
     'time-picker': TextEntry,
-    'color-picker': TextEntry,
+    'color-picker': ColorEntry,
   })
 }
