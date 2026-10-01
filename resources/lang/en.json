@@ -391,5 +391,8 @@
     ":n сек назад": ":n s ago",
     ":n мин назад": ":n min ago",
     ":n ч назад": ":n h ago",
-    ":n д назад": ":n d ago"
+    ":n д назад": ":n d ago",
+    "Запись создана.": "Record created.",
+    "Изменения сохранены.": "Changes saved.",
+    "Запись удалена.": "Record deleted."
 }

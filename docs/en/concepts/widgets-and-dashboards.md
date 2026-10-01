@@ -48,7 +48,7 @@ Register: `Admin::screen([ContentDashboardScreen::class])`. URL:
 | Class | `widgetType()` | Use |
 |---|---|---|
 | `StatsOverviewWidget` | `stats` | Single value + trend; KPI cards. |
-| `ChartWidget` | `chart` | Bar / line / area / doughnut / pie. |
+| `ChartWidget` | `chart` | Line / bar / area / radar (any number of `dataset()` series, `stacked()` for bar and area) and doughnut / pie. |
 | `RecentListWidget` | `recent_list` | Last N rows of an Eloquent model. |
 | `MarkdownWidget` | `markdown` | Static rich text. |
 | `IframeWidget` | `iframe` | Embed external URL. |
