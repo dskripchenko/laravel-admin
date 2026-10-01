@@ -144,6 +144,18 @@ describe('menu store', () => {
     expect(groups[2].group).toBe(null)
   })
 
+  it('groupedItems keeps the server order when no order is set', () => {
+    const m = useMenuStore()
+    const auth = useAuthStore()
+    auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['*'] }))
+    m.setItems([
+      { key: 'dashboard.main', label: 'Dashboard' },
+      { key: 'content', label: 'Content' },
+      { key: 'zeta', label: 'Alpha', order: -1 },
+    ])
+    expect(m.groupedItems[0]!.items.map((i) => i.key)).toEqual(['zeta', 'dashboard.main', 'content'])
+  })
+
   it('reset очищает state', async () => {
     const m = useMenuStore()
     m.setItems([{ key: 'a', label: 'A' }])

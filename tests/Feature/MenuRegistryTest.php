@@ -198,3 +198,19 @@ it('MenuNode::toArray translates the label through the translator per-request (B
     $raw = MenuNode::make('r', 'Просто текст')->toArray(app(ResourceRegistry::class), app(ScreenRegistry::class));
     expect($raw['label'])->toBe('Просто текст');
 });
+
+it('the menu keeps the order the host added the nodes in', function (): void {
+    /** @var MenuRegistry $registry */
+    $registry = app(MenuRegistry::class);
+    $registry->withAuto(false)
+        ->add(MenuNode::make('main', 'Dashboard')->url('/'))
+        ->add(MenuNode::make('content', 'Content')->children([
+            MenuNode::make('posts', 'Posts')->url('/posts'),
+        ]))
+        ->add(MenuNode::make('about', 'About')->url('/about'));
+
+    $items = $this->getJson('/api/admin/system/menu')->json('payload.items');
+
+    expect(array_column($items, 'key'))->toBe(['main', 'content', 'about'])
+        ->and(array_column($items, 'order'))->toBe([0, 0, 0]);
+});

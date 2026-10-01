@@ -15,6 +15,7 @@ import { Copy, Plus, Trash2 } from 'lucide-vue-next'
 import { UidButton, UidIcon, UidInput } from '@dskripchenko/ui'
 import { adminToast } from '../../stores/toast'
 import { trSafe as tr } from '../../stores/i18n'
+import { confirmDialog } from '../../composables/useConfirm'
 
 interface Token {
   id: number
@@ -66,7 +67,7 @@ async function create(): Promise<void> {
 }
 
 async function revoke(id: number): Promise<void> {
-  if (!window.confirm(tr('Отозвать токен? Запросы с ним перестанут работать.'))) return
+  if (!(await confirmDialog({ message: tr('Отозвать токен? Запросы с ним перестанут работать.'), destructive: true }))) return
   try {
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()

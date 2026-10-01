@@ -15,10 +15,37 @@ public function actions(): array
     ];
 }
 
-// На самом Resource'е:
-public function publish(Article $article): void
+// На самом Resource'е: ключ строки приходит списком из одного id.
+public function publish(array $ids, array $payload = []): int
 {
-    $article->update(['is_published' => true]);
+    return Article::whereIn('id', $ids)->update(['is_published' => true]);
+}
+```
+
+В списке у каждой строки появляется меню «⋮» рядом с иконками
+просмотра/правки/удаления — действие выполняется для этой строки. Те же
+действия доступны в панели массовых операций, когда строки выделены.
+
+## Standalone-action — без выбранных записей
+
+Действие в `command_bar` или `header` (позиция по умолчанию у `Button`)
+выполняется из меню «…» над списком без выделения: `ids` не отправляются,
+метод получает пустой список. Действие в `row`/`bulk` требует хотя бы один
+id (иначе 422); `standalone()` снимает это требование явно, `BulkAction`
+всегда требует выделения.
+
+```php
+Button::make('Пересчитать рейтинги')
+    ->method('recalculate');
+
+Button::make('Синхронизировать')
+    ->method('sync')
+    ->position(['header', 'row'])
+    ->standalone();
+
+public function recalculate(array $ids, array $payload = []): void
+{
+    // $ids === []
 }
 ```
 
@@ -59,7 +86,7 @@ public function sendNotification(array $ids, array $payload): int
 }
 ```
 
-SPA открывает модалку с полями (`modalSize('sm'|'md'|'lg'|'xl')`) и шлёт
+SPA открывает модалку с полями (`modalSize('sm'|'md'|'lg'|'xl'|'full')`) и шлёт
 `POST /{slug}/action` с `{key, ids, payload}`. Сервер проверяет `payload`
 правилами полей (`required()`, `rules([...])`); ошибки 422 показываются
 у полей, модалка остаётся открытой.

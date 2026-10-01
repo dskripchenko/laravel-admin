@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
-import { UidButton, UidIcon, UidMenu } from '@dskripchenko/ui'
+import { UidButton, UidMenu } from '@dskripchenko/ui'
 import type { AdminAction } from '../../composables/useActionRunner'
 import { resolveIcon } from '../shell/iconRegistry'
 import AdminActionMenuItems from './AdminActionMenuItems.vue'
@@ -50,11 +50,11 @@ const icon = computed(() => resolveIcon(props.action.icon))
         :size="size"
         :variant="resolvedVariant"
         :disabled="disabled"
+        :icon="ChevronDown"
+        icon-position="end"
         :data-testid="`action-${action.name}`"
       >
-        <template v-if="icon" #prepend><UidIcon :icon="icon" :size="14" /></template>
         {{ action.label }}
-        <template #append><UidIcon :icon="ChevronDown" :size="14" /></template>
       </UidButton>
     </template>
     <AdminActionMenuItems
@@ -69,10 +69,10 @@ const icon = computed(() => resolveIcon(props.action.icon))
     :variant="resolvedVariant"
     :disabled="disabled || isDisabled(action)"
     :loading="loading"
+    :icon="icon ?? undefined"
     :data-testid="`action-${action.name}`"
     @click="emit('run', action)"
   >
-    <template v-if="icon" #prepend><UidIcon :icon="icon" :size="14" /></template>
     {{ action.label }}
   </UidButton>
 </template>

@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'
 import { defineComponent, h } from 'vue'
 import MockAdapter from 'axios-mock-adapter'
 import ResourceFormPage from './ResourceFormPage.vue'
+import { confirmState, resolveConfirmDialog } from '../../composables/useConfirm'
 import { setAdminClient, clearAdminClient } from '../../stores/registry'
 import { createAdminClient } from '../../api/client'
 import { useManifestStore } from '../../stores/manifest'
@@ -213,7 +214,6 @@ describe('ResourceFormPage', () => {
   })
 
   it('delete: confirm + redirect to index', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     mock.onGet('/articles/read').reply(200, {
       success: true, payload: { record: { id: 5 } },
     })
@@ -228,8 +228,12 @@ describe('ResourceFormPage', () => {
     const delBtn = wrapper.findAll('button').find((b) => b.text() === 'Удалить')
     await delBtn!.trigger('click')
     await flushPromises()
-    expect(confirmSpy).toHaveBeenCalled()
-    confirmSpy.mockRestore()
+    // The question goes to the panel's dialog, not window.confirm.
+    expect(confirmState.open).toBe(true)
+    expect(mock.history.post.some((r) => r.url === '/articles/delete')).toBe(false)
+    resolveConfirmDialog(true)
+    await flushPromises()
+    expect(mock.history.post.some((r) => r.url === '/articles/delete')).toBe(true)
   })
 
   it('shows ValidationError messages on save failure', async () => {

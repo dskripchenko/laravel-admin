@@ -87,3 +87,20 @@ it('all advanced actions inherit __call attribute setters', function (): void {
     expect($arr['icon'])->toBe('trash');
     expect($arr['attributes']['color'])->toBe('red');
 });
+
+it('requiresSelection follows the position unless standalone() says otherwise', function (): void {
+    expect(Button::make('A')->requiresSelection())->toBeFalse()
+        ->and(Button::make('A')->position(['header'])->requiresSelection())->toBeFalse()
+        ->and(Button::make('A')->position(['row'])->requiresSelection())->toBeTrue()
+        ->and(Button::make('A')->position(['command_bar', 'bulk'])->requiresSelection())->toBeTrue()
+        ->and(Button::make('A')->position(['row'])->standalone()->requiresSelection())->toBeFalse()
+        ->and(Button::make('A')->standalone(false)->requiresSelection())->toBeTrue();
+});
+
+it('a BulkAction always requires a selection', function (): void {
+    expect(BulkAction::make('A')->standalone()->requiresSelection())->toBeTrue();
+});
+
+it('standalone() is serialized into the attributes', function (): void {
+    expect(Button::make('A')->standalone()->toArray()['attributes']['standalone'])->toBeTrue();
+});

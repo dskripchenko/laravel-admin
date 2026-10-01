@@ -102,6 +102,19 @@ describe('useScreenStore', () => {
     expect(s.errors).toEqual({})
   })
 
+  it('runMethod with alerts and an empty message sets no banner', async () => {
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onPost('/contact/runMethod').reply(200, {
+      success: true,
+      payload: { state: {}, message: '', alerts: [{ type: 'success', message: 'Saved' }], refresh: false },
+    })
+
+    const s = useScreenStore()
+    await s.load('contact')
+    await s.runMethod('send')
+    expect(s.lastMessage).toBeNull()
+  })
+
   it('runMethod shows the response alerts as toasts', async () => {
     useToast().clear()
     mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)

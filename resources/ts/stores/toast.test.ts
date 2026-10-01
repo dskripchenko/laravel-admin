@@ -42,6 +42,14 @@ describe('toastAlerts', () => {
     ])
   })
 
+  it('reads `level` and `variant` as aliases of `type`', () => {
+    toastAlerts([
+      { level: 'success', message: 'Saved' },
+      { variant: 'warning', message: 'Careful' },
+    ])
+    expect(useToast().toasts.value.map((t) => t.variant)).toEqual(['success', 'warning'])
+  })
+
   it('passes title and duration_ms through', () => {
     toastAlerts([{ type: 'info', message: 'Hi', title: 'Note', duration_ms: 0 }])
 

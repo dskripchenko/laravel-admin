@@ -342,5 +342,75 @@ describe('ResourceIndexPage', () => {
       expect(posted).toEqual([{ key: 'change-status', ids: [2], payload: { status: 'review' } }])
       wrapper.unmount()
     })
+    it("a row action runs from the row's own menu for that row alone", async () => {
+      seedManifest({
+        actions: [{
+          kind: 'action',
+          name: 'stamp',
+          label: 'Stamp',
+          type: 'button',
+          position: ['row'],
+          confirm: null,
+          attributes: { method: 'stamp' },
+        }],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const posted: unknown[] = []
+      mock.onPost('/articles/action').reply((config) => {
+        posted.push(JSON.parse(config.data))
+        return [200, { success: true, payload: { affected: 1 } }]
+      })
+
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      const { useResourceIndexStore } = await import('../../stores/resourceIndex')
+      const idx = useResourceIndexStore()
+      idx.toggleRow(1)
+      await flushPromises()
+
+      const menus = wrapper.findAll('[data-testid="row-actions-menu"]')
+      expect(menus).toHaveLength(2)
+      await menus[1]!.trigger('click')
+      await flushPromises()
+      // The menu's item, not the bulk bar's button of the same action.
+      ;(document.body.querySelector('.uid-menu [data-testid="action-stamp"]') as HTMLElement).click()
+      await flushPromises()
+
+      expect(posted).toEqual([{ key: 'stamp', ids: [2] }])
+      // The selection is not the row menu's business.
+      expect([...idx.selection]).toEqual([1])
+      wrapper.unmount()
+    })
+
+    it('a standalone action runs from the header menu with no selection', async () => {
+      seedManifest({
+        actions: [{
+          kind: 'action',
+          name: 'recalculate',
+          label: 'Recalculate',
+          type: 'button',
+          position: ['command_bar'],
+          confirm: null,
+          attributes: { method: 'recalculate' },
+        }],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const posted: unknown[] = []
+      mock.onPost('/articles/action').reply((config) => {
+        posted.push(JSON.parse(config.data))
+        return [200, { success: true, payload: { affected: 0 } }]
+      })
+
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      expect(wrapper.find('[data-testid="row-actions-menu"]').exists()).toBe(false)
+      await wrapper.find('.admin-page__more').trigger('click')
+      await flushPromises()
+      ;(document.body.querySelector('.uid-menu [data-testid="action-recalculate"]') as HTMLElement).click()
+      await flushPromises()
+
+      expect(posted).toEqual([{ key: 'recalculate', ids: [] }])
+      wrapper.unmount()
+    })
   })
 })

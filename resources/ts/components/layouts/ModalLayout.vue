@@ -5,11 +5,12 @@
  * It is opened by an action carrying `attributes.opens` = this layout's id
  * (the backend's `Action::opens()`), see ./overlay.ts. The footer holds the
  * backend's `->footer([...])` actions; a non-dismissable modal hides the cross
- * and ignores the overlay click and Escape.
+ * and stays open on the overlay click and Escape.
  */
 import { computed } from 'vue'
 import { UidButton, UidModal, UidStack } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
+import { resolveIcon } from '../shell/iconRegistry'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import type { ScreenActionLike } from '../render/screenContext'
 import { useOverlay } from './overlay'
@@ -40,14 +41,12 @@ const props = withDefaults(defineProps<Props>(), {
 const overlay = useOverlay(props)
 const model = overlay.model
 
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
-const SIZES: ReadonlySet<string> = new Set(['sm', 'md', 'lg', 'xl'])
+type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
+const SIZES: ReadonlySet<string> = new Set(['sm', 'md', 'lg', 'xl', 'full'])
 
-// UidModal stops at xl; 'full' is the widest it can do.
-const uidSize = computed<ModalSize>(() => {
-  if (props.size === 'full') return 'xl'
-  return props.size && SIZES.has(props.size) ? (props.size as ModalSize) : 'md'
-})
+const uidSize = computed<ModalSize>(() =>
+  props.size && SIZES.has(props.size) ? (props.size as ModalSize) : 'md',
+)
 </script>
 
 <template>
@@ -56,6 +55,7 @@ const uidSize = computed<ModalSize>(() => {
     :title="title ?? undefined"
     :size="uidSize"
     :close-on-overlay="dismissable"
+    :close-on-esc="dismissable"
     :hide-close="!dismissable"
   >
     <UidStack direction="column" gap="var(--uid-space-md)" align="stretch">
@@ -66,7 +66,7 @@ const uidSize = computed<ModalSize>(() => {
         v-for="(action, idx) in footer"
         :key="action.name ?? idx"
         :variant="overlay.variantOf(action)"
-        :icon="action.icon ?? undefined"
+        :icon="resolveIcon(action.icon) ?? undefined"
         :loading="overlay.running.value"
         :disabled="overlay.running.value"
         @click="overlay.onFooterClick(action)"

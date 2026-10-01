@@ -38,6 +38,7 @@ import { useDashboardStore, type WidgetLayoutItem } from '../../stores/dashboard
 import WidgetRenderer, { type WidgetNode } from './WidgetRenderer.vue'
 import WidgetActionsOverlay from './WidgetActionsOverlay.vue'
 import WidgetConfigDialog from './WidgetConfigDialog.vue'
+import { confirmDialog } from '../../composables/useConfirm'
 
 interface DashboardManifest {
   slug: string
@@ -359,7 +360,7 @@ function onCancelEdit(): void {
 }
 async function onResetLayout(): Promise<void> {
   // Reset to the dashboard's default layout: the persisted record is deleted.
-  if (!confirm(t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'))) return
+  if (!(await confirmDialog({ message: t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'), destructive: true }))) return
   await dashboardStore.resetToDefault().catch(() => undefined)
 }
 async function onSaveLayout(): Promise<void> {
