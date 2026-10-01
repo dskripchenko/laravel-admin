@@ -112,3 +112,17 @@ it('Step::icon stores icon prop', function (): void {
     $s = Step::make('T')->icon('user');
     expect($s->toArray()['props']['icon'])->toBe('user');
 });
+
+it('Wrapper stores className for the SPA', function (): void {
+    $arr = Wrapper::make([Input::make('a')])->className('two-col-grid')->toArray();
+    expect($arr['className'])->toBe('two-col-grid');
+    expect($arr['props']['className'])->toBe('two-col-grid');
+});
+
+it('an action opens a modal or drawer layout by its id', function (): void {
+    $modal = Modal::make('Edit', [Input::make('title')])->withId('edit-modal');
+    $button = Button::make('Edit')->opens($modal->id());
+
+    expect($button->toArray()['attributes']['opens'])->toBe('edit-modal');
+    expect($modal->toArray()['id'])->toBe('edit-modal');
+});

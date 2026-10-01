@@ -32,6 +32,15 @@ import SectionLayout from '../layouts/SectionLayout.vue'
 import TabsLayout from '../layouts/TabsLayout.vue'
 import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
+import AccordionLayout from '../layouts/AccordionLayout.vue'
+import WizardLayout from '../layouts/WizardLayout.vue'
+import StepLayout from '../layouts/StepLayout.vue'
+import ModalLayout from '../layouts/ModalLayout.vue'
+import DrawerLayout from '../layouts/DrawerLayout.vue'
+import ViewLayout from '../layouts/ViewLayout.vue'
+import WrapperLayout from '../layouts/WrapperLayout.vue'
+import InfolistLayout from '../layouts/InfolistLayout.vue'
+import AuditTrailLayout from '../layouts/AuditTrailLayout.vue'
 
 /**
  * A TextField with the input's `type` preset.
@@ -137,7 +146,7 @@ export function registerBuiltinComponents(): void {
       // The composite fields, which used to be drawn by UnknownField.
       key_value: KeyValueField,
       repeater: RepeaterField,
-    'generated-field': GeneratedField,
+      'generated-field': GeneratedField,
       builder: BuilderField,
       relation_table: RelationTableField,
     },
@@ -147,10 +156,18 @@ export function registerBuiltinComponents(): void {
       section: SectionLayout,
       block: SectionLayout,
       tabs: TabsLayout,
-      accordion: SectionLayout,
+      accordion: AccordionLayout,
       group: RowsLayout,
-      step: SectionLayout,
-      wizard: SectionLayout,
+      step: StepLayout,
+      wizard: WizardLayout,
+      // Opened by an action carrying `attributes.opens` = the layout's id.
+      modal: ModalLayout,
+      drawer: DrawerLayout,
+      // `Layout::view('name', $props)` — a host component registered as a layout.
+      view: ViewLayout,
+      wrapper: WrapperLayout,
+      infolist: InfolistLayout,
+      audit_trail: AuditTrailLayout,
       // Widgets on an ordinary screen: `Layout\Dashboard::make([...])`.
       dashboard: DashboardLayout,
       'admin.resource-table': EmbeddedResourceTable,
