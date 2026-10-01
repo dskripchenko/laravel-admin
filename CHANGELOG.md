@@ -63,6 +63,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   serialized; `MorphSwitcher` serializes each type's records as `options`
   (up to 100, like `RelationSelect`).
 
+- **The SPA runs every action type the backend declares.** One
+  `useActionRunner` composable drives resource bulk/row actions, the view
+  page's actions and the screen command bar: `ModalAction` opens a dialog
+  with its fields (rendered by the regular field components, `modalSize`
+  honoured) and sends their values as `payload`, with 422 errors shown next
+  to the fields; `AsyncAction` starts a delayed process and polls
+  `delayed/status` with a progress bar; `Link` navigates (router, full page,
+  `target`, download); `DropDown` renders a menu of its nested actions.
+  `requiresAtLeast` / `requiresAtMost` disable a bulk action outside its range.
+  On screens the screen context hands every non-overlay action to the runner
+  (new `run` option of `createScreenContext`), so actions in modal/drawer
+  footers and wizards get the same handling; its `confirm` option may now be
+  async and receives `{message, title}`.
+- `ResourceController::action` resolves actions nested in a `DropDown` and
+  validates a `ModalAction`'s payload against its fields' rules.
+
 ### Fixed
 
 - **Permission labels followed the boot locale.** Plugins register their
@@ -72,6 +88,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   locale; already-translated strings are returned unchanged.
 
 - `Wrapper::className()` was documented but did not exist.
+
+- Action confirmations never showed on resource pages: the backend sends
+  `confirm` as `{title, message}` and the SPA expected a string. Confirmations
+  are now a dialog (title + message) instead of `window.confirm`.
+- The view page posted its actions to a non-existent `/{slug}/action/{key}`.
+- A `ValidationException` thrown by a resource action method is a 422 again,
+  not a 500.
+- The default confirmation title is translated on English panels.
 
 ## 1.32.2
 
