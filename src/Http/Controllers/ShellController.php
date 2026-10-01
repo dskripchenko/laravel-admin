@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Controllers;
 
 use Dskripchenko\LaravelAdmin\Support\BootstrapBuilder;
+use Dskripchenko\LaravelAdmin\Support\PrebuiltAssets;
+use Dskripchenko\LaravelAdmin\Support\ViteManifest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -54,17 +56,19 @@ final class ShellController
     /**
      * Resolves the CSS and JS assets for shell.blade.
      *
-     * There are two modes, see config/admin.php → 'assets':
-     *  1. An explicit list: the `assets.css` and `assets.js` arrays of URLs.
-     *  2. A Vite manifest: `assets.vite_manifest`, the path to manifest.json,
-     *     plus `assets.vite_entry`, `resources/js/admin.js` for instance. The
-     *     controller parses the manifest and builds the final list, taking the
-     *     `imports` chunks and each entry's `css` into account.
+     * In order, see config/admin.php → 'assets':
+     *  1. The host's own build: `assets.vite_manifest` + `assets.vite_entry`
+     *     (a Vite manifest, resolved with its imports and css), and/or the
+     *     explicit `assets.css` / `assets.js` URL lists, which come after the
+     *     manifest's files so that they can override them.
+     *  2. Otherwise the prebuilt application the package ships, published to
+     *     public/vendor/admin by `admin:install` / `admin:publish`.
      *
-     * The two are compatible: when vite_manifest is set it applies on top of
-     * the explicit lists, which come AFTER it so that they can override.
+     * `missing` tells the shell that nothing could be found, so it explains
+     * what to run instead of rendering a blank page; `stale` that the
+     * published prebuilt copy is older than the installed package.
      *
-     * @return array{css: list<string>, js: list<string>}
+     * @return array{css: list<string>, js: list<string>, missing: bool, stale: bool}
      */
     private function resolveAssets(): array
     {
@@ -74,71 +78,30 @@ final class ShellController
         $manifestPath = config('admin.assets.vite_manifest');
         $entry = config('admin.assets.vite_entry');
 
-        if (is_string($manifestPath) && $manifestPath !== '' && is_string($entry) && $entry !== '' && is_file($manifestPath)) {
-            $resolved = $this->resolveViteManifest($manifestPath, $entry);
-            // The Vite manifest's assets come BEFORE the explicit ones, so
-            // that a host can override them through the config.
+        if (is_string($manifestPath) && $manifestPath !== '' && is_string($entry) && $entry !== '') {
+            $resolved = ViteManifest::resolve(
+                $manifestPath,
+                $entry,
+                (string) config('admin.assets.vite_base_url', '/build/'),
+            ) ?? ['css' => [], 'js' => []];
             $css = [...$resolved['css'], ...$css];
             $js = [...$resolved['js'], ...$js];
+        }
+
+        $stale = false;
+        if ($css === [] && $js === []) {
+            $prebuilt = PrebuiltAssets::resolve();
+            if ($prebuilt !== null) {
+                [$css, $js] = [$prebuilt['css'], $prebuilt['js']];
+                $stale = PrebuiltAssets::isStale();
+            }
         }
 
         return [
             'css' => array_values(array_unique($css)),
             'js' => array_values(array_unique($js)),
+            'missing' => $js === [],
+            'stale' => $stale,
         ];
-    }
-
-    /**
-     * Parses a Vite manifest.json and collects the CSS and JS of the given
-     * entry.
-     *
-     * The manifest's format, see https://vite.dev/guide/backend-integration.html:
-     *   {
-     *     "resources/js/admin.js": {
-     *       "file": "assets/admin-XXX.js",
-     *       "isEntry": true,
-     *       "imports": ["_shared-YYY.js"],
-     *       "css": ["assets/admin-ZZZ.css"]
-     *     },
-     *     "_shared-YYY.js": { "file": "...", "css": [...] }
-     *   }
-     *
-     * @return array{css: list<string>, js: list<string>}
-     */
-    private function resolveViteManifest(string $manifestPath, string $entry): array
-    {
-        /** @var array<string, array<string, mixed>>|null $manifest */
-        $manifest = json_decode((string) file_get_contents($manifestPath), true);
-        if (! is_array($manifest) || ! isset($manifest[$entry])) {
-            return ['css' => [], 'js' => []];
-        }
-
-        $base = (string) config('admin.assets.vite_base_url', '/build/');
-        $base = rtrim($base, '/').'/';
-
-        $css = [];
-        $js = [];
-        $visited = [];
-
-        $visit = static function (string $key) use (&$visit, &$visited, &$css, &$js, $manifest, $base): void {
-            if (isset($visited[$key]) || ! isset($manifest[$key])) {
-                return;
-            }
-            $visited[$key] = true;
-            $node = $manifest[$key];
-            foreach ((array) ($node['imports'] ?? []) as $importKey) {
-                $visit((string) $importKey);
-            }
-            foreach ((array) ($node['css'] ?? []) as $cssFile) {
-                $css[] = $base.ltrim((string) $cssFile, '/');
-            }
-            if (isset($node['file']) && is_string($node['file'])) {
-                $js[] = $base.ltrim($node['file'], '/');
-            }
-        };
-
-        $visit($entry);
-
-        return ['css' => $css, 'js' => $js];
     }
 }

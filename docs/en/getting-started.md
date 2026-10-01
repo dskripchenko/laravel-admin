@@ -14,7 +14,7 @@ resource in about ten minutes.
 
 - PHP 8.2+
 - Laravel 11, 12 or 13
-- Node 20+ to build the frontend bundle
+- Node — only if you build the frontend yourself (`--custom-build`)
 - An Eloquent model you'd like to manage (we'll use `Article`)
 
 ## Install
@@ -24,67 +24,39 @@ composer require dskripchenko/laravel-admin
 php artisan admin:install
 ```
 
-`admin:install` publishes `config/admin.php` and the migrations, runs
-`migrate` and offers to create the first administrator. It creates
-`admin_users`, `admin_roles`, `admin_settings`, `audit_logs`,
-`dashboard_layouts` and a few more tables. Options: `--no-migrate`,
-`--no-user`, `--force` (overwrite published files).
+`admin:install` publishes `config/admin.php` and the migrations, publishes
+the prebuilt frontend to `public/vendor/admin`, runs `migrate` and creates
+the first administrator. It creates `admin_users`, `admin_roles`,
+`admin_settings`, `audit_logs`, `dashboard_layouts` and a few more tables.
 
-## Frontend bundle
+No Node and no build step are needed: the package ships the admin SPA
+already built. `admin:install` also offers to add
+`php artisan admin:publish` to composer's `post-update-cmd`, so the
+frontend is republished whenever the package is updated (the admin shows a
+warning when the published copy is out of date).
 
-The admin is a Vue SPA. Install it with the UI kit and the default WYSIWYG
-editor:
+Options: `--no-migrate`, `--no-user`, `--no-composer-hook`, `--force`
+(overwrite published files), `--custom-build` (see below).
 
-```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
-```
+### Custom fields, widgets or pages: your own build
 
-Create the entry `resources/js/admin.js`:
-
-```js
-import '@dskripchenko/ui/styles/all.css'
-import '@dskripchenko/laravel-admin/style.css'
-import '@dskripchenko/wysiwyg/style.css'
-
-import { createAdminApp } from '@dskripchenko/laravel-admin'
-
-const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
-app.mount('#admin-app')
-```
-
-Add it to the inputs of `laravel-vite-plugin` in `vite.config.js`:
-
-```js
-laravel({
-    input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin.js'],
-    refresh: true,
-}),
-```
-
-and point the admin shell at the Vite manifest in `config/admin.php`:
-
-```php
-'assets' => [
-    'vite_manifest' => public_path('build/manifest.json'),
-    'vite_entry' => 'resources/js/admin.js',
-    'vite_base_url' => '/build/',
-    'css' => [],
-    'js' => [],
-],
-```
-
-Build:
+To register your own Vue components, build the admin with your
+application's Vite instead of using the prebuilt bundle:
 
 ```bash
+php artisan admin:install --custom-build
+npm i -D @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
 npm run build
 ```
 
-Without the `assets` settings the shell has nothing to load and the admin
-page stays blank.
+`--custom-build` creates `resources/js/admin.js`, adds it to the inputs of
+`laravel-vite-plugin` in `vite.config.js` and points `config('admin.assets')`
+at the Vite manifest. Register your components in that entry before
+`createAdminApp()` — see [Frontend extension](frontend-extension.md).
 
 ## Create the first admin user
 
-If you skipped it during `admin:install`:
+If you skipped it during `admin:install`, or for more administrators:
 
 ```bash
 php artisan admin:user --super

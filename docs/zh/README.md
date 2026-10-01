@@ -58,25 +58,9 @@ composer require dskripchenko/laravel-admin
 php artisan admin:install
 ```
 
-```js
-// resources/js/admin.js
-import '@dskripchenko/ui/styles/all.css'
-import '@dskripchenko/laravel-admin/style.css'
-import '@dskripchenko/wysiwyg/style.css'
-import { createAdminApp } from '@dskripchenko/laravel-admin'
-
-const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
-app.mount('#admin-app')
-```
-
-```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
-npm run build
-```
-
-把 `resources/js/admin.js` 加入 Vite 的入口，并在 `config('admin.assets')`
-中指向 Vite manifest——完整步骤（包括第一个 resource）见
-[getting-started.md](../en/getting-started.md)。然后访问 `/admin/login`。
+完成——管理后台 SPA 以预构建形式提供，无需 Node。访问 `/admin/login`。
+[Getting started](../en/getting-started.md) 介绍第一个 resource，以及为自定义
+Vue 组件使用自有构建的模式。
 
 ## 文档
 

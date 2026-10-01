@@ -67,7 +67,9 @@ final class MakeAdminCommand extends Command
                 'email' => $email,
                 'password' => $hasher->make($rawPassword),
                 'is_active' => true,
-                'locale' => (string) config('admin.ui.default_locale', 'ru'),
+                // No locale of its own: the browser's or the application's
+                // applies until the administrator picks one.
+                'locale' => null,
                 'theme' => (string) config('admin.ui.default_theme', 'light'),
             ])->save();
         } catch (Throwable $e) {

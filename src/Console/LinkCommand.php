@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Console;
 
+use Dskripchenko\LaravelAdmin\Support\PrebuiltAssets;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
 /**
- * `php artisan admin:link`
- *
- * Symlinks the admin's built SPA assets into public/vendor/admin.
- *
- * It looks for the source in this order:
- *   1. node_modules/@dskripchenko/laravel-admin/dist — the npm build of the SPA
- *   2. vendor/dskripchenko/laravel-admin/dist — prebuilt by Composer
- *   3. the package's own dist/, for development against a path repository
- *
- * When none of them is there, it prints what to do.
+ * Symlinks public/vendor/admin to the prebuilt frontend inside the package
+ * instead of copying it — for working on the package itself, where a fresh
+ * `npm run build:app` should show up without republishing.
  */
 final class LinkCommand extends Command
 {
@@ -25,37 +19,32 @@ final class LinkCommand extends Command
      * @var string
      */
     protected $signature = 'admin:link
-                            {--force : Перезаписать существующий симлинк/директорию}
-                            {--relative : Создать relative symlink}';
+                            {--force : Replace an existing public/vendor/admin}
+                            {--relative : Create a relative symlink}';
 
     /**
      * @var string
      */
-    protected $description = 'Симлинк скомпилированных SPA-ассетов admin в public/vendor/admin';
+    protected $description = 'Symlink public/vendor/admin to the package\'s prebuilt frontend';
 
     public function handle(Filesystem $files): int
     {
-        $target = $this->resolveSourcePath($files);
-        if ($target === null) {
-            $this->error('Не найдены собранные ассеты admin.');
-            $this->line('Соберите SPA (`npm run build`) и попробуйте снова.');
-            $this->line('Допустимые источники (в порядке поиска):');
-            $this->line('  1. node_modules/@dskripchenko/laravel-admin/dist');
-            $this->line('  2. vendor/dskripchenko/laravel-admin/dist');
-            $this->line('  3. локальный dist/');
+        $target = realpath(PrebuiltAssets::sourcePath());
+        if ($target === false || ! is_file($target.'/.vite/manifest.json')) {
+            $this->components->error('The package has no prebuilt frontend. Run `npm run build:app` in the package.');
 
             return self::FAILURE;
         }
 
-        $linkPath = public_path('vendor/admin');
+        $linkPath = PrebuiltAssets::publishedPath();
 
-        if ($files->exists($linkPath)) {
+        if ($files->exists($linkPath) || is_link($linkPath)) {
             if (! $this->option('force')) {
-                $this->error("{$linkPath} уже существует. Используйте --force для перезаписи.");
+                $this->components->error("{$linkPath} already exists. Use --force to replace it.");
 
                 return self::FAILURE;
             }
-            $files->isDirectory($linkPath) && ! $files->isLink($linkPath)
+            $files->isDirectory($linkPath) && ! is_link($linkPath)
                 ? $files->deleteDirectory($linkPath)
                 : $files->delete($linkPath);
         }
@@ -68,26 +57,8 @@ final class LinkCommand extends Command
             $files->link($target, $linkPath);
         }
 
-        $this->info("Симлинк создан: {$linkPath} → {$target}");
+        $this->components->info("Linked {$linkPath} → {$target}");
 
         return self::SUCCESS;
-    }
-
-    private function resolveSourcePath(Filesystem $files): ?string
-    {
-        $candidates = [
-            base_path('node_modules/@dskripchenko/laravel-admin/dist'),
-            base_path('vendor/dskripchenko/laravel-admin/dist'),
-            __DIR__.'/../../dist',
-        ];
-
-        foreach ($candidates as $candidate) {
-            $real = realpath($candidate);
-            if ($real !== false && $files->isDirectory($real)) {
-                return $real;
-            }
-        }
-
-        return null;
     }
 }

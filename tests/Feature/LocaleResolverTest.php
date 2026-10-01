@@ -153,3 +153,13 @@ it('ответ панели объявляет Vary по всем источни
         expect(strtolower((string) $vary))->toContain(strtolower($source));
     }
 });
+
+it('follows the application locale when no admin default is configured', function (): void {
+    config()->set('admin.ui.default_locale', null);
+    app()->setLocale('en');
+
+    expect(app(LocaleResolver::class)->default())->toBe('en');
+
+    app()->setLocale('ru');
+    expect(app(LocaleResolver::class)->default())->toBe('ru');
+});

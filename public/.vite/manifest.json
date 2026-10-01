@@ -1,0 +1,11 @@
+{
+  "resources/ts/app.ts": {
+    "file": "assets/app-Dn_q65Ok.js",
+    "name": "app",
+    "src": "resources/ts/app.ts",
+    "isEntry": true,
+    "css": [
+      "assets/app-xHC2jn_n.css"
+    ]
+  }
+}

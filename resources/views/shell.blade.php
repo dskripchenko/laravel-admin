@@ -82,7 +82,29 @@
         @endif
     @endif
 
-    <div id="admin-app"></div>
+    @if($assets['stale'] ?? false)
+        {{-- The package was updated without republishing its frontend: the
+             SPA may not match the API it talks to. --}}
+        <div id="admin-assets-stale" role="status" style="
+            padding:.5rem 1rem;background:#fee2e2;color:#7f1d1d;
+            font:500 14px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif;
+            border-bottom:1px solid #fca5a5;text-align:center">
+            {{ __('Файлы админки устарели: выполните') }} <code>php artisan admin:publish</code>
+        </div>
+    @endif
+
+    <div id="admin-app">
+        @if($assets['missing'] ?? false)
+            {{-- No frontend to load: say what to do instead of a blank page. --}}
+            <div style="max-width:36rem;margin:15vh auto;padding:0 1rem;
+                font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;color:#1f2937">
+                <h1 style="font-size:1.25rem;margin:0 0 .5rem">{{ __('Фронтенд админки не найден') }}</h1>
+                <p style="margin:0 0 .5rem">{{ __('Опубликуйте готовую сборку:') }}</p>
+                <pre style="background:#f3f4f6;padding:.5rem .75rem;border-radius:.375rem">php artisan admin:publish</pre>
+                <p style="margin:.5rem 0 0">{{ __('Или подключите свою Vite-сборку через config(\'admin.assets\').') }}</p>
+            </div>
+        @endif
+    </div>
 
     @if($strategy === 'xhr')
         {{-- SPA сама дёрнет /api/admin/system/bootstrap при старте --}}

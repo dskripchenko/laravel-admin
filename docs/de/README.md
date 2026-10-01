@@ -67,26 +67,10 @@ composer require dskripchenko/laravel-admin
 php artisan admin:install
 ```
 
-```js
-// resources/js/admin.js
-import '@dskripchenko/ui/styles/all.css'
-import '@dskripchenko/laravel-admin/style.css'
-import '@dskripchenko/wysiwyg/style.css'
-import { createAdminApp } from '@dskripchenko/laravel-admin'
-
-const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
-app.mount('#admin-app')
-```
-
-```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
-npm run build
-```
-
-Fügen Sie `resources/js/admin.js` zu den Vite-Inputs hinzu und verweisen Sie
-`config('admin.assets')` auf das Vite-Manifest — die vollständige Anleitung
-samt erster Resource steht in [getting-started.md](../en/getting-started.md).
-Öffnen Sie dann `/admin/login`.
+Das war's — die Admin-SPA wird vorgebaut ausgeliefert, Node ist nicht
+nötig. Öffnen Sie `/admin/login`. [Getting started](../en/getting-started.md)
+zeigt die erste Resource und den Custom-Build-Modus für eigene
+Vue-Komponenten.
 
 ## Dokumentation
 

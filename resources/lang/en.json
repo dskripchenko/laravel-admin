@@ -391,5 +391,9 @@
     ":n сек назад": ":n s ago",
     ":n мин назад": ":n min ago",
     ":n ч назад": ":n h ago",
-    ":n д назад": ":n d ago"
+    ":n д назад": ":n d ago",
+    "Файлы админки устарели: выполните": "The admin files are out of date: run",
+    "Фронтенд админки не найден": "The admin frontend was not found",
+    "Опубликуйте готовую сборку:": "Publish the prebuilt bundle:",
+    "Или подключите свою Vite-сборку через config('admin.assets').": "Or point config('admin.assets') at your own Vite build."
 }

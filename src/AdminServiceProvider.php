@@ -12,11 +12,13 @@ use Dskripchenko\LaravelAdmin\Console\MakeResourceCommand;
 use Dskripchenko\LaravelAdmin\Console\MakeScreenCommand;
 use Dskripchenko\LaravelAdmin\Console\MakeSectionCommand;
 use Dskripchenko\LaravelAdmin\Console\MakeWidgetCommand;
+use Dskripchenko\LaravelAdmin\Console\PublishCommand;
 use Dskripchenko\LaravelAdmin\Http\AdminApiModule;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
+use Dskripchenko\LaravelAdmin\Support\PrebuiltAssets;
 use Dskripchenko\LaravelApi\Facades\ApiErrorHandler;
 use Dskripchenko\LaravelApi\Providers\ApiServiceProvider;
 use Dskripchenko\LaravelApi\Services\ApiResponseHelper;
@@ -141,6 +143,12 @@ final class AdminServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../resources/stubs/admin' => resource_path('stubs/admin'),
         ], 'admin-stubs');
+
+        // The prebuilt SPA (see PrebuiltAssets): what the shell loads when the
+        // host has no Vite build of its own.
+        $this->publishes([
+            PrebuiltAssets::sourcePath() => PrebuiltAssets::publishedPath(),
+        ], 'admin-assets');
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'admin');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
@@ -360,6 +368,7 @@ final class AdminServiceProvider extends ServiceProvider
             InstallCommand::class,
             MakeAdminCommand::class,
             LinkCommand::class,
+            PublishCommand::class,
             MakeSectionCommand::class,
             MakeResourceCommand::class,
             MakeScreenCommand::class,

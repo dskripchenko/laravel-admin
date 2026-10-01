@@ -8,9 +8,6 @@ parameters:
     excludePaths:
         - src/**/stubs/*
     ignoreErrors:
-        # Filesystem::relativeLink() есть в Laravel 12, но larastan-stubs ещё устаревшие
-        - identifier: method.notFound
-          path: src/Console/LinkCommand.php
         # Используется sister-pack'ами (отдельные репозитории), внутри core'а
         # без анализа `packages/` trait выглядит unused.
         - identifier: trait.unused

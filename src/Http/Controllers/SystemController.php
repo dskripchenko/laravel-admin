@@ -153,7 +153,7 @@ final class SystemController extends ApiController
             'id' => $user->getKey(),
             'name' => $user->getAttribute('name'),
             'email' => $user->getAttribute('email'),
-            'locale' => $user->getAttribute('locale') ?? config('admin.ui.default_locale', 'ru'),
+            'locale' => $user->getAttribute('locale') ?? app(\Dskripchenko\LaravelAdmin\Theme\LocaleResolver::class)->default(),
             'theme' => $user->getAttribute('theme') ?? config('admin.ui.default_theme', 'light'),
             'twoFactorEnabled' => method_exists($user, 'hasTwoFactorEnabled')
                 ? $user->hasTwoFactorEnabled()

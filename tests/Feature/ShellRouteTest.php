@@ -66,13 +66,17 @@ it('resolves css/js from a Vite manifest', function (): void {
     ]);
 });
 
-it('returns empty assets when neither config-list nor vite-manifest provided', function (): void {
+it('reports missing assets when neither the host build nor the prebuilt bundle is there', function (): void {
+    Illuminate\Support\Facades\File::deleteDirectory(public_path('vendor/admin'));
+
     $response = $this->get('/admin');
 
     $response->assertOk();
     expect($response->viewData('assets'))->toBe([
         'css' => [],
         'js' => [],
+        'missing' => true,
+        'stale' => false,
     ]);
 });
 
