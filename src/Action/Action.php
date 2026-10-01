@@ -126,6 +126,34 @@ abstract class Action implements Renderable
     }
 
     /**
+     * Marks an action that runs on its own, without selected records — an
+     * import, a recalculation, a sync. It is sent with no ids and its method
+     * receives an empty list. An action in a row or in the bulk bar applies to
+     * records unless marked so; anywhere else it is standalone already.
+     */
+    public function standalone(bool $standalone = true): static
+    {
+        $this->attributes['standalone'] = $standalone;
+
+        return $this;
+    }
+
+    /**
+     * Whether the action applies to records and cannot run without at least
+     * one: an explicit standalone() decides, otherwise the position does — a
+     * row or bulk action needs records, a command bar or header one does not.
+     */
+    public function requiresSelection(): bool
+    {
+        $standalone = $this->attributes['standalone'] ?? null;
+        if (is_bool($standalone)) {
+            return ! $standalone;
+        }
+
+        return in_array('row', $this->position, true) || in_array('bulk', $this->position, true);
+    }
+
+    /**
      * @param  bool|callable(): bool  $cond
      */
     public function canSee(bool|callable $cond): static

@@ -781,10 +781,13 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Applies one of the resource's own bulk actions to the selected records.
+     * Applies one of the resource's own actions to the selected records, or
+     * runs a standalone one.
      *
      * The action is found by `key` among those the resource declares;
-     * `payload` carries whatever that action asks for.
+     * `payload` carries whatever that action asks for. A row or bulk action
+     * needs at least one id; a standalone one (`Action::standalone()`, or one
+     * placed only in the command bar or header) runs without any.
      *
      * The docblock that used to stand here described `reorder()` — it had
      * drifted one method up, and with it the wrong parameter name (`items`
@@ -793,9 +796,10 @@ final class ResourceController extends ApiController
      * specification would send `items` and be told the required `ids` is
      * missing.
      *
-     * @input array $ids Identifiers of the records; at least one. Each element
-     *                   is required — a scalar array's element has no tag of
-     *                   its own here
+     * @input array ?$ids Identifiers of the records; at least one for an
+     *                    action that applies to records. Each element is
+     *                    required — a scalar array's element has no tag of
+     *                    its own here
      * @input string $key The action, as the resource declares it
      * @input array ?$payload The action's own arguments, when it takes any
      *
@@ -811,7 +815,7 @@ final class ResourceController extends ApiController
     public function action(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'ids' => ['required', 'array', 'min:1'],
+            'ids' => ['nullable', 'array'],
             'ids.*' => ['required'],
             'key' => ['required', 'string'],
             'payload' => ['nullable', 'array'],
@@ -829,6 +833,13 @@ final class ResourceController extends ApiController
                 'message' => "Action `{$actionKey}` not declared on resource",
             ], 404);
         }
+
+        // An action that applies to records cannot run on none of them.
+        if ($action->requiresSelection()) {
+            Validator::make($data, ['ids' => ['required', 'array', 'min:1']])->validate();
+        }
+        /** @var list<int|string> $ids */
+        $ids = array_values((array) ($data['ids'] ?? []));
 
         // Resolve the method on the resource itself, e.g. BulkAction->method('archive').
         $methodName = $action->toArray()['attributes']['method'] ?? null;
@@ -850,7 +861,7 @@ final class ResourceController extends ApiController
 
         // The call is $resource->{method}(array $ids, array $payload).
         try {
-            $result = $resource->{$methodName}($data['ids'], $payload);
+            $result = $resource->{$methodName}($ids, $payload);
         } catch (ValidationException $e) {
             // The method validated something itself: a 422 with field errors,
             // not an action failure.
@@ -871,7 +882,7 @@ final class ResourceController extends ApiController
         }
 
         return $this->success([
-            'affected' => is_int($result) ? $result : count($data['ids']),
+            'affected' => is_int($result) ? $result : count($ids),
             'message' => 'Action `'.$actionKey.'` applied',
         ]);
     }

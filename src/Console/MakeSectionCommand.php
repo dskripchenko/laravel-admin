@@ -48,10 +48,10 @@ use function Laravel\Prompts\warning;
 final class MakeSectionCommand extends Command
 {
     protected $signature = 'admin:make-section
-                            {--force : Перезаписать существующий Resource}
-                            {--tree : Принудительно tree-режим (генерирует hierarchyParentKey()=parent_id)}';
+                            {--force : Overwrite an existing resource}
+                            {--tree : Force tree mode (generates hierarchyParentKey() = parent_id)}';
 
-    protected $description = 'Мастер создания раздела админки на основе таблицы или Eloquent-модели';
+    protected $description = 'Create an admin section from a database table or an Eloquent model (interactive)';
 
     public function handle(
         SchemaIntrospector $schema,
@@ -60,29 +60,29 @@ final class MakeSectionCommand extends Command
         AdminPluginUpdater $updater,
         Filesystem $files,
     ): int {
-        info('🧙 Wizard: новый раздел админки');
-        note('Команда проанализирует таблицу/модель и сгенерирует Resource, '
-            ."permissions и пункт меню.\n"
-            .'На любом шаге можно отменить (Ctrl+C).');
+        info('New admin section');
+        note('The command inspects the table or model and generates a resource, '
+            ."its permissions and a menu item.\n"
+            .'Press Ctrl+C at any step to cancel.');
 
         // === 1. Metadata ===
         $singular = text(
-            label: 'Singular label (например: Article)',
+            label: 'Singular label (e.g. Article)',
             placeholder: 'Article',
             required: true,
         );
         $plural = text(
-            label: 'Plural label (для таблицы и меню)',
+            label: 'Plural label (for the table and the menu)',
             default: Str::plural($singular),
             required: true,
         );
 
         // === 2. The source ===
         $sourceType = select(
-            label: 'Источник данных',
+            label: 'Data source',
             options: [
-                'model' => 'Eloquent-модель (auto-discover)',
-                'table' => 'DB-таблица (без модели)',
+                'model' => 'Eloquent model (auto-discovered)',
+                'table' => 'Database table (no model)',
             ],
             default: 'model',
         );
@@ -94,7 +94,7 @@ final class MakeSectionCommand extends Command
         };
 
         if ($analysis === null) {
-            warning('Источник не выбран — отменено.');
+            warning('No source selected; cancelled.');
 
             return self::FAILURE;
         }
@@ -122,7 +122,7 @@ final class MakeSectionCommand extends Command
         ));
 
         $selectedFormColumns = multiselect(
-            label: 'Поля для формы (create/edit)',
+            label: 'Form fields (create/edit)',
             options: array_combine($allColumnNames, $allColumnNames),
             default: $defaultFormColumns,
             scroll: 20,
@@ -134,7 +134,7 @@ final class MakeSectionCommand extends Command
             static fn (string $n): bool => ! in_array($n, ['updated_at', 'deleted_at', 'password', 'remember_token'], true),
         ));
         $selectedTableColumns = multiselect(
-            label: 'Колонки в таблице (list)',
+            label: 'Table columns (list)',
             options: array_combine($allColumnNames, $allColumnNames),
             default: $defaultTableColumns,
             scroll: 20,
@@ -143,42 +143,42 @@ final class MakeSectionCommand extends Command
         // === 4. Permissions ===
         $slug = Str::kebab(Str::pluralStudly($singular));
         $permission = text(
-            label: 'Базовое permission (auto-derived: .view/.create/.update/.delete)',
+            label: 'Base permission (derived: .view/.create/.update/.delete)',
             default: 'admin.'.$slug,
             required: true,
         );
 
         // === 5. Icon ===
         $icon = text(
-            label: 'Lucide icon name (см. lucide.dev)',
+            label: 'Lucide icon name (see lucide.dev)',
             default: $this->guessIcon($plural),
         );
 
         // === 6. Group (optional) ===
         $group = text(
-            label: 'Группа в sidebar (пусто — без группы)',
+            label: 'Sidebar group (empty for none)',
             default: '',
         );
 
         // === 7. The menu ===
-        $addMenu = confirm(label: 'Добавить в меню?', default: true);
+        $addMenu = confirm(label: 'Add to the menu?', default: true);
         $menuParent = '';
         if ($addMenu) {
             $menuParent = text(
-                label: 'Parent-key в меню (пусто — корневой пункт)',
+                label: 'Parent menu key (empty for a top-level item)',
                 default: '',
-                hint: 'Например: shop, content, tools',
+                hint: 'For example: shop, content, tools',
             );
         }
 
         // === 8. Role ===
-        $createRole = confirm(label: 'Создать Role с этими permissions?', default: false);
+        $createRole = confirm(label: 'Create a role with these permissions?', default: false);
         $roleName = '';
         $rolePerms = [];
         if ($createRole) {
-            $roleName = text(label: 'Имя Role', default: $plural.' editor', required: true);
+            $roleName = text(label: 'Role name', default: $plural.' editor', required: true);
             $rolePerms = multiselect(
-                label: 'Permissions для роли',
+                label: 'Permissions of the role',
                 options: [
                     "{$permission}.view" => 'View',
                     "{$permission}.create" => 'Create',
@@ -190,7 +190,7 @@ final class MakeSectionCommand extends Command
         }
 
         // === Generate ===
-        info('🛠  Генерация...');
+        info('Generating...');
 
         $namespace = 'App\\Admin\\Resources';
         $className = $writer->classNameFor($singular, 'Resource');
@@ -221,7 +221,7 @@ final class MakeSectionCommand extends Command
             $hierarchyKey = 'parent_id';
         }
         if ($treeMode) {
-            info("🌳 Tree-режим: иерархия через `{$hierarchyKey}` self-reference.");
+            info("Tree mode: hierarchy through the `{$hierarchyKey}` self-reference.");
         }
         $hierarchyMethod = $treeMode
             ? "\n    public function hierarchyParentKey(): ?string\n    {\n        return '{$hierarchyKey}';\n    }\n"
@@ -252,36 +252,36 @@ final class MakeSectionCommand extends Command
         $created = $writer->fromStub($stub, $target, $vars, force: (bool) $this->option('force'));
 
         if (! $created) {
-            warning("⚠ Файл уже существует: {$target}. Используйте --force для перезаписи.");
+            warning("File already exists: {$target}. Use --force to overwrite it.");
 
             return self::FAILURE;
         }
-        info("✓ Создан: {$target}");
+        info("Created: {$target}");
 
         // Registration in the plugin
         $resourceFqcn = $namespace.'\\'.$className;
         $reg = $updater->registerResource($resourceFqcn);
-        info("✓ Plugin: {$reg['path']} ({$reg['action']})");
+        info("Plugin: {$reg['path']} ({$reg['action']})");
 
         // The menu
         if ($addMenu) {
             $updater->ensureImport($reg['path'], 'Dskripchenko\\LaravelAdmin\\Menu\\MenuNode');
             $menu = $updater->addMenuNode('resource', $slug, $menuParent ?: null);
-            info("✓ Menu: {$menu['action']}");
+            info("Menu: {$menu['action']}");
         }
 
         // Role
         if ($createRole && ! empty($rolePerms)) {
             $this->createRole($roleName, $rolePerms);
-            info("✓ Role «{$roleName}» создана с ".count($rolePerms).' permissions');
+            info("Role \"{$roleName}\" created with ".count($rolePerms).' permissions');
         }
 
-        info('✅ Готово!');
+        info('Done.');
         $this->newLine();
-        note('Что дальше:');
-        $this->line('  1. Откройте '.$target.' и причешите fields/columns/filters');
-        $this->line('  2. Перезапустите admin (composer dump-autoload && npm run build)');
-        $this->line("  3. Откройте /admin/r/{$slug} — раздел готов");
+        note('Next steps:');
+        $this->line('  1. Open '.$target.' and tidy up the fields, columns and filters');
+        $this->line('  2. Rebuild (composer dump-autoload && npm run build)');
+        $this->line("  3. Open /admin/r/{$slug}");
 
         return self::SUCCESS;
     }
@@ -293,7 +293,7 @@ final class MakeSectionCommand extends Command
     {
         $models = $schema->discoverModels();
         if ($models === []) {
-            warning('Eloquent-модели не найдены в app/Models/.');
+            warning('No Eloquent models found in app/Models/.');
 
             return null;
         }
@@ -302,7 +302,7 @@ final class MakeSectionCommand extends Command
             $options[$cls] = $cls;
         }
         $picked = select(
-            label: 'Выберите модель',
+            label: 'Choose a model',
             options: $options,
             scroll: 15,
         );
@@ -325,7 +325,7 @@ final class MakeSectionCommand extends Command
     {
         $tables = $schema->listTables();
         if ($tables === []) {
-            warning('Таблицы не найдены в БД.');
+            warning('No tables found in the database.');
 
             return null;
         }
@@ -334,7 +334,7 @@ final class MakeSectionCommand extends Command
             $options[$t] = $t;
         }
         $picked = select(
-            label: 'Выберите таблицу',
+            label: 'Choose a table',
             options: $options,
             scroll: 15,
         );

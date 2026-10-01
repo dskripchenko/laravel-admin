@@ -20,23 +20,23 @@ use function Laravel\Prompts\text;
 final class MakeWidgetCommand extends Command
 {
     protected $signature = 'admin:make-widget
-                            {--force : Перезаписать существующий Widget}';
+                            {--force : Overwrite an existing widget}';
 
-    protected $description = 'Мастер создания custom Widget';
+    protected $description = 'Create a custom dashboard widget (interactive)';
 
     public function handle(ResourceWriter $writer): int
     {
-        info('🧙 Wizard: новый Widget');
+        info('New widget');
 
-        $name = text(label: 'Имя класса (например: WeatherWidget)', required: true);
+        $name = text(label: 'Class name (e.g. WeatherWidget)', required: true);
         if (! str_ends_with($name, 'Widget')) {
             $name .= 'Widget';
         }
 
         $type = select(
-            label: 'Тип widget (frontend type)',
+            label: 'Widget type (frontend type)',
             options: [
-                'stats' => 'Stats (KPI карточка)',
+                'stats' => 'Stats (KPI card)',
                 'chart' => 'Chart (bar/line/donut)',
                 'recent_list' => 'Recent list',
                 'markdown' => 'Markdown',
@@ -44,7 +44,7 @@ final class MakeWidgetCommand extends Command
                 'table' => 'Table',
                 'heatmap' => 'Heatmap',
                 'gauge' => 'Gauge',
-                'custom' => 'Custom (host регистрирует Vue-компонент)',
+                'custom' => 'Custom (the host registers a Vue component)',
             ],
             default: 'stats',
         );
@@ -80,12 +80,12 @@ final class MakeWidgetCommand extends Command
         $target = $writer->classPath($namespace, $name);
         $created = $writer->fromStub($stub, $target, $vars, force: (bool) $this->option('force'));
         if (! $created) {
-            $this->error("⚠ Файл уже существует: {$target}. Используйте --force.");
+            $this->error("File already exists: {$target}. Use --force to overwrite it.");
 
             return self::FAILURE;
         }
-        info("✓ Создан: {$target}");
-        info('   Используйте в DashboardScreen::widgets():');
+        info("Created: {$target}");
+        info('   Use it in DashboardScreen::widgets():');
         $this->line('     '.$name.'::make()->title(\'…\')->size(6),');
 
         return self::SUCCESS;

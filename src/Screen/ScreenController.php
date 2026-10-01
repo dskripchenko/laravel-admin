@@ -195,7 +195,8 @@ final class ScreenController extends ApiController
             'redirect_url' => $result['redirect_url'] ?? null,
             'refresh' => (bool) ($result['refresh'] ?? false),
             'download_url' => $result['download_url'] ?? null,
-            'message' => (string) ($result['message'] ?? 'OK'),
+            // No message means no banner: the panel shows one only when there is text.
+            'message' => (string) ($result['message'] ?? ''),
             // Where the message leads: a screen that starts background work
             // has somewhere to send the person — the job's own page. Shaped
             // rather than passed through, so a half-filled link never reaches
@@ -227,6 +228,13 @@ final class ScreenController extends ApiController
         $out = [];
         foreach (array_values($alerts) as $alert) {
             if (is_array($alert)) {
+                // `level` and `variant` read naturally for a toast and are
+                // what people write; the schema's key is `type`.
+                if (! isset($alert['type'])) {
+                    $alias = $alert['level'] ?? $alert['variant'] ?? null;
+                    $alert['type'] = is_string($alias) && $alias !== '' ? $alias : 'info';
+                }
+                unset($alert['level'], $alert['variant']);
                 foreach (['message', 'title'] as $key) {
                     if (isset($alert[$key]) && is_string($alert[$key])) {
                         $alert[$key] = Localize::string($alert[$key]);

@@ -301,6 +301,10 @@ final class SystemController extends ApiController
             ];
         }
 
+        // The panel keeps the server's sequence for equal orders, so the
+        // auto-filled items come sorted: by order, then alphabetically.
+        usort($items, static fn (array $a, array $b): int => [$a['order'], (string) $a['label']] <=> [$b['order'], (string) $b['label']]);
+
         return $items;
     }
 

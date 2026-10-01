@@ -7,6 +7,8 @@ import MockAdapter from 'axios-mock-adapter'
 import { setAdminClient, clearAdminClient } from '../stores/registry'
 import { createAdminClient } from '../api/client'
 import {
+  modalSizeOf,
+  needsSelection,
   normalizeAction,
   normalizeActions,
   selectionAllows,
@@ -73,6 +75,22 @@ describe('normalizeAction', () => {
     const d = act({ type: 'dropdown', items: [{ name: 'a', label: 'A', type: 'link' }, { label: '' }] })
     expect(d.items.map((i) => i.name)).toEqual(['a'])
     expect(normalizeActions(undefined)).toEqual([])
+  })
+
+  it('needsSelection: bulk always, standalone never, otherwise by position', () => {
+    expect(needsSelection(act({}))).toBe(false)
+    expect(needsSelection(act({ position: ['header'] }))).toBe(false)
+    expect(needsSelection(act({ position: ['row'] }))).toBe(true)
+    expect(needsSelection(act({ position: ['row'], attributes: { standalone: true } }))).toBe(false)
+    expect(needsSelection(act({ type: 'bulk', position: ['command_bar'] }))).toBe(true)
+    expect(needsSelection(act({ type: 'bulk', attributes: { standalone: true } }))).toBe(true)
+  })
+
+  it('maps the modal sizes, full included', () => {
+    expect(modalSizeOf('full')).toBe('full')
+    expect(modalSizeOf('fullscreen')).toBe('full')
+    expect(modalSizeOf('extra')).toBe('xl')
+    expect(modalSizeOf(undefined)).toBe('md')
   })
 
   it('checks requiresAtLeast / requiresAtMost', () => {
@@ -177,7 +195,7 @@ describe('useActionRunner', () => {
 
     $('action-modal-submit')!.click()
     await flushPromises()
-    expect(execute).toHaveBeenLastCalledWith(action, { reason: 'ok' })
+    expect(execute).toHaveBeenLastCalledWith(action, { reason: 'ok' }, undefined)
     // The form stays open with the error next to the field.
     expect($('action-modal')).not.toBeNull()
     expect(document.body.textContent).toContain('The reason is too short.')
@@ -185,8 +203,33 @@ describe('useActionRunner', () => {
     $('action-modal-submit')!.click()
     await flushPromises()
     expect(execute).toHaveBeenCalledTimes(2)
-    expect(onSuccess).toHaveBeenCalledWith(action, { affected: 1 })
+    expect(onSuccess).toHaveBeenCalledWith(action, { affected: 1 }, undefined)
     expect(m.runner().modalState.open).toBe(false)
+  })
+
+  it('keeps the ids of a run until its modal form is submitted', async () => {
+    const execute = vi.fn(async () => ({ affected: 1 }))
+    const onSuccess = vi.fn()
+    const m = await mountRunner({ execute, onSuccess, ids: () => [1, 2, 3] })
+    wrapper = m.wrapper
+    const action = act({ type: 'modal', position: ['row'], attributes: { method: 'notify', fields: [] } })
+
+    await m.runner().run(action, { ids: [7] })
+    await flushPromises()
+    $('action-modal-submit')!.click()
+    await flushPromises()
+    expect(execute).toHaveBeenLastCalledWith(action, {}, { ids: [7] })
+    expect(onSuccess).toHaveBeenCalledWith(action, { affected: 1 }, { ids: [7] })
+  })
+
+  it("checks a row run's own ids against requiresAtMost, not the selection", async () => {
+    const execute = vi.fn(async () => ({}))
+    const m = await mountRunner({ execute, ids: () => [1, 2, 3] })
+    wrapper = m.wrapper
+    const action = act({ type: 'bulk', position: ['bulk', 'row'], attributes: { requiresAtMost: 1 } })
+    expect(await m.runner().run(action, { ids: [7] })).toBe(true)
+    expect(execute).toHaveBeenLastCalledWith(action, undefined, { ids: [7] })
+    expect(await m.runner().run(action)).toBe(false)
   })
 
   it('AsyncAction starts a delayed process and polls it to the end', async () => {
@@ -298,6 +341,36 @@ describe('AdminActionButton', () => {
     await flushPromises()
     const emitted = wrapper.emitted('run') as Array<[AdminAction]>
     expect(emitted[0][0].name).toBe('audit')
+    wrapper.unmount()
+  })
+
+  it('renders a nested dropdown as a submenu', async () => {
+    const dropdown = act({
+      type: 'dropdown',
+      name: 'more',
+      label: 'More',
+      items: [
+        { name: 'restore', label: 'Restore', type: 'button', attributes: { method: 'restore' } },
+        {
+          name: 'export',
+          label: 'Export',
+          type: 'dropdown',
+          items: [{ name: 'csv', label: 'CSV', type: 'button', attributes: { method: 'csv' } }],
+        },
+      ],
+    })
+    const wrapper = mount(AdminActionButton, { props: { action: dropdown }, attachTo: document.body })
+    await wrapper.find('[data-testid="action-more"]').trigger('click')
+    await flushPromises()
+    const trigger = document.body.querySelector('.uid-submenu__trigger') as HTMLElement
+    expect(trigger.textContent).toContain('Export')
+    expect(document.body.querySelector('[data-testid="action-csv"]')).toBeNull()
+    trigger.click()
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="action-csv"]') as HTMLElement).click()
+    await flushPromises()
+    const emitted = wrapper.emitted('run') as Array<[AdminAction]>
+    expect(emitted[0][0].name).toBe('csv')
     wrapper.unmount()
   })
 })

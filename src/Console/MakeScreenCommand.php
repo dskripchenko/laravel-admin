@@ -31,24 +31,24 @@ use function Laravel\Prompts\text;
 final class MakeScreenCommand extends Command
 {
     protected $signature = 'admin:make-screen
-                            {--force : Перезаписать существующий Screen}';
+                            {--force : Overwrite an existing screen}';
 
-    protected $description = 'Мастер создания custom Screen (non-CRUD страница)';
+    protected $description = 'Create a custom screen, a non-CRUD page (interactive)';
 
     public function handle(ResourceWriter $writer, AdminPluginUpdater $updater): int
     {
-        info('🧙 Wizard: новый Custom Screen');
+        info('New custom screen');
 
-        $label = text(label: 'Название (например: Связаться с командой)', required: true);
+        $label = text(label: 'Title (e.g. Contact the team)', required: true);
         $slug = text(
             label: 'Slug',
             default: Str::kebab(Str::singular($label)),
             required: true,
         );
-        $description = text(label: 'Описание (опц.)', default: '');
+        $description = text(label: 'Description (optional)', default: '');
 
         $fieldTypes = multiselect(
-            label: 'Какие поля state-формы?',
+            label: 'Which form fields?',
             options: [
                 'text' => 'Input (text)',
                 'email' => 'Input type=email',
@@ -63,24 +63,24 @@ final class MakeScreenCommand extends Command
         $fieldNames = [];
         foreach ($fieldTypes as $type) {
             $name = text(
-                label: "Имя поля типа '{$type}'",
+                label: "Name of the '{$type}' field",
                 default: $type === 'email' ? 'email' : $type,
                 required: true,
             );
             $fieldNames[] = ['name' => $name, 'type' => $type];
         }
 
-        $hasSubmit = confirm(label: "Добавить кнопку 'Отправить' с command-методом send()?", default: true);
+        $hasSubmit = confirm(label: "Add a 'Send' button calling a send() method?", default: true);
 
         $permission = text(
-            label: 'Permission (пусто — только аутентификация)',
+            label: 'Permission (empty: any signed-in administrator)',
             default: '',
         );
 
-        $addMenu = confirm(label: 'Добавить в меню?', default: true);
+        $addMenu = confirm(label: 'Add to the menu?', default: true);
         $menuParent = '';
         if ($addMenu) {
-            $menuParent = text(label: 'Parent в меню (пусто — корневой)', default: 'tools');
+            $menuParent = text(label: 'Parent menu key (empty for a top-level item)', default: 'tools');
         }
 
         // === Generate ===
@@ -90,7 +90,7 @@ final class MakeScreenCommand extends Command
         $stateInit = $this->stateInit($fieldNames);
         $layoutFields = $this->layoutFields($fieldNames);
         $commandBar = $hasSubmit
-            ? "            Button::make('Отправить')->method('send')->primary(),"
+            ? "            Button::make('Send')->method('send')->primary(),"
             : '            // Button::make(...)->method(...),';
         $commandMethods = $hasSubmit
             ? $this->sendMethod($fieldNames)
@@ -113,24 +113,24 @@ final class MakeScreenCommand extends Command
         $target = $writer->classPath($namespace, $className);
         $created = $writer->fromStub($stub, $target, $vars, force: (bool) $this->option('force'));
         if (! $created) {
-            $this->error("⚠ Файл уже существует: {$target}. Используйте --force.");
+            $this->error("File already exists: {$target}. Use --force to overwrite it.");
 
             return self::FAILURE;
         }
-        info("✓ Создан: {$target}");
+        info("Created: {$target}");
 
         $screenFqcn = $namespace.'\\'.$className;
         $reg = $updater->registerScreen($screenFqcn);
-        info("✓ Plugin: {$reg['path']} ({$reg['action']})");
+        info("Plugin: {$reg['path']} ({$reg['action']})");
 
         if ($addMenu) {
             $updater->ensureImport($reg['path'], 'Dskripchenko\\LaravelAdmin\\Menu\\MenuNode');
             $updater->addMenuNode('screen', $slug, $menuParent ?: null);
-            info('✓ Menu: добавлен пункт');
+            info('Menu item added');
         }
 
-        info('✅ Готово!');
-        note("Откройте /admin/screens/{$slug} (после composer dump-autoload).");
+        info('Done.');
+        note("Open /admin/screens/{$slug} (after composer dump-autoload).");
 
         return self::SUCCESS;
     }
@@ -212,11 +212,10 @@ final class MakeScreenCommand extends Command
         // TODO: the actual sending and saving
 
         return [
-            'message' => 'Отправлено',
+            'message' => 'Sent.',
             'state' => [
 {$resetBlock}
             ],
-            'alerts' => [['type' => 'success', 'message' => 'OK']],
         ];
     }
 PHP;
