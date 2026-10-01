@@ -184,7 +184,14 @@ RelationSelect::make('author_id')
     ->relation('author')
     ->display('name')
     ->searchable(),
+
+// Records of another resource, picked in a dialog with its search and filters
+ResourcePicker::make('cover_id')->resource(MediaResource::class),
 ```
+
+A resource is shown in pickers through `pickerItem()`: `recordTitle()`,
+`recordSubtitle()` and `pickerPreview()` (an image URL or `null`). See
+[ResourcePicker](../fields-reference.md#resourcepicker).
 
 ## See also
 

@@ -367,6 +367,8 @@ final class ResourceController extends ApiController
      * @input array ?$filters
      * @input string ?$q
      * @input array ?$order
+     * @input array ?$ids Only the records with these keys.
+     * @input boolean ?$picker Adds `_picker` {id, title, subtitle, preview} to every row.
      *
      * @output object $payload
      *
@@ -400,6 +402,16 @@ final class ResourceController extends ApiController
                     $builder->orWhere($col, 'like', '%'.$q.'%');
                 }
             });
+        }
+
+        // Only the given keys: a ResourcePicker resolves the records it
+        // holds this way, through the same scope and permission as the list.
+        $ids = $request->input('ids');
+        if (is_array($ids)) {
+            $query = $query->whereKey(array_values(array_filter(
+                $ids,
+                static fn ($id): bool => is_int($id) || (is_string($id) && $id !== ''),
+            )));
         }
 
         // Order. When the request carries no explicit order, fall back to
@@ -454,6 +466,11 @@ final class ResourceController extends ApiController
         }
 
         $items = $this->withPerRowEditable($resource, $paginator->items());
+        if ($request->boolean('picker')) {
+            foreach ($paginator->items() as $i => $model) {
+                $items[$i]['_picker'] = $resource->pickerItem($model);
+            }
+        }
 
         return $this->success([
             'data' => $items,

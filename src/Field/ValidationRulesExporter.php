@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Field;
 
+use Dskripchenko\LaravelAdmin\Field\Rules\ResourceRecordsExist;
+
 /**
  * Turns a list of Field objects into Laravel-style validation rules fit for
  * `Request::validate(...)`.
@@ -16,6 +18,8 @@ namespace Dskripchenko\LaravelAdmin\Field;
  *      - date/date_range/time → `date` or `date_format`
  *      - file → `file`/`image`, `mimes:`, `max:` (KB), `array` for multiple, `between:0,maxFiles`
  *      - select/checkbox/radio with multiple → `array`
+ *      - resource_picker → `array`/`max:` for multiple, plus the existence of
+ *        the picked records in the target resource
  *      - color → `regex:/^#?[0-9a-f]{3,8}$/i` for hex
  *
  * The point is that Resource::validationRules() should not have to repeat the
@@ -41,6 +45,13 @@ final class ValidationRulesExporter
                 // it from $data — even when the backend wants the value as it
                 // is. The default is `nullable`, with no explicit limits.
                 $rules = ['nullable'];
+            }
+            if ($field instanceof ResourcePicker && is_string($field->getAttribute('resource'))) {
+                // The picked keys must name records the target resource lists.
+                $rules[] = new ResourceRecordsExist(
+                    (string) $field->getAttribute('resource'),
+                    $field->getAttribute('multiple') === true,
+                );
             }
             $result[$field->name()] = $rules;
 
@@ -117,6 +128,7 @@ final class ValidationRulesExporter
             'time' => self::timeRules($attrs),
             'file' => self::fileRules($attrs),
             'select', 'combobox', 'checkbox', 'radio' => self::choiceRules($attrs),
+            'resource_picker' => self::pickerRules($attrs),
             'color' => self::colorRules($attrs),
             'wysiwyg', 'markdown', 'textarea', 'code' => ['nullable', 'string'],
             'switch', 'switcher', 'boolean' => ['nullable', 'boolean'],
@@ -224,6 +236,25 @@ final class ValidationRulesExporter
         }
 
         return ['nullable'];
+    }
+
+    /**
+     * A single picker holds one key, a multiple one a list of keys.
+     *
+     * @param  array<string, mixed>  $attrs
+     * @return list<string>
+     */
+    private static function pickerRules(array $attrs): array
+    {
+        if (($attrs['multiple'] ?? false) !== true) {
+            return ['nullable'];
+        }
+        $rules = ['nullable', 'array'];
+        if (isset($attrs['maxItems'])) {
+            $rules[] = 'max:'.$attrs['maxItems'];
+        }
+
+        return $rules;
     }
 
     /**

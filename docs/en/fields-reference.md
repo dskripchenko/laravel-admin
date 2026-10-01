@@ -170,6 +170,60 @@ RelationTable::make('items')
     ->editable(),
 ```
 
+### ResourcePicker
+
+Records of another registered resource, picked in a dialog. Unlike
+`RelationSelect`, which reads a model into a select, the picker goes through
+the target **resource**: the dialog lists what its index lists, with its search,
+filters and pagination, and only for users who hold the target's
+`admin.{slug}.view` permission.
+
+```php
+ResourcePicker::make('cover_id')
+    ->resource(MediaResource::class),       // or a slug: 'media-library'
+
+ResourcePicker::make('related_ids')
+    ->resource('products')
+    ->multiple()                            // an ordered list of keys
+    ->maxItems(5)
+    ->filters(['status' => 'active'])       // fixed, hidden from the toolbar
+    ->perPage(24)
+    ->layout('list')                        // 'grid' | 'list'; default: grid when records have previews
+    ->dialogSize('xl'),                     // 'lg' | 'xl' | 'full'
+```
+
+The value is the record's key, or with `multiple()` a list of keys in the order
+the user arranged them; cast a multiple picker's column to `array`. On save
+every key must name a record of the target's `indexQuery()`, so scoping the
+index scopes what can be attached.
+
+The dialog draws each record from `Resource::pickerItem()`: the title from
+`recordTitle()`, the subtitle from `recordSubtitle()` and the preview image
+from `pickerPreview()`. Override them on the target resource:
+
+```php
+public function pickerPreview(Model $row): ?string
+{
+    return $row->avatar_url;
+}
+```
+
+`uploadTo()` adds an upload button to the dialog. The file is posted as
+multipart data to a path under the panel's API; the response is the new record
+(or holds it under `responseKey`), and it gets selected:
+
+```php
+ResourcePicker::make('document_id')
+    ->resource('documents')
+    ->uploadTo('/documents/files/upload', permission: 'admin.documents.create',
+        fileField: 'file', responseKey: 'document', data: ['folder' => 'contracts'],
+        accept: 'application/pdf'),
+```
+
+The button is shown to users holding `permission` — the target's `create`
+permission by default. On the view page the field shows the picked records
+with their previews, each linking to the target's view page.
+
 ### MorphSwitcher
 
 For polymorphic relations:

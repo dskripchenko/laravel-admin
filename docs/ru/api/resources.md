@@ -76,6 +76,8 @@ public function meta(Request $request): JsonResponse;
  * @input string ?$group_by Колонка из Resource::groupable() (опц).
  * @input array  ?$with Eager-load relations (whitelist в Resource::with()).
  * @input integer ?$view_id Применить saved view (override остальных параметров).
+ * @input array  ?$ids Только записи с этими ключами.
+ * @input boolean ?$picker Добавить к каждой строке `_picker` — {id, title, subtitle, preview} из Resource::pickerItem().
  *
  * @output object $payload
  * @output array  $payload.data Записи.

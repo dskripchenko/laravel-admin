@@ -5,6 +5,29 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **`ResourcePicker` field: pick records of another resource in a dialog.**
+  `ResourcePicker::make('cover_id')->resource('media-library')` (a slug or a
+  Resource class) opens a dialog over the target resource's own search
+  endpoint: its search, filters (the resource index toolbar), pagination and
+  `admin.{slug}.view` permission. `multiple()` stores an ordered list of keys
+  (reorder and remove in the form), `maxItems()`, `filters([...])` fixes filter
+  values (hidden from the toolbar), `perPage()`, `layout('grid'|'list')`,
+  `dialogSize('lg'|'xl'|'full')`, and `uploadTo($url, ...)` adds an upload
+  button that selects the record it creates (shown to holders of the target's
+  create permission, or the one given). The value is validated on save: every
+  key must name a record of the target's `indexQuery()`, and a single picker
+  rejects lists. The view page shows the picked records with their previews
+  and links (`resource_picker` is now one of the default `FieldEntry` types).
+- `Resource::pickerPreview(Model $row)` (an image URL, `null` by default) and
+  `Resource::pickerItem(Model $row)` — `{id, title, subtitle, preview}` built
+  from `recordTitle()`, `recordSubtitle()` and `pickerPreview()`.
+- Resource search takes `ids[]` (only those keys) and `picker: true` (adds
+  `_picker` with the picker item to every row).
+
 ## 1.33.0
 
 ### Added

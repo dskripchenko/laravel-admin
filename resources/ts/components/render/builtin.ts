@@ -25,6 +25,7 @@ import KeyValueField from '../fields/KeyValueField.vue'
 import RepeaterField from '../fields/RepeaterField.vue'
 import BuilderField from '../fields/BuilderField.vue'
 import RelationTableField from '../fields/RelationTableField.vue'
+import ResourcePickerField from '../fields/ResourcePickerField.vue'
 import GeneratedField from '../fields/GeneratedField.vue'
 import MarkdownField from '../fields/MarkdownField.vue'
 import CodeField from '../fields/CodeField.vue'
@@ -165,6 +166,8 @@ export function registerBuiltinComponents(): void {
       group: GroupField,
       builder: BuilderField,
       relation_table: RelationTableField,
+      // Records of another resource, picked in a dialog: Field\ResourcePicker.
+      resource_picker: ResourcePickerField,
     },
     layouts: {
       rows: RowsLayout,

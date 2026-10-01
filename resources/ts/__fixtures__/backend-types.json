@@ -25,6 +25,7 @@
         "relation_select",
         "relation_table",
         "repeater",
+        "resource_picker",
         "select",
         "slider",
         "slug",
