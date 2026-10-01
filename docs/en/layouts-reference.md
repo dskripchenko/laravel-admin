@@ -27,6 +27,7 @@ compose to arbitrary depth.
 | `Dashboard` | `Layout::dashboard([...])` | 12-col grid (used by `DashboardScreen`) |
 | `View` | `Layout::view('component-name', $props)` | Custom Vue component |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
+| `Listener` | `Layout::listener([...])->listen([...])` | Part of a form re-rendered by the server when watched fields change |
 
 ## Examples
 
@@ -226,6 +227,109 @@ Layout::dashboard([
 
 (Used by `DashboardScreen`, but you can drop a Dashboard layout
 inside any Screen.)
+
+### Listener (reactive part of a form)
+
+A listener watches some fields of the form. When one of them changes, the
+SPA waits for the user to pause (300 ms by default), posts the current form
+state to the server, and replaces the listener's children with the ones the
+server renders for that state. An optional handler can also return values to
+merge into the form.
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Number;
+use Dskripchenko\LaravelAdmin\Field\Select;
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+
+public function layout(): array
+{
+    return [
+        Layout::rows([
+            Select::make('country_id')->fromModel(Country::class),
+
+            // Children as a closure: rendered against the current state.
+            Layout::listener(fn (array $state) => [
+                Select::make('city_id')
+                    ->title('City')
+                    ->fromModel(City::where('country_id', $state['country_id'] ?? null)),
+            ])->listen('country_id'),
+
+            Number::make('price'),
+            Number::make('quantity'),
+
+            // A handler computing values: a public method of the screen.
+            Layout::listener([
+                Number::make('total')->readonly(),
+            ])->listen(['price', 'quantity'])->handler('recalculateTotal'),
+        ]),
+    ];
+}
+
+/** Returns a patch: the keys of the form state to change. */
+public function recalculateTotal(array $state, Request $request): array
+{
+    return ['total' => round((float) ($state['price'] ?? 0) * (int) ($state['quantity'] ?? 0), 2)];
+}
+```
+
+| Method | Meaning |
+|---|---|
+| `Layout::listener(array\|Closure $children)` | Static children, or `fn (array $state): array` |
+| `->listen(string\|array $fields)` | The watched field names |
+| `->handler(string\|Closure $handler)` | A public method of the screen/resource, or a closure; called as `(array $state, Request $request)`, returns a state patch (`array`, `Repository` or `null`) |
+| `->debounce(int $ms)` | The quiet period before a request, 300 by default |
+| `->withId(string $id)` | An explicit id; needed only when two listeners watch the same fields with closure handlers |
+
+The flow on each change: the handler runs with the posted state, its patch
+is merged into that state, and the children are rendered with the result.
+The response carries both the patch and the children; the SPA merges the
+patch into the form (skipping fields the user edited while the request was
+in flight), swaps the children in place — fields that keep their position
+keep their focus — cancels stale requests, and shows errors as a toast (or,
+for a `ValidationException`, under the fields).
+
+**In a Resource form** the listener goes into `formLayout()`, and a string
+handler is a public method of the Resource:
+
+```php
+public function formLayout(string $context): array
+{
+    return [
+        Select::make('country_id')->fromModel(Country::class),
+        Layout::listener(fn (array $state) => [
+            Select::make('city_id')->fromModel(City::where('country_id', $state['country_id'] ?? null)),
+        ])->listen('country_id'),
+        Layout::listener([Number::make('total')->readonly()])
+            ->listen(['price', 'quantity'])
+            ->handler('recalculateTotal'),
+    ];
+}
+
+public function recalculateTotal(array $state): array
+{
+    return ['total' => ($state['price'] ?? 0) * ($state['quantity'] ?? 0)];
+}
+```
+
+Validation and saving still read `fields()`: a field rendered by a listener
+must be declared there as well. The manifest is built without a record, so a
+closure receives an empty state at first; it should tolerate missing keys.
+When the edit form opens with the watched fields filled, the listener asks
+the server once to render its children for the record (without changing any
+values).
+
+**Endpoint and security.** Screens get `POST /api/admin/{screen}/listener`
+behind the screen's `permission()`; resources get
+`POST /api/admin/{resource}/listener` (only when their form has listeners),
+which requires `view` plus `create` or `update` according to the form's
+context. The body is `{listener, state, context?, id?}` and the answer
+`{listener, state, layouts}`. The request names a listener by its id, never a
+method: only handlers declared by a listener in that screen's `layout()` or
+that resource's `formLayout()` can run, and reserved screen methods
+(`query`, `layout`, …) are refused.
+
+A screen's `layout()` is called without `query()` when a listener request is
+served, so the listeners should not depend on properties `query()` sets.
 
 ### View (custom Vue component)
 

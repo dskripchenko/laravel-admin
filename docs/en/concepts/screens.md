@@ -102,6 +102,14 @@ Validation: throw `\Illuminate\Validation\ValidationException` (e.g.
 via `validator(...)->validate()`) — frontend's `useScreenStore.errors`
 will surface field errors.
 
+## Listeners
+
+`Layout::listener([...])->listen([...])->handler('method')` makes part of a
+screen's form reactive: the SPA posts the state to
+`POST /api/admin/{slug}/listener` as the watched fields change, and the
+server answers with the re-rendered subtree and a state patch. See
+[Layouts reference → Listener](../layouts-reference.md#listener-reactive-part-of-a-form).
+
 ## Examples
 
 ### Read-only Screen (no form)
