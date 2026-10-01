@@ -17,7 +17,7 @@ import { registerBuiltinWidgets } from '../dashboard/builtin'
 import { getWidget, hasWidget } from '../dashboard/registry'
 import { registerBuiltinInfolistEntries } from '../infolist/builtin'
 import { getInfolistEntry, hasInfolistEntry } from '../infolist/registry'
-import { CHART_RENDERERS } from '../dashboard/chartTypes'
+import { CHART_RENDERERS, type ChartRenderer } from '../dashboard/chartTypes'
 import TextField from '../fields/TextField.vue'
 import TextAreaField from '../fields/TextAreaField.vue'
 import NumberField from '../fields/NumberField.vue'
@@ -56,11 +56,7 @@ const GAPS: Record<'fields' | 'layouts' | 'widgets' | 'entries', Record<string, 
 }
 
 /** Chart types drawn by a renderer of another kind (a line as bars). */
-const CHART_GAPS: Record<string, 'bar' | 'donut' | null> = {
-  line: 'bar',
-  area: 'bar',
-  radar: null,
-}
+const CHART_GAPS: Record<string, ChartRenderer | null> = {}
 
 const lookups = {
   fields: { has: hasField, get: getField },

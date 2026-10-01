@@ -68,6 +68,19 @@ it('POST /runMethod dispatches command method with payload', function (): void {
     expect(TestContactScreen::$sent[0]['email'])->toBe('foo@example.com');
 });
 
+it('runMethod translates alert texts in the request locale', function (): void {
+    Illuminate\Support\Facades\Lang::addLines(['*.OK' => 'All good'], 'en');
+    app()->setLocale('en');
+
+    $response = $this->postJson('/api/admin/test-contact/runMethod', [
+        'method' => 'send',
+        'payload' => ['email' => 'foo@example.com', 'message' => 'Hello world'],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('payload.alerts.0'))->toBe(['type' => 'success', 'message' => 'All good']);
+});
+
 it('runMethod отдаёт ссылку рядом с сообщением', function (): void {
     // A screen that starts background work has somewhere to send the person —
     // the job's own page. Without the link the message names a place and

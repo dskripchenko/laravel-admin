@@ -13,7 +13,8 @@
  *   - destructive: variant=danger
  *   - primary: variant=primary
  *   - icon: passed on to UidButton
- *   - alerts: a UidAlert above the body, from lastMessage or store.error
+ *   - alerts: a UidAlert above the body, from lastMessage or store.error;
+ *     the response's `alerts` become toasts (see the screen store)
  *   - the fields' validation errors, through FormState, cleared on setField
  *   - the screen context (render/screenContext): an action carrying
  *     `attributes.opens` opens the Modal/Drawer layout with that id instead of

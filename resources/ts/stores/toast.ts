@@ -48,3 +48,58 @@ export function toastError(err: unknown, fallback = trSafe('Произошла �
         : fallback
   adminToast.error(msg)
 }
+
+/** One entry of a screen method's `alerts` — see the ScreenAlert schema. */
+export interface ServerAlert {
+  type?: string
+  message?: string
+  title?: string
+  duration_ms?: number
+}
+
+export type ToastLevel = 'success' | 'info' | 'warning' | 'error'
+
+/**
+ * Maps a server alert's `type` onto a toast level. The schema names
+ * info|success|warning|danger; `error` and `warn` are accepted as the obvious
+ * aliases, and anything unknown falls back to info.
+ */
+export function alertLevel(type: string | undefined): ToastLevel {
+  switch ((type ?? '').toLowerCase()) {
+    case 'success':
+    case 'ok':
+      return 'success'
+    case 'warning':
+    case 'warn':
+      return 'warning'
+    case 'danger':
+    case 'error':
+    case 'critical':
+      return 'error'
+    default:
+      return 'info'
+  }
+}
+
+/**
+ * Shows a server response's `alerts` as toasts. An alert whose text repeats
+ * `skipMessage` — the response's `message`, already drawn inline by the page —
+ * is left out, so the same sentence never appears twice. Returns how many
+ * toasts were shown.
+ */
+export function toastAlerts(alerts: unknown, skipMessage?: string | null): number {
+  if (!Array.isArray(alerts)) return 0
+  let shown = 0
+  for (const raw of alerts as unknown[]) {
+    if (raw === null || typeof raw !== 'object') continue
+    const alert = raw as ServerAlert
+    const message = typeof alert.message === 'string' ? alert.message.trim() : ''
+    if (message === '' || (skipMessage && message === skipMessage.trim())) continue
+    const opts: Options = {}
+    if (typeof alert.title === 'string' && alert.title !== '') opts.title = alert.title
+    if (typeof alert.duration_ms === 'number' && alert.duration_ms >= 0) opts.duration = alert.duration_ms
+    adminToast[alertLevel(alert.type)](message, opts)
+    shown++
+  }
+  return shown
+}

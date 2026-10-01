@@ -37,6 +37,7 @@ import {
 import { useManifestStore } from '../../stores/manifest'
 import { getAdminClient } from '../../stores/registry'
 import { trSafe as tr } from '../../stores/i18n'
+import { adminToast } from '../../stores/toast'
 
 interface Props {
   slug: string
@@ -240,6 +241,7 @@ async function deleteSelected(): Promise<void> {
     const client = getAdminClient()
     await client.post(`/${selectedSlug.value}/delete`, { id: selectedRecordId.value })
     selectedKeys.value = []
+    adminToast.success(tr('Запись удалена.'))
     await load()
   } catch (err) {
     error.value = err instanceof Error ? err : new Error(String(err))

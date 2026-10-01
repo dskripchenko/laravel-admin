@@ -35,6 +35,7 @@ import type { InfolistNode } from '../infolist/InfolistRenderer.vue'
 import { provideRecord } from '../infolist/recordContext'
 import AuditTimeline from './AuditTimeline.vue'
 import { trSafe as tr } from '../../stores/i18n'
+import { adminToast } from '../../stores/toast'
 
 interface Props {
   slug: string
@@ -258,6 +259,7 @@ async function onDelete(): Promise<void> {
   if (!confirm(tr('Удалить запись?'))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
+    adminToast.success(tr('Запись удалена.'))
     router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
   }
 }

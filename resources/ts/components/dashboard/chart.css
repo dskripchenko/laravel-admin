@@ -1,0 +1,63 @@
+/* Shared styles of the SVG charts (CartesianChartWidget, RadarChartWidget). */
+.admin-chart__box {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.admin-chart__svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.admin-chart__grid-line {
+  stroke: var(--uid-border-subtle);
+  stroke-width: 1;
+}
+.admin-chart__axis-line {
+  stroke: var(--uid-border-default);
+  stroke-width: 1;
+}
+.admin-chart__tick {
+  font-size: 11px;
+  fill: var(--uid-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.admin-chart__line {
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.admin-chart__point {
+  stroke: var(--uid-surface-raised);
+  stroke-width: 2;
+}
+.admin-chart__bar {
+  stroke: var(--uid-surface-raised);
+  stroke-width: 0;
+}
+.admin-chart--stacked .admin-chart__bar {
+  /* Stacked segments read apart through a thin surface seam. */
+  stroke-width: 1;
+}
+.admin-chart__crosshair {
+  stroke: var(--uid-border-hover, var(--uid-border-default));
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+.admin-chart__hover-band {
+  fill: var(--uid-text-primary);
+  fill-opacity: 0.05;
+  pointer-events: none;
+}
+.admin-chart__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -141,7 +141,7 @@ Recognized keys:
 
 - `state` — replace form-state on the screen.
 - `message` — toast or success bar.
-- `alerts` — array of `{type: 'info'|'success'|'warning'|'danger', message}`.
+- `alerts` — array of `{type: 'info'|'success'|'warning'|'danger', message, title?, duration_ms?}`, shown as toasts (an alert repeating `message` is skipped).
 - `redirect_url` — SPA-internal navigation.
 - `refresh` — `true` triggers screen reload.
 - `download_url` — opens for download.
