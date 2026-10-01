@@ -41,6 +41,17 @@ final class DropDown extends Action
     }
 
     /**
+     * The nested actions, as declared — the server looks a nested action up
+     * here when the SPA runs it from the dropdown.
+     *
+     * @return list<Action>
+     */
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

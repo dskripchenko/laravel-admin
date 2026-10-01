@@ -8,8 +8,13 @@ namespace Dskripchenko\LaravelAdmin\Action;
  * An action that runs as a delayed process.
  *
  * It is meant for the long operations: a bulk export, an import, recomputing
- * statistics, a mass mailout. The SPA receives a {process_uuid} and follows
- * the progress by polling /api/admin/delayed-processes/{uuid}.
+ * statistics, a mass mailout. The SPA starts it through `delayed/run` with
+ * {entity, method, params}, receives the process `uuid` and follows the
+ * progress by polling `delayed/status?uuid=…` every pollInterval seconds.
+ *
+ * When the action sits in a row or bulk position, the SPA adds the selected
+ * record keys to the params as `ids`, so the handler should accept an `ids`
+ * argument there.
  *
  * On the server the action must be whitelisted in AllowlistRegistrar as
  * `entity::method`, or the SPA cannot start it at all.
