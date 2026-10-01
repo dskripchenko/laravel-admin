@@ -15,6 +15,9 @@
  *   - icon: passed on to UidButton
  *   - alerts: a UidAlert above the body, from lastMessage or store.error
  *   - the fields' validation errors, through FormState, cleared on setField
+ *   - the screen context (render/screenContext): an action carrying
+ *     `attributes.opens` opens the Modal/Drawer layout with that id instead of
+ *     calling a method; the layouts dispatch their own actions through it
  */
 import { computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -22,6 +25,7 @@ import { UidAlert, UidButton, UidCard, UidSkeleton } from '@dskripchenko/ui'
 import { useScreenStore, type ScreenAction } from '../stores/screen'
 import { provideFormState } from './render/formState'
 import { provideRecord } from './infolist/recordContext'
+import { provideScreenContext } from './render/screenContext'
 import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
 import { trSafe as tr } from '../stores/i18n'
 
@@ -45,6 +49,19 @@ const resolvedSlug = computed<string>(() => {
 // for the infolists.
 const ctx = provideFormState(screen.state, screen.errors)
 provideRecord(screen.state)
+
+const screenCtx = provideScreenContext({
+  running: computed(() => screen.running),
+  async runMethod(method) {
+    try {
+      await screen.runMethod(method)
+      return true
+    } catch {
+      // The errors are in store.error and store.errors already; the UI follows reactively.
+      return false
+    }
+  },
+})
 
 // When store.errors changes, after a ValidationError, it is synced into the form context.
 watch(
@@ -86,18 +103,7 @@ watch(
 )
 
 async function onRunAction(action: ScreenAction): Promise<void> {
-  const method = action.attributes?.method as string | undefined
-  if (!method) return
-
-  if (action.confirm?.message) {
-    if (!confirm(action.confirm.message)) return
-  }
-
-  try {
-    await screen.runMethod(method)
-  } catch {
-    // The errors are in store.error and store.errors already; the UI follows reactively.
-  }
+  await screenCtx.dispatch(action)
 }
 
 function actionVariant(action: ScreenAction): 'primary' | 'danger' | 'ghost' | 'secondary' {

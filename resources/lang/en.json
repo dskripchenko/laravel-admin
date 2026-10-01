@@ -391,5 +391,13 @@
     ":n сек назад": ":n s ago",
     ":n мин назад": ":n min ago",
     ":n ч назад": ":n h ago",
-    ":n д назад": ":n d ago"
+    ":n д назад": ":n d ago",
+    "Компонент не зарегистрирован: :name": "Component is not registered: :name",
+    "Поле «:field» обязательно для заполнения.": "The “:field” field is required.",
+    "Поле «:field» должно быть адресом электронной почты.": "The “:field” field must be an email address.",
+    "Поле «:field» должно быть числом.": "The “:field” field must be a number.",
+    "Поле «:field» должно быть целым числом.": "The “:field” field must be an integer.",
+    "Поле «:field»: не меньше :min.": "The “:field” field must be at least :min.",
+    "Поле «:field»: не больше :max.": "The “:field” field may not be greater than :max.",
+    "Поле «:field» содержит недопустимое значение.": "The “:field” field has an invalid value."
 }
