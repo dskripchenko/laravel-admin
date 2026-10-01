@@ -115,3 +115,61 @@ it('настоящая поломка действия остаётся пяти
 
     $response->assertStatus(500);
 });
+
+it('modal action receives its validated payload', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A', 'status' => 'draft']);
+
+    $response = $this->postJson('/api/admin/test-actions/action', [
+        'key' => 'change-status',
+        'ids' => [$a->id],
+        'payload' => ['status' => 'review'],
+    ]);
+
+    $response->assertOk();
+    expect($a->fresh()->status)->toBe('review');
+});
+
+it('modal action payload is validated against the fields rules', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A', 'status' => 'draft']);
+
+    $response = $this->postJson('/api/admin/test-actions/action', [
+        'key' => 'change-status',
+        'ids' => [$a->id],
+        'payload' => [],
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.messages'))->toHaveKey('status');
+    expect($a->fresh()->status)->toBe('draft');
+
+    $tooLong = $this->postJson('/api/admin/test-actions/action', [
+        'key' => 'change-status',
+        'ids' => [$a->id],
+        'payload' => ['status' => str_repeat('x', 30)],
+    ]);
+    $tooLong->assertStatus(422);
+});
+
+it('action nested in a DropDown is resolved', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A', 'status' => 'published']);
+
+    $response = $this->postJson('/api/admin/test-actions/action', [
+        'key' => 'to-draft',
+        'ids' => [$a->id],
+    ]);
+
+    $response->assertOk();
+    expect($a->fresh()->status)->toBe('draft');
+});
+
+it('a validation error thrown by the action method stays a 422', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A']);
+
+    $response = $this->postJson('/api/admin/test-actions/action', [
+        'key' => 'self-validating',
+        'ids' => [$a->id],
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.messages'))->toHaveKey('note');
+});

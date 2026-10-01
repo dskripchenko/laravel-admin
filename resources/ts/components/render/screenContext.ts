@@ -9,7 +9,9 @@
  *     backend's `Action::opens()`) opens the overlay with that id;
  *   - the dispatcher — a click on an action, wherever it is drawn (the command
  *     bar, a modal's footer, a wizard's submit), goes through `dispatch`, which
- *     asks for the confirmation, opens an overlay or calls the screen's method.
+ *     asks for the confirmation and opens an overlay, or hands the action to
+ *     the page's action runner (`run`) — or, without one, calls the screen's
+ *     method.
  *
  * ScreenPage provides it. Outside a screen — a resource form, a unit test —
  * `useScreenContext()` returns null and the layouts degrade gracefully: an
@@ -55,12 +57,19 @@ export interface ScreenContextOptions {
   running: Readonly<Ref<boolean>>
   runMethod: (method: string) => Promise<boolean>
   /** The confirmation prompt; window.confirm by default. */
-  confirm?: (message: string) => boolean
+  confirm?: (confirm: { message: string; title?: string }) => boolean | Promise<boolean>
+  /**
+   * Runs any action that does not open an overlay — confirmation included.
+   * ScreenPage passes its action runner here, so the layouts' actions get
+   * every action type (modal, async, link…) too. Without it only
+   * `attributes.method` is understood.
+   */
+  run?: (action: ScreenActionLike) => Promise<boolean>
 }
 
 export function createScreenContext(options: ScreenContextOptions): ScreenContext {
   const openIds = reactive(new Set<string>())
-  const ask = options.confirm ?? ((message: string) => window.confirm(message))
+  const ask = options.confirm ?? ((c: { message: string }) => window.confirm(c.message))
 
   const ctx: ScreenContext = {
     isOpen: (id) => openIds.has(id),
@@ -73,9 +82,13 @@ export function createScreenContext(options: ScreenContextOptions): ScreenContex
     running: options.running,
     runMethod: options.runMethod,
     async dispatch(action) {
-      if (action.confirm?.message && !ask(action.confirm.message)) return false
-
       const opens = action.attributes?.opens
+      if (typeof opens !== 'string' || opens === '') {
+        if (options.run) return options.run(action)
+      }
+
+      if (action.confirm?.message && !(await ask(action.confirm))) return false
+
       if (typeof opens === 'string' && opens !== '') {
         ctx.open(opens)
         return true

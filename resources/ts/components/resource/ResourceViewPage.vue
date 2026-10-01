@@ -36,6 +36,9 @@ import { provideRecord } from '../infolist/recordContext'
 import AuditTimeline from './AuditTimeline.vue'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
+import { normalizeActions, useActionRunner, type AdminAction } from '../../composables/useActionRunner'
+import AdminActionDialogs from '../actions/AdminActionDialogs.vue'
+import AdminActionMenuItems from '../actions/AdminActionMenuItems.vue'
 
 interface Props {
   slug: string
@@ -177,36 +180,34 @@ function statusVariant(s: string): string {
 
 /**
  * The header's "more" actions are the same `actions[]` from the manifest as on
- * the index page; here they apply to a single record. The endpoint behind them
- * is POST `/{slug}/action/{key}` with a body of {ids:[id]}.
+ * the index page; here they apply to a single record. They run through
+ * useActionRunner; the server-side ones POST to `/{slug}/action` with
+ * {key, ids: [id], payload?}.
  */
-interface HeaderAction {
-  key: string
-  label: string
-  confirm?: string
-}
-const headerActions = computed<HeaderAction[]>(() => {
-  const raw = (resourceMeta.value?.actions ?? []) as Array<Record<string, unknown>>
-  return raw
-    .map((a) => ({
-      key: String(a.key ?? a.name ?? ''),
-      label: String(a.label ?? a.name ?? a.key ?? ''),
-      confirm: typeof a.confirm === 'string' ? a.confirm : undefined,
-    }))
-    .filter((a) => a.key !== '' && a.label !== '')
-})
+const headerActions = computed<AdminAction[]>(() => normalizeActions(resourceMeta.value?.actions))
 
-async function onCustomAction(action: HeaderAction): Promise<void> {
-  if (action.confirm && !window.confirm(action.confirm)) return
-  try {
+const runner = useActionRunner({
+  ids: () => [props.id],
+  async execute(action, payload) {
     const { getAdminClient } = await import('../../stores/registry')
-    const client = getAdminClient()
-    await client.post(`/${props.slug}/action/${action.key}`, { ids: [props.id] })
+    return getAdminClient().post<{ affected?: number; message?: string }>(
+      `/${props.slug}/action`,
+      { key: action.name, ids: [props.id], ...(payload ? { payload } : {}) },
+    )
+  },
+  async onSuccess(action, raw) {
+    const result = (raw ?? {}) as { message?: string }
+    adminToast.success(result.message ?? tRaw('Действие «:action» выполнено.', { action: action.label }))
     await form.load(props.slug, props.id, 'view').catch(() => undefined)
-  } catch (err) {
+  },
+  onError(action, err) {
     if (typeof console !== 'undefined') console.error('[admin] action failed:', err)
-  }
-}
+    adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
+  },
+  async refresh() {
+    await form.load(props.slug, props.id, 'view').catch(() => undefined)
+  },
+})
 
 onMounted(async () => {
   if (manifest.manifest === null) {
@@ -256,7 +257,7 @@ function onEdit(): void {
 }
 
 async function onDelete(): Promise<void> {
-  if (!confirm(tr('Удалить запись?'))) return
+  if (!(await runner.confirm(tr('Удалить запись?'), true))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
     adminToast.success(tr('Запись удалена.'))
@@ -298,13 +299,7 @@ async function onDelete(): Promise<void> {
               <UidIcon :icon="MoreHorizontal" :size="16" />
             </UidButton>
           </template>
-          <UidMenuItem
-            v-for="a in headerActions"
-            :key="a.key"
-            @click="onCustomAction(a)"
-          >
-            {{ a.label }}
-          </UidMenuItem>
+          <AdminActionMenuItems :actions="headerActions" @run="runner.run" />
           <UidMenuItem variant="danger" @click="onDelete">
             <template #icon><UidIcon :icon="Trash2" :size="14" /></template>
             {{ tr('Удалить') }}
@@ -370,6 +365,8 @@ async function onDelete(): Promise<void> {
         <slot name="sidebar" :record="form.state" :resource="resourceMeta" />
       </aside>
     </div>
+
+    <AdminActionDialogs :runner="runner" />
   </section>
 </template>
 
