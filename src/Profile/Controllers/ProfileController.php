@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Profile\Controllers;
 
+use Dskripchenko\LaravelAdmin\Auth\SessionPasswordHash;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\Base32;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\RecoveryCodes;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
@@ -134,9 +135,10 @@ class ProfileController extends ApiController
         // We refresh the hash of OUR OWN session, or AdminAuth would consider
         // it stale on the next request. The user's other sessions go out.
         if ($request->hasSession()) {
+            $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
             $request->session()->put(
-                'password_hash_'.\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard(),
-                (string) $user->getAttribute('password'),
+                SessionPasswordHash::key($guard),
+                SessionPasswordHash::make($guard, (string) $user->getAttribute('password')),
             );
         }
 
