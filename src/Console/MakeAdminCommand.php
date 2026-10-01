@@ -27,36 +27,36 @@ final class MakeAdminCommand extends Command
      * @var string
      */
     protected $signature = 'admin:user
-                            {name? : Имя}
+                            {name? : The name}
                             {email? : Email}
-                            {password? : Пароль}
-                            {--super : Назначить роль Super Admin (P2+)}';
+                            {password? : The password}
+                            {--super : Assign the Super Admin role}';
 
     /**
      * @var string
      */
-    protected $description = 'Создать администратора';
+    protected $description = 'Create an administrator';
 
     public function handle(Hasher $hasher): int
     {
         $modelClass = (string) config('admin.auth.model', \Dskripchenko\LaravelAdmin\Models\AdminUser::class);
 
         if (! class_exists($modelClass)) {
-            $this->error("Класс {$modelClass} не найден. Проверьте config('admin.auth.model').");
+            $this->error("Class {$modelClass} not found. Check config('admin.auth.model').");
 
             return self::FAILURE;
         }
 
-        $name = (string) ($this->argument('name') ?: text(label: 'Имя', required: true));
+        $name = (string) ($this->argument('name') ?: text(label: 'Name', required: true));
         $email = (string) ($this->argument('email') ?: text(
             label: 'Email',
             required: true,
-            validate: fn (string $v) => filter_var($v, FILTER_VALIDATE_EMAIL) === false ? 'Невалидный email' : null,
+            validate: fn (string $v) => filter_var($v, FILTER_VALIDATE_EMAIL) === false ? 'Not a valid email address' : null,
         ));
         $rawPassword = (string) ($this->argument('password') ?: password(
-            label: 'Пароль',
+            label: 'Password',
             required: true,
-            validate: fn (string $v) => strlen($v) < 8 ? 'Минимум 8 символов' : null,
+            validate: fn (string $v) => strlen($v) < 8 ? 'At least 8 characters' : null,
         ));
 
         try {
@@ -73,16 +73,16 @@ final class MakeAdminCommand extends Command
                 'theme' => (string) config('admin.ui.default_theme', 'light'),
             ])->save();
         } catch (Throwable $e) {
-            $this->error('Не удалось создать администратора: '.$e->getMessage());
+            $this->error('Could not create the administrator: '.$e->getMessage());
 
             return self::FAILURE;
         }
 
-        $this->info("Администратор создан: {$email} (id={$admin->getKey()})");
+        $this->info("Administrator created: {$email} (id={$admin->getKey()})");
 
         if ($this->option('super')) {
             if (! method_exists($admin, 'assignRole')) {
-                $this->error('Модель не использует HasAdminAccess — роль не назначена.');
+                $this->error('The model does not use HasAdminAccess; no role assigned.');
 
                 return self::FAILURE;
             }
@@ -92,7 +92,7 @@ final class MakeAdminCommand extends Command
                 ['name' => 'Super Admin', 'permissions' => ['*'], 'is_system' => true],
             );
             $admin->assignRole($role);
-            $this->info('Назначена роль Super Admin (permissions: *)');
+            $this->info('Super Admin role assigned (permissions: *)');
         }
 
         return self::SUCCESS;

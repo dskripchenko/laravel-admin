@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Listener layouts: reactive forms.** `Layout::listener($children)->listen([...])`
+  re-renders part of a form on the server whenever the watched fields change.
+  Children are a list or `fn (array $state): array`; an optional
+  `->handler('method')` (a public method of the Screen or Resource) or closure
+  receives `(array $state, Request $request)` and returns a state patch. New
+  endpoints `POST /api/admin/{screen}/listener` (behind the screen's
+  permission) and `POST /api/admin/{resource}/listener` (`view` plus
+  `create`/`update` by form context; registered only for forms with
+  listeners) take `{listener, state}` and answer `{listener, state, layouts}`.
+  Only listeners declared in the screen's `layout()` / the resource's
+  `formLayout()` can be reached; reserved screen methods are refused. The SPA
+  `listener` layout debounces changes (300 ms, `->debounce()`), cancels stale
+  requests, swaps its children in place, merges the patch without overwriting
+  fields edited meanwhile, and reports errors as toasts or field errors.
+  Screens render listeners against their initial state.
+- `Layout::childRenderables()` for walking a layout tree on the server.
+- **Row actions get a per-row menu.** Actions placed in `row` now show a ⋮ menu next to the view/edit/delete icons on every row of the resource index and run for that row alone (they stay in the bulk bar too).
+- **Standalone actions.** `Action::standalone()` and `Action::requiresSelection()`: a command bar or header action now runs without a selection (no `ids`, the method gets `[]`); a row or bulk action still needs at least one id, and a `BulkAction` always does. The SPA and the `/{slug}/action` validation follow the same rule.
+- **`useConfirm()` / `confirmDialog()`** — a panel-wide confirmation dialog (mounted by `AdminApp`); the remaining `window.confirm` calls (dashboard reset, token revoke, 2FA disable, embedded table, tree and form deletes, the screen context fallback) use it.
+- **The stats widget shows every stat** of a `StatsOverviewWidget` as a responsive row of cards, each with its own label, value, trend, color and icon.
 - **The OpenAPI document describes every resource's input.** One
   `ResourceController` serves every resource, so the fields of `create` and
   `update` were known only at runtime and the spec showed those operations with
@@ -28,8 +48,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fields to an OpenAPI object schema; `ResourceOperationSchema` — the
   per-resource operation schemas.
 
+### Changed
+
+- Requires `@dskripchenko/ui` ^1.4.0. Modal layouts and `ModalAction::modalSize('full')` use the kit's full size; a `top` drawer slides from the top; a non-dismissable modal or drawer turns off the kit's Escape and overlay close instead of ignoring close requests; wizard steps are selectable stepper buttons (keyboard included); a DropDown nested in a menu is a submenu; action buttons use `UidButton`'s `icon`.
+- The markdown widget renders its content with the built-in safe markdown renderer; the markdown typography moved to the shared stylesheet.
+- Menu items with equal `order` keep the order they were added in (the sidebar no longer re-sorts them alphabetically); auto-filled items come sorted from the server.
+- Console commands (`admin:user`, `admin:make-*`) speak English.
+- Requires `dskripchenko/laravel-api` `^5.11`.
+
 ### Fixed
 
+- A listener given as the whole content of a tab keeps its node instead of
+  being flattened into the tab's items.
+- A screen method that returns no `message` no longer shows an "OK" banner; the `admin:make-screen` stub returns a single message.
+- Screen alerts accept `level`/`variant` as aliases of `type`, so a `success` alert is a success toast.
 - `system/search` documents its `q` parameter and a `GlobalSearchResponse`
   template instead of the generic `SuccessResponse`.
 - `dashboard/reset` had no docblock at all: it now documents `key`, its
@@ -39,9 +71,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   laravel-api 5.11's nested notation).
 - `action` documents `payload` as an object, not an array.
 
-### Changed
-
-- Requires `dskripchenko/laravel-api` `^5.11`.
 
 ## 1.33.0
 

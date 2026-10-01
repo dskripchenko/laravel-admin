@@ -72,7 +72,8 @@ export const useMenuStore = defineStore('admin-menu', () => {
 
   /**
    * The grouped list, for rendering the sidebar in sections. Sorted by order
-   * ascending, then by label alphabetically.
+   * ascending; equal orders keep the server's sequence — the host's nodes in
+   * the order they were added, then the auto-filled ones.
    */
   const groupedItems = computed<MenuGroup[]>(() => {
     const groups = new Map<string | null, MenuItem[]>()
@@ -83,11 +84,8 @@ export const useMenuStore = defineStore('admin-menu', () => {
     }
     const result: MenuGroup[] = []
     for (const [group, list] of groups) {
-      list.sort((a, b) => {
-        const orderDiff = (a.order ?? 0) - (b.order ?? 0)
-        if (orderDiff !== 0) return orderDiff
-        return a.label.localeCompare(b.label)
-      })
+      // Array.prototype.sort is stable: equal orders stay as they came.
+      list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       result.push({ group, items: list })
     }
     return result

@@ -110,6 +110,9 @@ final class ResourceCompiler
             'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
             'editScreen' => ['method' => ['get'], 'middleware' => [$update]],
             'viewScreen' => ['method' => ['get'], 'middleware' => [$view]],
+            // The form's reactive parts. The create/update permission is
+            // checked by the action itself, which knows the form's context.
+            'listener' => ['method' => ['post'], 'middleware' => [$view]],
         ];
 
         if ($resource->hierarchyParentKey() === null) {
@@ -126,6 +129,13 @@ final class ResourceCompiler
 
         if (! $resource->reorderable()) {
             unset($actions['reorder']);
+        }
+
+        if (\Dskripchenko\LaravelAdmin\Layout\Listener::all([
+            ...$resource->formLayout('create'),
+            ...$resource->formLayout('update'),
+        ]) === []) {
+            unset($actions['listener']);
         }
 
         return [

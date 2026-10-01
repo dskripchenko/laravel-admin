@@ -38,6 +38,7 @@ import { useManifestStore } from '../../stores/manifest'
 import { getAdminClient } from '../../stores/registry'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
+import { confirmDialog } from '../../composables/useConfirm'
 
 interface Props {
   slug: string
@@ -236,7 +237,7 @@ function runAction(action: TreeNodeAction): void {
 
 async function deleteSelected(): Promise<void> {
   if (selectedRecordId.value === null) return
-  if (!confirm(tr('Удалить выбранный узел?'))) return
+  if (!(await confirmDialog({ message: tr('Удалить выбранный узел?'), destructive: true }))) return
   try {
     const client = getAdminClient()
     await client.post(`/${selectedSlug.value}/delete`, { id: selectedRecordId.value })

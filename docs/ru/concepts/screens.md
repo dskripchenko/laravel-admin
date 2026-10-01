@@ -102,6 +102,57 @@ public function send(array $state): array { ... }
 `validator(...)->validate()`) — фронтовый `useScreenStore.errors`
 получит field-ошибки.
 
+## Listener — реактивная часть формы
+
+`Layout::listener()` следит за полями формы: когда одно из них меняется,
+SPA выжидает паузу (300 мс по умолчанию), отправляет текущий state на
+сервер и заменяет детей listener'а теми, что сервер отрисовал для этого
+state. Необязательный handler возвращает патч значений, который
+вливается в форму.
+
+```php
+public function layout(): array
+{
+    return [
+        Layout::rows([
+            Select::make('country_id')->fromModel(Country::class),
+
+            // Дети-замыкание: рендерятся по текущему state.
+            Layout::listener(fn (array $state) => [
+                Select::make('city_id')
+                    ->fromModel(City::where('country_id', $state['country_id'] ?? null)),
+            ])->listen('country_id'),
+
+            Number::make('price'),
+            Number::make('quantity'),
+
+            // Handler — public-метод экрана, возвращает патч state.
+            Layout::listener([Number::make('total')->readonly()])
+                ->listen(['price', 'quantity'])
+                ->handler('recalculateTotal'),
+        ]),
+    ];
+}
+
+public function recalculateTotal(array $state, Request $request): array
+{
+    return ['total' => (float) ($state['price'] ?? 0) * (int) ($state['quantity'] ?? 0)];
+}
+```
+
+- Endpoint: `POST /api/admin/{slug}/listener` с телом `{listener, state}`,
+  под тем же `permission()`, что и экран; ответ — `{listener, state, layouts}`.
+- Запрос называет listener по id, а не метод: выполняются только handler'ы,
+  объявленные listener'ами в `layout()` этого экрана; reserved-методы
+  отклоняются.
+- `layout()` при таком запросе вызывается без `query()`.
+- В Resource listener кладётся в `formLayout()`, handler — public-метод
+  Resource; endpoint `POST /api/admin/{resource}/listener` требует `view` и
+  `create`/`update` по контексту формы. Поле, которое рисует listener, должно
+  быть и в `fields()` — валидация и сохранение читают их.
+
+Подробности и все методы — [Layouts reference](../../en/layouts-reference.md#listener-reactive-part-of-a-form).
+
 ## Примеры
 
 ### Read-only Screen (без формы)

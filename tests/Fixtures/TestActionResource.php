@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Dskripchenko\LaravelAdmin\Action\BulkAction;
+use Dskripchenko\LaravelAdmin\Action\Button;
 use Dskripchenko\LaravelAdmin\Action\DropDown;
 use Dskripchenko\LaravelAdmin\Action\ModalAction;
 use Dskripchenko\LaravelAdmin\Field\Input;
@@ -76,6 +77,21 @@ final class TestActionResource extends Resource
             BulkAction::make('Самопроверка')
                 ->method('selfValidating')
                 ->withName('self-validating'),
+            // A command bar button: standalone by its position.
+            Button::make('Recalculate')
+                ->method('recalculate')
+                ->withName('recalculate'),
+            // A row button: it applies to its row.
+            Button::make('Stamp')
+                ->method('stamp')
+                ->withName('stamp')
+                ->position(['row']),
+            // A header button marked standalone explicitly.
+            Button::make('Sync')
+                ->method('recalculate')
+                ->withName('sync')
+                ->position(['header', 'row'])
+                ->standalone(),
         ];
     }
 
@@ -130,5 +146,18 @@ final class TestActionResource extends Resource
         Illuminate\Support\Facades\Validator::make($payload, ['note' => ['required']])->validate();
 
         return count($ids);
+    }
+
+    /** A standalone action: no ids, it touches every record. */
+    public function recalculate(array $ids, array $payload = []): int
+    {
+        return TestResourceUserModel::query()->update(['amount' => count($ids)]);
+    }
+
+    public function stamp(array $ids, array $payload = []): int
+    {
+        return TestResourceUserModel::query()
+            ->whereIn('id', $ids)
+            ->update(['status' => 'stamped']);
     }
 }

@@ -47,14 +47,30 @@ export interface AdminAction {
   items: AdminAction[]
 }
 
+/** One run of an action. */
+export interface ActionRunOptions {
+  /**
+   * The record keys this run applies to — a row's own menu passes its row —
+   * instead of the context's `ids()` (the selection).
+   */
+  ids?: Array<string | number>
+}
+
 /** How a page runs a server-side action in its own context. */
 export interface ActionExecutor {
-  /** Runs a button, bulk or modal action; `payload` is the modal form's values. */
-  execute: (action: AdminAction, payload?: Record<string, unknown>) => Promise<unknown>
+  /**
+   * Runs a button, bulk or modal action; `payload` is the modal form's
+   * values, `options` what `run()` was given.
+   */
+  execute: (
+    action: AdminAction,
+    payload?: Record<string, unknown>,
+    options?: ActionRunOptions,
+  ) => Promise<unknown>
   /** The record keys the actions apply to, when the context has any. */
   ids?: () => Array<string | number>
   /** After a successful execute: a toast, a reload. */
-  onSuccess?: (action: AdminAction, result: unknown) => void | Promise<void>
+  onSuccess?: (action: AdminAction, result: unknown, options?: ActionRunOptions) => void | Promise<void>
   /** When execute fails; a toast with the error's message by default. */
   onError?: (action: AdminAction, err: unknown) => void
   /** Reloads the context's data after an async action has finished. */
@@ -116,8 +132,15 @@ export function normalizeActions(raw: unknown): AdminAction[] {
   return raw.map(normalizeAction).filter((a): a is AdminAction => a !== null)
 }
 
-/** Row and bulk actions apply to the selected records. */
+/**
+ * Whether the action applies to records: a BulkAction always does, an action
+ * marked `standalone()` never does, any other one does when it is placed in
+ * rows or in the bulk bar. The backend's Action::requiresSelection() answers
+ * the same way.
+ */
 export function needsSelection(action: AdminAction): boolean {
+  if (action.type === 'bulk') return true
+  if (action.attributes.standalone === true) return false
   return action.position.includes('row') || action.position.includes('bulk')
 }
 
@@ -133,12 +156,15 @@ export function selectionAllows(action: AdminAction, count: number): boolean {
   return true
 }
 
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
+
 /** The UidModal sizes; the backend's modalSize() is a free-form string. */
-export function modalSizeOf(raw: unknown): 'sm' | 'md' | 'lg' | 'xl' {
+export function modalSizeOf(raw: unknown): ModalSize {
   const s = String(raw ?? '').toLowerCase()
   if (s === 'sm' || s === 'small') return 'sm'
   if (s === 'lg' || s === 'large') return 'lg'
-  if (s === 'xl' || s === 'extra' || s === 'full' || s === 'fullscreen') return 'xl'
+  if (s === 'xl' || s === 'extra') return 'xl'
+  if (s === 'full' || s === 'fullscreen') return 'full'
   return 'md'
 }
 
@@ -236,14 +262,16 @@ export function useActionRunner(executor: ActionExecutor) {
     action: null as AdminAction | null,
     title: '',
     submitLabel: '',
-    size: 'md' as 'sm' | 'md' | 'lg' | 'xl',
+    size: 'md' as ModalSize,
     fields: [] as Array<Record<string, unknown>>,
     values: {} as Record<string, unknown>,
     errors: {} as Record<string, string[]>,
     submitting: false,
+    /** The run's options, kept until the form is submitted. */
+    options: undefined as ActionRunOptions | undefined,
   })
 
-  function openModal(action: AdminAction): void {
+  function openModal(action: AdminAction, options?: ActionRunOptions): void {
     const fields = Array.isArray(action.attributes.fields)
       ? (action.attributes.fields as Array<Record<string, unknown>>)
       : []
@@ -265,6 +293,7 @@ export function useActionRunner(executor: ActionExecutor) {
     modalState.values = values
     modalState.errors = {}
     modalState.submitting = false
+    modalState.options = options
     modalState.seq++
     modalState.open = true
   }
@@ -272,18 +301,20 @@ export function useActionRunner(executor: ActionExecutor) {
   function closeModal(): void {
     modalState.open = false
     modalState.action = null
+    modalState.options = undefined
   }
 
   async function submitModal(): Promise<void> {
     const action = modalState.action
     if (!action || modalState.submitting) return
+    const options = modalState.options
     modalState.submitting = true
     modalState.errors = {}
     running.value = true
     try {
-      const result = await executor.execute(action, { ...modalState.values })
+      const result = await executor.execute(action, { ...modalState.values }, options)
       closeModal()
-      await executor.onSuccess?.(action, result)
+      await executor.onSuccess?.(action, result, options)
     } catch (err) {
       if (err instanceof ValidationError) {
         // The form stays open with the errors next to the fields.
@@ -326,7 +357,7 @@ export function useActionRunner(executor: ActionExecutor) {
     asyncState.open = false
   }
 
-  async function runAsync(action: AdminAction): Promise<boolean> {
+  async function runAsync(action: AdminAction, options?: ActionRunOptions): Promise<boolean> {
     const handler = action.attributes.handler as { entity?: string; method?: string } | undefined
     if (!handler?.entity || !handler.method) {
       adminToast.error(tRaw('Действие «:action» не настроено.', { action: action.label }))
@@ -335,7 +366,8 @@ export function useActionRunner(executor: ActionExecutor) {
     const params: Record<string, unknown> = {
       ...((action.attributes.params as Record<string, unknown> | undefined) ?? {}),
     }
-    if (executor.ids && needsSelection(action)) params.ids = executor.ids()
+    if (options?.ids) params.ids = options.ids
+    else if (executor.ids && needsSelection(action)) params.ids = executor.ids()
     const body: Record<string, unknown> = {
       entity: handler.entity,
       method: handler.method,
@@ -438,10 +470,11 @@ export function useActionRunner(executor: ActionExecutor) {
    * Runs any action according to its type. Resolves to true when the action
    * went through: executed, navigated, its form opened or its process done.
    */
-  async function run(action: AdminAction): Promise<boolean> {
+  async function run(action: AdminAction, options?: ActionRunOptions): Promise<boolean> {
     if (action.type === 'dropdown') return false
 
-    if (executor.ids && needsSelection(action) && !selectionAllows(action, executor.ids().length)) {
+    const ids = options?.ids ?? executor.ids?.()
+    if (ids && needsSelection(action) && !selectionAllows(action, ids.length)) {
       adminToast.warning(tRaw('Действие «:action» недоступно для выбранного числа записей.', { action: action.label }))
       return false
     }
@@ -453,17 +486,17 @@ export function useActionRunner(executor: ActionExecutor) {
       return true
     }
     if (action.type === 'modal') {
-      openModal(action)
+      openModal(action, options)
       return true
     }
     if (action.type === 'async') {
-      return runAsync(action)
+      return runAsync(action, options)
     }
 
     running.value = true
     try {
-      const result = await executor.execute(action)
-      await executor.onSuccess?.(action, result)
+      const result = await executor.execute(action, undefined, options)
+      await executor.onSuccess?.(action, result, options)
       return true
     } catch (err) {
       reportError(action, err)

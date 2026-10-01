@@ -142,9 +142,31 @@ abstract class Layout implements Renderable
         return Dashboard::make($widgets);
     }
 
+    /**
+     * A reactive part of the form: re-rendered by the server when the
+     * watched fields change. See Listener.
+     *
+     * @param  list<Renderable>|\Closure(array<string, mixed>): list<Renderable>  $children
+     */
+    public static function listener(array|\Closure $children = []): Listener
+    {
+        return Listener::make($children);
+    }
+
     /* -----------------------------------------------------------------
      * Fluent API
      * ----------------------------------------------------------------- */
+
+    /**
+     * The child renderables, for walking the tree on the server (finding the
+     * listeners, say).
+     *
+     * @return list<Renderable>
+     */
+    public function childRenderables(): array
+    {
+        return $this->children;
+    }
 
     public function withId(string $id): static
     {

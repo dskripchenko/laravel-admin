@@ -5,8 +5,8 @@
  * action anywhere on the screen can open the overlay (`Action::opens($id)` on
  * the backend). Outside a screen the overlay falls back to a local flag.
  *
- * A non-dismissable overlay ignores every close request coming from the UI kit
- * (the cross, the overlay click, Escape); only its own footer actions — a
+ * A non-dismissable overlay is rendered without the cross and with the kit's
+ * overlay click and Escape turned off; only its own footer actions — a
  * successful method, or an action named `close`/`cancel` — close it.
  */
 
@@ -54,11 +54,7 @@ export function useOverlay(props: OverlayProps): Overlay {
 
   const model = computed<boolean>({
     get: isOpen,
-    set(value) {
-      // The UI kit asks to close; a non-dismissable overlay says no.
-      if (!value && props.dismissable === false) return
-      setOpen(value)
-    },
+    set: setOpen,
   })
 
   async function onFooterClick(action: ScreenActionLike): Promise<void> {

@@ -328,6 +328,65 @@ final class ResourceController extends ApiController
     }
 
     /**
+     * Re-renders one of the form's Listener layouts against the form state.
+     *
+     * The listener is looked up by id among those the resource's
+     * `formLayout($context)` declares; its handler — a public method of the
+     * resource or a closure — runs with the state and returns a patch, and the
+     * listener's children are rendered with the patched state.
+     *
+     * The route asks for the view permission; the form's own one — create or
+     * update, by `context` — is checked here, since the same listener serves
+     * both forms.
+     *
+     * @input string $listener The listener's id, as the layout serialized it
+     * @input object ?$state The current form state
+     * @input string ?$context create|update — update when an id is given, create otherwise
+     * @input integer ?$id The record being edited
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ListenerResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function listener(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+
+        $context = $request->input('context');
+        if ($context === null) {
+            $context = $request->input('id') !== null ? 'update' : 'create';
+        }
+        if (! in_array($context, ['create', 'update'], true)) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => '`context` must be create or update',
+                'messages' => ['context' => ['`context` must be create or update']],
+            ], 422);
+        }
+
+        $permission = $resource::permission().'.'.$context;
+        $user = \Illuminate\Support\Facades\Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+        if ($user === null || ! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+            ], 403);
+        }
+
+        return \Dskripchenko\LaravelAdmin\Layout\ListenerResponder::respond(
+            $this,
+            $resource,
+            $resource->formLayout($context),
+            $request,
+        );
+    }
+
+    /**
      * Compiles GeneratedViewScreen — the read-only display built on Infolist.
      *
      * @input integer $id
@@ -727,10 +786,13 @@ final class ResourceController extends ApiController
     }
 
     /**
-     * Applies one of the resource's own bulk actions to the selected records.
+     * Applies one of the resource's own actions to the selected records, or
+     * runs a standalone one.
      *
      * The action is found by `key` among those the resource declares;
-     * `payload` carries whatever that action asks for.
+     * `payload` carries whatever that action asks for. A row or bulk action
+     * needs at least one id; a standalone one (`Action::standalone()`, or one
+     * placed only in the command bar or header) runs without any.
      *
      * The docblock that used to stand here described `reorder()` — it had
      * drifted one method up, and with it the wrong parameter name (`items`
@@ -739,9 +801,10 @@ final class ResourceController extends ApiController
      * specification would send `items` and be told the required `ids` is
      * missing.
      *
-     * @input array $ids Identifiers of the records; at least one. Each element
-     *                   is required — a scalar array's element has no tag of
-     *                   its own here
+     * @input array ?$ids Identifiers of the records; at least one for an
+     *                    action that applies to records. Each element is
+     *                    required — a scalar array's element has no tag of
+     *                    its own here
      * @input string $key The action, as the resource declares it
      * @input object ?$payload The action's own arguments, when it takes any
      * @input [operationSchema]
@@ -758,7 +821,7 @@ final class ResourceController extends ApiController
     public function action(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'ids' => ['required', 'array', 'min:1'],
+            'ids' => ['nullable', 'array'],
             'ids.*' => ['required'],
             'key' => ['required', 'string'],
             'payload' => ['nullable', 'array'],
@@ -776,6 +839,13 @@ final class ResourceController extends ApiController
                 'message' => "Action `{$actionKey}` not declared on resource",
             ], 404);
         }
+
+        // An action that applies to records cannot run on none of them.
+        if ($action->requiresSelection()) {
+            Validator::make($data, ['ids' => ['required', 'array', 'min:1']])->validate();
+        }
+        /** @var list<int|string> $ids */
+        $ids = array_values((array) ($data['ids'] ?? []));
 
         // Resolve the method on the resource itself, e.g. BulkAction->method('archive').
         $methodName = $action->toArray()['attributes']['method'] ?? null;
@@ -797,7 +867,7 @@ final class ResourceController extends ApiController
 
         // The call is $resource->{method}(array $ids, array $payload).
         try {
-            $result = $resource->{$methodName}($data['ids'], $payload);
+            $result = $resource->{$methodName}($ids, $payload);
         } catch (ValidationException $e) {
             // The method validated something itself: a 422 with field errors,
             // not an action failure.
@@ -818,7 +888,7 @@ final class ResourceController extends ApiController
         }
 
         return $this->success([
-            'affected' => is_int($result) ? $result : count($data['ids']),
+            'affected' => is_int($result) ? $result : count($ids),
             'message' => 'Action `'.$actionKey.'` applied',
         ]);
     }

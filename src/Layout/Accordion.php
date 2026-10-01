@@ -15,6 +15,9 @@ use Dskripchenko\LaravelAdmin\Contracts\Renderable;
  */
 final class Accordion extends Layout
 {
+    /** @var list<Renderable> The sections' renderables, kept for the tree walk. */
+    private array $sectionChildren = [];
+
     /**
      * @param  array<string, Renderable|list<Renderable>>  $sections  title => content
      */
@@ -38,6 +41,7 @@ final class Accordion extends Layout
      */
     public function section(string $title, array $children, bool $defaultOpen = false): self
     {
+        array_push($this->sectionChildren, ...$children);
         $items = $this->props['sections'] ?? [];
         $items[] = [
             'title' => $title,
@@ -47,6 +51,14 @@ final class Accordion extends Layout
         $this->props['sections'] = $items;
 
         return $this;
+    }
+
+    /**
+     * @return list<Renderable>
+     */
+    public function childRenderables(): array
+    {
+        return [...$this->children, ...$this->sectionChildren];
     }
 
     public function multi(bool $multi = true): self

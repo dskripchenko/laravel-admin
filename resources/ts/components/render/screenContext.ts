@@ -19,6 +19,7 @@
  */
 
 import { inject, provide, reactive, type InjectionKey, type Ref } from 'vue'
+import { confirmDialog } from '../../composables/useConfirm'
 
 /** The shape of an action as the backend serializes it (Action::toArray). */
 export interface ScreenActionLike {
@@ -56,7 +57,7 @@ const ScreenContextKey: InjectionKey<ScreenContext> = Symbol('admin.screen-conte
 export interface ScreenContextOptions {
   running: Readonly<Ref<boolean>>
   runMethod: (method: string) => Promise<boolean>
-  /** The confirmation prompt; window.confirm by default. */
+  /** The confirmation prompt; the panel's confirmation dialog by default. */
   confirm?: (confirm: { message: string; title?: string }) => boolean | Promise<boolean>
   /**
    * Runs any action that does not open an overlay — confirmation included.
@@ -69,7 +70,7 @@ export interface ScreenContextOptions {
 
 export function createScreenContext(options: ScreenContextOptions): ScreenContext {
   const openIds = reactive(new Set<string>())
-  const ask = options.confirm ?? ((c: { message: string }) => window.confirm(c.message))
+  const ask = options.confirm ?? ((c: { message: string; title?: string }) => confirmDialog(c))
 
   const ctx: ScreenContext = {
     isOpen: (id) => openIds.has(id),

@@ -173,3 +173,46 @@ it('a validation error thrown by the action method stays a 422', function (): vo
     $response->assertStatus(422);
     expect($response->json('payload.messages'))->toHaveKey('note');
 });
+
+it('a command bar action runs without ids', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A', 'amount' => 5]);
+
+    $response = $this->postJson('/api/admin/test-actions/action', ['key' => 'recalculate']);
+
+    $response->assertOk();
+    expect($response->json('payload.affected'))->toBe(1);
+    // The method got an empty list of ids.
+    expect($a->fresh()->amount)->toBe(0);
+});
+
+it('a standalone action takes an empty ids list too', function (): void {
+    TestResourceUserModel::create(['name' => 'A']);
+
+    $this->postJson('/api/admin/test-actions/action', ['key' => 'sync', 'ids' => []])
+        ->assertOk();
+});
+
+it('a row action still needs at least one id', function (): void {
+    $response = $this->postJson('/api/admin/test-actions/action', ['key' => 'stamp']);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.messages'))->toHaveKey('ids');
+});
+
+it('a row action applies to the ids it is given', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A']);
+    $b = TestResourceUserModel::create(['name' => 'B']);
+
+    $this->postJson('/api/admin/test-actions/action', ['key' => 'stamp', 'ids' => [$a->id]])
+        ->assertOk();
+
+    expect($a->fresh()->status)->toBe('stamped');
+    expect($b->fresh()->status)->toBeNull();
+});
+
+it('a bulk action without ids is a 422', function (): void {
+    $response = $this->postJson('/api/admin/test-actions/action', ['key' => 'archive']);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.messages'))->toHaveKey('ids');
+});

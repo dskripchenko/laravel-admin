@@ -152,16 +152,34 @@ describe('WizardLayout', () => {
       { state: { email: 'a@b.co', name: 'Ann' }, runMethod },
     )
     // Free form: jump straight to the last step through the stepper.
-    await wrapper.findAll('.uid-stepper__step')[2]!.trigger('click')
+    await wrapper.findAll('.uid-stepper__target')[2]!.trigger('click')
     await flushPromises()
     await buttonByClass(wrapper, 'admin-wizard-layout__submit').trigger('click')
     await flushPromises()
     expect(runMethod).toHaveBeenCalledWith('finish')
   })
 
+  it('lets a linear wizard go back to a passed step through a stepper button', async () => {
+    const { wrapper } = mountNode(
+      { kind: 'layout', type: 'wizard', items: steps },
+      { state: { email: 'a@b.co' } },
+    )
+    // Nothing behind the first step yet: no step is a button.
+    expect(wrapper.findAll('button.uid-stepper__target')).toHaveLength(0)
+    await buttonByClass(wrapper, 'admin-wizard-layout__next').trigger('click')
+    await flushPromises()
+    expect(wrapper.html()).toContain('name="name"')
+    // The passed step is a real button now — reachable from the keyboard.
+    const targets = wrapper.findAll('button.uid-stepper__target')
+    expect(targets).toHaveLength(1)
+    await targets[0]!.trigger('click')
+    await flushPromises()
+    expect(wrapper.html()).toContain('name="email"')
+  })
+
   it('does not let a linear wizard jump forward through the stepper', async () => {
     const { wrapper } = mountNode({ kind: 'layout', type: 'wizard', items: steps })
-    await wrapper.findAll('.uid-stepper__step')[2]!.trigger('click')
+    await wrapper.findAll('.uid-stepper__target')[2]!.trigger('click')
     await flushPromises()
     expect(wrapper.html()).toContain('name="email"')
   })
@@ -172,7 +190,7 @@ describe('WizardLayout', () => {
       { kind: 'layout', type: 'wizard', items: steps, submitMethod: 'finish', freeForm: true },
       { runMethod },
     )
-    await wrapper.findAll('.uid-stepper__step')[2]!.trigger('click')
+    await wrapper.findAll('.uid-stepper__target')[2]!.trigger('click')
     await flushPromises()
     await buttonByClass(wrapper, 'admin-wizard-layout__submit').trigger('click')
     await flushPromises()
@@ -296,6 +314,9 @@ describe('ModalLayout and DrawerLayout', () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
       await flushPromises()
       expect(screen!.isOpen('m')).toBe(true)
+      await wrapper.find(`${root}-overlay`).trigger('click')
+      await flushPromises()
+      expect(screen!.isOpen('m')).toBe(true)
     })
 
     it(`${type}: a dismissable one closes on its cross`, async () => {
@@ -321,11 +342,27 @@ describe('ModalLayout and DrawerLayout', () => {
     expect(screen!.isOpen('m')).toBe(false)
   })
 
-  it('modal: maps the size, with full as the widest the kit has', async () => {
+  it('modal: passes the full size through to the kit', async () => {
     const { wrapper, screen } = mountNode({ kind: 'layout', type: 'modal', id: 'm', size: 'full', items: [] })
     screen!.open('m')
     await flushPromises()
-    expect(wrapper.find('.uid-modal').classes()).toContain('uid-modal--xl')
+    expect(wrapper.find('.uid-modal').classes()).toContain('uid-modal--full')
+  })
+
+  it('drawer: a top drawer slides from the top, sized by height', async () => {
+    const { wrapper, screen } = mountNode({
+      kind: 'layout',
+      type: 'drawer',
+      id: 'd',
+      position: 'top',
+      size: 'md',
+      items: [],
+    })
+    screen!.open('d')
+    await flushPromises()
+    const panel = wrapper.find('.uid-drawer')
+    expect(panel.classes()).toContain('uid-drawer--top')
+    expect(panel.attributes('style')).toContain('40vh')
   })
 
   it('drawer: takes the side from position and the width from a size token', async () => {
