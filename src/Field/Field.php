@@ -276,7 +276,7 @@ abstract class Field implements Renderable
             'kind' => 'field',
             'name' => $this->name,
             'type' => $this->fieldType(),
-            'label' => (string) Localize::string((string) ($this->attributes['title'] ?? '')),
+            'label' => (string) Localize::string($this->defaultLabel()),
             'placeholder' => is_string($placeholder) ? Localize::string($placeholder) : $placeholder,
             'help' => is_string($help) ? Localize::string($help) : $help,
             'required' => (bool) ($this->attributes['required'] ?? false),
@@ -294,5 +294,20 @@ abstract class Field implements Renderable
             'defaultValue' => $this->defaultValue,
             'attributes' => Localize::attributes($this->attributes),
         ];
+    }
+
+    /**
+     * The field's label: its title(), or else its name made readable —
+     * `opens_at` becomes "Opens At" — so a form is never a column of
+     * unlabeled inputs. Translated by Localize like any other label.
+     */
+    protected function defaultLabel(): string
+    {
+        $title = $this->attributes['title'] ?? null;
+        if (is_string($title)) {
+            return $title;
+        }
+
+        return $this->name === '' ? '' : \Illuminate\Support\Str::headline(str_replace('.', ' ', $this->name));
     }
 }

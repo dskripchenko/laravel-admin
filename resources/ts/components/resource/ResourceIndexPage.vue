@@ -30,6 +30,7 @@ import {
   Upload,
 } from 'lucide-vue-next'
 import {
+  UidBadge,
   UidButton,
   UidEmptyState,
   UidErrorState,
@@ -521,6 +522,29 @@ function renderCell(key: string, slotProps: unknown): string {
 
 function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
   return (slotProps as { row?: Record<string, unknown> } | undefined)?.row
+}
+
+/** A badge column — preset 'badge', see TableColumn::asBadge. */
+function columnIsBadge(key: string): boolean {
+  return columnMeta.value[key]?.preset === 'badge'
+}
+
+/**
+ * The badge tone of a cell: the column's colour map (`asBadge(['active' =>
+ * 'success'])`) by the raw value. Tone names pass through; the colour names
+ * the docs use (green, red, …) map onto the UI kit's tones.
+ */
+const BADGE_TONES: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'default'> = {
+  info: 'info', success: 'success', warning: 'warning', danger: 'danger', default: 'default',
+  blue: 'info', green: 'success', yellow: 'warning', amber: 'warning', orange: 'warning',
+  red: 'danger', gray: 'default', grey: 'default', neutral: 'default',
+}
+
+function badgeVariant(key: string, slotProps: unknown): 'info' | 'success' | 'warning' | 'danger' | 'default' {
+  const colors = (columnMeta.value[key]?.meta as { colors?: Record<string, string> } | undefined)?.colors ?? {}
+  const value = rowFromSlot(slotProps)?.[key]
+  const color = colors[String(value)]
+  return (color && BADGE_TONES[color]) || 'default'
 }
 
 /** A link column — preset 'link', see TableColumn::asLink. */
@@ -1363,6 +1387,10 @@ async function retryLoad(): Promise<void> {
             >
               <span class="admin-cell-truncate">{{ renderCell(col.key, slotProps) }}</span>
             </InlineEditCell>
+            <UidBadge
+              v-else-if="columnIsBadge(col.key) && renderCell(col.key, slotProps) !== ''"
+              :variant="badgeVariant(col.key, slotProps)"
+            >{{ renderCell(col.key, slotProps) }}</UidBadge>
             <a
               v-else-if="columnIsLink(col.key) && linkHref(col.key, slotProps)"
               class="admin-cell-truncate admin-cell-link"

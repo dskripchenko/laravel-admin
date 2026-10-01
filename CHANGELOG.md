@@ -107,6 +107,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Form fields had no labels unless `title()` was set** — a form read as a
+  column of unlabeled inputs, while the view page already named every field.
+  A field without a title is now labeled from its name (`opens_at` → "Opens
+  At"); `title('')` still opts out.
+- `TableColumn::asBadge()` cells render as badges in the resource table,
+  coloured by the column's map (tone names or colours: green, red, …).
+- English translations for the "Tools" menu group and the shell's "Learn
+  more" link; a test now requires an English entry for every Russian `__()`
+  string in the PHP and Blade code.
+
 - **Permission labels followed the boot locale.** Plugins register their
   permission groups once at boot, so under Octane a per-request locale never
   reached the role matrix. `ItemPermission::toArray()` (and so
