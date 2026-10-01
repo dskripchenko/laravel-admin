@@ -17,13 +17,12 @@ import { registerBuiltinWidgets } from '../dashboard/builtin'
 import { getWidget, hasWidget } from '../dashboard/registry'
 import { registerBuiltinInfolistEntries } from '../infolist/builtin'
 import { getInfolistEntry, hasInfolistEntry } from '../infolist/registry'
-import { CHART_RENDERERS } from '../dashboard/chartTypes'
+import { CHART_RENDERERS, type ChartRenderer } from '../dashboard/chartTypes'
 import TextField from '../fields/TextField.vue'
 import TextAreaField from '../fields/TextAreaField.vue'
 import NumberField from '../fields/NumberField.vue'
 import SelectField from '../fields/SelectField.vue'
 import DateField from '../fields/DateField.vue'
-import SectionLayout from '../layouts/SectionLayout.vue'
 import TextEntry from '../infolist/TextEntry.vue'
 
 /** `null` — no component at all; a component — the stand-in drawing it today. */
@@ -46,17 +45,7 @@ const GAPS: Record<'fields' | 'layouts' | 'widgets' | 'entries', Record<string, 
     hidden: TextField,
     group: null,
   },
-  layouts: {
-    accordion: SectionLayout,
-    step: SectionLayout,
-    wizard: SectionLayout,
-    modal: null,
-    drawer: null,
-    view: null,
-    wrapper: null,
-    infolist: null,
-    audit_trail: null,
-  },
+  layouts: {},
   widgets: {},
   entries: {
     color: null,
@@ -67,11 +56,7 @@ const GAPS: Record<'fields' | 'layouts' | 'widgets' | 'entries', Record<string, 
 }
 
 /** Chart types drawn by a renderer of another kind (a line as bars). */
-const CHART_GAPS: Record<string, 'bar' | 'donut' | null> = {
-  line: 'bar',
-  area: 'bar',
-  radar: null,
-}
+const CHART_GAPS: Record<string, ChartRenderer | null> = {}
 
 const lookups = {
   fields: { has: hasField, get: getField },

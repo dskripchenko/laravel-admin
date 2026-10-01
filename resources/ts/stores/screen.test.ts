@@ -5,6 +5,7 @@ import { useScreenStore } from './screen'
 import { setAdminClient, clearAdminClient } from './registry'
 import { createAdminClient } from '../api/client'
 import { ValidationError } from '../api/errors'
+import { useToast } from '@dskripchenko/ui'
 
 const STATE_ENVELOPE = {
   success: true,
@@ -99,6 +100,31 @@ describe('useScreenStore', () => {
     expect(s.lastMessage).toBe('Отправлено')
     expect(s.lastMessageLink).toBeNull()
     expect(s.errors).toEqual({})
+  })
+
+  it('runMethod shows the response alerts as toasts', async () => {
+    useToast().clear()
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onPost('/contact/runMethod').reply(200, {
+      success: true,
+      payload: {
+        message: 'Sent',
+        alerts: [
+          { type: 'success', message: 'Sent' },
+          { type: 'warning', message: 'The mailbox is almost full' },
+        ],
+      },
+    })
+
+    const s = useScreenStore()
+    await s.load('contact')
+    await s.runMethod('send')
+
+    // The first alert repeats the inline message and is left out.
+    expect(useToast().toasts.value.map((t) => [t.variant, t.message])).toEqual([
+      ['warning', 'The mailbox is almost full'],
+    ])
+    useToast().clear()
   })
 
   it('runMethod запоминает ссылку рядом с сообщением', async () => {

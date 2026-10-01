@@ -1,15 +1,17 @@
 <script setup lang="ts">
 /**
- * BarChartWidget — a plain SVG bar chart with no external dependencies.
+ * BarChartWidget — the `bar-chart` manifest widget: one series of
+ * {label, value} points, drawn by CartesianChartWidget.
  *
  * Manifest:
  *   { type: 'bar-chart', title: '30 days',
  *     data: [{ label: '01', value: 12 }, ...],
  *     accent: 'var(--uid-accent)' }
+ *
+ * Several series go through the `chart` widget with chartType 'bar'.
  */
 import { computed } from 'vue'
-import { UidCard } from '@dskripchenko/ui'
-import { trSafe as tr } from '../../stores/i18n'
+import CartesianChartWidget from './CartesianChartWidget.vue'
 
 interface Datum {
   label: string
@@ -22,6 +24,8 @@ interface Props {
   data: Datum[]
   accent?: string
   height?: number
+  /** The series name in the tooltip; the title by default. */
+  seriesLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,62 +33,35 @@ const props = withDefaults(defineProps<Props>(), {
   description: '',
   accent: 'var(--uid-accent)',
   height: 200,
+  seriesLabel: '',
 })
 
-const isEmpty = computed(
-  () => props.data.length === 0 || props.data.every((d) => !d.value),
-)
-const maxValue = computed(() => Math.max(1, ...props.data.map((d) => d.value)))
-
-const bars = computed(() => {
-  const n = Math.max(1, props.data.length)
-  const barWidth = 100 / n
-  return props.data.map((d, i) => ({
-    label: d.label,
-    value: d.value,
-    x: i * barWidth + barWidth * 0.1,
-    width: barWidth * 0.8,
-    heightPct: (d.value / maxValue.value) * 100,
-  }))
-})
+const labels = computed(() => (props.data ?? []).map((d) => String(d.label)))
+const series = computed(() => [
+  {
+    label: props.seriesLabel || props.title || '',
+    data: (props.data ?? []).map((d) => (Number.isFinite(Number(d.value)) ? Number(d.value) : null)),
+    color: props.accent,
+  },
+])
 </script>
 
 <template>
-  <UidCard padding="md" class="admin-widget">
-    <header v-if="title || description" class="admin-widget__hd">
-      <h3 v-if="title" class="admin-widget__title">{{ title }}</h3>
-      <p v-if="description" class="admin-widget__desc">{{ description }}</p>
-    </header>
-    <div v-if="isEmpty" class="admin-widget__empty">{{ tr('Нет данных за период') }}</div>
-    <svg
-      v-else
-      class="admin-widget-bar-chart"
-      :viewBox="`0 0 100 ${height}`"
-      preserveAspectRatio="none"
-      :height="height"
-      width="100%"
-      role="img"
-      :aria-label="title || 'Bar chart'"
-    >
-      <rect
-        v-for="(bar, idx) in bars"
-        :key="idx"
-        :x="bar.x"
-        :y="height - (bar.heightPct / 100) * height"
-        :width="bar.width"
-        :height="(bar.heightPct / 100) * height"
-        :fill="accent"
-        rx="1"
-        :data-label="bar.label"
-        :data-value="bar.value"
-      >
-        <title>{{ bar.label }}: {{ bar.value }}</title>
-      </rect>
-    </svg>
-  </UidCard>
+  <CartesianChartWidget
+    kind="bar"
+    :title="title"
+    :description="description"
+    :labels="labels"
+    :series="series"
+    :height="height"
+  />
 </template>
 
 <style>
+/*
+ * The common header and empty state of the dashboard widgets. They live here
+ * because the built-in bundle always loads this component.
+ */
 .admin-widget__hd { margin-bottom: var(--uid-space-sm); }
 .admin-widget__title {
   margin: 0;
@@ -96,13 +73,6 @@ const bars = computed(() => {
   margin: var(--uid-space-2xs) 0 0;
   font-size: var(--uid-font-size-xs);
   color: var(--uid-text-tertiary);
-}
-.admin-widget-bar-chart {
-  display: block;
-  width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
-  height: auto !important;
 }
 .admin-widget__empty {
   flex: 1 1 auto;

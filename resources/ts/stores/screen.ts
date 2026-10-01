@@ -23,6 +23,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
 import { ApiError, ValidationError } from '../api/errors'
+import { toastAlerts, type ServerAlert } from './toast'
 
 export interface ScreenLayoutNode {
   kind: 'layout' | 'field'
@@ -71,7 +72,8 @@ export interface ScreenMethodResult {
    * leaves them to find it by themselves.
    */
   message_link?: ScreenMessageLink | null
-  alerts?: Array<{ type: string; message: string; duration_ms?: number }>
+  /** Shown as toasts by runMethod — see toastAlerts(). */
+  alerts?: ServerAlert[]
   redirect_url?: string | null
   refresh?: boolean
   download_url?: string | null
@@ -232,6 +234,9 @@ export const useScreenStore = defineStore('admin-screen', () => {
         lastMessage.value = res.message
         lastMessageLink.value = res.message_link ?? null
       }
+      // The message is drawn inline by ScreenPage; the alerts go to toasts,
+      // minus one that only repeats the message.
+      toastAlerts(res.alerts, res.message)
       if (res.download_url && typeof document !== 'undefined') {
         // The server hands the file over at a signed URL, with
         // Content-Disposition: attachment, so we trigger the download through

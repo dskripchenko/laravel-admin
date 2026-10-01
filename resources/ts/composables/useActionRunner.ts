@@ -326,11 +326,11 @@ export function useActionRunner(executor: ActionExecutor) {
     asyncState.open = false
   }
 
-  async function runAsync(action: AdminAction): Promise<void> {
+  async function runAsync(action: AdminAction): Promise<boolean> {
     const handler = action.attributes.handler as { entity?: string; method?: string } | undefined
     if (!handler?.entity || !handler.method) {
       adminToast.error(tRaw('Действие «:action» не настроено.', { action: action.label }))
-      return
+      return false
     }
     const params: Record<string, unknown> = {
       ...((action.attributes.params as Record<string, unknown> | undefined) ?? {}),
@@ -361,7 +361,7 @@ export function useActionRunner(executor: ActionExecutor) {
       status = { status: started.status, progress: 0 }
       while (!TERMINAL.has(status.status)) {
         await sleep(intervalMs)
-        if (disposed) return
+        if (disposed) return false
         status = await client.get<DelayedStatus>(
           `/delayed/status?uuid=${encodeURIComponent(started.uuid)}`,
         )
@@ -372,7 +372,7 @@ export function useActionRunner(executor: ActionExecutor) {
       asyncState.finished = true
       asyncState.error = errorMessage(err, tr('Не удалось выполнить действие.'))
       adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
-      return
+      return false
     }
 
     asyncState.finished = true
@@ -384,13 +384,14 @@ export function useActionRunner(executor: ActionExecutor) {
         : tRaw('Действие «:action» выполнено.', { action: action.label })
       adminToast.success(message)
       await executor.refresh?.()
-    } else {
-      asyncState.error = status.error ?? tr('Процесс завершился с ошибкой.')
-      adminToast.error(tRaw('Действие «:action» завершилось с ошибкой: :error', {
-        action: action.label,
-        error: asyncState.error,
-      }))
+      return true
     }
+    asyncState.error = status.error ?? tr('Процесс завершился с ошибкой.')
+    adminToast.error(tRaw('Действие «:action» завершилось с ошибкой: :error', {
+      action: action.label,
+      error: asyncState.error,
+    }))
+    return false
   }
 
   /* ---------------- link ---------------- */
@@ -433,36 +434,40 @@ export function useActionRunner(executor: ActionExecutor) {
     adminToast.error(errorMessage(err, tRaw('Не удалось выполнить действие «:action».', { action: action.label })))
   }
 
-  /** Runs any action according to its type. */
-  async function run(action: AdminAction): Promise<void> {
-    if (action.type === 'dropdown') return
+  /**
+   * Runs any action according to its type. Resolves to true when the action
+   * went through: executed, navigated, its form opened or its process done.
+   */
+  async function run(action: AdminAction): Promise<boolean> {
+    if (action.type === 'dropdown') return false
 
     if (executor.ids && needsSelection(action) && !selectionAllows(action, executor.ids().length)) {
       adminToast.warning(tRaw('Действие «:action» недоступно для выбранного числа записей.', { action: action.label }))
-      return
+      return false
     }
 
-    if (action.confirm && !(await confirm(action.confirm, action.destructive))) return
+    if (action.confirm && !(await confirm(action.confirm, action.destructive))) return false
 
     if (action.type === 'link') {
       openLink(action)
-      return
+      return true
     }
     if (action.type === 'modal') {
       openModal(action)
-      return
+      return true
     }
     if (action.type === 'async') {
-      await runAsync(action)
-      return
+      return runAsync(action)
     }
 
     running.value = true
     try {
       const result = await executor.execute(action)
       await executor.onSuccess?.(action, result)
+      return true
     } catch (err) {
       reportError(action, err)
+      return false
     } finally {
       running.value = false
     }

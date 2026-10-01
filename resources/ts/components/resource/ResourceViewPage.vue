@@ -260,6 +260,7 @@ async function onDelete(): Promise<void> {
   if (!(await runner.confirm(tr('Удалить запись?'), true))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
+    adminToast.success(tr('Запись удалена.'))
     router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
   }
 }

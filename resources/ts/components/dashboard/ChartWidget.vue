@@ -1,24 +1,22 @@
 <script setup lang="ts">
 /**
- * ChartWidget — the dispatcher over `data.type`: bar, line, pie, doughnut,
- * area.
+ * ChartWidget — the dispatcher over `data.chartType`: line, bar, area, pie,
+ * doughnut and radar.
  *
- * The backend's ChartWidget::data() returns `{type, labels, datasets, ...}`.
- * This frontend wrapper turns that into plain arrays of data points or slices
- * and leaves the drawing to the specialized components — Bar, Donut and the
- * rest.
+ * The backend's ChartWidget::data() returns `{chartType, labels, datasets,
+ * stacked}`. This wrapper resolves the series (colours included) and leaves
+ * the drawing to the specialized components: CartesianChartWidget for line,
+ * area and bar — every dataset becomes a series — RadarChartWidget for radar,
+ * and DonutChartWidget for pie and doughnut, which slice the first dataset.
  */
 import { computed } from 'vue'
-import BarChartWidget from './BarChartWidget.vue'
+import CartesianChartWidget from './CartesianChartWidget.vue'
 import DonutChartWidget from './DonutChartWidget.vue'
+import RadarChartWidget from './RadarChartWidget.vue'
 import UnknownWidget from './UnknownWidget.vue'
 import { CHART_RENDERERS } from './chartTypes'
+import { resolveLabels, toSeries, type RawDataset } from './chartGeometry'
 
-interface ChartDataset {
-  label: string
-  data: number[]
-  color?: string
-}
 interface ChartData {
   /**
    * The backend's ChartWidget::data() returns `chartType`. The older wrapper
@@ -26,28 +24,44 @@ interface ChartData {
    */
   chartType?: string
   type?: string
-  labels?: string[]
-  datasets?: ChartDataset[]
+  labels?: Array<string | number>
+  datasets?: RawDataset[]
+  stacked?: boolean
 }
 
 interface Props {
   type?: string
   title?: string
+  description?: string
   size?: number
   data?: ChartData
+  /*
+   * WidgetRenderer also spreads `data` flat. Declared here so they do not
+   * fall through onto the rendered chart, and used when `data` is absent.
+   */
+  chartType?: string
+  labels?: Array<string | number>
+  datasets?: RawDataset[]
+  stacked?: boolean
 }
 const props = defineProps<Props>()
 
-const chartType = computed<string>(
-  () => props.data?.chartType ?? props.data?.type ?? 'bar',
+const source = computed<ChartData>(() => props.data ?? {
+  chartType: props.chartType,
+  labels: props.labels,
+  datasets: props.datasets,
+  stacked: props.stacked,
+})
+
+const resolvedType = computed<string>(
+  () => source.value.chartType ?? source.value.type ?? 'bar',
 )
 
-const renderer = computed(() => CHART_RENDERERS[chartType.value])
+const renderer = computed(() => CHART_RENDERERS[resolvedType.value])
 
 /**
- * The default palette of a donut or a pie. It comes from the --uid-* tokens,
- * falling back to static colours. When the backend sends a `color` in the
- * dataset, that wins.
+ * The palette of a donut or a pie, one colour per slice. When the backend
+ * sends a `color` in the dataset, that wins.
  */
 const DEFAULT_PALETTE = [
   '#10b981', // teal-500
@@ -59,30 +73,17 @@ const DEFAULT_PALETTE = [
   '#ec4899', // pink-500
 ]
 
-/**
- * The bar, line and area charts expect a list of {label, value}. We take the
- * first dataset; stacking several is for a later round.
- */
-const barData = computed(() => {
-  const ds = props.data?.datasets?.[0]
-  if (!ds) return []
-  return ds.data.map((v, i) => ({
-    label: props.data?.labels?.[i] ?? String(i + 1),
-    value: v,
-  }))
-})
-
-const barAccent = computed<string | undefined>(
-  () => props.data?.datasets?.[0]?.color,
-)
+const chartSeries = computed(() => toSeries(source.value.datasets))
+const chartLabels = computed(() => resolveLabels(source.value.labels, chartSeries.value))
+const isStacked = computed(() => source.value.stacked === true)
 
 /** In a donut or a pie each item gets its share of the total. */
 const donutData = computed(() => {
-  const ds = props.data?.datasets?.[0]
-  if (!ds) return []
+  const ds = source.value.datasets?.[0]
+  if (!ds || !Array.isArray(ds.data)) return []
   return ds.data.map((v, i) => ({
-    label: props.data?.labels?.[i] ?? String(i + 1),
-    value: v,
+    label: String(source.value.labels?.[i] ?? i + 1),
+    value: Number(v) || 0,
     color: ds.color ?? DEFAULT_PALETTE[i % DEFAULT_PALETTE.length],
   }))
 })
@@ -94,11 +95,21 @@ const donutData = computed(() => {
     :title="title"
     :data="donutData"
   />
-  <BarChartWidget
-    v-else-if="renderer === 'bar'"
+  <RadarChartWidget
+    v-else-if="renderer === 'radar'"
     :title="title"
-    :data="barData"
-    :accent="barAccent"
+    :description="description"
+    :labels="chartLabels"
+    :series="chartSeries"
   />
-  <UnknownWidget v-else :type="`chart:${chartType}`" />
+  <CartesianChartWidget
+    v-else-if="renderer === 'bar' || renderer === 'line' || renderer === 'area'"
+    :kind="renderer"
+    :title="title"
+    :description="description"
+    :labels="chartLabels"
+    :series="chartSeries"
+    :stacked="isStacked"
+  />
+  <UnknownWidget v-else :type="`chart:${resolvedType}`" />
 </template>

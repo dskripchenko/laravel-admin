@@ -33,6 +33,7 @@ import { resolveStatusLabel } from './statusLabel'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
+import { adminToast } from '../../stores/toast'
 
 interface Props {
   /** The resource slug: articles, users and so on. */
@@ -223,6 +224,7 @@ async function onSave(): Promise<void> {
 
   try {
     const newId = await form.save()
+    adminToast.success(wasCreate ? tr('Запись создана.') : tr('Изменения сохранены.'))
     if (wasCreate) {
       // After a create, go to edit with the new id; the host does the routing.
       void router.push({
@@ -254,6 +256,7 @@ async function onDelete(): Promise<void> {
   if (!confirm(tr('Удалить запись?'))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
+    adminToast.success(tr('Запись удалена.'))
     void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
   }
 }

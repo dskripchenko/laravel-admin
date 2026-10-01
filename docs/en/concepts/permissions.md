@@ -78,6 +78,11 @@ Admin::permissions(
 
 These appear in the role-edit screen as checkable items.
 
+Pass the group name and labels as source strings (or translation keys), not as
+`__()` results: groups are registered once at boot, and the labels are
+translated through the JSON translations when they are served, in the locale
+of that request. A label that is already translated is returned as it is.
+
 ## Checking in code
 
 ```php
