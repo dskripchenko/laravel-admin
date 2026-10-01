@@ -26,6 +26,20 @@ import RepeaterField from '../fields/RepeaterField.vue'
 import BuilderField from '../fields/BuilderField.vue'
 import RelationTableField from '../fields/RelationTableField.vue'
 import GeneratedField from '../fields/GeneratedField.vue'
+import MarkdownField from '../fields/MarkdownField.vue'
+import CodeField from '../fields/CodeField.vue'
+import ColorField from '../fields/ColorField.vue'
+import SliderField from '../fields/SliderField.vue'
+import RatingField from '../fields/RatingField.vue'
+import RadioField from '../fields/RadioField.vue'
+import TimeField from '../fields/TimeField.vue'
+import DateRangeField from '../fields/DateRangeField.vue'
+import TreeSelectField from '../fields/TreeSelectField.vue'
+import CascaderField from '../fields/CascaderField.vue'
+import MorphSwitcherField from '../fields/MorphSwitcherField.vue'
+import LabelField from '../fields/LabelField.vue'
+import HiddenField from '../fields/HiddenField.vue'
+import GroupField from '../fields/GroupField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -95,22 +109,22 @@ export function registerBuiltinComponents(): void {
       tel: textFieldOfType('tel'),
       search: textFieldOfType('search'),
       slug: TextField,
-      hidden: TextField,
-      label: TextField,
+      hidden: HiddenField,
+      label: LabelField,
       textarea: TextAreaField,
       // The default WYSIWYG is our own @dskripchenko/wysiwyg: no
       // dependencies, about 7 KB gzipped. A host may override it:
       //   import { QuillField } from '@dskripchenko/laravel-admin/quill'
       //   registerField('wysiwyg', QuillField)
       wysiwyg: WysiwygField,
-      markdown: TextAreaField,
-      code: TextAreaField,
+      markdown: MarkdownField,
+      code: CodeField,
       number: NumberField,
-      slider: NumberField,
-      rating: NumberField,
+      slider: SliderField,
+      rating: RatingField,
       select: SelectField,
       combobox: ComboboxField,
-      radio: SelectField,
+      radio: RadioField,
       tags: TagsField,
       // Translatable: the backend's Field\TranslatableInput has
       // fieldType()='translatable'. The value is a Record<locale, string>, and
@@ -120,13 +134,13 @@ export function registerBuiltinComponents(): void {
       // The backend's fieldType() returns snake_case, so that is what we
       // register; the dashed variants remain as historical aliases for host
       // code.
-      morph_switcher: SelectField,
-      'morph-switcher': SelectField,
+      morph_switcher: MorphSwitcherField,
+      'morph-switcher': MorphSwitcherField,
       relation_select: SelectField,
       relation: SelectField,
-      cascader: SelectField,
-      tree_select: SelectField,
-      'tree-select': SelectField,
+      cascader: CascaderField,
+      tree_select: TreeSelectField,
+      'tree-select': TreeSelectField,
       checkbox: CheckboxField,
       switch: CheckboxField,
       switcher: CheckboxField,
@@ -134,12 +148,12 @@ export function registerBuiltinComponents(): void {
       date: DateField,
       datetime: DateField,
       datepicker: DateField,
-      date_range: DateField,
-      'date-range': DateField,
-      time: DateField,
-      'time-picker': DateField,
-      color: TextField,
-      'color-picker': TextField,
+      date_range: DateRangeField,
+      'date-range': DateRangeField,
+      time: TimeField,
+      'time-picker': TimeField,
+      color: ColorField,
+      'color-picker': ColorField,
       file: FileField,
       image: FileField,
       image_cropper: ImageCropperField,
@@ -147,6 +161,8 @@ export function registerBuiltinComponents(): void {
       key_value: KeyValueField,
       repeater: RepeaterField,
       'generated-field': GeneratedField,
+      // A field-level group: nested fields stored as one object under its name.
+      group: GroupField,
       builder: BuilderField,
       relation_table: RelationTableField,
     },

@@ -95,3 +95,66 @@ export function useFormState(): FormStateContext {
 export function tryUseFormState(): FormStateContext | null {
   return inject(FormStateKey, null)
 }
+
+/**
+ * Provides a form context scoped to one object-valued field of `parent` — the
+ * backend's Field\Group, whose state is `{city: ..., street: ...}` under its
+ * own name.
+ *
+ * Unlike NestedFieldsGroup this keeps no copy: every read and write goes to
+ * `parent.state[name]`, and the errors are the parent's `name.child` keys —
+ * the shape Laravel's validator reports them in — seen without the prefix.
+ * Scopes nest: a group inside a group prefixes twice.
+ */
+export function provideScopedFormState(parent: FormStateContext, name: string): FormStateContext {
+  const prefix = `${name}.`
+  const obj = (): Record<string, unknown> => {
+    const v = parent.getField(name)
+    return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
+  }
+  const ownKeys = (): string[] =>
+    Object.keys(parent.errors)
+      .filter((k) => k.startsWith(prefix))
+      .map((k) => k.slice(prefix.length))
+
+  // A live view over the parent's errors: reads go through the parent's
+  // reactive map, so a component reading `errors.city` re-renders when
+  // `errors['address.city']` changes.
+  const errors = new Proxy({} as Record<string, string[]>, {
+    get: (_t, key) => (typeof key === 'string' ? parent.errors[prefix + key] : undefined),
+    has: (_t, key) => typeof key === 'string' && prefix + key in parent.errors,
+    ownKeys: () => ownKeys(),
+    getOwnPropertyDescriptor: (_t, key) =>
+      typeof key === 'string' && prefix + key in parent.errors
+        ? { enumerable: true, configurable: true, value: parent.errors[prefix + key] }
+        : undefined,
+  })
+
+  const ctx: FormStateContext = {
+    get state() {
+      return obj()
+    },
+    errors,
+    mode: parent.mode,
+    setField(key, value) {
+      parent.setField(name, { ...obj(), [key]: value })
+      parent.setError(prefix + key, null)
+    },
+    getField(key) {
+      return obj()[key]
+    },
+    setError(key, messages) {
+      parent.setError(prefix + key, messages)
+    },
+    setErrors(next) {
+      for (const key of ownKeys()) parent.setError(prefix + key, null)
+      for (const [key, messages] of Object.entries(next)) parent.setError(prefix + key, messages)
+    },
+    clearErrors() {
+      for (const key of ownKeys()) parent.setError(prefix + key, null)
+    },
+  }
+
+  provide(FormStateKey, ctx)
+  return ctx
+}

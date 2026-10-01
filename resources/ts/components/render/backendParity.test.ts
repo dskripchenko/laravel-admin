@@ -18,41 +18,15 @@ import { getWidget, hasWidget } from '../dashboard/registry'
 import { registerBuiltinInfolistEntries } from '../infolist/builtin'
 import { getInfolistEntry, hasInfolistEntry } from '../infolist/registry'
 import { CHART_RENDERERS, type ChartRenderer } from '../dashboard/chartTypes'
-import TextField from '../fields/TextField.vue'
-import TextAreaField from '../fields/TextAreaField.vue'
-import NumberField from '../fields/NumberField.vue'
-import SelectField from '../fields/SelectField.vue'
-import DateField from '../fields/DateField.vue'
-import TextEntry from '../infolist/TextEntry.vue'
 
 /** `null` — no component at all; a component — the stand-in drawing it today. */
 type Gap = Component | null
 
 const GAPS: Record<'fields' | 'layouts' | 'widgets' | 'entries', Record<string, Gap>> = {
-  fields: {
-    markdown: TextAreaField,
-    code: TextAreaField,
-    slider: NumberField,
-    rating: NumberField,
-    radio: SelectField,
-    morph_switcher: SelectField,
-    cascader: SelectField,
-    tree_select: SelectField,
-    date_range: DateField,
-    time: DateField,
-    color: TextField,
-    label: TextField,
-    hidden: TextField,
-    group: null,
-  },
+  fields: {},
   layouts: {},
   widgets: {},
-  entries: {
-    color: null,
-    image: null,
-    map: null,
-    relation: TextEntry,
-  },
+  entries: {},
 }
 
 /** Chart types drawn by a renderer of another kind (a line as bars). */

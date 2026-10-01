@@ -40,6 +40,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the screen (give the layout a stable id with `withId()`).
 - The screen context (`provideScreenContext`/`useScreenContext`), through which
   layouts open overlays and call screen methods.
+- **Every backend field type has a real SPA component.** `markdown` (editor
+  with a formatting toolbar and write/preview/split modes, rendered by a
+  built-in, HTML-escaping markdown renderer), `code` (monospaced editor with
+  line numbers and Tab/Shift+Tab indentation; read-only via `UidCode`),
+  `color` (`UidColorPicker`, stores hex/rgb/hsl per `format()`, palette,
+  alpha), `slider` (with marks), `rating`, `radio`, `time`, `date_range`
+  (with `presets()`), `tree_select`, `cascader`, `morph_switcher` (type +
+  record selects), `label` (static text), `hidden` (invisible, value kept in
+  the state) and the field-level `group` (nested object state, prefixed
+  validation errors, rows/columns/inline layout, collapsible). The stand-ins
+  — textareas, number inputs and plain selects — are gone.
+- **Every infolist entry type is drawn.** `color` (swatch + value), `image`
+  (thumbnails, click to zoom), `map` (coordinates and an OpenStreetMap link,
+  no tile dependency) and `relation` (links to the related record's view page
+  with `linkTo()`).
+- `Infolist\FieldEntry` — the read-only view of a form field. The default
+  `Resource::infolist()` now uses it for markdown, code, rating, radio,
+  tree_select, cascader, date_range, morph_switcher and group fields, shows
+  `color` fields as a `ColorEntry`, and leaves `hidden` fields out.
+- `TreeSelect::fromModel()` builds the tree from the model when the field is
+  serialized; `MorphSwitcher` serializes each type's records as `options`
+  (up to 100, like `RelationSelect`).
 
 - **The SPA runs every action type the backend declares.** One
   `useActionRunner` composable drives resource bulk/row actions, the view
