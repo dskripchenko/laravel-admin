@@ -26,6 +26,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Success toasts after creating, saving and deleting a record from the
   resource form, view and tree pages.
 
+- **Every backend layout now renders for real in the SPA.** `accordion`
+  (collapsible sections, `multi`, `defaultOpen`), `wizard` (a stepper with
+  Back/Next, per-step validation from the fields' rules and `Step::rules()`,
+  `submit()` calling the screen method, `freeForm()` jumps, progress kept in
+  localStorage under `persistKey()`), `modal` and `drawer` (size, position,
+  `dismissable()`, footer actions), `view` (a host component registered with
+  `registerLayout()`), `wrapper` (`tag()` and the new `className()`),
+  `infolist` on any screen, and `audit_trail` (the record's audit timeline,
+  `limit()`, `withPermission()`). Accordion, step and wizard were drawn as a
+  plain card; the rest showed the unknown-type placeholder.
+- `Action::opens($layoutId)` — a button that opens a Modal or Drawer layout of
+  the screen (give the layout a stable id with `withId()`).
+- The screen context (`provideScreenContext`/`useScreenContext`), through which
+  layouts open overlays and call screen methods.
+
 ### Fixed
 
 - **Permission labels followed the boot locale.** Plugins register their
@@ -33,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reached the role matrix. `ItemPermission::toArray()` (and so
   `/system/permissions`) now translates group names and labels in the current
   locale; already-translated strings are returned unchanged.
+
+- `Wrapper::className()` was documented but did not exist.
 
 ## 1.32.2
 

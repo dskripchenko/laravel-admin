@@ -23,7 +23,6 @@ import TextAreaField from '../fields/TextAreaField.vue'
 import NumberField from '../fields/NumberField.vue'
 import SelectField from '../fields/SelectField.vue'
 import DateField from '../fields/DateField.vue'
-import SectionLayout from '../layouts/SectionLayout.vue'
 import TextEntry from '../infolist/TextEntry.vue'
 
 /** `null` — no component at all; a component — the stand-in drawing it today. */
@@ -46,17 +45,7 @@ const GAPS: Record<'fields' | 'layouts' | 'widgets' | 'entries', Record<string, 
     hidden: TextField,
     group: null,
   },
-  layouts: {
-    accordion: SectionLayout,
-    step: SectionLayout,
-    wizard: SectionLayout,
-    modal: null,
-    drawer: null,
-    view: null,
-    wrapper: null,
-    infolist: null,
-    audit_trail: null,
-  },
+  layouts: {},
   widgets: {},
   entries: {
     color: null,

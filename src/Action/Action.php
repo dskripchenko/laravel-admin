@@ -102,6 +102,20 @@ abstract class Action implements Renderable
     }
 
     /**
+     * Opens a Modal or Drawer layout of the screen instead of calling a
+     * method. The layout is found by its id, so give it a stable one:
+     *
+     *     Layout::modal('Edit', [...])->withId('edit-modal')
+     *     Button::make('Edit')->opens('edit-modal')
+     */
+    public function opens(string $layoutId): static
+    {
+        $this->attributes['opens'] = $layoutId;
+
+        return $this;
+    }
+
+    /**
      * @param  list<'command_bar'|'row'|'bulk'|'header'>  $positions
      */
     public function position(array $positions): static
