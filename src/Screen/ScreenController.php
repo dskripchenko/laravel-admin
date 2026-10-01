@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Screen;
 
+use Dskripchenko\LaravelAdmin\I18n\Localize;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
 use Illuminate\Http\JsonResponse;
@@ -149,7 +150,7 @@ final class ScreenController extends ApiController
         $payload = [
             'state' => (object) ($result['state'] ?? []),
             'layouts' => (object) ($result['layouts'] ?? []),
-            'alerts' => $result['alerts'] ?? [],
+            'alerts' => self::normalizeAlerts($result['alerts'] ?? []),
             'redirect_url' => $result['redirect_url'] ?? null,
             'refresh' => (bool) ($result['refresh'] ?? false),
             'download_url' => $result['download_url'] ?? null,
@@ -167,6 +168,34 @@ final class ScreenController extends ApiController
         }
 
         return $payload;
+    }
+
+    /**
+     * The panel shows each alert as a toast. Its text and title go through
+     * the JSON translations of the request's locale — idempotent, so a string
+     * the screen already translated comes back as it is.
+     *
+     * @return list<mixed>
+     */
+    private static function normalizeAlerts(mixed $alerts): array
+    {
+        if (! is_array($alerts)) {
+            return [];
+        }
+
+        $out = [];
+        foreach (array_values($alerts) as $alert) {
+            if (is_array($alert)) {
+                foreach (['message', 'title'] as $key) {
+                    if (isset($alert[$key]) && is_string($alert[$key])) {
+                        $alert[$key] = Localize::string($alert[$key]);
+                    }
+                }
+            }
+            $out[] = $alert;
+        }
+
+        return $out;
     }
 
     /**

@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Dashboard charts draw every type and every dataset.** `ChartWidget` line
+  and area charts were drawn as bars, radar fell through to the unknown-widget
+  placeholder, and only the first dataset was shown. New dependency-free SVG
+  renderers: line, area (overlaid, or stacked with `stacked()`), bar (grouped,
+  or stacked) and radar, all multi-series, with axes and gridlines, a hover
+  crosshair/tooltip, a legend for two series and more, a screen-reader data
+  table, and a colour-blind-checked series palette (overridable through
+  `--admin-chart-series-1..6`). They size to the dashboard cell and follow the
+  dark theme. The `bar-chart` widget now renders through the same component.
+- **Screen method `alerts` are shown as toasts.** The `alerts` a screen method
+  returns were part of the contract but never displayed. Each now becomes a
+  toast (`success`/`info`/`warning`/`danger`, with `error`/`warn` aliases,
+  optional `title` and `duration_ms`); an alert that only repeats the inline
+  `message` is skipped. Alert texts are translated in the request locale.
+- Success toasts after creating, saving and deleting a record from the
+  resource form, view and tree pages.
+
 - **Every backend layout now renders for real in the SPA.** `accordion`
   (collapsible sections, `multi`, `defaultOpen`), `wizard` (a stepper with
   Back/Next, per-step validation from the fields' rules and `Step::rules()`,
@@ -47,6 +64,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (up to 100, like `RelationSelect`).
 
 ### Fixed
+
+- **Permission labels followed the boot locale.** Plugins register their
+  permission groups once at boot, so under Octane a per-request locale never
+  reached the role matrix. `ItemPermission::toArray()` (and so
+  `/system/permissions`) now translates group names and labels in the current
+  locale; already-translated strings are returned unchanged.
 
 - `Wrapper::className()` was documented but did not exist.
 
