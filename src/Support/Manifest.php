@@ -59,7 +59,9 @@ final class Manifest
     /**
      * Builds the manifest for the current user and locale.
      *
-     * There is no permission filtering yet — every resource is visible.
+     * Resources and screens are listed with their permissions and the SPA
+     * hides what the user may not open; dashboards are filtered here, since
+     * they carry computed data.
      *
      * @return array<string, mixed>
      */
@@ -113,37 +115,26 @@ final class Manifest
             $settingsPayload[] = $settings->meta();
         }
 
-        // Dashboards: every DashboardScreen is exported as
-        // { slug, label, description, widgets[] } for the frontend's
-        // DashboardPage, keyed by slug in manifest.dashboards. The widgets are
-        // the output of Widget::toArray() — `{kind, slug, type, title, size,
-        // ...}` — and the frontend renderer resolves them through its registry
-        // by the `type` field.
+        // Dashboards: every DashboardScreen the user may open is exported as
+        // { slug, label, description, permission, periods, period, widgets[] }
+        // for the frontend's DashboardPage, keyed by slug in
+        // manifest.dashboards. A dashboard the user has no permission for is
+        // left out altogether, and so is every widget they may not see — its
+        // data() is never called. The widgets are the output of
+        // Widget::toArray(), resolved by the frontend through its registry by
+        // the `type` field. See DashboardScreen for the rules.
         $dashboardsPayload = [];
         foreach ($this->screens->all($panel) as $slug => $class) {
-            // ScreenRegistry stores class strings; we resolve them through
-            // the container so that DI injects the dependencies, in case a
-            // particular DashboardScreen has a typed constructor.
             if (! is_subclass_of($class, \Dskripchenko\LaravelAdmin\Widget\DashboardScreen::class)) {
                 continue;
             }
+            // Resolved through the container, so that a DashboardScreen with a
+            // typed constructor gets its dependencies.
             $screen = app($class);
-            if (! $screen instanceof \Dskripchenko\LaravelAdmin\Widget\DashboardScreen) {
+            if (! $screen instanceof \Dskripchenko\LaravelAdmin\Widget\DashboardScreen || ! $screen->canAccess()) {
                 continue;
             }
-            $widgets = [];
-            foreach ($screen->widgets() as $widget) {
-                if (! $widget->isVisible()) {
-                    continue;
-                }
-                $widgets[] = $widget->toArray();
-            }
-            $dashboardsPayload[] = [
-                'slug' => $slug,
-                'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->name() ?? $slug),
-                'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->description()),
-                'widgets' => $widgets,
-            ];
+            $dashboardsPayload[] = $screen->toManifest($slug);
         }
 
         $payload = [
