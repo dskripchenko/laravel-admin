@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'
@@ -53,13 +53,14 @@ const seedManifest = (overrides: Record<string, unknown> = {}) => {
   }
 }
 
-async function mountPage(props: Record<string, unknown> = {}) {
+async function mountPage(props: Record<string, unknown> = {}, attach = false) {
   const router = mkRouter()
   await router.push('/r/articles')
   await router.isReady()
   return mount(ResourceIndexPage, {
     props: { slug: 'articles', ...props },
     global: { plugins: [router] },
+    ...(attach ? { attachTo: document.body } : {}),
   })
 }
 
@@ -169,9 +170,7 @@ describe('ResourceIndexPage', () => {
       deleted.push(JSON.parse(config.data).id)
       return [200, { success: true, payload: {} }]
     })
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-
-    const wrapper = await mountPage()
+    const wrapper = await mountPage({}, true)
     await flushPromises()
 
     const { useResourceIndexStore } = await import('../../stores/resourceIndex')
@@ -186,9 +185,15 @@ describe('ResourceIndexPage', () => {
     expect(deleteBtn).toBeDefined()
     await deleteBtn!.trigger('click')
     await flushPromises()
+    // The confirmation is a dialog now, not window.confirm.
+    expect(document.body.querySelector('[data-testid="action-confirm-message"]')?.textContent)
+      .toContain('Удалить выбранные записи (2)?')
+    ;(document.body.querySelector('[data-testid="action-confirm-ok"]') as HTMLElement).click()
+    await flushPromises()
 
     expect(deleted.sort()).toEqual([1, 2])
     expect(idx.hasSelection).toBe(false)
+    wrapper.unmount()
 
   })
 
@@ -244,5 +249,98 @@ describe('ResourceIndexPage', () => {
     await flushPromises()
 
     expect(mock.history.get.filter((r) => r.url?.includes('_views'))).toHaveLength(1)
+  })
+
+  describe('resource actions', () => {
+    const rows = {
+      success: true,
+      payload: {
+        data: [{ id: 1 }, { id: 2 }],
+        meta: { page: 1, per_page: 20, total: 2, last_page: 1 },
+      },
+    }
+
+    it('bulk action with an object confirm asks in a dialog, then posts {key, ids}', async () => {
+      seedManifest({
+        actions: [{
+          kind: 'action',
+          name: 'archive',
+          label: 'Архивировать',
+          type: 'bulk',
+          position: ['bulk'],
+          confirm: { title: 'Архивация', message: 'Архивировать выбранное?' },
+          attributes: { method: 'archive' },
+        }],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const posted: unknown[] = []
+      mock.onPost('/articles/action').reply((config) => {
+        posted.push(JSON.parse(config.data))
+        return [200, { success: true, payload: { affected: 2 } }]
+      })
+
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      const { useResourceIndexStore } = await import('../../stores/resourceIndex')
+      const idx = useResourceIndexStore()
+      idx.toggleRow(1)
+      idx.toggleRow(2)
+      await flushPromises()
+
+      await wrapper.find('[data-testid="action-archive"]').trigger('click')
+      await flushPromises()
+      expect(document.body.querySelector('[data-testid="action-confirm-message"]')?.textContent)
+        .toContain('Архивировать выбранное?')
+      expect(document.body.textContent).toContain('Архивация')
+      expect(posted).toEqual([])
+
+      ;(document.body.querySelector('[data-testid="action-confirm-ok"]') as HTMLElement).click()
+      await flushPromises()
+      expect(posted).toEqual([{ key: 'archive', ids: [1, 2] }])
+      wrapper.unmount()
+    })
+
+    it('modal action sends the form values as payload', async () => {
+      const { registerBuiltinComponents } = await import('../render/builtin')
+      registerBuiltinComponents()
+      seedManifest({
+        actions: [{
+          kind: 'action',
+          name: 'change-status',
+          label: 'Сменить статус',
+          type: 'modal',
+          position: ['bulk'],
+          confirm: null,
+          attributes: {
+            method: 'changeStatus',
+            fields: [{ kind: 'field', type: 'input', name: 'status', label: 'Статус' }],
+          },
+        }],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const posted: unknown[] = []
+      mock.onPost('/articles/action').reply((config) => {
+        posted.push(JSON.parse(config.data))
+        return [200, { success: true, payload: { affected: 1 } }]
+      })
+
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      const { useResourceIndexStore } = await import('../../stores/resourceIndex')
+      useResourceIndexStore().toggleRow(2)
+      await flushPromises()
+
+      await wrapper.find('[data-testid="action-change-status"]').trigger('click')
+      await flushPromises()
+      const input = document.body.querySelector('[data-testid="action-form"] input') as HTMLInputElement
+      input.value = 'review'
+      input.dispatchEvent(new Event('input'))
+      await flushPromises()
+      ;(document.body.querySelector('[data-testid="action-modal-submit"]') as HTMLElement).click()
+      await flushPromises()
+
+      expect(posted).toEqual([{ key: 'change-status', ids: [2], payload: { status: 'review' } }])
+      wrapper.unmount()
+    })
   })
 })

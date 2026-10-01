@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Resource;
 
+use Dskripchenko\LaravelAdmin\Action\Action;
+use Dskripchenko\LaravelAdmin\Action\DropDown;
+use Dskripchenko\LaravelAdmin\Action\ModalAction;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
 use Dskripchenko\LaravelAdmin\Filter\HttpFilterParser;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
@@ -16,6 +19,8 @@ use Dskripchenko\LaravelApi\Facades\ApiRequest;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -756,14 +761,9 @@ final class ResourceController extends ApiController
         $resource = $this->currentResource();
         $actionKey = $data['key'];
 
-        // Find the action whose name equals $actionKey among Resource->actions().
-        $action = null;
-        foreach ($resource->actions() as $a) {
-            if ($a->name() === $actionKey) {
-                $action = $a;
-                break;
-            }
-        }
+        // Find the action whose name equals $actionKey among Resource->actions(),
+        // including the ones nested in a DropDown.
+        $action = self::findAction($resource->actions(), $actionKey);
         if ($action === null) {
             return $this->error([
                 'errorKey' => 'unknown_action',
@@ -780,9 +780,22 @@ final class ResourceController extends ApiController
             ], 501);
         }
 
+        $payload = (array) ($data['payload'] ?? []);
+
+        // A modal action collects its payload through a form; the form's own
+        // rules are checked here, so the method receives what it declared and
+        // the modal shows the errors next to the fields.
+        if ($action instanceof ModalAction) {
+            $payload = self::validateModalPayload($action, $payload);
+        }
+
         // The call is $resource->{method}(array $ids, array $payload).
         try {
-            $result = $resource->{$methodName}($data['ids'], (array) ($data['payload'] ?? []));
+            $result = $resource->{$methodName}($data['ids'], $payload);
+        } catch (ValidationException $e) {
+            // The method validated something itself: a 422 with field errors,
+            // not an action failure.
+            throw $e;
         } catch (ActionFailedException $e) {
             // A refusal on the merits: the action ran and is explaining why it
             // could not finish. A 500 here would mean the panel itself broke —
@@ -802,6 +815,70 @@ final class ResourceController extends ApiController
             'affected' => is_int($result) ? $result : count($data['ids']),
             'message' => 'Action `'.$actionKey.'` applied',
         ]);
+    }
+
+    /**
+     * @param  array<int, Action>  $actions
+     */
+    private static function findAction(array $actions, string $key): ?Action
+    {
+        foreach ($actions as $action) {
+            if ($action->name() === $key) {
+                return $action;
+            }
+            if ($action instanceof DropDown) {
+                $nested = self::findAction($action->getItems(), $key);
+                if ($nested !== null) {
+                    return $nested;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Validates a modal action's payload against the string rules of its
+     * fields; `required()` fields are required.
+     *
+     * @param  array<array-key, mixed>  $payload
+     * @return array<array-key, mixed>
+     *
+     * @throws ValidationException
+     */
+    private static function validateModalPayload(ModalAction $action, array $payload): array
+    {
+        $fields = $action->toArray()['attributes']['fields'] ?? [];
+        if (! is_array($fields)) {
+            return $payload;
+        }
+
+        $rules = [];
+        $labels = [];
+        foreach ($fields as $field) {
+            if (! is_array($field) || ! is_string($field['name'] ?? null) || $field['name'] === '') {
+                continue;
+            }
+            $name = $field['name'];
+            $fieldRules = array_values(array_filter((array) ($field['rules'] ?? []), 'is_string'));
+            if (($field['required'] ?? false) === true && ! in_array('required', $fieldRules, true)) {
+                array_unshift($fieldRules, 'required');
+            }
+            if ($fieldRules !== []) {
+                $rules[$name] = $fieldRules;
+            }
+            if (is_string($field['label'] ?? null) && $field['label'] !== '') {
+                $labels[$name] = $field['label'];
+            }
+        }
+
+        if ($rules === []) {
+            return $payload;
+        }
+
+        Validator::make($payload, $rules, [], $labels)->validate();
+
+        return $payload;
     }
 
     /**

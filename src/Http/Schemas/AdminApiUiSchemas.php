@@ -51,6 +51,7 @@ trait AdminApiUiSchemas
             'ScreenAlert' => [
                 'type' => 'string!',                            // info|success|warning|danger
                 'message' => 'string!',
+                'title' => 'string',
                 'duration_ms' => 'integer',
             ],
 

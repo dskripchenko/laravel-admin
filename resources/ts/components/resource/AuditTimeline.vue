@@ -46,8 +46,10 @@ interface Props {
    */
   subjectType: string | null
   subjectId: string | number
+  /** Show at most this many of the latest events; all of them when null. */
+  limit?: number | null
 }
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { limit: null })
 
 const items = ref<AuditEntry[]>([])
 const loading = ref<boolean>(false)
@@ -70,7 +72,8 @@ async function load(): Promise<void> {
     const result = await client.get<{ data: AuditEntry[] }>(
       `/audit/timeline?subject_type=${encodeURIComponent(props.subjectType)}&subject_id=${encodeURIComponent(String(props.subjectId))}`,
     )
-    items.value = result.data ?? []
+    const data = result.data ?? []
+    items.value = props.limit && props.limit > 0 ? data.slice(0, props.limit) : data
   } catch (err) {
     error.value = err instanceof Error ? err : new Error(String(err))
     items.value = []
@@ -80,7 +83,7 @@ async function load(): Promise<void> {
 }
 
 onMounted(load)
-watch(() => [props.subjectType, props.subjectId] as const, load)
+watch(() => [props.subjectType, props.subjectId, props.limit] as const, load)
 
 const hasItems = computed<boolean>(() => items.value.length > 0)
 

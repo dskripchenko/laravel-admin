@@ -26,6 +26,7 @@ compose to arbitrary depth.
 | `Infolist` | `Layout::infolist([...])` | Read-only key/value display |
 | `Dashboard` | `Layout::dashboard([...])` | 12-col grid (used by `DashboardScreen`) |
 | `View` | `Layout::view('component-name', $props)` | Custom Vue component |
+| `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
 
 ## Examples
 
@@ -98,9 +99,22 @@ Layout::wizard([
 ]),
 ```
 
-The frontend renders an `UidStepper` header. Step navigation is
-validation-gated: each step's required fields must pass before the
-user can advance.
+The frontend renders a `UidStepper` header with Back/Next buttons. Moving
+forward is validation-gated: the step's fields are checked against their
+own rules (`required`, `email`, `numeric`, `integer`, `min`, `max`, `in`;
+anything else is left to the server) plus the step's `->rules([...])`.
+
+```php
+Layout::wizard([...])
+    ->submit('finish')          // the last step's button calls this screen method
+    ->freeForm()                // steps may be visited in any order
+    ->persistKey('onboarding'), // progress survives a reload (localStorage)
+```
+
+Without `freeForm()` only the steps already passed are clickable in the
+stepper. With `persistKey()` the current step and the entered values are
+kept in the browser until the wizard is submitted; passwords and files are
+never stored.
 
 ### Modal / Drawer
 
@@ -114,24 +128,49 @@ ModalAction::make('Set price')
     ]),
 ```
 
-Or as a layout in a Screen:
+Or as a layout in a Screen, opened by an action that names its id:
 
 ```php
-Layout::modal('Edit', [
-    Input::make('title'),
-])->size('lg'),
+public function layout(): array
+{
+    return [
+        Layout::modal('Edit', [
+            Input::make('title'),
+        ])
+            ->withId('edit-modal')
+            ->size('lg')               // sm | md | lg | xl | full
+            ->dismissable(false)       // no cross, no overlay click, no Escape
+            ->footer([
+                Button::make('Cancel')->withName('cancel'),
+                Button::make('Save')->method('save')->primary(),
+            ]),
+    ];
+}
+
+public function commandBar(): array
+{
+    return [Button::make('Edit')->opens('edit-modal')];
+}
 ```
+
+A footer action with a method closes the overlay once the method succeeds;
+one named `close` or `cancel` just closes it. `Layout::drawer()` works the
+same way, with `->position('left'|'right'|'bottom')` and `->size()` (`sm`,
+`md`, `lg`, `xl` or a CSS length).
 
 ### Wrapper
 
-Plain `<div>` to apply CSS:
+Plain element to apply CSS:
 
 ```php
 Layout::wrapper([
     Input::make('title'),
     Input::make('slug'),
-])->class('two-col-grid'),
+])->className('two-col-grid')->tag('section'),
 ```
+
+`tag()` accepts `div` (default), `section`, `article`, `aside`, `header`,
+`footer`, `main`, `nav`, `fieldset` and `span`.
 
 ### Accordion
 
@@ -139,10 +178,11 @@ Layout::wrapper([
 Layout::accordion([
     'Personal' => [Input::make('name')],
     'Billing' => [Input::make('card_last4')->readonly()],
-])->multiple(),
+])->multi(),
 ```
 
-`->multiple()` allows several sections to be open at once.
+`->multi()` allows several sections to be open at once. Sections start
+closed; `->section('Title', [...], defaultOpen: true)` opens one initially.
 
 ### Infolist (read-only)
 
@@ -159,6 +199,20 @@ Layout::infolist([
 Entry types: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 `ImageEntry`, `RelationEntry`, `RepeatableEntry`, `MapEntry`,
 `ColorEntry`.
+
+On a custom Screen the entries read the screen's state.
+
+### AuditTrail
+
+```php
+AuditTrail::for(\App\Models\User::class)
+    ->fromState('user_id')          // the state key holding the id; 'id' by default
+    ->limit(20)
+    ->withPermission('admin.audit'),
+```
+
+Shows the record's audit timeline (`GET /audit/timeline`); nothing is shown
+while the state has no id.
 
 ### Dashboard
 
@@ -216,7 +270,7 @@ Tabs::make([
         ]),
     ],
     'Audit' => [
-        Layout::view('audit-trail', ['record_id' => fn ($state) => $state['id']]),
+        AuditTrail::for(\App\Models\User::class),
     ],
 ]),
 ```

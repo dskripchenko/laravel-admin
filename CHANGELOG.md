@@ -9,6 +9,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Dashboard charts draw every type and every dataset.** `ChartWidget` line
+  and area charts were drawn as bars, radar fell through to the unknown-widget
+  placeholder, and only the first dataset was shown. New dependency-free SVG
+  renderers: line, area (overlaid, or stacked with `stacked()`), bar (grouped,
+  or stacked) and radar, all multi-series, with axes and gridlines, a hover
+  crosshair/tooltip, a legend for two series and more, a screen-reader data
+  table, and a colour-blind-checked series palette (overridable through
+  `--admin-chart-series-1..6`). They size to the dashboard cell and follow the
+  dark theme. The `bar-chart` widget now renders through the same component.
+- **Screen method `alerts` are shown as toasts.** The `alerts` a screen method
+  returns were part of the contract but never displayed. Each now becomes a
+  toast (`success`/`info`/`warning`/`danger`, with `error`/`warn` aliases,
+  optional `title` and `duration_ms`); an alert that only repeats the inline
+  `message` is skipped. Alert texts are translated in the request locale.
+- Success toasts after creating, saving and deleting a record from the
+  resource form, view and tree pages.
+
+- **Every backend layout now renders for real in the SPA.** `accordion`
+  (collapsible sections, `multi`, `defaultOpen`), `wizard` (a stepper with
+  Back/Next, per-step validation from the fields' rules and `Step::rules()`,
+  `submit()` calling the screen method, `freeForm()` jumps, progress kept in
+  localStorage under `persistKey()`), `modal` and `drawer` (size, position,
+  `dismissable()`, footer actions), `view` (a host component registered with
+  `registerLayout()`), `wrapper` (`tag()` and the new `className()`),
+  `infolist` on any screen, and `audit_trail` (the record's audit timeline,
+  `limit()`, `withPermission()`). Accordion, step and wizard were drawn as a
+  plain card; the rest showed the unknown-type placeholder.
+- `Action::opens($layoutId)` — a button that opens a Modal or Drawer layout of
+  the screen (give the layout a stable id with `withId()`).
+- The screen context (`provideScreenContext`/`useScreenContext`), through which
+  layouts open overlays and call screen methods.
+- **Every backend field type has a real SPA component.** `markdown` (editor
+  with a formatting toolbar and write/preview/split modes, rendered by a
+  built-in, HTML-escaping markdown renderer), `code` (monospaced editor with
+  line numbers and Tab/Shift+Tab indentation; read-only via `UidCode`),
+  `color` (`UidColorPicker`, stores hex/rgb/hsl per `format()`, palette,
+  alpha), `slider` (with marks), `rating`, `radio`, `time`, `date_range`
+  (with `presets()`), `tree_select`, `cascader`, `morph_switcher` (type +
+  record selects), `label` (static text), `hidden` (invisible, value kept in
+  the state) and the field-level `group` (nested object state, prefixed
+  validation errors, rows/columns/inline layout, collapsible). The stand-ins
+  — textareas, number inputs and plain selects — are gone.
+- **Every infolist entry type is drawn.** `color` (swatch + value), `image`
+  (thumbnails, click to zoom), `map` (coordinates and an OpenStreetMap link,
+  no tile dependency) and `relation` (links to the related record's view page
+  with `linkTo()`).
+- `Infolist\FieldEntry` — the read-only view of a form field. The default
+  `Resource::infolist()` now uses it for markdown, code, rating, radio,
+  tree_select, cascader, date_range, morph_switcher and group fields, shows
+  `color` fields as a `ColorEntry`, and leaves `hidden` fields out.
+- `TreeSelect::fromModel()` builds the tree from the model when the field is
+  serialized; `MorphSwitcher` serializes each type's records as `options`
+  (up to 100, like `RelationSelect`).
+
+- **The SPA runs every action type the backend declares.** One
+  `useActionRunner` composable drives resource bulk/row actions, the view
+  page's actions and the screen command bar: `ModalAction` opens a dialog
+  with its fields (rendered by the regular field components, `modalSize`
+  honoured) and sends their values as `payload`, with 422 errors shown next
+  to the fields; `AsyncAction` starts a delayed process and polls
+  `delayed/status` with a progress bar; `Link` navigates (router, full page,
+  `target`, download); `DropDown` renders a menu of its nested actions.
+  `requiresAtLeast` / `requiresAtMost` disable a bulk action outside its range.
+  On screens the screen context hands every non-overlay action to the runner
+  (new `run` option of `createScreenContext`), so actions in modal/drawer
+  footers and wizards get the same handling; its `confirm` option may now be
+  async and receives `{message, title}`.
+- `ResourceController::action` resolves actions nested in a `DropDown` and
+  validates a `ModalAction`'s payload against its fields' rules.
+
 - **The admin works without Node or a build step.** The package now ships
   the SPA prebuilt in `public/` (`npm run build:app`); `admin:install` and the
   new `admin:publish` copy it to `public/vendor/admin`, and the shell loads it
@@ -34,6 +104,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Russian), and `admin:user` no longer stores that default as the new
   administrator's own choice, so the browser's language applies until they
   pick one.
+
+### Fixed
+
+- **Permission labels followed the boot locale.** Plugins register their
+  permission groups once at boot, so under Octane a per-request locale never
+  reached the role matrix. `ItemPermission::toArray()` (and so
+  `/system/permissions`) now translates group names and labels in the current
+  locale; already-translated strings are returned unchanged.
+
+- `Wrapper::className()` was documented but did not exist.
+
+- Action confirmations never showed on resource pages: the backend sends
+  `confirm` as `{title, message}` and the SPA expected a string. Confirmations
+  are now a dialog (title + message) instead of `window.confirm`.
+- The view page posted its actions to a non-existent `/{slug}/action/{key}`.
+- A `ValidationException` thrown by a resource action method is a 422 again,
+  not a 500.
+- The default confirmation title is translated on English panels.
 
 ## 1.32.2
 

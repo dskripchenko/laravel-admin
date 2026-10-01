@@ -50,6 +50,16 @@ import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
 import { adminToast } from '../../stores/toast'
 import { useI18nStore } from '../../stores/i18n'
+import {
+  needsSelection,
+  normalizeActions,
+  selectionAllows,
+  useActionRunner,
+  type AdminAction,
+} from '../../composables/useActionRunner'
+import AdminActionButton from '../actions/AdminActionButton.vue'
+import AdminActionDialogs from '../actions/AdminActionDialogs.vue'
+import AdminActionMenuItems from '../actions/AdminActionMenuItems.vue'
 
 const i18n = useI18nStore()
 const tr = (s: string): string => i18n.tr(s)
@@ -131,78 +141,67 @@ const resolvedCreateRouteName = computed<string | null>(() => {
 })
 
 /**
- * Header actions from manifest.actions — `Resource->actions()` on the backend.
- * Every node carries {key, label, icon?, confirm?, …} and renders in the
- * more-menu. A click calls onCustomAction, which POSTs to
- * /{slug}/action/{key}.
+ * Resource actions from manifest.actions — `Resource->actions()` on the
+ * backend, every type of them (button, bulk, modal, async, link, dropdown).
+ * The ones needing no selection live in the ⋯ menu; row and bulk actions live
+ * in the bulk toolbar, which appears once rows are picked. They all run
+ * through useActionRunner; the server-side ones POST to /{slug}/action with
+ * {key, ids[], payload?}.
  */
-interface HeaderAction {
-  key: string
-  label: string
-  confirm?: string
-  icon?: string
-  /** true when the action operates on selected rows (row or bulk position). */
-  needsSelection: boolean
-  destructive?: boolean
-}
-const allActions = computed<HeaderAction[]>(() => {
-  const raw = (resourceMeta.value?.actions ?? []) as Array<Record<string, unknown>>
-  return raw
-    .map((a) => {
-      const position = Array.isArray(a.position) ? (a.position as string[]) : []
-      return {
-        key: String(a.key ?? a.name ?? ''),
-        label: String(a.label ?? a.name ?? a.key ?? ''),
-        confirm: typeof a.confirm === 'string' ? a.confirm : undefined,
-        icon: typeof a.icon === 'string' ? a.icon : undefined,
-        // Row and bulk actions apply to the selected records — provisioning,
-        // suspend, drop and so on. With nothing selected there is nothing to
-        // run them against.
-        needsSelection: position.includes('row') || position.includes('bulk'),
-        destructive: Boolean(a.destructive),
-      }
-    })
-    .filter((a) => a.key !== '' && a.label !== '')
-})
-// Global actions — the ones needing no selection — live in the ⋯ menu;
-// selection actions live in the bulk toolbar, which appears once rows are
-// picked.
-const headerActions = computed<HeaderAction[]>(() => allActions.value.filter((a) => !a.needsSelection))
-const selectionActions = computed<HeaderAction[]>(() => allActions.value.filter((a) => a.needsSelection))
+const allActions = computed<AdminAction[]>(() => normalizeActions(resourceMeta.value?.actions))
+const headerActions = computed<AdminAction[]>(() => allActions.value.filter((a) => !needsSelection(a)))
+const selectionActions = computed<AdminAction[]>(() => allActions.value.filter((a) => needsSelection(a)))
 
-async function onCustomAction(action: HeaderAction): Promise<void> {
+/** A bulk action outside its requiresAtLeast/requiresAtMost range is disabled. */
+const isActionDisabled = (action: AdminAction): boolean =>
+  needsSelection(action) && !selectionAllows(action, index.selectedCount)
+
+const runner = useActionRunner({
+  ids: () => [...index.selection],
+  async execute(action, payload) {
+    nav.start()
+    try {
+      const { getAdminClient } = await import('../../stores/registry')
+      // The backend contract: POST /{slug}/action with {key, ids[], payload?}.
+      // The action is resolved by name through `Resource->actions()`.
+      return await getAdminClient().post<{ affected?: number; message?: string }>(
+        `/${props.slug}/action`,
+        {
+          key: action.name,
+          ids: [...index.selection],
+          ...(payload ? { payload } : {}),
+        },
+      )
+    } finally {
+      nav.end()
+    }
+  },
+  async onSuccess(action, raw) {
+    const result = (raw ?? {}) as { affected?: number; message?: string }
+    if (needsSelection(action)) index.clearSelection()
+    await index.load().catch(() => undefined)
+    adminToast.success(
+      result.message ?? tRaw('Действие «:action» применено к :count записям.', { action: action.label, count: result.affected ?? 0 }),
+    )
+  },
+  onError(action, err) {
+    if (typeof console !== 'undefined') console.error('[admin] header-action failed:', err)
+    adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
+  },
+  async refresh() {
+    await index.load().catch(() => undefined)
+  },
+})
+
+async function onCustomAction(action: AdminAction): Promise<void> {
   // Selection actions require a selection — a guard, even though their
   // buttons only exist in the bulk toolbar; global ones run without it.
-  if (action.needsSelection && !index.hasSelection) {
+  if (needsSelection(action) && !index.hasSelection) {
     adminToast.error(tr('Сначала выберите записи.'))
     return
   }
-  if (action.confirm && !window.confirm(action.confirm)) return
-  emit('header-action', action.key)
-  try {
-    nav.start()
-    const { getAdminClient } = await import('../../stores/registry')
-    const client = getAdminClient()
-    // The backend contract: POST /{slug}/action with {key, ids[], payload?}.
-    // The action is resolved by name through `Resource->actions()`.
-    const result = await client.post<{ affected?: number; message?: string }>(
-      `/${props.slug}/action`,
-      {
-        key: action.key,
-        ids: [...index.selection],
-      },
-    )
-    if (action.needsSelection) index.clearSelection()
-    await index.load().catch(() => undefined)
-    adminToast.success(
-      result?.message ?? tRaw('Действие «:action» применено к :count записям.', { action: action.label, count: result?.affected ?? 0 }),
-    )
-  } catch (err) {
-    if (typeof console !== 'undefined') console.error('[admin] header-action failed:', err)
-    adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
-  } finally {
-    nav.end()
-  }
+  emit('header-action', action.name)
+  await runner.run(action)
 }
 
 const bulkDeleting = ref(false)
@@ -210,7 +209,7 @@ const bulkDeleting = ref(false)
 async function onBulkDelete(): Promise<void> {
   const ids = [...index.selection]
   if (ids.length === 0) return
-  if (!window.confirm(tRaw('Удалить выбранные записи (:count)?', { count: ids.length }))) return
+  if (!(await runner.confirm(tRaw('Удалить выбранные записи (:count)?', { count: ids.length }), true))) return
   bulkDeleting.value = true
   try {
     const { getAdminClient } = await import('../../stores/registry')
@@ -665,7 +664,7 @@ async function onResetView(): Promise<void> {
 async function onDeleteView(view: SavedViewItem, e?: MouseEvent): Promise<void> {
   e?.stopPropagation()
   if (!view.owned) return
-  if (!window.confirm(tRaw('Удалить представление «:name»?', { name: view.name }))) return
+  if (!(await runner.confirm(tRaw('Удалить представление «:name»?', { name: view.name }), true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
@@ -897,7 +896,7 @@ async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<v
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!window.confirm(tt('admin.resource.delete_confirm', 'Удалить запись?'))) return
+  if (!(await runner.confirm(tt('admin.resource.delete_confirm', 'Удалить запись?'), true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
@@ -1006,7 +1005,7 @@ async function onForceDelete(row: Record<string, unknown>, e?: MouseEvent): Prom
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!window.confirm(tt('admin.resource.force_delete_confirm', 'Удалить запись НАВСЕГДА? Действие необратимо.'))) return
+  if (!(await runner.confirm(tt('admin.resource.force_delete_confirm', 'Удалить запись НАВСЕГДА? Действие необратимо.'), true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
@@ -1102,14 +1101,8 @@ async function retryLoad(): Promise<void> {
           >
             {{ tr('Экспорт') }} {{ EXPORT_LABELS[fmt] ?? fmt.toUpperCase() }}
           </UidMenuItem>
-          <!-- Кастомные действия от backend Resource->actions(). -->
-          <UidMenuItem
-            v-for="action in headerActions"
-            :key="action.key"
-            @click="onCustomAction(action)"
-          >
-            {{ action.label }}
-          </UidMenuItem>
+          <!-- Custom actions from the backend's Resource->actions(). -->
+          <AdminActionMenuItems :actions="headerActions" @run="onCustomAction" />
           <slot name="header-menu" />
         </UidMenu>
         <UidButton v-if="isImportable" variant="secondary" size="md" @click="onImportClick">
@@ -1143,15 +1136,15 @@ async function retryLoad(): Promise<void> {
         {{ tr('Выбрано') }} <b>{{ index.selectedCount }}</b>
       </span>
       <span class="admin-bulk-toolbar__divider" />
-      <UidButton
+      <AdminActionButton
         v-for="action in selectionActions"
-        :key="action.key"
+        :key="action.name"
+        :action="action"
         size="sm"
-        :variant="action.destructive ? 'danger' : 'ghost'"
-        @click="onCustomAction(action)"
-      >
-        {{ action.label }}
-      </UidButton>
+        default-variant="ghost"
+        :is-disabled="isActionDisabled"
+        @run="onCustomAction"
+      />
       <UidButton size="sm" variant="ghost" @click="onExport('csv')">{{ tr('Экспорт') }}</UidButton>
       <UidButton
         v-if="isEditable"
@@ -1400,6 +1393,8 @@ async function retryLoad(): Promise<void> {
         @update:model-value="onPageChange"
       />
     </footer>
+
+    <AdminActionDialogs :runner="runner" />
   </section>
 </template>
 

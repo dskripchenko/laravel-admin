@@ -50,7 +50,19 @@ ModalAction::make('Отправить уведомление')
         Textarea::make('body')->rows(5)->required(),
     ])
     ->submitLabel('Отправить');
+
+// На Resource'е: значения формы приходят вторым аргументом.
+public function sendNotification(array $ids, array $payload): int
+{
+    // $payload = ['subject' => ..., 'body' => ...]
+    return count($ids);
+}
 ```
+
+SPA открывает модалку с полями (`modalSize('sm'|'md'|'lg'|'xl')`) и шлёт
+`POST /{slug}/action` с `{key, ids, payload}`. Сервер проверяет `payload`
+правилами полей (`required()`, `rules([...])`); ошибки 422 показываются
+у полей, модалка остаётся открытой.
 
 ## Async-action — долгая операция через delayed-process
 
@@ -70,8 +82,10 @@ AsyncAction::make('Пересчитать статистику')
     ->pollInterval(5);
 ```
 
-SPA получит `process_uuid` и будет polling'ом следить за прогрессом
-через `/api/admin/delayed/status?uuid=...`.
+SPA запускает процесс через `/api/admin/delayed/run`, получает `uuid` и
+каждые `pollInterval` секунд опрашивает `/api/admin/delayed/status?uuid=...`,
+показывая прогресс. Если action стоит в позиции `row`/`bulk`, в параметры
+добавляются выбранные ключи как `ids` — handler должен их принимать.
 
 ## DropDown — группа actions под одну кнопку
 

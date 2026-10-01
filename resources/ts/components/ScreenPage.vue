@@ -9,19 +9,30 @@
  * `runMethod` into the store.
  *
  * What it supports:
- *   - confirm, when set: a confirm() before the runMethod
+ *   - every action type through useActionRunner: button, modal (its form
+ *     values merged into the state), async, link and dropdown
+ *   - confirm, when set: a confirmation dialog before the action
  *   - destructive: variant=danger
  *   - primary: variant=primary
- *   - icon: passed on to UidButton
- *   - alerts: a UidAlert above the body, from lastMessage or store.error
+ *   - icon: resolved through the icon registry
+ *   - alerts: a UidAlert above the body, from lastMessage or store.error;
+ *     the response's `alerts` become toasts (see the screen store)
  *   - the fields' validation errors, through FormState, cleared on setField
+ *   - the screen context (render/screenContext): an action carrying
+ *     `attributes.opens` opens the Modal/Drawer layout with that id instead of
+ *     calling a method; the layouts dispatch their own actions through it
  */
 import { computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { UidAlert, UidButton, UidCard, UidSkeleton } from '@dskripchenko/ui'
-import { useScreenStore, type ScreenAction } from '../stores/screen'
+import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
+import { useScreenStore } from '../stores/screen'
+import { normalizeAction, normalizeActions, useActionRunner } from '../composables/useActionRunner'
+import AdminActionButton from './actions/AdminActionButton.vue'
+import AdminActionDialogs from './actions/AdminActionDialogs.vue'
+import { toastError } from '../stores/toast'
 import { provideFormState } from './render/formState'
 import { provideRecord } from './infolist/recordContext'
+import { provideScreenContext } from './render/screenContext'
 import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
 import { trSafe as tr } from '../stores/i18n'
 
@@ -45,6 +56,49 @@ const resolvedSlug = computed<string>(() => {
 // for the infolists.
 const ctx = provideFormState(screen.state, screen.errors)
 provideRecord(screen.state)
+
+const commandBar = computed(() => normalizeActions(screen.commandBar))
+
+const runner = useActionRunner({
+  execute(action, payload) {
+    const method = action.attributes.method
+    if (typeof method !== 'string' || method === '') {
+      return Promise.reject(new Error(`Action \`${action.name}\` has no method`))
+    }
+    // A modal's values join the screen's state: the command method still
+    // receives one payload.
+    return screen.runMethod(method, payload ? { ...screen.state, ...payload } : undefined)
+  },
+  // A failed runMethod is already the page's alert; anything else — an action
+  // with no method, say — gets a toast.
+  onError: (_action, err) => {
+    if (!screen.hasError) toastError(err)
+  },
+  refresh: async () => {
+    if (resolvedSlug.value) await screen.load(resolvedSlug.value).catch(() => undefined)
+  },
+})
+
+// Every action on the screen — the command bar's and the layouts' (a modal's
+// footer, a wizard's submit) — goes through the screen context: an overlay
+// opens locally, anything else is handed to the action runner.
+const screenCtx = provideScreenContext({
+  running: computed(() => screen.running),
+  async runMethod(method) {
+    try {
+      await screen.runMethod(method)
+      return true
+    } catch {
+      // The errors are in store.error and store.errors already; the UI follows reactively.
+      return false
+    }
+  },
+  confirm: (c) => runner.confirm(c),
+  run: async (action) => {
+    const normalized = normalizeAction(action)
+    return normalized ? runner.run(normalized) : false
+  },
+})
 
 // When store.errors changes, after a ValidationError, it is synced into the form context.
 watch(
@@ -85,26 +139,6 @@ watch(
   },
 )
 
-async function onRunAction(action: ScreenAction): Promise<void> {
-  const method = action.attributes?.method as string | undefined
-  if (!method) return
-
-  if (action.confirm?.message) {
-    if (!confirm(action.confirm.message)) return
-  }
-
-  try {
-    await screen.runMethod(method)
-  } catch {
-    // The errors are in store.error and store.errors already; the UI follows reactively.
-  }
-}
-
-function actionVariant(action: ScreenAction): 'primary' | 'danger' | 'ghost' | 'secondary' {
-  if (action.destructive) return 'danger'
-  if (action.primary) return 'primary'
-  return 'secondary'
-}
 </script>
 
 <template>
@@ -116,18 +150,15 @@ function actionVariant(action: ScreenAction): 'primary' | 'danger' | 'ghost' | '
           {{ screen.description }}
         </p>
       </div>
-      <div v-if="screen.commandBar.length > 0" class="admin-page__actions">
-        <UidButton
-          v-for="action in screen.commandBar"
+      <div v-if="commandBar.length > 0" class="admin-page__actions">
+        <AdminActionButton
+          v-for="action in commandBar"
           :key="action.name"
-          :variant="actionVariant(action)"
-          :icon="action.icon ?? undefined"
+          :action="action"
           :loading="screen.running"
           :disabled="screen.running || screen.loading"
-          @click="onRunAction(action)"
-        >
-          {{ action.label }}
-        </UidButton>
+          @run="screenCtx.dispatch"
+        />
       </div>
     </header>
 
@@ -179,6 +210,8 @@ function actionVariant(action: ScreenAction): 'primary' | 'danger' | 'ghost' | '
         :node="node"
       />
     </UidCard>
+
+    <AdminActionDialogs :runner="runner" />
   </section>
 </template>
 
