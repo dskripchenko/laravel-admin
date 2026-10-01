@@ -5,7 +5,7 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.34.0
+## 1.35.0
 
 ### Security
 
@@ -15,6 +15,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   user needs at least one admin role (or `canAccessAdmin()`): the login
   answers 403 `forbidden`, the API answers 403 to such a site session without
   logging it out, and the shell treats the user as a guest.
+
+### Added
+
+- **The shared strategy works out of the box.** `admin:install --shared`
+  points `config/admin.php` at the application's default guard, its provider,
+  user model and password broker, and publishes a migration
+  (`admin-shared-migrations` tag) that adds the admin's columns — `locale`,
+  `theme`, `is_active`, `last_login_*`, `two_factor_*` — to that users table,
+  skipping the ones it already has. New `HasAdminTwoFactor` trait gives a host
+  model the 2FA casts and `hasTwoFactorEnabled()` (`AdminUser` now uses it).
+
+- `admin:user alice@example.com --super` grants Super Admin to an existing
+  user instead of failing on the taken email.
+
+- A model may define `canAccessAdmin(string $panelId): bool` to decide who
+  enters a panel.
+
+- Docs: [Adding the admin to an existing application](docs/en/integration.md)
+  (en, ru) — installer footprint and undo, dedicated vs shared, path/domain/API
+  prefix, sessions, CSRF, proxies, panels, a host laravel-api module, roles,
+  frontend, upgrading and troubleshooting.
+
+### Fixed
+
+- **`admin:user` failed on a users table without the admin's columns**
+  (`is_active`, `locale`, `theme`) — the shared strategy's case. It now fills
+  only the columns the table has, and speaks English.
+
+- **The SPA ignored a moved laravel-api prefix.** The admin API is served at
+  `/{laravel-api.prefix}/admin`, but the SPA was given a fixed `api/admin`, so
+  a host with `'prefix' => 'api/v1'` got a 404 on every call.
+  `admin.api_path` (`ADMIN_API_PATH`) now defaults to that prefix, and panels'
+  API paths follow it too.
+
+- **An admin mounted at the root of its domain swallowed its own API**
+  (`ADMIN_PATH=` with `ADMIN_DOMAIN`): the shell's catch-all answered
+  `/api/admin/*` with HTML. A root panel now always excludes the API prefix.
+
+- README: the testing helpers, the locale resolver steps and the bundle size
+  were out of date; getting started named a non-existent `admin:make-resource`
+  argument and old table names. `hasAccess()` takes a single permission in the
+  permissions docs (`hasAnyAccess`/`hasAllAccess` for lists).
+
+## 1.34.0
+
+### Security
+
 - **Dashboard and widget permissions were not enforced.** Any logged-in user
   received every dashboard in the manifest, with the computed data of every
   widget, and could call the `/api/admin/dashboard/*` endpoints for any of
@@ -30,22 +77,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   outside a widget's `data()`, still runs for everyone who may open it.
 
 ### Added
-
-- **The shared strategy works out of the box.** `admin:install --shared`
-  points `config/admin.php` at the application's default guard, its provider,
-  user model and password broker, and publishes a migration
-  (`admin-shared-migrations` tag) that adds the admin's columns — `locale`,
-  `theme`, `is_active`, `last_login_*`, `two_factor_*` — to that users table,
-  skipping the ones it already has. New `HasAdminTwoFactor` trait gives a host
-  model the 2FA casts and `hasTwoFactorEnabled()` (`AdminUser` now uses it).
-- `admin:user alice@example.com --super` grants Super Admin to an existing
-  user instead of failing on the taken email.
-- A model may define `canAccessAdmin(string $panelId): bool` to decide who
-  enters a panel.
-- Docs: [Adding the admin to an existing application](docs/en/integration.md)
-  (en, ru) — installer footprint and undo, dedicated vs shared, path/domain/API
-  prefix, sessions, CSRF, proxies, panels, a host laravel-api module, roles,
-  frontend, upgrading and troubleshooting.
 
 - **Listener layouts: reactive forms.** `Layout::listener($children)->listen([...])`
   re-renders part of a form on the server whenever the watched fields change.
@@ -86,22 +117,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Console commands (`admin:user`, `admin:make-*`) speak English.
 
 ### Fixed
-
-- **`admin:user` failed on a users table without the admin's columns**
-  (`is_active`, `locale`, `theme`) — the shared strategy's case. It now fills
-  only the columns the table has, and speaks English.
-- **The SPA ignored a moved laravel-api prefix.** The admin API is served at
-  `/{laravel-api.prefix}/admin`, but the SPA was given a fixed `api/admin`, so
-  a host with `'prefix' => 'api/v1'` got a 404 on every call.
-  `admin.api_path` (`ADMIN_API_PATH`) now defaults to that prefix, and panels'
-  API paths follow it too.
-- **An admin mounted at the root of its domain swallowed its own API**
-  (`ADMIN_PATH=` with `ADMIN_DOMAIN`): the shell's catch-all answered
-  `/api/admin/*` with HTML. A root panel now always excludes the API prefix.
-- README: the testing helpers, the locale resolver steps and the bundle size
-  were out of date; getting started named a non-existent `admin:make-resource`
-  argument and old table names. `hasAccess()` takes a single permission in the
-  permissions docs (`hasAnyAccess`/`hasAllAccess` for lists).
 
 - A listener given as the whole content of a tab keeps its node instead of
   being flattened into the tab's items.
