@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Http\Middleware;
 
 use Closure;
+use Dskripchenko\LaravelAdmin\Auth\SessionPasswordHash;
 use Dskripchenko\LaravelAdmin\Http\AdminApi;
 use Dskripchenko\LaravelApi\Components\BaseApi;
 use Dskripchenko\LaravelApi\Facades\ApiModule;
@@ -64,10 +65,10 @@ final class AdminAuth
         // means the session belongs to someone else, or to an earlier
         // password.
         if ($user !== null && $request->hasSession()) {
-            $key = 'password_hash_'.$guard;
+            $key = SessionPasswordHash::key($guard);
             $hash = (string) $user->getAuthPassword();
             $stored = $request->session()->get($key);
-            if (is_string($stored) && $stored !== $hash) {
+            if (is_string($stored) && ! SessionPasswordHash::matches($guard, $hash, $stored)) {
                 Auth::guard($guard)->logout();
                 $request->session()->invalidate();
 
@@ -77,7 +78,7 @@ final class AdminAuth
                 ], Response::HTTP_UNAUTHORIZED);
             }
             if ($stored === null) {
-                $request->session()->put($key, $hash);
+                $request->session()->put($key, SessionPasswordHash::make($guard, $hash));
             }
         }
 
