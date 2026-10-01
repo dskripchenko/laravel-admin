@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The view page posted its actions to a non-existent `/{slug}/action/{key}`.
 - A `ValidationException` thrown by a resource action method is a 422 again,
   not a 500.
+- The default confirmation title is translated on English panels.
 
 ## 1.32.2
 

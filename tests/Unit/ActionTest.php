@@ -26,9 +26,15 @@ it('Button supports primary and destructive flags', function (): void {
 
 it('confirm() accepts string and wraps it', function (): void {
     $btn = Button::make('Delete')->confirm('Are you sure?');
+
+    app()->setLocale('ru');
     $arr = $btn->toArray();
     expect($arr['confirm']['message'])->toBe('Are you sure?');
     expect($arr['confirm']['title'])->toBe('Подтверждение');
+
+    // The default title follows the panel's language.
+    app()->setLocale('en');
+    expect($btn->toArray()['confirm']['title'])->toBe('Confirmation');
 });
 
 it('Link::href + target', function (): void {
