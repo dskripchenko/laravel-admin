@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Security
+
+- **Dashboard and widget permissions were not enforced.** Any logged-in user
+  received every dashboard in the manifest, with the computed data of every
+  widget, and could call the `/api/admin/dashboard/*` endpoints for any of
+  them — `DashboardScreen::permission()`, `Widget::permission()` and
+  `Widget::canSee()` were ignored everywhere except the unused `layout()`
+  path. Now a dashboard the user may not open is left out of the manifest and
+  the menu, and `dashboard/get`, `save`, `savePeriod`, `reset` and `widgets`
+  answer `403` for it (`404` for a dashboard of another panel). A widget the
+  user may not see is dropped before its `data()` is called, so its queries
+  never run, and a saved per-user layout can no longer bring it back. Every
+  permission listed is required, as in `AdminAccess`; a user model without
+  `hasAccess()` holds none. Work a dashboard does in `widgets()` itself,
+  outside a widget's `data()`, still runs for everyone who may open it.
+
 ### Added
 
 - **Listener layouts: reactive forms.** `Layout::listener($children)->listen([...])`
@@ -29,6 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Standalone actions.** `Action::standalone()` and `Action::requiresSelection()`: a command bar or header action now runs without a selection (no `ids`, the method gets `[]`); a row or bulk action still needs at least one id, and a `BulkAction` always does. The SPA and the `/{slug}/action` validation follow the same rule.
 - **`useConfirm()` / `confirmDialog()`** — a panel-wide confirmation dialog (mounted by `AdminApp`); the remaining `window.confirm` calls (dashboard reset, token revoke, 2FA disable, embedded table, tree and form deletes, the screen context fallback) use it.
 - **The stats widget shows every stat** of a `StatsOverviewWidget` as a responsive row of cards, each with its own label, value, trend, color and icon.
+- **The dashboard period reaches the widgets.** A widget reads the selected
+  period through `$this->dashboardContext()` — a `DashboardContext` with
+  `period`, `days()`, `from()`, `to()` and `constrain($query, $column)` — in
+  `data()`. `RecentListWidget` and `TableWidget` get `withinPeriod($column)`.
+  `DashboardScreen::periods()` and `defaultPeriod()` choose the periods; by
+  default the switcher is shown only when a widget depends on the period
+  (`periodAware()`, `withinPeriod()` or reading the context) or the screen
+  reads `period()`/`periodDays()` in `widgets()`. Periods are `all` or a number
+  of days (`14d`). The manifest entry of a dashboard now carries `permission`,
+  `periods` and `period`.
 
 ### Changed
 
@@ -43,6 +69,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   being flattened into the tab's items.
 - A screen method that returns no `message` no longer shows an "OK" banner; the `admin:make-screen` stub returns a single message.
 - Screen alerts accept `level`/`variant` as aliases of `type`, so a `success` alert is a success toast.
+- Widgets registered by plugins through `$admin->widgets([...])` reach the
+  SPA: the manifest and `dashboard/widgets` built dashboards from `widgets()`
+  alone, so the registry was only read by `layout()`, which the SPA never
+  calls.
+- The period switcher changed nothing on most dashboards: the period was sent
+  to the server, but only a screen reading `periodDays()` in `widgets()` could
+  use it — widgets had no way to read it. Switching to another dashboard no longer keeps the
+  previous dashboard's refreshed widgets on screen, and a saved period the
+  dashboard no longer offers is ignored.
 
 ## 1.33.0
 

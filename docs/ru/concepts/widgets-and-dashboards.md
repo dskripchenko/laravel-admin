@@ -110,6 +110,100 @@ User layout (DashboardLayout row) сидит поверх — те же slug'и,
 Если manifest меняется (новый widget в коде), он появляется в конце
 user grid'а по умолчанию.
 
+## Права доступа
+
+Закрыть можно и дашборд, и каждый виджет:
+
+```php
+final class SalesDashboardScreen extends DashboardScreen
+{
+    public function permission(): array|string|null
+    {
+        return 'sales.dashboard';            // массив — нужны все права
+    }
+
+    public function widgets(): array
+    {
+        return [
+            RevenueWidget::make()->permission('sales.revenue'),
+            OrdersWidget::make()->canSee(fn () => auth('admin')->user()?->is_manager),
+        ];
+    }
+}
+```
+
+Правила проверяются на сервере везде, где отдаётся дашборд:
+
+- дашборд, к которому у пользователя нет доступа, не попадает ни в манифест,
+  ни в меню, а любой вызов `/api/admin/dashboard/*` для него отвечает `403`;
+- виджет, который пользователю не положен, отбрасывается до вызова `data()` —
+  его запросы не выполняются — в манифесте, в `dashboard/widgets` (смена
+  периода и polling) и в `layout()`;
+- сохранённый layout такой виджет не вернёт: `dashboard/get` и
+  `dashboard/save` его вычищают.
+
+Дорогие вычисления держите внутри `data()` виджета. То, что считается прямо в
+`widgets()` при сборке списка (например `->stat('TOTAL', Article::count())`),
+выполняется для каждого, кто может открыть дашборд, независимо от прав самого
+виджета.
+
+## Период
+
+В тулбаре дашборда есть переключатель периода (7 / 30 / 90 дней / всё время).
+Выбранный период уходит в `/api/admin/dashboard/widgets?key={slug}&period={p}`,
+сохраняется для пользователя и передаётся каждому виджету как
+`DashboardContext`:
+
+```php
+use Dskripchenko\LaravelAdmin\Widget\Widget;
+
+class NewOrdersWidget extends Widget
+{
+    public function widgetType(): string { return 'stats'; }
+
+    public function data(): array
+    {
+        $context = $this->dashboardContext();   // ->period, ->days(), ->from(), ->to()
+
+        $count = $context->constrain(Order::query(), 'created_at')->count();
+
+        return ['stats' => [['label' => 'Новые заказы', 'value' => $count]]];
+    }
+}
+```
+
+`DashboardContext::constrain($query, $column)` добавляет
+`where($column, '>=', from)`, а для `all` оставляет запрос как есть. Период — это
+`all` или число дней с суффиксом `d` (`7d`, `14d`, `90d`).
+
+Встроенные списочные виджеты включают фильтр через `withinPeriod()`:
+
+```php
+RecentListWidget::make()->model(Order::class)->column('number')->withinPeriod();
+TableWidget::make()->model(Order::class)->withinPeriod('paid_at');
+```
+
+Экран дашборда может и сам читать период при сборке виджетов —
+`$this->period()`, `$this->periodDays()` или `$this->dashboardContext()`: так
+дашборды писались до появления контекста у виджетов. Виджеты, которым период
+безразличен, работают как раньше.
+
+Переключатель показывается, только если от периода что-то зависит: виджет читает
+`dashboardContext()` в `data()`, помечен `->periodAware()` (или
+`withinPeriod()`), либо экран читает период в `widgets()`. Задать набор явно:
+
+```php
+public function periods(): ?array
+{
+    return ['7d', '14d', '30d'];   // [] скрывает переключатель, null — автоматически
+}
+
+public function defaultPeriod(): string
+{
+    return '14d';
+}
+```
+
 ## Custom widget
 
 ```php
@@ -150,7 +244,10 @@ public function boot(Admin $admin): void
 ```
 
 Виджет собирается через контейнер, так что зависимость можно попросить в
-конструкторе. Дубли отсекаются по slug: если хост поставил тот же виджет сам —
+конструкторе. Такие виджеты появляются везде, где отдаётся дашборд, — в
+манифесте, в обновлении `dashboard/widgets` и в сохранённых layout'ах — по тем
+же правилам доступа, что и объявленные: виджет плагина с `permission()` видят
+только те, у кого это право. Дубли отсекаются по slug: если хост поставил тот же виджет сам —
 со своим заголовком или размером, — второй копии не появится. Виджет, который не
 удалось собрать, пропускается: сломанный биндинг плагина не должен ронять
 дашборд.

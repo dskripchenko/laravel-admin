@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -32,10 +33,16 @@ class DashboardController extends ApiController
      * @security AdminSession
      *
      * @response 200 {DashboardLayoutResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
      */
-    public function get(Request $request): JsonResponse
+    public function get(Request $request, ScreenRegistry $screens): JsonResponse
     {
         $request->validate(['key' => ['required', 'string']]);
+        $screen = $this->resolveDashboard((string) $request->input('key'), $screens);
+        if ($screen instanceof JsonResponse) {
+            return $screen;
+        }
         $user = $this->user();
         if ($user === null) {
             return $this->success(['layout' => null]);
@@ -47,8 +54,15 @@ class DashboardController extends ApiController
             ->where('owner_id', $user->getKey())
             ->first();
 
+        $items = $layout?->widgets;
+        if ($items !== null && $screen !== null) {
+            // A widget the user may not see is not handed back, even when an
+            // older layout — saved before a permission was revoked — has it.
+            $items = $screen->filterLayoutItems($items);
+        }
+
         return $this->success([
-            'layout' => $layout?->widgets,
+            'layout' => $items,
             'period' => $layout?->getAttribute('period'),
         ]);
     }
@@ -66,13 +80,26 @@ class DashboardController extends ApiController
      * @security AdminSession
      *
      * @response 200 {SuccessResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
      */
-    public function savePeriod(Request $request): JsonResponse
+    public function savePeriod(Request $request, ScreenRegistry $screens): JsonResponse
     {
         $data = $request->validate([
             'key' => ['required', 'string'],
             'period' => ['required', 'string', 'max:16'],
         ]);
+
+        $screen = $this->resolveDashboard($data['key'], $screens);
+        if ($screen instanceof JsonResponse) {
+            return $screen;
+        }
+        $accepted = $screen?->acceptsPeriod($data['period']) ?? DashboardContext::isValidPeriod($data['period']);
+        if (! $accepted) {
+            throw ValidationException::withMessages([
+                'period' => __('Недопустимый период: :period', ['period' => $data['period']]),
+            ]);
+        }
 
         $user = $this->user();
         if ($user === null) {
@@ -116,8 +143,10 @@ class DashboardController extends ApiController
      * @security AdminSession
      *
      * @response 200 {DashboardLayoutSavedResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
      */
-    public function save(Request $request): JsonResponse
+    public function save(Request $request, ScreenRegistry $screens): JsonResponse
     {
         $data = $request->validate([
             'key' => ['required', 'string'],
@@ -138,6 +167,11 @@ class DashboardController extends ApiController
             'widgets.*.config' => ['nullable', 'array'],
         ]);
 
+        $screen = $this->resolveDashboard($data['key'], $screens);
+        if ($screen instanceof JsonResponse) {
+            return $screen;
+        }
+
         $user = $this->user();
         if ($user === null) {
             return $this->error([
@@ -152,12 +186,55 @@ class DashboardController extends ApiController
                 'owner_type' => $user->getMorphClass(),
                 'owner_id' => $user->getKey(),
             ],
-            ['widgets' => $data['widgets']],
+            // A layout cannot smuggle in a widget the user may not see.
+            ['widgets' => $screen?->filterLayoutItems($data['widgets']) ?? $data['widgets']],
         );
 
         return $this->success([
             'id' => $row->id,
             'widgets' => $row->widgets,
+        ]);
+    }
+
+    /**
+     * Fresh widget data for a dashboard, with the filters (the period and so
+     * on) applied. The frontend calls it when the date range changes, so that
+     * the widgets are recomputed without reloading the whole manifest.
+     *
+     * @input string $key
+     * @input string ?$period `all` or a number of days such as 7d; the dashboard's default otherwise
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {DashboardWidgetsResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
+     */
+    public function widgets(Request $request, ScreenRegistry $screens): JsonResponse
+    {
+        $data = $request->validate([
+            'key' => ['required', 'string'],
+            'period' => ['nullable', 'string', 'max:16'],
+        ]);
+
+        $screen = $this->resolveDashboard($data['key'], $screens);
+        if ($screen instanceof JsonResponse) {
+            return $screen;
+        }
+        if ($screen === null) {
+            return $this->unknownDashboard($data['key']);
+        }
+
+        // The period reaches the widgets through their DashboardContext, and
+        // the screen itself through period()/periodDays() in widgets(). An
+        // unknown period falls back to the dashboard's default.
+        $screen->withPeriod($data['period'] ?? $screen->defaultPeriod());
+
+        return $this->success([
+            'widgets' => $screen->compileWidgets(),
+            'period' => $screen->period(),
         ]);
     }
 
@@ -171,61 +248,16 @@ class DashboardController extends ApiController
      * @security AdminSession
      *
      * @response 200 {SuccessResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
      */
-    /**
-     * Fresh widget data for a dashboard, with the filters (the period and so
-     * on) applied. The frontend calls it when the date range changes, so that
-     * the widgets are recomputed without reloading the whole manifest.
-     *
-     * @input string $key
-     * @input string ?$period 7d/30d/90d/all; 30d by default
-     *
-     * @output object $payload
-     *
-     * @security AdminSession
-     *
-     * @response 200 {DashboardWidgetsResponse}
-     */
-    public function widgets(Request $request, ScreenRegistry $screens): JsonResponse
-    {
-        $data = $request->validate([
-            'key' => ['required', 'string'],
-            'period' => ['nullable', 'string'],
-        ]);
-
-        $screenClass = $screens->get($data['key']);
-        if ($screenClass === null || ! is_subclass_of($screenClass, DashboardScreen::class)) {
-            return $this->error([
-                'errorKey' => 'unknown_dashboard',
-                'message' => "Dashboard `{$data['key']}` not registered",
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        /** @var DashboardScreen $screen */
-        $screen = app($screenClass);
-        // The period is passed into the screen context, where a
-        // DashboardScreen may use it in `widgets()` for a conditional
-        // aggregation — see Screen::query() and $this->context(). A screen
-        // that ignores it simply returns the same set of widgets.
-        $screen->withPeriod($data['period'] ?? '30d');
-
-        $widgets = [];
-        foreach ($screen->widgets() as $widget) {
-            if (! $widget->isVisible()) {
-                continue;
-            }
-            $widgets[] = $widget->toArray();
-        }
-
-        return $this->success([
-            'widgets' => $widgets,
-            'period' => $data['period'] ?? '30d',
-        ]);
-    }
-
-    public function reset(Request $request): JsonResponse
+    public function reset(Request $request, ScreenRegistry $screens): JsonResponse
     {
         $request->validate(['key' => ['required', 'string']]);
+        $screen = $this->resolveDashboard((string) $request->input('key'), $screens);
+        if ($screen instanceof JsonResponse) {
+            return $screen;
+        }
         $user = $this->user();
         if ($user === null) {
             return $this->error([
@@ -241,6 +273,48 @@ class DashboardController extends ApiController
             ->delete();
 
         return $this->success(['key' => $request->input('key')]);
+    }
+
+    /**
+     * Finds the dashboard a key names and checks the user may open it.
+     *
+     * Returns the screen; null when the key is not a registered dashboard at
+     * all — a host may keep a layout for a DashboardPage of its own, which has
+     * no screen behind it; or the error response: 404 for a dashboard of
+     * another panel, 403 for one the user has no permission for.
+     */
+    private function resolveDashboard(string $key, ScreenRegistry $screens): DashboardScreen|JsonResponse|null
+    {
+        $class = $screens->get($key);
+        if ($class === null || ! is_subclass_of($class, DashboardScreen::class)) {
+            return null;
+        }
+
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        if (! array_key_exists($key, $screens->all($panel))) {
+            return $this->unknownDashboard($key);
+        }
+
+        $screen = app($class);
+        if (! $screen instanceof DashboardScreen) {
+            return $this->unknownDashboard($key);
+        }
+        if (! $screen->canAccess($this->user())) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => __('Нет доступа к дашборду'),
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        return $screen;
+    }
+
+    private function unknownDashboard(string $key): JsonResponse
+    {
+        return $this->error([
+            'errorKey' => 'unknown_dashboard',
+            'message' => "Dashboard `{$key}` not registered",
+        ], Response::HTTP_NOT_FOUND);
     }
 
     private function user(): ?Model

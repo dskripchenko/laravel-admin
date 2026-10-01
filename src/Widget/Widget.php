@@ -46,6 +46,19 @@ abstract class Widget implements Renderable
     protected $visibility = true;
 
     /**
+     * Declared to depend on the dashboard's period — see periodAware().
+     */
+    protected bool $periodAware = false;
+
+    private ?DashboardContext $dashboardContext = null;
+
+    /**
+     * Set once data() has read the context: such a widget depends on the
+     * period whether or not it said so.
+     */
+    private bool $contextRead = false;
+
+    /**
      * The widget's UI type: stats, chart, recent_list, table, markdown, iframe, heatmap or gauge.
      */
     abstract public function widgetType(): string;
@@ -144,6 +157,46 @@ abstract class Widget implements Renderable
         return is_callable($this->visibility)
             ? (bool) ($this->visibility)()
             : (bool) $this->visibility;
+    }
+
+    /**
+     * Marks the widget as one whose data depends on the dashboard's period.
+     * A dashboard shows its period switcher only when one of its widgets
+     * does; a widget that reads dashboardContext() in data() is detected
+     * without it.
+     */
+    public function periodAware(bool $aware = true): static
+    {
+        $this->periodAware = $aware;
+
+        return $this;
+    }
+
+    public function isPeriodAware(): bool
+    {
+        return $this->periodAware || $this->contextRead;
+    }
+
+    /**
+     * Hands the widget the dashboard's context before data() is computed.
+     * The dashboard does it; a widget computed outside one gets the default.
+     */
+    public function withDashboardContext(DashboardContext $context): static
+    {
+        $this->dashboardContext = $context;
+
+        return $this;
+    }
+
+    /**
+     * The dashboard's context — the selected period first of all — for use
+     * inside data().
+     */
+    public function dashboardContext(): DashboardContext
+    {
+        $this->contextRead = true;
+
+        return $this->dashboardContext ??= new DashboardContext;
     }
 
     /**
