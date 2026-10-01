@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Impersonation;
 
+use Dskripchenko\LaravelAdmin\Auth\SessionPasswordHash;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -74,7 +75,7 @@ final class ImpersonationManager
         // The session changed its user legitimately, so we refresh the hash
         // for AdminAuth — otherwise the session invalidation would consider it
         // stale.
-        Session::put('password_hash_'.$guard, (string) $target->getAuthPassword());
+        Session::put(SessionPasswordHash::key($guard), SessionPasswordHash::make($guard, (string) $target->getAuthPassword()));
     }
 
     /**
@@ -100,7 +101,7 @@ final class ImpersonationManager
 
         if ($user instanceof Authenticatable) {
             Auth::guard($this->guard())->login($user);
-            Session::put('password_hash_'.$this->guard(), (string) $user->getAuthPassword());
+            Session::put(SessionPasswordHash::key($this->guard()), SessionPasswordHash::make($this->guard(), (string) $user->getAuthPassword()));
         }
 
         return $user;

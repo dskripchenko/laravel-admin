@@ -5,6 +5,21 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.32.1
+
+### Fixed
+
+- **Signing in did not hold on current Laravel 12 and 13.** Recent releases
+  store an HMAC of the password hash in the session at login
+  (`SessionGuard::hashPasswordForCookie()`) instead of the hash itself.
+  `AdminAuth` compared the session value with the raw hash, saw a mismatch,
+  and answered the first request after a successful login with 401
+  `session_expired`. The fingerprint is now written in the guard's own
+  format everywhere (login check, own password change, impersonation) and
+  verified against both formats, as Laravel's `AuthenticateSession` does, so
+  sessions opened before the upgrade stay valid. Laravel 11 was not
+  affected.
+
 ## 1.32.0
 
 ### Исправлено
