@@ -200,6 +200,37 @@ trait AdminApiSystemSchemas
                 'widgets' => '@WidgetLayoutItem[]',
             ],
 
+            'GlobalSearchResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@GlobalSearchPayload',
+            ],
+            'GlobalSearchPayload' => [
+                'query' => 'string! The query as received',
+                'groups' => '@GlobalSearchGroup[]!',
+            ],
+            'GlobalSearchGroup' => [
+                'slug' => 'string! The resource',
+                'label' => 'string!',
+                'icon' => 'string',
+                'items' => '@GlobalSearchItem[]!',
+                'hasMore' => 'boolean!',
+                'moreUrl' => 'string!',
+            ],
+            'GlobalSearchItem' => [
+                'id' => 'string! The primary key; a number for integer keys',
+                'title' => 'string!',
+                'subtitle' => 'string',
+                'url' => 'string!',
+            ],
+
+            'DashboardLayoutResetResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@DashboardLayoutResetPayload',
+            ],
+            'DashboardLayoutResetPayload' => [
+                'key' => 'string! The dashboard whose layout went back to the default',
+            ],
+
             'DashboardWidgetsResponse' => [
                 'success' => 'boolean!',
                 'payload' => '@DashboardWidgetsPayload',

@@ -241,15 +241,17 @@ class DashboardController extends ApiController
     /**
      * Drops the customization: the row is deleted and the default returns.
      *
-     * @input string $key
+     * @input string $key The dashboard
      *
      * @output object $payload
      *
      * @security AdminSession
      *
-     * @response 200 {SuccessResponse}
+     * @response 200 {DashboardLayoutResetResponse}
+     * @response 401 {UnauthenticatedErrorResponse}
      * @response 403 {ForbiddenErrorResponse}
      * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
      */
     public function reset(Request $request, ScreenRegistry $screens): JsonResponse
     {

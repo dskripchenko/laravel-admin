@@ -9,6 +9,7 @@ use Dskripchenko\LaravelAdmin\Action\DropDown;
 use Dskripchenko\LaravelAdmin\Action\ModalAction;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
 use Dskripchenko\LaravelAdmin\Filter\HttpFilterParser;
+use Dskripchenko\LaravelAdmin\Http\OpenApi\ResourceOperationSchema;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
@@ -16,6 +17,7 @@ use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedTreeScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedViewScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
+use Dskripchenko\LaravelApi\Services\OpenApi\OperationContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -98,8 +100,7 @@ final class ResourceController extends ApiController
      * a host should either split the resource into sub-trees or override
      * `tree()` in a subclass.
      *
-     * @input array $filters
-     * @input string $q
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -423,9 +424,7 @@ final class ResourceController extends ApiController
      *
      * @input integer ?$page
      * @input integer ?$per_page
-     * @input array ?$filters
-     * @input string ?$q
-     * @input array ?$order
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -610,7 +609,10 @@ final class ResourceController extends ApiController
     /**
      * Creates a record.
      *
-     * Which `@input` fields there are is decided by Resource::fields().
+     * The fields are the resource's own: `[operationSchema]` describes them per
+     * resource from Resource::fields() and validationRules('create').
+     *
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -651,7 +653,11 @@ final class ResourceController extends ApiController
     /**
      * Updates a record.
      *
+     * Besides `id`, the fields are the resource's own, as validationRules('update')
+     * checks them.
+     *
      * @input integer $id
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -702,17 +708,16 @@ final class ResourceController extends ApiController
     /**
      * Streaming export of the list into any registered format.
      *
-     * @input string ?$format  csv|xlsx|pdf — csv by default. The format must be
-     *                          registered in ExporterRegistry.
-     * @input array ?$filters
-     * @input string ?$q
-     * @input array ?$columns
+     * Takes the filters, `q`, the columns and the format — one of the formats
+     * registered in ExporterRegistry, csv by default.
      *
      * The body is the file itself, so there is nothing to describe field by
      * field: `@output file` never parsed — the generator wants a variable — and
      * was dropped in silence, leaving the operation with no response schema at
      * all. FileDownloadResponse says the same thing and is a template that
      * exists.
+     *
+     * @input [operationSchema]
      *
      * @security AdminSession
      *
@@ -801,7 +806,8 @@ final class ResourceController extends ApiController
      *                    required — a scalar array's element has no tag of
      *                    its own here
      * @input string $key The action, as the resource declares it
-     * @input array ?$payload The action's own arguments, when it takes any
+     * @input object ?$payload The action's own arguments, when it takes any
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -958,9 +964,7 @@ final class ResourceController extends ApiController
      * Takes `items: [{id, position}]`. The resource must have
      * `reorderable() === true` and a `reorderColumn()`.
      *
-     * @input array $items
-     * @input mixed $items[].id
-     * @input integer $items[].position
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -1191,6 +1195,7 @@ final class ResourceController extends ApiController
      * @input string $value As typed; the server casts it to the column's own
      *                     type. `any` is not a type this markup has — it became
      *                     `string` in the spec anyway, silently.
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -1245,6 +1250,8 @@ final class ResourceController extends ApiController
      *
      * Returns a map of column => {sum?, avg?, …} for the columns that declare
      * `Resource::columns()->summary([...])`.
+     *
+     * @input [operationSchema]
      *
      * @output object $payload
      *
@@ -1319,6 +1326,33 @@ final class ResourceController extends ApiController
             'range' => ['min' => $query->min($column), 'max' => $query->max($column)],
             default => null,
         };
+    }
+
+    /* -----------------------------------------------------------------
+     * OpenAPI
+     * ----------------------------------------------------------------- */
+
+    /**
+     * The input schema of one operation on one resource, for the spec.
+     *
+     * Not an action: laravel-api calls it while generating the OpenAPI
+     * document, once per route that names `@input [operationSchema]`, and
+     * tells it which route that is. The controller key is the resource slug,
+     * and the Api class says which panel the slug belongs to.
+     *
+     * @return array<string, mixed>
+     */
+    public function operationSchema(OperationContext $operation): array
+    {
+        $panel = method_exists($operation->apiClass, 'panelId')
+            ? (string) $operation->apiClass::panelId()
+            : null;
+        $resource = $this->registry->resolve($operation->controllerKey, $panel);
+        if ($resource === null) {
+            return [];
+        }
+
+        return ResourceOperationSchema::forAction($resource, $operation->actionKey);
     }
 
     /* -----------------------------------------------------------------

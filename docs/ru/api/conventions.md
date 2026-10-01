@@ -155,6 +155,14 @@ public function action(Request $request): JsonResponse
 - Enum: `string $status [draft,pending,confirmed]`.
 - Вложенность: `object $address`, потом `string $address.city`.
 - Массивы объектов: `array $items`, потом `integer $items[].id`.
+- Массив скаляров: `array $tags`, потом `string $tags[]`.
+- Поля, известные только в рантайме: `@input [methodName]`. Метод получает
+  `OperationContext` (ключ контроллера, действие, версию, класс Api) и
+  возвращает строки разметки или JSON Schema объекта. Так описаны поля
+  ресурсов: `ResourceController::operationSchema()` строит схему из
+  `fields()` + `validationRules()` того ресурса, чей маршрут описывается.
+  Метод, который валидирует вход и не объявляет ни одного `@input`,
+  `api:lint` помечает правилом `input.undeclared`.
 - Ссылки на схемы: `@output {OrderSchema}` или массив `@output {OrderSchema[]}`.
 
 ### Security schemes
