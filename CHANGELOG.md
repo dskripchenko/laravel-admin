@@ -266,7 +266,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.31.2
 
 ### Fixed
-
 - **A docblock had drifted one method up.** The one describing `reorder()` sat
   above `action()`, and `reorder()` had none at all. Everything followed from
   that: the bulk-action endpoint documented `items` while requiring `ids`, said
@@ -295,7 +294,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.31.1
 
 ### Fixed
-
 - **`any` and `null` are not types this markup has** — the tail of 1.31.0's
   cleanup. Five tags named them and became `string` in the spec without a word:
   the inline-update value is documented as the string it arrives as, and the
@@ -307,7 +305,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.31.0
 
 ### Fixed
-
 - **The published spec referenced schemes and templates it never defined.**
   Found by `api:lint`, shipped with laravel-api 5.7.0, on its first run over a
   real installation: 1204 dangling references from a couple of dozen causes,
@@ -354,7 +351,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a hard refresh to be trusted is worse than none.
 
 ### Fixed
-
 - **Widgets registered by plugins never appeared anywhere.** `$admin->widgets()`
   had been there since the widget subsystem landed and nothing ever read it, so
   a pack could register a widget and see nothing. Any `DashboardScreen` of the
@@ -365,7 +361,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.29.0
 
 ### Fixed
-
 - **After creating a record the panel stayed on `/create`.** The redirect to the
   new record's edit page had been written in `ResourceFormPage` from the start
   and never fired: `save()` switches the store to 'edit' itself, so the check
@@ -396,7 +391,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.27.1
 
 ### Fixed
-
 - **A non-string in a role's permissions took the panel down.** The column is a
   JSON list of strings by convention, and nothing enforces it: a seed, an
   import or a hand-written row can put anything in there. Such an entry reached
@@ -448,7 +442,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in another language. Four such keys were found on the first sweep.
 
 ### Fixed
-
 - **`tRaw()` threw without an active Pinia.** Unlike its neighbour `trSafe()` it
   had no fallback, so a component rendering before the store was ready took the
   whole page down. It now interpolates the source string instead: an
@@ -457,7 +450,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.25.2
 
 ### Fixed
-
 - **The drawer link of 1.25.1 went into a component nobody renders.** There
   were two `NotificationsDrawer.vue` in the tree: the live one under `shell/`,
   which `AdminApp` mounts, and a twin under `notifications/` — exported
@@ -492,7 +484,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.24.2
 
 ### Fixed
-
 - **The 401 redirect of 1.24.0, third attempt — the one that works.** Going
   through the router failed twice: the refusal arrives while the menu and the
   manifest are still loading, so the router may not exist yet, and when it does
@@ -504,14 +495,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.24.1
 
 ### Fixed
-
 - An attempt to cover the case where the router does not exist yet. Superseded
   by 1.24.2 — see there for why the router was the wrong tool entirely.
 
 ## 1.24.0
 
 ### Fixed
-
 - **An expired session left the visitor inside a live shell with an empty
   menu.** The panel's HTTP client has had an `onUnauthenticated` option since
   the beginning, and nothing ever passed it: a 401 was simply dropped. The
@@ -536,7 +525,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.23.2
 
 ### Fixed
-
 - **The status label fix of 1.23.1 did not actually work.** It looked for the
   labels in the node's top-level `options`, which the serialiser does emit —
   always empty, because it reads a property no field fills. The labels live in
@@ -549,7 +537,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.23.1
 
 ### Fixed
-
 - **The status badge in a form header printed the machine value.** `active`
   stood next to a fully translated form while the select two lines below said
   "Активен" — the header took the value from the form state and rendered it
@@ -583,7 +570,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   equal literally.
 
 ### Fixed
-
 - **Fields inside a tab touched each other.** The panel rendered its children
   straight into the DOM with no stack, so the gap was zero: the label of the
   next field sat on the hint of the previous one and the form read as one
@@ -596,7 +582,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.22.1
 
 ### Fixed
-
 - **The record page title stayed Russian on an English panel** — `Templates:
   запись #2`. The label came from the resource manifest and was translated; the
   word next to it was written into the component and never went through the
@@ -620,7 +605,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.21.4
 
 ### Fixed
-
 - **The upload icon in a drop zone sat pinned to the left while its label was
   centred.** Centring was done with `text-align: center` alone, which has no
   effect on a block-level element — and the icon renders as a block svg. On a
@@ -633,7 +617,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.21.3
 
 ### Fixed
-
 - **Reloading any screen showed a full-page 404 first and the real page a
   moment later.** Dynamic routes exist only once the manifest has been fetched,
   so during boot every deep link resolves to the catch-all. A gate for exactly
@@ -650,7 +633,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.21.2
 
 ### Fixed
-
 - **The unread-notifications badge was an oval, and the digit inside it read as
   off-centre.** Under `box-sizing: border-box` a single digit measured 6.09px
   plus 8px of padding plus 2px of border — 16.09px against a height of 14px, so
@@ -665,7 +647,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.21.1
 
 ### Fixed
-
 - **Registering one screen into a second panel silently removed it from the
   first.** `ScreenRegistry` kept a single panel id per slug, so the last
   registration won: a screen wanted in both the service and the client panel
@@ -696,7 +677,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.20.1
 
 ### Fixed
-
 - **A user with no saved locale got the panel in the default language after
   logging in, and the browser's language back after a refresh.** The two
   serialisers of the same user shape disagreed: `BootstrapBuilder` returned the
@@ -747,7 +727,6 @@ misbehaving on its own; each was a loaded gun aimed at a change someone
 would reasonably make later.
 
 ### Fixed
-
 - **The manifest cache outlived the request it was built for.** `Manifest`
   memoises assembled payloads so that the bootstrap and `/manifest` don't
   build the same thing twice, and the memo was written for FPM, where a
@@ -781,7 +760,6 @@ would reasonably make later.
 ## 1.19.4
 
 ### Fixed
-
 - **The manifest was memoised under a key that did not match the language of
   its own contents.** The cache key came from the `X-Admin-Locale` header
   alone, while the strings inside are translated through `app()->getLocale()`,
@@ -816,7 +794,6 @@ would reasonably make later.
 ## 1.19.3
 
 ### Fixed
-
 - **The loading bar had no accessible name.** A `role="progressbar"` without a
   label is announced as "progressbar" and says nothing about what is
   happening. Found by running axe-core over the sign-in screen.
@@ -829,7 +806,6 @@ would reasonably make later.
 ## 1.19.2
 
 ### Fixed
-
 - **The sign-in form sat off-centre on a phone, with the page scrolling
   sideways.** The card was a fixed 400px wide and its `max-width: 100%`
   resolved against a grid area that was itself wider than the screen. Width is
@@ -843,7 +819,6 @@ would reasonably make later.
 ## [1.19.1] — 2026-08-04
 
 ### Fixed
-
 - **On a phone the panel opened with the menu covering the whole screen.** The
   `collapsed` flag means "narrow sidebar" on the desktop and "drawer is open"
   on a narrow screen — different things sharing a single default. At 390px the
@@ -897,7 +872,6 @@ would reasonably make later.
 ## [1.18.2] — 2026-08-04
 
 ### Fixed
-
 - **A disabled panel user could sign in.** Login checked only `is_active` (an
   `AdminUser` column), while panel user models are disabled through an
   `enabled` column — such a user received a session and a "you are signed in"
@@ -912,7 +886,6 @@ would reasonably make later.
 ## [1.18.1] — 2026-08-04
 
 ### Fixed
-
 - **A screen button answered 500 when the request carried no `payload`.** A
   screen method declares a parameter (usually `array $state`), the controller
   called it with no arguments, and an `ArgumentCountError` escaped — on every
@@ -944,7 +917,6 @@ would reasonably make later.
 ## [1.17.1] — 2026-08-03
 
 ### Fixed
-
 - **Creating a record with a file field failed validation.** The SPA is
   upload-first: the file goes through `/uploads/upload` and the create/update
   form carries `{disk, path}` — yet the server-side rule exporter added
@@ -979,7 +951,6 @@ would reasonably make later.
 ## [1.15.3] — 2026-08-02
 
 ### Fixed
-
 - **The form stayed silent on validation errors.** The user pressed "Save"
   with an empty required field and got nothing: no highlight, no text.
   `ValidationError` read the field map only from `payload.messages`, while it
@@ -993,7 +964,6 @@ would reasonably make later.
 ## [1.15.2] - 2026-07-30
 
 ### Fixed
-
 - A type error in 1.15.1: the TextField wrapper did not pass `vue-tsc`. The
   1.15.1 tag stays as it is — published tags are never rewritten; install
   1.15.2 instead.
@@ -1001,7 +971,6 @@ would reasonably make later.
 ## [1.15.1] - 2026-07-30
 
 ### Fixed
-
 - **`Password::make()` rendered as an ordinary text field** — the secret was
   visible in clear text while typing. The `password`/`email`/`url`/`tel` fields
   all mapped to one TextField, which defaults to `type="text"`; the type is now
@@ -1042,7 +1011,6 @@ would reasonably make later.
 ## [1.13.4] - 2026-07-29
 
 ### Fixed
-
 - i18n: the impersonation banner ("You are signed in as … · impersonation
   mode") was hard-coded in Russian — the one place a manifest sweep does not
   see, because it renders only during impersonation.
@@ -1050,7 +1018,6 @@ would reasonably make later.
 ## [1.13.3] - 2026-07-29
 
 ### Fixed
-
 - i18n: `Layout::toArray` returns props TWICE (spread onto the top level for
   `v-bind` and under a `props` key) — only the second copy was localized, so
   tab labels in the manifest stayed in the source language.
@@ -1058,7 +1025,6 @@ would reasonably make later.
 ## [1.13.2] - 2026-07-29
 
 ### Fixed
-
 - i18n: tab labels (`Tabs::toArray`) and any option-dictionary attributes
   (`*Options`, e.g. `typeOptions` of custom host fields) are now localized —
   they stayed in the source language under the `en` locale.
@@ -1066,7 +1032,6 @@ would reasonably make later.
 ## [1.13.1] - 2026-07-29
 
 ### Fixed
-
 - i18n: Localize coverage widened — labels that serialization never reached
   are now translated: any `*Label` attributes (key-value, repeater, builder),
   layout `props` (tab labels), `OptionsFilter` options, and a screen's
@@ -1077,7 +1042,6 @@ would reasonably make later.
 ## [1.13.0] - 2026-07-29
 
 ### Fixed
-
 - i18n: picked up the strings the previous sweep (BL-11) did not see — text
   standing on its own line inside a tag (multi-line text nodes): the 404/403
   status pages, the sign-in and 2FA forms, the profile and API tokens, the
@@ -1088,7 +1052,6 @@ would reasonably make later.
 ## [1.12.6] - 2026-07-28
 
 ### Fixed
-
 - **CRITICAL, panels**: the API class's global middleware (panel additions —
   layer activation, throttling) is now applied when the request matched
   laravel-api's generic route `api/{version}/{controller}/{action}` as well.
@@ -1102,7 +1065,6 @@ would reasonably make later.
 ## [1.12.5] - 2026-07-28
 
 ### Fixed
-
 - Screen store: a `download_url` in a runMethod result now actually downloads
   the file (through a programmatic anchor) — the field was in the contract but
   never handled, so screen buttons like "Download…" (printable's translation
@@ -1111,7 +1073,6 @@ would reasonably make later.
 ## [1.12.4] - 2026-07-28
 
 ### Fixed
-
 - Screen store: the success banner (`lastMessage`) survived navigation to
   another screen — `load()` now clears it when the slug changes (reloading the
   same screen after a runMethod keeps the message).
@@ -1119,7 +1080,6 @@ would reasonably make later.
 ## [1.12.3] - 2026-07-28
 
 ### Fixed
-
 - i18n (BL-11, tail): AdminApp passes the panel locale into
   @dskripchenko/ui's `provideLocale()` — the primitives' built-in strings
   ("Select…", "Nothing found", the calendar and so on) are translated together
@@ -1129,7 +1089,6 @@ would reasonably make later.
 ## [1.12.2] - 2026-07-28
 
 ### Fixed
-
 - i18n: the remaining frontend strings are covered — the title and buttons of
   ResourceFormPage, the `createLabel` and record-count plurals of
   ResourceIndexPage, AuditTimeline (events, "System", relative time) and
@@ -1140,7 +1099,6 @@ would reasonably make later.
 ## [1.12.1] - 2026-07-28
 
 ### Fixed
-
 - A re-release of 1.12.0 (the tag had been rewritten, and composer and the
   registry cache the reference): no changes relative to the final content.
 
@@ -1158,7 +1116,6 @@ would reasonably make later.
 ## [1.11.2] - 2026-07-28
 
 ### Fixed
-
 - i18n (BL-11): user-facing manifest strings are translated during
   serialization through JSON translations (`I18n\Localize`) — field
   label/help/placeholder/options, column, filter and action labels (plus
@@ -1171,7 +1128,6 @@ would reasonably make later.
 ## [1.11.1] - 2026-07-28
 
 ### Fixed
-
 - Dashboard (BL-18): hidden (hidden-override) widgets can be brought back —
   the "Add widget" dialog gained a "Hidden widgets" section (restore); with an
   empty list it says "Nothing to add". Store: `restoreWidget()`.
@@ -1207,25 +1163,21 @@ would reasonably make later.
 ## [1.10.17] - 2026-07-24
 
 ### Fixed
-
 - The notification badge moved into the corner of its button and no longer covers the bell.
 
 ## [1.10.16] - 2026-07-24
 
 ### Fixed
-
 - Dropped the bottom border of the sidebar header in the admin shell.
 
 ## [1.10.15] - 2026-07-23
 
 ### Fixed
-
 - Two-factor `disable()` sends the password, so the button no longer answers 422 every time.
 
 ## [1.10.14] - 2026-07-23
 
 ### Fixed
-
 - `config('admin.auth.login_throttle')` is wired into the routes instead of being ignored.
 
 ## [1.10.13] - 2026-07-23
@@ -1241,7 +1193,6 @@ would reasonably make later.
 ## [1.10.11] - 2026-07-23
 
 ### Fixed
-
 - Autogeneration survives the create-form seeding race.
 
 ## [1.10.10] - 2026-07-23
@@ -1300,7 +1251,6 @@ would reasonably make later.
 ## [1.10.3] - 2026-07-23
 
 ### Fixed
-
 - The profile page wires up the two-factor wizard that actually works.
 
 ## [1.10.2] - 2026-07-23
@@ -1322,7 +1272,6 @@ The printable backlog train (BL-1…36).
 - Inline checkboxes, and a `RecentListWidget` whose rows are clickable through `linkTo`.
 
 ### Fixed
-
 - `manifest.refresh()` no longer nulls the manifest, which is what made forms appear to collapse.
 - Shell and timeline alignment.
 - The ⌘K palette focuses its input on open (`autofocus`, with @dskripchenko/ui 1.1.3
@@ -1331,7 +1280,6 @@ The printable backlog train (BL-1…36).
 ## [npm 1.9.3] - 2026-07-22
 
 ### Fixed
-
 - SPA permission matching now mirrors backend `Role::hasPermission`
   (fnmatch): mid-pattern globs (`printable.*.view`) work in route guards
   and menu filtering — previously only trailing `.*` masks matched, so
@@ -1340,7 +1288,6 @@ The printable backlog train (BL-1…36).
 ## [npm 1.9.2] - 2026-07-22
 
 ### Fixed
-
 - DB-driven select options (model-backed `options()` serialized into the
   manifest) went stale within an SPA session: creating a group didn't add it
   to the "Parent" selects until a full page reload. The resource form store now
@@ -1350,7 +1297,6 @@ The printable backlog train (BL-1…36).
 ## [npm 1.9.1] - 2026-07-22
 
 ### Fixed
-
 - Builtin registration no longer clobbers host components: `registerField`/
   `registerWidget` calls made before `createAdminApp()` keep priority
   (builtins register only absent types). Previously the built-in bundle
@@ -1383,7 +1329,6 @@ The printable backlog train (BL-1…36).
   login.
 
 ### Fixed
-
 - `ValidationRulesExporter` silently dropped object rules (`Rule::unique()`
   et al.) — they never reached the validator. Objects now pass through to
   validation; the manifest keeps serializing string rules only.
@@ -1422,7 +1367,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
 ## [1.8.9] - 2026-07-22
 
 ### Fixed
-
 - Panel user models implementing only the `hasAccess()` contract received an
   empty permissions list in the SPA (login payload / bootstrap) — frontend
   route guards redirected them to /forbidden while the backend authorized the
@@ -1433,7 +1377,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
 ## [1.8.8] - 2026-07-22
 
 ### Fixed
-
 - Per-action middleware executed twice (route registration + a second
   Pipeline pass in `RunActionMiddleware`) — every login burned 2+ throttle
   hits, so 429 arrived on the 3rd attempt instead of the 6th.
@@ -1455,7 +1398,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
   rules and `Rule::unique` objects).
 
 ### Fixed
-
 - `dbExceptionToValidation()` put field messages under `errors`, but the SPA
   reads `payload.messages` — DB-level violations (unique/not-null/FK) never
   highlighted the offending fields.
@@ -1463,7 +1405,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
 ## [1.8.6] - 2026-07-21
 
 ### Fixed
-
 - The builtin frontend bundle registered only dash-cased component keys while
   `Field::fieldType()` emits snake_case — `relation_select`,
   `morph_switcher`, `tree_select`, `date_range`, `color` all rendered the
@@ -1476,7 +1417,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
 ## [1.8.5] - 2026-07-21
 
 ### Fixed
-
 - `SessionGuard` fires `Login`/`Logout` itself; the auth controller
   dispatched the same events again (completeLogin, logout, password-reset
   auto-login) — listeners such as the audit log received every auth event
@@ -1485,7 +1425,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
 ## [1.8.4] - 2026-07-21
 
 ### Fixed
-
 - Unnamed `ThrottleRequests` middleware share one per-IP counter: the global
   `:60,1` api throttle burned the `:5,1` login limit — a handful of ordinary
   API requests produced 429 on login. Auth endpoints now pass explicit
@@ -1494,7 +1433,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
 ## [1.8.3] - 2026-07-21
 
 ### Fixed
-
 - Panel-aware auth: `AuthController`/`SystemController`/
   `ImpersonationManager` resolved the user provider from
   `config('admin.auth.provider')` regardless of the current panel — logins
@@ -1506,7 +1444,6 @@ stable pairing of composer v1.9.0 + npm `@dskripchenko/laravel-admin` 1.7.0.
 ## [1.8.2] - 2026-07-21
 
 ### Fixed
-
 - `Input`: missing `@method $this type(string $type)` annotation (the HTML
   type override was documented in prose but invisible to static analysis).
 
@@ -1548,7 +1485,6 @@ Multiple independent admin surfaces on one core (Filament-Panels parity):
   them — the same SPA bundle serves every panel).
 
 ### Fixed
-
 - `RunActionMiddleware` read per-action middleware from a hardcoded
   `AdminApi` — now resolves the current request's Api version, so per-action
   guards apply to panel APIs as well.
