@@ -172,3 +172,21 @@ it('Manifest::build exposes registered screens (excluding generated)', function 
     expect($entry)->not->toBeNull();
     expect($entry['name'])->toBe('Contact');
 });
+
+it('runMethod without a message answers with an empty one, not a default', function (): void {
+    $response = $this->postJson('/api/admin/test-contact/runMethod', ['method' => 'notifyOnly']);
+
+    $response->assertOk();
+    expect($response->json('payload.message'))->toBe('')
+        ->and($response->json('payload.alerts.0.message'))->toBe('Saved');
+});
+
+it('runMethod reads an alert level as its type', function (): void {
+    $response = $this->postJson('/api/admin/test-contact/runMethod', ['method' => 'levelAlert']);
+
+    $response->assertOk();
+    expect($response->json('payload.alerts'))->toBe([
+        ['message' => 'Done', 'type' => 'success'],
+        ['message' => 'Plain', 'type' => 'info'],
+    ]);
+});

@@ -52,6 +52,9 @@ export function toastError(err: unknown, fallback = trSafe('Произошла �
 /** One entry of a screen method's `alerts` — see the ScreenAlert schema. */
 export interface ServerAlert {
   type?: string
+  /** Aliases of `type` that people write for a toast. */
+  level?: string
+  variant?: string
   message?: string
   title?: string
   duration_ms?: number
@@ -98,7 +101,7 @@ export function toastAlerts(alerts: unknown, skipMessage?: string | null): numbe
     const opts: Options = {}
     if (typeof alert.title === 'string' && alert.title !== '') opts.title = alert.title
     if (typeof alert.duration_ms === 'number' && alert.duration_ms >= 0) opts.duration = alert.duration_ms
-    adminToast[alertLevel(alert.type)](message, opts)
+    adminToast[alertLevel(alert.type ?? alert.level ?? alert.variant)](message, opts)
     shown++
   }
   return shown

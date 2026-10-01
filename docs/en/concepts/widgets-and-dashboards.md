@@ -109,6 +109,100 @@ User layout (DashboardLayout row) sits on top — same slugs, different
 If the manifest changes (new widget added in code), it appears at the
 end of the user's grid by default.
 
+## Permissions
+
+A dashboard and each of its widgets can be guarded:
+
+```php
+final class SalesDashboardScreen extends DashboardScreen
+{
+    public function permission(): array|string|null
+    {
+        return 'sales.dashboard';            // an array means "all of them"
+    }
+
+    public function widgets(): array
+    {
+        return [
+            RevenueWidget::make()->permission('sales.revenue'),
+            OrdersWidget::make()->canSee(fn () => auth('admin')->user()?->is_manager),
+        ];
+    }
+}
+```
+
+The rules are enforced on the server, wherever the dashboard is served:
+
+- a dashboard the user may not open is left out of the manifest and of the
+  menu, and every `/api/admin/dashboard/*` call for it answers `403`;
+- a widget the user may not see is dropped before its `data()` is called — its
+  queries never run — in the manifest, in `dashboard/widgets` (period changes
+  and polling) and in `layout()`;
+- a saved per-user layout cannot bring such a widget back: `dashboard/get`
+  and `dashboard/save` strip it.
+
+Put the expensive work inside the widget's `data()`. Whatever `widgets()`
+computes while building the list (for example `->stat('TOTAL', Article::count())`)
+runs for every user who can open the dashboard, whatever the widget's own
+permission.
+
+## Period
+
+The dashboard toolbar has a period switcher (7 / 30 / 90 days / all time). The
+selected period is sent to `/api/admin/dashboard/widgets?key={slug}&period={p}`,
+saved per user, and handed to every widget as a `DashboardContext`:
+
+```php
+use Dskripchenko\LaravelAdmin\Widget\Widget;
+
+class NewOrdersWidget extends Widget
+{
+    public function widgetType(): string { return 'stats'; }
+
+    public function data(): array
+    {
+        $context = $this->dashboardContext();   // ->period, ->days(), ->from(), ->to()
+
+        $count = $context->constrain(Order::query(), 'created_at')->count();
+
+        return ['stats' => [['label' => 'New orders', 'value' => $count]]];
+    }
+}
+```
+
+`DashboardContext::constrain($query, $column)` adds `where($column, '>=', from)`
+and leaves the query alone for `all`. A period is `all` or a number of days
+followed by `d` (`7d`, `14d`, `90d`).
+
+The built-in list widgets opt in with `withinPeriod()`:
+
+```php
+RecentListWidget::make()->model(Order::class)->column('number')->withinPeriod();
+TableWidget::make()->model(Order::class)->withinPeriod('paid_at');
+```
+
+A dashboard screen can also read the period itself while building its widgets —
+`$this->period()`, `$this->periodDays()` or `$this->dashboardContext()` — which
+is how dashboards were written before widgets had a context. Widgets that ignore
+the period keep working unchanged.
+
+The switcher is shown only when something on the dashboard depends on the
+period: a widget that reads `dashboardContext()` in `data()`, one marked with
+`->periodAware()` (or `withinPeriod()`), or a screen that reads its period in
+`widgets()`. To choose the periods explicitly:
+
+```php
+public function periods(): ?array
+{
+    return ['7d', '14d', '30d'];   // [] hides the switcher, null = automatic
+}
+
+public function defaultPeriod(): string
+{
+    return '14d';
+}
+```
+
 ## Custom widgets
 
 ```php
@@ -141,6 +235,28 @@ import { registerWidget } from '@dskripchenko/laravel-admin'
 import WeatherWidget from './WeatherWidget.vue'
 registerWidget('weather', WeatherWidget)
 ```
+
+## Plugin widgets
+
+A package has nowhere to declare a widget — the dashboard class belongs to the
+host. So `$admin->widgets([...])` registers widget classes, and every
+`DashboardScreen` of the current panel picks them up, after its own:
+
+```php
+public function boot(Admin $admin): void
+{
+    $admin->widgets([QueueDepthWidget::class]);
+}
+```
+
+They appear wherever the dashboard is served — the manifest, the
+`dashboard/widgets` refresh and the saved layouts — under the same permission
+rules as declared widgets, so a plugin widget that sets `permission()` is shown
+only to the users who hold it. The widget is built through the container, so it
+may ask for dependencies in its constructor. Duplicates are dropped by slug: if
+the host placed the same widget itself, with its own title or size, no second
+copy is added. A widget that cannot be built is skipped, so a broken plugin
+binding does not take the dashboard down.
 
 ## See also
 

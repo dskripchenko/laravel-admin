@@ -38,12 +38,20 @@ import { useDashboardStore, type WidgetLayoutItem } from '../../stores/dashboard
 import WidgetRenderer, { type WidgetNode } from './WidgetRenderer.vue'
 import WidgetActionsOverlay from './WidgetActionsOverlay.vue'
 import WidgetConfigDialog from './WidgetConfigDialog.vue'
+import { confirmDialog } from '../../composables/useConfirm'
 
 interface DashboardManifest {
   slug: string
   label?: string
   description?: string | null
   widgets: WidgetNode[]
+  /**
+   * The periods the switcher offers. An empty list hides it — nothing on the
+   * dashboard depends on the period. Absent for a page built from props.
+   */
+  periods?: string[]
+  /** The period a user starts with. */
+  period?: string
 }
 
 interface Props {
@@ -211,15 +219,42 @@ function rowSpanFor(layoutSlug: string, w: WidgetNode): number {
 }
 
 // === Toolbar period ===
-const periods = computed(() => [
-  { key: '7d', label: t('admin.dashboard.period.7d', 'За 7 дней') },
-  { key: '30d', label: t('admin.dashboard.period.30d', 'За 30 дней') },
-  { key: '90d', label: t('admin.dashboard.period.90d', 'За 90 дней') },
-  { key: 'all', label: t('admin.dashboard.period.all', 'Всё время') },
-])
-const selectedPeriod = ref<string>('30d')
+const DEFAULT_PERIODS = ['7d', '30d', '90d', 'all']
+function periodLabelFor(key: string): string {
+  if (key === '7d') return t('admin.dashboard.period.7d', 'За 7 дней')
+  if (key === '30d') return t('admin.dashboard.period.30d', 'За 30 дней')
+  if (key === '90d') return t('admin.dashboard.period.90d', 'За 90 дней')
+  if (key === 'all') return t('admin.dashboard.period.all', 'Всё время')
+  const days = /^(\d+)d$/.exec(key)
+  return days ? tr('За :n дн.').replace(':n', days[1]) : key
+}
+/**
+ * The manifest says which periods the dashboard offers; a dashboard nothing on
+ * which depends on the period gets an empty list and no switcher. A page built
+ * from props, with no manifest entry, keeps the standard set.
+ */
+const periods = computed(() => {
+  const keys = dashboard.value
+    ? (dashboard.value.periods ?? DEFAULT_PERIODS)
+    : DEFAULT_PERIODS
+  return keys.map((key) => ({ key, label: periodLabelFor(key) }))
+})
+const defaultPeriod = computed<string>(() => dashboard.value?.period ?? '30d')
+const selectedPeriod = ref<string>(defaultPeriod.value)
 /** Fresh widget data fetched through /dashboard/widgets?period=. */
 const refreshedWidgets = ref<WidgetNode[] | null>(null)
+
+/**
+ * Applies the period the user saved for this dashboard, when the dashboard
+ * still offers it, and fetches the widgets for it.
+ */
+async function restorePeriod(): Promise<void> {
+  const saved = dashboardStore.period
+  if (saved && periods.value.some((p) => p.key === saved)) {
+    selectedPeriod.value = saved
+    await refetchPeriod()
+  }
+}
 
 async function setPeriod(key: string, close: () => void): Promise<void> {
   selectedPeriod.value = key
@@ -292,12 +327,10 @@ onMounted(async () => {
   }
   const slug = resolvedSlug.value
   if (slug) {
+    selectedPeriod.value = defaultPeriod.value
     await dashboardStore.openDashboard(slug).catch(() => undefined)
     // Restore the period this user had chosen.
-    if (dashboardStore.period) {
-      selectedPeriod.value = dashboardStore.period
-      await refetchPeriod()
-    }
+    await restorePeriod()
   }
   startPolling()
 })
@@ -310,12 +343,12 @@ watch(
   () => resolvedSlug.value,
   async (next, prev) => {
     if (next === prev) return
+    // The data fetched for the previous dashboard must not stay on screen.
+    refreshedWidgets.value = null
+    selectedPeriod.value = defaultPeriod.value
     if (next) {
       await dashboardStore.openDashboard(next).catch(() => undefined)
-      if (dashboardStore.period) {
-        selectedPeriod.value = dashboardStore.period
-        await refetchPeriod()
-      }
+      await restorePeriod()
     } else {
       dashboardStore.reset()
     }
@@ -325,6 +358,7 @@ watch(
 const periodLabel = computed(
   () => periods.value.find((p) => p.key === selectedPeriod.value)?.label ?? t('admin.dashboard.period.label', 'Период'),
 )
+const showPeriodSwitcher = computed<boolean>(() => periods.value.length > 0)
 
 // === Edit-mode actions ===
 const dialogMode = ref<'add' | 'configure' | null>(null)
@@ -359,7 +393,7 @@ function onCancelEdit(): void {
 }
 async function onResetLayout(): Promise<void> {
   // Reset to the dashboard's default layout: the persisted record is deleted.
-  if (!confirm(t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'))) return
+  if (!(await confirmDialog({ message: t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'), destructive: true }))) return
   await dashboardStore.resetToDefault().catch(() => undefined)
 }
 async function onSaveLayout(): Promise<void> {
@@ -650,7 +684,7 @@ function onExport(): void {
       <div class="admin-page__actions">
         <slot name="actions" />
 
-        <UidMenu>
+        <UidMenu v-if="showPeriodSwitcher">
           <template #trigger>
             <UidButton variant="ghost" size="md" data-testid="dash-period">
               <template #prepend><UidIcon :icon="Calendar" :size="14" /></template>

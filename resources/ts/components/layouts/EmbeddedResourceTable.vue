@@ -35,6 +35,7 @@ import { useResourceFormStore } from '../../stores/resourceForm'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
+import { confirmDialog } from '../../composables/useConfirm'
 
 interface Features {
   create?: boolean
@@ -167,7 +168,7 @@ function toggleSelectAll(): void {
 
 async function deleteRow(row: Record<string, unknown>): Promise<void> {
   const id = rowId(row)
-  if (!confirm(tr('Удалить строку?'))) return
+  if (!(await confirmDialog({ message: tr('Удалить строку?'), destructive: true }))) return
   try {
     await getAdminClient().post(`/${props.resource}/delete`, { id })
     items.value = items.value.filter((r) => rowId(r) !== id)
@@ -180,7 +181,7 @@ async function deleteRow(row: Record<string, unknown>): Promise<void> {
 
 async function bulkDelete(): Promise<void> {
   if (selection.value.size === 0) return
-  if (!confirm(tRaw('Удалить :count строк?', { count: selection.value.size }))) return
+  if (!(await confirmDialog({ message: tRaw('Удалить :count строк?', { count: selection.value.size }), destructive: true }))) return
   const ids = [...selection.value]
   try {
     // Deleting in parallel: the backend has no bulk endpoint yet, so they go one by one.

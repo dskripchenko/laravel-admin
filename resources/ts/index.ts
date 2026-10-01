@@ -56,9 +56,13 @@ export {
   type ActionExecutor,
   type AdminAction,
   type ActionConfirm,
+  type ActionRunOptions,
 } from './composables/useActionRunner'
 export { default as AdminActionButton } from './components/actions/AdminActionButton.vue'
 export { default as AdminActionDialogs } from './components/actions/AdminActionDialogs.vue'
+export { useConfirm, confirmDialog } from './composables/useConfirm'
+export type { ConfirmOptions } from './composables/useConfirm'
+export { default as AdminConfirmDialog } from './components/shell/AdminConfirmDialog.vue'
 export { default as AdminActionMenuItems } from './components/actions/AdminActionMenuItems.vue'
 
 export {

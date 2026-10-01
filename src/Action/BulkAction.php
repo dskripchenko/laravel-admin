@@ -30,6 +30,12 @@ final class BulkAction extends Action
      * The name of the resource's method that performs the action. It takes
      * `array<int, mixed> $ids` plus an optional payload.
      */
+    /** A bulk action always applies to the selected records. */
+    public function requiresSelection(): bool
+    {
+        return true;
+    }
+
     public function method(string $method): self
     {
         $this->attributes['method'] = $method;

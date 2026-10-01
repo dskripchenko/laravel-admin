@@ -185,7 +185,10 @@ final class SystemController extends ApiController
         $custom = [];
         $usedKeys = [];
         foreach ($this->menuRegistry->roots($panel) as $node) {
-            $serialized = $node->toArray($this->resources, $this->screens);
+            $serialized = $this->withoutForbiddenDashboards($node->toArray($this->resources, $this->screens), $panel);
+            if ($serialized === null) {
+                continue;
+            }
             $custom[] = $serialized;
             self::collectUsedSlugs($serialized, $usedKeys);
         }
@@ -199,6 +202,43 @@ final class SystemController extends ApiController
         }
 
         return $this->success(['items' => array_merge($custom, $auto)]);
+    }
+
+    /**
+     * Drops, recursively, the nodes leading to a dashboard the user may not
+     * open. The SPA filters the menu by the `permissions` of each node too,
+     * but a dashboard's own rule — every permission of
+     * DashboardScreen::permission() — is applied here, where it is defined.
+     *
+     * @param  array<string, mixed>  $node
+     * @return array<string, mixed>|null
+     */
+    private function withoutForbiddenDashboards(array $node, string $panel): ?array
+    {
+        $url = $node['url'] ?? null;
+        if (is_string($url) && str_starts_with($url, '/dashboard/')) {
+            $slug = substr($url, strlen('/dashboard/'));
+            $class = $this->screens->all($panel)[$slug] ?? null;
+            if ($class !== null && is_subclass_of($class, DashboardScreen::class)) {
+                $screen = app($class);
+                if ($screen instanceof DashboardScreen && ! $screen->canAccess()) {
+                    return null;
+                }
+            }
+        }
+
+        if (is_array($node['children'] ?? null)) {
+            $children = [];
+            foreach ($node['children'] as $child) {
+                $kept = is_array($child) ? $this->withoutForbiddenDashboards($child, $panel) : $child;
+                if ($kept !== null) {
+                    $children[] = $kept;
+                }
+            }
+            $node['children'] = $children;
+        }
+
+        return $node;
     }
 
     /**
@@ -300,6 +340,10 @@ final class SystemController extends ApiController
                 'children' => [],
             ];
         }
+
+        // The panel keeps the server's sequence for equal orders, so the
+        // auto-filled items come sorted: by order, then alphabetically.
+        usort($items, static fn (array $a, array $b): int => [$a['order'], (string) $a['label']] <=> [$b['order'], (string) $b['label']]);
 
         return $items;
     }

@@ -105,11 +105,10 @@ final class AdminServiceProvider extends ServiceProvider
         // /manifest do not build the same thing twice within a request. That
         // memo was written for FPM, where a singleton IS one request; under
         // Octane the instance lives as long as the worker, and the memo
-        // quietly turns from deduplication into a cross-request cache. Today
-        // the content depends only on the locale and the panel, and both are
-        // in the key — but Manifest itself records that permission filtering
-        // is still ahead. On that day the key stops describing the content,
-        // and a worker hands one person's manifest to another. Tenancy is
+        // quietly turns from deduplication into a cross-request cache. The
+        // key holds the locale and the panel, but the content also depends on
+        // the user — the dashboards are filtered by permission — so a shared
+        // instance would hand one person's manifest to another. Tenancy is
         // scoped right here for the same reason.
         //
         // BootstrapBuilder moves along with it, and not for company: it holds

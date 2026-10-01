@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Security
+
+- **Shared strategy: every site user could open the admin.** With
+  `strategy=shared` any account of the host's guard logged in, and a user
+  already signed in to the site was signed in to the admin API too. Now a
+  user needs at least one admin role (or `canAccessAdmin()`): the login
+  answers 403 `forbidden`, the API answers 403 to such a site session without
+  logging it out, and the shell treats the user as a guest.
+- **Dashboard and widget permissions were not enforced.** Any logged-in user
+  received every dashboard in the manifest, with the computed data of every
+  widget, and could call the `/api/admin/dashboard/*` endpoints for any of
+  them — `DashboardScreen::permission()`, `Widget::permission()` and
+  `Widget::canSee()` were ignored everywhere except the unused `layout()`
+  path. Now a dashboard the user may not open is left out of the manifest and
+  the menu, and `dashboard/get`, `save`, `savePeriod`, `reset` and `widgets`
+  answer `403` for it (`404` for a dashboard of another panel). A widget the
+  user may not see is dropped before its `data()` is called, so its queries
+  never run, and a saved per-user layout can no longer bring it back. Every
+  permission listed is required, as in `AdminAccess`; a user model without
+  `hasAccess()` holds none. Work a dashboard does in `widgets()` itself,
+  outside a widget's `data()`, still runs for everyone who may open it.
+
 ### Added
 
 - **The shared strategy works out of the box.** `admin:install --shared`
@@ -41,15 +63,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fields edited meanwhile, and reports errors as toasts or field errors.
   Screens render listeners against their initial state.
 - `Layout::childRenderables()` for walking a layout tree on the server.
+- **Row actions get a per-row menu.** Actions placed in `row` now show a ⋮ menu next to the view/edit/delete icons on every row of the resource index and run for that row alone (they stay in the bulk bar too).
+- **Standalone actions.** `Action::standalone()` and `Action::requiresSelection()`: a command bar or header action now runs without a selection (no `ids`, the method gets `[]`); a row or bulk action still needs at least one id, and a `BulkAction` always does. The SPA and the `/{slug}/action` validation follow the same rule.
+- **`useConfirm()` / `confirmDialog()`** — a panel-wide confirmation dialog (mounted by `AdminApp`); the remaining `window.confirm` calls (dashboard reset, token revoke, 2FA disable, embedded table, tree and form deletes, the screen context fallback) use it.
+- **The stats widget shows every stat** of a `StatsOverviewWidget` as a responsive row of cards, each with its own label, value, trend, color and icon.
+- **The dashboard period reaches the widgets.** A widget reads the selected
+  period through `$this->dashboardContext()` — a `DashboardContext` with
+  `period`, `days()`, `from()`, `to()` and `constrain($query, $column)` — in
+  `data()`. `RecentListWidget` and `TableWidget` get `withinPeriod($column)`.
+  `DashboardScreen::periods()` and `defaultPeriod()` choose the periods; by
+  default the switcher is shown only when a widget depends on the period
+  (`periodAware()`, `withinPeriod()` or reading the context) or the screen
+  reads `period()`/`periodDays()` in `widgets()`. Periods are `all` or a number
+  of days (`14d`). The manifest entry of a dashboard now carries `permission`,
+  `periods` and `period`.
+
+### Changed
+
+- Requires `@dskripchenko/ui` ^1.4.0. Modal layouts and `ModalAction::modalSize('full')` use the kit's full size; a `top` drawer slides from the top; a non-dismissable modal or drawer turns off the kit's Escape and overlay close instead of ignoring close requests; wizard steps are selectable stepper buttons (keyboard included); a DropDown nested in a menu is a submenu; action buttons use `UidButton`'s `icon`.
+- The markdown widget renders its content with the built-in safe markdown renderer; the markdown typography moved to the shared stylesheet.
+- Menu items with equal `order` keep the order they were added in (the sidebar no longer re-sorts them alphabetically); auto-filled items come sorted from the server.
+- Console commands (`admin:user`, `admin:make-*`) speak English.
 
 ### Fixed
 
-- **Shared strategy: every site user could open the admin.** With
-  `strategy=shared` any account of the host's guard logged in, and a user
-  already signed in to the site was signed in to the admin API too. Now a
-  user needs at least one admin role (or `canAccessAdmin()`): the login
-  answers 403 `forbidden`, the API answers 403 to such a site session without
-  logging it out, and the shell treats the user as a guest.
 - **`admin:user` failed on a users table without the admin's columns**
   (`is_active`, `locale`, `theme`) — the shared strategy's case. It now fills
   only the columns the table has, and speaks English.
@@ -68,6 +105,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A listener given as the whole content of a tab keeps its node instead of
   being flattened into the tab's items.
+- A screen method that returns no `message` no longer shows an "OK" banner; the `admin:make-screen` stub returns a single message.
+- Screen alerts accept `level`/`variant` as aliases of `type`, so a `success` alert is a success toast.
+- Widgets registered by plugins through `$admin->widgets([...])` reach the
+  SPA: the manifest and `dashboard/widgets` built dashboards from `widgets()`
+  alone, so the registry was only read by `layout()`, which the SPA never
+  calls.
+- The period switcher changed nothing on most dashboards: the period was sent
+  to the server, but only a screen reading `periodDays()` in `widgets()` could
+  use it — widgets had no way to read it. Switching to another dashboard no longer keeps the
+  previous dashboard's refreshed widgets on screen, and a saved period the
+  dashboard no longer offers is ignored.
 
 ## 1.33.0
 

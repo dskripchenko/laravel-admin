@@ -1,18 +1,22 @@
 <script setup lang="ts">
 /**
- * The markdown widget — a plain preformatted block. In production a host may
- * supply its own with marked or MDX, through registerWidget('markdown', ...).
- *
- * What is here is the fallback: basic formatting that preserves line breaks.
+ * The markdown widget: the content rendered by the built-in renderer, which
+ * escapes the source first (raw HTML shows as text) and allows only safe
+ * links. A host that needs the full CommonMark grammar registers its own
+ * through registerWidget('markdown', ...).
  */
+import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
+import { renderMarkdown } from '../fields/support/markdown'
 
 interface Props {
   title?: string
-  content: string
+  content?: string | null
 }
 
-withDefaults(defineProps<Props>(), { title: '' })
+const props = withDefaults(defineProps<Props>(), { title: '', content: '' })
+
+const html = computed<string>(() => renderMarkdown(props.content ?? ''))
 </script>
 
 <template>
@@ -20,15 +24,13 @@ withDefaults(defineProps<Props>(), { title: '' })
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <div class="admin-markdown-widget">{{ content }}</div>
+    <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes the source before adding markup -->
+    <div class="admin-markdown admin-markdown-widget" v-html="html" />
   </UidCard>
 </template>
 
 <style>
 .admin-markdown-widget {
-  font-size: var(--uid-font-size-sm);
   color: var(--uid-text-secondary);
-  white-space: pre-wrap;
-  line-height: var(--uid-line-height-normal);
 }
 </style>

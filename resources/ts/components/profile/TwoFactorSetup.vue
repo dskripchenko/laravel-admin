@@ -20,6 +20,7 @@ import { generate, correction } from 'lean-qr'
 import { toSvgSource } from 'lean-qr/extras/svg'
 import { adminToast } from '../../stores/toast'
 import { trSafe as tr } from '../../stores/i18n'
+import { confirmDialog } from '../../composables/useConfirm'
 
 interface Props {
   /** Whether 2FA was on when this mounted — auth.user.twoFactorEnabled. */
@@ -95,7 +96,7 @@ async function disable(): Promise<void> {
     error.value = tr('Введите текущий пароль.')
     return
   }
-  if (!window.confirm(tr('Отключить 2FA? Аккаунт станет менее защищённым.'))) return
+  if (!(await confirmDialog({ message: tr('Отключить 2FA? Аккаунт станет менее защищённым.'), destructive: true }))) return
   busy.value = true
   error.value = ''
   try {

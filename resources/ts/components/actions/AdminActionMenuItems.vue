@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * Actions as items of an existing UidMenu. UidMenu has no submenus, so a
- * DropDown nested here is flattened: its items follow a separator.
+ * Actions as items of an existing UidMenu. A DropDown nested here becomes a
+ * UidSubMenu holding its own actions, to any depth.
  */
-import { UidIcon, UidMenuItem, UidMenuSeparator } from '@dskripchenko/ui'
+import { UidIcon, UidMenuItem, UidSubMenu } from '@dskripchenko/ui'
 import type { AdminAction } from '../../composables/useActionRunner'
 import { resolveIcon } from '../shell/iconRegistry'
 import AdminActionMenuItems from './AdminActionMenuItems.vue'
@@ -21,15 +21,18 @@ const emit = defineEmits<{ run: [action: AdminAction] }>()
 
 <template>
   <template v-for="action in actions" :key="action.name">
-    <template v-if="action.type === 'dropdown'">
-      <UidMenuSeparator />
+    <UidSubMenu
+      v-if="action.type === 'dropdown'"
+      :label="action.label"
+      :icon="resolveIcon(action.icon) ?? undefined"
+      :data-testid="`action-${action.name}`"
+    >
       <AdminActionMenuItems
         :actions="action.items"
         :is-disabled="isDisabled"
         @run="(a: AdminAction) => emit('run', a)"
       />
-      <UidMenuSeparator />
-    </template>
+    </UidSubMenu>
     <UidMenuItem
       v-else
       :variant="action.destructive ? 'danger' : 'default'"

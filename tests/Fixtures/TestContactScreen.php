@@ -106,4 +106,31 @@ final class TestContactScreen extends Screen
             'message_link' => ['url' => '/r/jobs/7'],
         ];
     }
+
+    /**
+     * Answers with a toast only — no message, so no banner.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    public function notifyOnly(array $state): array
+    {
+        return [
+            'alerts' => [['type' => 'success', 'message' => 'Saved']],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    public function levelAlert(array $state): array
+    {
+        return [
+            'alerts' => [
+                ['level' => 'success', 'message' => 'Done'],
+                ['message' => 'Plain'],
+            ],
+        ];
+    }
 }
