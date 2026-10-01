@@ -79,16 +79,17 @@ Input::make('slug')->reactive(['title' => 'slugify']),
 ## Columns (таблица)
 
 ```php
-TableColumn::make('id')->sortable(),
-TableColumn::make('title')->sortable()->searchable(),
-TableColumn::make('status')->preset('badge')->align('center'),
-TableColumn::make('created_at')->preset('datetime')->sortable(),
-TableColumn::make('price')->preset('money')->align('right'),
-TableColumn::make('actions')->view(),  // built-in row actions column
+TableColumn::make('id')->sort(),
+TableColumn::make('title')->sort()->search(),
+TableColumn::make('status')->asBadge(['published' => 'success'])->align('center'),
+TableColumn::make('created_at')->asDateTime()->sort(),
+TableColumn::make('price')->asMoney('USD')->align('right'),
+TableColumn::make('cover')->asImage(),
 ```
 
-Presets: `badge`, `datetime`, `date`, `money`, `boolean`, `bytes`,
-`relative-time`, `code`, `truncate`.
+Форматы: `asDate()`, `asDateTime()`, `asMoney()`, `asBoolean()`,
+`asBytes()`, `asBadge()`, `asLink()`, `asImage()`, а для остального —
+`format(callable)`. Действия над строкой таблица рисует сама.
 
 ## Filters
 

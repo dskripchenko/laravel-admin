@@ -181,7 +181,7 @@ command method itself.
 | Aspect | Resource | Screen |
 |---|---|---|
 | Bound to model | Yes (Eloquent) | No |
-| URL | `/r/{slug}` (+`/{id}/edit`, `/create`, `/{id}/view`) | `/screens/{slug}` |
+| URL | `/r/{slug}` (+`/{id}/edit`, `/create`, `/{id}`) | `/screens/{slug}` |
 | Endpoints | `meta`, `search`, `read`, `create`, `update`, `delete`, ... | `state` (GET), `runMethod` (POST) |
 | Auto-generated UI | Yes | No (host-controlled via `layout()`) |
 | Multiple records | Yes (table) | No (single state) |

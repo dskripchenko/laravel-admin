@@ -64,27 +64,29 @@ Admin::menu()->add(
 
 ```bash
 composer require dskripchenko/laravel-admin
-php artisan vendor:publish --tag=admin-config
-php artisan migrate
+php artisan admin:install
 ```
 
 ```js
 // resources/js/admin.js
-import { createAdminApp } from '@dskripchenko/laravel-admin'
 import '@dskripchenko/ui/styles/all.css'
 import '@dskripchenko/laravel-admin/style.css'
+import '@dskripchenko/wysiwyg/style.css'
+import { createAdminApp } from '@dskripchenko/laravel-admin'
 
 const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
 app.mount('#admin-app')
 ```
 
 ```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui
+npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
 npm run build
 ```
 
-Öffnen Sie `/admin/login`. Siehe
-[getting-started.md](../../docs/de/getting-started.md) für die erste Resource.
+Fügen Sie `resources/js/admin.js` zu den Vite-Inputs hinzu und verweisen Sie
+`config('admin.assets')` auf das Vite-Manifest — die vollständige Anleitung
+samt erster Resource steht in [getting-started.md](../en/getting-started.md).
+Öffnen Sie dann `/admin/login`.
 
 ## Dokumentation
 
@@ -108,12 +110,12 @@ npm run build
 
 ## Stack
 
-- **PHP** ^8.5
-- **Laravel** ^12
+- **PHP** ^8.2
+- **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
 - **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
-- **Kein Vendor-Lock-In** für Editor/Charts — bringen Sie Ihre eigenen
-  (Sister-Pack-Adapter: `quill`, `tinymce`)
+- **WYSIWYG** — standardmäßig `@dskripchenko/wysiwyg`; Quill- und
+  TinyMCE-Adapter liegen im npm-Paket (`/quill`, `/tinymce`)
 
 ## Sister-Packs
 
@@ -121,10 +123,7 @@ Optionale Erweiterungen, installieren Sie nur was Sie brauchen:
 
 | Paket | Zweck |
 |---|---|
-| `dskripchenko/laravel-admin-starter` | User/Role/Audit/Settings/Translations/Blocks Resources |
-| `dskripchenko/laravel-admin-tinymce` | TinyMCE WYSIWYG-Adapter |
-| `dskripchenko/laravel-admin-quill` | Quill WYSIWYG-Adapter |
-| `dskripchenko/laravel-admin-search` | ⌘K Command Palette + Scout Suggest |
+| `dskripchenko/laravel-admin-starter` | Resources für Benutzer, Rollen und Audit-Log |
 | `dskripchenko/laravel-admin-media` | Medienbibliothek (ohne Spatie/medialibrary) |
 | `dskripchenko/laravel-admin-health` | Health-Checks (ohne Spatie/laravel-health) |
 | `dskripchenko/laravel-admin-pulse` | Telemetrie (ohne laravel/pulse) |
