@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Models;
 
 use Dskripchenko\LaravelAdmin\Audit\Concerns\Loggable;
+use Dskripchenko\LaravelAdmin\Auth\Concerns\HasAdminTwoFactor;
 use Dskripchenko\LaravelAdmin\Permission\Concerns\HasAdminAccess;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Auth\MustVerifyEmail;
@@ -47,6 +48,7 @@ class AdminUser extends Model implements AuthenticatableContract, CanResetPasswo
     use Authorizable;
     use CanResetPassword;
     use HasAdminAccess;
+    use HasAdminTwoFactor;
     use HasFactory;
     use Loggable;
     use MustVerifyEmail;
@@ -94,14 +96,5 @@ class AdminUser extends Model implements AuthenticatableContract, CanResetPasswo
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
         ];
-    }
-
-    /**
-     * 2FA is enabled and confirmed.
-     */
-    public function hasTwoFactorEnabled(): bool
-    {
-        return $this->two_factor_secret !== null
-            && $this->two_factor_confirmed_at !== null;
     }
 }

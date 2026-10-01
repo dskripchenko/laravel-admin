@@ -43,12 +43,12 @@ Admin::menu()->add(
 - **通知** — 铃铛徽章 + 抽屉（Database notifications）。
 - **API tokens** — Profile 中的 Sanctum 集成（可选）。
 - **主题** — 浅色/深色 + 用户偏好，`@dskripchenko/ui` 设计 token。
-- **i18n** — locale 解析器（5 步优先级），与
+- **i18n** — locale 解析器（6 步优先级），与
   `dskripchenko/laravel-translatable` 的 `TranslatableField` 桥接。
 - **多租户** — `TenantResolver` / `TenantContext` / `TenantScoped`
   trait。策略由主机端决定；我们仅提供契约。
 - **插件** — `AdminPlugin` 接口；姐妹包使用相同的 hook。
-- **测试** — `ResourceTestCase`、`ScreenTestCase`、`ActsAsAdmin` trait。
+- **测试** — `AdminTestCase`、`ActsAsAdmin` 与 `InteractsWithAdminResources` trait。
 - **OpenAPI 3.0** — 从 docblock 标签 `@input`/`@output` 生成。
 
 ## 安装
@@ -87,7 +87,7 @@ Vue 组件使用自有构建的模式。
 - **PHP** ^8.2
 - **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
-- **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
+- **前端** — 预构建 SPA 约 350 KB gz JS + 35 KB gz CSS；用于自定义构建的 npm 库约 260 KB gz（Vue、Pinia 与 UI kit 为外部依赖）
 - **WYSIWYG** — 默认使用 `@dskripchenko/wysiwyg`；Quill 与 TinyMCE
   适配器已包含在 npm 包中（`/quill`、`/tinymce`）
 

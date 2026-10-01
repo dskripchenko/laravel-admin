@@ -123,7 +123,7 @@ trait InteractsWithAdminResources
 
     private function resourceUrl(string $slug, string $action): string
     {
-        $apiPath = (string) config('admin.api_path', 'api/admin');
+        $apiPath = \Dskripchenko\LaravelAdmin\Panel\Panel::apiPathFor('admin');
 
         return '/'.trim($apiPath, '/').'/'.$slug.'/'.$action;
     }

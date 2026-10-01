@@ -11,7 +11,7 @@ use Dskripchenko\LaravelApi\Components\BaseModule;
  * The admin API module — laravel-api's entry point.
  *
  * It overrides a few of BaseModule's methods so that the admin API:
- *   - lives under its own prefix, `api/admin` (config: admin.api_path);
+ *   - lives at `/{laravel-api.prefix}/admin` — `/api/admin` by default;
  *   - has no `{version}` segment in the URL (the pattern is
  *     `{controller}/{action}`);
  *   - has a middleware stack of its own (config: admin.middleware.api).
@@ -66,12 +66,11 @@ class AdminApiModule extends BaseModule
      * The prefix of the laravel-api routes; 'api' by default, as laravel-api
      * has it. The final URL becomes
      * `/{prefix}/{version}/{controller}/{action}`, and with version='admin'
-     * that is /api/admin/{controller}/{action} — exactly what
-     * `config('admin.api_path')` intends.
+     * that is /api/admin/{controller}/{action}.
      *
-     * When a host project uses its own laravel-api prefix ('api/v1', say), the
-     * admin ends up underneath it: `/api/v1/admin/...`. To avoid the clash we
-     * keep the global default of 'api'.
+     * When a host project sets its own laravel-api prefix ('api/v1', say), the
+     * admin moves underneath it, `/api/v1/admin/...`, and the SPA follows:
+     * Panel::defaultApiPath() derives its URL from the same prefix.
      */
     public function getApiPrefix(): string
     {

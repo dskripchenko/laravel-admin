@@ -136,6 +136,12 @@ final class AdminServiceProvider extends ServiceProvider
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'admin-migrations');
 
+        // The shared strategy only: admin columns on the host's users table.
+        // Never loaded on its own — a dedicated install must not touch `users`.
+        $this->publishes([
+            __DIR__.'/../database/shared-migrations' => database_path('migrations'),
+        ], 'admin-shared-migrations');
+
         $this->publishes([
             __DIR__.'/../resources/views' => resource_path('views/vendor/admin'),
         ], 'admin-views');
@@ -195,7 +201,7 @@ final class AdminServiceProvider extends ServiceProvider
             return;
         }
 
-        $prefix = (string) config('admin.api_path', 'api/admin');
+        $prefix = Panel\Panel::apiPathFor('admin');
         $routePath = $prefix === '' ? 'doc' : "{$prefix}/doc";
 
         Route::get($routePath, Http\Controllers\ScalarDocController::class)
@@ -330,11 +336,20 @@ final class AdminServiceProvider extends ServiceProvider
 
         foreach ($ordered as $panel) {
             $anyPattern = '.*';
-            if ($panel->excludePrefixes !== []) {
+            $excluded = $panel->excludePrefixes;
+            // A panel at the root must not swallow the API it talks to: the
+            // shell's catch-all would answer /api/... with the SPA's HTML.
+            if ($panel->isRoot()) {
+                $apiPrefix = trim((string) config('laravel-api.prefix', 'api'), '/');
+                if ($apiPrefix !== '' && ! in_array($apiPrefix, $excluded, true)) {
+                    $excluded[] = $apiPrefix;
+                }
+            }
+            if ($excluded !== []) {
                 // A catch-all that does not swallow other prefixes: api/, draft/, …
                 $quoted = array_map(
                     static fn (string $prefix): string => preg_quote(trim($prefix, '/'), '#'),
-                    $panel->excludePrefixes,
+                    $excluded,
                 );
                 $anyPattern = '(?!(?:'.implode('|', $quoted).')(?:/|$)).*';
             }

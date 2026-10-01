@@ -443,5 +443,6 @@
     "Инструменты": "Tools",
     "Подробнее": "Learn more",
     "Не удалось обновить форму": "Could not update the form",
-    "Обновление…": "Updating…"
+    "Обновление…": "Updating…",
+    "Нет доступа к панели администратора": "You do not have access to the admin panel"
 }

@@ -21,6 +21,12 @@
         <testsuite name="Host">
             <directory>tests/Host</directory>
         </testsuite>
+        <testsuite name="Shared">
+            <directory>tests/Shared</directory>
+        </testsuite>
+        <testsuite name="RootPanel">
+            <directory>tests/RootPanel</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

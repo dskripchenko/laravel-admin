@@ -14,7 +14,10 @@ return [
     'path' => env('ADMIN_PATH', 'admin'),
     'domain' => env('ADMIN_DOMAIN'),
     // The API lives SEPARATELY from the SPA, at /api/admin/*; it does not nest under path.
-    'api_path' => env('ADMIN_API_PATH', 'api/admin'),
+    // laravel-api serves it at /{laravel-api.prefix}/admin/*, and that is the
+    // default here too (null). Set it only when a proxy rewrites the path
+    // the browser sees; to move the API itself, change laravel-api.prefix.
+    'api_path' => env('ADMIN_API_PATH'),
 
     'api' => [
         // The admin API's global per-user rate limit: 'requests,minutes'.
