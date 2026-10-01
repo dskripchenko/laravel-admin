@@ -33,6 +33,7 @@ import { toastError } from '../stores/toast'
 import { provideFormState } from './render/formState'
 import { provideRecord } from './infolist/recordContext'
 import { provideScreenContext } from './render/screenContext'
+import { provideListenerEndpoint } from './render/listenerContext'
 import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
 import { trSafe as tr } from '../stores/i18n'
 
@@ -56,6 +57,8 @@ const resolvedSlug = computed<string>(() => {
 // for the infolists.
 const ctx = provideFormState(screen.state, screen.errors)
 provideRecord(screen.state)
+// The Listener layouts ask the screen's own `listener` action.
+provideListenerEndpoint({ url: () => `/${resolvedSlug.value}/listener` })
 
 const commandBar = computed(() => normalizeActions(screen.commandBar))
 

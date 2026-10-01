@@ -66,7 +66,11 @@ final class Tabs extends Layout
                     (string) ($labels[$idx] ?? ('Tab '.($idx + 1))),
                 ),
                 // The child has been serialized by Layout::toArray() already and holds its items.
-                'items' => $child['items'] ?? ($child['children'] ?? [$child]),
+                // A listener keeps its own node: flattening it would drop
+                // the reactivity along with the wrapper.
+                'items' => ($child['type'] ?? null) === 'listener'
+                    ? [$child]
+                    : ($child['items'] ?? ($child['children'] ?? [$child])),
             ];
         }
 

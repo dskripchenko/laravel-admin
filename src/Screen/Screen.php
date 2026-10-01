@@ -6,6 +6,7 @@ namespace Dskripchenko\LaravelAdmin\Screen;
 
 use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Layout\Listener;
 use Dskripchenko\LaravelAdmin\Support\Repository;
 use Illuminate\Support\Str;
 
@@ -150,13 +151,21 @@ abstract class Screen
         $stateRepo = $this->query(...$params);
         $state = $stateRepo instanceof Repository ? $stateRepo->toArray() : $stateRepo;
 
+        $layouts = array_values(array_filter($this->layout(), static fn (Layout $l): bool => $l->isVisible()));
+        // The listeners render their first paint against the state the form
+        // opens with, so the SPA need not ask the server again right away.
+        $listenerState = $this->listenerState($state);
+        foreach (Listener::all($layouts) as $listener) {
+            $listener->prime($listenerState);
+        }
+
         $payload = [
             'state' => $state,
             'name' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->name()),
             'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->description()),
             'layout' => array_map(
                 static fn (Layout $l): array => $l->toArray(),
-                array_values(array_filter($this->layout(), static fn (Layout $l): bool => $l->isVisible())),
+                $layouts,
             ),
             'command_bar' => array_map(
                 static fn (Action $a): array => $a->toArray(),
@@ -173,6 +182,18 @@ abstract class Screen
         ]);
 
         return $payload;
+    }
+
+    /**
+     * The part of the state the form's fields read — what a listener sees.
+     * The whole state on an ordinary screen.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    protected function listenerState(array $state): array
+    {
+        return $state;
     }
 
     /**

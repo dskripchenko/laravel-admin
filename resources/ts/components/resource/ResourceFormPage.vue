@@ -28,6 +28,7 @@ import {
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { useManifestStore } from '../../stores/manifest'
 import { provideFormState } from '../render/formState'
+import { provideListenerEndpoint } from '../render/listenerContext'
 import { ApiError } from '../../api/errors'
 import { resolveStatusLabel } from './statusLabel'
 import RowsLayout from '../layouts/RowsLayout.vue'
@@ -98,6 +99,15 @@ const ctx = provideFormState(
   form.errors,
   props.id !== null && props.id !== undefined ? 'update' : 'create',
 )
+
+// The Listener layouts of the form ask the resource's `listener` action, with
+// the form's context — the server checks the create or update permission by it.
+provideListenerEndpoint({
+  url: () => `/${props.slug}/listener`,
+  extra: () => (form.isCreate
+    ? { context: 'create' }
+    : { context: 'update', id: props.id }),
+})
 
 // Changes made through ctx.setField are synced back into the store so that
 // isDirty works. Since state.value === ctx.state — the same reactive object,

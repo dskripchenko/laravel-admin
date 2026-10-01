@@ -12,10 +12,11 @@ use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
  * Compiles ScreenRegistry into the `controllers` array of
  * AdminApi::getMethods().
  *
- * Every registered screen becomes a controller entry with two actions:
+ * Every registered screen becomes a controller entry with three actions:
  *   - state (GET)      — returns compile(): the state, layout, command bar and
  *                        meta
  *   - runMethod (POST) — the dispatch point of the screen's command methods
+ *   - listener (POST)  — re-renders one of the screen's Listener layouts
  *
  * The permission gate is the AdminAccess middleware, applied when the screen
  * declares a `permission()` — a string, or a list joined with `;`, which means
@@ -53,6 +54,10 @@ final class ScreenCompiler
                         'middleware' => $middleware,
                     ],
                     'runMethod' => [
+                        'method' => ['post'],
+                        'middleware' => $middleware,
+                    ],
+                    'listener' => [
                         'method' => ['post'],
                         'middleware' => $middleware,
                     ],

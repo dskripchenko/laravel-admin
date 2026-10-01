@@ -45,6 +45,7 @@
         "dashboard",
         "drawer",
         "infolist",
+        "listener",
         "modal",
         "rows",
         "step",

@@ -55,6 +55,16 @@ trait AdminApiUiSchemas
                 'duration_ms' => 'integer',
             ],
 
+            'ListenerResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ListenerPayload',
+            ],
+            'ListenerPayload' => [
+                'listener' => 'string!',                            // the listener's id
+                'state' => 'object!',                               // the handler's state patch
+                'layouts' => '@LayoutSchema[]',                     // the re-rendered children
+            ],
+
             'ScreenAsyncResponse' => [
                 'success' => 'boolean!',
                 'payload' => '@ScreenAsyncPayload',

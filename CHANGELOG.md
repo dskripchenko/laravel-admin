@@ -5,6 +5,32 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Listener layouts: reactive forms.** `Layout::listener($children)->listen([...])`
+  re-renders part of a form on the server whenever the watched fields change.
+  Children are a list or `fn (array $state): array`; an optional
+  `->handler('method')` (a public method of the Screen or Resource) or closure
+  receives `(array $state, Request $request)` and returns a state patch. New
+  endpoints `POST /api/admin/{screen}/listener` (behind the screen's
+  permission) and `POST /api/admin/{resource}/listener` (`view` plus
+  `create`/`update` by form context; registered only for forms with
+  listeners) take `{listener, state}` and answer `{listener, state, layouts}`.
+  Only listeners declared in the screen's `layout()` / the resource's
+  `formLayout()` can be reached; reserved screen methods are refused. The SPA
+  `listener` layout debounces changes (300 ms, `->debounce()`), cancels stale
+  requests, swaps its children in place, merges the patch without overwriting
+  fields edited meanwhile, and reports errors as toasts or field errors.
+  Screens render listeners against their initial state.
+- `Layout::childRenderables()` for walking a layout tree on the server.
+
+### Fixed
+
+- A listener given as the whole content of a tab keeps its node instead of
+  being flattened into the tab's items.
+
 ## 1.33.0
 
 ### Added

@@ -327,6 +327,65 @@ final class ResourceController extends ApiController
     }
 
     /**
+     * Re-renders one of the form's Listener layouts against the form state.
+     *
+     * The listener is looked up by id among those the resource's
+     * `formLayout($context)` declares; its handler — a public method of the
+     * resource or a closure — runs with the state and returns a patch, and the
+     * listener's children are rendered with the patched state.
+     *
+     * The route asks for the view permission; the form's own one — create or
+     * update, by `context` — is checked here, since the same listener serves
+     * both forms.
+     *
+     * @input string $listener The listener's id, as the layout serialized it
+     * @input object ?$state The current form state
+     * @input string ?$context create|update — update when an id is given, create otherwise
+     * @input integer ?$id The record being edited
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ListenerResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function listener(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+
+        $context = $request->input('context');
+        if ($context === null) {
+            $context = $request->input('id') !== null ? 'update' : 'create';
+        }
+        if (! in_array($context, ['create', 'update'], true)) {
+            return $this->error([
+                'errorKey' => 'validation',
+                'message' => '`context` must be create or update',
+                'messages' => ['context' => ['`context` must be create or update']],
+            ], 422);
+        }
+
+        $permission = $resource::permission().'.'.$context;
+        $user = \Illuminate\Support\Facades\Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+        if ($user === null || ! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+            ], 403);
+        }
+
+        return \Dskripchenko\LaravelAdmin\Layout\ListenerResponder::respond(
+            $this,
+            $resource,
+            $resource->formLayout($context),
+            $request,
+        );
+    }
+
+    /**
      * Compiles GeneratedViewScreen — the read-only display built on Infolist.
      *
      * @input integer $id
