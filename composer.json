@@ -66,7 +66,8 @@
         "test": "pest",
         "test-coverage": "pest --coverage",
         "lint": "pint",
-        "stan": "phpstan analyse"
+        "stan": "phpstan analyse",
+        "types:export": "@php -r \"require 'vendor/autoload.php'; file_put_contents(Dskripchenko\\\\LaravelAdmin\\\\Tests\\\\Support\\\\BackendTypes::FIXTURE, Dskripchenko\\\\LaravelAdmin\\\\Tests\\\\Support\\\\BackendTypes::json());\""
     },
     "extra": {
         "laravel": {

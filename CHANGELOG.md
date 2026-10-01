@@ -5,6 +5,32 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **Getting started could not be followed to a working admin.** It named a
+  command that does not exist (`admin:make-user`, now `admin:user --super`),
+  table-column methods that do not exist (`sortable()`, `searchable()`,
+  `preset()` — the API is `sort()`, `search()`, `asBadge()`, `asDateTime()`
+  and the other `as*()` formatters), the wrong view URL, and left out the
+  Vite/`admin.assets` setup without which the shell renders a blank page.
+  Rewritten in English and Russian around `admin:install`; the same column
+  examples are fixed in the Resources concept page.
+- README (all languages): the PHP/Laravel requirements match composer
+  (PHP ^8.2, Laravel 11–13), the archived sister-packs are gone from the
+  list, and the starter is described as what it ships.
+- The npm package no longer depends on itself.
+
+### Added
+
+- A backend ↔ SPA parity check. `composer types:export` writes every field,
+  layout, widget, infolist-entry and chart type the PHP side can send to
+  `resources/ts/__fixtures__/backend-types.json` (a PHP test keeps it
+  current); a frontend test looks each one up in the SPA registries. Types
+  the SPA does not draw yet, or draws with a stand-in, are listed in the test
+  and the list may only shrink.
+
 ## 1.32.0
 
 ### Fixed

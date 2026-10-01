@@ -12,6 +12,7 @@ import { computed } from 'vue'
 import BarChartWidget from './BarChartWidget.vue'
 import DonutChartWidget from './DonutChartWidget.vue'
 import UnknownWidget from './UnknownWidget.vue'
+import { CHART_RENDERERS } from './chartTypes'
 
 interface ChartDataset {
   label: string
@@ -40,6 +41,8 @@ const props = defineProps<Props>()
 const chartType = computed<string>(
   () => props.data?.chartType ?? props.data?.type ?? 'bar',
 )
+
+const renderer = computed(() => CHART_RENDERERS[chartType.value])
 
 /**
  * The default palette of a donut or a pie. It comes from the --uid-* tokens,
@@ -87,12 +90,12 @@ const donutData = computed(() => {
 
 <template>
   <DonutChartWidget
-    v-if="chartType === 'doughnut' || chartType === 'pie'"
+    v-if="renderer === 'donut'"
     :title="title"
     :data="donutData"
   />
   <BarChartWidget
-    v-else-if="chartType === 'bar' || chartType === 'line' || chartType === 'area'"
+    v-else-if="renderer === 'bar'"
     :title="title"
     :data="barData"
     :accent="barAccent"
