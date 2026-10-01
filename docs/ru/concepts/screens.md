@@ -181,7 +181,7 @@ public function permission(): array|string|null
 | Аспект | Resource | Screen |
 |---|---|---|
 | Привязан к модели | Да (Eloquent) | Нет |
-| URL | `/r/{slug}` (+`/{id}/edit`, `/create`, `/{id}/view`) | `/screens/{slug}` |
+| URL | `/r/{slug}` (+`/{id}/edit`, `/create`, `/{id}`) | `/screens/{slug}` |
 | Endpoints | `meta`, `search`, `read`, `create`, `update`, `delete`, ... | `state` (GET), `runMethod` (POST) |
 | Auto-генерация UI | Да | Нет (host контролирует через `layout()`) |
 | Несколько записей | Да (таблица) | Нет (один state) |

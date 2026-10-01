@@ -4,48 +4,75 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/getting-started.md
-translated_at: 2026-05-08
+translated_at: 2026-10-01
 ---
 
 # Быстрый старт
 
-Этот документ проведёт от чистого Laravel 12 приложения до работающей
-админки с кастомным resource'ом за ~5 минут.
+Этот документ проведёт от чистого Laravel-приложения до работающей
+админки с собственным ресурсом примерно за десять минут.
 
 ## Требования
 
-- PHP 8.5+
-- Laravel 12.x
-- Node 20+ для frontend-bundle
-- Чистая Eloquent-модель, которой хочешь управлять (для примера —
-  `Article`)
+- PHP 8.2+
+- Laravel 11, 12 или 13
+- Node 20+ для сборки фронтенда
+- Eloquent-модель, которой нужно управлять (для примера — `Article`)
 
 ## Установка
 
 ```bash
 composer require dskripchenko/laravel-admin
-php artisan vendor:publish --tag=admin-config
-php artisan migrate
+php artisan admin:install
 ```
 
-Это создаст таблицы `admin_users`, `admin_roles`, `admin_settings`,
-`audit_logs`, `dashboard_layouts` и несколько других.
+`admin:install` публикует `config/admin.php` и миграции, запускает
+`migrate` и предлагает создать первого администратора. Появятся таблицы
+`admin_users`, `admin_roles`, `admin_settings`, `audit_logs`,
+`dashboard_layouts` и несколько других. Опции: `--no-migrate`, `--no-user`,
+`--force` (перезаписать опубликованные файлы).
 
-## Frontend bundle
+## Фронтенд
+
+Админка — Vue SPA. Ставится вместе с UI-китом и редактором WYSIWYG по
+умолчанию:
 
 ```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui
+npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
 ```
 
-Точка входа в `resources/js/admin.js`:
+Точка входа `resources/js/admin.js`:
 
 ```js
-import { createAdminApp } from '@dskripchenko/laravel-admin'
 import '@dskripchenko/ui/styles/all.css'
 import '@dskripchenko/laravel-admin/style.css'
+import '@dskripchenko/wysiwyg/style.css'
+
+import { createAdminApp } from '@dskripchenko/laravel-admin'
 
 const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
 app.mount('#admin-app')
+```
+
+Добавьте её во входы `laravel-vite-plugin` в `vite.config.js`:
+
+```js
+laravel({
+    input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin.js'],
+    refresh: true,
+}),
+```
+
+и укажите оболочке админки Vite-манифест в `config/admin.php`:
+
+```php
+'assets' => [
+    'vite_manifest' => public_path('build/manifest.json'),
+    'vite_entry' => 'resources/js/admin.js',
+    'vite_base_url' => '/build/',
+    'css' => [],
+    'js' => [],
+],
 ```
 
 Сборка:
@@ -54,38 +81,33 @@ app.mount('#admin-app')
 npm run build
 ```
 
-## Первый admin-пользователь
+Без настроек `assets` оболочке нечего загрузить, и страница админки
+останется пустой.
+
+## Первый администратор
+
+Если пропустили этот шаг в `admin:install`:
 
 ```bash
-php artisan admin:make-user
+php artisan admin:user --super
 ```
 
-Или через tinker:
+Команда спросит имя, email и пароль (или возьмёт их аргументами:
+`admin:user "Admin" admin@example.com secret123 --super`). `--super`
+назначает роль со всеми правами.
 
-```php
-\Dskripchenko\LaravelAdmin\Models\AdminUser::create([
-    'name' => 'Admin',
-    'email' => 'admin@example.com',
-    'password' => 'password',
-])->assignRole(
-    \Dskripchenko\LaravelAdmin\Permission\Models\Role::firstOrCreate(
-        ['slug' => 'super'],
-        ['name' => 'Super', 'permissions' => ['*']],
-    ),
-);
-```
+Откройте `/admin/login` с этими данными. Путь задаётся `ADMIN_PATH`
+(по умолчанию `admin`).
 
-Открой `/admin/login` с этими credentials.
+## Первый ресурс
 
-## Первый Resource
-
-Сгенерировать скелет:
+Сгенерировать заготовку:
 
 ```bash
 php artisan admin:make-resource ArticleResource
 ```
 
-Или вручную:
+Или написать вручную:
 
 ```php
 namespace App\Admin\Resources;
@@ -107,13 +129,13 @@ final class ArticleResource extends Resource
     public function fields(): array
     {
         return [
-            Input::make('title')->required()->title('Заголовок'),
+            Input::make('title')->required(),
             Input::make('slug')->required(),
-            Textarea::make('excerpt')->rows(3)->title('Аннотация'),
+            Textarea::make('excerpt')->rows(3),
             Select::make('status')->options([
                 'draft' => 'Черновик',
-                'review' => 'На ревью',
-                'published' => 'Опубликовано',
+                'review' => 'На проверке',
+                'published' => 'Опубликована',
                 'archived' => 'В архиве',
             ])->required(),
         ];
@@ -122,10 +144,10 @@ final class ArticleResource extends Resource
     public function columns(): array
     {
         return [
-            TableColumn::make('id')->sortable(),
-            TableColumn::make('title')->sortable()->searchable(),
-            TableColumn::make('status')->preset('badge'),
-            TableColumn::make('created_at')->preset('datetime')->sortable(),
+            TableColumn::make('id')->sort(),
+            TableColumn::make('title')->sort()->search(),
+            TableColumn::make('status')->asBadge(),
+            TableColumn::make('created_at')->asDateTime()->sort(),
         ];
     }
 }
@@ -150,7 +172,7 @@ public function boot(): void
 | `/admin/r/articles` | Список + фильтры + пагинация |
 | `/admin/r/articles/create` | Форма создания |
 | `/admin/r/articles/{id}/edit` | Форма редактирования |
-| `/admin/r/articles/{id}/view` | Read-only infolist |
+| `/admin/r/articles/{id}` | Read-only infolist |
 
 ## Дальше
 

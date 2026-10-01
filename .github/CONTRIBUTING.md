@@ -72,7 +72,7 @@ vendor/bin/phpstan analyse # static analysis (level 5)
 
 ### PHP
 
-- **PHP 8.5+**, strict types declared at the top of every file.
+- **PHP 8.2+**, strict types declared at the top of every file.
 - **Pint** is the formatter (`vendor/bin/pint`). Run before committing.
 - **PHPStan level 5**. Don't widen types or add `@phpstan-ignore` to
   silence — fix the underlying issue (or document why if pre-existing).

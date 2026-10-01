@@ -5,6 +5,32 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **Getting started could not be followed to a working admin.** It named a
+  command that does not exist (`admin:make-user`, now `admin:user --super`),
+  table-column methods that do not exist (`sortable()`, `searchable()`,
+  `preset()` — the API is `sort()`, `search()`, `asBadge()`, `asDateTime()`
+  and the other `as*()` formatters), the wrong view URL, and left out the
+  Vite/`admin.assets` setup without which the shell renders a blank page.
+  Rewritten in English and Russian around `admin:install`; the same column
+  examples are fixed in the Resources concept page.
+- README (all languages): the PHP/Laravel requirements match composer
+  (PHP ^8.2, Laravel 11–13), the archived sister-packs are gone from the
+  list, and the starter is described as what it ships.
+- The npm package no longer depends on itself.
+
+### Added
+
+- A backend ↔ SPA parity check. `composer types:export` writes every field,
+  layout, widget, infolist-entry and chart type the PHP side can send to
+  `resources/ts/__fixtures__/backend-types.json` (a PHP test keeps it
+  current); a frontend test looks each one up in the SPA registries. Types
+  the SPA does not draw yet, or draws with a stand-in, are listed in the test
+  and the list may only shrink.
+
 ## 1.32.1
 
 ### Fixed
@@ -22,51 +48,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.32.0
 
-### Исправлено
+### Fixed
 
-- **Стек админки навешивался на все версии API хост-приложения.** Модуль
-  объявлен открытым для наследования: хост мержит `parent::getApiVersionList()`
-  и ставит свои версии рядом с панелями. Но `getApiMiddleware()` отдавал
-  `admin.middleware.api` безусловно, а laravel-api регистрирует его одной
-  группой на каждый маршрут модуля — и публичный `api/v1/*` с bearer-токеном
-  получал 401 от `AdminAuth` раньше, чем до него доходил собственный
-  middleware, а CSRF из `web` резал его POST'ы. Найдено интеграционным тестом
-  хост-проекта на Sanctum.
+- **The admin middleware stack was attached to every API version of the host
+  application.** The module is declared open for extension: the host merges
+  `parent::getApiVersionList()` and puts its own versions next to the panels.
+  But `getApiMiddleware()` returned `admin.middleware.api` unconditionally, and
+  laravel-api registers it as a single group on every route of the module — so
+  a public `api/v1/*` with a bearer token got a 401 from `AdminAuth` before its
+  own middleware ever ran, and CSRF from `web` cut off its POSTs. Found by an
+  integration test in a host project on Sanctum.
 
-  Выбирать стек по версии из URL при регистрации маршрутов было бы починкой
-  под FPM и тишиной под Octane: воркер грузится однажды, и группа осталась бы
-  выбором первого запроса для всех следующих. Поэтому группа теперь не зависит
-  от запроса — `CaptureApiRequest` и `RunVersionMiddleware`, — а выбор делается
-  на каждом запросе: панели (`admin`, `admin.panels.*`) получают стек из
-  `admin.middleware.api`, прочие версии — контракт laravel-api, middleware
-  своего класса `BaseApi` через `RunActionMiddleware`, и ничего из админки.
-  `exclude-middleware` маршрута действует и внутри вложенного стека, так что
-  `auth/login` по-прежнему проходит мимо `AdminAuth`.
+  Picking the stack by the URL version at route registration would have been a
+  fix under FPM and silence under Octane: the worker boots once, and the group
+  would stay whatever the first request chose for every request after it. So
+  the group no longer depends on the request — `CaptureApiRequest` and
+  `RunVersionMiddleware` — and the choice is made per request: panels
+  (`admin`, `admin.panels.*`) get the stack from `admin.middleware.api`, other
+  versions get the laravel-api contract, the middleware of their own `BaseApi`
+  class via `RunActionMiddleware`, and nothing from the admin. A route's
+  `exclude-middleware` also applies inside the nested stack, so `auth/login`
+  still bypasses `AdminAuth`.
 
-  Для версий хоста это смена поведения: `AdminLocale` и сессия к ним больше не
-  приходят сами, кто ими пользовался — объявляет в `getMethods()` версии.
-  Воспроизведено фикстурой host-модуля (`tests/Host`): без правки четыре из
-  пяти проверок красные.
+  For host versions this is a behaviour change: `AdminLocale` and the session
+  no longer come to them on their own; whoever relied on them declares them in
+  the version's `getMethods()`. Reproduced with a host-module fixture
+  (`tests/Host`): without the fix four of the five checks are red.
 
 ## 1.31.3
 
-### Исправлено
+### Fixed
 
-- **Индикаторы состояния спрашивали сервер на каждом монтировании.** Для
-  открытой вкладки это раз в минуту, как и задумано; но каждая полная
-  перезагрузка страницы добавляла ещё один запрос, и сессия, которая ходит по
-  адресам — обход панели, прогон e2e, человек, идущий по списку записей
-  ссылками, — платила по запросу за переход.
+- **Status indicators queried the server on every mount.** For an open tab
+  that is once a minute, as intended; but every full page reload added another
+  request, and a session that moves by URL — a panel crawl, an e2e run, a
+  person following links through a list of records — paid one request per
+  navigation.
 
-  Замерено на стенде: 110 запросов `/system/status` за две минуты, почти
-  четверть всего трафика панели. Этого хватило, чтобы прогон упёрся в лимит
-  API (240 запросов в минуту) и красными стали экраны, к состоянию системы
-  отношения не имеющие.
+  Measured on the staging stand: 110 `/system/status` requests in two minutes,
+  almost a quarter of all panel traffic. That was enough for a run to hit the
+  API rate limit (240 requests per minute) and turn red screens that have
+  nothing to do with system status.
 
-  Ответ теперь живёт во вкладке: младше минуты — берётся как есть, а
-  следующий запрос назначается на момент, когда минута истечёт, а не через
-  минуту после перезагрузки. Обещание свежести не ослабло — исчез его повтор.
-  Неудачный запрос в кэш не пишется: отказ эндпоинта не новость о системе.
+  The response now lives in the tab: if it is younger than a minute it is used
+  as is, and the next request is scheduled for when that minute expires rather
+  than a minute after the reload. The freshness promise is no weaker — only its
+  repetition is gone. A failed request is not cached: an endpoint failure is
+  not news about the system.
 
 ## 1.31.2
 

@@ -82,16 +82,17 @@ registered via `registerField`).
 ## Columns (table)
 
 ```php
-TableColumn::make('id')->sortable(),
-TableColumn::make('title')->sortable()->searchable(),
-TableColumn::make('status')->preset('badge')->align('center'),
-TableColumn::make('created_at')->preset('datetime')->sortable(),
-TableColumn::make('price')->preset('money')->align('right'),
-TableColumn::make('actions')->view(),  // built-in row actions column
+TableColumn::make('id')->sort(),
+TableColumn::make('title')->sort()->search(),
+TableColumn::make('status')->asBadge(['published' => 'success'])->align('center'),
+TableColumn::make('created_at')->asDateTime()->sort(),
+TableColumn::make('price')->asMoney('USD')->align('right'),
+TableColumn::make('cover')->asImage(),
 ```
 
-Available presets: `badge`, `datetime`, `date`, `money`, `boolean`,
-`bytes`, `relative-time`, `code`, `truncate`.
+Formatters: `asDate()`, `asDateTime()`, `asMoney()`, `asBoolean()`,
+`asBytes()`, `asBadge()`, `asLink()`, `asImage()`, or `format(callable)` for
+anything else. Row actions are rendered by the table itself.
 
 ## Filters
 

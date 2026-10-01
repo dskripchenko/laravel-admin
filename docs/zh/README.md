@@ -55,27 +55,28 @@ Admin::menu()->add(
 
 ```bash
 composer require dskripchenko/laravel-admin
-php artisan vendor:publish --tag=admin-config
-php artisan migrate
+php artisan admin:install
 ```
 
 ```js
 // resources/js/admin.js
-import { createAdminApp } from '@dskripchenko/laravel-admin'
 import '@dskripchenko/ui/styles/all.css'
 import '@dskripchenko/laravel-admin/style.css'
+import '@dskripchenko/wysiwyg/style.css'
+import { createAdminApp } from '@dskripchenko/laravel-admin'
 
 const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
 app.mount('#admin-app')
 ```
 
 ```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui
+npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
 npm run build
 ```
 
-访问 `/admin/login`。第一个 resource 见
-[getting-started.md](../../docs/zh/getting-started.md)。
+把 `resources/js/admin.js` 加入 Vite 的入口，并在 `config('admin.assets')`
+中指向 Vite manifest——完整步骤（包括第一个 resource）见
+[getting-started.md](../en/getting-started.md)。然后访问 `/admin/login`。
 
 ## 文档
 
@@ -99,12 +100,12 @@ npm run build
 
 ## 技术栈
 
-- **PHP** ^8.5
-- **Laravel** ^12
+- **PHP** ^8.2
+- **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
 - **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
-- **无 vendor lock-in** 用于编辑器/图表 — 自带（姐妹包适配器：
-  `quill`、`tinymce`）
+- **WYSIWYG** — 默认使用 `@dskripchenko/wysiwyg`；Quill 与 TinyMCE
+  适配器已包含在 npm 包中（`/quill`、`/tinymce`）
 
 ## 姐妹包
 
@@ -112,10 +113,7 @@ npm run build
 
 | 包 | 用途 |
 |---|---|
-| `dskripchenko/laravel-admin-starter` | User/Role/Audit/Settings/Translations/Blocks resources |
-| `dskripchenko/laravel-admin-tinymce` | TinyMCE WYSIWYG 适配器 |
-| `dskripchenko/laravel-admin-quill` | Quill WYSIWYG 适配器 |
-| `dskripchenko/laravel-admin-search` | ⌘K 命令面板 + Scout suggest |
+| `dskripchenko/laravel-admin-starter` | 用户、角色与审计日志 resources |
 | `dskripchenko/laravel-admin-media` | 媒体库（无 Spatie/medialibrary 依赖） |
 | `dskripchenko/laravel-admin-health` | 健康检查（无 Spatie/laravel-health 依赖） |
 | `dskripchenko/laravel-admin-pulse` | 遥测（无 laravel/pulse 依赖） |

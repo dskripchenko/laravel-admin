@@ -3,7 +3,9 @@
 Статус выполнения плана из [ARCHITECTURE.md §12](ARCHITECTURE.md) (там —
 скоуп и оценки). Обновляется при закрытии фаз и major-вехах.
 
-Актуально на 2026-08-18 (composer v1.30.0 / npm 1.30.0).
+Актуально на 2026-10-01 (composer v1.32.0 / npm 1.31.3). Следующий план —
+[plan-2026-10-showcase.md](plan-2026-10-showcase.md): внедрение в готовый
+проект, каркас приложения, публичный стенд с документацией на самой админке.
 
 ## Core
 
@@ -23,7 +25,7 @@
 | P11. Settings + Plugin + Tenancy | ✅ | |
 | P12. Actions advanced | ✅ | async через delayed-process |
 | P13. Export/Import | ✅ | XLSX/PDF/CSV, import-wizard |
-| P14. WYSIWYG | ✅ | default — @dskripchenko/wysiwyg; tinymce/quill sister-packs |
+| P14. WYSIWYG | ✅ | default — @dskripchenko/wysiwyg; адаптеры quill/tinymce в npm-пакете ядра (`/quill`, `/tinymce`) |
 | P15. Notifications + API tokens | ✅ | |
 | P16. Theming + i18n | ✅ | |
 | P17. Bootstrap + Scalar UI | ✅ | |
@@ -47,7 +49,9 @@
 
 | Пакет | Статус |
 |---|---|
-| starter, search, media, health, pulse, jobs, tinymce, quill | ✅ v1.0 |
+| starter (v1.3.3), media (v1.3.0), pulse (v1.3.0) | ✅ |
+| health, jobs (v1.4.0 — индикатор статуса и виджеты, ядро ^1.30) | ✅ |
+| search, tinymce, quill | 🗄 архив с 2026-08-17: ядро переросло (⌘K-поиск с 1.10.5, редакторы в npm-пакете ядра); на Packagist abandoned → ядро |
 
 ## Backlog — закрыт 2026-07-22 (core v1.9.2 + npm 1.9.0)
 

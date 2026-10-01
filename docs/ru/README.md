@@ -60,27 +60,28 @@ Admin::menu()->add(
 
 ```bash
 composer require dskripchenko/laravel-admin
-php artisan vendor:publish --tag=admin-config
-php artisan migrate
+php artisan admin:install
 ```
 
 ```js
 // resources/js/admin.js
-import { createAdminApp } from '@dskripchenko/laravel-admin'
 import '@dskripchenko/ui/styles/all.css'
 import '@dskripchenko/laravel-admin/style.css'
+import '@dskripchenko/wysiwyg/style.css'
+import { createAdminApp } from '@dskripchenko/laravel-admin'
 
 const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
 app.mount('#admin-app')
 ```
 
 ```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui
+npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
 npm run build
 ```
 
-Открой `/admin/login`. См. [getting-started.md](../../docs/ru/getting-started.md)
-для первого resource'а.
+Добавьте `resources/js/admin.js` во входы Vite и укажите в
+`config('admin.assets')` Vite-манифест — пошагово, вместе с первым ресурсом,
+в [getting-started.md](getting-started.md). Затем откройте `/admin/login`.
 
 ## Документация
 
@@ -104,12 +105,12 @@ npm run build
 
 ## Стек
 
-- **PHP** ^8.5
-- **Laravel** ^12
+- **PHP** ^8.2
+- **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
 - **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
-- **Без vendor lock-in** для редактора/чартов — подключай свой
-  (sister-pack-адаптеры: `quill`, `tinymce`)
+- **WYSIWYG** — по умолчанию `@dskripchenko/wysiwyg`; адаптеры Quill и
+  TinyMCE входят в npm-пакет (`/quill`, `/tinymce`)
 
 ## Sister-пакеты
 
@@ -117,10 +118,7 @@ npm run build
 
 | Пакет | Назначение |
 |---|---|
-| `dskripchenko/laravel-admin-starter` | Resources для User/Role/Audit/Settings/Translations/Blocks |
-| `dskripchenko/laravel-admin-tinymce` | TinyMCE WYSIWYG-адаптер |
-| `dskripchenko/laravel-admin-quill` | Quill WYSIWYG-адаптер |
-| `dskripchenko/laravel-admin-search` | ⌘K command palette + Scout suggest |
+| `dskripchenko/laravel-admin-starter` | Ресурсы пользователей, ролей и журнала аудита |
 | `dskripchenko/laravel-admin-media` | Медиа-библиотека (без Spatie/medialibrary) |
 | `dskripchenko/laravel-admin-health` | Health checks (без Spatie/laravel-health) |
 | `dskripchenko/laravel-admin-pulse` | Telemetry (без laravel/pulse) |

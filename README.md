@@ -60,27 +60,29 @@ Admin::menu()->add(
 
 ```bash
 composer require dskripchenko/laravel-admin
-php artisan vendor:publish --tag=admin-config
-php artisan migrate
+php artisan admin:install
 ```
 
 ```js
 // resources/js/admin.js
-import { createAdminApp } from '@dskripchenko/laravel-admin'
 import '@dskripchenko/ui/styles/all.css'
 import '@dskripchenko/laravel-admin/style.css'
+import '@dskripchenko/wysiwyg/style.css'
+import { createAdminApp } from '@dskripchenko/laravel-admin'
 
 const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
 app.mount('#admin-app')
 ```
 
 ```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui
+npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
 npm run build
 ```
 
-Visit `/admin/login`. See [getting-started.md](docs/en/getting-started.md)
-for the first resource.
+Add `resources/js/admin.js` to the Vite inputs and point
+`config('admin.assets')` at the Vite manifest — the full walk-through,
+including the first resource, is in [getting-started.md](docs/en/getting-started.md).
+Then visit `/admin/login`.
 
 ## Documentation
 
@@ -104,12 +106,12 @@ for the first resource.
 
 ## Stack
 
-- **PHP** ^8.5
-- **Laravel** ^12
+- **PHP** ^8.2
+- **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
 - **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
-- **No vendor lock-in** for editor/charts — bring your own
-  (sister-pack adapters: `quill`, `tinymce`)
+- **WYSIWYG** — `@dskripchenko/wysiwyg` by default; Quill and TinyMCE
+  adapters ship in the npm package (`/quill`, `/tinymce`)
 
 ## Sister-packs
 
@@ -117,10 +119,7 @@ Optional extensions, install only what you need:
 
 | Package | Purpose |
 |---|---|
-| `dskripchenko/laravel-admin-starter` | User/Role/Audit/Settings/Translations/Blocks resources |
-| `dskripchenko/laravel-admin-tinymce` | TinyMCE WYSIWYG adapter |
-| `dskripchenko/laravel-admin-quill` | Quill WYSIWYG adapter |
-| `dskripchenko/laravel-admin-search` | ⌘K command palette + Scout suggest |
+| `dskripchenko/laravel-admin-starter` | User, Role and Audit Log resources |
 | `dskripchenko/laravel-admin-media` | Media library (no Spatie/medialibrary dependency) |
 | `dskripchenko/laravel-admin-health` | Health checks (no Spatie/laravel-health dependency) |
 | `dskripchenko/laravel-admin-pulse` | Telemetry sampler (no laravel/pulse dependency) |
