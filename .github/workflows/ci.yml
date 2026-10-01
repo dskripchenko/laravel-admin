@@ -86,6 +86,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Prebuilt bundle is up to date
+        run: npm run check:app
+
+      - name: Prebuilt bundle builds
+        run: npx vite build -c vite.app.config.ts --outDir /tmp/admin-app-check --emptyOutDir
+
       # Витрина компонентов: собирается на CI, чтобы сломанная история не
       # доехала незамеченной — смотреть её будут уже после, а чинить дорого.
       - name: Storybook build

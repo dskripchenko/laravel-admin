@@ -16,7 +16,7 @@ translated_at: 2026-10-01
 
 - PHP 8.2+
 - Laravel 11, 12 или 13
-- Node 20+ для сборки фронтенда
+- Node — только если собираете фронтенд сами (`--custom-build`)
 - Eloquent-модель, которой нужно управлять (для примера — `Article`)
 
 ## Установка
@@ -26,67 +26,39 @@ composer require dskripchenko/laravel-admin
 php artisan admin:install
 ```
 
-`admin:install` публикует `config/admin.php` и миграции, запускает
-`migrate` и предлагает создать первого администратора. Появятся таблицы
-`admin_users`, `admin_roles`, `admin_settings`, `audit_logs`,
-`dashboard_layouts` и несколько других. Опции: `--no-migrate`, `--no-user`,
-`--force` (перезаписать опубликованные файлы).
+`admin:install` публикует `config/admin.php` и миграции, публикует готовую
+сборку фронтенда в `public/vendor/admin`, запускает `migrate` и создаёт
+первого администратора. Появятся таблицы `admin_users`, `admin_roles`,
+`admin_settings`, `audit_logs`, `dashboard_layouts` и несколько других.
 
-## Фронтенд
+Node и сборка не нужны: пакет поставляет SPA админки уже собранной.
+`admin:install` также предлагает добавить `php artisan admin:publish` в
+`post-update-cmd` composer — тогда фронтенд публикуется заново при каждом
+обновлении пакета (если опубликованная копия устарела, админка покажет
+предупреждение).
 
-Админка — Vue SPA. Ставится вместе с UI-китом и редактором WYSIWYG по
-умолчанию:
+Опции: `--no-migrate`, `--no-user`, `--no-composer-hook`, `--force`
+(перезаписать опубликованные файлы), `--custom-build` (см. ниже).
 
-```bash
-npm i @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
-```
+### Свои поля, виджеты и страницы: собственная сборка
 
-Точка входа `resources/js/admin.js`:
-
-```js
-import '@dskripchenko/ui/styles/all.css'
-import '@dskripchenko/laravel-admin/style.css'
-import '@dskripchenko/wysiwyg/style.css'
-
-import { createAdminApp } from '@dskripchenko/laravel-admin'
-
-const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
-app.mount('#admin-app')
-```
-
-Добавьте её во входы `laravel-vite-plugin` в `vite.config.js`:
-
-```js
-laravel({
-    input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin.js'],
-    refresh: true,
-}),
-```
-
-и укажите оболочке админки Vite-манифест в `config/admin.php`:
-
-```php
-'assets' => [
-    'vite_manifest' => public_path('build/manifest.json'),
-    'vite_entry' => 'resources/js/admin.js',
-    'vite_base_url' => '/build/',
-    'css' => [],
-    'js' => [],
-],
-```
-
-Сборка:
+Чтобы регистрировать свои Vue-компоненты, соберите админку Vite'ом
+приложения вместо готовой сборки:
 
 ```bash
+php artisan admin:install --custom-build
+npm i -D @dskripchenko/laravel-admin @dskripchenko/ui @dskripchenko/wysiwyg
 npm run build
 ```
 
-Без настроек `assets` оболочке нечего загрузить, и страница админки
-останется пустой.
+`--custom-build` создаёт `resources/js/admin.js`, добавляет его во входы
+`laravel-vite-plugin` в `vite.config.js` и направляет `config('admin.assets')`
+на Vite-манифест. Компоненты регистрируются в этой точке входа до
+`createAdminApp()` — см. [расширение фронтенда](../en/frontend-extension.md).
 
 ## Первый администратор
 
-Если пропустили этот шаг в `admin:install`:
+Если пропустили этот шаг в `admin:install` или нужны ещё администраторы:
 
 ```bash
 php artisan admin:user --super

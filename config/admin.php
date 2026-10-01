@@ -160,7 +160,9 @@ return [
 
     'ui' => [
         'default_theme' => 'light',
-        'default_locale' => 'ru',
+        // null — follow config('app.locale'). The browser's Accept-Language and
+        // the user's own choice still come first; see LocaleResolver.
+        'default_locale' => env('ADMIN_LOCALE'),
         'available_locales' => ['ru', 'en'],
     ],
 
@@ -309,23 +311,22 @@ return [
     | SPA frontend assets
     |--------------------------------------------------------------------------
     |
-    | The host project builds the SPA bundle with Vite and states its paths in
-    | one of two ways:
+    | Leave everything empty to use the prebuilt admin application the package
+    | ships: `php artisan admin:install` / `admin:publish` copies it to
+    | public/vendor/admin and the shell loads it — no Node, no build step.
     |
-    | 1. An explicit list (the minimum):
-    |     'assets' => [
-    |         'css' => ['/build/admin.css'],
-    |         'js'  => ['/build/admin.js'],
-    |     ]
+    | To build the admin with your own Vite (custom fields, widgets, pages —
+    | `php artisan admin:install --custom-build` sets this up), point the shell
+    | at your build in one of two ways:
     |
-    | 2. A Vite manifest (resolved automatically through `public/build/manifest.json`):
-    |     'assets' => [
-    |         'vite_manifest' => public_path('build/manifest.json'),
-    |         'vite_entry'    => 'resources/js/admin.js',
-    |         'vite_base_url' => '/build/',
-    |     ]
+    | 1. A Vite manifest:
+    |     'vite_manifest' => public_path('build/manifest.json'),
+    |     'vite_entry'    => 'resources/js/admin.js',
+    |     'vite_base_url' => '/build/',
     |
-    | ShellController picks the mode itself, by the presence of the `vite_manifest` key.
+    | 2. Explicit URL lists (applied after the manifest's files):
+    |     'css' => ['/build/admin.css'],
+    |     'js'  => ['/build/admin.js'],
     */
 
     'assets' => [

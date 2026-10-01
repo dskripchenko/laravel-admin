@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Cookie;
  *   3. user.locale, when someone is logged in.
  *   4. the 'admin_locale' cookie.
  *   5. Accept-Language — the browser's first acceptable locale.
- *   6. config('admin.ui.default_locale').
+ *   6. config('admin.ui.default_locale'), or the application locale when it
+ *      is not set.
  */
 final class LocaleResolver
 {
@@ -50,7 +51,7 @@ final class LocaleResolver
 
     public function default(): string
     {
-        $configured = (string) config('admin.ui.default_locale', 'ru');
+        $configured = (string) (config('admin.ui.default_locale') ?: app()->getLocale());
         $available = $this->available();
 
         return in_array($configured, $available, true) ? $configured : ($available[0] ?? 'en');

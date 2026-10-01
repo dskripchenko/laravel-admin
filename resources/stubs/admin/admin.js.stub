@@ -1,0 +1,16 @@
+/**
+ * The admin SPA entry, built by the application's own Vite.
+ *
+ * Register custom fields, widgets or layouts before createAdminApp():
+ *
+ *     import { registerField } from '@dskripchenko/laravel-admin'
+ *     registerField('my-field', MyField)
+ */
+import '@dskripchenko/ui/styles/all.css'
+import '@dskripchenko/laravel-admin/style.css'
+import '@dskripchenko/wysiwyg/style.css'
+
+import { createAdminApp } from '@dskripchenko/laravel-admin'
+
+const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
+app.mount('#admin-app')

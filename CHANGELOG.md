@@ -5,7 +5,7 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.33.0
 
 ### Added
 
@@ -79,7 +79,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ResourceController::action` resolves actions nested in a `DropDown` and
   validates a `ModalAction`'s payload against its fields' rules.
 
+- **The admin works without Node or a build step.** The package now ships
+  the SPA prebuilt in `public/` (`npm run build:app`); `admin:install` and the
+  new `admin:publish` copy it to `public/vendor/admin`, and the shell loads it
+  whenever `config('admin.assets')` names no build of the host's own. A
+  published copy older than the installed package shows a warning bar, and
+  `admin:install` offers to add `admin:publish` to composer's
+  `post-update-cmd`. CI checks that the committed bundle was rebuilt after its
+  sources changed (`npm run check:app`).
+- `admin:install --custom-build`: generates `resources/js/admin.js`, adds it to
+  the `laravel-vite-plugin` inputs and points `config('admin.assets')` at the
+  Vite manifest — for hosts that register their own Vue components.
+
+### Changed
+
+- `admin:install` publishes the frontend, creates the first administrator as
+  a super admin, runs non-interactively with flags, and speaks English.
+- `admin:link` symlinks `public/vendor/admin` to the package's prebuilt
+  bundle (for working on the package itself).
+- With no frontend at all the shell explains what to run instead of
+  rendering a blank page.
+- The default admin locale follows `config('app.locale')` unless
+  `ADMIN_LOCALE` / `admin.ui.default_locale` is set (it was hard-coded to
+  Russian), and `admin:user` no longer stores that default as the new
+  administrator's own choice, so the browser's language applies until they
+  pick one.
+
 ### Fixed
+
+- **Form fields had no labels unless `title()` was set** — a form read as a
+  column of unlabeled inputs, while the view page already named every field.
+  A field without a title is now labeled from its name (`opens_at` → "Opens
+  At"); `title('')` still opts out.
+- `TableColumn::asBadge()` cells render as badges in the resource table,
+  coloured by the column's map (tone names or colours: green, red, …).
+- English translations for the "Tools" menu group and the shell's "Learn
+  more" link; a test now requires an English entry for every Russian `__()`
+  string in the PHP and Blade code.
 
 - **Permission labels followed the boot locale.** Plugins register their
   permission groups once at boot, so under Octane a per-request locale never

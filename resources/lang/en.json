@@ -392,6 +392,10 @@
     ":n мин назад": ":n min ago",
     ":n ч назад": ":n h ago",
     ":n д назад": ":n d ago",
+    "Файлы админки устарели: выполните": "The admin files are out of date: run",
+    "Фронтенд админки не найден": "The admin frontend was not found",
+    "Опубликуйте готовую сборку:": "Publish the prebuilt bundle:",
+    "Или подключите свою Vite-сборку через config('admin.assets').": "Or point config('admin.assets') at your own Vite build.",
     "Подтверждение": "Confirmation",
     "Выполнить": "Run",
     "Ошибка": "Error",
@@ -435,5 +439,7 @@
     "Код": "Code",
     "Запись": "Record",
     "Увеличить": "Enlarge",
-    "Открыть на карте": "Open on the map"
+    "Открыть на карте": "Open on the map",
+    "Инструменты": "Tools",
+    "Подробнее": "Learn more"
 }
