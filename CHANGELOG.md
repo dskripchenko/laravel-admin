@@ -164,8 +164,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   white text on light grey, as were the embedded table's header, file and
   cropper backgrounds and the status indicators. They use the kit's tokens
   now, and a test fails on any undefined token.
-- **English left in a Russian panel:** the toolbar's "Filter" chip and the
-  widget dialog's "Resource slug" and "Limit" labels.
 - **A generated field's button ran past a narrow card**; it wraps under the
   input now.
 - **Profile:** the language and theme selects had no visible labels.
