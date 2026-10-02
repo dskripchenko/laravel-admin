@@ -4,13 +4,14 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/architecture.md
-translated_at: 2026-05-08
+translated_at: 2026-10-02
 ---
 
 # Архитектура
 
-Высокоуровневое описание дизайна `laravel-admin`. Полное описание
-архитектуры с rationale — в `docs/ARCHITECTURE.md` (~1500 строк, RU).
+Высокоуровневое описание дизайна `laravel-admin`. Подробный
+архитектурный документ с обоснованием решений — в
+`docs/internal/architecture.md` в репозитории (~1500 строк).
 
 ## Цели
 
@@ -47,6 +48,11 @@ SPA bootstrap
        ├── manifestStore.load() ← /api/admin/system/manifest
        ├── menuStore.load()     ← /api/admin/system/menu
        └── replaceManifestRoutes ← Vue Router из manifest'а
+
+Пользователь открывает /admin/r/{slug} (список ресурса)
+  └── ResourceIndexPage
+       └── useResourceIndexStore.load() → POST /{slug}/search
+            └── columns + filters + actions из manifest'а
 ```
 
 ## PHP-слои
@@ -78,7 +84,7 @@ SPA bootstrap
 | Stores (Pinia) | auth/manifest/menu/theme/locale/notifications/resourceIndex/resourceForm/screen/dashboard. | `resources/ts/stores/*` |
 | Router | `buildRoutesFromManifest` + auth-guard + title-guard. | `resources/ts/router/*` |
 | Render | `FieldRenderer`, `LayoutRenderer`, `WidgetRenderer`, `provideFormState`. | `resources/ts/components/render/*` |
-| Pages | `HomePage`, `ResourceIndexPage`, `ResourceFormPage`, `ResourceViewPage`, `ScreenPage`, `DashboardPage`, ... | `resources/ts/components/*` |
+| Pages | `HomePage`, `ResourceIndexPage`, `ResourceFormPage`, `ResourceViewPage`, `ScreenPage`, `DashboardPage`, `ProfilePage`, `ImportWizardPage`, `FieldGalleryPage`. | `resources/ts/components/*` |
 | Shell | `AdminApp`, `AdminTopBar`, `AdminSidebar`, `AdminSidebarNode`, `BrandLogo`, `NotificationsDrawer`. | `resources/ts/components/shell/*` |
 
 ## Ключевые контракты
@@ -89,8 +95,9 @@ Single source of truth для SPA, отдаётся `/api/admin/system/manifest`
 
 ```json
 {
-  "version": "sha256-...",
+  "version": "3f9a0c…",
   "locale": "ru",
+  "panel": "admin",
   "resources": [{ "slug": "articles", "label": "Статьи", "fields": [...], ... }],
   "screens":   [{ "slug": "contact", "name": "Связаться", "permission": null }],
   "settings":  [{ "slug": "brand", "fields": [...] }],
@@ -120,14 +127,22 @@ Single source of truth для SPA, отдаётся `/api/admin/system/manifest`
 
 ### Action dispatch
 
-Действия дёргают controller-method. Стандартный payload:
+Действие вызывает метод на стороне PHP. Действие `Screen` идёт в
+`ScreenController::runMethod` и называет публичный метод экрана:
 
 ```json
 { "method": "send", "payload": { "form_field": "value" } }
 ```
 
-`Resource` actions идут в `ResourceController::action`; `Screen` — в
-`ScreenController::runMethod`. Оба возвращают нормализованный shape:
+Действие `Resource` идёт в `ResourceController::action`: оно называет
+действие по ключу и передаёт выбранные записи, а метод ресурса вызывается как
+`$resource->{method}(array $ids, array $payload)`:
+
+```json
+{ "key": "publish", "ids": [1, 2], "payload": {} }
+```
+
+Оба возвращают нормализованный shape:
 `message`, `alerts`, `state`, `refresh`, `redirect_url`,
 `download_url`.
 
@@ -147,14 +162,15 @@ Single source of truth для SPA, отдаётся `/api/admin/system/manifest`
 | Область | Default | Как переопределить |
 |---|---|---|
 | WYSIWYG | `@dskripchenko/wysiwyg` | `registerField('wysiwyg', QuillField)` |
-| File storage | `Storage::disk('admin')` | host конфигурирует disks |
-| PDF rendering | mPDF (если установлен) | `app->bind(PdfRenderer::class, MyRenderer::class)` |
+| File storage | `config('admin.uploads.disk')` (`ADMIN_UPLOADS_DISK`, по умолчанию `local`) | конфиг / диски host'а |
+| PDF rendering | mPDF или dompdf — какой установлен | `admin.exports.pdf.driver` = `mpdf` / `dompdf` |
 | Charts | Built-in SVG widgets | `registerWidget('chart', MyChart)` |
 | Auth guard | `auth.guard = admin` | config |
 | User model | `AdminUser` | host `Authenticatable` |
+| Источник локали | `LocaleResolver`, 6 уровней | `admin.ui.default_locale` и остальной конфиг |
 
 ## См. также
 
-- [Глоссарий](glossary.md)
-- [API reference](../en/api-reference.md) (en)
-- [Frontend extension](../en/frontend-extension.md) (en)
+- [Глоссарий](glossary.md) — терминология
+- [API reference](api-reference.md) — REST-эндпоинты
+- [Frontend extension](frontend-extension.md) — свои компоненты на стороне host'а

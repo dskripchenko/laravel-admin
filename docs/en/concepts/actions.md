@@ -22,6 +22,10 @@ share one normalized response shape.
 | `DropDown` | `dropdown` | Container for sub-actions. |
 | `AsyncAction` | `async` | Long-running; uses `dskripchenko/laravel-delayed-process`. |
 
+Any action can also open one of the screen's Modal or Drawer layouts
+instead of calling a method: `Button::make('Edit')->opens('edit-modal')`,
+where `edit-modal` is the layout's `withId()`.
+
 ## Common fluent API
 
 ```php
@@ -31,11 +35,21 @@ Button::make('Publish')
     ->primary()                           // visual variant
     ->destructive()                       // red variant
     ->confirm('Publish this article?')    // confirmation prompt
-    ->permission('admin.articles.update') // gate
+    ->permission('admin.articles.update') // permission key, sent with the action
     ->position(['command_bar', 'row'])    // where to show
     ->canSee(fn () => auth()->user()?->is_publisher)
     ->withName('publish-action');         // unique key
 ```
+
+`make()` derives the key from the label (`'Publish'` → `publish`);
+`withName()` sets it explicitly. `canSee()` takes a bool or a closure
+**without arguments**, evaluated once when the schema is serialized — it
+is not a per-row condition.
+
+`permission()` is published with the action's schema; the server does not
+check it on its own. The resource `action` endpoint requires the
+resource's `.view` permission, so a stricter rule belongs in the method
+(`$user->hasAccess(...)`).
 
 ## Positions
 
@@ -46,34 +60,44 @@ Button::make('Publish')
 - `bulk` — appears in bulk-toolbar (when 1+ row selected)
 - `header` — list-screen toolbar (above the table)
 
+The default is `['command_bar']`; a `BulkAction` defaults to `['bulk']`.
+An action in a `row` or `bulk` position applies to records and needs at
+least one id; mark an action that runs on its own (an import, a sync)
+with `->standalone()` — it is sent without ids and its method receives
+an empty list.
+
 ## Resource actions
 
 ```php
 public function actions(): array
 {
     return [
-        Button::make('Publish')->method('publish')->position(['row'])
-            ->canSee(fn ($r) => $r?->status !== 'published'),
+        Button::make('Publish')->method('publish')->position(['row']),
 
         BulkAction::make('Archive')->method('archiveBulk')
-            ->confirm('Archive {n} articles?')
-            ->destructive(),
+            ->confirm('Archive the selected articles?')
+            ->destructive()
+            ->requiresAtMost(500),
     ];
 }
 
-public function publish(int $id): void
+public function publish(array $ids, array $payload = []): int
 {
-    $this->repository()->find($id)->update(['status' => 'published']);
+    return Article::whereIn('id', $ids)->update(['status' => 'published']);
 }
 
-public function archiveBulk(array $ids): void
+public function archiveBulk(array $ids, array $payload = []): int
 {
-    Article::whereIn('id', $ids)->update(['status' => 'archived']);
+    return Article::whereIn('id', $ids)->update(['status' => 'archived']);
 }
 ```
 
 Backend dispatches via `ResourceController::action` (POST
-`/api/admin/{slug}/action` body `{key, ids[], payload?}`).
+`/api/admin/{slug}/action` body `{key, ids[], payload?}`): the action is
+found by its key, and the resource method is called as
+`$resource->{method}(array $ids, array $payload)` — a row action receives
+its own row as a one-element list. An integer return value is reported as
+the number of affected records (otherwise `count($ids)`).
 
 ## Screen commandBar
 
@@ -88,35 +112,49 @@ public function commandBar(): array
 ```
 
 Frontend dispatches via `ScreenController::runMethod` body
-`{method, payload: state}`.
+`{method, payload: state}`; the method receives the state as its
+argument.
 
 ## Modal action (form before submit)
 
 ```php
 ModalAction::make('Set price')
     ->method('setPrice')
+    ->position(['row', 'bulk'])
     ->fields([
         Number::make('price')->required()->min(0)->step(0.01),
-    ]),
+    ]);
 
-public function setPrice(int $id, array $payload): void
+public function setPrice(array $ids, array $payload): int
 {
-    Product::find($id)->update(['price' => $payload['price']]);
+    return Product::whereIn('id', $ids)->update(['price' => $payload['price']]);
 }
 ```
+
+The payload is validated against the modal fields' rules (`required()`,
+`rules([...])`) before the method runs; a 422 shows the errors next to the
+fields and keeps the modal open.
 
 ## Async action (long-running)
 
 ```php
+// AppServiceProvider::boot(AllowlistRegistrar $allowlist)
+$allowlist->allow(\App\Jobs\ReindexSearch::class, 'handle');
+
 AsyncAction::make('Re-index search')
-    ->handler(\App\Jobs\ReindexSearch::class)
-    ->params(['model' => Article::class])
-    ->callbackUrl('/admin/r/articles')   // redirect on done
-    ->pollInterval(5),                   // seconds
+    ->handler(\App\Jobs\ReindexSearch::class, 'handle')
+    ->withParams(['model' => Article::class])
+    ->pollInterval(5);                   // seconds
 ```
 
-The frontend polls `/api/admin/delayed/status?uuid=...` until the
-process finishes; UI shows a progress modal.
+The handler must be allowed in
+`Dskripchenko\LaravelAdmin\DelayedProcess\AllowlistRegistrar` as an
+`entity::method` pair, or the SPA cannot start it. The SPA starts the
+process via `/api/admin/delayed/run` and polls
+`/api/admin/delayed/status?uuid=...` until it finishes; the UI shows a
+progress modal. In a `row`/`bulk` position the selected keys are added to
+the params as `ids`. `->callback($url)` sets a webhook that receives the
+progress and the result.
 
 ## Response payload
 
@@ -145,6 +183,7 @@ Recognized keys:
 - `redirect_url` — SPA-internal navigation.
 - `refresh` — `true` triggers screen reload.
 - `download_url` — opens for download.
+- `message_link` — where the message leads, e.g. the page of a started job.
 
 Unknown keys are passed via `extra`.
 
@@ -152,18 +191,31 @@ Unknown keys are passed via `extra`.
 
 ```php
 ->confirm('Delete this record?')
-->confirm(['title' => 'Confirm', 'message' => 'Cannot be undone.'])
+->confirm(['title' => 'Confirm', 'message' => 'Cannot be undone.',
+           'confirmLabel' => 'Delete', 'cancelLabel' => 'Keep'])
 ```
 
 Frontend shows a modal before the POST.
 
-## Disabling per-row
+## Refusing for a particular record
+
+There is no per-row visibility condition: a row action is shown on every
+row. Check the record in the method and refuse with
+`Dskripchenko\LaravelAdmin\Resource\ActionFailedException` — the panel
+gets a 422 with your message instead of a 500:
 
 ```php
-Button::make('Publish')
-    ->method('publish')
-    ->position(['row'])
-    ->canSee(fn ($record) => $record !== null && $record->status !== 'published'),
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
+
+public function publish(array $ids, array $payload = []): int
+{
+    $articles = Article::whereIn('id', $ids)->get();
+    if ($articles->contains('status', 'published')) {
+        throw new ActionFailedException('Some articles are already published.');
+    }
+
+    return Article::whereIn('id', $ids)->update(['status' => 'published']);
+}
 ```
 
 ## See also
@@ -171,3 +223,4 @@ Button::make('Publish')
 - [Resources](resources.md)
 - [Screens](screens.md)
 - [Permissions](permissions.md)
+- [Custom actions recipe](../../ru/recipes/custom-actions.md) (ru)

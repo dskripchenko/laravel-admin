@@ -9,7 +9,8 @@ locale: en
 
 The admin SPA talks to the backend via JSON over `/api/admin/...`. All
 responses follow the `{success, payload}` envelope from
-`dskripchenko/laravel-api`.
+`dskripchenko/laravel-api`. The prefix follows `config('laravel-api.prefix')`:
+with `api/v1` the admin API moves to `/api/v1/admin/...`.
 
 ## Envelope
 
@@ -26,17 +27,17 @@ Error:
 {
   "success": false,
   "payload": {
-    "errorKey": "validation_error",
+    "errorKey": "validation",
     "message": "...",
     "messages": { "field": ["..."] }
   }
 }
 ```
 
-HTTP status codes: 200 / 401 / 403 / 404 / 422 / 500.
+HTTP status codes: 200 / 304 / 401 / 403 / 404 / 422 / 429 / 500.
 
 OpenAPI 3.0 spec is auto-generated and served at `/api/admin/doc`
-(rendered with Scalar UI).
+(rendered with Scalar UI) — see [OpenAPI spec](#openapi-spec).
 
 ## Endpoints
 
@@ -50,19 +51,21 @@ Base prefix: `/api/admin/`.
 | GET | `system/manifest` | Full manifest. Auth-gated. ETag cached. |
 | GET | `system/me` | Current admin user summary. |
 | GET | `system/menu` | Sidebar tree (custom + auto). |
+| GET | `system/search` | Global search (the ⌘K palette). |
 | GET | `system/locales` | Available locales. Public. |
-| POST | `system/setLocale` | Save user locale. |
+| POST | `system/setLocale` | Save user locale. Public. |
 | GET | `system/permissions` | All registered permission groups. |
 | GET | `system/plugins` | Loaded plugins. |
+| GET | `system/status` | Status indicators for the top bar (not cached). |
 | GET | `system/theme` | Current theme. Public. |
-| POST | `system/setTheme` | Save user theme. |
+| POST | `system/setTheme` | Save user theme. Public. |
 
 ### auth
 
 | Method | Path | |
 |---|---|---|
-| POST | `auth/login` | Email + password → session. May return 423 with `errorKey: two_factor_required`. |
-| POST | `auth/twoFactorChallenge` | TOTP code. |
+| POST | `auth/login` | Email + password → session. With 2FA on, answers `success: false`, `errorKey: two_factor_required` and a `challenge_token` (valid 5 minutes) instead. |
+| POST | `auth/twoFactorChallenge` | `challenge_token` + TOTP code. |
 | POST | `auth/twoFactorRecovery` | Recovery code. |
 | POST | `auth/logout` | |
 | POST | `auth/forgotPassword` | |
@@ -79,8 +82,8 @@ Base prefix: `/api/admin/`.
 | GET | `profile/show` | |
 | POST | `profile/update` | |
 | POST | `profile/changePassword` | |
-| GET | `profile/twoFactorStatus` | Returns enabled/qr/secret. |
-| POST | `profile/twoFactorEnable` | Returns provisioning URI + recovery codes. |
+| GET | `profile/twoFactorStatus` | `enabled`, `confirmed_at`, `recovery_codes_remaining`. |
+| POST | `profile/twoFactorEnable` | New `secret`, provisioning `qr_uri` and `recovery_codes`; pending until confirmed. |
 | POST | `profile/twoFactorConfirm` | Verify the first code. |
 | POST | `profile/twoFactorDisable` | |
 | POST | `profile/twoFactorRegenerateCodes` | |
@@ -94,6 +97,7 @@ Base prefix: `/api/admin/`.
 |---|---|---|
 | GET | `dashboard/get?key={slug}` | User-saved layout (or null). |
 | POST | `dashboard/save` | Save user layout. |
+| POST | `dashboard/savePeriod` | Save the user's period filter without touching the layout. |
 | POST | `dashboard/reset` | Delete user override (revert to manifest). |
 | GET | `dashboard/widgets?key={slug}&period={p}` | Re-fetch widget data (used for polling and period change). |
 
@@ -104,23 +108,28 @@ For each registered Resource, prefix is `{slug}/`:
 | Method | Path | |
 |---|---|---|
 | GET | `{slug}/meta` | Resource meta (fields, columns, filters, actions, screens). |
-| POST | `{slug}/search` | Filtered, sorted, paginated list. Body: `{filters, sort, page, per_page, ...}`. |
+| POST | `{slug}/search` | Filtered, sorted, paginated list. Body: `{filters, q, order: [{column, direction}], page, per_page, ids?, group_by?}`. |
 | POST | `{slug}/summary` | Aggregations for list (sum/avg/count). |
 | GET | `{slug}/read?id={id}` | Single record. |
 | POST | `{slug}/create` | |
 | POST | `{slug}/update` | |
 | POST | `{slug}/inlineUpdate` | Single field patch. |
 | POST | `{slug}/delete` | |
-| POST | `{slug}/restore` | (soft-delete) |
-| POST | `{slug}/forceDelete` | |
-| POST | `{slug}/replicate` | |
-| POST | `{slug}/reorder` | |
-| POST | `{slug}/export?format=xlsx&pdf...` | |
+| POST | `{slug}/restore` | Only for resources with `SoftDeletes`. |
+| POST | `{slug}/forceDelete` | Only for resources with `SoftDeletes`. |
+| POST | `{slug}/replicate` | Only when `replicable()`. |
+| POST | `{slug}/reorder` | Only when `reorderable()`. |
+| GET/POST | `{slug}/export?format=csv` | `format`: `csv` (default), `xlsx`, `pdf` — whichever exporters are installed; `columns[]` narrows the columns. |
 | POST | `{slug}/action` | Generic action dispatcher. Body: `{key, ids[], payload}`. |
 | GET | `{slug}/listScreen` | Compiled `GeneratedListScreen` snapshot. |
+| GET | `{slug}/treeScreen` | Only for hierarchical resources. |
+| POST | `{slug}/tree` | Tree nodes (hierarchical resources). |
 | GET | `{slug}/createScreen` | |
 | GET | `{slug}/editScreen?id={id}` | |
 | GET | `{slug}/viewScreen?id={id}` | |
+| POST | `{slug}/listener` | Reactive form parts (`Layout::listener`); only when the form has any. |
+
+An action the resource does not support is not registered and answers 404.
 
 Saved-views: `{slug}_views/{list,create,update,delete}` — registered only for resources whose `savedViews()` returns `true`.
 
@@ -132,6 +141,7 @@ For each registered Custom Screen, prefix is `{slug}/`:
 |---|---|---|
 | GET | `{slug}/state` | `Screen::compile()` payload. |
 | POST | `{slug}/runMethod` | Body: `{method, payload, parameters?}`. |
+| POST | `{slug}/listener` | Reactive form parts. |
 
 ### settings (per-SettingsResource, dynamic)
 
@@ -147,8 +157,8 @@ Prefix `settings_{slug}/`:
 
 | Method | Path | |
 |---|---|---|
-| GET | `audit/list` | All audit log entries (filterable). |
-| GET | `audit/timeline?model_type=&model_id=` | Per-record timeline. |
+| GET | `audit/list` | All audit log entries (filters: `subject_type`, `subject_id`, `actor_type`, `actor_id`, `event`, `from`, `to`). |
+| GET | `audit/timeline?subject_type=&subject_id=` | Per-record timeline. |
 
 ### notifications
 
@@ -167,7 +177,7 @@ Prefix `settings_{slug}/`:
 | POST | `import/upload` | Stage CSV/XLSX. |
 | POST | `import/preview` | Headers + sample + auto-mapping. |
 | POST | `import/start` | Run import. |
-| GET | `import/status?id={uuid}` | Progress (delayed-process). |
+| GET | `import/status?id={id}` | Progress of the import process. |
 
 ### uploads
 
@@ -175,6 +185,7 @@ Prefix `settings_{slug}/`:
 |---|---|---|
 | POST | `uploads/upload` | Generic file upload. |
 | POST | `uploads/image` | Image-specific (used by Wysiwyg). |
+| GET | `uploads/serve?disk=&path=` | Serve a stored file. |
 
 ### delayed (long-running tasks)
 
@@ -185,25 +196,32 @@ Prefix `settings_{slug}/`:
 
 ## Caching
 
-- **Manifest** — ETag (sha256 of payload + version + locale +
-  permissions). Use `If-None-Match` to get 304.
+- **Manifest** — ETag = the manifest `version` (sha256 of the package
+  version and the payload, which is built per locale and panel, so it also
+  changes with permissions). Use `If-None-Match` to get 304.
 - **Bootstrap** — not cached (per-request CSRF).
 - **Other endpoints** — no HTTP cache (auth-gated, fast queries).
 
 ## Rate limiting
 
-Default `60/min` on all admin endpoints, additional throttles on auth:
+Default `240/min` on all admin endpoints (`config('admin.api.throttle')`,
+`'240,1'`), additional throttles on auth:
 
-- `auth/login` — 5/min
+- `auth/login`, `auth/twoFactorChallenge`, `auth/twoFactorRecovery` — 5/min
+  (`config('admin.auth.login_throttle')`, `'5,1'`)
 - `auth/forgotPassword` — 3/5min
-- `auth/twoFactorChallenge` — 5/min
+- `auth/resendEmailVerification` — 3/min
 
 ## OpenAPI spec
 
 ```
 GET /api/admin/doc            # Scalar UI (interactive)
-GET /api/admin/openapi.json   # Raw spec
+GET /api/doc/admin            # Raw JSON spec (laravel-api's per-version source)
 ```
+
+The Scalar page is on by default; `config('admin.openapi.ui')` (env
+`ADMIN_OPENAPI_UI`) set to anything but `scalar` leaves laravel-api's own
+`/api/doc` in charge.
 
 Resource operations are documented per resource. `create` and `update` list
 the resource's own fields — built from `fields()` and `validationRules()`, with

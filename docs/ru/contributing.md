@@ -92,7 +92,8 @@ vendor/bin/phpstan analyse # статический анализ (уровень
 ### CSS
 
 - Только CSS-переменные (`var(--uid-...)`). Ни Tailwind, ни SCSS, ни CSS-in-JS.
-- Никаких `<style scoped>` — темам нужно пробиваться внутрь.
+- Предпочитайте обычный `<style>` с БЭМ-именами; `<style scoped>` — только
+  для внутренностей, которые теме переопределять незачем.
 
 ## Тесты
 
@@ -103,7 +104,6 @@ vendor/bin/phpstan analyse # статический анализ (уровень
   проверяемым (`Component.test.ts`).
 - Базу не мокайте — берите SQLite в памяти, она уже настроена
   `Orchestra\Testbench`.
-- Сквозной смоук на Playwright живёт в `demo/e2e-full-flow.mjs`.
 
 ## Релиз
 

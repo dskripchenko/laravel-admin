@@ -4,7 +4,7 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/concepts/menu.md
-translated_at: 2026-05-08
+translated_at: 2026-10-02
 ---
 
 # Иерархическое меню
@@ -92,14 +92,22 @@ Admin::menu()->under('shop', [
 ## Auto-fill контроль
 
 По умолчанию: любой Resource/Screen, не упомянутый в дереве, добавляется
-автоматически (Screen'ы — в группу `Инструменты`, Resource'ы — без
-группы). Чтобы выключить:
+автоматически (Screen'ы — в группу `Инструменты`, Resource'ы — в свою
+`$group`, а если она не задана — без группы). Чтобы выключить:
 
 ```php
 Admin::menu()->withAuto(false);
 ```
 
 Тогда нужно явно перечислить каждый видимый item.
+
+Чтобы оставить auto-fill, но убрать из него один ресурс или экран —
+например, дочерний ресурс, который показывается только встроенным в
+родительский:
+
+```php
+Admin::menu()->hideAuto('order-items');
+```
 
 ## Permissions
 
@@ -147,4 +155,4 @@ Frontend рендерит узлы рекурсивно (`AdminSidebarNode.vue`)
 
 - [Resources](resources.md)
 - [Screens](screens.md)
-- [Permissions](../../en/concepts/permissions.md) (en)
+- [Permissions](permissions.md)

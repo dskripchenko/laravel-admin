@@ -14,8 +14,9 @@ Shared terminology across the entire `dskripchenko/laravel-admin` ecosystem
 
 A class extending `Dskripchenko\LaravelAdmin\Resource\Resource`. Describes
 how a single Eloquent model is exposed in the admin: fields (form),
-columns (table), filters, actions, permissions. Backed by a `Repository`
-and rendered through `GeneratedListScreen` / `GeneratedEditScreen` /
+columns (table), filters, actions, permissions. Rendered through
+`GeneratedListScreen` (or `GeneratedTreeScreen` for a hierarchical
+resource) / `GeneratedCreateScreen` / `GeneratedEditScreen` /
 `GeneratedViewScreen`.
 
 ## Screen
@@ -45,14 +46,15 @@ arbitrary depth.
 
 A button/link/dropdown attached to a screen, row or bulk selection:
 `Button`, `Link`, `BulkAction`, `ModalAction`, `DropDown`, `AsyncAction`.
-Actions trigger a controller method (e.g. `Button::method('save')`).
+Actions trigger a method on the screen or resource (e.g.
+`Button::make('Save')->method('save')`).
 
 ## Filter
 
-A table-filter descriptor for list-screens: `BaseInputFilter`,
-`BaseDateFilter`, `BaseSwitcherFilter`, `BaseSelectFromModelFilter`,
-`BaseSelectFromQueryFilter`, `BaseSelectFromOptionsFilter`,
-`TrashedFilter`. Parsed from the HTTP query by `HttpFilterParser`.
+A table-filter descriptor for list-screens, created with
+`::for('column')`: `InputFilter`, `OptionsFilter`, `DateRangeFilter`,
+`SwitcherFilter`, `SelectFromModelFilter`, `QueryFilter`, `TrashedFilter`.
+Parsed from the HTTP query by `HttpFilterParser`.
 
 ## Permission
 
@@ -64,8 +66,8 @@ supported.
 ## Manifest
 
 The single JSON document `/api/admin/system/manifest` returned to the
-SPA on bootstrap: `{resources, screens, settings, dashboards, plugins,
-permissions, version}`. The frontend builds Vue Router routes and
+SPA on bootstrap: `{version, locale, panel, resources, screens, settings,
+dashboards, plugins, permissions}`. The frontend builds Vue Router routes and
 sidebar from it; ETag-based caching.
 
 ## Plugin
@@ -83,7 +85,7 @@ provides only the contract.
 ## Widget / Dashboard
 
 `Widget` — a single dashboard tile (`Stats`, `Chart`, `RecentList`,
-`Heatmap`, `Gauge`, `Markdown`, `Iframe`). `DashboardScreen` aggregates
+`Heatmap`, `Gauge`, `Markdown`, `Iframe`, `Table`). `DashboardScreen` aggregates
 widgets with optional layout overrides per user. Dashboards live at
 `/dashboard/{slug}`.
 
@@ -102,7 +104,8 @@ Rendered via `AuditTrail` layout and `AuditController`.
 
 Field-level i18n for Eloquent models, provided by
 `dskripchenko/laravel-translatable`. The admin bridges translatable
-models with `TranslatableInput` / `TranslatableField` (per-locale tabs).
+models with `TranslatableInput` (per-locale tabs) and
+`TranslatableFieldBridge`.
 
 ## Bootstrap
 

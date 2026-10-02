@@ -1,16 +1,19 @@
 ---
-title: Frontend Extension
+title: Расширение фронтенда
 audience: developer
 status: stable
-locale: en
+locale: ru
+translated_from: en/frontend-extension.md
+translated_at: 2026-10-02
 ---
 
-# Frontend Extension
+# Расширение фронтенда
 
-The SPA bundle ships with default field/layout/widget/infolist registries.
-Host projects can register custom Vue components without forking.
+SPA поставляется с готовыми реестрами полей, layout'ов, виджетов и
+элементов infolist. Свои Vue-компоненты host-проект регистрирует в них —
+форкать пакет не нужно.
 
-## Mount
+## Монтирование
 
 ```js
 import { createAdminApp } from '@dskripchenko/laravel-admin'
@@ -35,7 +38,14 @@ const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__, {
 app.mount('#admin-app')
 ```
 
-## Custom field
+`pages` заменяет стандартные страницы (`login`, `home`, `forbidden`,
+`notFound`, `profile`, `dashboard`, `settings`, `screen`, страницы
+ресурса и т. д.), `router.extraRoutes` добавляет свои маршруты, а
+`router.titleGuard` задаёт шаблон заголовка вкладки: `{title}` — заголовок
+маршрута, `{brand}` — название бренда. `createAdminApp` возвращает
+`{ app, router, client }`.
+
+## Своё поле
 
 ```ts
 // resources/js/admin/MyColorField.vue
@@ -73,7 +83,7 @@ const { app } = createAdminApp(window.__ADMIN_BOOTSTRAP__)
 app.mount('#admin-app')
 ```
 
-Backend:
+На бэкенде:
 
 ```php
 class ColorPicker extends Field
@@ -82,7 +92,10 @@ class ColorPicker extends Field
 }
 ```
 
-## Custom layout
+Компонент выбирается по `type` из JSON поля — то есть по значению
+`fieldType()`. Остальные свойства узла приходят в компонент как props.
+
+## Свой layout
 
 ```ts
 import { registerLayout } from '@dskripchenko/laravel-admin'
@@ -95,9 +108,11 @@ registerLayout('hero', HeroBlock)
 Layout::view('hero', ['headline' => 'Welcome'])
 ```
 
-`HeroBlock.vue` receives `headline` as a prop.
+`HeroBlock.vue` получает `headline` как prop. Если имя не
+зарегистрировано, вместо компонента выводится предупреждение с подсказкой,
+что именно зарегистрировать.
 
-## Custom widget
+## Свой виджет
 
 ```ts
 import { registerWidget } from '@dskripchenko/laravel-admin'
@@ -106,7 +121,8 @@ import WeatherWidget from './widgets/WeatherWidget.vue'
 registerWidget('weather', WeatherWidget)
 ```
 
-`WeatherWidget.vue` receives the entire widget node (after data spread):
+`WeatherWidget.vue` получает весь узел виджета; ключи из `data`
+дополнительно разворачиваются на верхний уровень props:
 
 ```vue
 <script setup lang="ts">
@@ -120,7 +136,7 @@ defineProps<Props>()
 </script>
 ```
 
-## Custom infolist entry
+## Свой элемент infolist
 
 ```ts
 import { registerInfolistEntry } from '@dskripchenko/laravel-admin'
@@ -136,9 +152,9 @@ class StatusEntry extends Entry
 }
 ```
 
-## Bundles
+## Наборы компонентов
 
-Register many at once:
+Несколько компонентов можно зарегистрировать разом:
 
 ```ts
 import { registerComponents } from '@dskripchenko/laravel-admin'
@@ -149,7 +165,10 @@ registerComponents({
 })
 ```
 
-## Form state from a custom component
+Для виджетов и элементов infolist есть свои пакетные функции —
+`registerWidgets()` и `registerInfolistEntries()`.
+
+## Состояние формы из своего компонента
 
 ```ts
 import { useFormState, tryUseFormState } from '@dskripchenko/laravel-admin'
@@ -163,7 +182,10 @@ form.setError('title', ['Too short'])
 form.errors.title                            // current errors
 ```
 
-## API client (axios)
+`useFormState()` бросает исключение, если компонент находится вне формы;
+`tryUseFormState()` в этом случае возвращает `null`.
+
+## API-клиент (axios)
 
 ```ts
 import { getAdminClient } from '@dskripchenko/laravel-admin'
@@ -173,7 +195,10 @@ const result = await client.get('/system/menu')   // unwraps {success, payload}
 const article = await client.post('/articles/create', { title: 'Hi' })
 ```
 
-Errors are thrown as typed `ApiError` subclasses:
+Клиент сам разворачивает конверт `{success, payload}` и возвращает
+`payload`. Исходный экземпляр axios доступен как `client.raw`.
+
+Ошибки приходят типизированными подклассами `ApiError`:
 
 ```ts
 import { ApiError, ValidationError, ForbiddenError } from '@dskripchenko/laravel-admin'
@@ -189,20 +214,22 @@ try {
 }
 ```
 
-## Stores (Pinia)
+Кроме них есть `UnauthenticatedError`, `NotFoundError` и `NetworkError`.
+
+## Сторы (Pinia)
 
 ```ts
 import { useAuthStore, useManifestStore, useNotificationsStore } from '@dskripchenko/laravel-admin'
 ```
 
-Exported from the package root: `useAuthStore`, `useManifestStore`,
+Из корня пакета экспортируются: `useAuthStore`, `useManifestStore`,
 `useMenuStore`, `useThemeStore`, `useLocaleStore`, `useNotificationsStore`,
-`useResourceIndexStore`, `useResourceFormStore`, `useI18nStore`. The
-screen, dashboard and navigation stores are internal to the SPA's pages and
-are not part of the public API.
+`useResourceIndexStore`, `useResourceFormStore`, `useI18nStore`. Сторы
+экранов, дашбордов и навигации — внутренние для страниц SPA и в публичный
+API не входят.
 
-## See also
+## См. также
 
-- [Fields reference](fields-reference.md)
-- [Layouts reference](layouts-reference.md)
-- [Architecture](architecture.md)
+- [Каталог полей](fields-reference.md)
+- [Каталог layout'ов](layouts-reference.md)
+- [Архитектура](architecture.md)

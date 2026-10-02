@@ -58,7 +58,7 @@ Columns::make([
 Block::make('Profile', [
     Input::make('name'),
     Input::make('email'),
-])->help('Personal data'),
+])->description('Personal data'),
 ```
 
 ### Tabs
@@ -156,7 +156,7 @@ public function commandBar(): array
 
 A footer action with a method closes the overlay once the method succeeds;
 one named `close` or `cancel` just closes it. `Layout::drawer()` works the
-same way, with `->position('left'|'right'|'bottom')` and `->size()` (`sm`,
+same way, with `->position('left'|'right'|'top'|'bottom')` and `->size()` (`sm`,
 `md`, `lg`, `xl` or a CSS length).
 
 ### Wrapper
@@ -192,7 +192,7 @@ For `view` mode (`ResourceViewPage`, custom Screen):
 ```php
 Layout::infolist([
     TextEntry::make('title'),
-    BadgeEntry::make('status')->variant(fn ($v) => $v === 'published' ? 'success' : 'default'),
+    BadgeEntry::make('status')->colors(['published' => 'success', 'draft' => 'default']),
     KeyValueEntry::make('meta'),
 ])->layout('rows'),  // or 'columns', 'grid'
 ```
@@ -386,13 +386,17 @@ Every layout serializes to:
 ```json
 {
   "id": "l-xxxxxxxx",
+  "kind": "layout",
   "type": "rows",
+  "items": [ ... ],
   "props": {},
   "children": [ ... ]
 }
 ```
 
-`children` are recursive (other layout `toArray`s or field `toArray`s).
+The props are also spread at the top level, and `items` repeats
+`children`. `children` are recursive (other layout `toArray`s or field
+`toArray`s).
 The frontend `LayoutRenderer` resolves the type from a registry and
 recurses.
 

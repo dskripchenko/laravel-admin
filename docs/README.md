@@ -23,13 +23,13 @@ not a plan:
 | --- | :-: | :-: | :-: | :-: |
 | getting-started, architecture, glossary | ✅ | ✅ | ✅ | ✅ |
 | concepts: menu, resources, screens, widgets | ✅ | ✅ | ✅ | ✅ |
-| concepts: actions, i18n, permissions, tenancy | ✅ | — | — | — |
-| api-reference, fields, layouts, testing, migration, frontend-extension | ✅ | — | — | — |
+| concepts: actions, i18n, permissions, tenancy | ✅ | — | ✅ | — |
+| api-reference, fields, layouts, testing, migration, frontend-extension | ✅ | — | ✅ | — |
 | `api/` — endpoint reference (17 pages) | — | — | ✅ | — |
 | `recipes/` — how-to guides (9 pages) | — | — | ✅ | — |
 | `sister-packs/` — specifications of the optional packages | — | — | ✅ | — |
 
-Two gaps, both real: the deeper English pages have no translations yet, and
-the endpoint reference, recipes and sister-pack specs exist only in Russian.
-They are being filled in; until then this table says which is which rather
-than leaving a reader to discover it by following a dead link.
+Russian covers everything English does. German and Chinese have the core
+pages only, and the endpoint reference, recipes and sister-pack specs exist
+only in Russian. This table says which is which rather than leaving a reader
+to discover it by following a dead link.

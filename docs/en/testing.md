@@ -8,43 +8,75 @@ locale: en
 # Testing
 
 Backend tests run with **Pest** (`vendor/bin/pest`), frontend with
-**Vitest** (`npm test`). The package ships test helpers that handle
-admin-auth, registry resets and HTTP envelope unwrapping.
+**Vitest** (`npm test`). The package ships test helpers that log an
+administrator in, reset the admin registries between tests and wrap the
+resource API in short calls.
 
-## TestCase
+## Base test cases
 
-`Dskripchenko\LaravelAdmin\Testing\TestCase` extends Orchestra Testbench
-and pre-loads the required service providers. Use it as your base in
-host-side tests:
+Two base classes live in `Dskripchenko\LaravelAdmin\Testing`:
+
+- **`AdminTestCase`** — for a host application's tests. It extends
+  Laravel's own `Illuminate\Foundation\Testing\TestCase`, uses
+  `RefreshDatabase`, `ActsAsAdmin` and `InteractsWithAdminResources`, and in
+  `setUp()` clears `ResourceRegistry`, `SettingsRegistry` and the `AdminApi`
+  route cache. `registerResource()` and `registerSettings()` add a class to
+  the registry for the current test only.
+- **`PackageTestCase`** — for packages built on top of the admin (Orchestra
+  Testbench). It loads the laravel-api, delayed-process, translatable and
+  admin service providers and an in-memory SQLite; the package adds its own
+  providers in `additionalProviders()`.
 
 ```php
-abstract class TestCase extends \Dskripchenko\LaravelAdmin\Testing\TestCase
+// tests/TestCase.php of a host application
+abstract class TestCase extends \Dskripchenko\LaravelAdmin\Testing\AdminTestCase
 {
-    use \Illuminate\Foundation\Testing\RefreshDatabase;
+    //
 }
 ```
 
 ## Acting as an admin
 
 ```php
-use Dskripchenko\LaravelAdmin\Testing\Concerns\ActsAsAdmin;
-
 it('lists articles', function () {
-    $this->actingAsAdmin(['admin.articles.view']);
-    $this->getJson('/api/admin/articles/search')
+    $this->actingAsAdmin(permissions: ['admin.articles.view']);
+    $this->postJson('/api/admin/articles/search')
         ->assertOk()
         ->assertJsonPath('payload.data.0.id', 1);
 });
 ```
 
-`actingAsAdmin($permissions = ['*'])` creates an `AdminUser` + role +
-authenticates against the `admin` guard. Permissions can be
-`['admin.articles.*']` or `['*']`.
+`actingAsAdmin(array $attributes = [], array $permissions = [])` creates an
+`AdminUser` (the attributes override the generated name, email and
+password), assigns it a role with the given permissions when there are any,
+authenticates it against the `admin` guard and returns the user.
+Permissions can be exact (`admin.articles.view`), wildcards
+(`admin.articles.*`) or `*`. `actingAsSuperAdmin()` is the shortcut for a
+user with `*`.
+
+## Resource API helpers
+
+`InteractsWithAdminResources` builds the URL `/{api path}/{slug}/{action}`
+from the panel's configured API path:
+
+```php
+$this->getResourceMeta('articles')->assertOk();
+$this->postResourceCreate('articles', ['title' => 'Hello']);
+$this->getResourceRead('articles', $id);
+$this->postResourceUpdate('articles', $id, ['title' => 'Bye']);
+$this->postResourceDelete('articles', $id);
+$this->postResourceSearch('articles', filters: ['status' => 'draft']);
+$this->postResourceAction('articles', 'publish', ['ids' => [$id]]);
+
+$this->assertResourceMetaOk('articles');   // meta has fields, columns, permissions
+$this->assertResourceCount('articles', 3); // payload.meta.total of search
+```
 
 ## Cleanup between tests
 
-If you register Resources / Screens / Settings during a test,
-`AdminApi`'s method cache must be invalidated:
+`AdminTestCase` already resets resources and settings. If a test registers
+Screens or menu nodes as well, or your base class is not `AdminTestCase`,
+reset them yourself and invalidate `AdminApi`'s method cache:
 
 ```php
 beforeEach(function () {
@@ -58,7 +90,7 @@ beforeEach(function () {
 
 ## Fixtures
 
-Tests at `tests/Fixtures/*.php` are autoloaded via composer classmap
+In this package's own test suite, fixtures at `tests/Fixtures/*.php` are autoloaded via composer classmap
 and live in the **global namespace** (no `namespace` declaration —
 required by the path-classmap autoloader).
 
@@ -80,8 +112,8 @@ final class TestArticleResource extends Resource
 
 ```php
 it('creates an article', function () {
-    $this->actingAsAdmin();
-    $resp = $this->postJson('/api/admin/test-article/create', [
+    $this->actingAsSuperAdmin();
+    $resp = $this->postJson('/api/admin/test-articles/create', [
         'title' => 'Hello',
         'slug' => 'hello',
     ]);
@@ -92,13 +124,31 @@ it('creates an article', function () {
 
 ## Screen tests
 
+The query parameters of `state` reach `Screen::query(mixed ...$params)` as
+positional strings, in the order of the query string:
+
+```php
+final class MyScreen extends Screen
+{
+    public function name(): string { return 'My Screen'; }
+
+    public function query(mixed ...$params): array
+    {
+        return ['period' => (int) ($params[0] ?? 7)];
+    }
+
+    public function layout(): array { return []; }
+}
+```
+
 ```php
 it('compiles state with custom params', function () {
     app(ScreenRegistry::class)->add(MyScreen::class);
     AdminApi::clearCache();
-    $this->actingAsAdmin();
+    $this->actingAsSuperAdmin();
 
-    $resp = $this->getJson('/api/admin/my-screen/state?period=30');
+    // MyScreen is served under the slug `my`: the class name without "Screen", kebab-cased.
+    $resp = $this->getJson('/api/admin/my/state?period=30');
     $resp->assertOk()
         ->assertJsonPath('payload.name', 'My Screen')
         ->assertJsonPath('payload.state.period', 30);
@@ -117,9 +167,10 @@ it('runs send command', function () {
 ## Validation responses
 
 ```php
-$resp = $this->postJson('/api/admin/test-article/create', []);
+$resp = $this->postJson('/api/admin/test-articles/create', []);
 $resp->assertStatus(422);
-$resp->assertJsonPath('payload.errorKey', 'validation_error');
+$resp->assertJsonPath('success', false);
+$resp->assertJsonPath('payload.errorKey', 'validation');
 $resp->assertJsonPath('payload.messages.title.0', 'The title field is required.');
 ```
 
@@ -160,9 +211,10 @@ describe('useResourceIndexStore', () => {
 
 ## E2E (Playwright)
 
-`demo/e2e-full-flow.mjs` covers login → menu → resources → dashboard
-→ custom screen → notifications → profile → logout. Run from `demo/`
-with `php artisan serve` in the background:
+The demo application ([dskripchenko/laravel-admin-demo](https://github.com/dskripchenko/laravel-admin-demo))
+carries `e2e-full-flow.mjs`, which covers login → menu → resources →
+dashboard → custom screen → notifications → profile → logout. Run it from
+the demo's root with `php artisan serve` in the background:
 
 ```bash
 cd demo
@@ -173,12 +225,13 @@ node e2e-full-flow.mjs
 ## CI
 
 ```yaml
-- run: composer install --no-progress
-- run: vendor/bin/pest
+- run: composer update --prefer-dist --no-interaction --no-progress
 - run: vendor/bin/pint --test
-- run: vendor/bin/phpstan analyse --memory-limit=1G
-- run: npm ci
-- run: npx vue-tsc --noEmit
+- run: vendor/bin/phpstan analyse --no-progress
+- run: vendor/bin/pest
+- run: npm install --no-audit --no-fund
+- run: npm run lint
+- run: npm run typecheck   # vue-tsc --noEmit
 - run: npm test
 - run: npm run build
 ```
@@ -186,4 +239,4 @@ node e2e-full-flow.mjs
 ## See also
 
 - [`tests/`](../../tests/) directory
-- [`testing/`](../../src/Testing/) — base classes and traits
+- [`src/Testing/`](../../src/Testing/) — base classes and traits

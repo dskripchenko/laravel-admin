@@ -75,7 +75,7 @@ URL: `/admin/screens/contact`.
 | `query(...$params)` | Returns initial state. Receives `?key=value` from URL as named args. |
 | `layout()` | Returns `Renderable[]` (Rows/Columns/Tabs/Block/...). |
 | `commandBar()` | Returns `Action[]` rendered in the page header. |
-| Public methods | Any other public method (not in the reserved set) is callable as a command via `Button::method('xxx')`. |
+| Public methods | Any other public method (not in the reserved set) is callable as a command via `Button::make('…')->method('xxx')`. |
 
 Reserved method names: `query`, `layout`, `name`, `description`,
 `permission`, `commandBar`, `compile`, `slug`, `reservedMethods`,
@@ -93,8 +93,9 @@ public function send(array $state): array { ... }
 Return values:
 
 - `array` — wrapped into a normalized `ScreenMethodPayload` and sent
-  back. Recognized keys: `state`, `message`, `alerts`, `redirect_url`,
-  `refresh`, `download_url`, `extra`.
+  back. Recognized keys: `state`, `layouts`, `message`, `message_link`,
+  `alerts`, `redirect_url`, `refresh`, `download_url`; any other key goes
+  into `extra`.
 - `JsonResponse` — passed through.
 - `null` / `void` — `{ok: true}`.
 
@@ -196,6 +197,5 @@ command method itself.
 
 ## See also
 
-- [Custom forms cookbook](../../ru/recipes/README.md) (TBD)
 - [Permissions](permissions.md)
 - [Layouts reference](../layouts-reference.md)

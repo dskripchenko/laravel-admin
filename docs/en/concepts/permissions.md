@@ -21,12 +21,18 @@ Format: `admin.{domain}.{action}`. Examples:
 
 Wildcards:
 - `admin.users.*` — all actions in users domain
+- `admin.*.view` — view access to everything
 - `admin.*` — all admin permissions
 - `*` — superadmin
 
+A granted key with `*` is matched with `fnmatch()`, where `*` also matches
+dots: `admin.*` covers `admin.cms.articles.view` as well.
+
 ## Roles
 
-Stored in `admin_roles`. A user gets a role via `assignRole()`:
+Stored in `admin_roles`; `permissions` is a JSON list of strings. A user
+model with the `HasAdminAccess` trait gets a role via `assignRole()` (a
+`Role`, its id or its slug) and loses it via `revokeRole()`:
 
 ```php
 $role = Role::create([
@@ -38,8 +44,9 @@ $user->assignRole($role);
 
 ## Resource auto-permissions
 
-For each Resource the admin auto-generates permissions matching the
-actions:
+For each Resource the admin derives permission keys from
+`Resource::permission()` (`admin.{slug}` by default) and guards the
+resource's routes with them:
 
 ```
 admin.articles.view
@@ -53,7 +60,9 @@ admin.articles.reorder         (if reorderable)
 ```
 
 `AdminAccess:admin.articles.create` middleware guards the
-`create`-route automatically.
+`create`-route automatically. Custom actions (`POST /{slug}/action`)
+require `.view`. These keys are only gates: to make them checkable in the
+role editor, register them with `Admin::permissions()` (below).
 
 Override the base via `Resource::permission()`:
 
@@ -91,7 +100,8 @@ $user->hasAnyAccess(['admin.articles.update', 'admin.articles.delete']);  // OR
 $user->hasAllAccess(['admin.articles.update', 'admin.articles.delete']);  // AND
 ```
 
-In Blade / Vue (manifest exposes user permissions to SPA):
+In the SPA (the bootstrap and the login response carry the user's flat
+permission list; the store matches the same `*` masks):
 
 ```ts
 const auth = useAuthStore()
@@ -121,7 +131,8 @@ public function permission(): array|string|null
 }
 ```
 
-Both `state` (GET) and `runMethod` (POST) endpoints are auto-gated.
+The `state` (GET), `runMethod` and `listener` (POST) endpoints are
+auto-gated. `null` (the default) means authentication alone is enough.
 
 ## Settings
 

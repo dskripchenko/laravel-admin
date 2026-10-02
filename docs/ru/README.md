@@ -74,24 +74,31 @@ php artisan admin:install
 
 ## Документация
 
-- [Быстрый старт](../../docs/ru/getting-started.md)
-- [Подключение к существующему приложению](../../docs/ru/integration.md)
-- [Архитектура](../../docs/ru/architecture.md)
-- Концепции: [Resources](../../docs/ru/concepts/resources.md) ·
-  [Screens](../../docs/ru/concepts/screens.md) ·
-  [Widgets & Dashboards](../../docs/ru/concepts/widgets-and-dashboards.md) ·
-  [Menu](../../docs/ru/concepts/menu.md) ·
-  [Actions](../../docs/en/concepts/actions.md) (en) ·
-  [Permissions](../../docs/en/concepts/permissions.md) (en) ·
-  [i18n](../../docs/en/concepts/i18n.md) (en) ·
-  [Tenancy](../../docs/en/concepts/tenancy.md) (en)
-- [Каталог полей](../../docs/en/fields-reference.md) (en)
-- [Каталог layout'ов](../../docs/en/layouts-reference.md) (en)
-- [API reference](../../docs/en/api-reference.md) (en)
-- [Frontend-расширение](../../docs/en/frontend-extension.md) (en)
-- [Тестирование](../../docs/en/testing.md) (en)
-- [Migration guide](../../docs/en/migration-guide.md) (en)
-- [Глоссарий](../../docs/ru/glossary.md)
+- [Быстрый старт](getting-started.md)
+- [Подключение к существующему приложению](integration.md)
+- [Архитектура](architecture.md)
+- Концепции: [Ресурсы](concepts/resources.md) ·
+  [Экраны](concepts/screens.md) ·
+  [Виджеты и дашборды](concepts/widgets-and-dashboards.md) ·
+  [Меню](concepts/menu.md) ·
+  [Действия](concepts/actions.md) ·
+  [Права доступа](concepts/permissions.md) ·
+  [i18n](concepts/i18n.md) ·
+  [Мультитенантность](concepts/tenancy.md)
+- [Каталог полей](fields-reference.md)
+- [Каталог layout'ов](layouts-reference.md)
+- [Справочник API](api-reference.md)
+- [Расширение фронтенда](frontend-extension.md)
+- [Тестирование](testing.md)
+- [Руководство по миграции](migration-guide.md)
+- [Глоссарий](glossary.md)
+- [Участие в разработке](contributing.md)
+
+Дополнительно, только на русском:
+
+- [Контракты HTTP API](api/README.md) — спецификации всех эндпоинтов
+- [Рецепты](recipes/README.md) — типовые сценарии с готовым кодом
+- [Sister-пакеты](sister-packs/README.md) — спецификации опциональных пакетов
 
 ## Стек
 
