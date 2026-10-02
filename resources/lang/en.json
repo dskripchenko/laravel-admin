@@ -507,5 +507,7 @@
     "Создайте первую запись.": "Create the first record.",
     "Здесь пока нет записей.": "There are no records here yet.",
     "По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск.": "Nothing matches “:query”. Change the query or reset the search.",
-    "Сбросить поиск": "Reset search"
+    "Сбросить поиск": "Reset search",
+    "Ресурс (slug)": "Resource slug",
+    "Сколько строк": "Limit"
 }
