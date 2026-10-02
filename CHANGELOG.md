@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- **Notifications are translated when they are read.** The notification
+  endpoints (`list`, `unread`) pass the stored `title`, `body` (and a host
+  notification's `subject`, `description`, `message`, `text`) through
+  `Localize`, the same JSON dictionaries as every other caption, into the
+  reader's locale. A notification stored in the source language now follows
+  the panel's language; text with no translation comes back unchanged, so
+  existing rows read as before.
+- `AdminNotification` takes `params`: the `:name` placeholders of the title
+  and the body, stored next to them so the stored text stays a translation
+  key (`'Imported: :count'` + `['count' => 1234]`). A host notification may
+  store `params` too, or `{key}_params` (`title_params`…) for one key.
+  `Localize::string()` accepts the replacements as an optional second
+  argument.
+
+### Changed
+
+- **Requires `@dskripchenko/ui` ^1.6.1.** `UidStat` formats its numbers in the
+  panel's locale (`2.9%` in English, `2,9%` in Russian) instead of always in
+  ru-RU.
+- **The sidebar and the breadcrumbs resolve the current menu item by one
+  rule** (`findMenuTrail()`, now in `shell/menuTrail.ts`). When several items
+  lead to the same page, both pick the most specific match; on a tie, the
+  canonical item (the one pointing at the page by its route name, as
+  `MenuNode::resource()` does) over a copied url, then the shallowest, then
+  the first declared. The sidebar highlights that one item and opens only
+  its branch. Before, it lit every copy and could open a branch the
+  breadcrumbs did not name.
+
 ### Fixed
 
 - `delayed/run` answers 422 instead of 500 when `params` has a key named
@@ -17,6 +47,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Binding by name needs a `dskripchenko/laravel-delayed-process` release
   with named-parameter binding; until then `handle(string $model)` fails
   with a `TypeError`.
+- The notifications page had no padding and touched the sidebar and the top
+  bar; it now has the page padding of the other pages. Each item shows the
+  notification's icon on a tone-coloured disc, like the drawer, and an
+  `info` notification is no longer grey.
+- A screen's `message_link` with the panel prefix (`/admin/screens/x`) led to
+  `/admin/admin/screens/x`. It is normalized like `redirect_url`, through the
+  shared `toRouterPath()`; a `redirect_url` that is not a panel route now
+  loads as a page instead of hitting the panel's 404.
+- The async action dialog said the result "will arrive as a notification"; it
+  arrives as a toast on the page, and the hint now says so.
 
 ## 1.41.0
 
