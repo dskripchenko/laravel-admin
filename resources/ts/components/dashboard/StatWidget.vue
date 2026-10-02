@@ -191,6 +191,8 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
     :tone="items[0]!.tone"
     :icon="items[0]!.icon"
     :loading="loading"
+    trend-placement="below"
+    class="admin-stats-widget__single"
   />
   <section v-else class="admin-stats-widget">
     <header v-if="title" class="admin-stats-widget__hd">
@@ -211,6 +213,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
         :tone="stat.tone"
         :icon="stat.icon"
         :loading="loading"
+        trend-placement="below"
       />
     </div>
   </section>
@@ -228,6 +231,11 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
   font-size: var(--uid-font-size-sm);
   font-weight: var(--uid-font-weight-semibold);
   color: var(--uid-text-primary);
+}
+.admin-stats-widget__single {
+  /* A lone card fills its dashboard cell, level with the cards next to it. */
+  height: 100%;
+  box-sizing: border-box;
 }
 .admin-stats-widget__grid {
   display: grid;

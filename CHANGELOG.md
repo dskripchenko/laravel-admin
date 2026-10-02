@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **KPI cards in a row are uniform.** A stat's trend now always sits under its
+  value, so the card with the longest value no longer wraps its trend while the
+  others keep it inline; a lone stat card fills its dashboard cell, level with
+  the cards next to it. Gauges with zones lost the faint dots at both ends of
+  the arc. Requires `@dskripchenko/ui` ^1.8.0.
+
 ## 1.44.0
 
 ### Added
