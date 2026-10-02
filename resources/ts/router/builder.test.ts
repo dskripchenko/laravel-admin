@@ -86,7 +86,10 @@ describe('buildRoutesFromManifest', () => {
       { ...baseManifest, resources: [{ ...resource, features: { creatable: false, editable: false } }] },
       components,
     )
-    expect(readOnly.map((r) => r.path)).toEqual(['/r/audit', '/r/audit/:id'])
+    expect(readOnly.map((r) => r.path)).toEqual(['/r/audit', '/r/audit/create', '/r/audit/:id/edit', '/r/audit/:id'])
+    expect(readOnly[1]!.redirect).toEqual({ name: 'admin.resource.audit.index' })
+    expect(readOnly[1]!.component).toBeUndefined()
+    expect(typeof readOnly[2]!.redirect).toBe('function')
 
     const editable = buildRoutesFromManifest({ ...baseManifest, resources: [{ ...resource, features: {} }] }, components)
     const create = editable.find((r) => r.path === '/r/audit/create')!

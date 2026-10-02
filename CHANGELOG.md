@@ -148,7 +148,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   columns, with their formatting.
 - **A read-only resource had a create page.** `/r/{slug}/create` (and edit)
   opened an empty form with a Create button for a resource that is neither
-  creatable nor editable; those routes are no longer registered.
+  creatable nor editable; those addresses now lead back to the list and to
+  the record.
 - **Page titles mixed languages.** The browser title of a create or edit
   page was "Orders: создать" in every language; the action is translated on
   its own now.

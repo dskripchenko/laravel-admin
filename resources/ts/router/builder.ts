@@ -160,11 +160,17 @@ function buildResourceRoutes(
       props: (route) => ({ slug, id: route.params.id }),
     },
   ]
-  return routes.filter((r) => {
+  // The pages it lacks lead back to the list and the record instead — a
+  // missing `/create` route would otherwise be taken for a record id.
+  return routes.map((r): RouteRecordRaw => {
     const name = String(r.name ?? '')
-    if (name.endsWith('.create')) return creatable
-    if (name.endsWith('.edit')) return editable
-    return true
+    if (name.endsWith('.create') && !creatable) {
+      return { path: r.path, redirect: { name: `admin.resource.${slug}.index` } }
+    }
+    if (name.endsWith('.edit') && !editable) {
+      return { path: r.path, redirect: (to) => ({ name: `admin.resource.${slug}.view`, params: { id: to.params.id } }) }
+    }
+    return r
   })
 }
 
