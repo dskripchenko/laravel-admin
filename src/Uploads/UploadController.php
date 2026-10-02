@@ -159,7 +159,7 @@ final class UploadController extends ApiController
      */
     public static function serveUrl(string $disk, string $path): string
     {
-        $prefix = (string) config('admin.api_path', 'api/admin');
+        $prefix = \Dskripchenko\LaravelAdmin\Panel\Panel::defaultApiPath();
 
         return '/'.trim($prefix, '/').'/uploads/serve?disk='.urlencode($disk).'&path='.urlencode($path);
     }

@@ -458,5 +458,9 @@
     "Ресурс :resource не зарегистрирован.": "The resource :resource is not registered.",
     "Убрать": "Remove",
     "Не удалось обновить форму": "Could not update the form",
-    "Обновление…": "Updating…"
+    "Обновление…": "Updating…",
+    "Недопустимый период: :period": "Invalid period: :period",
+    "Нет доступа к дашборду": "You have no access to this dashboard",
+    "За :n дн.": "Last :n days",
+    "Нет доступа к панели администратора": "You do not have access to the admin panel"
 }

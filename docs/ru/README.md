@@ -39,21 +39,22 @@ Admin::menu()->add(
 - **Dashboard** — 8 типов виджетов (Stats/Chart/RecentList/Markdown/
   Iframe/Table/Heatmap/Gauge), per-user layout-override'ы, drag/resize,
   polling.
-- **Auth & RBAC** — multi-guard, AdminUser, Roles, 2FA TOTP, profile,
-  impersonation, password-reset, email-verification.
+- **Auth & RBAC** — multi-guard; отдельная таблица `admin_users` или ваши
+  существующие пользователи ([стратегия shared](integration.md#2-кто-входит-dedicated-или-shared)),
+  роли, 2FA TOTP, профиль, impersonation, сброс пароля, подтверждение email.
 - **Audit** — append-only журнал админских действий
   (`AuditLog` + trait `Loggable`).
 - **Settings** — singleton-страницы конфигурации.
 - **Уведомления** — bell-badge + drawer (Database notifications).
 - **API-токены** — Sanctum в Profile (опционально).
 - **Темы** — light/dark + per-user, дизайн-токены `@dskripchenko/ui`.
-- **i18n** — locale-resolver (5 уровней приоритета),
+- **i18n** — locale-resolver (6 уровней приоритета),
   `TranslatableField`-bridge с `dskripchenko/laravel-translatable`.
 - **Tenancy** — `TenantResolver` / `TenantContext` / trait
   `TenantScoped`. Стратегия — на стороне host'а, мы даём контракт.
 - **Plugins** — интерфейс `AdminPlugin`; sister-pack'и используют тот же hook.
-- **Тестирование** — `ResourceTestCase`, `ScreenTestCase`, trait
-  `ActsAsAdmin`.
+- **Тестирование** — `AdminTestCase`, trait'ы `ActsAsAdmin` и
+  `InteractsWithAdminResources`.
 - **OpenAPI 3.0** — генерируется из docblock-тегов `@input`/`@output`.
 
 ## Установка
@@ -67,9 +68,14 @@ php artisan admin:install
 `/admin/login`. В [быстром старте](getting-started.md) — первый ресурс и
 режим своей сборки для собственных Vue-компонентов.
 
+Подключаете к приложению, где уже есть пользователи, свой API или прокси?
+См. [подключение к существующему приложению](integration.md) — в том числе
+`admin:install --shared`, чтобы в админку входили ваши пользователи.
+
 ## Документация
 
 - [Быстрый старт](../../docs/ru/getting-started.md)
+- [Подключение к существующему приложению](../../docs/ru/integration.md)
 - [Архитектура](../../docs/ru/architecture.md)
 - Концепции: [Resources](../../docs/ru/concepts/resources.md) ·
   [Screens](../../docs/ru/concepts/screens.md) ·
@@ -92,7 +98,8 @@ php artisan admin:install
 - **PHP** ^8.2
 - **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
-- **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
+- **Фронтенд** — готовая SPA ~350 KB gz JS + ~35 KB gz CSS; npm-библиотека
+  для своей сборки ~260 KB gz (Vue, Pinia и UI-kit — внешние)
 - **WYSIWYG** — по умолчанию `@dskripchenko/wysiwyg`; адаптеры Quill и
   TinyMCE входят в npm-пакет (`/quill`, `/tinymce`)
 

@@ -39,8 +39,10 @@ Admin::menu()->add(
 - **Dashboard** — 8 widget types (Stats/Chart/RecentList/Markdown/
   Iframe/Table/Heatmap/Gauge), per-user layout overrides, drag/resize,
   polling.
-- **Auth & RBAC** — multi-guard, AdminUser, Roles, 2FA TOTP, profile,
-  impersonation, password reset, email verification.
+- **Auth & RBAC** — multi-guard; a separate `admin_users` table or your
+  existing users ([shared strategy](docs/en/integration.md#2-who-signs-in-dedicated-or-shared)),
+  roles, 2FA TOTP, profile, impersonation, password reset, email
+  verification.
 - **Audit** — append-only log of admin actions (`AuditLog` + `Loggable`
   trait).
 - **Settings** — singleton-style configuration screens.
@@ -48,12 +50,13 @@ Admin::menu()->add(
 - **API tokens** — Sanctum integration in Profile (conditional).
 - **Theming** — light/dark + per-user preference, `@dskripchenko/ui`
   design tokens.
-- **i18n** — locale resolver (5-step priority), `TranslatableField`
+- **i18n** — locale resolver (6-step priority), `TranslatableField`
   bridge for `dskripchenko/laravel-translatable`.
 - **Tenancy** — `TenantResolver` / `TenantContext` / `TenantScoped`
   trait. Strategy is host-side; we provide the contract.
 - **Plugins** — `AdminPlugin` interface; sister-packs use the same hook.
-- **Testing** — `ResourceTestCase`, `ScreenTestCase`, `ActsAsAdmin` trait.
+- **Testing** — `AdminTestCase`, `ActsAsAdmin` and
+  `InteractsWithAdminResources` traits.
 - **OpenAPI 3.0** — generated from docblock `@input`/`@output` tags.
 
 ## Install
@@ -67,9 +70,14 @@ That's it — the admin SPA ships prebuilt, no Node needed. Visit
 `/admin/login`. [Getting started](docs/en/getting-started.md) walks through
 the first resource and the custom-build mode for your own Vue components.
 
+Adding it to an application that already has users, its own API or a proxy?
+Read [Adding the admin to an existing application](docs/en/integration.md) —
+including `admin:install --shared`, which lets your existing users sign in.
+
 ## Documentation
 
 - [Getting started](docs/en/getting-started.md)
+- [Adding the admin to an existing application](docs/en/integration.md)
 - [Architecture](docs/en/architecture.md)
 - Concepts: [Resources](docs/en/concepts/resources.md) ·
   [Screens](docs/en/concepts/screens.md) ·
@@ -92,7 +100,8 @@ the first resource and the custom-build mode for your own Vue components.
 - **PHP** ^8.2
 - **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
-- **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
+- **Frontend** — prebuilt SPA ~350 KB gz JS + ~35 KB gz CSS; the npm
+  library entry for custom builds ~260 KB gz (Vue, Pinia and the UI kit external)
 - **WYSIWYG** — `@dskripchenko/wysiwyg` by default; Quill and TinyMCE
   adapters ship in the npm package (`/quill`, `/tinymce`)
 

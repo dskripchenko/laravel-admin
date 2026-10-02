@@ -31,6 +31,8 @@ class TableWidget extends Widget
 
     private string $orderDirection = 'desc';
 
+    private ?string $periodColumn = null;
+
     public function widgetType(): string
     {
         return 'table';
@@ -84,6 +86,17 @@ class TableWidget extends Widget
     }
 
     /**
+     * Shows only the records inside the dashboard's selected period, by a
+     * timestamp column. Off by default: the widget ignores the period.
+     */
+    public function withinPeriod(string $column = 'created_at'): static
+    {
+        $this->periodColumn = $column;
+
+        return $this->periodAware();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function data(): array
@@ -101,6 +114,10 @@ class TableWidget extends Widget
         $query = $modelClass::query();
         if ($this->queryModifier !== null) {
             $query = ($this->queryModifier)($query);
+        }
+
+        if ($this->periodColumn !== null) {
+            $query = $this->dashboardContext()->constrain($query, $this->periodColumn);
         }
 
         $rows = $query

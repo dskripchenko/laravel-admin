@@ -6,6 +6,7 @@ use Dskripchenko\LaravelAdmin\Field\ResourcePicker;
 use Dskripchenko\LaravelAdmin\Field\Rules\ResourceRecordsExist;
 use Dskripchenko\LaravelAdmin\Field\ValidationRulesExporter;
 use Dskripchenko\LaravelAdmin\Http\AdminApi;
+use Dskripchenko\LaravelAdmin\Http\OpenApi\ResourceOperationSchema;
 use Dskripchenko\LaravelAdmin\Infolist\FieldEntry;
 use Dskripchenko\LaravelAdmin\Models\AdminUser;
 use Dskripchenko\LaravelAdmin\Permission\Models\Role;
@@ -174,4 +175,16 @@ it('rejects keys the target resource does not list', function (): void {
     }
 
     expect(TestPickerPost::count())->toBe(0);
+});
+
+it('describes the picker inputs in the OpenAPI schemas', function (): void {
+    $search = ResourceOperationSchema::forAction(new TestPickerPhotoResource, 'search')['properties'];
+    $create = ResourceOperationSchema::forAction(new TestPickerPostResource, 'create')['properties'];
+    $key = ['oneOf' => [['type' => 'integer'], ['type' => 'string']]];
+
+    expect($search['ids']['items'])->toBe($key)
+        ->and($search['picker']['type'])->toBe('boolean')
+        ->and($create['cover_id']['oneOf'])->toBe($key['oneOf'])
+        ->and($create['gallery']['type'])->toBe('array')
+        ->and($create['gallery']['items'])->toBe($key);
 });

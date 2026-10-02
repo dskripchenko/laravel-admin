@@ -205,6 +205,20 @@ GET /api/admin/doc            # Scalar UI (interactive)
 GET /api/admin/openapi.json   # Raw spec
 ```
 
+Resource operations are documented per resource. `create` and `update` list
+the resource's own fields — built from `fields()` and `validationRules()`, with
+types, formats, required, enums from options, and bounds — and `search`,
+`export`, `action`, `reorder`, `inlineUpdate` and a settings group's `update`
+document the parts that depend on the resource (filters, sortable and
+exportable columns, action keys, editable columns, settings values). A
+controller that serves many routes can do the same: declare
+`@input [method]` and type-hint `Dskripchenko\LaravelApi\Services\OpenApi\OperationContext`
+in that method — it is told the controller key and action of the route being
+described.
+
+`php artisan api:lint --strict` checks the markup, including actions that
+validate input without declaring any (`input.undeclared`).
+
 ## See also
 
 - [Architecture](architecture.md) — manifest + envelope shape

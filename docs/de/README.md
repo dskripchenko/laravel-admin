@@ -48,7 +48,7 @@ Admin::menu()->add(
 - **API-Tokens** — Sanctum-Integration im Profil (optional).
 - **Theming** — Light/Dark + Benutzerpräferenz, `@dskripchenko/ui`
   Design-Tokens.
-- **i18n** — Locale-Resolver (5-Stufen-Priorität),
+- **i18n** — Locale-Resolver (6-Stufen-Priorität),
   `TranslatableField`-Bridge für
   `dskripchenko/laravel-translatable`.
 - **Mandantenfähigkeit** — `TenantResolver` / `TenantContext` /
@@ -56,8 +56,8 @@ Admin::menu()->add(
   Vertrag.
 - **Plugins** — `AdminPlugin`-Interface; Sister-Packs nutzen denselben
   Hook.
-- **Testing** — `ResourceTestCase`, `ScreenTestCase`,
-  `ActsAsAdmin`-Trait.
+- **Testing** — `AdminTestCase`, Traits `ActsAsAdmin` und
+  `InteractsWithAdminResources`.
 - **OpenAPI 3.0** — generiert aus Docblock-Tags `@input`/`@output`.
 
 ## Installation
@@ -97,7 +97,8 @@ Vue-Komponenten.
 - **PHP** ^8.2
 - **Laravel** 11 / 12 / 13
 - **Vue** ^3.4 + TypeScript + Pinia + Vue Router
-- **Bundle** — `@dskripchenko/laravel-admin` ~62 KB gz (esm + cjs)
+- **Frontend** — vorgebaute SPA ~350 KB gz JS + ~35 KB gz CSS; npm-Bibliothek
+  für eigene Builds ~260 KB gz (Vue, Pinia und UI-Kit extern)
 - **WYSIWYG** — standardmäßig `@dskripchenko/wysiwyg`; Quill- und
   TinyMCE-Adapter liegen im npm-Paket (`/quill`, `/tinymce`)
 
