@@ -215,7 +215,7 @@
     "Поиск везде…": "Search everywhere…",
     "Поиск по дереву…": "Search the tree…",
     "Поиск…": "Search…",
-    "Пока пусто": "Empty",
+    "Пока пусто": "Nothing here yet",
     "Пользователь не найден": "User not found",
     "Попробуйте обновить страницу.": "Try reloading the page.",
     "Предпросмотр": "Preview",
@@ -498,5 +498,14 @@
     "Фильтр": "Filter",
     "Slug ресурса": "Resource slug",
     "Лимит": "Limit",
-    "Документация": "Docs"
+    "Документация": "Docs",
+    "Нажмите, чтобы изменить": "Click to edit",
+    "Нет значения": "No value",
+    "По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск и фильтры.": "Nothing matches “:query”. Change the query or reset the search and filters.",
+    "Ни одна запись не подходит под фильтры. Измените их или сбросьте.": "No record matches the filters. Change them or reset them.",
+    "Сбросить поиск и фильтры": "Reset search and filters",
+    "Создайте первую запись.": "Create the first record.",
+    "Здесь пока нет записей.": "There are no records here yet.",
+    "По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск.": "Nothing matches “:query”. Change the query or reset the search.",
+    "Сбросить поиск": "Reset search"
 }

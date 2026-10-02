@@ -1,7 +1,11 @@
 <script setup lang="ts">
 /**
  * InlineEditCell — a wrapper around a cell's text that turns into an input on
- * a double click.
+ * a click (or Enter, from the keyboard).
+ *
+ * The click is stopped here: a table row opens the record on a click, and an
+ * editable cell must start editing instead. A read-only cell lets the click
+ * through to the row.
  *
  * The backend contract: POST /{slug}/inlineUpdate with a body of
  * {id, column, value}. The validation rules are resolved on the backend, in
@@ -30,7 +34,7 @@ interface Props {
   rowId: string | number
   column: string
   value: unknown
-  /** With false a double click does nothing: the cell is read-only. */
+  /** With false a click does nothing here and reaches the row: the cell is read-only. */
   editable?: boolean
   /** The kind of editing control. */
   inputType?: InlineInputType
@@ -70,6 +74,19 @@ async function startEdit(): Promise<void> {
   if (inputRef.value && 'select' in inputRef.value && typeof inputRef.value.select === 'function') {
     inputRef.value.select()
   }
+}
+
+function onIdleClick(e: MouseEvent): void {
+  if (!isEditable.value) return
+  e.stopPropagation()
+  void startEdit()
+}
+
+function onIdleKeydown(e: KeyboardEvent): void {
+  if (!isEditable.value || (e.key !== 'Enter' && e.key !== ' ')) return
+  e.preventDefault()
+  e.stopPropagation()
+  void startEdit()
 }
 
 function cancel(): void {
@@ -140,8 +157,11 @@ const optionEntries = computed(() =>
     <span
       v-if="!editing"
       :class="['admin-inline-edit', { 'admin-inline-edit--editable': isEditable }]"
-      :title="isEditable ? tr('Двойной клик для редактирования') : undefined"
-      @dblclick.stop="startEdit"
+      :title="isEditable ? tr('Нажмите, чтобы изменить') : undefined"
+      :role="isEditable ? 'button' : undefined"
+      :tabindex="isEditable ? 0 : undefined"
+      @click="onIdleClick"
+      @keydown="onIdleKeydown"
     >
       <slot>{{ value }}</slot>
     </span>
@@ -219,9 +239,15 @@ const optionEntries = computed(() =>
   vertical-align: middle;
 }
 .admin-inline-edit--editable {
+  /* An empty value still leaves something to click. */
+  min-width: 2em;
   cursor: text;
   border-radius: 3px;
   transition: background 120ms ease;
+}
+.admin-inline-edit--editable:focus-visible {
+  outline: 2px solid var(--uid-accent);
+  outline-offset: 1px;
 }
 .admin-inline-edit--editable:hover {
   background: color-mix(in srgb, var(--uid-accent) 8%, transparent);

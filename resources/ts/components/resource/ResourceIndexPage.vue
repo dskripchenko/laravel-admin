@@ -896,7 +896,40 @@ function inlineRowId(slotProps: unknown): string | number {
   return rowId(rowFromSlot(slotProps) ?? {}) ?? ''
 }
 
+/**
+ * The controls a click inside a row belongs to, rather than to the row: a
+ * link, a button, a form control, an inline editor. UidTable reports a row
+ * click without the event, so the target is noted on the way down, in the
+ * capture phase, and onRowClick skips the clicks that started on one of them.
+ */
+const INTERACTIVE_IN_ROW = [
+  'a[href]', 'button', 'input', 'select', 'textarea', 'label', 'summary',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="button"]', '[role="checkbox"]', '[role="switch"]', '[role="link"]',
+  '[role="menuitem"]', '[role="option"]', '[role="combobox"]',
+  '.admin-inline-edit--editable', '.admin-inline-edit__input',
+].join(',')
+
+let lastClickTarget: EventTarget | null = null
+
+function onTableClickCapture(e: MouseEvent): void {
+  lastClickTarget = e.target
+}
+
+/** Whether a click started on an interactive element inside a table row. */
+function isInteractiveClick(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  const hit = target.closest(INTERACTIVE_IN_ROW)
+  return hit !== null && hit.closest('tr') !== null
+}
+
 function onRowClick(row: Record<string, unknown>): void {
+  const target = lastClickTarget
+  lastClickTarget = null
+  if (isInteractiveClick(target)) return
+  // Selecting text in a cell is not a click on the row either.
+  const selection = typeof window !== 'undefined' ? window.getSelection() : null
+  if (selection && !selection.isCollapsed && selection.toString().trim() !== '') return
   emit('row-click', row)
   // By default a row click opens the record's view screen. A host can
   // intercept it through @row-click and call preventDefault.
@@ -1256,43 +1289,76 @@ async function retryLoad(): Promise<void> {
          Показываем placeholder вместо UidTable — иначе сама таблица
          рендерит "Нет данных" empty state, что создаёт flicker
          "Нет данных → реальные строки" при navigation. -->
+    <!-- Loading, error and empty states sit in the same card as the table
+         would: closed with its border and radius, joined to the toolbar
+         above when there is one. -->
     <div
-      v-if="index.loading && index.items.length === 0"
-      class="admin-resource-index__loading"
+      v-if="(index.loading && index.items.length === 0) || index.hasError || index.isEmpty"
+      class="admin-resource-index__panel"
+      :class="{ 'admin-resource-index__panel--joined': showFilterBar || index.hasSelection }"
+      data-testid="resource-state"
     >
-      <template v-if="index.slowLoading">
-        <UidSkeleton v-for="i in 8" :key="i" height="40px" />
-      </template>
+      <div
+        v-if="index.loading && index.items.length === 0"
+        class="admin-resource-index__loading"
+      >
+        <template v-if="index.slowLoading">
+          <UidSkeleton v-for="i in 8" :key="i" height="40px" />
+        </template>
+      </div>
+      <UidErrorState
+        v-else-if="index.hasError"
+        :title="tr('Не удалось загрузить данные')"
+        :description="index.error?.message ?? tr('Попробуйте обновить страницу.')"
+        class="admin-resource-index__state"
+      >
+        <template #actions>
+          <UidButton variant="primary" @click="retryLoad">{{ tr('Обновить') }}</UidButton>
+        </template>
+      </UidErrorState>
+      <!-- Nothing matches the search or the filters: say so, name the query,
+           and offer the way back. -->
+      <UidEmptyState
+        v-else-if="hasActiveFilters"
+        :title="tr('Ничего не найдено')"
+        :description="index.search !== ''
+          ? tRaw('По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск и фильтры.', { query: index.search })
+          : tr('Ни одна запись не подходит под фильтры. Измените их или сбросьте.')"
+        class="admin-resource-index__state"
+        data-testid="resource-no-results"
+      >
+        <template #actions>
+          <UidButton variant="secondary" data-testid="resource-reset-filters" @click="onResetFilters">
+            <template #prepend><UidIcon :icon="RotateCcw" :size="14" /></template>
+            {{ tr('Сбросить поиск и фильтры') }}
+          </UidButton>
+        </template>
+      </UidEmptyState>
+      <!-- A truly empty resource: the create action only for who may create. -->
+      <UidEmptyState
+        v-else
+        :title="tr('Пока пусто')"
+        :description="resolvedCreateRouteName && isCreatable
+          ? tr('Создайте первую запись.')
+          : tr('Здесь пока нет записей.')"
+        class="admin-resource-index__state"
+        data-testid="resource-empty"
+      >
+        <template #actions>
+          <UidButton
+            v-if="resolvedCreateRouteName && isCreatable"
+            variant="primary"
+            @click="$router.push({ name: resolvedCreateRouteName })"
+          >
+            <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
+            {{ createLabel ?? tr('Создать') }}
+          </UidButton>
+        </template>
+      </UidEmptyState>
     </div>
-    <UidErrorState
-      v-else-if="index.hasError"
-      :title="tr('Не удалось загрузить данные')"
-      :description="index.error?.message ?? tr('Попробуйте обновить страницу.')"
-      class="admin-resource-index__state"
-    >
-      <template #actions>
-        <UidButton variant="primary" @click="retryLoad">{{ tr('Обновить') }}</UidButton>
-      </template>
-    </UidErrorState>
-    <UidEmptyState
-      v-else-if="index.isEmpty"
-      :title="tr('Пока пусто')"
-      :description="tr('Создайте первую запись или измените фильтры.')"
-      class="admin-resource-index__state"
-    >
-      <template #actions>
-        <UidButton
-          v-if="createRouteName && isCreatable"
-          variant="primary"
-          @click="$router.push({ name: createRouteName })"
-        >
-          {{ createLabel ?? tr('Создать') }}
-        </UidButton>
-      </template>
-    </UidEmptyState>
 
     <!-- Таблица — UidTable native selection (UidTable.selectable + selection prop). -->
-    <div v-else class="admin-resource-index__table">
+    <div v-else class="admin-resource-index__table" @click.capture="onTableClickCapture">
       <UidTable
         :columns="columns"
         :data="index.items"
@@ -1502,7 +1568,6 @@ async function retryLoad(): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: var(--uid-space-sm);
-  margin-top: var(--uid-space-md);
   /* min-height keeps the layout from collapsing on the first mount,
      когда slowLoading ещё false (быстрый запрос — placeholder пустой). */
   min-height: 320px;
@@ -1583,8 +1648,22 @@ async function retryLoad(): Promise<void> {
 .admin-resource-index__row-action--danger:hover {
   color: var(--uid-color-danger, #dc2626);
 }
+/* The card of the loading, error and empty states — the same frame as the
+   table's, so the toolbar above never ends in mid-air. */
+.admin-resource-index__panel {
+  margin-top: var(--uid-space-md);
+  padding: var(--uid-space-md);
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-lg);
+  background: var(--uid-surface-raised);
+}
+.admin-resource-index__panel--joined {
+  margin-top: 0;
+  border-top-color: var(--uid-border-subtle);
+  border-radius: 0 0 var(--uid-radius-lg) var(--uid-radius-lg);
+}
 .admin-resource-index__state {
-  margin-top: var(--uid-space-xl);
+  padding: var(--uid-space-lg) 0;
 }
 .admin-resource-index__table {
   /* The table is visually glued to the filter bar or bulk toolbar above it —

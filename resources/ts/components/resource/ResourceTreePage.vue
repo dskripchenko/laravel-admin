@@ -36,7 +36,7 @@ import {
 } from '@dskripchenko/ui'
 import { useManifestStore } from '../../stores/manifest'
 import { getAdminClient } from '../../stores/registry'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
 import { confirmDialog } from '../../composables/useConfirm'
 
@@ -332,11 +332,29 @@ onMounted(load)
       <template v-if="loading && nodes.length === 0">
         <UidSkeleton v-for="i in 6" :key="i" />
       </template>
-      <UidErrorState v-else-if="error" :message="error.message" @retry="load" />
+      <UidErrorState
+        v-else-if="error"
+        :title="tr('Не удалось загрузить данные')"
+        :description="error.message"
+      >
+        <template #actions>
+          <UidButton variant="primary" @click="load">{{ tr('Обновить') }}</UidButton>
+        </template>
+      </UidErrorState>
+      <UidEmptyState
+        v-else-if="nodes.length === 0 && search.trim() !== ''"
+        :title="tr('Ничего не найдено')"
+        :description="tRaw('По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск.', { query: search.trim() })"
+        data-testid="tree-no-results"
+      >
+        <template #actions>
+          <UidButton variant="secondary" @click="search = ''">{{ tr('Сбросить поиск') }}</UidButton>
+        </template>
+      </UidEmptyState>
       <UidEmptyState
         v-else-if="nodes.length === 0"
-        :title="tr('Нет данных')"
-        :hint="search.length > 0 ? tr('Ничего не найдено по запросу.') : null"
+        :title="tr('Пока пусто')"
+        :description="tr('Здесь пока нет записей.')"
       />
       <UidTreeView
         v-else
