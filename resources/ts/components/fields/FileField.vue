@@ -179,7 +179,7 @@ function clear(): void {
 .admin-file-field__drop:hover,
 .admin-file-field__drop--over {
   border-color: var(--uid-color-primary, #2dd4bf);
-  background: var(--uid-color-surface-2, #f3f4f6);
+  background: var(--uid-color-surface-hover);
 }
 .admin-file-field__hint {
   margin: 8px 0 0;

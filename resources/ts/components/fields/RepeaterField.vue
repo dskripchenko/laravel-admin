@@ -170,7 +170,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 }
 .admin-repeater__item-no {
   font-size: 12px;
-  color: var(--uid-color-text-subtle, #6b7280);
+  color: var(--uid-text-tertiary);
 }
 .admin-repeater__add {
   align-self: flex-start;

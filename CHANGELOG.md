@@ -157,6 +157,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its own now.
 - **Narrow layouts:** a donut's legend wraps under the ring instead of being
   cut off; a key-value row keeps its remove button inside a narrow column.
+- **Light patches in the dark theme.** Styles read UI-kit tokens the kit
+  does not define (`--uid-color-surface-2`, `--uid-surface-muted`,
+  `--uid-color-surface-1`, the warning/danger `-fg`/`-bg` pair and others),
+  so their light fallbacks showed: the notifications page's active tab was
+  white text on light grey, as were the embedded table's header, file and
+  cropper backgrounds and the status indicators. They use the kit's tokens
+  now, and a test fails on any undefined token.
+- **English left in a Russian panel:** the toolbar's "Filter" chip and the
+  widget dialog's "Resource slug" and "Limit" labels.
+- **A generated field's button ran past a narrow card**; it wraps under the
+  input now.
 - **Profile:** the language and theme selects had no visible labels.
 - **The tree page** used other padding and title size than the list pages.
 - **Russian search placeholder** read "Поиск по заказы"; it is "Поиск: заказы".

@@ -213,7 +213,7 @@ onMounted(() => {
   cursor: pointer;
 }
 .admin-notifs-page__tab--active {
-  background: var(--uid-color-surface-2, #f3f4f6);
+  background: var(--uid-color-surface-hover);
   color: var(--uid-color-text, #1f2937);
   font-weight: 500;
 }

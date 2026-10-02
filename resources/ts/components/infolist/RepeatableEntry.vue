@@ -183,7 +183,7 @@ function subProps(entry: EntryMeta, item: Record<string, unknown>) {
   vertical-align: top;
 }
 .admin-repeatable__tbl th {
-  background: var(--uid-surface-muted, #f9fafb);
+  background: var(--uid-color-bg-subtle);
   font-weight: var(--uid-font-weight-semibold, 600);
   color: var(--uid-text-secondary, #4b5563);
   font-size: var(--uid-font-size-xs, 12px);

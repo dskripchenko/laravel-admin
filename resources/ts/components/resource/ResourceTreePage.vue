@@ -395,7 +395,7 @@ onMounted(load)
   margin: 0;
 }
 .admin-resource-tree-page__count {
-  background: var(--uid-color-surface-2, #eef0f3);
+  background: var(--uid-color-surface-hover);
   color: var(--uid-color-text-secondary, #62686f);
   border-radius: 999px;
   padding: 2px 10px;
@@ -424,7 +424,7 @@ onMounted(load)
   font-weight: 500;
 }
 .admin-resource-tree-page__body {
-  background: var(--uid-color-surface-1, #fff);
+  background: var(--uid-surface-raised);
   border: 1px solid var(--uid-color-border, #e5e7eb);
   border-radius: var(--uid-radius-md, 8px);
   padding: var(--uid-space-md, 16px);

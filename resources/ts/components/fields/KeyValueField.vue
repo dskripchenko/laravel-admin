@@ -150,7 +150,7 @@ const listId = computed(() => `kv-keys-${props.name}`)
 }
 .admin-keyvalue__head {
   font-size: 12px;
-  color: var(--uid-color-text-subtle, #6b7280);
+  color: var(--uid-text-tertiary);
 }
 .admin-keyvalue__add {
   margin-top: var(--uid-space-sm, 8px);

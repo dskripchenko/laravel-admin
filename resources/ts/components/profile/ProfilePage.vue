@@ -315,7 +315,7 @@ function onTwoFactorDisabled(): void {
   cursor: pointer;
 }
 .admin-profile__nav-item:hover {
-  background: var(--uid-surface-hover);
+  background: var(--uid-color-surface-hover);
   color: var(--uid-text-primary);
 }
 .admin-profile__nav-item--active {
