@@ -2,8 +2,9 @@
 /**
  * SliderField — the backend's Field\Slider over UidSlider: min, max, step and
  * the current value. `->marks([value => label])` are drawn as ticks under the
- * track, placed by their value. The caption is UidFormField's alone: UidSlider
- * would draw it a second time above the track.
+ * track, placed by their value. The visible caption is UidFormField's alone
+ * (UidSlider would draw it a second time above the track); the handle gets
+ * the same text as its accessible name through `ariaLabel`.
  */
 import { computed } from 'vue'
 import { UidFormField, UidSlider } from '@dskripchenko/ui'
@@ -71,6 +72,7 @@ function onUpdate(next: number): void {
         :max="max"
         :step="step"
         :disabled="disabled || readonly"
+        :aria-label="label || name"
         show-value
         @update:model-value="onUpdate"
       />

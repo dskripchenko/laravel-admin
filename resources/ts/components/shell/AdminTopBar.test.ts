@@ -96,12 +96,32 @@ describe('AdminTopBar', () => {
         { label: 'Введение в Laravel 12' },
       ],
     })
-    const crumbs = wrapper.findAll('.admin-topbar__breadcrumbs .cur, .admin-topbar__breadcrumbs span:not(.sep), .admin-topbar__breadcrumbs a')
     expect(wrapper.find('.admin-topbar__breadcrumbs').text()).toContain('Введение в Laravel 12')
-    // The last one carries the cur class and is not a link.
-    const lastCur = wrapper.find('.admin-topbar__breadcrumbs .cur')
-    expect(lastCur.text()).toBe('Введение в Laravel 12')
-    expect(crumbs.length).toBeGreaterThan(0)
+    // The crumbs with a target are router links to it.
+    const links = wrapper.findAllComponents(RouterLinkStub)
+      .filter((l) => l.classes('uid-breadcrumb__link'))
+    expect(links.map((l) => l.props('to'))).toEqual(['/', '/r/articles'])
+    // The last one is the current page and is not a link.
+    const current = wrapper.find('.admin-topbar__breadcrumbs [aria-current="page"]')
+    expect(current.text()).toBe('Введение в Laravel 12')
+    expect(wrapper.findAll('.admin-topbar__breadcrumbs [aria-current="page"]')).toHaveLength(1)
+  })
+
+  it('leaves a crumb whose route is not registered yet a plain caption', async () => {
+    const wrapper = await mountBar({
+      breadcrumbs: [{ label: 'Orders', to: { name: 'admin.resource.orders.index' } }, { label: 'Editing' }],
+    })
+    expect(wrapper.find('.admin-topbar__breadcrumbs .uid-breadcrumb__text').text()).toBe('Orders')
+    expect(wrapper.findAll('.admin-topbar__breadcrumbs .uid-breadcrumb__link')).toHaveLength(0)
+  })
+
+  it('renders a crumb without a target as plain text, not as the current page', async () => {
+    const wrapper = await mountBar({
+      breadcrumbs: [{ label: 'Контент' }, { label: 'Articles' }],
+    })
+    const text = wrapper.find('.admin-topbar__breadcrumbs .uid-breadcrumb__text')
+    expect(text.text()).toBe('Контент')
+    expect(wrapper.find('.admin-topbar__breadcrumbs [aria-current="page"]').text()).toBe('Articles')
   })
 
   it('renders ⌘K command-palette pill in default search slot', async () => {

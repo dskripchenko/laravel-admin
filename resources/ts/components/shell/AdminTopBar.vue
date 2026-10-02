@@ -49,23 +49,21 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
 
 const router = useRouter()
 
-/** The crumb's href, for a middle click or a new tab; null without a target. */
-function hrefOf(crumb: Crumb): string | undefined {
+/**
+ * The crumb's target for UidBreadcrumbItem, which renders it through the
+ * app's RouterLink: a plain click navigates in place, a modified one opens a
+ * new tab. A target the router cannot resolve yet — the resource routes are
+ * added once the manifest is in — leaves the crumb a plain caption, since
+ * RouterLink would throw on it.
+ */
+function targetOf(crumb: Crumb): string | Record<string, unknown> | undefined {
   if (!crumb.to) return undefined
   try {
-    return router.resolve(crumb.to).href
+    router.resolve(crumb.to)
   } catch {
-    return typeof crumb.to === 'string' ? crumb.to : undefined
+    return undefined
   }
-}
-
-/** A plain click navigates in place, through the router; modified clicks stay the browser's. */
-function onCrumbClick(event: MouseEvent, crumb: Crumb): void {
-  if (!crumb.to || event.defaultPrevented) return
-  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-  if (!(event.target as HTMLElement | null)?.closest('a')) return
-  event.preventDefault()
-  void router.push(crumb.to).catch(() => undefined)
+  return crumb.to as string | Record<string, unknown>
 }
 </script>
 
@@ -87,11 +85,9 @@ function onCrumbClick(event: MouseEvent, crumb: Crumb): void {
           <UidBreadcrumbItem
             v-for="(crumb, idx) in breadcrumbs"
             :key="idx"
-            :href="hrefOf(crumb)"
+            :to="targetOf(crumb)"
             :current="idx === lastIdx"
-            :class="idx === lastIdx ? 'cur' : ''"
             :title="crumb.label"
-            @click="onCrumbClick($event, crumb)"
           >{{ crumb.label }}</UidBreadcrumbItem>
         </UidBreadcrumb>
       </slot>

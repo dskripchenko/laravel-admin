@@ -3,6 +3,7 @@ import { renderMarkdown } from './markdown'
 import { formatColor, parseColor, toHex } from './color'
 import { cascaderLabels, findLabelPath, normalizeTree, optionLabel } from './tree'
 import { readDateRange } from './dateRange'
+import { singleSelectValue } from './selectValue'
 
 describe('renderMarkdown', () => {
   it('renders headings, emphasis, code, lists and quotes', () => {
@@ -86,5 +87,16 @@ describe('readDateRange', () => {
     expect(readDateRange({ start: '2026-02-01', end: null })).toEqual({ start: '2026-02-01', end: null })
     expect(readDateRange(['2026-03-01', '2026-03-02'])).toEqual({ start: '2026-03-01', end: '2026-03-02' })
     expect(readDateRange(null)).toEqual({ start: null, end: null })
+  })
+})
+
+describe('singleSelectValue', () => {
+  it('passes a scalar through and reads a list as its first value', () => {
+    expect(singleSelectValue(3)).toBe(3)
+    expect(singleSelectValue('a')).toBe('a')
+    expect(singleSelectValue(null)).toBeNull()
+    expect(singleSelectValue(undefined)).toBeNull()
+    expect(singleSelectValue(['b', 'c'])).toBe('b')
+    expect(singleSelectValue([])).toBeNull()
   })
 })

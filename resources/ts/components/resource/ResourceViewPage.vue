@@ -302,8 +302,7 @@ async function onDelete(): Promise<void> {
             </UidButton>
           </template>
           <AdminActionMenuItems :actions="headerActions" @run="runner.run" />
-          <UidMenuItem variant="danger" @click="onDelete">
-            <template #icon><UidIcon :icon="Trash2" :size="14" /></template>
+          <UidMenuItem variant="danger" :icon="Trash2" @click="onDelete">
             {{ tr('Удалить') }}
           </UidMenuItem>
         </UidMenu>

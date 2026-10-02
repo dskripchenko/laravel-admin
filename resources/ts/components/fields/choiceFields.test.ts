@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, type Component } from 'vue'
-import { UidCheckbox, UidDatePicker, UidSelect, UidSlider, UidTreeSelect } from '@dskripchenko/ui'
+import { defineComponent, h, nextTick, type Component } from 'vue'
+import { UidCheckbox, UidCheckboxGroup, UidDatePicker, UidSelect, UidSlider } from '@dskripchenko/ui'
 import { provideFormState, type FormStateContext } from '../render/formState'
 import SelectField from './SelectField.vue'
 import CheckboxField from './CheckboxField.vue'
@@ -29,30 +29,32 @@ const options = [
 ]
 
 describe('SelectField multiple()', () => {
-  it('stays a single UidSelect without multiple', () => {
+  it('stays a single-value UidSelect without multiple', () => {
     const { w } = wrap(SelectField, { x: 1 }, { name: 'x', options })
-    expect(w.findComponent(UidSelect).exists()).toBe(true)
-    expect(w.findComponent(UidTreeSelect).exists()).toBe(false)
+    const select = w.findComponent(UidSelect)
+    expect(select.exists()).toBe(true)
+    expect(select.props('multiple')).toBe(false)
+    expect(select.props('modelValue')).toBe(1)
   })
 
   it('takes a list, matching the option values however the state spells them', () => {
     const { w } = wrap(SelectField, { x: ['2', 3] }, { name: 'x', options, multiple: true })
-    const tree = w.findComponent(UidTreeSelect)
-    expect(tree.exists()).toBe(true)
-    expect(tree.props('multiple')).toBe(true)
-    expect(tree.props('modelValue')).toEqual([2, 3])
+    const select = w.findComponent(UidSelect)
+    expect(select.exists()).toBe(true)
+    expect(select.props('multiple')).toBe(true)
+    expect(select.props('modelValue')).toEqual([2, 3])
   })
 
   it('reads a JSON string a cast left behind', () => {
     const { w } = wrap(SelectField, { x: '[1]' }, { name: 'x', options, multiple: true })
-    expect(w.findComponent(UidTreeSelect).props('modelValue')).toEqual([1])
+    expect(w.findComponent(UidSelect).props('modelValue')).toEqual([1])
   })
 
   it('writes the list back', async () => {
     const { w, ctx } = wrap(SelectField, { x: null }, { name: 'x', options, multiple: true })
-    w.findComponent(UidTreeSelect).vm.$emit('update:modelValue', [1, 3])
+    w.findComponent(UidSelect).vm.$emit('update:modelValue', [1, 3])
     expect(ctx.getField('x')).toEqual([1, 3])
-    w.findComponent(UidTreeSelect).vm.$emit('update:modelValue', null)
+    w.findComponent(UidSelect).vm.$emit('update:modelValue', null)
     expect(ctx.getField('x')).toEqual([])
   })
 })
@@ -63,21 +65,23 @@ describe('CheckboxField with options()', () => {
     const boxes = w.findAllComponents(UidCheckbox)
     expect(boxes.map((b) => b.props('label'))).toEqual(['One', 'Two', 'Three'])
     expect(boxes.map((b) => b.props('modelValue'))).toEqual([false, true, false])
+    expect(w.findComponent(UidCheckboxGroup).props('modelValue')).toEqual([2])
     expect(w.find('[role="group"]').exists()).toBe(true)
     expect(w.text()).toContain('Numbers')
   })
 
-  it('toggles an option, keeping the options order and value types', () => {
-    const { w, ctx } = wrap(CheckboxField, { x: [3] }, { name: 'x', options })
+  it('toggles an option, keeping the options order and value types', async () => {
+    const { w, ctx } = wrap(CheckboxField, { x: ['3'] }, { name: 'x', options })
     w.findAllComponents(UidCheckbox)[0]!.vm.$emit('update:modelValue', true)
     expect(ctx.getField('x')).toEqual([1, 3])
+    await nextTick()
     w.findAllComponents(UidCheckbox)[2]!.vm.$emit('update:modelValue', false)
     expect(ctx.getField('x')).toEqual([1])
   })
 
   it('lays the group out in a row with inline()', () => {
     const { w } = wrap(CheckboxField, { x: [] }, { name: 'x', options, inline: true })
-    expect(w.find('.admin-checkbox-group--inline').exists()).toBe(true)
+    expect(w.findComponent(UidCheckboxGroup).props('direction')).toBe('horizontal')
   })
 
   it('is one boolean checkbox without options', () => {
@@ -91,8 +95,12 @@ describe('CheckboxField with options()', () => {
 describe('SliderField', () => {
   it('shows its caption once, through the form field', () => {
     const { w } = wrap(SliderField, { x: 5 }, { name: 'x', label: 'Volume', min: 0, max: 10 })
-    expect(w.findComponent(UidSlider).props('label')).toBeUndefined()
+    const slider = w.findComponent(UidSlider)
+    expect(slider.props('label')).toBeUndefined()
     expect(w.text().split('Volume')).toHaveLength(2)
+    // The handle still has an accessible name.
+    expect(slider.props('ariaLabel')).toBe('Volume')
+    expect(w.find('input[type="range"]').attributes('aria-label')).toBe('Volume')
   })
 })
 
