@@ -8,7 +8,6 @@
 import { computed } from 'vue'
 import { UidSelect, UidFormField, type SelectValue } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import { singleSelectValue } from './support/selectValue'
 
 export interface SelectOption {
   value: string | number
@@ -60,8 +59,8 @@ const value = computed<string | number | null>(() => {
 })
 const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
 
-function onUpdate(next: SelectValue | SelectValue[] | null): void {
-  form.setField(props.name, singleSelectValue(next))
+function onUpdate(next: SelectValue | null): void {
+  form.setField(props.name, next)
 }
 
 /**
@@ -79,9 +78,9 @@ const values = computed<Array<string | number>>(() => {
     .map((x) => props.options.find((o) => String(o.value) === String(x))?.value ?? x)
 })
 
-function onUpdateMany(next: unknown): void {
+function onUpdateMany(next: SelectValue[]): void {
   if (props.readonly) return
-  form.setField(props.name, Array.isArray(next) ? next : next === null || next === undefined ? [] : [next])
+  form.setField(props.name, next)
 }
 </script>
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, type Component } from 'vue'
+import { defineComponent, h, nextTick, type Component, type DefineComponent } from 'vue'
 import {
   UidCascader,
   UidCode,
@@ -12,6 +12,7 @@ import {
   UidSlider,
   UidTimePicker,
   UidTreeSelect,
+  type UidSelectProps,
 } from '@dskripchenko/ui'
 import { provideFormState, type FormStateContext } from '../render/formState'
 import MarkdownField from './MarkdownField.vue'
@@ -30,6 +31,9 @@ import HiddenField from './HiddenField.vue'
 import GroupField from './GroupField.vue'
 import { clearRegistry } from '../render/registry'
 import { registerBuiltinComponents } from '../render/builtin'
+
+/** UidSelect is generic over `multiple`, and test-utils types a generic component's props as never. */
+const Select = UidSelect as unknown as DefineComponent<UidSelectProps>
 
 /**
  * The same contract as fields.test.ts: read state[name], write it through the
@@ -283,7 +287,7 @@ describe('MorphSwitcherField', () => {
         user: { options: [{ value: 1, label: 'Alice' }] },
       },
     })
-    const [typeSel, idSel] = w.findAllComponents(UidSelect)
+    const [typeSel, idSel] = w.findAllComponents(Select)
     expect(typeSel?.props('options')).toEqual([
       { value: 'post', label: 'post' },
       { value: 'user', label: 'user' },
@@ -292,8 +296,8 @@ describe('MorphSwitcherField', () => {
     typeSel?.vm.$emit('update:modelValue', 'user')
     await nextTick()
     expect(state.subject).toEqual({ type: 'user', id: null })
-    expect(w.findAllComponents(UidSelect)[1]?.props('options')).toEqual([{ value: 1, label: 'Alice' }])
-    w.findAllComponents(UidSelect)[1]?.vm.$emit('update:modelValue', 1)
+    expect(w.findAllComponents(Select)[1]?.props('options')).toEqual([{ value: 1, label: 'Alice' }])
+    w.findAllComponents(Select)[1]?.vm.$emit('update:modelValue', 1)
     expect(state.subject).toEqual({ type: 'user', id: 1 })
     w.unmount()
   })

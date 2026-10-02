@@ -5,6 +5,30 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **Requires `@dskripchenko/ui` ^1.6.0.** More of what the panel did by hand
+  is now the kit's:
+  - `UidSelect` emits a type that depends on its mode (`SelectValue | null`
+    without `multiple`, `SelectValue[]` with it), so `Select`, `MorphSwitcher`
+    and the import wizard handle the value they actually get. The
+    `singleSelectValue()` stopgap is gone;
+  - the top bar breadcrumbs are `<UidBreadcrumb collapse>`. The trail stays on
+    one line with ellipsized crumbs, and when it overflows, the middle crumbs
+    fold into a "…" that opens a menu of them. This replaces the panel's CSS
+    for a one-line trail and its "… › current" fallback below 1100px. The
+    crumb width cap is now `--uid-breadcrumb-item-max-width`;
+  - the trail grows into the free room of the top bar, so a collapsed trail
+    expands again when the window widens;
+  - below 1100px the top bar search field shrinks to its icon so the trail
+    has room for its first, "…" and current crumbs. ⌘K and a click still
+    open the search;
+  - the selection column of a resource list is pinned left (`selectionFixed`)
+    with or without a drag-handle column, like the row actions column on the
+    right, so the checkboxes stay in view on a wide table.
+
 ## 1.40.0
 
 ### Changed

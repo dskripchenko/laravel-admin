@@ -12,7 +12,6 @@
 import { computed } from 'vue'
 import { UidFormField, UidSelect, type SelectValue } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import { singleSelectValue } from './support/selectValue'
 import { trSafe as tr } from '../../stores/i18n'
 import type { SelectOption } from './SelectField.vue'
 
@@ -78,16 +77,15 @@ const errorMsg = computed<string | undefined>(
     form.errors[`${props.name}.id`]?.[0],
 )
 
-function onType(value: SelectValue | SelectValue[] | null): void {
+function onType(value: SelectValue | null): void {
   if (isLocked.value) return
-  const next = singleSelectValue(value)
-  const type = next === null || next === '' ? null : String(next)
+  const type = value === null || value === '' ? null : String(value)
   form.setField(props.name, type === null ? null : { type, id: null })
 }
 
-function onId(value: SelectValue | SelectValue[] | null): void {
+function onId(value: SelectValue | null): void {
   if (isLocked.value || current.value.type === null) return
-  form.setField(props.name, { type: current.value.type, id: singleSelectValue(value) })
+  form.setField(props.name, { type: current.value.type, id: value })
 }
 </script>
 

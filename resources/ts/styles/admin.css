@@ -151,46 +151,22 @@
   font-size: 13px;
   color: var(--uid-text-secondary);
 }
-/* A long trail stays on one line: every crumb gives way, ellipsized. */
+/*
+ * The kit's `collapse` keeps the trail on one line: crumbs ellipsize, and when
+ * the trail overflows the middle ones fold into a "…" menu. The trail grows
+ * into the free room of the bar, so its width follows the bar's: sized by its
+ * content, a collapsed trail would stay collapsed when the window widens.
+ */
 .admin-topbar__breadcrumbs {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   --uid-breadcrumb-font-size: 13px;
   --uid-breadcrumb-sep-color: var(--uid-text-tertiary);
+  --uid-breadcrumb-item-max-width: 16rem;
 }
-.admin-topbar__breadcrumbs .uid-breadcrumb {
-  min-width: 0;
-}
-.admin-topbar__breadcrumbs .uid-breadcrumb__list {
-  flex-wrap: nowrap;
-}
-/* The parent crumbs give way first; the current page keeps its name longest. */
-.admin-topbar__breadcrumbs .uid-breadcrumb__item {
-  min-width: 0;
-  flex-shrink: 8;
-}
-.admin-topbar__breadcrumbs .uid-breadcrumb__item:last-child {
-  flex-shrink: 1;
-}
-/* A narrow top bar keeps the current page alone; an ellipsis stands for the trail. */
-@media (max-width: 1100px) {
-  .admin-topbar__breadcrumbs .uid-breadcrumb__item:not(:last-child) {
-    display: none;
-  }
-  .admin-topbar__breadcrumbs .uid-breadcrumb__item:last-child:not(:first-child)::before {
-    content: '…\00a0›';
-  }
-}
-.admin-topbar__breadcrumbs .uid-breadcrumb__item + .uid-breadcrumb__item::before {
-  padding: 0 var(--uid-space-xs);
-}
-.admin-topbar__breadcrumbs .uid-breadcrumb__link,
-.admin-topbar__breadcrumbs .uid-breadcrumb__text,
-.admin-topbar__breadcrumbs .uid-breadcrumb__current {
-  max-width: 16rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.admin-topbar__breadcrumbs > .uid-breadcrumb {
+  flex: 1 1 auto;
 }
 .admin-topbar__search {
   display: flex;
@@ -215,6 +191,23 @@
   border: 1px solid var(--uid-border-subtle);
   background: var(--uid-surface-raised);
   color: var(--uid-text-tertiary);
+}
+/*
+ * A narrow top bar leaves the trail too little room for its first, "…" and
+ * current crumbs: the search field shrinks to its icon (⌘K still opens it).
+ */
+@media (max-width: 1100px) {
+  .admin-topbar__search {
+    min-width: 0;
+    width: 32px;
+    flex-shrink: 0;
+    justify-content: center;
+    padding: 0;
+  }
+  .admin-topbar__search > span,
+  .admin-topbar__search > kbd {
+    display: none;
+  }
 }
 .admin-topbar__icon-btn {
   position: relative;

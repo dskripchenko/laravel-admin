@@ -31,7 +31,6 @@ import {
   type UidTableColumn,
 } from '@dskripchenko/ui'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
-import { singleSelectValue } from '../fields/support/selectValue'
 
 interface ColumnHeader {
   key: string
@@ -122,8 +121,7 @@ function onUpload(files: Array<{ file: File; id: string }>): void {
 // Step 2: mapping
 const mapping = ref<Record<string, string | null>>({})
 
-function setTarget(source: string, picked: SelectValue | SelectValue[] | null): void {
-  const value = singleSelectValue(picked)
+function setTarget(source: string, value: SelectValue | null): void {
   mapping.value[source] = value === null || value === '' ? null : String(value)
 }
 
