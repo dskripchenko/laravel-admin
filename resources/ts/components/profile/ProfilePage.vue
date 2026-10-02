@@ -23,6 +23,7 @@ import {
   UidCard,
   UidInput,
   UidSelect,
+  UidFormField,
 } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { useThemeStore } from '../../stores/theme'
@@ -229,16 +230,13 @@ function onTwoFactorDisabled(): void {
               type="email"
               name="email"
             />
-            <UidSelect
-              v-model="profile.locale"
-              :options="localeOptions"
-              :label="tr('Язык')"
-            />
-            <UidSelect
-              v-model="profile.theme"
-              :options="themeOptions"
-              :label="tr('Тема')"
-            />
+            <!-- UidSelect draws no label of its own: the form field does. -->
+            <UidFormField :label="tr('Язык')">
+              <UidSelect v-model="profile.locale" :options="localeOptions" />
+            </UidFormField>
+            <UidFormField :label="tr('Тема')">
+              <UidSelect v-model="profile.theme" :options="themeOptions" />
+            </UidFormField>
           </div>
 
           <footer class="admin-profile__card-ft">

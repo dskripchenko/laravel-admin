@@ -108,6 +108,9 @@ const slices = computed(() => {
 <style>
 .admin-donut-widget__row {
   display: flex;
+  /* A narrow card puts the legend under the ring instead of cutting it off. */
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: var(--uid-space-md);
   flex: 1 1 auto;
@@ -130,7 +133,8 @@ const slices = computed(() => {
   list-style: none;
   margin: 0;
   padding: 0;
-  flex: 1;
+  flex: 1 1 140px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--uid-space-xs);
@@ -147,7 +151,14 @@ const slices = computed(() => {
   border-radius: var(--uid-radius-full);
   flex: none;
 }
-.admin-donut-widget__label { flex: 1; color: var(--uid-text-primary); }
+.admin-donut-widget__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--uid-text-primary);
+}
 .admin-donut-widget__value {
   color: var(--uid-text-tertiary);
   font-variant-numeric: tabular-nums;

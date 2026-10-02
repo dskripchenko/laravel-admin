@@ -602,7 +602,9 @@ const manifestColumns = computed(
 )
 const searchPlaceholder = computed(() => {
   const label = (resourceMeta.value?.label ?? props.slug).toLowerCase()
-  return tRaw('Поиск по :label…', { label })
+  // "Поиск по :label" would need the label in the dative case, which a
+  // resource label (nominative) is not: "поиск по заказы".
+  return tRaw('Поиск: :label…', { label })
 })
 
 const groupByCol = ref<string | null>(null)

@@ -139,6 +139,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   font to the inherited 16px; it now uses the item's size.
 - **The sidebar footer drew two lines.** The pattern's own padding and border
   stacked on top of the admin footer's line.
+- **The view page showed raw data.** The default infolist labelled fields
+  without a title by their column name (`PAYMENT_METHOD`), showed a select's
+  stored key, a relation's id and tags as JSON, and a resource without
+  fields got an empty card. Labels are the form's readable labels now;
+  select, combobox, tags and relation selects show their option labels; a
+  checkbox shows Yes/No; a resource without fields is described by its
+  columns, with their formatting.
+- **A read-only resource had a create page.** `/r/{slug}/create` (and edit)
+  opened an empty form with a Create button for a resource that is neither
+  creatable nor editable; those routes are no longer registered.
+- **Page titles mixed languages.** The browser title of a create or edit
+  page was "Orders: создать" in every language; the action is translated on
+  its own now.
+- **Narrow layouts:** a donut's legend wraps under the ring instead of being
+  cut off; a key-value row keeps its remove button inside a narrow column.
+- **Profile:** the language and theme selects had no visible labels.
+- **The tree page** used other padding and title size than the list pages.
+- **Russian search placeholder** read "Поиск по заказы"; it is "Поиск: заказы".
 - **An embedded page widget looked cut off.** `IframeWidget` draws a frame
   around the embedded page, so it reads as a viewport that scrolls.
 

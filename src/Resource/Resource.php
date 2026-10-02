@@ -54,6 +54,8 @@ abstract class Resource
     protected const FIELD_VIEW_TYPES = [
         'markdown', 'code', 'rating', 'radio', 'tree_select', 'cascader',
         'date_range', 'morph_switcher', 'group', 'resource_picker',
+        // Fields whose stored value is a key: the view shows the option's label.
+        'select', 'combobox', 'tags', 'relation_select',
     ];
 
     /**
@@ -814,16 +816,25 @@ abstract class Resource
      */
     public function infolist(): array
     {
+        $fields = $this->fields();
+        if ($fields === []) {
+            return $this->infolistFromColumns();
+        }
+
         $entries = [];
-        foreach ($this->fields() as $field) {
+        foreach ($fields as $field) {
             $name = $field->name();
-            $label = (string) ($field->getAttributes()['title'] ?? $name);
+            // The same label the form shows: title(), or the readable name —
+            // never the raw `payment_method`.
+            $label = (string) ($field->getAttributes()['title'] ?? Str::headline(str_replace('.', ' ', $name)));
             $type = $field->fieldType();
             if ($type === 'hidden') {
                 continue;
             }
+            $hasOptions = ($field->toArray()['options'] ?? []) !== [];
             $entries[] = match (true) {
-                $type === 'switch' => IconEntry::make($name)
+                $type === 'checkbox' && $hasOptions => FieldEntry::fromField($field),
+                $type === 'switch' || $type === 'checkbox' => IconEntry::make($name)
                     ->label($label)
                     ->trueLabel((string) __('admin::admin.common.yes'))
                     ->falseLabel((string) __('admin::admin.common.no'))
@@ -833,6 +844,29 @@ abstract class Resource
                 in_array($type, static::FIELD_VIEW_TYPES, true) => FieldEntry::fromField($field),
                 default => TextEntry::make($name)->label($label),
             };
+        }
+
+        return $entries;
+    }
+
+    /**
+     * The view of a resource with no fields — a list-only one: an entry per
+     * column, with the column's label and its formatting (money, dates,
+     * badges), so the view page is not an empty card.
+     *
+     * @return list<Entry>
+     */
+    protected function infolistFromColumns(): array
+    {
+        $entries = [];
+        foreach ($this->columns() as $column) {
+            $col = $column->toArray();
+            $entry = TextEntry::make($column->name())->label((string) $col['label']);
+            if (($col['type'] ?? 'text') !== 'text') {
+                $entry->preset($col['type']);
+                $entry->meta($col['meta'] ?? []);
+            }
+            $entries[] = $entry;
         }
 
         return $entries;

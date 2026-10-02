@@ -93,8 +93,13 @@ function buildResourceRoutes(
 ): RouteRecordRaw[] {
   const slug = resource.slug
   const base = `/r/${slug}`
+  // A read-only resource (features.creatable / editable false) gets no create
+  // or edit page: reached by URL it showed an empty form with a Create button.
+  const features = (resource.features ?? {}) as Record<string, unknown>
+  const creatable = features.creatable !== false
+  const editable = features.editable !== false
 
-  return [
+  const routes: RouteRecordRaw[] = [
     {
       path: base,
       name: `admin.resource.${slug}.index`,
@@ -119,7 +124,9 @@ function buildResourceRoutes(
         requiresAuth: true,
         kind: 'resource',
         slug,
-        title: `${resource.label}: создать`,
+        title: resource.label,
+        // Translated on its own, joined to the title by the document-title hook.
+        titleAction: 'Создание',
         permissions: pickResourcePermission(resource, 'create'),
       },
       props: { slug },
@@ -132,7 +139,8 @@ function buildResourceRoutes(
         requiresAuth: true,
         kind: 'resource',
         slug,
-        title: `${resource.label}: редактирование`,
+        title: resource.label,
+        titleAction: 'Редактирование',
         permissions: pickResourcePermission(resource, 'update'),
       },
       // The slug is baked in, the id comes from the route params.
@@ -152,6 +160,12 @@ function buildResourceRoutes(
       props: (route) => ({ slug, id: route.params.id }),
     },
   ]
+  return routes.filter((r) => {
+    const name = String(r.name ?? '')
+    if (name.endsWith('.create')) return creatable
+    if (name.endsWith('.edit')) return editable
+    return true
+  })
 }
 
 function buildScreenRoute(

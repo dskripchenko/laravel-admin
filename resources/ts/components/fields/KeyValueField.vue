@@ -139,9 +139,14 @@ const listId = computed(() => `kv-keys-${props.name}`)
 .admin-keyvalue__head,
 .admin-keyvalue__row {
   display: grid;
-  grid-template-columns: 1fr 1fr 36px;
+  /* minmax(0, …): an input's intrinsic width must not push the remove button
+     out of a narrow column. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
   gap: var(--uid-space-sm, 8px);
   align-items: center;
+}
+.admin-keyvalue__row > * {
+  min-width: 0;
 }
 .admin-keyvalue__head {
   font-size: 12px;

@@ -76,6 +76,24 @@ describe('buildRoutesFromManifest', () => {
     expect(routes[1].props).toEqual({ slug: 'users' })
   })
 
+  it('gives a read-only resource no create or edit page, and titles the pages translatably', () => {
+    const resource = {
+      slug: 'audit', label: 'Audit log', permissions: {},
+      fields: [], columns: [], filters: [], actions: [],
+      searchable: [], with: [],
+    }
+    const readOnly = buildRoutesFromManifest(
+      { ...baseManifest, resources: [{ ...resource, features: { creatable: false, editable: false } }] },
+      components,
+    )
+    expect(readOnly.map((r) => r.path)).toEqual(['/r/audit', '/r/audit/:id'])
+
+    const editable = buildRoutesFromManifest({ ...baseManifest, resources: [{ ...resource, features: {} }] }, components)
+    const create = editable.find((r) => r.path === '/r/audit/create')!
+    expect(create.meta?.title).toBe('Audit log')
+    expect(create.meta?.titleAction).toBe('Создание')
+  })
+
   it('omits permissions array when ability missing', () => {
     const manifest: AdminManifest = {
       ...baseManifest,
