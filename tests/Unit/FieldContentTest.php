@@ -27,7 +27,7 @@ it('Slug has type=slug and from()/separator()/reactive()', function (): void {
     expect($f->fieldType())->toBe('slug');
     expect($f->getAttribute('from'))->toBe('title');
     expect($f->getAttribute('separator'))->toBe('_');
-    expect($f->getAttribute('reactive'))->toBeFalse();
+    expect($f->getAttribute('follow'))->toBeFalse();
 });
 
 it('Slug::generate() creates URL-safe slug', function (): void {

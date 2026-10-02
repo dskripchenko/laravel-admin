@@ -143,6 +143,8 @@ export function createAdminApp(
   const client = createAdminClient({
     baseURL: bootstrap.apiUrl,
     csrfToken: bootstrap.csrf,
+    // The locale the panel renders, on every request from the first one on.
+    locale: bootstrap.locale ?? undefined,
 
     /**
      * A 401 from any panel request leads to the login page, by full navigation.

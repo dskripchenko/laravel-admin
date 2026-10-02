@@ -7,7 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Security
+
+- **`Action::permission()` is enforced on the server.** It used to be sent to
+  the panel and nothing more: a user who could open a resource could run any
+  of its actions, whatever permission they declared. Now an action the user
+  lacks the permission for — or whose `canSee()` is false — is left out of the
+  resource's `actions` in the meta and the manifest, of a screen's command bar
+  and layout, and of a `DropDown`'s items; running it anyway is answered with
+  `403` and `errorKey: action_forbidden`. This covers the resource `action`
+  endpoint (row, bulk, header, standalone and modal actions, and the items of
+  a dropdown whose own permission the user lacks), a screen's `runMethod` for
+  a method that a `Button` or `ModalAction` in its command bar or layout calls,
+  and `delayed/run` for a handler started by such an `AsyncAction`.
+  `AllowlistRegistrar::allow()` takes an optional permission for handlers
+  started from elsewhere. `Action::isVisible()` now includes the permission;
+  `passesVisibility()` gives `canSee()` alone.
+
 ### Added
+
+- **`Slug` fills itself.** The SPA registers a `SlugField`: it follows its
+  `from()` field until the slug is edited by hand (clearing it hands it back),
+  uses the field's `separator()`, keeps a saved slug that no longer matches its
+  source, and with `reactive(false)` fills only an empty slug.
+- **`DatePicker::withTime()`** shows a time picker next to the date and stores
+  the value in the field's `format()` (`Y-m-d H:i:s` by default).
+- **`Switcher::labels($on, $off)`** captions the switch by its state;
+  `Switcher` is drawn as a toggle switch rather than a checkbox.
+- `SlugField`, `SwitchField` and `slugify()` are exported for host code.
 
 - **`Layout::markdown($text)`** — a block of markdown drawn by the panel's safe
   renderer: headings with anchor ids, an optional table of contents
@@ -51,6 +78,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`Slug::generate()` has its own transliteration**, shared with the SPA
+  through one table and one set of fixtures, instead of `Str::slug()`. Russian
+  follows the common web transliteration (`щ` → `shch`, `х` → `kh`,
+  `ц` → `ts`, `ю` → `yu`, `ё` → `yo`), and Ukrainian, Belarusian, Serbian,
+  Kazakh, Greek and Latin letters with diacritics are covered. Slugs generated
+  on the server for Cyrillic text may differ from those of earlier versions.
+- `Slug::reactive()` is serialized as the `follow` attribute, so it no longer
+  overwrites the `reactive` map of `visibleWhen()`.
+
 - The documentation ships in the Composer dist: `docs/{en,de,ru,zh}` can be
   read from `vendor/dskripchenko/laravel-admin/docs`; only `docs/internal`
   stays out.
@@ -65,6 +101,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `driver`): nothing read it. The panel uses the application's session; set
   `session.cookie` there.
 
+### Fixed
+
+- **Server messages come in the language of the screen.** The SPA sends
+  `X-Admin-Locale` with the locale it renders on every request — from the
+  bootstrap on, after a switch and after a logout (which used to drop the
+  header, so the login form's errors and demo-mode toasts followed the
+  browser's `Accept-Language` instead). A user's saved locale still takes over
+  at login. On the server `AdminLocale` now runs before `AdminAuth` in
+  `admin.middleware.api`, so the refusals of the session, the account, 2FA and
+  demo mode are translated too; a published `config/admin.php` keeps its old
+  order — move `AdminLocale` right after `'web'` there. The resolver's order
+  (query > header > user > cookie > Accept-Language > default) is unchanged.
+- Choosing a language or a theme no longer fails on a users table without
+  `locale` or `theme` columns (the shared strategy with a host's own table):
+  the choice is kept in the cookie, and the column is written only when it
+  exists. The column list is read once per request.
+
+
 ### Docs
 
 - Full Russian documentation: the concept pages (actions, i18n, permissions,
@@ -72,6 +126,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   testing and the migration guide are translated; code examples in both
   languages were checked against the current API and corrected where they
   had drifted.
+- `docs/ru/api/*` describes the API the package really has, against
+  `AdminApi::getMethods()` and the controllers: the OpenAPI document is
+  `/api/doc/admin`, Scalar UI is `/api/admin/doc`, and the registry of
+  response templates is generated from `getOpenApiTemplates()`.
+- The embedded `ResourceTable` layout is documented in the layouts reference.
+- The `AllowlistRegistrar` docblock pointed at an `Admin::allowAsync()` that
+  never existed; it shows the real `allow()` call.
 
 ## 1.36.0
 

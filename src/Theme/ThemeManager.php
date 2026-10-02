@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Theme;
 
+use Dskripchenko\LaravelAdmin\Support\TableColumns;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -79,7 +80,9 @@ final class ThemeManager
     {
         $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
-        if ($user instanceof Model) {
+        // A host's own users table may have no `theme` column; the cookie
+        // remembers the choice then.
+        if ($user instanceof Model && TableColumns::has($user, 'theme')) {
             $user->forceFill(['theme' => $theme])->save();
         }
 

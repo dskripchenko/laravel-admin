@@ -116,6 +116,8 @@ final class AdminServiceProvider extends ServiceProvider
         // instance of the first request for good — worse than before.
         $this->app->scoped(Manifest::class);
         $this->app->scoped(Support\BootstrapBuilder::class);
+        // The column lists of the users tables, read once per request.
+        $this->app->scoped(Support\TableColumns::class);
 
         // Override laravel-api's `api_module` to our AdminApiModule.
         // Pre-condition: laravel-api's ApiServiceProvider already ran register()

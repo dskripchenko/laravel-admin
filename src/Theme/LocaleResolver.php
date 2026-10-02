@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Theme;
 
+use Dskripchenko\LaravelAdmin\Support\TableColumns;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -76,13 +77,15 @@ final class LocaleResolver
     }
 
     /**
-     * Persists the locale: into user.locale, when logged in, and into a cookie.
+     * Persists the locale: into user.locale, when logged in and the users
+     * table has that column, and into a cookie in any case — a host's own
+     * users table in the shared strategy may well have no `locale`.
      */
     public function persist(string $locale): \Symfony\Component\HttpFoundation\Cookie
     {
         $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
         $user = Auth::guard($guard)->user();
-        if ($user instanceof Model) {
+        if ($user instanceof Model && TableColumns::has($user, 'locale')) {
             $user->forceFill(['locale' => $locale])->save();
         }
 

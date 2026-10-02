@@ -10,6 +10,8 @@
 import { defineComponent, h } from 'vue'
 import { hasField, hasLayout, registerField, registerLayout } from './registry'
 import TextField from '../fields/TextField.vue'
+import SlugField from '../fields/SlugField.vue'
+import SwitchField from '../fields/SwitchField.vue'
 import TextAreaField from '../fields/TextAreaField.vue'
 import NumberField from '../fields/NumberField.vue'
 import SelectField from '../fields/SelectField.vue'
@@ -112,7 +114,7 @@ export function registerBuiltinComponents(): void {
       password: textFieldOfType('password'),
       tel: textFieldOfType('tel'),
       search: textFieldOfType('search'),
-      slug: TextField,
+      slug: SlugField,
       hidden: HiddenField,
       label: LabelField,
       textarea: TextAreaField,
@@ -146,8 +148,8 @@ export function registerBuiltinComponents(): void {
       tree_select: TreeSelectField,
       'tree-select': TreeSelectField,
       checkbox: CheckboxField,
-      switch: CheckboxField,
-      switcher: CheckboxField,
+      switch: SwitchField,
+      switcher: SwitchField,
       boolean: CheckboxField,
       date: DateField,
       datetime: DateField,

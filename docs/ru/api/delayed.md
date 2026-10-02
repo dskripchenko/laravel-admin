@@ -1,133 +1,115 @@
 # API: Delayed processes
 
-Универсальный controller для отслеживания фоновых операций. Используется SPA-интерсептором `applyAxiosInterceptor` из `dskripchenko/laravel-delayed-process`.
+Контроллер `delayed` (`Dskripchenko\LaravelAdmin\DelayedProcess\DelayedProcessController`) — запуск фоновых обработчиков через `dskripchenko/laravel-delayed-process` и опрос их состояния. Через него работают асинхронные действия (`Action\AsyncAction`): SPA (`useActionRunner`) вызывает `delayed/run`, получает `uuid` и опрашивает `delayed/status` каждые `pollInterval` секунд (по умолчанию 2), пока статус не станет конечным.
 
-> Все actions, которые могут уйти в background (export, import, bulk async, ...), отвечают envelope'ом `{ payload: { delayed: { uuid, status, progress, message } } }` (см. [conventions.md](conventions.md) §4). Дальше клиент работает с этим controller'ом.
+> Конвенции — [conventions.md](conventions.md). Объявление async-действий — [actions.md](actions.md).
 
-URL: `api/admin/delayed/{action}`.
+URL: `/api/admin/delayed/{action}`. Оба action требуют аутентификации (`AdminAuth`, см. [system.md](system.md)).
 
 ---
 
-## DelayedController
-
-### Регистрация
+## Регистрация в `AdminApi::getMethods()`
 
 ```php
 'delayed' => [
-    'controller' => DelayedController::class,
-    'middleware' => [AdminAuth::class],
+    'controller' => \Dskripchenko\LaravelAdmin\DelayedProcess\DelayedProcessController::class,
     'actions' => [
+        'run'    => ['method' => ['post']],
         'status' => ['method' => ['get']],
-        'cancel' => ['method' => ['post']],
-        'list'   => ['method' => ['get']],
     ],
 ],
 ```
 
+Других actions (отмены, списка процессов, пакетного статуса) нет.
+
 ---
 
-## Действия
+## Allowlist обработчиков — `AllowlistRegistrar`
 
-### `delayed.status`
+`delayed/run` запускает только явно разрешённые пары «класс::метод». Без этого SPA могла бы вызвать любой класс приложения. Пара регистрируется в `boot()` сервис-провайдера или плагина:
 
 ```php
-/**
- * Получить статус одного или нескольких процессов одним запросом.
- * Поддерживает batch до 50 uuid'ов через повторение параметра uuid[].
- *
- * @input array $uuid Список UUID процессов.
- * @input string(uuid) $uuid[]
- *
- * @output object $payload
- * @output array  $payload.processes Список DelayedProcessStatus.
- * @output string(uuid) $payload.processes[].uuid
- * @output string $payload.processes[].status new|running|done|failed|cancelled|expired.
- * @output integer $payload.processes[].progress 0-100.
- * @output string ?$payload.processes[].message
- * @output string(date-time) ?$payload.processes[].started_at
- * @output string(date-time) ?$payload.processes[].finished_at
- * @output integer ?$payload.processes[].duration_ms
- * @output integer $payload.processes[].attempts
- * @output mixed   ?$payload.processes[].data Финальный payload, когда status=done.
- * @output object  ?$payload.processes[].error
- * @output string  $payload.processes[].error.class
- * @output string  $payload.processes[].error.message
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {DelayedStatusResponse}
- * @response 404 {NotFoundErrorResponse} UUID не найден или не принадлежит юзеру.
- * @response 403 {ForbiddenErrorResponse} Видны только свои процессы (либо admin.system.delayed.view_any).
- */
-public function status(Request $request): JsonResponse;
+use Dskripchenko\LaravelAdmin\DelayedProcess\AllowlistRegistrar;
+
+app(AllowlistRegistrar::class)->allow(ReportBuilder::class, 'build');
+
+// С правом: запустить обработчик сможет только пользователь, у которого оно есть.
+app(AllowlistRegistrar::class)->allow(ReportBuilder::class, 'build', 'admin.reports.build');
+
+// Несколько прав — нужны все.
+app(AllowlistRegistrar::class)->allow(ReportBuilder::class, 'rebuild', ['admin.reports.build', 'admin.reports.delete']);
 ```
 
-### `delayed.cancel`
+Сигнатура: `allow(string $entity, string $method, array|string|null $permission = null): void`.
 
-```php
-/**
- * Отменить процесс (если handler поддерживает Cancellable-trait).
- *
- * @input string(uuid) $uuid
- *
- * @output object $payload
- * @output string $payload.status cancelled|finishing.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {DelayedCancelResponse}
- * @response 404 {NotFoundErrorResponse}
- * @response 409 {CannotCancelResponse} Процесс уже в финальном статусе или не cancellable.
- * @response 403 {ForbiddenErrorResponse}
- */
-public function cancel(Request $request): JsonResponse;
-```
+- `$entity` должен существовать, иначе — `InvalidArgumentException`.
+- `$permission` — ключ или список ключей; все они требуются от того, кто запускает обработчик. Повторный `allow()` той же пары добавляет права к уже зарегистрированным.
+- Класс автоматически добавляется в `delayed-process.allowed_entities`, который проверяет сама фабрика процессов.
 
-### `delayed.list`
+`AllowlistRegistrar` — singleton; кроме `allow()` у него есть `isAllowed($entity, $method)`, `permissionsFor($entity, $method)`, `all()` и `clear()`.
 
-```php
-/**
- * Список процессов текущего пользователя (paginated). Полезно для debug-страницы.
- *
- * @input integer ?$page
- * @input integer ?$per_page
- * @input string  ?$filter_status new|running|done|failed|cancelled|expired.
- * @input string  ?$filter_command FQCN handler-класса.
- * @input string(date-time) ?$filter_started_at_from
- * @input string(date-time) ?$filter_started_at_to
- *
- * @output object $payload
- * @output array  $payload.data Список DelayedProcessStatus.
- * @output object $payload.meta Пагинация.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {DelayedListResponse}
- */
-public function list(Request $request): JsonResponse;
+---
+
+## `delayed.run`
+
+`POST /api/admin/delayed/run`
+
+| Параметр | Правила |
+|---|---|
+| `entity` | `required`, `string` — FQCN обработчика |
+| `method` | `required`, `string` — метод обработчика |
+| `params` | `nullable`, `array` — аргументы метода; передаются как `...$params`, то есть строковые ключи становятся именованными аргументами |
+| `callback` | `nullable`, `url` — сохраняется в `callback_url` процесса |
+
+SPA собирает `params` из `AsyncAction::withParams()` и для действий над строками/выделением добавляет `ids` — ключи выбранных записей, так что обработчик должен принимать аргумент `ids`.
+
+### Проверки, по порядку
+
+1. Валидация — `422 validation`.
+2. Пара `entity::method` не зарегистрирована в `AllowlistRegistrar` — `403`:
+   ```json
+   { "success": false, "payload": { "errorKey": "forbidden", "message": "This async handler is not allowlisted" } }
+   ```
+3. У пользователя нет одного из прав, переданных в `allow()` — `403 action_forbidden`, в `message` — первое недостающее право («Доступ запрещён: admin.reports.build»).
+4. Права объявленных действий. Сервер собирает действия из `actions()` всех зарегистрированных ресурсов и из `commandBar()` всех кастомных экранов (без `GeneratedScreen` и `DashboardScreen`; экран, чей `commandBar()` бросает исключение вне его страницы, пропускается) и ищет среди них `AsyncAction`, запускающие эту пару (`->handler($entity, $method)`). Если такие есть, пользователь должен иметь возможность запустить хотя бы одно из них: проходит `canSee()`, есть право из `permission()`, и видимы все обёртки — `DropDown`, в котором лежит действие, и layout'ы вокруг. Иначе — `403 action_forbidden`: `message` называет право, которого не хватило («Доступ запрещён: …»), или, если права есть, но действие скрыто условием `canSee()` либо невидимым layout'ом, — «Действие недоступно».
+
+   Если ни одно действие эту пару не запускает, шаг 4 ничего не требует — тогда защищайте обработчик правом в `allow()` (так же стоит поступить для экранов, чей `commandBar()` нельзя построить вне страницы).
+5. Создание процесса фабрикой `ProcessFactoryInterface::make()`. Исключение фабрики — `500`:
+   ```json
+   { "success": false, "payload": { "errorKey": "delayed_run_failed", "message": "<текст исключения>" } }
+   ```
+
+Ответ `200`:
+
+```json
+{ "success": true, "payload": { "uuid": "9b1d...", "status": "new" } }
 ```
 
 ---
 
-## Polling-стратегия (для справки SPA-разработчика)
+## `delayed.status`
 
-`applyAxiosInterceptor` из `delayed-process` сам реализует poll. Базовая логика:
+`GET /api/admin/delayed/status?uuid=...`
 
-1. Если ответ содержит `payload.delayed.uuid` — interceptor подменяет промис на новый, который резолвится после `done`/`failed`.
-2. Опрос каждые 1–3 секунды.
-3. Поддержка `BatchPoller` — несколько активных uuid'ов опрашиваются одним запросом `delayed.status` с массивом uuid.
-4. При `failed` промис отклоняется с error-объектом.
-5. При `cancelled` — промис отклоняется с `errorKey: 'cancelled'`.
-6. При `expired` (зависший процесс убит `delayed:expire`) — отклоняется с `errorKey: 'expired'`.
+| Параметр | Правила |
+|---|---|
+| `uuid` | `required`, `string` |
 
----
+Ответ `200`:
 
-## Конфигурация process-классов
+| Ключ | Описание |
+|---|---|
+| `uuid` | uuid процесса |
+| `status` | `new` \| `wait` \| `done` \| `error` \| `expired` \| `cancelled` (enum `ProcessStatus` пакета delayed-process) |
+| `progress` | прогресс, 0–100 |
+| `attempts` | число попыток |
+| `started_at` | ISO-8601 или `null` |
+| `duration_ms` | длительность или `null` |
+| `data` | результат обработчика |
+| `error` | текст ошибки (`error_message`) или `null` |
 
-Per-process параметры (queue, timeout, attempts) задаются в `config/delayed-process.php → allowed_entities` для каждого process-класса. admin auto-merge'ит свои process-классы (см. ARCHITECTURE.md п.5.9):
+Ошибки: `422 validation`; `404 not_found` — процесса с таким `uuid` нет.
 
-- `ImportProcess` (импорт-мастер).
-- `ExportProcess` (CSV/XLSX/PDF экспорт).
-- `BulkActionAsyncProcess` (массовые async-actions).
-- `MediaVariantsProcess` (если установлен `laravel-admin-media`).
-- ... всё, что зарегистрировано как `Action\Async`.
+Процесс ищется только по `uuid`, без проверки, кто его запустил, и без проверки прав.
+
+SPA считает статусы `done`, `error`, `expired`, `cancelled` конечными; при `done` показывает `data.message` (если обработчик его вернул) и обновляет данные экрана, при остальных — сообщение об ошибке.

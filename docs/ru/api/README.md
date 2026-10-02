@@ -1,66 +1,70 @@
-# API contracts
+# HTTP API панели
 
-Спецификации всех HTTP-actions admin-API. Все actions реализованы поверх `dskripchenko/laravel-api`. URL имеет жёсткий паттерн `{api_path}/{controller}/{action}` (default: `/api/admin/{controller}/{action}`), а каждый метод обязан иметь полный docblock с тегами `@input`/`@output`/`@header`/`@security`/`@response`.
+Описание JSON-API, через который SPA панели (и любые другие клиенты) работают с сервером. API построен на `dskripchenko/laravel-api`: все эндпоинты объявлены в `AdminApi::getMethods()` (`src/Http/AdminApi.php`), часть из них — статически, часть генерируется из зарегистрированных ресурсов, настроек и экранов.
 
-## URL-паттерн (важно!)
+## URL-паттерн
 
 ```
-{admin.api_path}/{controller}/{action}
+/{laravel-api.prefix}/{version}/{controller}/{action}
 
-Default: /api/admin/{controller}/{action}
+Панель по умолчанию:     /api/admin/{controller}/{action}
+Дополнительная панель:   /api/{panelId}/{controller}/{action}
 ```
 
-- **API живёт отдельно от SPA-shell.** SPA — на `/admin/*` (под `admin.path`). API — на `/api/admin/*` (под `admin.api_path`). Они **не вложены** друг в друга.
-- **Никаких path-параметров** кроме `{controller}` и `{action}`.
-- Все параметры (id, фильтры, реляции) идут через **Request body** (для POST/...) или **query** (для GET).
-- HTTP-метод задаётся в `getMethods()` явно: `'method' => ['post']`.
+- `laravel-api.prefix` по умолчанию `api`; `{version}` — идентификатор панели (`admin` для основной, ключ из `admin.panels` для дополнительных). Это не версия API в смысле semver, а внутренний контракт между ядром и SPA.
+- **API живёт отдельно от SPA-shell.** SPA — под `admin.path` (по умолчанию `/admin/*`), API — под `/api/admin/*`. `admin.api_path` задают только тогда, когда прокси переписывает путь, который видит браузер; чтобы перенести сам API, меняют `laravel-api.prefix`.
+- **Никаких path-параметров** кроме `{controller}` и `{action}`: идентификаторы, фильтры и прочие аргументы передаются в query-string (GET) или в теле запроса (POST).
+- HTTP-метод каждого action'а задан в `getMethods()` (`'method' => ['get']` / `['post']`); все изменяющие действия — `POST`.
 
-## Структура документа
+## Структура раздела
 
 | Файл | Содержимое |
 |---|---|
-| [conventions.md](conventions.md) | Общие конвенции: envelope, заголовки, ошибки, пагинация, фильтры, etag, idempotency, throttling, обязательные требования к docblock'ам |
-| [registration.md](registration.md) | Структура `AdminApi::getMethods()`, динамическая регистрация Resource/Screen-контроллеров, schema-templates через `getOpenApiTemplates()`, security schemes, middleware-каскад |
-| [schemas.md](schemas.md) | Полный реестр всех ~140 named-templates (`{XxxResponse}`) с описанием структуры. Реализация — в `src/Http/AdminApi.php` + traits `src/Http/Schemas/`. |
-| [system.md](system.md) | controller `system`: bootstrap, manifest, me, menu, locales, permissions, plugins, notifications, audit |
-| [auth.md](auth.md) | controller `auth`: login, logout, password-reset, email-verify, 2FA-challenge, impersonation |
-| [profile.md](profile.md) | controller `profile`: профиль, смена пароля, 2FA-setup, recovery codes, API-токены |
-| [resources.md](resources.md) | per-Resource controllers (slug = Resource::slug()): meta, search, read, create, update, delete, restore, forceDelete, replicate, inlineEdit, view, audit, reactiveField, reorder, relations*, views*, preferences* |
-| [actions.md](actions.md) | bulk- и single-record actions, parameters, async actions через delayed-process |
-| [screens.md](screens.md) | per-Screen controllers: state, runMethod, async |
-| [settings.md](settings.md) | per-SettingsResource controllers: meta, show, update |
-| [dashboards.md](dashboards.md) | controller `dashboards`: list, show, widgetData, saveLayout, resetLayout, duplicate |
-| [exports-imports.md](exports-imports.md) | actions Resource-controller'а: export, exportStatus, exportDownload, importUpload, importPreview, importRun, importCancel, importErrors |
-| [uploads.md](uploads.md) | controller `uploads`: upload, show, delete, chunkedStart, chunkedChunk, chunkedFinish, chunkedCancel |
-| [delayed.md](delayed.md) | controller `delayed`: status, cancel, list |
-| [search.md](search.md) | controller `search` (sister-pack): global |
-| [health.md](health.md) | controller `health` (sister-pack): summary, checks, run, history |
+| [conventions.md](conventions.md) | Общие конвенции: конверт ответа, заголовки, коды и `errorKey`, права доступа, пагинация и фильтры, ограничение частоты, локаль, docblock'и |
+| [registration.md](registration.md) | Как собирается `AdminApi::getMethods()`: статические контроллеры, генерация контроллеров ресурсов/настроек/экранов, панели (`PanelApi`), каскад middleware, security schemes, OpenAPI-шаблоны |
+| [schemas.md](schemas.md) | Реестр named-шаблонов ответов (`{XxxResponse}`) из `src/Http/Schemas/*` — 275 шаблонов в пяти трейтах |
+| [system.md](system.md) | Контроллер `system`: bootstrap, manifest, me, menu, search (глобальный поиск ⌘K), locales/setLocale, permissions, plugins, status, theme/setTheme |
+| [auth.md](auth.md) | Контроллер `auth`: login, logout, восстановление пароля, подтверждение email, 2FA-challenge и recovery-коды, impersonation |
+| [profile.md](profile.md) | Контроллер `profile`: профиль, смена пароля, настройка 2FA и recovery-кодов, персональные API-токены (laravel/sanctum) |
+| [resources.md](resources.md) | Контроллер каждого ресурса (`{slug}`): meta, search, summary, read, create, update, inlineUpdate, delete, restore/forceDelete, replicate, reorder, tree, export, экраны list/tree/create/edit/view, listener; сохранённые представления `{slug}_views` |
+| [actions.md](actions.md) | Действия ресурса через `{slug}/action` (`key`, `ids`, `payload`), модальные действия, асинхронные действия, проверка прав на действие (`action_forbidden`) |
+| [screens.md](screens.md) | Контроллер каждого экрана (`{slug}`): state, runMethod, listener |
+| [settings.md](settings.md) | Контроллер каждого раздела настроек (`settings_{slug}`): meta, read, update |
+| [dashboards.md](dashboards.md) | Контроллер `dashboard`: раскладка виджетов пользователя (get, save, reset), период (savePeriod), данные виджетов (widgets) |
+| [exports-imports.md](exports-imports.md) | Экспорт — action `{slug}/export` ресурса; импорт — контроллер `import`: upload, preview, start, status |
+| [uploads.md](uploads.md) | Контроллер `uploads`: upload (любой файл), image (картинки для WYSIWYG и ImageCropper), serve (отдача файла с диска) |
+| [delayed.md](delayed.md) | Контроллер `delayed`: run (запуск асинхронного обработчика из allowlist) и status (статус процесса) |
+| [search.md](search.md) | Глобальный поиск (⌘K): action ядра `system/search` и пакет-компаньон `dskripchenko/laravel-admin-search`, который регистрирует обычный Laravel-маршрут на тот же адрес. Контроллера `search` в `AdminApi` нет |
+| [health.md](health.md) | Health-checks из пакета-компаньона `dskripchenko/laravel-admin-health`. Своего контроллера у пакета нет: он добавляет ресурс `system-health-results`, индикатор для `system/status` и виджет дашборда |
+
+Контроллеры `audit` (list, timeline) и `notifications` (list, unread, markAsRead, markAllAsRead, destroy) отдельной страницы не имеют; их actions перечислены в [registration.md](registration.md#2-статические-контроллеры).
 
 ## OpenAPI и Scalar UI
 
-Все actions автоматически экспортируются в OpenAPI 3.0 через `dskripchenko/laravel-api` (на основе docblock'ов). Доступно:
+OpenAPI-документ генерируется laravel-api из docblock'ов action'ов (`@input`, `@output`, `@header`, `@security`, `@response`) и шаблонов `getOpenApiTemplates()`.
 
-- `GET /api/admin/openapi.json` — JSON-спецификация.
-- `GET /api/admin/doc` — **Scalar UI** для интерактивного просмотра (lazy-loaded, требует permission `admin.system.api-docs`).
-- `php artisan admin:api:client admin` — генерация TypeScript-интерфейсов.
-- `php artisan admin:api:postman admin` — Postman Collection.
-- `php artisan admin:api:http admin` — `.http`-files.
+| URL | Что отдаёт | Кто регистрирует |
+|---|---|---|
+| `GET /api/admin/doc` | Scalar UI со спецификациями **всех** версий модуля (основная панель, дополнительные панели, версии хост-модуля) | ядро, `ScalarDocController`, маршрут `admin.api-doc` |
+| `GET /api/doc` | страница документации laravel-api; версии из `laravel-api.hidden_versions` в её список не попадают | laravel-api |
+| `GET /api/doc/{version}` | JSON-спецификация одной версии, например `/api/doc/admin` | laravel-api |
 
-## Обязательные правила
+- `/api/admin/doc` регистрируется, только если `admin.openapi.ui` = `'scalar'` (по умолчанию). Скрипт Scalar берётся из `admin.openapi.scalar_script` (по умолчанию CDN jsdelivr; можно указать локальный путь), тема — `admin.openapi.scalar_theme`. Спецификации пишутся в storage, в каталог `laravel-api.openapi_path` (по умолчанию `public/openapi`), файлами `{version}.json` и пересобираются при отсутствии файла или в debug-режиме.
+- **Доступ к документации не проверяется правами панели.** `/api/admin/doc` работает на стеке `admin.middleware.shell` (`web`, `AdminLocale`, `AdminCspNonce`) без `AdminAuth`; маршруты laravel-api `/api/doc*` — на `getDocMiddleware()` модуля, который у `AdminApiModule` пуст. Если карта API не должна быть публичной, закройте эти пути на уровне приложения или веб-сервера.
 
-1. **Все actions** объявлены через `AdminApi::getMethods()` — никаких свободных `Route::post(...)` вне laravel-api.
-2. **Каждый action** имеет полный docblock: `@input`/`@output`/`@security`/`@response` минимум.
-3. **Все ответы** в конверте `{success: true, payload: ...}` или `{success: false, payload: {errorKey, message, ...}}` через `$this->success()` / `$this->error()`.
-4. **Permissions** проверяются либо в middleware (через `AdminAccess`), либо явно через `$this->authorize('...')`.
-5. **URL** не содержит path-параметров кроме `{controller}/{action}`.
+Artisan-команды для работы со спецификацией поставляет laravel-api:
 
-CI-job `admin:api:lint` проверяет это автоматически.
+| Команда | Назначение |
+|---|---|
+| `php artisan api:generate-types --api-version=admin` | TypeScript-интерфейсы из спецификации (`--output=` — путь файла) |
+| `php artisan api:export --api-version=admin --format=postman` | экспорт спецификации: `postman`, `http`, `markdown`, `curl`, `bruno` |
+| `php artisan api:doc-clear` | удалить закэшированные файлы спецификаций |
+| `php artisan api:lint --api-version=admin` | проверка карты маршрутов и docblock-разметки (`--strict`, `--unrouted`, `--json`) |
 
 ## Стиль документации
 
-- Тип-аннотации в TypeScript-нотации внутри payload-описаний (для краткости).
-- Сами action-сигнатуры — PHP с реальным docblock.
-- ISO-8601 для дат (`2026-04-30T10:00:00Z`).
+- Структуры payload в описаниях даются в TypeScript-подобной нотации — для краткости.
+- Сигнатуры action'ов — PHP с реальным docblock'ом.
+- Даты — ISO-8601 (`2026-04-30T10:00:00Z`).
 - Идентификаторы записей: `string | number` (зависит от модели).
-- UUID процессов: UUIDv7 (см. `delayed-process`).
-- `null` означает «значение отсутствует/не применимо», в противоположность отсутствию ключа.
+- `null` означает «значение отсутствует / неприменимо», в отличие от отсутствия ключа.

@@ -30,6 +30,7 @@ compose to arbitrary depth.
 | `Code` | `Layout::code($code, 'php')` | Highlighted, copyable code block |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
 | `Listener` | `Layout::listener([...])->listen([...])` | Part of a form re-rendered by the server when watched fields change |
+| `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Table of another resource's records belonging to the edited one |
 
 ## Examples
 
@@ -332,6 +333,64 @@ that resource's `formLayout()` can run, and reserved screen methods
 
 A screen's `layout()` is called without `query()` when a listener request is
 served, so the listeners should not depend on properties `query()` sets.
+
+### ResourceTable (embedded table of another resource)
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\ResourceTable;
+
+public function formLayout(string $context): array
+{
+    if ($context !== 'update') {
+        return [];
+    }
+
+    return [
+        Layout::tabs([
+            'General' => $this->fields(),
+            'Items' => [
+                ResourceTable::for(DictionaryItemResource::class)
+                    ->foreignKey('dictionary_id')   // the child's column pointing at the parent
+                    ->parentField('id')             // the parent's column it holds; 'id' by default
+                    ->hideColumns(['dictionary_id'])
+                    ->features(['create' => true, 'delete' => true, 'bulkDelete' => true]),
+            ],
+        ]),
+    ];
+}
+```
+
+Shows the child resource's records that belong to the record being edited,
+on the parent's edit page. The table takes the child resource's columns from
+the manifest (minus `hideColumns()`), loads up to 100 rows through
+`POST /{child}/search` with `filters: {foreign_key: parent[parent_field]}`,
+and edits cells inline where the child's columns are `editable()`.
+`features()` turns on, all off by default:
+
+- `create` — a draft row at the top, saved through `POST /{child}/create`
+  with the foreign key filled in;
+- `delete` — a delete button per row (`POST /{child}/delete`);
+- `bulkDelete` — row selection and a bulk delete.
+
+Each request is checked against the child resource's own permissions
+(`.view`, `.create`, `.update`, `.delete`).
+
+The foreign key reaches the query only through a filter the child resource
+declares on that column — without one the table lists the records of every
+parent. Declare an exact-match filter in the child resource:
+
+```php
+public function filters(): array
+{
+    return [
+        QueryFilter::for('dictionary_id')
+            ->using(fn ($query, $value) => $query->where('dictionary_id', $value)),
+    ];
+}
+```
+
+Place it in `formLayout('update')`: a record being created has no key yet,
+and the table stays empty until it is saved.
 
 ### Markdown
 

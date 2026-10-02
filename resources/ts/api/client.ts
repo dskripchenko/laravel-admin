@@ -31,8 +31,13 @@ export interface AdminClient {
   put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
   patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
   delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
+  /** Sends X-Admin-Locale on every later request: the locale the panel renders. */
   setLocale(locale: string): void
-  /** Removes the pinned X-Admin-Locale, leaving the locale to the server. */
+  /**
+   * Removes X-Admin-Locale, leaving the locale to the server's chain. The
+   * panel itself does not call it: its requests always carry the locale it
+   * renders.
+   */
   clearLocale(): void
 }
 

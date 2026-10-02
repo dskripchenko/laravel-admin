@@ -35,7 +35,7 @@ Button::make('Publish')
     ->primary()                           // visual variant
     ->destructive()                       // red variant
     ->confirm('Publish this article?')    // confirmation prompt
-    ->permission('admin.articles.update') // permission key, sent with the action
+    ->permission('admin.articles.update') // required to see and to run it
     ->position(['command_bar', 'row'])    // where to show
     ->canSee(fn () => auth()->user()?->is_publisher)
     ->withName('publish-action');         // unique key
@@ -46,10 +46,20 @@ Button::make('Publish')
 **without arguments**, evaluated once when the schema is serialized — it
 is not a per-row condition.
 
-`permission()` is published with the action's schema; the server does not
-check it on its own. The resource `action` endpoint requires the
-resource's `.view` permission, so a stricter rule belongs in the method
-(`$user->hasAccess(...)`).
+`permission()` and `canSee()` are enforced on the server. An action the
+user lacks the permission for — or whose `canSee()` is false — is left out
+of the resource's `actions` in the manifest and of the screen's command bar
+and layout, and so are the dropdown items it covers. Running it anyway is
+refused with `403` and `errorKey: action_forbidden`:
+
+- the resource `action` endpoint, for row, bulk, header, standalone and
+  modal actions and for the items of a `DropDown` (the dropdown's own
+  permission covers its items);
+- the screen's `runMethod`, for a method that a `Button` or a
+  `ModalAction` in the command bar or the layout calls — a method no
+  action names is guarded only by the screen's `permission()`;
+- `delayed/run`, for a handler that an `AsyncAction` with a permission
+  starts (see below).
 
 ## Positions
 
@@ -145,6 +155,8 @@ fields and keeps the modal open.
 ```php
 // AppServiceProvider::boot(AllowlistRegistrar $allowlist)
 $allowlist->allow(\App\Jobs\ReindexSearch::class, 'handle');
+// or, with a permission required to start it:
+$allowlist->allow(\App\Jobs\ReindexSearch::class, 'handle', 'admin.search.reindex');
 
 AsyncAction::make('Re-index search')
     ->handler(\App\Jobs\ReindexSearch::class, 'handle')
@@ -154,7 +166,10 @@ AsyncAction::make('Re-index search')
 
 The handler must be allowed in
 `Dskripchenko\LaravelAdmin\DelayedProcess\AllowlistRegistrar` as an
-`entity::method` pair, or the SPA cannot start it. The SPA starts the
+`entity::method` pair, or the SPA cannot start it. `delayed/run` requires
+the permission given to `allow()`, and when the handler is started by
+`AsyncAction`s declared in resources' `actions()` or screens' command bars,
+the user has to be allowed at least one of them. The SPA starts the
 process via `/api/admin/delayed/run` and polls
 `/api/admin/delayed/status?uuid=...` until it finishes; the UI shows a
 progress modal. In a `row`/`bulk` position the selected keys are added to

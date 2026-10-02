@@ -94,10 +94,13 @@ return [
             // EncryptCookies and CSRF. Headless bearer tokens through Sanctum
             // are optional and come later.
             'web',
+            // The locale comes first, so that every refusal below — the
+            // session, the account, 2FA, demo mode — speaks the panel's
+            // language rather than the application's default.
+            Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\CaptureApiRequest::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\RunActionMiddleware::class,
-            Dskripchenko\LaravelAdmin\Http\Middleware\AdminLocale::class,
         ],
         'public' => [
             'web',

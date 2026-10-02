@@ -67,4 +67,22 @@ describe('locale store', () => {
     await expect(l.setLocale('de')).rejects.toThrow()
     expect(l.current).toBe('en') // откат
   })
+
+  it('keeps the header on the locale the panel renders: switch, rollback and logout', async () => {
+    const l = useLocaleStore()
+    l.hydrate(mkBootstrap({ locale: 'ru' }))
+
+    mock.onPost('/system/setLocale').reply(200, { success: true, payload: { locale: 'en' } })
+    await l.setLocale('en')
+    expect(client.raw.defaults.headers.common['X-Admin-Locale']).toBe('en')
+
+    mock.onPost('/system/setLocale').networkError()
+    await expect(l.setLocale('de')).rejects.toThrow()
+    expect(client.raw.defaults.headers.common['X-Admin-Locale']).toBe('en')
+
+    // A logout does not drop it: the login form is still rendered in it.
+    client.clearLocale()
+    l.release()
+    expect(client.raw.defaults.headers.common['X-Admin-Locale']).toBe('en')
+  })
 })

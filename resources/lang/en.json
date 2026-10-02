@@ -81,6 +81,7 @@
     "Добавьте новый аккаунт вручную, скопировав ключ:": "Add a new account manually by copying the key:",
     "Доступ запрещён.": "Access denied.",
     "Доступ запрещён: :permission": "Access denied: :permission",
+    "Действие недоступно": "The action is not available",
     "Если такой email зарегистрирован — мы отправили письмо со ссылкой на сброс.": "If that email is registered, we have sent a message with a reset link.",
     "Если такой email зарегистрирован, на него отправлено письмо со ссылкой для сброса пароля": "If that email is registered, a password reset link has been sent to it",
     "Есть несохранённые изменения": "There are unsaved changes",

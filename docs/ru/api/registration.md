@@ -1,357 +1,151 @@
 # API: регистрация в `AdminApi::getMethods()`
 
-Документ описывает, как admin-API регистрируется через `dskripchenko/laravel-api`: структуру `AdminApi`/`AdminApiModule`, динамическую регистрацию Resource-контроллеров через `ResourceCompiler`, наполнение middleware-каскада и Schema-templates для `@response`.
+Как API панели подключается к `dskripchenko/laravel-api`: модуль и версии, статические контроллеры, генерация контроллеров ресурсов, настроек и экранов, дополнительные панели, каскад middleware, security schemes и шаблоны ответов для OpenAPI.
 
-> Глобальные правила (URL-паттерн, docblock'и, security) — в [conventions.md](conventions.md). Конкретные actions — в соседних файлах.
+> Общие правила (URL, конверт, ошибки, права) — в [conventions.md](conventions.md). Конкретные action'ы — в соседних файлах.
 
 ---
 
-## 1. AdminApiModule и AdminApi
+## 1. Модуль и версия API
+
+`AdminServiceProvider` подменяет модуль laravel-api своим: `$this->app->singleton('api_module', AdminApiModule::class)`. Маршруты регистрирует сам laravel-api (`ApiServiceProvider::makeApiRoutes()`): для каждого action'а каждой версии — именованный маршрут `api.{version}.{controller}.{action}`, плюс общий маршрут `api-endpoint` по шаблону `{version}/{controller}/{action}`. Отдельного `Route::group` для API в ядре нет; `routes/admin.php` содержит только SPA-shell.
+
+`AdminApiModule` (`src/Http/AdminApiModule.php`) переопределяет у `BaseModule`:
+
+| Метод | Что возвращает |
+|---|---|
+| `getApiVersionList()` | `['admin' => AdminApi::class]` + по версии на каждую дополнительную панель (`admin.panels.{id}.api`) |
+| `getApiPrefix()` | `config('laravel-api.prefix', 'api')` |
+| `getApiUriPattern()` | `config('laravel-api.uri_pattern', '{version}/{controller}/{action}')` |
+| `getApiMiddleware()` | `[CaptureApiRequest::class, RunVersionMiddleware::class]` — см. §6 |
+
+`AdminApi` (`src/Http/AdminApi.php`) — наследник `BaseApi`:
 
 ```php
-namespace Dskripchenko\LaravelAdmin\Http;
-
-use Dskripchenko\LaravelApi\BaseModule;
-
-final class AdminApiModule extends BaseModule
-{
-    public function getApiVersionList(): array
-    {
-        return [
-            'admin' => AdminApi::class,
-        ];
-    }
-}
-```
-
-```php
-namespace Dskripchenko\LaravelAdmin\Http;
-
-use Dskripchenko\LaravelApi\BaseApi;
-
 class AdminApi extends BaseApi
 {
+    use AdminApiCommonSchemas, AdminApiResourceSchemas, AdminApiSisterPackSchemas,
+        AdminApiSystemSchemas, AdminApiUiSchemas;
+
+    public static $useResponseTemplates = true;
+
+    public static function panelId(): string { return 'admin'; }
+
     public static function getMethods(): array
     {
-        return array_merge_deep(
-            self::staticControllers(),
-            self::resourceControllers(),
-            self::screenControllers(),
-            self::pluginControllers(),
-        );
-    }
+        $controllers = [ /* статические контроллеры, §2 */ ];
 
-    private static function staticControllers(): array
-    {
+        $controllers = array_merge($controllers, (new ResourceCompiler)->compile(app(ResourceRegistry::class), static::panelId()));
+        $controllers = array_merge($controllers, (new SettingsCompiler)->compile(app(SettingsRegistry::class), static::panelId()));
+        $controllers = array_merge($controllers, (new ScreenCompiler)->compile(app(ScreenRegistry::class), static::panelId()));
+
         return [
-            'middleware' => [
-                \Illuminate\Routing\Middleware\ThrottleRequests::class . ':60,1',
-            ],
-            'controllers' => [
-                'system'  => [/* SystemController + actions */],
-                'auth'    => [/* AuthController + actions */],
-                'profile' => [/* ProfileController + actions */],
-                'uploads' => [/* UploadController + actions */],
-                'delayed' => [/* DelayedController + actions */],
-            ],
-        ];
-    }
-
-    private static function resourceControllers(): array
-    {
-        $controllers = [];
-        foreach (app(ResourceRegistry::class)->all() as $compiled) {
-            $controllers[$compiled->slug()] = [
-                'controller' => $compiled->controllerClass(),
-                'middleware' => [
-                    \Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
-                ],
-                'actions'    => $compiled->actionsMap(),
-            ];
-        }
-        return ['controllers' => $controllers];
-    }
-
-    private static function screenControllers(): array { /* аналогично */ }
-    private static function pluginControllers(): array { /* собирает из AdminPlugin'ов */ }
-}
-```
-
-В `AdminServiceProvider::boot()`:
-
-```php
-// API живёт ОТДЕЛЬНО от SPA-shell. SPA — под config('admin.path') (default 'admin').
-// API — под config('admin.api_path') (default 'api/admin'), без вложенности под path.
-Route::group([
-    'prefix'     => config('admin.api_path'),
-    'middleware' => config('admin.middleware.api'),
-    'as'         => 'admin.api.',
-], function (): void {
-    (new AdminApiModule())->register('admin');
-});
-```
-
-> **Замечание про `api/{version}/...` паттерн laravel-api.** Стандартный laravel-api ожидает URL `api/{version}/{controller}/{action}`. У нас `version = 'admin'` (не настоящая версия — внутренний идентификатор, см. ARCHITECTURE.md п.12.4 и п.13.12: семвер admin = семвер API без exposed-версии). Финальный URL получается `{api_path}/{controller}/{action}` = `/api/admin/{controller}/{action}` — где `api/admin` — это `api_path` целиком, а сегменты после — `{controller}/{action}`. Если в будущем понадобятся параллельные версии, добавим вторую запись в `getApiVersionList()` (например, `'admin-v2' => AdminApiV2::class`).
-
----
-
-## 2. Динамическая регистрация Resource-контроллеров
-
-Каждый зарегистрированный Resource (`Admin::resources([UserResource::class])`) превращается в один controller под slug = `Resource::slug()`.
-
-`ResourceCompiler` создаёт класс контроллера на лету через runtime-bind (или генерирует один раз стабильный controller-класс с маршрутизацией внутрь Resource):
-
-```php
-namespace Dskripchenko\LaravelAdmin\Resource;
-
-final class ResourceController extends \Dskripchenko\LaravelApi\Http\Controllers\CrudController
-{
-    public function __construct(private readonly Resource $resource) {}
-
-    public function service(): CrudServiceInterface
-    {
-        return new ResourceCrudService($this->resource);
-    }
-
-    /**
-     * Получить метаданные ресурса (поля, фильтры, колонки).
-     *
-     * @output object $payload Метаданные.
-     * @output array  $payload.fields Список полей формы.
-     * @output array  $payload.columns Список колонок таблицы.
-     * @output array  $payload.filters Список фильтров.
-     * @security AdminSession
-     * @security AdminBearer
-     * @response 200 {ResourceMeta}
-     */
-    public function meta(): JsonResponse { /* унаследован из CrudController */ }
-
-    // ... search, read, create, update, delete унаследованы
-    // restore, forceDelete, replicate, inlineEdit, view, audit, reactiveField,
-    // reorder, relations*, views*, preferences* — переопределены в Resource
-}
-```
-
-`ResourceCompiler::actionsMap()` возвращает массив action-name → method-config с правильными HTTP-методами:
-
-```php
-return [
-    'meta'        => ['method' => ['get']],
-    'search'      => ['method' => ['post'], 'middleware' => [AdminAccess::class . ':' . $resource::permission() . '.view']],
-    'read'        => ['method' => ['get'],  'middleware' => [...]],
-    'create'      => ['method' => ['post'], 'middleware' => [...]],
-    'update'      => ['method' => ['post'], 'middleware' => [...]],     // POST, не PATCH/PUT — конвенция laravel-api
-    'delete'      => ['method' => ['post']],
-    'restore'     => ['method' => ['post']],
-    'forceDelete' => ['method' => ['post']],
-    'replicate'   => ['method' => ['post']],
-    'inlineEdit'  => ['method' => ['post']],
-    'view'        => ['method' => ['get']],
-    'audit'       => ['method' => ['get']],
-    'reactiveField' => ['method' => ['get']],
-    'reorder'     => ['method' => ['post']],
-    'relationsList'   => ['method' => ['get']],
-    'relationsAttach' => ['method' => ['post']],
-    'relationsDetach' => ['method' => ['post']],
-    'relationsSync'   => ['method' => ['post']],
-    'viewsList'      => ['method' => ['get']],
-    'viewSave'       => ['method' => ['post']],
-    'viewUpdate'     => ['method' => ['post']],
-    'viewDelete'     => ['method' => ['post']],
-    'viewApply'      => ['method' => ['post']],
-    'preferencesGet' => ['method' => ['get']],
-    'preferencesSet' => ['method' => ['post']],
-    'export'         => ['method' => ['post']],
-    'exportStatus'   => ['method' => ['get']],
-    'importUpload'   => ['method' => ['post']],
-    'importPreview'  => ['method' => ['post']],
-    'importRun'      => ['method' => ['post']],
-    'importCancel'   => ['method' => ['post']],
-    'bulkAction'     => ['method' => ['post']],
-    'singleAction'   => ['method' => ['post']],
-    'actionParameters' => ['method' => ['get']],
-];
-```
-
-> **Конвенция:** в `laravel-api` все mutation-actions используют `POST`, не `PATCH`/`PUT`/`DELETE`. URL-паттерн `{controller}/{action}` не несёт REST-семантики — semantics несёт **имя action'а**.
-
----
-
-## 3. Screen-контроллеры
-
-Аналогично Resource. Каждый зарегистрированный Screen становится контроллером со slug = `Str::kebab(class_basename(ScreenClass))`:
-
-```php
-final class CompiledScreenController extends ApiController
-{
-    public function __construct(private readonly Screen $screen) {}
-
-    public function state(Request $request): JsonResponse { /* */ }
-    public function runMethod(Request $request): JsonResponse { /* любой command-метод Screen'а */ }
-    public function async(Request $request): JsonResponse { /* reactive layer reload */ }
-}
-```
-
-actions:
-
-```php
-'state'     => ['method' => ['get']],
-'runMethod' => ['method' => ['post']],
-'async'     => ['method' => ['get']],
-```
-
-Имя метода Screen'а передаётся в body: `{ "method": "save", "state": {...}, "parameters": {...} }`.
-
----
-
-## 4. Schema-templates для @response
-
-Каждый named template (`{XxxResponse}`) объявляется через **`getOpenApiTemplates(): array`** на классе версии API. На `AdminApi` (наследнике `BaseApi`) выставлено `public static bool $useResponseTemplates = true;` — laravel-api без этого флага шаблоны не считает.
-
-Структура: метод возвращает map `'TemplateName' => ['field' => 'type-spec', ...]`. Type-spec поддерживает синтаксис:
-
-| Pattern | Значение |
-|---------|----------|
-| `'string!'` | required |
-| `'string'` | optional |
-| `'string(date-time)'` | с форматом (формат как у OpenAPI: `email`, `uuid`, `date-time`, `int64`, ...) |
-| `'@RefName'` | ссылка на другой template (через `components/schemas` в OpenAPI) |
-| `'@RefName[]'` | массив ссылок |
-
-Пример:
-
-```php
-public static function getOpenApiTemplates(): array
-{
-    return [
-        'AdminUserSummary' => [
-            'id'                => 'integer!',
-            'name'              => 'string!',
-            'email'             => 'string(email)!',
-            'avatar'            => 'string',
-            'twoFactorEnabled'  => 'boolean!',
-            'impersonator'      => '@ImpersonatorRef',
-        ],
-        'ImpersonatorRef' => [
-            'id'   => 'integer!',
-            'name' => 'string!',
-        ],
-        'LoginResponse' => [
-            'success' => 'boolean!',
-            'payload' => '@LoginPayload',
-        ],
-        'LoginPayload' => [
-            'user'         => '@AdminUserSummary',
-            'redirect_url' => 'string!',
-        ],
-    ];
-}
-```
-
-В контроллере ссылка на template — стандартным `@response`:
-
-```php
-/**
- * @response 200 {LoginResponse}
- * @response 401 {InvalidCredentialsResponse}
- */
-```
-
-### Структура файлов в admin
-
-Все templates admin core живут в `src/Http/Schemas/` как traits, подключаемые в `AdminApi`:
-
-```
-src/Http/
-├── AdminApi.php                              # extends BaseApi, use traits, $useResponseTemplates=true
-├── AdminApiModule.php                        # extends BaseModule, getApiVersionList()
-└── Schemas/
-    ├── AdminApiCommonSchemas.php             # envelope, errors, building blocks (AdminUserSummary, FieldSchema, ColumnSchema, ...)
-    ├── AdminApiSystemSchemas.php             # system + auth + profile templates
-    ├── AdminApiResourceSchemas.php           # resource controllers + actions + settings
-    ├── AdminApiUiSchemas.php                 # screens, dashboards, uploads, delayed, exports/imports
-    └── AdminApiSisterPackSchemas.php         # search, health (sister-packs могут перекрыть/дополнить через AdminPlugin)
-```
-
-`AdminApi::getOpenApiTemplates()` объединяет всё через `array_merge()` от пяти `provide*Schemas()` методов traits.
-
-Полный человекочитаемый список templates — в [schemas.md](schemas.md).
-
-### Sister-packs и templates
-
-Sister-pack может предоставить свои templates через `AdminPlugin`-контракт:
-
-```php
-final class AdminMediaPlugin implements AdminPlugin
-{
-    public function openApiTemplates(): array
-    {
-        return [
-            'MediaItemResponse' => [/* ... */],
-            // ...
+            'middleware' => [ThrottleRequests::class.':'.config('admin.api.throttle', '240,1')],
+            'controllers' => $controllers,
         ];
     }
 }
 ```
 
-`AdminApi::getOpenApiTemplates()` после своего `array_merge` дополнительно мерджит вклад от всех зарегистрированных plugin'ов.
+Результат кэшируется laravel-api в статическом свойстве; после изменения реестров (в тестах — после `Resources::add` / `Resources::clear`) кэш сбрасывают `AdminApi::clearCache()`. Ядро делает это само в конце `boot()`, после загрузки плагинов.
 
----
+## 2. Статические контроллеры
 
-## 5. Security schemes
-
-Регистрируются в `config/laravel-api.php` (через наш AdminApi-публикатор):
-
-```php
-'security_schemes' => [
-    'AdminSession' => [
-        'type' => 'apiKey',
-        'in'   => 'cookie',
-        'name' => 'laravel_session',
-    ],
-    'AdminBearer' => [
-        'type' => 'http',
-        'scheme' => 'bearer',
-        'bearerFormat' => 'JWT',          // условный label, фактически — Sanctum opaque token
-    ],
-    'Public' => [
-        'type' => 'apiKey',
-        'in'   => 'header',
-        'name' => 'X-No-Auth',
-    ],
-],
-```
-
-`@security AdminSession` или `@security AdminBearer` ссылается на эти определения.
-
-Public-actions (`auth.login`, `auth.forgotPassword`, `auth.resetPassword`) указывают `@security Public`.
-
----
-
-## 6. Middleware каскад
-
-| Уровень | Где задаётся | Когда применяется |
+| Ключ | Контроллер | Actions (метод) |
 |---|---|---|
-| Module | `AdminApiModule::getApiMiddleware()` | на все маршруты модуля; это только `CaptureApiRequest` + `RunVersionMiddleware` |
-| Panel stack | `config('admin.middleware.api')` | на версии-панели (`admin` и `admin.panels.*`), запускается `RunVersionMiddleware` на рантайме |
-| Api version | `AdminApi::getMethods() → 'middleware'` | на все controllers версии |
-| Controller | `getMethods() → 'controllers' → {slug} → 'middleware'` | на все actions controller'а |
-| Action | `getMethods() → 'controllers' → {slug} → 'actions' → {name} → 'middleware'` | на конкретный action |
+| `system` | `Http\Controllers\SystemController` | `bootstrap`¹, `manifest`, `me`, `menu`, `search`, `locales`¹, `permissions`, `plugins`, `status`, `theme`¹ — GET; `setLocale`¹, `setTheme`¹ — POST |
+| `auth` | `Auth\Controllers\AuthController` | все POST: `login`¹, `logout`, `forgotPassword`¹, `resetPassword`¹, `verifyEmail`¹, `resendEmailVerification`¹, `twoFactorChallenge`¹, `twoFactorRecovery`¹, `startImpersonation`, `stopImpersonation` |
+| `profile` | `Profile\Controllers\ProfileController` | GET: `show`, `twoFactorStatus`, `tokensList`; POST: `update`, `changePassword`, `twoFactorEnable`, `twoFactorConfirm`, `twoFactorDisable`, `twoFactorRegenerateCodes`, `tokenCreate`, `tokenRevoke` |
+| `dashboard` | `Widget\DashboardController` | GET: `get`, `widgets`; POST: `save`, `savePeriod`, `reset` |
+| `audit` | `Audit\AuditController` | GET: `list`, `timeline` |
+| `delayed` | `DelayedProcess\DelayedProcessController` | POST: `run`; GET: `status` |
+| `import` | `Import\ImportController` | POST: `upload`, `preview`, `start`; GET: `status` |
+| `uploads` | `Uploads\UploadController` | POST: `upload`, `image`; GET: `serve` |
+| `notifications` | `Notifications\NotificationController` | GET: `list`, `unread`; POST: `markAsRead`, `markAllAsRead`, `destroy` |
 
-Каждый уровень может **исключать** middleware верхнего уровня:
+¹ — публичный action: `'exclude-middleware' => [AdminAuth::class]`, вход не требуется.
+
+Собственные лимиты частоты у `auth/login`, `auth/twoFactorChallenge`, `auth/twoFactorRecovery` (`admin.auth.login_throttle`, ключ `auth-{panel}`), `auth/forgotPassword` (`3,5`, ключ `forgot-{panel}`) и `auth/resendEmailVerification` (`3,1`, ключ `verify-{panel}`).
+
+## 3. Контроллеры ресурсов (`ResourceCompiler`)
+
+Каждый ресурс панели становится контроллером с ключом `Resource::slug()` (по умолчанию — имя класса без суффикса `Resource`, во множественном числе, в kebab-case: `UserResource` → `users`). Все ресурсы обслуживает один класс `Resource\ResourceController`: какой ресурс нужен, он узнаёт из ключа контроллера (`ApiRequest::getApiControllerKey()`). На каждый action навешивается `AdminAccess` с правом от `Resource::permission()` (по умолчанию `admin.{slug}`):
+
+| Action | Метод | Право | Регистрируется |
+|---|---|---|---|
+| `meta` | GET | `.view` | всегда |
+| `search` | POST | `.view` | всегда |
+| `summary` | POST | `.view` | всегда |
+| `read` | GET | `.view` | всегда |
+| `create` | POST | `.create` | всегда |
+| `update` | POST | `.update` | всегда |
+| `inlineUpdate` | POST | `.update` | всегда |
+| `delete` | POST | `.delete` | всегда |
+| `export` | GET, POST | `.view` | всегда |
+| `action` | POST | `.view` | всегда; диспетчер действий ресурса, тело `{key, ids?, payload?}` — [actions.md](actions.md) |
+| `listScreen`, `viewScreen` | GET | `.view` | всегда |
+| `createScreen` | GET | `.create` | всегда |
+| `editScreen` | GET | `.update` | всегда |
+| `restore` | POST | `.restore` | модель с `SoftDeletes` |
+| `forceDelete` | POST | `.force-delete` | модель с `SoftDeletes` |
+| `replicate` | POST | `.replicate` | `replicable()` |
+| `reorder` | POST | `.reorder` | `reorderable()` |
+| `tree`, `treeScreen` | POST, GET | `.view` | `hierarchyParentKey()` не `null` |
+| `listener` | POST | `.view` (право на create/update проверяет сам action) | в форме создания или редактирования есть `Listener` |
+
+Если у ресурса включены сохранённые представления (`savedViews()`), добавляется контроллер `{slug}_views` (`Table\SavedViewsController`) с action'ами `list` (GET), `create`, `update`, `delete` (POST) — все под правом `.view`.
+
+## 4. Контроллеры настроек (`SettingsCompiler`)
+
+Каждый `SettingsResource` — контроллер `settings_{slug}` (подчёркивание, потому что точка в маршрутах Laravel требует отдельного ограничения), класс `Settings\SettingsController`:
+
+| Action | Метод | Право |
+|---|---|---|
+| `meta` | GET | `{permission}.view` |
+| `read` | GET | `{permission}.view` |
+| `update` | POST | `{permission}.update` |
+
+`SettingsResource::permission()` по умолчанию — `admin.settings.{slug}`.
+
+## 5. Контроллеры экранов (`ScreenCompiler`)
+
+Каждый зарегистрированный экран — контроллер с ключом `Screen::slug()` (по умолчанию — имя класса без суффикса `Screen` в kebab-case), класс `Screen\ScreenController`:
+
+| Action | Метод | Назначение |
+|---|---|---|
+| `state` | GET | состояние, layout, command bar и мета экрана |
+| `runMethod` | POST | вызов метода экрана; имя метода — в поле `method` тела |
+| `listener` | POST | перерисовка одного `Listener`-layout'а экрана |
+
+Если экран объявляет `permission()` (строка или список — нужны все), на все три action'а навешивается `AdminAccess`. Из этого конвейера исключены наследники `GeneratedScreen` (их обслуживает `ResourceController`) и `DashboardScreen` (их обслуживает `DashboardController`). Подробнее — [screens.md](screens.md).
+
+## 6. Каскад middleware
+
+| Уровень | Где задаётся | Применяется |
+|---|---|---|
+| Модуль | `AdminApiModule::getApiMiddleware()` | ко всем маршрутам модуля; только `CaptureApiRequest` и `RunVersionMiddleware` |
+| Стек панели | `config('admin.middleware.api')`: `web`, `CaptureApiRequest`, `AdminAuth`, `RunActionMiddleware`, `AdminLocale` | к версиям-панелям (`admin` и `admin.panels.*`); запускает `RunVersionMiddleware` на каждом запросе |
+| Версия | `getMethods()['middleware']` | ко всем контроллерам версии (у `AdminApi` — общий `ThrottleRequests`; у `PanelApi` к нему добавляются `admin.panels.{id}.middleware.api`) |
+| Контроллер | `getMethods()['controllers'][$key]['middleware']` | ко всем action'ам контроллера |
+| Action | `getMethods()['controllers'][$key]['actions'][$name]['middleware']` | к одному action'у (например, `AdminAccess` ресурсов) |
+
+Middleware контроллера и action'а laravel-api вешает на именованный маршрут; `RunActionMiddleware` дозапускает то, чего нет в стеке маршрута (например, когда запрос пришёл через общий маршрут `api-endpoint`), не запуская ничего дважды.
+
+Контроллер или action может исключить middleware верхних уровней:
 
 ```php
 'login' => [
     'method' => ['post'],
-    'exclude-middleware' => [AdminAuth::class],     // публичный, не требует auth
-    'middleware'         => [ThrottleRequests::class . ':5,1'],
+    'middleware' => [ThrottleRequests::class.':5,1,auth-admin'],
+    'exclude-middleware' => [AdminAuth::class],   // публичный action
 ],
 ```
 
-### Host-модуль со своими версиями
+`AdminAuth` читает `exclude-middleware` текущего контроллера и action'а из `getPreparedMethods()` версии запроса и пропускает такие запросы без проверки входа.
 
-`AdminApiModule` открыт для наследования: хост-модуль мержит
-`parent::getApiVersionList()` и добавляет версии приложения рядом с панелями.
+### Хост-модуль со своими версиями
+
+`AdminApiModule` открыт для наследования: хост-модуль может добавить версии приложения рядом с панелями.
 
 ```php
 final class AppApiModule extends AdminApiModule
@@ -366,73 +160,107 @@ final class AppApiModule extends AdminApiModule
 }
 ```
 
-Стек панели (`admin.middleware.api`: сессия, CSRF, `AdminAuth`) на такие
-версии **не распространяется**. Для них действует контракт laravel-api: глобальные,
-контроллерные и экшенные middleware из `getMethods()` класса версии, и ничего
-из админки. Выбор делает `RunVersionMiddleware` на каждом запросе, а не при
-регистрации маршрутов — группа middleware у laravel-api одна на модуль и
-собирается один раз при boot, под Octane воркер грузится однажды, и выбор «по
-версии из URL» на этапе boot был бы выбором первого запроса для всех
-последующих.
+Стек панели (`admin.middleware.api`: сессия, CSRF, `AdminAuth`) на такие версии не распространяется: `RunVersionMiddleware` выбирает стек на каждом запросе. Для версии-панели — стек панели, для остальных — только глобальные, контроллерные и action-middleware из `getMethods()` её класса (через `RunActionMiddleware`). Выбор делается не при регистрации маршрутов: группа middleware у laravel-api одна на модуль и собирается один раз при boot, а под Octane воркер загружается однажды.
 
-Если версии приложения нужна локаль панели или сессия, она объявляет это сама:
-`'middleware' => [AdminLocale::class]` в `getMethods()`. `exclude-middleware`
-с элементами стека панели (`'web'`, `AdminAuth::class`) в не-панельной версии
-больше не нужен — вырезать нечего.
+Если версии приложения нужна локаль панели или сессия, она объявляет это сама, например `'middleware' => [AdminLocale::class]` в своём `getMethods()`.
 
----
+## 7. Дополнительные панели (`PanelApi`)
 
-## 7. Команды artisan
-
-`laravel-api` поставляет команды; в admin делаем aliases для удобства:
-
-| Команда | Описание |
-|---|---|
-| `php artisan admin:api:routes` | вывести все зарегистрированные admin-actions с URL и методами |
-| `php artisan admin:api:openapi` | сгенерировать `openapi.json` |
-| `php artisan admin:api:client` | сгенерировать TypeScript-интерфейсы для SPA |
-| `php artisan admin:api:postman` | сгенерировать Postman Collection |
-| `php artisan admin:api:http` | сгенерировать `.http`-files (для VS Code REST Client / IntelliJ) |
-
----
-
-## 8. Тестирование
+Дополнительная панель объявляется в `admin.panels.{id}` и получает свою версию API `/api/{id}/...`. Класс версии — наследник `Panel\PanelApi`, указанный в `admin.panels.{id}.api`:
 
 ```php
-// tests/Feature/HelloResourceTest.php
-beforeEach(function () {
-    Admin::resources([UserResource::class]);
-});
+final class ClientApi extends \Dskripchenko\LaravelAdmin\Panel\PanelApi {}
 
-it('lists users via search action', function () {
-    $this->actingAsAdmin($admin, ['admin.users.view'])
-        ->postJson('/api/admin/users/search', [
-            'page' => 1, 'per_page' => 25,
-            'filters' => [['column' => 'is_active', 'operator' => '=', 'value' => true]],
-        ])
-        ->assertSuccessful()
+// config/admin.php
+'panels' => [
+    'client' => [
+        'api' => App\Admin\ClientApi::class,
+        'middleware' => ['api' => [SomePanelMiddleware::class]],
+        // path, auth, plugins, ...
+    ],
+],
+```
+
+`PanelApi` наследует всю системную поверхность `AdminApi` (system, auth, profile, dashboard, uploads, notifications и т.д.), но:
+
+- `panelId()` находит панель по `static::class` в `admin.panels.*.api`; один класс обслуживает ровно одну панель;
+- ресурсы, настройки и экраны компилируются только те, что зарегистрированы для этой панели;
+- `getPreparedMethods()` не сливает методы родительского класса, иначе в клиентскую панель попали бы ресурсы основной;
+- `admin.panels.{id}.middleware.api` — **добавки** к общему стеку, они дописываются в `getMethods()['middleware']`;
+- аутентификация работает на guard'е панели (`Panels::currentGuard()`).
+
+## 8. Security schemes
+
+Схемы объявлены в `AdminApi::getOpenApiSecurityDefinitions()`:
+
+| Схема | Тип | Описание |
+|---|---|---|
+| `AdminSession` | `apiKey` в cookie, имя — `config('session.cookie')` | сессия браузера после входа; такие запросы проходят CSRF-проверку |
+| `AdminBearer` | `http`, `bearer` | персональный API-токен из профиля (laravel/sanctum) |
+
+Docblock action'а ссылается на них тегами `@security AdminSession` / `@security AdminBearer`; публичные action'ы `@security` не указывают.
+
+## 9. Шаблоны ответов для `@response`
+
+Named-шаблоны (`{XxxResponse}`) отдаёт `AdminApi::getOpenApiTemplates()`. laravel-api учитывает их только при `public static $useResponseTemplates = true;` — флаг выставлен на `AdminApi`.
+
+Метод сливает результаты пяти трейтов из `src/Http/Schemas/`:
+
+```php
+public static function getOpenApiTemplates(): array
+{
+    return array_merge(
+        self::provideCommonSchemas(),      // AdminApiCommonSchemas
+        self::provideSystemSchemas(),      // AdminApiSystemSchemas
+        self::provideResourceSchemas(),    // AdminApiResourceSchemas
+        self::provideUiSchemas(),          // AdminApiUiSchemas
+        self::provideSisterPackSchemas(),  // AdminApiSisterPackSchemas
+    );
+}
+```
+
+Шаблон — карта `'поле' => 'тип'`. Синтаксис типа:
+
+| Запись | Значение |
+|---|---|
+| `'string!'` | обязательное поле |
+| `'string'` | необязательное |
+| `'string(date-time)'` | с OpenAPI-форматом (`email`, `uuid`, `date-time`, ...) |
+| `'string! Описание'` | текст после типа — описание поля |
+| `'@RefName'` | ссылка на другой шаблон |
+| `'@RefName[]'` | массив ссылок |
+
+Пример из `AdminApiCommonSchemas`:
+
+```php
+'AffectedResponse' => [
+    'success' => 'boolean!',
+    'payload' => '@AffectedPayload',
+],
+'AffectedPayload' => [
+    'affected' => 'integer!',
+    'message' => 'string! What was applied, in words',
+],
+```
+
+В docblock'е action'а: `@response 200 {AffectedResponse}`. Полный реестр — [schemas.md](schemas.md).
+
+Плагины (`AdminPlugin`) своих шаблонов в `AdminApi` не добавляют: контракт плагина — `name()`, `version()`, `register()`, `boot(Admin $admin)`, а API плагин получает через регистрацию ресурсов, экранов, настроек и виджетов, которые компилируются по §3–§5.
+
+## 10. Тестирование
+
+```php
+it('lists users via search', function (): void {
+    $this->actingAsAdmin([], ['admin.users.view']);
+
+    $this->postJson('/api/admin/users/search', [
+        'page' => 1,
+        'per_page' => 25,
+        'filters' => ['is_active' => true],
+    ])
+        ->assertOk()
         ->assertJsonStructure(['payload' => ['data', 'meta']]);
 });
 ```
 
-`ResourceTestCase` оборачивает в helper'ы:
-
-```php
-$this->callResourceAction('users', 'search', [
-    'filters' => [['column' => 'is_active', 'operator' => '=', 'value' => true]],
-]);
-```
-
----
-
-## 9. Запрет на отступления
-
-В **code-review** проверяется:
-
-1. Все actions объявлены в `getMethods()` (нет «свободных» Route::post вне laravel-api).
-2. У каждого action есть полный docblock (`@input`/`@output`/`@security`/`@response`).
-3. Все actions возвращают envelope `{success, payload}` через `$this->success()` / `$this->error()`.
-4. URL не содержит path-параметров кроме `{controller}/{action}`.
-5. Permissions проверяются либо в middleware, либо явно через `$this->authorize(...)`.
-
-CI-job `php artisan admin:api:lint` проверит это автоматически (планируется на P3 поверх стандартного lint'а laravel-api).
+То же через помощник `InteractsWithAdminResources`: `$this->postResourceSearch('users', ['is_active' => true])`. Карту маршрутов и разметку docblock'ов проверяет `php artisan api:lint --api-version=admin` (команда laravel-api).

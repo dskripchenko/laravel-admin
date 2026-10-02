@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Action;
 
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
+use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
 
 /**
  * The abstract action — a button, a link or a dropdown in a command bar, a
@@ -77,11 +78,39 @@ abstract class Action implements Renderable
         return $this->label;
     }
 
+    /**
+     * The permission a user needs to see and to run the action. It is checked
+     * on the server: an action the user lacks it for is left out of the
+     * manifest and the command bar, and a request that runs it anyway is
+     * answered with a 403 (`errorKey: action_forbidden`).
+     */
     public function permission(string $permission): static
     {
         $this->permission = $permission;
 
         return $this;
+    }
+
+    /**
+     * One of the action's attributes — `method`, `handler`, `opens` — as set.
+     */
+    public function getAttribute(string $key): mixed
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    public function getPermission(): ?string
+    {
+        return $this->permission;
+    }
+
+    /**
+     * Whether the user — by default the one signed in to the current panel —
+     * holds the action's permission; true when it declares none.
+     */
+    public function isPermitted(?object $user = null): bool
+    {
+        return PermissionCheck::allows($this->permission, $user);
     }
 
     /**
@@ -163,7 +192,19 @@ abstract class Action implements Renderable
         return $this;
     }
 
+    /**
+     * Whether the action is shown — and may be run: its canSee() condition
+     * holds and the current user has its permission().
+     */
     public function isVisible(): bool
+    {
+        return $this->passesVisibility() && $this->isPermitted();
+    }
+
+    /**
+     * The canSee() condition alone, without the permission.
+     */
+    public function passesVisibility(): bool
     {
         return is_callable($this->visibility)
             ? (bool) ($this->visibility)()

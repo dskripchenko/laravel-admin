@@ -58,6 +58,11 @@ describe('createAdminApp', () => {
     expect(app._context.config.globalProperties).toBeDefined()
   })
 
+  it('sends the bootstrap locale with every request from the first one on', () => {
+    const { client } = createAdminApp({ ...baseBootstrap, locale: 'en', availableLocales: ['ru', 'en'] }, { skipManifestLoad: true })
+    expect(client.raw.defaults.headers.common['X-Admin-Locale']).toBe('en')
+  })
+
   it('вызывает onAppCreated hook', () => {
     const hook = vi.fn()
     createAdminApp(baseBootstrap, { skipManifestLoad: true, onAppCreated: hook })
