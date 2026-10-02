@@ -53,6 +53,55 @@ class StatsOverviewWidget extends Widget
     }
 
     /**
+     * Shows the value of the card added last as money in that currency (an
+     * ISO 4217 code), formatted by the panel's locale — its separators and
+     * the currency's sign: `$1,591,285` in English, `1 591 285 $` in
+     * Russian. Pass the raw number to stat(), not a formatted string.
+     */
+    public function money(string $currency = 'USD', int $decimals = 0): static
+    {
+        return $this->setOnLast('format', [
+            'style' => 'currency',
+            'currency' => strtoupper($currency),
+            'decimals' => max(0, $decimals),
+        ]);
+    }
+
+    /**
+     * The decimals of the value of the card added last; its number is
+     * formatted by the panel's locale either way.
+     */
+    public function precision(int $decimals): static
+    {
+        return $this->setOnLast('precision', max(0, $decimals));
+    }
+
+    /**
+     * A text before the value of the card added last.
+     */
+    public function prefix(string $prefix): static
+    {
+        return $this->setOnLast('prefix', $prefix);
+    }
+
+    /**
+     * A text after the value of the card added last — a unit.
+     */
+    public function suffix(string $suffix): static
+    {
+        return $this->setOnLast('suffix', $suffix);
+    }
+
+    private function setOnLast(string $key, mixed $value): static
+    {
+        if ($this->stats !== []) {
+            $this->stats[array_key_last($this->stats)][$key] = $value;
+        }
+
+        return $this;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function data(): array

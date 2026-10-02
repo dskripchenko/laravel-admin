@@ -79,3 +79,21 @@ describe('resolveLinkHref', () => {
     expect(resolveLinkHref('', { id: 1 }, 'x')).toBe('')
   })
 })
+
+describe('formatCell money follows the panel locale', () => {
+  afterEach(() => {
+    document.documentElement.lang = ''
+  })
+
+  it('formats an ISO currency with the locale separators and sign', () => {
+    document.documentElement.lang = 'en'
+    expect(formatCell(12579.83, 'money', { currency: 'USD', decimals: 2 })).toBe('$12,579.83')
+    document.documentElement.lang = 'ru'
+    expect(formatCell(12579.83, 'money', { currency: 'USD', decimals: 2 }).replace(/\s/g, ' ')).toBe('12 579,83 $')
+  })
+
+  it('keeps a currency that is no ISO code after the number', () => {
+    document.documentElement.lang = 'en'
+    expect(formatCell(1500, 'money', { currency: 'points', decimals: 0 })).toBe('1,500 points')
+  })
+})

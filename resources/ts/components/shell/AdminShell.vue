@@ -262,13 +262,16 @@ onBeforeUnmount(() => {
  * in other contexts (the UI kit's storybook, tests).
  */
 .admin-shell.uid-layout-sidebar {
-  height: 100vh;
+  /* --admin-banner-height: the installation banners above the SPA, measured
+     by the shell page; the shell takes what is left of the viewport. */
+  --admin-shell-height: calc(100vh - var(--admin-banner-height, 0px));
+  height: var(--admin-shell-height);
   min-height: 0;
-  max-height: 100vh;
+  max-height: var(--admin-shell-height);
   overflow: hidden;
 }
 .admin-shell .uid-layout-sidebar__sidebar {
-  height: 100vh;
+  height: var(--admin-shell-height);
 }
 .admin-shell .uid-pattern-sidebar {
   height: 100%;
@@ -293,9 +296,14 @@ onBeforeUnmount(() => {
 }
 .admin-shell .uid-pattern-sidebar__footer {
   flex: none;
+  /* The admin foot inside draws the one bottom line, level with the main
+     footer's; the pattern's own padding and border-top added a second line
+     12px above it. */
+  padding: 0;
+  border-top: none;
 }
 .admin-shell .uid-layout-sidebar__main {
-  height: 100vh;
+  height: var(--admin-shell-height);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -315,8 +323,8 @@ onBeforeUnmount(() => {
 .admin-shell-root[data-admin-impersonating='true'] .admin-shell.uid-layout-sidebar,
 .admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__sidebar,
 .admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__main {
-  height: calc(100vh - 32px);
-  max-height: calc(100vh - 32px);
+  height: calc(100vh - 32px - var(--admin-banner-height, 0px));
+  max-height: calc(100vh - 32px - var(--admin-banner-height, 0px));
 }
 
 /*

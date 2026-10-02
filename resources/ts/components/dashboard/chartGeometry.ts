@@ -4,6 +4,7 @@
  * formatting. Pure functions — the components only lay the results out.
  */
 import { toneColor } from './toneColor'
+import { formatNumber } from '../../stores/i18n'
 
 /** One drawable series: the backend's dataset with its colour resolved. */
 export interface ChartSeries {
@@ -133,17 +134,14 @@ export function niceScale(min: number, max: number, count = 4): NiceScale {
   return { min: lo, max: hi, ticks }
 }
 
-const compactFormat = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })
-const fullFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 })
-
-/** An axis tick: compact (1.2K, 3M). */
+/** An axis tick: compact (1.2K, 3M), in the panel's locale. */
 export function formatTick(v: number): string {
-  return compactFormat.format(v)
+  return formatNumber(v, { notation: 'compact', maximumFractionDigits: 1 })
 }
 
-/** A value in a tooltip or the data table: full, with grouping. */
+/** A value in a tooltip or the data table: full, with grouping, in the panel's locale. */
 export function formatValue(v: number | null): string {
-  return v === null ? '—' : fullFormat.format(v)
+  return v === null ? '—' : formatNumber(v, { maximumFractionDigits: 2 })
 }
 
 /** A rough text width in px for the axis font — enough to keep labels apart. */

@@ -53,3 +53,27 @@ describe('MarkdownWidget', () => {
     expect(body.text()).toContain('<script>')
   })
 })
+
+describe('StatWidget number formatting follows the panel locale', () => {
+  const stats = [
+    { label: 'Revenue', value: 1591285, format: { style: 'currency', currency: 'USD', decimals: 0 } },
+    { label: 'Orders', value: 1681 },
+    { label: 'Per order', value: 2.5, precision: 1 },
+  ]
+
+  it('formats money, numbers and decimals in Russian for a Russian panel', () => {
+    document.documentElement.lang = 'ru'
+    const wrapper = mount(StatWidget, { props: { stats } })
+    const values = wrapper.findAll('.uid-stat__value').map((v) => v.text().replace(/\s/g, ' '))
+    expect(values[0]).toBe('1 591 285 $')
+    expect(values[1]).toBe('1 681')
+    expect(values[2]).toBe('2,5')
+  })
+
+  it('formats them in English for an English panel', () => {
+    document.documentElement.lang = 'en'
+    const wrapper = mount(StatWidget, { props: { stats } })
+    const values = wrapper.findAll('.uid-stat__value').map((v) => v.text())
+    expect(values).toEqual(['$1,591,285', '1,681', '2.5'])
+  })
+})

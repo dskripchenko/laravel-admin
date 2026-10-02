@@ -42,6 +42,11 @@ final class ContentDashboardScreen extends DashboardScreen
 }
 ```
 
+`stat()` принимает число как есть, панель форматирует его в своей локали. Для
+денег вызовите на карточке `money()`: `->stat('Выручка', $revenue)->money('USD')`
+покажет `$1,591,285` по-английски и `1 591 285 $` по-русски. `precision()`,
+`prefix()` и `suffix()` тоже описывают последнюю добавленную карточку.
+
 Регистрация: `Admin::screen([ContentDashboardScreen::class])`. URL:
 `/admin/dashboard/content`.
 

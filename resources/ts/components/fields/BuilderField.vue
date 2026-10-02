@@ -53,13 +53,19 @@ function fromState(): BlockItem[] {
   return (v as BlockItem[]).map((b) => ({ type: b.type, data: { ...(b.data ?? {}) } }))
 }
 
+// A stable key per item, so moving or removing one does not hand another
+// item's sub-form to it.
+let keySeq = 0
+const nextKey = (): number => ++keySeq
 const blocksState = ref<BlockItem[]>(fromState())
+const keys = ref<number[]>(blocksState.value.map(nextKey))
 
 watch(
   () => form.getField(props.name),
   (next) => {
     if (JSON.stringify(next ?? []) !== JSON.stringify(blocksState.value)) {
       blocksState.value = fromState()
+      keys.value = blocksState.value.map(nextKey)
     }
   },
 )
@@ -76,11 +82,13 @@ const canAdd = computed(
 
 function addBlock(type: string): void {
   blocksState.value.push({ type, data: {} })
+  keys.value.push(nextKey())
   sync()
 }
 
 function removeBlock(idx: number): void {
   blocksState.value.splice(idx, 1)
+  keys.value.splice(idx, 1)
   sync()
 }
 
@@ -90,6 +98,9 @@ function move(idx: number, dir: -1 | 1): void {
   const copy = [...blocksState.value]
   ;[copy[idx], copy[target]] = [copy[target], copy[idx]]
   blocksState.value = copy
+  const ks = [...keys.value]
+  ;[ks[idx], ks[target]] = [ks[target], ks[idx]]
+  keys.value = ks
   sync()
 }
 
@@ -113,7 +124,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 
     <UidCard
       v-for="(block, idx) in blocksState"
-      :key="idx"
+      :key="keys[idx] ?? idx"
       padding="md"
       class="admin-builder__block"
     >

@@ -286,4 +286,18 @@ watch(
 .admin-screen-page__body {
   margin-bottom: var(--uid-space-2xl);
 }
+/*
+ * The screen's layouts stack with one rhythm, whatever they are: a dashboard
+ * grid or a rows layout followed by a block used to touch it, since only the
+ * block carried a margin of its own.
+ */
+.admin-screen-page__body > .uid-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-lg);
+  min-width: 0;
+}
+.admin-screen-page__body > .uid-card__body > .admin-section {
+  margin-bottom: 0;
+}
 </style>

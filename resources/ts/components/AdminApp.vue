@@ -23,7 +23,7 @@ import { useAppReady } from '../composables/useAppReady'
 import { useShellVisibility } from '../composables/useShellVisibility'
 import { provideLocale, ru as uidRu, en as uidEn } from '@dskripchenko/ui'
 import { useLocaleStore } from '../stores/locale'
-import { trSafe as tr } from '../stores/i18n'
+import { intlLocale, trSafe as tr } from '../stores/i18n'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -32,7 +32,12 @@ const brand = useBrand()
 // The UI kit's locale follows the panel's, so that the built-in strings of
 // the @dskripchenko/ui primitives ("Select…" and the rest) follow it too.
 const localeStore = useLocaleStore()
-provideLocale(computed(() => (localeStore.current === 'en' ? uidEn : uidRu)))
+// The kit formats its numbers and dates by the locale's `code`: the panel's
+// own locale, whichever of the kit's string bags stands in for it.
+provideLocale(computed(() => ({
+  ...(localeStore.current === 'en' ? uidEn : uidRu),
+  code: intlLocale(localeStore.current),
+})))
 
 /**
  * The impersonation state: when the active session is an impersonation, the

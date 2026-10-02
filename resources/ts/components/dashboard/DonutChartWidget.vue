@@ -8,7 +8,7 @@
  */
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
-import { trSafe as tr } from '../../stores/i18n'
+import { formatNumber, trSafe as tr } from '../../stores/i18n'
 import { toneColor } from './toneColor'
 
 interface Slice {
@@ -68,7 +68,7 @@ const slices = computed(() => {
       ...s,
       path,
       color: toneColor(s.color) || PALETTE[idx % PALETTE.length],
-      pct: ((s.value / total.value) * 100).toFixed(1),
+      pct: formatNumber((s.value / total.value) * 100, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
     }
   })
 })
@@ -90,7 +90,7 @@ const slices = computed(() => {
           stroke="var(--uid-surface-raised)"
           stroke-width="1"
         >
-          <title>{{ s.label }}: {{ s.value }} ({{ s.pct }}%)</title>
+          <title>{{ s.label }}: {{ formatNumber(s.value) }} ({{ s.pct }}%)</title>
         </path>
         <circle v-if="hole" cx="60" cy="60" r="30" fill="var(--uid-surface-raised)" />
       </svg>

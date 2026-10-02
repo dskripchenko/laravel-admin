@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   endpoint and no control in the panel. The button shows when
   `replicable()` is on and the user holds the `replicate` permission; the copy
   opens for editing.
+- **`Layout::resourceIndex(Resource::class)`** embeds the live list page of a
+  resource into a screen: the table with its search, filters, sorting, row
+  and bulk actions, inline edits, reordering and trash, or the tree of a
+  hierarchical resource. It is hidden from a user without the resource's view
+  permission. One per screen.
+- **`StatsOverviewWidget::money()`, `precision()`, `prefix()`, `suffix()`**
+  describe the card added last. Pass raw numbers to `stat()`: `money('USD')`
+  formats the value as money in the panel's locale (`$1,591,285` in English,
+  `1 591 285 $` in Russian).
 
 ### Changed
 
@@ -101,6 +110,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the error message never showed and there was no retry button. Both use
   the states' `description` and an actions slot now, and the tree page offers
   resetting a search that matched nothing.
+- **Repeater and Builder items did not move.** The "move up/down" buttons
+  rewrote the state while every item's sub-form kept showing its old values,
+  and removing the first item showed the removed one's values in its place.
+  Items are keyed stably now, and a nested sub-form follows a value replaced
+  from outside.
+- **Stacked layouts on a screen touched each other.** A dashboard grid or a
+  rows layout followed by a block had no gap above the block; the screen's
+  layouts now stack with one rhythm, and a trailing block no longer adds a
+  margin at the bottom.
+- **Dashboard widgets overlapped or were cut off.** A widget whose content
+  outgrew its rows (a stats group wrapping onto two lines, a long table)
+  spilled over the widget below and the page clipped the last row. A
+  dashboard row is now a 140px minimum that grows with its content.
+- **The shell ran past the bottom of the screen under an installation
+  banner.** The notice and the stale-assets banners pushed the full-height
+  shell down, hiding the footer and the bottom of every page (the
+  pagination). The shell now takes the height the banners leave.
+- **Numbers, money and dates follow the panel's locale everywhere.** Money
+  columns (`asMoney()`), chart axes and tooltips, donut percentages, the
+  view page's timestamps, API tokens, notifications and the audit trail used
+  the browser's locale or hardcoded Russian; the UI kit gets the panel's
+  locale for its own formatting too. Money columns show the currency's sign
+  for an ISO code (`$12,579.83`).
+- **"1681 record" in English.** The record count of a list used Russian
+  plural rules in every language; it uses the panel language's rules now.
+- **Menu groups had a larger font than items.** A group's button reset its
+  font to the inherited 16px; it now uses the item's size.
+- **The sidebar footer drew two lines.** The pattern's own padding and border
+  stacked on top of the admin footer's line.
+- **An embedded page widget looked cut off.** `IframeWidget` draws a frame
+  around the embedded page, so it reads as a viewport that scrolls.
 
 ## 1.43.0
 

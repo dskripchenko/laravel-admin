@@ -54,7 +54,7 @@ import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
 import { applyPositions, buildReorderPayload, canDragReorder, type ReorderResponse } from './reorder'
 import { adminToast } from '../../stores/toast'
-import { useI18nStore } from '../../stores/i18n'
+import { formatLocale, useI18nStore } from '../../stores/i18n'
 import {
   needsSelection,
   normalizeActions,
@@ -759,10 +759,11 @@ const totalLabel = computed(() => {
  * slot.
  */
 function pluralRecords(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return tr('запись')
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return tr('записи')
+  // The form is chosen by the panel's language rules, not Russian ones: an
+  // English panel must not get "1681 record" because 1681 ends in a 1.
+  const form = new Intl.PluralRules(formatLocale()).select(n)
+  if (form === 'one') return tr('запись')
+  if (form === 'few' || form === 'two') return tr('записи')
   return tr('записей')
 }
 

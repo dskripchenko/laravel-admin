@@ -14,7 +14,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { UidButton, UidCard, UidIcon, UidSpinner } from '@dskripchenko/ui'
 import { useNotificationsStore, type NotificationFilter, type NotificationItem } from '../../stores/notifications'
-import { trSafe as tr, tRaw } from '../../stores/i18n'
+import { formatLocale, trSafe as tr, tRaw } from '../../stores/i18n'
 import {
   notificationBody,
   notificationIcon,
@@ -80,7 +80,7 @@ const itemKind = (i: NotificationItem): NotificationTone => notificationTone(i)
 function when(iso: string | null): string {
   if (iso === null) return ''
 
-  return new Date(iso).toLocaleString()
+  return new Date(iso).toLocaleString(formatLocale())
 }
 
 onMounted(() => {

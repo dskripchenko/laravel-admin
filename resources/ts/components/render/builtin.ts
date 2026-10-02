@@ -48,6 +48,7 @@ import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
 import TabsLayout from '../layouts/TabsLayout.vue'
 import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
+import ResourceIndexLayout from '../layouts/ResourceIndexLayout.vue'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import AccordionLayout from '../layouts/AccordionLayout.vue'
 import WizardLayout from '../layouts/WizardLayout.vue'
@@ -201,6 +202,8 @@ export function registerBuiltinComponents(): void {
       // Widgets on an ordinary screen: `Layout\Dashboard::make([...])`.
       dashboard: DashboardLayout,
       'admin.resource-table': EmbeddedResourceTable,
+      // `Layout::resourceIndex(Resource::class)` — the live list page of a resource on a screen.
+      'admin.resource-index': ResourceIndexLayout,
     },
   })
 }

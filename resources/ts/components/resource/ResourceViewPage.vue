@@ -16,7 +16,7 @@
  *   └──────────────────────────────┴─────────────────┘
  */
 import { computed, onMounted, watch } from 'vue'
-import { tRaw } from '../../stores/i18n'
+import { formatLocale, tRaw } from '../../stores/i18n'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, MoreHorizontal, Pencil, Trash2 } from 'lucide-vue-next'
 import {
@@ -116,7 +116,7 @@ const defaultMetrics = computed<MetricRow[]>(() => {
     if (typeof iso !== 'string' || iso === '') return null
     const ts = new Date(iso)
     if (Number.isNaN(ts.getTime())) return null
-    return ts.toLocaleString('ru-RU', {
+    return ts.toLocaleString(formatLocale(), {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
