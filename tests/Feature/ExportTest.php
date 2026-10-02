@@ -158,3 +158,21 @@ it('exportCsv больше не регистрируется — остался 
 
     $response->assertNotFound();
 });
+
+it('exports the rows the list shows: the q and order the panel sends', function (): void {
+    foreach (['Alice', 'Bob', 'Alina'] as $name) {
+        TestResourceUserModel::create(['name' => $name, 'email' => strtolower($name).'@example.com', 'password' => 'x']);
+    }
+
+    // The body of ResourceIndexPage's export: the format plus the search's own q, filters and order.
+    $response = $this->post('/api/admin/test-users/export', [
+        'format' => 'csv',
+        'q' => 'Ali',
+        'order' => [['column' => 'name', 'direction' => 'desc']],
+    ]);
+
+    $response->assertOk();
+    $csv = $response->streamedContent();
+    expect($csv)->not->toContain('Bob');
+    expect(strpos($csv, 'Alina'))->toBeLessThan(strpos($csv, 'Alice') ?: 0);
+});

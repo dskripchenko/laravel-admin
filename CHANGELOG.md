@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- **A "Make a copy" row button for replicable resources.** `replicate` had an
+  endpoint and no control in the panel. The button shows when
+  `replicable()` is on and the user holds the `replicate` permission; the copy
+  opens for editing.
+
 ### Changed
 
 - **Requires `@dskripchenko/ui` ^1.7.0.** The kit release brings floating
@@ -49,6 +56,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   font with `font: inherit`, overriding the kit's item size and weight: groups
   rendered at 16px/400 next to 14px/500 leaves. Only the family and the line
   height are inherited now.
+- **Dragging a row to reorder it failed with a 422.** The list page posted
+  `{ids}` to `POST /{slug}/reorder`, while the endpoint accepted only
+  `{items: [{id, position}]}`. The endpoint now takes both: `ids` — the rows in
+  their new order — trade the positions they already hold, smallest first, so
+  a page of a paginated or filtered list reorders within its own slots (or are
+  numbered from `offset` when those positions are missing or repeat); `items`
+  is written as given. The answer carries the new `positions`, and the list
+  shows them. Positions are written through the resource's `modelQuery()`, so
+  its scopes apply. The panel sends `{ids, offset}`, and a shared fixture ties
+  the SPA's test and the endpoint's test to the same body.
+- **Drag-reordering under a foreign sort.** The handle is disabled unless the
+  list is in its manual order (no sort, or the reorder column ascending): a
+  drop on a list sorted by another column scrambled the stored order.
+- **The export ignored the list's sort.** It now receives the same `q`,
+  `filters` and `order` as the search, and the server applies the order, so
+  the file holds the rows in the order the table shows them. Before, the
+  panel also sent the search text as `search`, which the endpoint never read,
+  and filters in a shape the search does not use.
 
 ## 1.43.0
 

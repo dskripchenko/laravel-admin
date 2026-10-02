@@ -145,6 +145,16 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     return params
   }
 
+  /**
+   * What the list is narrowed and ordered by — `q`, `filters`, `order` — in
+   * the shape search takes, for the requests that must see the same rows: the
+   * export.
+   */
+  function queryParams(): Record<string, unknown> {
+    const { page: _page, per_page: _perPage, ...rest } = buildParams()
+    return rest
+  }
+
   /** Loads a page. Without arguments it uses the current filters, sort and page. */
   async function load(override: IndexParams = {}): Promise<void> {
     if (!slug.value) {
@@ -283,6 +293,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     setSlug,
     reset,
     load,
+    queryParams,
     setSearch,
     setFilter,
     clearFilters,
