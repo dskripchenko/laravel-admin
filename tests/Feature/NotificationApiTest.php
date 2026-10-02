@@ -156,3 +156,61 @@ it('AdminUser->notify integrates with Laravel notification system', function ():
     $stored = $this->admin->notifications()->first();
     expect($stored->data['title'])->toBe('Hi');
 });
+
+it('notifications.list translates the stored text into the reader locale', function (): void {
+    Illuminate\Support\Facades\Lang::addLines([
+        '*.Импорт завершён' => 'Import finished',
+        '*.Импортировано записей: :count' => ':count records imported',
+    ], 'en');
+    app()->setLocale('en');
+
+    $this->admin->notify(new Dskripchenko\LaravelAdmin\Notifications\AdminNotification(
+        title: 'Импорт завершён',
+        body: 'Импортировано записей: :count',
+        level: 'success',
+        params: ['count' => 1234],
+    ));
+    // A row stored before params existed, with text that has no translation.
+    createNotificationFor($this->admin, 'Готовый текст', 'без перевода');
+
+    $data = collect($this->withHeader('X-Admin-Locale', 'en')
+        ->getJson('/api/admin/notifications/list')
+        ->assertOk()
+        ->json('payload.data'))->pluck('data');
+
+    $titles = $data->pluck('title')->all();
+    $bodies = $data->pluck('body')->all();
+    expect($titles)->toContain('Import finished')->toContain('Готовый текст');
+    expect($bodies)->toContain('1234 records imported')->toContain('без перевода');
+});
+
+it('notifications.list keeps the source text in the source locale, with params filled', function (): void {
+    app()->setLocale('ru');
+    $this->admin->notify(new Dskripchenko\LaravelAdmin\Notifications\AdminNotification(
+        title: 'Счёт :number оплачен',
+        params: ['number' => 'A-17'],
+    ));
+
+    $data = $this->withHeader('X-Admin-Locale', 'ru')
+        ->getJson('/api/admin/notifications/list')
+        ->json('payload.data.0.data');
+
+    expect($data['title'])->toBe('Счёт A-17 оплачен');
+    expect($data['params'])->toBe(['number' => 'A-17']);
+});
+
+it('notifications.unread translates as well, honouring per-key params', function (): void {
+    Illuminate\Support\Facades\Lang::addLines(['*.Новый заказ :id' => 'New order :id'], 'en');
+    app()->setLocale('en');
+    DatabaseNotification::create([
+        'id' => (string) Str::uuid(),
+        'type' => 'HostNotification',
+        'notifiable_type' => $this->admin->getMorphClass(),
+        'notifiable_id' => $this->admin->id,
+        'data' => ['subject' => 'Новый заказ :id', 'subject_params' => ['id' => 42], 'params' => ['id' => 1]],
+    ]);
+
+    $response = $this->withHeader('X-Admin-Locale', 'en')->getJson('/api/admin/notifications/unread');
+
+    expect(collect($response->json('payload'))->flatten()->all())->toContain('New order 42');
+});

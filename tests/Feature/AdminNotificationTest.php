@@ -101,3 +101,10 @@ it('me unread_count drops to 0 when all notifications are read', function (): vo
     $response = $this->getJson('/api/admin/system/me');
     expect($response->json('payload.unread_notifications_count'))->toBe(0);
 });
+
+it('AdminNotification::toArray stores params only when given', function (): void {
+    $n = new AdminNotification(title: 'Счёт :number оплачен', params: ['number' => 'A-17']);
+
+    expect($n->toArray(null)['params'])->toBe(['number' => 'A-17']);
+    expect(new AdminNotification('T'))->toArray(null)->not->toHaveKey('params');
+});
