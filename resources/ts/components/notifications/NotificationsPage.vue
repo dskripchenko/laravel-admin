@@ -15,6 +15,7 @@ import { computed, onMounted, ref } from 'vue'
 import { UidButton, UidCard, UidSpinner } from '@dskripchenko/ui'
 import { useNotificationsStore, type NotificationFilter, type NotificationItem } from '../../stores/notifications'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
+import { notificationBody, notificationTitle, notificationTone } from './notificationView'
 
 const notifications = useNotificationsStore()
 const filter = ref<NotificationFilter>('all')
@@ -53,15 +54,14 @@ async function onReadAll(): Promise<void> {
   await notifications.load(filter.value, page.value).catch(() => undefined)
 }
 
-const itemTitle = (i: NotificationItem): string => (i.data.title as string | undefined) ?? '—'
-const itemBody = (i: NotificationItem): string => (i.data.body as string | undefined) ?? ''
+const itemTitle = (i: NotificationItem): string => notificationTitle(i, '—')
+const itemBody = (i: NotificationItem): string => notificationBody(i)
 const itemUrl = (i: NotificationItem): string | null => (i.data.url as string | undefined) ?? null
 
+/** AdminNotification's level — 'error' included — as the page's tone. */
 function itemKind(i: NotificationItem): 'info' | 'success' | 'warning' | 'danger' {
-  const lvl = i.data.level
-  if (lvl === 'success' || lvl === 'warning' || lvl === 'danger') return lvl
-
-  return 'info'
+  const tone = notificationTone(i)
+  return tone === 'neutral' ? 'info' : tone
 }
 
 /**

@@ -49,11 +49,23 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 const timed = computed<boolean>(() => props.withTime || props.inputType === 'datetime-local')
 
 const parts = computed(() => splitDateTime(form.getField(props.name)))
+/**
+ * The value UidDatePicker gets: a 'YYYY-MM-DD' that is a real date, or
+ * nothing. A datetime stored in a date field gives its date part; anything
+ * else — free text, '2026-13-45' — leaves the picker empty instead of drawing
+ * NaN.NaN.NaN.
+ */
 const dateValue = computed<string | null>(() => {
-  if (timed.value) return parts.value.date
-  const v = form.getField(props.name)
-  return v === null || v === undefined || v === '' ? null : String(v)
+  if (timed.value) return validDate(parts.value.date)
+  return validDate(splitDateTime(form.getField(props.name)).date)
 })
+
+function validDate(date: string | null): string | null {
+  if (!date) return null
+  const [y, m, d] = date.split('-').map(Number)
+  const probe = new Date(y ?? NaN, (m ?? NaN) - 1, d ?? NaN)
+  return probe.getFullYear() === y && probe.getMonth() === (m ?? 0) - 1 && probe.getDate() === d ? date : null
+}
 
 /** A time picked before the date: kept until the date arrives. */
 const pendingTime = ref<string | null>(null)

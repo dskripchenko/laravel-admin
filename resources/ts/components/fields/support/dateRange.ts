@@ -8,8 +8,9 @@ export interface DateRangeValue {
   end: string | null
 }
 
+/** The 'YYYY-MM-DD' a value starts with; anything else is no date at all. */
 const datePart = (v: unknown): string | null =>
-  typeof v === 'string' && v !== '' ? v.slice(0, 10) : null
+  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null
 
 export function readDateRange(raw: unknown): DateRangeValue {
   if (Array.isArray(raw)) return { start: datePart(raw[0]), end: datePart(raw[1]) }

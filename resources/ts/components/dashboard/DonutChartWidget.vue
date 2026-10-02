@@ -9,6 +9,7 @@
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
 import { trSafe as tr } from '../../stores/i18n'
+import { toneColor } from './toneColor'
 
 interface Slice {
   label: string
@@ -19,10 +20,13 @@ interface Slice {
 interface Props {
   title?: string
   data: Slice[]
+  /** A doughnut's hole; a pie is drawn without one. */
+  hole?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
+  hole: true,
 })
 
 const PALETTE = [
@@ -63,7 +67,7 @@ const slices = computed(() => {
     return {
       ...s,
       path,
-      color: s.color ?? PALETTE[idx % PALETTE.length],
+      color: toneColor(s.color) || PALETTE[idx % PALETTE.length],
       pct: ((s.value / total.value) * 100).toFixed(1),
     }
   })
@@ -83,10 +87,12 @@ const slices = computed(() => {
           :key="idx"
           :d="s.path"
           :fill="s.color"
+          stroke="var(--uid-surface-raised)"
+          stroke-width="1"
         >
           <title>{{ s.label }}: {{ s.value }} ({{ s.pct }}%)</title>
         </path>
-        <circle cx="60" cy="60" r="30" fill="var(--uid-surface-raised)" />
+        <circle v-if="hole" cx="60" cy="60" r="30" fill="var(--uid-surface-raised)" />
       </svg>
       <ul class="admin-donut-widget__legend">
         <li v-for="(s, idx) in slices" :key="idx">

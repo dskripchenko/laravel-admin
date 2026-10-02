@@ -47,7 +47,7 @@ const meta = computed(() => manifest.manifest?.settings?.find((s) => s.slug === 
   border: 1px solid var(--uid-border-subtle);
   padding: var(--uid-space-sm);
   border-radius: var(--uid-radius-sm);
-  font-family: var(--uid-font-mono);
+  font-family: var(--uid-font-family-mono);
   font-size: var(--uid-font-size-xs);
   overflow: auto;
   max-height: 60vh;

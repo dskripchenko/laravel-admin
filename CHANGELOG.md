@@ -24,6 +24,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dskripchenko/laravel-delayed-process` ^2.1.2; its progress reporting
   (`ProcessProgressInterface::setProgress()`) is documented in the async
   action docs.
+- **Breadcrumbs in the top bar.** The shell derives the trail from the menu
+  (group, parent items, the active item), then the resource, the record
+  (`Resource::recordTitle()`, else its title, name or label, else `#id`) and
+  the "Creating"/"Editing" step; a page outside the menu is named by its
+  title. Crumbs navigate through the router; the trail is also passed to a
+  custom `topbar` slot.
+- `GaugeWidget::precision(int)` sets the decimals shown. Unset, a whole value
+  shows none and a fractional one up to two (82.6 is no longer rounded to 83).
+- `Select::multiple()` is a multi-choice dropdown with removable tags, its
+  value a list. `Checkbox` with `options()` is a group of checkboxes (a row
+  with `inline()`), its value the list of checked values.
+- `Block::icon()` is drawn before the block title, in forms and infolists.
+- Table cells share one renderer across resource lists, embedded resource
+  tables, `RelationTable` fields and `TableWidget`: `TableColumn::asImage()`
+  draws a thumbnail (`meta.width`/`meta.height`), badges and links work in
+  every one of them, editable cells included.
+- PHP date format strings in columns support every `date()` token; month and
+  day names (`M`, `F`, `D`, `l`) follow the panel language, with the Russian
+  genitive month inside a date ("1 октября").
 
 ### Fixed
 
@@ -59,6 +78,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and date settings (`asMoney()` and friends now also send `meta`), and an
   entry without `label()` gets a caption from its name, like a field
   (`unit_price` → "Unit Price"). An explicit `label('')` still hides it.
+- **Gauge and chart colours follow the theme.** A zone or dataset colour given
+  as a tone (`success`, `warning`, `danger`, `info`, `primary`, `neutral`) or
+  a colour word (`green`, `amber`, `red`…) maps to the UI kit tokens, dark
+  mode included; any other CSS colour passes through.
+- **A `pie` chart is a full disc;** only `doughnut` has a hole.
+- **`IframeWidget` no longer triggers the browser sandbox warning.** The
+  default sandbox is `allow-scripts allow-forms allow-popups`
+  (`IframeWidget::DEFAULT_SANDBOX`); `allow-same-origin` together with
+  `allow-scripts` let the frame lift its own sandbox. A page that needs its
+  origin asks for it through `sandbox()`.
+- **`TableColumn::defaultHidden()` is respected:** such a column starts
+  hidden in the column switcher and stays hidden in embedded tables;
+  `cantHide()` locks the switch.
+- **Row action icons are shown in the row menu.**
+- **Markdown renders nested lists** — ordered in unordered and back, several
+  levels deep, with continuation paragraphs and code inside an item; an
+  ordered list keeps its starting number.
+- **The notifications drawer shows an `AdminNotification` body**, its level
+  (`error` included) as the colour and its `icon`.
+- **`Slider` and `RepeatableEntry` show their label once**, not twice.
+- **A date field with a value that is no date stays empty** instead of showing
+  "NaN.NaN.NaN".
+- **A long command bar no longer squeezes the page title:** it wraps under the
+  title instead. Code blocks use a monospace stack with Cyrillic on every
+  platform instead of falling back to a serif face. The row actions column
+  stays in view on wide tables.
+- **A switch in the generated view page reads "Yes"/"No"** instead of the raw
+  `admin.common.yes`/`admin.common.no` keys.
 
 ## 1.38.0
 

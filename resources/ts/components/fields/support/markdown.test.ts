@@ -100,3 +100,38 @@ describe('splitMarkdown', () => {
     expect(splitMarkdown('')).toEqual([])
   })
 })
+
+describe('renderMarkdown — lists', () => {
+  it('nests a list indented under an item', () => {
+    const html = renderMarkdown('- One\n  - One.a\n  - One.b\n- Two')
+    expect(html).toBe('<ul><li>One<ul><li>One.a</li><li>One.b</li></ul></li><li>Two</li></ul>')
+  })
+
+  it('nests ordered in unordered, three levels deep', () => {
+    const html = renderMarkdown('- A\n  1. A1\n     - A1x\n  2. A2\n- B')
+    expect(html).toBe('<ul><li>A<ol><li>A1<ul><li>A1x</li></ul></li><li>A2</li></ol></li><li>B</li></ul>')
+  })
+
+  it('keeps one list across blank lines and a continuation paragraph', () => {
+    const html = renderMarkdown('1. First\n\n   More about the first.\n\n2. Second')
+    expect(html).toBe('<ol><li>First<p>More about the first.</p></li><li>Second</li></ol>')
+  })
+
+  it('joins a lazy continuation line to the item', () => {
+    expect(renderMarkdown('- one\ntwo\n- three')).toBe('<ul><li>one\ntwo</li><li>three</li></ul>')
+  })
+
+  it('starts an ordered list at its first number', () => {
+    expect(renderMarkdown('3. c\n4. d')).toBe('<ol start="3"><li>c</li><li>d</li></ol>')
+  })
+
+  it('ends the list at a heading or a paragraph after a blank line', () => {
+    expect(renderMarkdown('- a\n\nText')).toBe('<ul><li>a</li></ul>\n<p>Text</p>')
+    expect(renderMarkdown('- a\n# H')).toBe('<ul><li>a</li></ul>\n<h1>H</h1>')
+  })
+
+  it('keeps code nested in an item', () => {
+    const html = renderMarkdown('- Run:\n\n  ```\n  php artisan\n  ```\n- Done')
+    expect(html).toBe('<ul><li>Run:<pre><code>php artisan</code></pre></li><li>Done</li></ul>')
+  })
+})

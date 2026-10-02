@@ -825,8 +825,8 @@ abstract class Resource
             $entries[] = match (true) {
                 $type === 'switch' => IconEntry::make($name)
                     ->label($label)
-                    ->trueLabel((string) __('admin.common.yes'))
-                    ->falseLabel((string) __('admin.common.no'))
+                    ->trueLabel((string) __('admin::admin.common.yes'))
+                    ->falseLabel((string) __('admin::admin.common.no'))
                     ->trueIcon('check-circle-2')
                     ->falseIcon('x-circle'),
                 $type === 'color' => ColorEntry::make($name)->label($label),

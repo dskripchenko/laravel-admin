@@ -78,4 +78,19 @@ describe('NotificationsDrawer', () => {
 
     expect(document.body.textContent).toContain('Нет уведомлений')
   })
+
+  it('shows an AdminNotification body, its level as the tone and its icon', () => {
+    const store = openDrawer()
+    store.items = [
+      { id: '1', type: 'Dskripchenko\\LaravelAdmin\\Notifications\\AdminNotification', data: { title: 'Import', body: '120 rows imported', level: 'error', icon: 'bell' }, read_at: null, created_at: '2026-08-12T09:00:00Z' },
+      { id: '2', type: 'Dskripchenko\\LaravelAdmin\\Notifications\\AdminNotification', data: { title: 'Saved', level: 'success' }, read_at: null, created_at: '2026-08-12T09:00:00Z' },
+    ] as never
+
+    mount(NotificationsDrawer, { attachTo: document.body })
+
+    expect(document.body.textContent).toContain('120 rows imported')
+    const icons = [...document.querySelectorAll('.admin-notif-drawer__icon')]
+    expect(icons.map((i) => i.getAttribute('data-variant'))).toEqual(['danger', 'success'])
+    expect(icons.every((i) => i.querySelector('svg') !== null)).toBe(true)
+  })
 })

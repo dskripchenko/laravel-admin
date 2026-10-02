@@ -25,6 +25,19 @@
  * radius/shadow/duration/ease/z-*) — синхронны с темами и density.
  */
 
+/*
+ * The monospace stack. The kit names IBM Plex Mono and Fira Code, then
+ * ui-monospace — which only Safari knows — and the generic monospace, which
+ * is Courier in Chrome: wherever the first two are not installed, code and
+ * the Cyrillic in it came out in a serif typewriter face. Every desktop has
+ * one of the system faces listed here, all of them with Cyrillic.
+ */
+:root {
+  --uid-font-family-mono: 'IBM Plex Mono', 'Fira Code', ui-monospace, 'SF Mono', SFMono-Regular,
+    Menlo, Monaco, Consolas, 'Cascadia Mono', 'Liberation Mono', 'DejaVu Sans Mono',
+    'Roboto Mono', 'Courier New', monospace;
+}
+
 /* ============================================================
    Density (data-density на <html>): два пресета как в design handoff.
    Comfortable — 40px row / 14px text, Compact — 32px / 13px (Linear/Supabase).
@@ -153,6 +166,51 @@
 }
 .admin-topbar__breadcrumbs .sep { color: var(--uid-text-tertiary); }
 .admin-topbar__breadcrumbs .cur { color: var(--uid-text-primary); font-weight: 500; }
+/* A long trail stays on one line: every crumb gives way, ellipsized. */
+.admin-topbar__breadcrumbs {
+  min-width: 0;
+  overflow: hidden;
+}
+.admin-topbar__breadcrumbs .uid-breadcrumb {
+  min-width: 0;
+}
+.admin-topbar__breadcrumbs .uid-breadcrumb__list {
+  flex-wrap: nowrap;
+  font-size: 13px;
+}
+/* The parent crumbs give way first; the current page keeps its name longest. */
+.admin-topbar__breadcrumbs .uid-breadcrumb__item {
+  min-width: 0;
+  flex-shrink: 8;
+}
+.admin-topbar__breadcrumbs .uid-breadcrumb__item:last-child {
+  flex-shrink: 1;
+}
+/* A narrow top bar keeps the current page alone; an ellipsis stands for the trail. */
+@media (max-width: 1100px) {
+  .admin-topbar__breadcrumbs .uid-breadcrumb__item:not(:last-child) {
+    display: none;
+  }
+  .admin-topbar__breadcrumbs .uid-breadcrumb__item:last-child:not(:first-child)::before {
+    content: '…\00a0›';
+  }
+}
+.admin-topbar__breadcrumbs .uid-breadcrumb__item + .uid-breadcrumb__item::before {
+  padding: 0 var(--uid-space-xs);
+  color: var(--uid-text-tertiary);
+}
+/* A crumb with no link that is not the current page (a menu group) reads as a step, not as the page. */
+.admin-topbar__breadcrumbs .uid-breadcrumb__item:not(.cur) .uid-breadcrumb__current {
+  color: var(--uid-text-secondary);
+  font-weight: inherit;
+}
+.admin-topbar__breadcrumbs .uid-breadcrumb__link,
+.admin-topbar__breadcrumbs .uid-breadcrumb__current {
+  max-width: 16rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .admin-topbar__search {
   display: flex;
   align-items: center;
@@ -179,6 +237,8 @@
 }
 .admin-topbar__icon-btn {
   position: relative;
+  /* A squeezed icon button stops being a button: the breadcrumbs give way instead. */
+  flex-shrink: 0;
   appearance: none;
   border: 0;
   background: transparent;
@@ -356,8 +416,14 @@
 .admin-page {
   padding: var(--admin-page-pad, 24px);
 }
+/*
+ * The title keeps at least 16rem: a command bar too long to share the row
+ * moves under the title, right-aligned, and wraps there, instead of
+ * squeezing the title into a column of single words.
+ */
 .admin-page__hd {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--uid-space-md);
@@ -367,6 +433,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--uid-space-xs);
+  /* Children keep their own width: a status badge does not stretch along. */
+  align-items: flex-start;
+  flex: 1 1 16rem;
+  min-width: min(100%, 16rem);
 }
 .admin-page__title {
   font-family: var(--uid-font-family-display);
@@ -390,8 +460,12 @@
 }
 .admin-page__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--uid-space-sm);
+  margin-left: auto;
+  max-width: 100%;
 }
 
 /*

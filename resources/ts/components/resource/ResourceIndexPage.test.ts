@@ -438,4 +438,90 @@ describe('ResourceIndexPage', () => {
       wrapper.unmount()
     })
   })
+  describe('cells and columns', () => {
+    const rows = {
+      success: true,
+      payload: {
+        data: [{ id: 1, title: 'Hello', status: 'draft', cover: '/img/1.png', url: '/r/articles/1', secret: 'x' }],
+        meta: { page: 1, per_page: 20, total: 1, last_page: 1 },
+      },
+    }
+
+    it('hides a defaultHidden() column until it is switched on, never a cantHide() one', async () => {
+      seedManifest({
+        columns: [
+          { key: 'title', label: 'Title', cantHide: true, defaultHidden: true },
+          { key: 'secret', label: 'Secret', defaultHidden: true },
+          { key: 'status', label: 'Status' },
+        ],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const wrapper = await mountPage()
+      await flushPromises()
+      const heads = wrapper.findAll('.uid-table__th').map((th) => th.text())
+      expect(heads).toContain('Title')
+      expect(heads).toContain('Status')
+      expect(heads).not.toContain('Secret')
+    })
+
+    it('draws an image, a badge and a link by the column preset', async () => {
+      seedManifest({
+        columns: [
+          { key: 'cover', label: 'Cover', preset: 'image', meta: { width: 40, height: 40 } },
+          { key: 'status', label: 'Status', preset: 'badge', meta: { colors: { draft: 'warning' }, labels: { draft: 'Draft' } } },
+          { key: 'title', label: 'Title', preset: 'link', meta: { template: '{url}' } },
+        ],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const wrapper = await mountPage()
+      await flushPromises()
+      const img = wrapper.find('.admin-cell-image img')
+      expect(img.exists()).toBe(true)
+      expect(img.attributes('src')).toBe('/img/1.png')
+      expect(wrapper.text()).not.toContain('/img/1.png')
+      expect(wrapper.find('.uid-badge--warning').text()).toBe('Draft')
+      expect(wrapper.find('a.uid-link').attributes('href')).toBe('/r/articles/1')
+    })
+
+    it('draws a badge in an editable column too', async () => {
+      seedManifest({
+        columns: [
+          {
+            key: 'status',
+            label: 'Status',
+            preset: 'badge',
+            meta: { colors: { draft: 'warning' } },
+            editable: { field: 'status', validation: [], as: 'select', options: { draft: 'Draft' } },
+          },
+        ],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const wrapper = await mountPage()
+      await flushPromises()
+      expect(wrapper.find('.uid-badge--warning').exists()).toBe(true)
+    })
+
+    it('keeps the icon of a row action in its menu', async () => {
+      seedManifest({
+        actions: [{
+          kind: 'action',
+          name: 'advance',
+          label: 'Advance',
+          type: 'button',
+          icon: 'play',
+          position: ['row'],
+          confirm: null,
+          attributes: { method: 'advance' },
+        }],
+      })
+      mock.onPost('/articles/search').reply(200, rows)
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      await wrapper.find('[data-testid="row-actions-menu"]').trigger('click')
+      await flushPromises()
+      const item = document.body.querySelector('.uid-menu [data-testid="action-advance"]') as HTMLElement
+      expect(item.querySelector('svg')).not.toBeNull()
+      wrapper.unmount()
+    })
+  })
 })

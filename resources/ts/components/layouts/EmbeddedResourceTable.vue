@@ -30,6 +30,8 @@ import {
   type UidTableColumn,
 } from '@dskripchenko/ui'
 import InlineEditCell from '../resource/InlineEditCell.vue'
+import AdminTableCell from '../resource/AdminTableCell.vue'
+import type { CellMeta } from '../resource/cellFormat'
 import { useManifestStore } from '../../stores/manifest'
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { getAdminClient } from '../../stores/registry'
@@ -89,7 +91,8 @@ const visibleColumns = computed<Array<Record<string, unknown>>>(() => {
   const cols = (childMeta.value?.columns ?? []) as Array<Record<string, unknown>>
   return cols.filter((c) => {
     const name = String(c.name ?? '')
-    return !props.hide_columns.includes(name)
+    // No column switcher here: a defaultHidden() column stays hidden.
+    return !props.hide_columns.includes(name) && (c.defaultHidden !== true || c.cantHide === true)
   })
 })
 
@@ -221,10 +224,15 @@ function updateDraftField(col: string, value: unknown): void {
   draft.value = { ...draft.value, [col]: value }
 }
 
-function getCellDisplay(row: Record<string, unknown>, col: string): string {
-  const v = row[col]
-  if (v === null || v === undefined) return ''
-  return String(v)
+function columnDef(col: string): Record<string, unknown> {
+  return visibleColumns.value.find((c) => String(c.name ?? '') === col) ?? {}
+}
+function columnPreset(col: string): string | null {
+  const p = columnDef(col).preset
+  return typeof p === 'string' ? p : null
+}
+function columnCellMeta(col: string): CellMeta {
+  return (columnDef(col).meta as CellMeta | undefined) ?? {}
 }
 </script>
 
@@ -284,10 +292,21 @@ function getCellDisplay(row: Record<string, unknown>, col: string): string {
             :row-override="(rowFromSlot(slotProps)!._editable as Record<string, boolean> | undefined) ?? {}"
             @saved="(v) => { const r = rowFromSlot(slotProps); if (r) r[col.key] = v }"
           >
-            <span>{{ getCellDisplay(rowFromSlot(slotProps)!, col.key) }}</span>
+            <AdminTableCell
+              :value="rowFromSlot(slotProps)![col.key]"
+              :preset="columnPreset(col.key)"
+              :meta="columnCellMeta(col.key)"
+              :row="rowFromSlot(slotProps)"
+            />
           </InlineEditCell>
         </template>
-        <span v-else>{{ getCellDisplay(rowFromSlot(slotProps) ?? {}, col.key) }}</span>
+        <AdminTableCell
+          v-else
+          :value="(rowFromSlot(slotProps) ?? {})[col.key]"
+          :preset="columnPreset(col.key)"
+          :meta="columnCellMeta(col.key)"
+          :row="rowFromSlot(slotProps)"
+        />
       </template>
 
       <template v-if="canDelete" #actions="slotProps">

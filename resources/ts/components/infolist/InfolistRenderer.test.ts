@@ -151,3 +151,28 @@ describe('InfolistRenderer', () => {
   })
 
 })
+
+describe('RepeatableEntry label', () => {
+  beforeEach(() => {
+    clearInfolistRegistry()
+    clearRegistry()
+    registerBuiltinComponents()
+    registerBuiltinInfolistEntries()
+  })
+
+  it('shows its label once, above the entry', () => {
+    const w = mount(Wrap, {
+      props: {
+        node: {
+          type: 'repeatable',
+          name: 'phones',
+          label: 'Phones',
+          entries: [{ type: 'text', name: 'number', label: 'Number' }],
+        },
+        record: { phones: [{ number: '+1' }] },
+      },
+    })
+    expect(w.text().split('Phones')).toHaveLength(2)
+    expect(w.text()).toContain('+1')
+  })
+})

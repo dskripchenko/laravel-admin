@@ -94,6 +94,13 @@ it('GaugeWidget stores value/range/unit/thresholds', function (): void {
     expect($data['thresholds'])->toHaveCount(3);
 });
 
+it('GaugeWidget sends its precision, null until set', function (): void {
+    expect(GaugeWidget::make()->data()['precision'])->toBeNull();
+    expect(GaugeWidget::make()->value(82.6)->precision(1)->data()['precision'])->toBe(1);
+    expect(fn () => GaugeWidget::make()->precision(-1))
+        ->toThrow(InvalidArgumentException::class);
+});
+
 it('GaugeWidget::range rejects max <= min', function (): void {
     expect(fn () => GaugeWidget::make()->range(100, 50))
         ->toThrow(InvalidArgumentException::class);

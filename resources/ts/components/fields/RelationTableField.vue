@@ -7,9 +7,10 @@
  * and the cells use the same presets as a resource list.
  */
 import { computed } from 'vue'
-import { UidBadge, UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
+import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import { formatTableRows, rowBadgeTone, type CellMeta } from '../resource/cellFormat'
+import AdminTableCell from '../resource/AdminTableCell.vue'
+import type { CellMeta } from '../resource/cellFormat'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface BackendColumn {
@@ -40,12 +41,8 @@ const form = useFormState()
 
 const rows = computed<Record<string, unknown>[]>(() => {
   const v = form.getField(props.name)
-  if (!Array.isArray(v)) return []
-  return formatTableRows(v as Record<string, unknown>[], props.columns) as Record<string, unknown>[]
+  return Array.isArray(v) ? (v as Record<string, unknown>[]) : []
 })
-
-// A badge column is drawn as a UidBadge, its tone from the raw value.
-const badgeColumns = computed(() => props.columns.filter((c) => c.preset === 'badge'))
 
 // The UidTable scoped slot passes {row}.
 function slotRow(slotProps: unknown): Record<string, unknown> {
@@ -67,8 +64,14 @@ const uidColumns = computed<UidTableColumn[]>(() =>
     <label v-if="label" class="uid-form-field__label">{{ label }}</label>
     <UidCard padding="sm">
       <UidTable :columns="uidColumns" :data="rows" :empty-text="tr(emptyText)">
-        <template v-for="col in badgeColumns" :key="col.name" #[col.name]="slotProps">
-          <UidBadge v-if="slotRow(slotProps)[col.name] !== ''" :variant="rowBadgeTone(slotRow(slotProps), col)">{{ slotRow(slotProps)[col.name] }}</UidBadge>
+        <!-- Every cell by its column's preset: links, badges, images, formats. -->
+        <template v-for="col in columns" :key="col.name" #[col.name]="slotProps">
+          <AdminTableCell
+            :value="slotRow(slotProps)[col.name]"
+            :preset="col.preset"
+            :meta="col.meta"
+            :row="slotRow(slotProps)"
+          />
         </template>
       </UidTable>
     </UidCard>

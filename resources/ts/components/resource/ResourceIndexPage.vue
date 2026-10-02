@@ -31,7 +31,6 @@ import {
   Upload,
 } from 'lucide-vue-next'
 import {
-  UidBadge,
   UidButton,
   UidEmptyState,
   UidErrorState,
@@ -46,7 +45,8 @@ import {
 import { useResourceIndexStore } from '../../stores/resourceIndex'
 import { useManifestStore } from '../../stores/manifest'
 import { useNavigationStore } from '../../stores/navigation'
-import { badgeTone, formatCell, type BadgeTone, type CellMeta } from './cellFormat'
+import type { CellMeta } from './cellFormat'
+import AdminTableCell from './AdminTableCell.vue'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
@@ -446,9 +446,9 @@ const columns = computed<UidTableColumn[]>(() => {
     }
   })
     .filter((c) => c.key)
-    // Apply the visibility state from the toolbar's "Columns" control: an
-    // explicit false hides the column. Absent from the map means visible.
-    .filter((c) => columnVisibility.value[c.key] !== false)
+    // The visibility from the toolbar's "Columns" control; a column it has not
+    // touched follows TableColumn::defaultHidden().
+    .filter((c) => isColumnVisible(c.key))
   // A reorderable resource gets a drag-handle column in front.
   const head: UidTableColumn[] = isReorderable.value
     ? [{
@@ -475,6 +475,20 @@ const columns = computed<UidTableColumn[]>(() => {
     },
   ]
 })
+
+/**
+ * Whether a column is shown: cantHide() always is; otherwise the toolbar's
+ * choice, and a column it has not touched is shown unless defaultHidden().
+ */
+function isColumnVisible(key: string): boolean {
+  const col = (resourceMeta.value?.columns ?? []).find((c) => {
+    const m = c as Record<string, unknown>
+    return String(m.key ?? m.name ?? '') === key
+  }) as Record<string, unknown> | undefined
+  if (col?.cantHide === true) return true
+  if (key in columnVisibility.value) return columnVisibility.value[key] !== false
+  return col?.defaultHidden !== true
+}
 
 // Per-column metadata from the manifest: preset, format, currency, editable
 // and so on. formatCell uses it (datetime → 'd.m.Y H:i:s', money →
@@ -527,52 +541,8 @@ const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta }>>
   return result
 })
 
-function renderCell(key: string, slotProps: unknown): string {
-  // The UidTable scoped slot passes {row: actualRow}.
-  const row = (slotProps as { row?: Record<string, unknown> } | undefined)?.row
-  const value = row?.[key]
-  const m = columnMeta.value[key]
-  return formatCell(value, m?.preset, m?.meta ?? {})
-}
-
 function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
   return (slotProps as { row?: Record<string, unknown> } | undefined)?.row
-}
-
-/** A badge column — preset 'badge', see TableColumn::asBadge. */
-function columnIsBadge(key: string): boolean {
-  return columnMeta.value[key]?.preset === 'badge'
-}
-
-/** The badge tone of a cell, by the column's colour map — see badgeTone. */
-function badgeVariant(key: string, slotProps: unknown): BadgeTone {
-  return badgeTone(rowFromSlot(slotProps)?.[key], columnMeta.value[key]?.meta ?? {})
-}
-
-/** A link column — preset 'link', see TableColumn::asLink. */
-function columnIsLink(key: string): boolean {
-  return columnMeta.value[key]?.preset === 'link'
-}
-
-/**
- * Resolves the href of a link column: the template from meta.template, with
- * `{field}` standing for a field of the row and `:value` for the cell's own
- * value. Empty when the field is missing or null — then no link is rendered
- * and the plain text remains.
- */
-function linkHref(key: string, slotProps: unknown): string {
-  const row = rowFromSlot(slotProps) ?? {}
-  const tpl = (columnMeta.value[key]?.meta?.template as string | undefined) ?? ''
-  if (!tpl) return ''
-  const href = tpl
-    .replace(/\{(\w+)\}/g, (_m, f: string) => String(row[f] ?? ''))
-    .replace(/:value/g, String(row[key] ?? ''))
-  // Unresolved placeholders left, or nothing at all — then there is no link
-  return href.includes('{') || href === '' ? '' : href
-}
-
-function linkTarget(key: string): string | undefined {
-  return (columnMeta.value[key]?.meta?.target as string | undefined) ?? undefined
 }
 
 /**
@@ -1407,25 +1377,20 @@ async function retryLoad(): Promise<void> {
                 if (r) r[col.key] = v
               }"
             >
-              <span class="admin-cell-truncate">{{ renderCell(col.key, slotProps) }}</span>
+              <AdminTableCell
+                :value="(rowFromSlot(slotProps) ?? {})[col.key]"
+                :preset="columnMeta[col.key]?.preset"
+                :meta="columnMeta[col.key]?.meta"
+                :row="rowFromSlot(slotProps)"
+              />
             </InlineEditCell>
-            <UidBadge
-              v-else-if="columnIsBadge(col.key) && renderCell(col.key, slotProps) !== ''"
-              :variant="badgeVariant(col.key, slotProps)"
-            >{{ renderCell(col.key, slotProps) }}</UidBadge>
-            <a
-              v-else-if="columnIsLink(col.key) && linkHref(col.key, slotProps)"
-              class="admin-cell-truncate admin-cell-link"
-              :href="linkHref(col.key, slotProps)"
-              :target="linkTarget(col.key)"
-              rel="noopener"
-              :title="renderCell(col.key, slotProps)"
-            >{{ renderCell(col.key, slotProps) }}</a>
-            <span
+            <AdminTableCell
               v-else
-              class="admin-cell-truncate"
-              :title="renderCell(col.key, slotProps)"
-            >{{ renderCell(col.key, slotProps) }}</span>
+              :value="(rowFromSlot(slotProps) ?? {})[col.key]"
+              :preset="columnMeta[col.key]?.preset"
+              :meta="columnMeta[col.key]?.meta"
+              :row="rowFromSlot(slotProps)"
+            />
           </slot>
         </template>
       </UidTable>
@@ -1534,7 +1499,7 @@ async function retryLoad(): Promise<void> {
 }
 .admin-resource-index__table {
   /* The table is visually glued to the filter bar or bulk toolbar above it —
-     убираем gap, скругляем только нижние углы у table-wrap'а. */
+     so there is no gap and only the bottom corners of the table-wrap are rounded. */
   margin-top: 0;
 }
 .admin-resource-index__table .uid-table-wrap {
@@ -1558,35 +1523,26 @@ async function retryLoad(): Promise<void> {
 }
 
 /*
- * Cell truncation: one line with an ellipsis and a sane max-width, 320px by
- * default. Long words wrap within that limit up to three lines (line-clamp),
- * in case a host overrides white-space through a slot.
- *
- * The full value is shown by the native browser tooltip through the `title`
- * attribute — see the cell renderer above.
+ * The row actions stay in view however wide the table is: the last column
+ * sticks to the right edge of the horizontal scroll. UidTable has no fixed
+ * columns of its own, hence the override here.
  */
-.admin-cell-truncate {
-  display: inline-block;
-  max-width: var(--admin-cell-max-width, 320px);
-  vertical-align: middle;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.admin-resource-index__table .uid-table__th:last-child,
+.admin-resource-index__table .uid-table__td:last-child:not(.uid-table__td--empty) {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--uid-table-bg, var(--uid-color-surface));
+  box-shadow: inset 1px 0 0 var(--uid-border-subtle);
 }
-.admin-cell-link {
-  color: var(--uid-accent, #2563eb);
-  text-decoration: none;
-  cursor: pointer;
+.admin-resource-index__table .uid-table__th:last-child {
+  background: var(--uid-table-head-bg, var(--uid-color-surface-raised));
 }
-.admin-cell-link:hover {
-  text-decoration: underline;
+.admin-resource-index__table .uid-table__row--selected > .uid-table__td:last-child {
+  background: var(--uid-table-row-bg-selected, var(--uid-color-surface-hover));
 }
-.admin-cell-truncate--multi {
-  display: -webkit-box;
-  white-space: normal;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  word-break: break-word;
+.admin-resource-index__table .uid-table__row:hover > .uid-table__td:last-child {
+  background: var(--uid-table-row-bg-hover, var(--uid-color-surface-hover));
 }
 .admin-resource-index__footer {
   display: flex;

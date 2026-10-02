@@ -17,6 +17,8 @@ use InvalidArgumentException;
  */
 class IframeWidget extends Widget
 {
+    public const DEFAULT_SANDBOX = 'allow-scripts allow-forms allow-popups';
+
     private string $src = '';
 
     /** @var list<string> */
@@ -24,7 +26,13 @@ class IframeWidget extends Widget
 
     private ?int $height = null;
 
-    private string $sandbox = 'allow-scripts allow-same-origin';
+    /**
+     * Scripts, forms and pop-ups, but an opaque origin: a sandbox granting
+     * both allow-scripts and allow-same-origin can remove itself, and browsers
+     * warn about it. A page that needs its own origin — its cookies, its
+     * storage — asks for it through sandbox().
+     */
+    private string $sandbox = self::DEFAULT_SANDBOX;
 
     public function widgetType(): string
     {

@@ -28,7 +28,7 @@ import {
   Search,
   X,
 } from 'lucide-vue-next'
-import { UidButton, UidIcon, UidMenu } from '@dskripchenko/ui'
+import { UidButton, UidCheckbox, UidIcon, UidMenu } from '@dskripchenko/ui'
 import { resolveIcon } from '../shell/iconRegistry'
 import { FilterEditor, type FilterDef, type FilterOption } from './FilterEditor'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
@@ -39,6 +39,10 @@ interface ColumnDef {
   label?: string
   groupable?: boolean
   hidden?: boolean
+  /** TableColumn::defaultHidden(): off until switched on. */
+  defaultHidden?: boolean
+  /** TableColumn::cantHide(): always shown, the switch is locked. */
+  cantHide?: boolean
 }
 
 interface Props {
@@ -196,11 +200,13 @@ function colLabel(c: ColumnDef): string {
   return String(c.label ?? c.name ?? c.key ?? '')
 }
 function isVisible(c: ColumnDef): boolean {
+  if (c.cantHide === true) return true
   const k = colKey(c)
   if (k in props.columnVisibility) return props.columnVisibility[k]
-  return true
+  return c.defaultHidden !== true
 }
 function toggleVisibility(c: ColumnDef): void {
+  if (c.cantHide === true) return
   const k = colKey(c)
   emit('columns-visibility', { ...props.columnVisibility, [k]: !isVisible(c) })
 }
@@ -425,18 +431,18 @@ function iconFor(name: string | null | undefined) {
           </button>
         </template>
         <div class="admin-toolbar__popover admin-toolbar__popover--list" @keydown.stop>
-          <label
+          <div
             v-for="c in columns.filter((col) => colKey(col) !== '')"
             :key="colKey(c)"
             class="admin-toolbar__list-item admin-toolbar__list-item--checkbox"
           >
-            <input
-              type="checkbox"
-              :checked="isVisible(c)"
-              @change="toggleVisibility(c)"
+            <UidCheckbox
+              :model-value="isVisible(c)"
+              :label="colLabel(c)"
+              :disabled="c.cantHide === true"
+              @update:model-value="toggleVisibility(c)"
             />
-            <span>{{ colLabel(c) }}</span>
-          </label>
+          </div>
         </div>
       </UidMenu>
 

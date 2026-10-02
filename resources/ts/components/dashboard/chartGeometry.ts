@@ -3,6 +3,7 @@
  * normalization of the backend's datasets, nice axis ticks and number
  * formatting. Pure functions — the components only lay the results out.
  */
+import { toneColor } from './toneColor'
 
 /** One drawable series: the backend's dataset with its colour resolved. */
 export interface ChartSeries {
@@ -48,7 +49,8 @@ function toNumber(v: unknown): number | null {
 }
 
 /**
- * Turns the backend's datasets into drawable series. An explicit `color` wins;
+ * Turns the backend's datasets into drawable series. An explicit `color` — a
+ * tone name or a CSS colour, see toneColor — wins;
  * otherwise a lone series takes `singleColor` and several take the palette in
  * order.
  */
@@ -61,8 +63,8 @@ export function toSeries(
     label: typeof ds.label === 'string' && ds.label !== '' ? ds.label : `#${i + 1}`,
     data: Array.isArray(ds.data) ? ds.data.map(toNumber) : [],
     color:
-      typeof ds.color === 'string' && ds.color !== ''
-        ? ds.color
+      toneColor(ds.color) !== ''
+        ? toneColor(ds.color)
         : list.length === 1
           ? singleColor
           : SERIES_PALETTE[i % SERIES_PALETTE.length],

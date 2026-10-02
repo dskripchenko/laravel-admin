@@ -6,8 +6,10 @@ import { trSafe as tr } from '../../stores/i18n'
 /**
  * The backend's IframeWidget::data() gives {src, height, sandbox}. Validating
  * the src against the allowed hosts is the host's business; the sandbox
- * attribute is passed through as it is, and the backend's default is
- * allow-scripts allow-same-origin.
+ * attribute is passed through as it is. The default — the backend's too —
+ * lets scripts, forms and pop-ups run under an opaque origin: adding
+ * allow-same-origin to allow-scripts would let the frame lift its own sandbox,
+ * which browsers warn about.
  */
 interface Props {
   title?: string
@@ -20,7 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
   title: '',
   src: '',
   height: null,
-  sandbox: 'allow-scripts allow-same-origin',
+  sandbox: 'allow-scripts allow-forms allow-popups',
 })
 
 const frameStyle = computed(() => ({
