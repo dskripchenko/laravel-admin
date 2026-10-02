@@ -69,7 +69,11 @@ final class BootstrapBuilder
             'config' => [
                 'manifest' => ['etag' => (bool) config('admin.manifest.etag', true)],
                 'bootstrap' => ['strategy' => (string) config('admin.bootstrap.strategy', 'inline')],
+                'twoFactor' => ['enabled' => \Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy::enabled()],
             ],
+            // Demo mode (admin.demo): the login page's demo accounts and the
+            // read-only flag; null when it is off.
+            'demo' => \Dskripchenko\LaravelAdmin\Demo\DemoMode::bootstrap(),
         ];
     }
 
@@ -153,6 +157,9 @@ final class BootstrapBuilder
             'twoFactorEnabled' => method_exists($user, 'hasTwoFactorEnabled')
                 ? $user->hasTwoFactorEnabled()
                 : false,
+            // admin.auth.two_factor.enforce_for: the SPA keeps such a user on
+            // the profile until 2FA is on.
+            'twoFactorRequired' => \Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy::requiredFor($user),
         ];
     }
 

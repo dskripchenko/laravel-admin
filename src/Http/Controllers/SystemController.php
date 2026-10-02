@@ -158,6 +158,7 @@ final class SystemController extends ApiController
             'twoFactorEnabled' => method_exists($user, 'hasTwoFactorEnabled')
                 ? $user->hasTwoFactorEnabled()
                 : false,
+            'twoFactorRequired' => \Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy::requiredFor($user),
             'impersonator' => $impersonator,
             'unread_notifications_count' => $unreadNotifications,
         ]);

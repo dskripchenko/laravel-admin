@@ -8,6 +8,7 @@ use Dskripchenko\LaravelAdmin\Auth\SessionPasswordHash;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\Base32;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\RecoveryCodes;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
+use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -171,9 +172,14 @@ class ProfileController extends ApiController
      * @security AdminSession
      *
      * @response 200 {TwoFactorSetupResponse}
+     * @response 403 {ForbiddenErrorResponse} Two-factor setup is switched off (admin.auth.two_factor.enabled)
      */
     public function twoFactorEnable(): JsonResponse
     {
+        if (! TwoFactorPolicy::enabled()) {
+            return $this->twoFactorUnavailable();
+        }
+
         $user = $this->currentUser();
 
         $secret = Base32::generateSecret();
@@ -207,10 +213,15 @@ class ProfileController extends ApiController
      * @security AdminSession
      *
      * @response 200 {TwoFactorConfirmedResponse}
+     * @response 403 {ForbiddenErrorResponse} Two-factor setup is switched off (admin.auth.two_factor.enabled)
      * @response 422 {InvalidTwoFactorResponse}
      */
     public function twoFactorConfirm(Request $request): JsonResponse
     {
+        if (! TwoFactorPolicy::enabled()) {
+            return $this->twoFactorUnavailable();
+        }
+
         $user = $this->currentUser();
         $request->validate(['code' => ['required', 'string']]);
 
@@ -282,10 +293,15 @@ class ProfileController extends ApiController
      * @security AdminSession
      *
      * @response 200 {RecoveryCodesResponse}
+     * @response 403 {ForbiddenErrorResponse} Two-factor setup is switched off (admin.auth.two_factor.enabled)
      * @response 422 {ValidationErrorResponse}
      */
     public function twoFactorRegenerateCodes(Request $request): JsonResponse
     {
+        if (! TwoFactorPolicy::enabled()) {
+            return $this->twoFactorUnavailable();
+        }
+
         $user = $this->currentUser();
         $request->validate(['password' => ['required', 'string']]);
 
@@ -468,6 +484,17 @@ class ProfileController extends ApiController
     }
 
     /**
+     * The refusal when admin.auth.two_factor.enabled is off.
+     */
+    private function twoFactorUnavailable(): JsonResponse
+    {
+        return $this->error([
+            'errorKey' => 'two_factor_disabled',
+            'message' => __('Двухфакторная аутентификация отключена в этой установке.'),
+        ], Response::HTTP_FORBIDDEN);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function twoFactorState(Authenticatable&Model $user): array
@@ -480,6 +507,10 @@ class ProfileController extends ApiController
                 && $confirmedAt !== null,
             'confirmed_at' => $confirmedAt?->toIso8601String(),
             'recovery_codes_remaining' => count($recoveryCodes),
+            // Whether the installation lets users set 2FA up, and whether this
+            // user is one of those who must (admin.auth.two_factor).
+            'available' => TwoFactorPolicy::enabled(),
+            'required' => TwoFactorPolicy::requiredFor($user),
         ];
     }
 

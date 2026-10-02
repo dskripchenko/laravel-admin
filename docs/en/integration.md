@@ -255,9 +255,9 @@ kept apart.
   `admin_users`; switch it off (`'resources' => ['users' => false]` in
   `config/admin-starter.php`) and manage your users with a resource of your
   own.
-- The testing helper `ActsAsAdmin` creates `AdminUser`s. In a shared
-  application create your own user in tests and call
-  `$this->actingAs($user, 'web')` after `$user->assignRole(...)`.
+- The testing helper `ActsAsAdmin` follows the strategy: in a shared
+  application it creates your own user (`admin.auth.model`), assigns it a role
+  and signs it in on your guard.
 
 ## 3. Path, domain, API, sessions, proxies
 
@@ -476,6 +476,29 @@ It registers itself and adds the resources "Users" (`admin_users`), "Roles"
 (permissions picked from those of every registered resource and plugin) and
 a read-only "Audit log". In the shared strategy switch the "Users" resource off,
 see above.
+
+### Two-factor authentication
+
+Every user can turn on TOTP two-factor authentication in the profile. Two
+settings in `config/admin.php` change that:
+
+```php
+'auth' => [
+    'two_factor' => [
+        // false: the profile offers no 2FA setup and enabling it is refused
+        // (403 two_factor_disabled). Users who enrolled earlier still pass
+        // the challenge at login and can still switch it off.
+        'enabled' => true,
+        // Role slugs whose holders must enable 2FA first; '*' means everyone.
+        'enforce_for' => ['super-admin', 'security'],
+    ],
+],
+```
+
+A user covered by `enforce_for` who has not set 2FA up yet reaches only the
+profile, the session and the shell: any other API request answers 403 with
+`errorKey: two_factor_setup_required`, and the SPA keeps them on the profile's
+"Security" section until 2FA is on.
 
 ## 7. The frontend
 

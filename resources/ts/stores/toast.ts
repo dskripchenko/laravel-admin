@@ -20,11 +20,25 @@ function shorthand(message: string, opts?: Options) {
   return { message, ...(opts ?? {}) }
 }
 
+/** Until when error toasts are held back; see suppressErrorToasts(). */
+let errorsSuppressedUntil = 0
+
+/**
+ * Holds error toasts back for a moment. Called after a refusal that was
+ * already explained to the user by its own toast (demo mode, the 2FA
+ * requirement), so that the caller's generic "could not save" does not pile
+ * on top of it.
+ */
+export function suppressErrorToasts(ms = 1500): void {
+  errorsSuppressedUntil = Date.now() + ms
+}
+
 export const adminToast = {
   success(message: string, opts?: Options): void {
     useToast().success(shorthand(message, opts))
   },
   error(message: string, opts?: Options): void {
+    if (Date.now() < errorsSuppressedUntil) return
     useToast().error(shorthand(message, { duration: 6000, ...(opts ?? {}) }))
   },
   warning(message: string, opts?: Options): void {

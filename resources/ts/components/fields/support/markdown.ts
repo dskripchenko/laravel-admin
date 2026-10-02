@@ -1,15 +1,17 @@
 /**
- * A small, dependency-free markdown → HTML renderer for previews.
+ * A small, dependency-free markdown → HTML renderer.
  *
  * It covers the everyday subset — headings, paragraphs, emphasis, inline code,
- * fenced code, links, images, block quotes, lists and rules — which is what a
- * description or a note in an admin form usually holds. A host that needs the
- * full CommonMark grammar registers its own `markdown` field or entry.
+ * fenced code, links, images, block quotes and callouts, lists, tables and
+ * rules — which is what a description, a note or a documentation page in an
+ * admin usually holds. A host that needs the full CommonMark grammar registers
+ * its own `markdown` field, entry or layout.
  *
  * Safety: the source is HTML-escaped BEFORE any markup is produced, so raw
  * HTML in the markdown is shown as text, never executed; link and image URLs
  * are limited to http(s), mailto, relative and anchor targets.
  */
+import { trSafe } from '../../../stores/i18n'
 
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -23,6 +25,65 @@ export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (ch) => ESCAPES[ch] ?? ch)
 }
 
+function unescapeHtml(text: string): string {
+  return text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+}
+
+/** A heading met while rendering, for a table of contents. */
+export interface MarkdownHeading {
+  level: number
+  /** The heading's plain text. */
+  text: string
+  id: string
+}
+
+/** Turns heading text into a unique anchor id; shared across the chunks of one document. */
+export type Slugger = (text: string) => string
+
+export function createSlugger(): Slugger {
+  const seen = new Map<string, number>()
+  return (text: string): string => {
+    const base =
+      text
+        .toLowerCase()
+        .trim()
+        .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'section'
+    const count = seen.get(base) ?? 0
+    seen.set(base, count + 1)
+    return count === 0 ? base : `${base}-${count}`
+  }
+}
+
+export interface MarkdownOptions {
+  /** Gives the headings anchor ids. */
+  slugger?: Slugger | null
+  /** Called for every heading, in document order. */
+  onHeading?: (heading: MarkdownHeading) => void
+  /**
+   * The base relative links resolve against, the way a browser resolves them
+   * against `<base href>`. Absolute, anchor and scheme links are left alone.
+   */
+  linkBase?: string | null
+  /** Drops a trailing `.md` from relative links resolved through linkBase. */
+  stripMdExtension?: boolean
+  /** The base relative image paths resolve against. */
+  imageBase?: string | null
+  /**
+   * Opens relative and anchor links in place. By default every link opens in
+   * a new tab, which suits a note in a form; a documentation page wants its
+   * own links to navigate.
+   */
+  internalLinksInPlace?: boolean
+}
+
 /** A URL is allowed when it has no scheme, or one of the harmless ones. */
 function safeUrl(url: string): string | null {
   const trimmed = url.trim()
@@ -33,22 +94,56 @@ function safeUrl(url: string): string | null {
   return trimmed
 }
 
+function isRelative(url: string): boolean {
+  return !/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(url)
+}
+
+/**
+ * Resolves an escaped relative URL against a base. The result is escaped
+ * again; an absolute base keeps its origin, a path base yields a path.
+ */
+export function resolveAgainst(escapedUrl: string, base: string, stripMd = false): string {
+  let url = unescapeHtml(escapedUrl)
+  if (stripMd) {
+    url = url.replace(/\.md(?=$|[?#])/i, '')
+  }
+  try {
+    const absoluteBase = /^[a-z][a-z0-9+.-]*:\/\//i.test(base)
+    const resolved = new URL(url, absoluteBase ? base : `http://base.invalid${base.startsWith('/') ? '' : '/'}${base}`)
+    const out = absoluteBase ? resolved.href : resolved.pathname + resolved.search + resolved.hash
+    return escapeHtml(out)
+  } catch {
+    return escapedUrl
+  }
+}
+
 /** Inline markup over an already escaped line. */
-function renderInline(escaped: string): string {
+function renderInline(escaped: string, opts: MarkdownOptions = {}): string {
   const slots: string[] = []
-  const stash = (html: string): string => `\uE000${slots.push(html) - 1}\uE000`
+  const stash = (html: string): string => `${slots.push(html) - 1}`
 
   let out = escaped.replace(/`([^`]+)`/g, (_m, code: string) => stash(`<code>${code}</code>`))
 
-  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt: string, url: string) => {
-    const src = safeUrl(url)
-    return src === null ? m : stash(`<img src="${src}" alt="${alt}" loading="lazy">`)
+  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;[^)]*&quot;)?\)/g, (m, alt: string, url: string) => {
+    let src = safeUrl(url)
+    if (src === null) return m
+    if (opts.imageBase && isRelative(src)) src = resolveAgainst(src, opts.imageBase)
+    return stash(`<img src="${src}" alt="${alt}" loading="lazy">`)
   })
-  out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, text: string, url: string) => {
-    const href = safeUrl(url)
-    return href === null
-      ? m
-      : stash(`<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`)
+  out = out.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;[^)]*&quot;)?\)/g, (m, text: string, url: string) => {
+    let href = safeUrl(url)
+    if (href === null) return m
+    const relative = isRelative(href)
+    if (opts.linkBase && relative) {
+      href = resolveAgainst(href, opts.linkBase, opts.stripMdExtension ?? false)
+    }
+    const external = /^(https?:)?\/\//i.test(href) || /^mailto:/i.test(href)
+    const inPlace = opts.internalLinksInPlace === true && !external
+    return stash(
+      inPlace
+        ? `<a href="${href}">${text}</a>`
+        : `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`,
+    )
   })
 
   out = out
@@ -59,20 +154,68 @@ function renderInline(escaped: string): string {
     .replace(/(?<!\w)_(?=\S)(.+?)(?<=\S)_(?!\w)/g, '<em>$1</em>')
     .replace(/~~(?=\S)(.+?)(?<=\S)~~/g, '<del>$1</del>')
 
-  return out.replace(/\uE000(\d+)\uE000/g, (_m, i: string) => slots[Number(i)] ?? '')
+  return out.replace(/(\d+)/g, (_m, i: string) => slots[Number(i)] ?? '')
+}
+
+/** The plain text of rendered inline HTML: for anchor ids and the table of contents. */
+function plainText(html: string): string {
+  return unescapeHtml(html.replace(/<[^>]+>/g, ''))
 }
 
 const LIST_ITEM = /^\s*([-*+]|\d+[.)])\s+(.*)$/
+const TABLE_SEPARATOR = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/
 
-export function renderMarkdown(source: string | null | undefined): string {
+function splitRow(line: string): string[] {
+  let row = line.trim()
+  if (row.startsWith('|')) row = row.slice(1)
+  if (row.endsWith('|') && !row.endsWith('\\|')) row = row.slice(0, -1)
+  return row.split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, '|'))
+}
+
+/** The callout kinds, keyed by the marker that opens them: `[!NOTE]` or `**Note**`. */
+const CALLOUTS: Record<string, string> = {
+  note: 'note',
+  info: 'note',
+  tip: 'tip',
+  hint: 'tip',
+  important: 'important',
+  warning: 'warning',
+  caution: 'caution',
+  danger: 'caution',
+  'примечание': 'note',
+  'заметка': 'note',
+  'совет': 'tip',
+  'важно': 'important',
+  'внимание': 'warning',
+  'предупреждение': 'warning',
+  'осторожно': 'caution',
+}
+
+function calloutTitle(kind: string): string {
+  switch (kind) {
+    case 'tip':
+      return trSafe('Совет')
+    case 'important':
+      return trSafe('Важно')
+    case 'warning':
+      return trSafe('Внимание')
+    case 'caution':
+      return trSafe('Осторожно')
+    default:
+      return trSafe('Примечание')
+  }
+}
+
+export function renderMarkdown(source: string | null | undefined, opts: MarkdownOptions = {}): string {
   if (!source) return ''
   const lines = escapeHtml(source.replace(/\r\n?/g, '\n')).split('\n')
   const html: string[] = []
   let paragraph: string[] = []
+  const inline = (text: string): string => renderInline(text, opts)
 
   const flushParagraph = (): void => {
     if (paragraph.length > 0) {
-      html.push(`<p>${renderInline(paragraph.join('\n'))}</p>`)
+      html.push(`<p>${inline(paragraph.join('\n'))}</p>`)
       paragraph = []
     }
   }
@@ -80,7 +223,7 @@ export function renderMarkdown(source: string | null | undefined): string {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i] ?? ''
 
-    const fence = /^\s*(```|~~~)\s*([\w+-]*)\s*$/.exec(line)
+    const fence = /^\s*(```|~~~)\s*([\w+#.-]*)[^`]*$/.exec(line)
     if (fence) {
       flushParagraph()
       const body: string[] = []
@@ -103,13 +246,50 @@ export function renderMarkdown(source: string | null | undefined): string {
     if (heading) {
       flushParagraph()
       const level = heading[1]?.length ?? 1
-      html.push(`<h${level}>${renderInline(heading[2] ?? '')}</h${level}>`)
+      const content = inline(heading[2] ?? '')
+      if (opts.slugger) {
+        const text = plainText(content)
+        const id = opts.slugger(text)
+        opts.onHeading?.({ level, text, id })
+        html.push(`<h${level} id="${escapeHtml(id)}">${content}</h${level}>`)
+      } else {
+        html.push(`<h${level}>${content}</h${level}>`)
+      }
       continue
     }
 
     if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) {
       flushParagraph()
       html.push('<hr>')
+      continue
+    }
+
+    // A table: a row of cells, then the separator row of dashes.
+    if (line.includes('|') && TABLE_SEPARATOR.test(lines[i + 1] ?? '') && (lines[i + 1] ?? '').includes('|')) {
+      flushParagraph()
+      const header = splitRow(line)
+      const aligns = splitRow(lines[i + 1] ?? '').map((cell) => {
+        const left = cell.startsWith(':')
+        const right = cell.endsWith(':')
+        return left && right ? 'center' : right ? 'right' : left ? 'left' : ''
+      })
+      const cell = (tag: 'th' | 'td', text: string, idx: number): string => {
+        const align = aligns[idx] ? ` style="text-align:${aligns[idx]}"` : ''
+        return `<${tag}${align}>${inline(text)}</${tag}>`
+      }
+      const rows: string[] = []
+      i += 2
+      while (i < lines.length && (lines[i] ?? '').includes('|') && (lines[i] ?? '').trim() !== '') {
+        const cells = splitRow(lines[i] ?? '')
+        rows.push(`<tr>${header.map((_h, idx) => cell('td', cells[idx] ?? '', idx)).join('')}</tr>`)
+        i++
+      }
+      i--
+      html.push(
+        '<div class="admin-markdown__table"><table>'
+          + `<thead><tr>${header.map((h, idx) => cell('th', h, idx)).join('')}</tr></thead>`
+          + `<tbody>${rows.join('')}</tbody></table></div>`,
+      )
       continue
     }
 
@@ -121,8 +301,7 @@ export function renderMarkdown(source: string | null | undefined): string {
         i++
       }
       i--
-      // The quote's body is escaped already; render it without escaping twice.
-      html.push(`<blockquote>${renderEscapedBlocks(quoted)}</blockquote>`)
+      html.push(renderQuote(quoted, opts))
       continue
     }
 
@@ -134,7 +313,7 @@ export function renderMarkdown(source: string | null | undefined): string {
       while (i < lines.length) {
         const m = LIST_ITEM.exec(lines[i] ?? '')
         if (!m || /\d/.test(m[1] ?? '') !== ordered) break
-        items.push(`<li>${renderInline(m[2] ?? '')}</li>`)
+        items.push(`<li>${inline(m[2] ?? '')}</li>`)
         i++
       }
       i--
@@ -150,15 +329,76 @@ export function renderMarkdown(source: string | null | undefined): string {
   return html.join('\n')
 }
 
+/**
+ * A block quote, or a callout when its first line is a marker: GitHub's
+ * `[!NOTE]` (the marker line is replaced with a title) or a bold `**Note**`
+ * (kept as written).
+ */
+function renderQuote(quoted: string[], opts: MarkdownOptions): string {
+  const first = (quoted[0] ?? '').trim()
+  const github = /^\[!(\w+)\]\s*$/.exec(first)
+  if (github) {
+    const kind = CALLOUTS[(github[1] ?? '').toLowerCase()]
+    if (kind) {
+      const title = `<p class="admin-markdown__callout-title">${escapeHtml(calloutTitle(kind))}</p>`
+      return `<blockquote class="admin-markdown__callout admin-markdown__callout--${kind}">${title}${renderEscapedBlocks(quoted.slice(1), opts)}</blockquote>`
+    }
+  }
+  const bold = /^\*\*([^*]+?):?\*\*:?/.exec(first)
+  if (bold) {
+    const kind = CALLOUTS[(bold[1] ?? '').trim().toLowerCase()]
+    if (kind) {
+      return `<blockquote class="admin-markdown__callout admin-markdown__callout--${kind}">${renderEscapedBlocks(quoted, opts)}</blockquote>`
+    }
+  }
+  return `<blockquote>${renderEscapedBlocks(quoted, opts)}</blockquote>`
+}
+
 /** Renders lines that were escaped already (the body of a block quote). */
-function renderEscapedBlocks(lines: string[]): string {
+function renderEscapedBlocks(lines: string[], opts: MarkdownOptions): string {
   // Unescape and run the full renderer: it escapes again exactly once.
-  const raw = lines
-    .join('\n')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
-  return renderMarkdown(raw)
+  return renderMarkdown(unescapeHtml(lines.join('\n')), opts)
+}
+
+/** A piece of a markdown document: text to render, or a top-level fenced code block. */
+export type MarkdownSegment =
+  | { kind: 'text'; source: string }
+  | { kind: 'code'; code: string; language: string }
+
+/**
+ * Splits a document at its top-level fenced code blocks, so that a caller can
+ * draw the code with a real highlighter and the rest with renderMarkdown.
+ * Fences inside block quotes stay in the text.
+ */
+export function splitMarkdown(source: string | null | undefined): MarkdownSegment[] {
+  if (!source) return []
+  const lines = source.replace(/\r\n?/g, '\n').split('\n')
+  const segments: MarkdownSegment[] = []
+  let text: string[] = []
+
+  const flushText = (): void => {
+    if (text.some((l) => l.trim() !== '')) segments.push({ kind: 'text', source: text.join('\n') })
+    text = []
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
+    const fence = /^ {0,3}(`{3,}|~{3,})\s*([\w+#.-]*)[^`]*$/.exec(line)
+    if (!fence) {
+      text.push(line)
+      continue
+    }
+    flushText()
+    const marker = fence[1] ?? '```'
+    const body: string[] = []
+    i++
+    while (i < lines.length && !(lines[i] ?? '').trim().startsWith(marker)) {
+      body.push(lines[i] ?? '')
+      i++
+    }
+    segments.push({ kind: 'code', code: body.join('\n'), language: (fence[2] ?? '').toLowerCase() })
+  }
+  flushText()
+
+  return segments
 }

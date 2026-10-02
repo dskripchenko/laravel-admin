@@ -16,6 +16,7 @@
  */
 import { computed, ref, useSlots, watch } from 'vue'
 import {
+  UidAlert,
   UidAvatar,
   UidBadge,
   UidButton,
@@ -62,11 +63,20 @@ const locale = useLocaleStore()
 
 const slots = useSlots()
 
+// A local flag for the 2FA status, updated by the embedded TwoFactorSetup
+// wizard's events, so that the "Enabled/Disabled" badge reacts at once.
+const twoFAEnabled = ref<boolean>(Boolean(auth.user?.twoFactorEnabled))
+
 // "General" and "Security" are the library's own; the rest belong to whoever
 // fills them.
 const navItems = computed(() => [
   { id: 'general', label: tr('Основное'), icon: 'user' },
-  { id: 'security', label: tr('Безопасность'), icon: 'shield' },
+  // Two-factor setup is the section's only content: with the feature off
+  // (admin.auth.two_factor.enabled) it stays for those who enrolled earlier,
+  // so that they can switch it off.
+  ...(auth.twoFactorAvailable || twoFAEnabled.value
+    ? [{ id: 'security', label: tr('Безопасность'), icon: 'shield' }]
+    : []),
   ...(slots.tokens ? [{ id: 'tokens', label: tr('API токены'), icon: 'key' }] : []),
   ...(slots.sessions ? [{ id: 'sessions', label: tr('Сессии'), icon: 'monitor' }] : []),
 ])
@@ -141,9 +151,6 @@ function onAvatarReplace(): void {
   emit('avatar-replace')
 }
 
-// A local flag for the 2FA status, updated by the embedded TwoFactorSetup
-// wizard's events, so that the "Enabled/Disabled" badge reacts at once.
-const twoFAEnabled = ref<boolean>(Boolean(auth.user?.twoFactorEnabled))
 const has2FA = computed(() => twoFAEnabled.value)
 
 function onTwoFactorEnabled(): void {
@@ -253,6 +260,10 @@ function onTwoFactorDisabled(): void {
             (enable/confirm/disable/regenerate) и рендерит все стадии. Host
             может полностью заменить блок через slot `enable-2fa`.
           -->
+          <UidAlert v-if="auth.needsTwoFactorSetup" variant="warning" class="admin-profile__alert">
+            {{ tr('Ваша роль требует двухфакторной аутентификации. Включите её, чтобы продолжить работу в панели.') }}
+          </UidAlert>
+
           <slot name="enable-2fa">
             <TwoFactorSetup
               :enabled="has2FA"
@@ -277,6 +288,7 @@ function onTwoFactorDisabled(): void {
 </template>
 
 <style>
+.admin-profile__alert { margin-bottom: var(--uid-space-md); }
 .admin-profile__layout {
   display: grid;
   /* minmax(0,1fr) rather than 1fr: a `1fr` column is never narrower than its content, and

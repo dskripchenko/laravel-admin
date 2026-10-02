@@ -149,6 +149,7 @@ trait AdminApiCommonSchemas
                 'locale' => 'string!',
                 'theme' => 'string!',                    // light|dark
                 'twoFactorEnabled' => 'boolean!',
+                'twoFactorRequired' => 'boolean',        // admin.auth.two_factor.enforce_for
                 'impersonator' => '@ImpersonatorRef',
             ],
             'ImpersonatorRef' => [

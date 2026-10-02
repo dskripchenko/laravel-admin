@@ -117,6 +117,8 @@ export function createAdminRouter(opts: AdminRouterOptions): AdminRouter {
       path: '/profile',
       name: 'admin.profile',
       component: opts.components.profile,
+      // `?section=security` opens a section directly.
+      props: (route) => (typeof route.query.section === 'string' ? { section: route.query.section } : {}),
       meta: { requiresAuth: true, kind: 'system', title: 'Профиль' },
     })
   }

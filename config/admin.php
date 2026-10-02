@@ -45,7 +45,14 @@ return [
         'login_throttle' => env('ADMIN_LOGIN_THROTTLE', '5,1'),
 
         'two_factor' => [
+            // false hides two-factor setup in the profile and refuses to
+            // enable it. Users who enrolled earlier still pass the challenge
+            // at login and may still switch it off.
             'enabled' => true,
+            // The role slugs whose holders must enable 2FA before they can use
+            // the panel; '*' means everyone. Until they do, every request
+            // other than the profile, the session and the shell answers 403
+            // `two_factor_setup_required`, and the SPA opens the profile.
             'enforce_for' => [],
             'recovery_codes' => 8,
             'window' => 1,
@@ -62,17 +69,6 @@ return [
             'rate_limit' => '60,1',
             'default_expiry' => null,
         ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | The session
-    |--------------------------------------------------------------------------
-    */
-
-    'session' => [
-        'cookie' => env('ADMIN_SESSION_COOKIE'),
-        'driver' => null,
     ],
 
     /*
@@ -159,6 +155,51 @@ return [
         'countdown_to' => null,
         // The caption next to the countdown: "until the reset", "until it ends" and the like.
         'countdown_label' => env('ADMIN_NOTICE_COUNTDOWN_LABEL'),
+    ],
+
+    /*
+    | Demo mode: for a public demonstration stand. Off by default.
+    |
+    | `accounts` puts "Sign in as …" buttons on the login page; a click logs in
+    | through the ordinary login endpoint. Their passwords are sent to every
+    | visitor of the login page, so list demo accounts only — never a real one.
+    |
+    | `readonly` refuses the operations that would let one visitor lock out or
+    | spoil the stand for the next: a 403 with errorKey `demo_readonly`, which
+    | the SPA shows as a toast. What is refused:
+    |   - `blocked`: API actions as `controller.action` patterns (`*` matches
+    |     anything), e.g. 'profile.changePassword', 'settings_*.update';
+    |   - `protected_models`: writes to the resources of these models — null
+    |     means the panel's user model and Role; `protected_actions` lists
+    |     which resource actions count as writes;
+    |   - uploaded files over `max_upload_kb` (0 switches the limit off).
+    |
+    | An announcement such as "the data resets every hour" goes into `notice`.
+    */
+    'demo' => [
+        'enabled' => (bool) env('ADMIN_DEMO', false),
+        // [['label' => 'Administrator', 'email' => 'admin@demo.test', 'password' => 'demo', 'description' => 'Full access']]
+        'accounts' => [],
+        'readonly' => (bool) env('ADMIN_DEMO_READONLY', true),
+        'blocked' => [
+            'profile.update',
+            'profile.changePassword',
+            'profile.twoFactorEnable',
+            'profile.twoFactorConfirm',
+            'profile.twoFactorDisable',
+            'profile.twoFactorRegenerateCodes',
+            'profile.tokenCreate',
+            'profile.tokenRevoke',
+            'auth.startImpersonation',
+            'import.*',
+            'settings_*.update',
+        ],
+        'protected_models' => null,
+        'protected_actions' => [
+            'create', 'update', 'inlineUpdate', 'replicate', 'reorder',
+            'delete', 'restore', 'forceDelete', 'action',
+        ],
+        'max_upload_kb' => 2048,
     ],
 
     'ui' => [

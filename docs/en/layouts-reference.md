@@ -26,6 +26,8 @@ compose to arbitrary depth.
 | `Infolist` | `Layout::infolist([...])` | Read-only key/value display |
 | `Dashboard` | `Layout::dashboard([...])` | 12-col grid (used by `DashboardScreen`) |
 | `View` | `Layout::view('component-name', $props)` | Custom Vue component |
+| `Markdown` | `Layout::markdown($text)` | Rendered markdown: anchored headings, table of contents, highlighted code, tables, callouts |
+| `Code` | `Layout::code($code, 'php')` | Highlighted, copyable code block |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
 | `Listener` | `Layout::listener([...])->listen([...])` | Part of a form re-rendered by the server when watched fields change |
 
@@ -330,6 +332,78 @@ that resource's `formLayout()` can run, and reserved screen methods
 
 A screen's `layout()` is called without `query()` when a listener request is
 served, so the listeners should not depend on properties `query()` sets.
+
+### Markdown
+
+A block of markdown, rendered by the panel's built-in renderer. The source is
+escaped before any markup is produced, so raw HTML shows as text and is never
+executed; links and images may only point at http(s), `mailto:`, relative and
+anchor targets.
+
+```php
+Layout::markdown(file_get_contents(base_path('docs/en/getting-started.md')))
+    ->toc()                         // table of contents from the h2/h3 headings
+    ->linkBase('/admin/screens/docs/en/') // where relative links lead
+    ->imageBase('/docs-assets/')    // where relative images load from
+```
+
+`Layout::markdown()` also takes a callable, resolved when the screen is
+serialized — handy when the text is read from disk or a database:
+
+```php
+Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
+```
+
+The text is sent as is: pick the language version yourself, e.g. by
+`app()->getLocale()`.
+
+What the renderer supports:
+
+| Syntax | Result |
+|---|---|
+| `# Heading` … `###### Heading` | Headings with anchor ids: `## Getting started` → `#getting-started` (letters of any script are kept, duplicates get `-1`, `-2`) |
+| Fenced code blocks (three backticks and a language) | Highlighted, copyable code; the language comes from the fence (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
+| `\| a \| b \|` + `\|---\|:---:\|` | Tables, with column alignment |
+| `> quote` | Block quote |
+| `> **Note** …`, `> **Warning** …` | Callout; also `Tip`, `Important`, `Caution` and GitHub's `> [!NOTE]` form |
+| `**bold**`, `*italic*`, `~~struck~~`, backtick code spans | Inline markup |
+| `[text](url)`, `![alt](src)` | Links and images |
+| `-`/`*`/`1.` lists, `---` | Lists and rules |
+
+Options:
+
+| Method | Effect |
+|---|---|
+| `toc(bool $enabled = true, int $depth = 3)` | A table of contents from headings of levels 2 to `$depth`, beside the text on wide screens and above it on narrow ones |
+| `tocLabel(string $label)` | The caption above it; "On this page" by default |
+| `linkBase(string $base, bool $stripExtension = true)` | Relative links resolve against `$base` the way a browser resolves them against `<base href>`: with `/admin/screens/docs/en/`, `concepts/menu.md#items` opens `/admin/screens/docs/en/concepts/menu#items` and `../ru/intro.md` opens `/admin/screens/docs/ru/intro`. The `.md` extension is dropped unless `$stripExtension` is false. Links starting with `/`, `#` or a scheme are left alone |
+| `imageBase(string $base)` | The same for relative image paths, without touching extensions |
+| `card(bool $card = true)` | Draws the text inside a card |
+
+Links behave like a site's: anchors scroll within the page, links that stay
+inside the panel navigate without a reload, and external links open in a new
+tab.
+
+### Code
+
+A highlighted code block with a copy button:
+
+```php
+Layout::code(<<<'PHP'
+    Layout::rows([
+        Input::make('title')->required(),
+    ]);
+    PHP, 'php')
+    ->title('app/Admin/Resources/PostResource.php')
+    ->lineNumbers(),
+```
+
+| Method | Effect |
+|---|---|
+| `title(string $title)` | A caption above the code, a file name for instance |
+| `lineNumbers(bool $on = true)` | Line numbers |
+| `maxHeight(int\|string $height)` | Scroll after this height: `400` (px) or `'50vh'` |
+| `wrap(bool $wrap = true)` | Wrap long lines instead of scrolling sideways |
 
 ### View (custom Vue component)
 

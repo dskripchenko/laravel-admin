@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- **`Layout::markdown($text)`** — a block of markdown drawn by the panel's safe
+  renderer: headings with anchor ids, an optional table of contents
+  (`->toc(depth: 3)`, `->tocLabel()`), fenced code highlighted and copyable by
+  `UidCode` with the language from the fence, tables with column alignment,
+  callouts (`> **Note**`, `> **Warning**`, GitHub's `> [!NOTE]`), images.
+  `->linkBase('/admin/screens/docs/')` resolves relative links the way a browser
+  resolves them against `<base href>` (dropping `.md`), `->imageBase()` does the
+  same for images, `->card()` frames it. Anchors scroll in place, links inside
+  the panel navigate without a reload. The source may be a callable, resolved
+  at serialization.
+- **`Layout::code($code, 'php')`** — a highlighted, copyable code block with
+  `->title()`, `->lineNumbers()`, `->maxHeight()` and `->wrap()`.
+- The built-in markdown renderer (fields, entries, the markdown widget) now
+  also draws tables and callouts.
+- **Demo mode** (`admin.demo`, `ADMIN_DEMO`), off by default.
+  `accounts` puts "Sign in as …" buttons on the login page, signing in through
+  the ordinary login endpoint. `readonly` refuses, with 403
+  `errorKey: demo_readonly` and a translated message the SPA shows as a toast,
+  the API actions listed in `blocked` (`controller.action` patterns: the
+  profile, the password, 2FA, API tokens, impersonation, import, settings
+  writes by default), writes to the resources of `protected_models` (the
+  panel's user model and Role by default) and uploads over `max_upload_kb`.
+  See docs/en/demo-mode.md.
+- **`admin.auth.two_factor.enabled` and `enforce_for` work.** The keys were in
+  the config and read by nothing. `enabled => false` hides the 2FA setup in the
+  profile and refuses to enable it (403 `two_factor_disabled`); users who
+  enrolled earlier still pass the challenge and may switch it off.
+  `enforce_for` lists role slugs (`'*'` for everyone) whose holders must enable
+  2FA first: until they do, every API request other than the profile, the
+  session and the shell answers 403 `two_factor_setup_required`, and the SPA
+  keeps them on the profile's security section. The user payload gains
+  `twoFactorRequired`, the bootstrap `config.twoFactor.enabled`.
+- The resource action endpoint answers with the message the resource method
+  returned: a string, or `['message' => ..., 'affected' => ...]`. "Action `x`
+  applied" remains the fallback.
+- Icons: `dollar-sign`, `book`, `book-open`, `chart-bar`, `newspaper`,
+  `user-cog`, `folder-tree`, `building-2`, `credit-card`, `cube` and about fifty
+  other common lucide names resolve in the menu.
+- `/profile?section=security` opens a profile section directly.
+
+### Changed
+
+- The documentation ships in the Composer dist: `docs/{en,de,ru,zh}` can be
+  read from `vendor/dskripchenko/laravel-admin/docs`; only `docs/internal`
+  stays out.
+- `ActsAsAdmin` follows the auth strategy: it creates a user of the panel's
+  model (`admin.auth.model`) on the panel's guard, and in the shared strategy
+  always assigns a role. `actingAsAdmin()` and `actingAsSuperAdmin()` are
+  typed `Model&Authenticatable` instead of `AdminUser`.
+
+### Removed
+
+- The unused `admin.session` config (`cookie` / `ADMIN_SESSION_COOKIE`,
+  `driver`): nothing read it. The panel uses the application's session; set
+  `session.cookie` there.
+
 ### Docs
 
 - Full Russian documentation: the concept pages (actions, i18n, permissions,

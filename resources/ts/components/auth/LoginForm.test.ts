@@ -113,4 +113,33 @@ describe('LoginForm', () => {
     expect((btn.element as HTMLButtonElement).disabled).toBe(true)
     expect(btn.text()).toContain('Вход')
   })
+
+  it('shows no demo accounts unless demo mode sends some', () => {
+    const wrapper = mount(LoginForm)
+    expect(wrapper.find('[data-testid="login-demo"]').exists()).toBe(false)
+  })
+
+  it('signs in as a demo account with one click, through the login endpoint', async () => {
+    useAuthStore().demo = {
+      readonly: true,
+      accounts: [{ label: 'Administrator', email: 'admin@demo.test', password: 'demo', description: 'Full access' }],
+    }
+    mock.onPost('/auth/login').reply((config) => {
+      expect(JSON.parse(config.data as string)).toMatchObject({ email: 'admin@demo.test', password: 'demo' })
+      return [200, {
+        success: true,
+        payload: {
+          user: { id: 1, name: 'A', email: 'admin@demo.test', avatar: null, locale: null, theme: null, twoFactorEnabled: false },
+        },
+      }]
+    })
+    const wrapper = mount(LoginForm)
+    const button = wrapper.find('[data-testid="login-demo-admin@demo.test"]')
+    expect(button.text()).toContain('Войти как Administrator')
+    expect(button.text()).toContain('Full access')
+    await button.trigger('click')
+    await flushPromises()
+    expect(wrapper.emitted('success')?.[0]).toEqual(['authenticated'])
+    expect(mock.history.post).toHaveLength(1)
+  })
 })

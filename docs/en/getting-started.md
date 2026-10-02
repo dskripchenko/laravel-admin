@@ -163,3 +163,5 @@ That's it. List/create/edit/view screens are generated automatically:
 - [Permissions](concepts/permissions.md) — gate per-action access.
 - [Fields reference](fields-reference.md) — full field catalog.
 - [Layouts reference](layouts-reference.md) — Tabs/Wizard/Modal/Drawer.
+- [Demo mode](demo-mode.md) — a public demonstration stand: one-click demo
+  accounts and a read-only guard.
