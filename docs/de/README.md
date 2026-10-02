@@ -68,29 +68,31 @@ php artisan admin:install
 ```
 
 Das war's — die Admin-SPA wird vorgebaut ausgeliefert, Node ist nicht
-nötig. Öffnen Sie `/admin/login`. [Getting started](../en/getting-started.md)
+nötig. Öffnen Sie `/admin/login`. [Erste Schritte](getting-started.md)
 zeigt die erste Resource und den Custom-Build-Modus für eigene
 Vue-Komponenten.
 
 ## Dokumentation
 
-- [Erste Schritte](../../docs/de/getting-started.md)
-- [Architektur](../../docs/de/architecture.md)
-- Konzepte: [Resources](../../docs/de/concepts/resources.md) ·
-  [Screens](../../docs/de/concepts/screens.md) ·
-  [Widgets & Dashboards](../../docs/de/concepts/widgets-and-dashboards.md) ·
-  [Menü](../../docs/de/concepts/menu.md) ·
-  [Actions](../../docs/en/concepts/actions.md) (en) ·
-  [Permissions](../../docs/en/concepts/permissions.md) (en) ·
-  [i18n](../../docs/en/concepts/i18n.md) (en) ·
-  [Mandanten](../../docs/en/concepts/tenancy.md) (en)
-- [Felder-Referenz](../../docs/en/fields-reference.md) (en)
-- [Layouts-Referenz](../../docs/en/layouts-reference.md) (en)
-- [API-Referenz](../../docs/en/api-reference.md) (en)
-- [Frontend-Erweiterung](../../docs/en/frontend-extension.md) (en)
-- [Testen](../../docs/en/testing.md) (en)
-- [Migration Guide](../../docs/en/migration-guide.md) (en)
-- [Glossar](../../docs/de/glossary.md)
+- [Erste Schritte](getting-started.md)
+- [Admin in eine bestehende Anwendung integrieren](integration.md)
+- [Architektur](architecture.md)
+- Konzepte: [Resources](concepts/resources.md) ·
+  [Screens](concepts/screens.md) ·
+  [Widgets & Dashboards](concepts/widgets-and-dashboards.md) ·
+  [Menü](concepts/menu.md) ·
+  [Actions](concepts/actions.md) ·
+  [Berechtigungen](concepts/permissions.md) ·
+  [i18n](concepts/i18n.md) ·
+  [Mandantenfähigkeit](concepts/tenancy.md)
+- [Felder-Referenz](fields-reference.md)
+- [Layouts-Referenz](layouts-reference.md)
+- [API-Referenz](api-reference.md)
+- [Frontend-Erweiterung](frontend-extension.md)
+- [Testen](testing.md)
+- [Migrationsleitfaden](migration-guide.md)
+- [Demo-Modus](demo-mode.md)
+- [Glossar](glossary.md)
 
 ## Stack
 

@@ -37,6 +37,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   added once the manifest is in) is a plain caption instead of a link that
   throws while the panel boots.
 
+### Documentation
+
+- Full German (`docs/de/`) and Chinese (`docs/zh/`) translations of the
+  English documentation tree: getting started, integration, architecture,
+  demo mode, all concept pages, the fields, layouts and API references,
+  frontend extension, testing, the migration guide and the glossary. The
+  pages mirror `docs/en/` file for file; the earlier stubs are replaced, and
+  the German and Chinese indexes now link to their own pages instead of the
+  English ones.
+
 ## 1.39.0
 
 ### Added

@@ -21,15 +21,14 @@ not a plan:
 
 | Section | en | de | ru | zh |
 | --- | :-: | :-: | :-: | :-: |
-| getting-started, architecture, glossary | ✅ | ✅ | ✅ | ✅ |
-| concepts: menu, resources, screens, widgets | ✅ | ✅ | ✅ | ✅ |
-| concepts: actions, i18n, permissions, tenancy | ✅ | — | ✅ | — |
-| api-reference, fields, layouts, testing, migration, frontend-extension | ✅ | — | ✅ | — |
+| getting-started, integration, architecture, demo-mode, glossary | ✅ | ✅ | ✅ | ✅ |
+| concepts: actions, i18n, menu, permissions, resources, screens, tenancy, widgets | ✅ | ✅ | ✅ | ✅ |
+| api-reference, fields, layouts, testing, migration, frontend-extension | ✅ | ✅ | ✅ | ✅ |
 | `api/` — endpoint reference (17 pages) | — | — | ✅ | — |
 | `recipes/` — how-to guides (9 pages) | — | — | ✅ | — |
 | `sister-packs/` — specifications of the optional packages | — | — | ✅ | — |
 
-Russian covers everything English does. German and Chinese have the core
-pages only, and the endpoint reference, recipes and sister-pack specs exist
-only in Russian. This table says which is which rather than leaving a reader
+English, German, Russian and Chinese cover the same set of pages, file for
+file. The endpoint reference, recipes and sister-pack specs exist only in
+Russian. This table says which is which rather than leaving a reader
 to discover it by following a dead link.
