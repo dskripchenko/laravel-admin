@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- **Requires `@dskripchenko/ui` ^1.5.1.** The stopgaps the panel carried for
+  what the kit lacked give way to the kit's own components:
+  - row and header action menus pass the action icon to `UidMenuItem`'s `icon`
+    instead of drawing it inside the label;
+  - `Select::multiple()` is a `UidSelect` in its multiple mode (removable
+    chips) instead of a `UidTreeSelect` over flat nodes;
+  - `Checkbox` with `options()` is a `UidCheckboxGroup` (`inline()` lays it
+    out horizontally) instead of a hand-made group;
+  - the row actions column of a resource list is a right-fixed `UidTable`
+    column, and the drag-handle column of a reorderable resource a left-fixed
+    one with the selection column pinned along; the sticky-column CSS override
+    is gone;
+  - breadcrumbs link through `UidBreadcrumbItem`'s `to` (the app's
+    `RouterLink`), and a crumb without a link (a menu group) is plain text
+    without a style override; the one-line, ellipsized trail and its
+    collapse to "… › current" on a narrow top bar stay in the panel;
+  - the monospace font override is removed: the kit's
+    `--uid-font-family-mono` now lists the system faces itself.
+
+### Fixed
+
+- **A `Slider` handle has an accessible name again** — the field label, given
+  through `UidSlider`'s `ariaLabel` — now that the visible caption is drawn
+  once.
+- **A breadcrumb whose route is not registered yet** (the resource routes are
+  added once the manifest is in) is a plain caption instead of a link that
+  throws while the panel boots.
+
 ### Documentation
 
 - Full German (`docs/de/`) and Chinese (`docs/zh/`) translations of the

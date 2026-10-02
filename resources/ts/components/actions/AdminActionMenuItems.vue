@@ -3,7 +3,7 @@
  * Actions as items of an existing UidMenu. A DropDown nested here becomes a
  * UidSubMenu holding its own actions, to any depth.
  */
-import { UidIcon, UidMenuItem, UidSubMenu } from '@dskripchenko/ui'
+import { UidMenuItem, UidSubMenu } from '@dskripchenko/ui'
 import type { AdminAction } from '../../composables/useActionRunner'
 import { resolveIcon } from '../shell/iconRegistry'
 import AdminActionMenuItems from './AdminActionMenuItems.vue'
@@ -36,12 +36,11 @@ const emit = defineEmits<{ run: [action: AdminAction] }>()
     <UidMenuItem
       v-else
       :variant="action.destructive ? 'danger' : 'default'"
+      :icon="resolveIcon(action.icon) ?? undefined"
       :disabled="isDisabled(action)"
       :data-testid="`action-${action.name}`"
       @click="emit('run', action)"
     >
-      <!-- UidMenuItem has a single default slot: the icon goes in with the label. -->
-      <UidIcon v-if="resolveIcon(action.icon)" :icon="resolveIcon(action.icon)!" :size="14" />
       {{ action.label }}
     </UidMenuItem>
   </template>
