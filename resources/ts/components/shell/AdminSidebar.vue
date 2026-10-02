@@ -18,6 +18,7 @@ import { useAppReady } from '../../composables/useAppReady'
 import AdminSidebarNode from './AdminSidebarNode.vue'
 import { ACTIVE_MENU_TRAIL, useActiveMenuTrail } from './menuTrail'
 import BrandLogo from './BrandLogo.vue'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   collapsed?: boolean
@@ -122,7 +123,7 @@ const ready = computed(() => appReady.value || menu.isLoaded)
           :href="docsUrl"
           class="admin-sidebar-foot__text admin-sidebar-foot__link"
         >
-          Docs
+          {{ tr('Документация') }}
         </a>
       </div>
     </template>

@@ -34,8 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `description`), builder block labels, slider `marks()`, a `Label` field's
   static `->value()` text and a gauge's `unit()` are now translated into the
   panel's language like the other captions.
-- **The profile page's title and its section navigation's accessible name were
-  hardcoded in English.** They are source strings translated per locale now.
+- **Hardcoded English captions in the panel.** The profile page's title and
+  its section navigation's accessible name, the list toolbar's "Filter" chip,
+  the widget dialog's "Resource slug" and "Limit" and the sidebar's "Docs"
+  link are source strings translated per locale now; a test guards the
+  component templates against English text typed straight into them.
 
 ## 1.42.1
 

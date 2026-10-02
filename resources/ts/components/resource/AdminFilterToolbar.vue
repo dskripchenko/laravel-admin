@@ -345,7 +345,7 @@ function iconFor(name: string | null | undefined) {
         <template #trigger>
           <button type="button" class="admin-toolbar__chip">
             <UidIcon :icon="Plus" :size="14" />
-            <span class="admin-toolbar__chip-text">Filter</span>
+            <span class="admin-toolbar__chip-text">{{ tr('Фильтр') }}</span>
           </button>
         </template>
         <div class="admin-toolbar__popover admin-toolbar__popover--list" @keydown.stop>

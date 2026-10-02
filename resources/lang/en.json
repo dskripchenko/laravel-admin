@@ -490,5 +490,9 @@
     "Активен": "Active",
     "Телефон": "Phone",
     "Позиция": "Position",
-    "Разделы профиля": "Profile sections"
+    "Разделы профиля": "Profile sections",
+    "Фильтр": "Filter",
+    "Slug ресурса": "Resource slug",
+    "Лимит": "Limit",
+    "Документация": "Docs"
 }
