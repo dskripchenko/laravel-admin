@@ -4,7 +4,7 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/concepts/screens.md
-translated_at: 2026-05-08
+translated_at: 2026-10-02
 ---
 
 # Screens
@@ -76,7 +76,7 @@ URL: `/admin/screens/contact`.
 | `query(...$params)` | Возвращает initial state. Принимает `?key=value` из URL как named-arg'и. |
 | `layout()` | Возвращает `Renderable[]` (Rows/Columns/Tabs/Block/...). |
 | `commandBar()` | Возвращает `Action[]` для шапки страницы. |
-| Public-методы | Любой другой public-метод (не из reserved) вызывается как command через `Button::method('xxx')`. |
+| Public-методы | Любой другой public-метод (не из reserved) вызывается как command через `Button::make('…')->method('xxx')`. |
 
 Reserved method names: `query`, `layout`, `name`, `description`,
 `permission`, `commandBar`, `compile`, `slug`, `reservedMethods`,
@@ -93,8 +93,9 @@ public function send(array $state): array { ... }
 Возвращаемые значения:
 
 - `array` — нормализуется в `ScreenMethodPayload` и отправляется
-  обратно. Ключи: `state`, `message`, `alerts`, `redirect_url`,
-  `refresh`, `download_url`, `extra`.
+  обратно. Ключи: `state`, `layouts`, `message`, `message_link`,
+  `alerts`, `redirect_url`, `refresh`, `download_url`; всё остальное
+  попадает в `extra`.
 - `JsonResponse` — пробрасывается как есть.
 - `null`/`void` — `{ok: true}`.
 
@@ -151,7 +152,7 @@ public function recalculateTotal(array $state, Request $request): array
   `create`/`update` по контексту формы. Поле, которое рисует listener, должно
   быть и в `fields()` — валидация и сохранение читают их.
 
-Подробности и все методы — [Layouts reference](../../en/layouts-reference.md#listener-reactive-part-of-a-form).
+Подробности и все методы — в [каталоге layout'ов](../layouts-reference.md).
 
 ## Примеры
 
@@ -239,5 +240,6 @@ public function permission(): array|string|null
 
 ## См. также
 
-- [Permissions](../../en/concepts/permissions.md) (en)
-- [Каталог layouts](../../en/layouts-reference.md) (en)
+- [Recipes](../recipes/README.md) — практические рецепты
+- [Permissions](permissions.md)
+- [Каталог layout'ов](../layouts-reference.md)

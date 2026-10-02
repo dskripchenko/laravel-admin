@@ -94,7 +94,7 @@ User can also **+ Add widget** — opens the type-picker dialog. Custom
 widgets get `slug = "custom.{type}.{timestamp}"`.
 
 Save → POST `/api/admin/dashboard/save` with the full widget array.
-Persisted in `dashboard_layouts` per-user.
+Persisted per user in `admin_dashboard_layouts`.
 
 ## Per-user overrides
 
@@ -257,6 +257,14 @@ may ask for dependencies in its constructor. Duplicates are dropped by slug: if
 the host placed the same widget itself, with its own title or size, no second
 copy is added. A widget that cannot be built is skipped, so a broken plugin
 binding does not take the dashboard down.
+
+## Header indicators
+
+A neighbouring mechanism for the same case — a package has something to say
+and nowhere to put it: `$admin->statusIndicators([...])` and the
+`Dskripchenko\LaravelAdmin\Status\StatusIndicator` interface. The panel
+draws the indicator, the plugin answers for its state (`key()` and
+`state()`) — see [system.status](../../ru/api/system.md) (in Russian).
 
 ## See also
 

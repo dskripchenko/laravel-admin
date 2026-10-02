@@ -4,7 +4,7 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/concepts/resources.md
-translated_at: 2026-05-08
+translated_at: 2026-10-02
 ---
 
 # Resources
@@ -45,36 +45,48 @@ public static string $icon = 'package';        // имя lucide-иконки
 public static ?string $group = 'Каталог';      // секция в sidebar
 
 public static function slug(): string { return 'articles'; }    // URL = /admin/r/articles
-public static function label(): string { return 'Статьи'; }
+public static function label(): string { return 'Статьи'; }   // подпись в sidebar
 ```
 
 ## Fields
 
+Каждое поле возвращает дескриптор. Типичные варианты:
+
 ```php
-Input::make('email')->type('email')->required(),
+Input::make('email')->type('email')->required()->placeholder('user@host'),
 Number::make('price')->min(0)->step(0.01),
 Select::make('status')->options(['draft' => 'Черновик', 'published' => 'Опубликовано'])->required(),
 DatePicker::make('published_at')->withTime(),
-RelationSelect::make('category_id')->relation('category')->display('name'),
+RelationSelect::make('category_id')->relation(Category::class, 'name'),
 Repeater::make('tags')->fields([Input::make('name'), Input::make('color')]),
 TranslatableInput::make('title')->locales(['en', 'ru']),
 Wysiwyg::make('body')->sanitize(),
 ```
 
-См. [каталог полей](../../en/fields-reference.md) (en) для всех типов.
+Все типы — в [каталоге полей](../fields-reference.md).
 
 ### Видимость по режимам
 
 ```php
-Input::make('slug')->required()->visibleOn(['create', 'update'])
-                              ->hiddenOn(['view']),
+Input::make('slug')->required()->onView(false),     // только create + update
+Password::make('password')->onUpdate(false),         // только create
 ```
 
-### Reactive fields
+`onCreate()`, `onUpdate()` и `onView()` принимают bool, по умолчанию
+`true`: поле, которому ничего не задано, видно во всех трёх режимах. Чтобы
+показывать поле, только пока другое поле имеет нужное значение, —
+`visibleWhen('driver', 's3')`.
+
+### Поля, вычисляемые из других полей
 
 ```php
-Input::make('slug')->reactive(['title' => 'slugify']),
+Slug::make('slug')->from('title'),
 ```
+
+Фронтенд пересчитывает `slug` при каждом изменении `title` — пока slug не
+отредактировали вручную. Для более сложных случаев — опции, зависящие от
+другого поля, вычисляемая сумма — оберните поля в
+[Listener](../layouts-reference.md#listener-реактивная-часть-формы).
 
 ## Columns (таблица)
 
@@ -97,63 +109,132 @@ TableColumn::make('cover')->asImage(),
 public function filters(): array
 {
     return [
-        BaseInputFilter::make('search')->searchableFields(['title', 'slug']),
-        BaseSelectFromOptionsFilter::make('status')->options([...]),
-        BaseDateFilter::make('created_at')->range(),
-        BaseSelectFromModelFilter::make('category_id')->model(Category::class),
-        TrashedFilter::make(),
+        InputFilter::for('title')->label('Заголовок'),           // LIKE %…%
+        OptionsFilter::for('status')->options(['draft' => 'Черновик', 'published' => 'Опубликовано']),
+        DateRangeFilter::for('created_at'),                       // {from, to}
+        SelectFromModelFilter::for('category_id')->fromModel(Category::class, 'name'),
+        SwitcherFilter::for('is_featured'),
     ];
 }
 ```
 
+Фильтры лежат в `Dskripchenko\LaravelAdmin\Filter`. Для модели с
+`SoftDeletes` `TrashedFilter` добавляется автоматически. Всё, что не покрывают
+остальные, решает `QueryFilter` с замыканием:
+`QueryFilter::for('legacy_status')->using(fn ($q, $value) => $q->where(...))`.
+
 ## Actions
+
+Действия строки, bulk и command-bar — см. [Actions](actions.md).
 
 ```php
 public function actions(): array
 {
     return [
-        Button::make('Опубликовать')->method('publish')->position(['row']),
-        BulkAction::make('В архив')->method('archive')->confirm('Архивировать N статей?'),
+        Button::make('Опубликовать')->withName('publish')->method('publish')->position(['row']),
+        BulkAction::make('В архив')->withName('archive')->method('archive')->confirm('Архивировать N статей?'),
     ];
 }
 
-public function publish(int $id): void
+public function publish(array $ids, array $payload = []): void
 {
-    \App\Models\Article::find($id)->update(['status' => 'published']);
+    \App\Models\Article::whereKey($ids)->update(['status' => 'published']);
 }
 ```
 
+Действие вызывается по имени, а метод ресурса получает выбранные id и
+payload действия. Имя выводится из подписи, но только из латиницы и цифр:
+у кириллической подписи оно вырождается в `action`, и несколько таких
+действий сливаются в одно. Поэтому при русских подписях задавайте имя явно —
+`withName()`.
+
 ## Soft-delete / Restore / Force-delete
 
-Если модель использует `SoftDeletes`, admin авто-включает:
-- `TrashedFilter`
-- `Restore` row action
-- `ForceDelete` row action (gated `admin.{slug}.force-delete`)
+Если модель использует `SoftDeletes`, админка сама включает:
+- `TrashedFilter` (активные / удалённые / все)
+- действие строки `Restore`
+- действие строки `ForceDelete` (под правом `admin.{slug}.force-delete`)
 
-## Replicate / Reorder
+## Replicate
 
 ```php
-public static function replicable(): bool { return true; }
-public static string $reorderColumn = 'position';
+public function replicable(): bool { return true; }
+
+public function replicate(Model $original): Model
+{
+    $copy = parent::replicate($original);
+    $copy->slug = $original->slug.'-copy';
+
+    return $copy;
+}
 ```
+
+По умолчанию `replicate()` — это `Model::replicate()` из Eloquent плюс
+суффикс копии у `name`/`title`/`slug`; переопределите, чтобы заново
+сгенерировать уникальные поля.
+
+## Reorder
+
+Для моделей с колонкой порядка:
+
+```php
+public function reorderable(): bool { return true; }
+public function reorderColumn(): string { return 'position'; }   // значение по умолчанию
+```
+
+В списке появляется колонка с drag-handle.
 
 ## Permissions
 
-Default base: `admin.{slug}`. Auto-derived: `view`, `create`, `update`,
-`delete`, `restore`, `force-delete`, `replicate`, `reorder`. Override:
+Базовое право по умолчанию — `admin.{slug}`. Из него выводятся: `view`,
+`create`, `update`, `delete`, `restore`, `force-delete`, `replicate`,
+`reorder`. Переопределить:
 
 ```php
 public static function permission(): string
 {
-    return 'admin.articles';
+    return 'admin.articles';     // admin.articles.view, admin.articles.update, ...
+}
+```
+
+## Searchable / Sortable
+
+Полнотекстовый поиск списка (`?q=`) идёт по колонкам, помеченным `search()`;
+чтобы выбрать их самому, переопределите `searchableFields()`. Без явной
+сортировки список упорядочен по `defaultOrder()` — новые сверху по
+первичному ключу:
+
+```php
+public function searchableFields(): array { return ['title', 'slug']; }
+
+public function defaultOrder(): array
+{
+    return [['column' => 'created_at', 'direction' => 'desc']];
 }
 ```
 
 ## Связи в полях/колонках
 
 ```php
-TableColumn::make('author.name')->label('Автор'),  // dot-notation auto-eager
-RelationSelect::make('author_id')->relation('author')->display('name')->searchable(),
+RelationSelect::make('author_id')
+    ->relation(User::class, 'name')
+    ->searchable(['name', 'email']),
+```
+
+Ячейка списка читает плоский ключ сериализованной строки. Чтобы показать
+значение из связи, загрузите связь в `indexQuery()` и отдайте значение
+атрибутом (accessor, перечисленный в `$appends` модели):
+
+```php
+public function indexQuery(): Builder
+{
+    return parent::indexQuery()->with('author');
+}
+
+public function columns(): array
+{
+    return [TableColumn::make('author_name')->label('Автор')];   // Article::getAuthorNameAttribute()
+}
 ```
 
 ### Выбор записей другого ресурса
@@ -180,10 +261,11 @@ public function pickerPreview(Model $row): ?string
 ```
 
 Остальные настройки (`filters()`, `uploadTo()`, `layout()`, `dialogSize()`) —
-в [каталоге полей](../../en/fields-reference.md#resourcepicker) (en).
+в [каталоге полей](../fields-reference.md#resourcepicker).
 
 ## См. также
 
-- [Screens](screens.md)
-- [Permissions](../../en/concepts/permissions.md) (en)
-- [Каталог полей](../../en/fields-reference.md) (en)
+- [Screens](screens.md) — non-CRUD страницы
+- [Permissions](permissions.md) — подробности RBAC
+- [Каталог полей](../fields-reference.md)
+- [Каталог layout'ов](../layouts-reference.md)

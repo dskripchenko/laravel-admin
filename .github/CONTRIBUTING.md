@@ -93,7 +93,8 @@ vendor/bin/phpstan analyse # static analysis (level 5)
 
 - CSS custom properties only (`var(--uid-...)`). No Tailwind, no SCSS,
   no CSS-in-JS.
-- No `<style scoped>` — themes need to penetrate.
+- Prefer unscoped `<style>` with BEM class names; reach for `<style scoped>`
+  only for internals a theme never needs to override.
 
 ## Testing
 
@@ -104,7 +105,6 @@ vendor/bin/phpstan analyse # static analysis (level 5)
   the SUT (`Component.test.ts`).
 - Don't mock the database — use SQLite in-memory (already configured
   by `Orchestra\Testbench`).
-- E2E smoke (Playwright) lives in `demo/e2e-full-flow.mjs`.
 
 ## Releasing
 

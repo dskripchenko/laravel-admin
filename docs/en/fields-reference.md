@@ -13,14 +13,28 @@ All fields extend `Dskripchenko\LaravelAdmin\Field\Field`. They share:
 ->required()           // adds 'required' to validation rules
 ->placeholder('text')
 ->help('Hint shown under the field')
-->title('Custom label')
+->title('Custom label') // default: the name made readable, `opens_at` → "Opens At"
 ->default('value')     // initial form-state
-->visibleOn(['create', 'update'])
-->hiddenOn(['view'])
-->reactive(['title' => 'slugify'])  // recompute when other field changes
+->onCreate(false)      // hide on the create form; also onUpdate(), onView()
+->visibleWhen('driver', 's3')          // show only while another field holds a value
+->visibleWhen('driver', ['s3', 'minio']) // ...or any of several values
+->span(6)              // width in the 12-column grid of a Rows layout
+->canSee(fn () => Gate::allows('manage-billing')) // server-side visibility
 ->readonly()
-->rules(['min:3', 'max:255'])  // additional Laravel rules
+->disabled()
+->rules(['min:3', 'max:255'])  // explicit Laravel rules
 ```
+
+`rules()` replaces the explicit rules set before it; `required()` is kept
+either way. On top of the explicit rules every field adds implicit ones from its
+type: `numeric`/`integer` and `min`/`max` for numbers, `email` for
+`->type('email')`, `date` for dates, `array` for multiple choices, and so on —
+so the limits are declared once, on the field.
+
+Methods a field class does not define are stored as attributes and passed to
+the SPA component as props. That is how `->placeholder()`, `->type()` or
+`->rows()` work, and also why a misspelt method fails silently: it becomes an
+attribute nobody reads.
 
 ## Text inputs
 
@@ -31,9 +45,9 @@ Input::make('title')->required(),
 Input::make('email')->type('email'),
 Input::make('phone')->type('tel'),
 Input::make('website')->type('url'),
-Input::make('password')->type('password'),
-Input::make('color')->type('color'),
 ```
+
+For a password use `Password` (below), for a color `ColorPicker`.
 
 ### Textarea
 
@@ -50,38 +64,60 @@ Number::make('quantity')->integer(),
 
 ### Slug
 
-Auto-fills from a source field:
+A URL slug derived from another field of the form:
 
 ```php
-Slug::make('slug')->from('title'),
+Slug::make('slug')->from('title')->separator('-'),
 ```
+
+`from()` names the source field. The SPA currently renders the slug as a plain
+text input and does not fill it in by itself; to derive it on the server, use
+`Slug::generate($title)` (a wrapper over `Str::slug`), for example in the
+resource's save hook.
 
 ### Code
 
 Code editor with syntax highlighting:
 
 ```php
-Code::make('snippet')->language('javascript')->theme('dark'),
+Code::make('snippet')->language('javascript')->lineNumbers()->height(400),
 ```
+
+`theme()` is accepted but ignored: the editor follows the panel's theme.
 
 ### Markdown
 
 Markdown editor with live preview:
 
 ```php
-Markdown::make('content')->minHeight('300px'),
+Markdown::make('content')->height('300px'),
+Markdown::make('notes')->preview(false)->toolbar(false),
 ```
 
 ### Wysiwyg
 
-Default: `@dskripchenko/wysiwyg` (zero-dep, ~12 KB gz).
+Default editor: `@dskripchenko/wysiwyg` (no dependencies).
 
 ```php
-Wysiwyg::make('body')->sanitize(),
+Wysiwyg::make('body'),
+Wysiwyg::make('summary')->preset('minimal'),     // 'minimal' | 'default' | 'full'
+Wysiwyg::make('page')->preset('full')->uploadImages(),
 ```
 
-Override per-host: `registerField('wysiwyg', QuillField)` (sister-pack
-`dskripchenko/laravel-admin-quill` or `-tinymce`).
+The HTML is sanitized on save by default; `->sanitize(false)` turns that off for
+content you trust.
+
+Quill and TinyMCE adapters ship in the npm package as subpath exports; the host
+installs the editor itself (`quill` + `@vueup/vue-quill`, or `tinymce` +
+`@tinymce/tinymce-vue`) and registers the component under the `wysiwyg` type:
+
+```ts
+import { registerField } from '@dskripchenko/laravel-admin'
+import { QuillField } from '@dskripchenko/laravel-admin/quill'
+// or: import { TinymceField } from '@dskripchenko/laravel-admin/tinymce'
+
+registerField('wysiwyg', QuillField)
+```
 
 ## Selection
 
@@ -94,15 +130,26 @@ Select::make('status')->options([
 ])->required(),
 ```
 
-### Combobox
-
-Searchable Select with async options:
+Options also come from an enum or a model:
 
 ```php
-Combobox::make('category_id')
-    ->source('/api/categories/search')
-    ->searchable(),
+Select::make('status')->fromEnum(ArticleStatus::class),
+Select::make('category_id')->fromModel(Category::class, 'id', 'title'),
+Select::make('country')->options([...])->searchable()->clearable(),
 ```
+
+### Combobox
+
+A select that also accepts a value outside its list — the options are hints,
+not a rule. Use `Select` where the set really is closed.
+
+```php
+Combobox::make('model')
+    ->options(['claude-opus-5' => 'Claude Opus 5', 'claude-sonnet-5' => 'Claude Sonnet 5'])
+    ->clearable(),
+```
+
+`creatable()` is on by default; `->creatable(false)` restricts it to the list.
 
 ### Radio
 
@@ -121,32 +168,45 @@ Switcher::make('is_active')->title('Active'),
 
 ```php
 DatePicker::make('start_date'),
+DatePicker::make('birthday')->min('1900-01-01')->max(now()),
 DatePicker::make('publish_at')->withTime(),
-DateRangePicker::make('period'),
-TimePicker::make('start_time'),
+DateRange::make('period')->presets(['today', 'last_7_days']),
+TimePicker::make('start_time')->step(15),
 ```
+
+`withTime()` switches the stored format to `Y-m-d H:i:s`; the SPA's picker
+currently edits the date part only. `DateRange` stores
+`{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}`.
 
 ## Numeric
 
 ```php
-Slider::make('volume')->min(0)->max(100)->step(5)->showValue(),
-Rating::make('quality')->max(5)->allowHalf(),
+Slider::make('volume')->min(0)->max(100)->step(5)->marks([0 => 'Off', 100 => 'Max']),
+Rating::make('quality')->count(5)->half(),
 ```
 
 ## Files
 
 ```php
-FileUpload::make('avatar')
-    ->disk('public')
-    ->path('avatars')
+FileUpload::make('contract')
     ->maxSize(5 * 1024)        // KB
-    ->accept(['image/*'])
-    ->multiple(),
+    ->accept(['application/pdf', '.docx']),
+
+FileUpload::make('avatar')->image(),   // image-only, with a preview
 
 ImageCropper::make('hero')
     ->aspectRatio(16 / 9)
-    ->minSize(800, 450),
+    ->minCrop(800, 450)
+    ->outputSize(1600, 900)
+    ->quality(0.85),
 ```
+
+The SPA uploads the file first, through the panel's `uploads` endpoint, and
+puts `{disk, path, url, name, size, mime}` into the form state. The disk and the
+directory come from `config('admin.uploads.disk')` and
+`config('admin.uploads.directory')`. One file per field: `multiple()` and
+`maxFiles()` shape the validation rules, but the SPA's uploader handles a single
+file.
 
 ## Relations
 
@@ -154,21 +214,30 @@ ImageCropper::make('hero')
 
 ```php
 RelationSelect::make('author_id')
-    ->relation('author')
-    ->display('name')
-    ->searchable(),
+    ->relation(User::class, 'name')   // model, label column, value column = 'id'
+    ->preload(['team']),
 ```
+
+The options are loaded from the related model when the form is serialized (up
+to 100 rows; `->eager(500)` raises the limit), so this suits reference tables.
+For a large table use `ResourcePicker`.
 
 ### RelationTable
 
-For has-many editing inline:
+A read-only table of related records on the edit form — a HasMany or a
+BelongsToMany. The rows come from the field's value, so load the relation with
+the record:
 
 ```php
 RelationTable::make('items')
     ->relation('items')
-    ->columns(['name', 'price'])
-    ->editable(),
+    ->columns([
+        TableColumn::make('name')->label('Name'),
+        TableColumn::make('price')->asMoney('USD'),
+    ]),
 ```
+
+The columns are `TableColumn`s, with the same presets as a resource list.
 
 ### ResourcePicker
 
@@ -230,11 +299,18 @@ For polymorphic relations:
 
 ```php
 MorphSwitcher::make('subject')
-    ->types([
-        Article::class => 'Article',
-        Product::class => 'Product',
-    ]),
+    ->morph('article', Article::class, 'title')
+    ->morph('product', Product::class),          // display column 'name' by default
+
+// or several at once, alias => model:
+MorphSwitcher::make('subject')->morphMany([
+    'article' => Article::class,
+    'product' => Product::class,
+]),
 ```
+
+The state is `{type, id}`. Each type's records (up to 100) are loaded into the
+form as options.
 
 ## Composite
 
@@ -248,12 +324,16 @@ Repeater::make('tags')
         Input::make('name')->required(),
         Input::make('color'),
     ])
-    ->minItems(0)->maxItems(10),
+    ->minItems(0)->maxItems(10)
+    ->defaultItem(['color' => '#888888']),
 ```
+
+`addable()`, `removable()` and `reorderable()` toggle the buttons.
 
 ### Group
 
-Logical grouping (no array structure, just visual):
+Nested fields stored as one object in the state — `contact.email`,
+`contact.phone` — and validated as an array:
 
 ```php
 Group::make('contact')
@@ -261,8 +341,13 @@ Group::make('contact')
     ->fields([
         Input::make('email'),
         Input::make('phone'),
-    ]),
+    ])
+    ->layout('columns')        // 'rows' (default) | 'columns' | 'inline'
+    ->collapsed(),
 ```
+
+For purely visual grouping use a layout such as `Layout::block()` — see the
+[layouts reference](layouts-reference.md).
 
 ### KeyValue
 
@@ -271,7 +356,8 @@ Free-form key/value pairs:
 ```php
 KeyValue::make('headers')
     ->keyLabel('Header')
-    ->valueLabel('Value'),
+    ->valueLabel('Value')
+    ->allowedKeys(['Accept', 'Authorization']),  // optional
 ```
 
 ### TagsInput
@@ -282,14 +368,25 @@ TagsInput::make('tags')
     ->maxItems(8),
 ```
 
+Suggestions do not restrict input: any string can be added.
+
 ## Tree / hierarchy
 
 ### TreeSelect
 
 ```php
 TreeSelect::make('category_id')
-    ->options($treeOptions)
+    ->tree([
+        ['value' => 1, 'label' => 'Electronics', 'children' => [
+            ['value' => 2, 'label' => 'Phones'],
+        ]],
+    ])
     ->multiple(),
+
+// or from a self-referencing model:
+TreeSelect::make('category_id')
+    ->fromModel(Category::class, 'parent_id', 'id', 'name')
+    ->selectableParents(false),   // leaves only
 ```
 
 ### Cascader
@@ -307,21 +404,32 @@ Cascader::make('location')
 
 ### TranslatableInput
 
-Tabs per locale:
+Tabs per locale; the state is `{en: '...', ru: '...'}`:
 
 ```php
 TranslatableInput::make('title')->locales(['en', 'ru', 'de']),
 TranslatableInput::make('body')->multiline()->locales(['en', 'ru']),
+TranslatableInput::make('name')->requireAllLocales(),
 ```
+
+Without `locales()` the list comes from `config('admin.ui.available_locales')`.
+See [i18n](concepts/i18n.md).
 
 ### Builder
 
-Page-builder style block list (for CMS hosts):
+Page-builder style block list (for CMS hosts). Each block type is declared
+with its own fields; the state is a list of `{type, data}`:
 
 ```php
-Builder::make('blocks')->blocks([
-    HeroBlock::class, TextBlock::class, GalleryBlock::class,
-]),
+Builder::make('blocks')
+    ->block('hero', [
+        Input::make('title')->required(),
+        Markdown::make('subtitle'),
+    ], label: 'Hero', icon: 'image')
+    ->block('gallery', [
+        FileUpload::make('image')->image(),
+    ])
+    ->maxBlocks(20),
 ```
 
 ### Hidden
@@ -332,10 +440,39 @@ Hidden::make('uuid'),
 
 ### Label
 
-Read-only display only:
+Read-only display only — neither editable nor submitted. Shows the state's
+value for its name, or a fixed `->value()`:
 
 ```php
 Label::make('id')->title('Record ID'),
+Label::make('note')->value('Changes apply after a restart.'),
+```
+
+### ColorPicker
+
+```php
+ColorPicker::make('brand_color')
+    ->format('hex')                       // 'hex' | 'rgb' | 'hsl'
+    ->palette(['#1e88e5', '#43a047'])
+    ->withAlpha(),
+```
+
+### Password
+
+```php
+Password::make('password')->required()->confirmed()->revealable(),
+```
+
+`confirmed()` adds the `confirmed` rule, so the form also needs a
+`password_confirmation` field.
+
+### Generated
+
+A random string generated in the browser when the create form opens — tokens,
+secret keys — with a "Generate" button:
+
+```php
+Generated::make('api_key')->length(40)->charset('abcdef0123456789'),
 ```
 
 ## See also

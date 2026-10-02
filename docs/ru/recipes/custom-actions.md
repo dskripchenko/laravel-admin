@@ -2,6 +2,10 @@
 
 ## Row action — простая кнопка с подтверждением
 
+Ключ действия выводится из подписи только по латинице: у кириллической
+подписи он вырождается в `action`, и несколько действий сливаются в одно.
+Поэтому при русских подписях задавайте ключ явно через `withName()`.
+
 ```php
 public function actions(): array
 {
@@ -36,9 +40,11 @@ id (иначе 422); `standalone()` снимает это требование �
 
 ```php
 Button::make('Пересчитать рейтинги')
+    ->withName('recalculate')
     ->method('recalculate');
 
 Button::make('Синхронизировать')
+    ->withName('sync')
     ->method('sync')
     ->position(['header', 'row'])
     ->standalone();
@@ -53,6 +59,7 @@ public function recalculate(array $ids, array $payload = []): void
 
 ```php
 BulkAction::make('Опубликовать выделенные')
+    ->withName('bulk_publish')
     ->method('bulkPublish')
     ->requiresAtLeast(1)
     ->requiresAtMost(100)
@@ -70,6 +77,7 @@ public function bulkPublish(array $ids): array
 
 ```php
 ModalAction::make('Отправить уведомление')
+    ->withName('send_notification')
     ->method('sendNotification')
     ->modalTitle('Уведомление подписчикам')
     ->fields([
@@ -104,6 +112,7 @@ public function boot(AllowlistRegistrar $allowlist): void
 
 // В Resource'е
 AsyncAction::make('Пересчитать статистику')
+    ->withName('recalc_stats')
     ->handler(\App\Jobs\RecomputeStats::class, 'handle')
     ->withParams(['period' => '30d'])
     ->pollInterval(5);

@@ -55,7 +55,7 @@ Input::make('email')->type('email')->required()->placeholder('user@host'),
 Number::make('price')->min(0)->step(0.01),
 Select::make('status')->options(['draft' => 'Draft', 'published' => 'Published'])->required(),
 DatePicker::make('published_at')->withTime(),
-RelationSelect::make('category_id')->relation('category')->display('name'),
+RelationSelect::make('category_id')->relation(Category::class, 'name'),
 Repeater::make('tags')->fields([Input::make('name'), Input::make('color')]),
 TranslatableInput::make('title')->locales(['en', 'ru']),
 Wysiwyg::make('body')->sanitize(),
@@ -66,18 +66,24 @@ See [fields reference](../fields-reference.md) for the full catalog.
 ### Visibility per mode
 
 ```php
-Input::make('slug')->required()->visibleOn(['create', 'update'])
-                              ->hiddenOn(['view']),
+Input::make('slug')->required()->onView(false),     // create + update only
+Password::make('password')->onUpdate(false),         // create only
 ```
 
-### Reactive fields
+Each of `onCreate()`, `onUpdate()`, `onView()` takes a bool and defaults to
+`true`; a field left alone is shown in all three. To show a field only while
+another one holds a value, use `visibleWhen('driver', 's3')`.
+
+### Fields derived from other fields
 
 ```php
-Input::make('slug')->reactive(['title' => 'slugify']),
+Slug::make('slug')->from('title'),
 ```
 
-The frontend recomputes `slug` whenever `title` changes (field strategy
-registered via `registerField`).
+The frontend regenerates `slug` whenever `title` changes, until the slug is
+edited by hand. For anything more involved — options that depend on another
+field, a computed total — wrap the fields in a
+[Listener](../layouts-reference.md#listener-reactive-part-of-a-form).
 
 ## Columns (table)
 
@@ -100,14 +106,18 @@ anything else. Row actions are rendered by the table itself.
 public function filters(): array
 {
     return [
-        BaseInputFilter::make('search')->searchableFields(['title', 'slug']),
-        BaseSelectFromOptionsFilter::make('status')->options([...]),
-        BaseDateFilter::make('created_at')->range(),
-        BaseSelectFromModelFilter::make('category_id')->model(Category::class),
-        TrashedFilter::make(),  // soft-delete
+        InputFilter::for('title')->label('Title'),               // LIKE %…%
+        OptionsFilter::for('status')->options(['draft' => 'Draft', 'published' => 'Published']),
+        DateRangeFilter::for('created_at'),                       // {from, to}
+        SelectFromModelFilter::for('category_id')->fromModel(Category::class, 'name'),
+        SwitcherFilter::for('is_featured'),
     ];
 }
 ```
+
+Filters live in `Dskripchenko\LaravelAdmin\Filter`. For a model with
+`SoftDeletes` a `TrashedFilter` is added automatically. `QueryFilter` takes
+a closure for anything the others do not cover.
 
 ## Actions
 
@@ -122,11 +132,17 @@ public function actions(): array
     ];
 }
 
-public function publish(int $id): void
+public function publish(array $ids, array $payload = []): void
 {
-    \App\Models\Article::find($id)->update(['status' => 'published']);
+    \App\Models\Article::whereKey($ids)->update(['status' => 'published']);
 }
 ```
+
+The action is dispatched by its name, and the resource method receives the
+selected ids and the action's payload. The name is derived from the label's
+Latin letters and digits only — a label in another script collapses to
+`action`, and several such actions become one — so with non-Latin labels set
+the name explicitly with `withName('publish')`.
 
 ## Soft-delete / Restore / Force-delete
 
@@ -138,20 +154,27 @@ If your model uses `SoftDeletes`, the admin auto-enables:
 ## Replicate
 
 ```php
-public static function replicable(): bool { return true; }
+public function replicable(): bool { return true; }
 
-public function onReplicate(Model $copy, Model $source): void
+public function replicate(Model $original): Model
 {
-    $copy->title = $source->title.' (copy)';
+    $copy = parent::replicate($original);
+    $copy->slug = $original->slug.'-copy';
+
+    return $copy;
 }
 ```
 
+By default `replicate()` is Eloquent's `Model::replicate()` plus a copy
+suffix on `name`/`title`/`slug`; override it to regenerate unique fields.
+
 ## Reorder
 
-For models with a `position` column:
+For models with an order column:
 
 ```php
-public static string $reorderColumn = 'position';
+public function reorderable(): bool { return true; }
+public function reorderColumn(): string { return 'position'; }   // the default
 ```
 
 The list-screen gets a drag-handle column.
@@ -171,22 +194,45 @@ public static function permission(): string
 
 ## Searchable / Sortable
 
+The list's free-text search (`?q=`) runs over the columns marked with
+`search()`; override `searchableFields()` to choose them yourself. Without an
+explicit order the list is sorted by `defaultOrder()` — newest first by the
+primary key:
+
 ```php
 public function searchableFields(): array { return ['title', 'slug']; }
-public function defaultSort(): array { return ['created_at' => 'desc']; }
+
+public function defaultOrder(): array
+{
+    return [['column' => 'created_at', 'direction' => 'desc']];
+}
 ```
 
 ## Relationships in fields/columns
 
 ```php
-TableColumn::make('author.name')->label('Author'),  // dot-notation auto-eager-loads
 RelationSelect::make('author_id')
-    ->relation('author')
-    ->display('name')
-    ->searchable(),
+    ->relation(User::class, 'name')
+    ->searchable(['name', 'email']),
 
 // Records of another resource, picked in a dialog with its search and filters
 ResourcePicker::make('cover_id')->resource(MediaResource::class),
+```
+
+A list cell reads a flat key of the serialized row, so to show a related
+value, load the relation in `indexQuery()` and expose the value as an
+attribute (an accessor listed in the model's `$appends`):
+
+```php
+public function indexQuery(): Builder
+{
+    return parent::indexQuery()->with('author');
+}
+
+public function columns(): array
+{
+    return [TableColumn::make('author_name')->label('Author')];   // Article::getAuthorNameAttribute()
+}
 ```
 
 A resource is shown in pickers through `pickerItem()`: `recordTitle()`,

@@ -4,7 +4,7 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/getting-started.md
-translated_at: 2026-10-01
+translated_at: 2026-10-02
 ---
 
 # Быстрый старт
@@ -60,7 +60,7 @@ npm run build
 `--custom-build` создаёт `resources/js/admin.js`, добавляет его во входы
 `laravel-vite-plugin` в `vite.config.js` и направляет `config('admin.assets')`
 на Vite-манифест. Компоненты регистрируются в этой точке входа до
-`createAdminApp()` — см. [расширение фронтенда](../en/frontend-extension.md).
+`createAdminApp()` — см. [расширение фронтенда](frontend-extension.md).
 
 ## Первый администратор
 
@@ -162,8 +162,8 @@ public function boot(): void
   деревом навигации.
 - [Custom Screens](concepts/screens.md) — non-CRUD страницы (формы,
   отчёты).
-- [Permissions](../en/concepts/permissions.md) (en) — гранулярный
+- [Permissions](concepts/permissions.md) — гранулярный
   контроль доступа.
-- [Каталог полей](../en/fields-reference.md) (en) — все типы полей.
-- [Каталог layout'ов](../en/layouts-reference.md) (en) — Tabs/Wizard/
+- [Каталог полей](fields-reference.md) — все типы полей.
+- [Каталог layout'ов](layouts-reference.md) — Tabs/Wizard/
   Modal/Drawer.

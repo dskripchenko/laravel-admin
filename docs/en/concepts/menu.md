@@ -90,14 +90,21 @@ exist, a stub parent node is created.
 ## Auto-fill control
 
 Default: any Resource/custom Screen not mentioned in your tree is
-appended automatically (under the `Tools` group for screens; with no
-group for resources). To disable:
+appended automatically (screens under the `Tools` group, resources under
+their own `$group`, or with no group when it is not set). To disable:
 
 ```php
 Admin::menu()->withAuto(false);
 ```
 
 You then need to mention every visible item explicitly.
+
+To keep auto-fill on but leave out a single resource or screen — say, a
+child resource that is only shown embedded in its parent:
+
+```php
+Admin::menu()->hideAuto('order-items');
+```
 
 ## Permissions
 

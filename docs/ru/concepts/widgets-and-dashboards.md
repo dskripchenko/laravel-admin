@@ -4,7 +4,7 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/concepts/widgets-and-dashboards.md
-translated_at: 2026-05-08
+translated_at: 2026-10-02
 ---
 
 # Widgets & Dashboards
@@ -94,8 +94,8 @@ Click "Редактировать" в toolbar. На каждом виджете 
 `+ Add widget` — открывает type-picker. Custom-виджет получает
 `slug = "custom.{type}.{timestamp}"`.
 
-Save → POST `/api/admin/dashboard/save`. Сохраняется в
-`dashboard_layouts` per-user.
+Save → POST `/api/admin/dashboard/save` с полным массивом виджетов.
+Сохраняется per-user в `admin_dashboard_layouts`.
 
 ## Per-user override'ы
 
@@ -222,7 +222,14 @@ class WeatherWidget extends Widget
 }
 ```
 
-Frontend регистрирует Vue-компонент:
+```php
+public function widgets(): array
+{
+    return [WeatherWidget::make()->title('Погода')->size(3)];
+}
+```
+
+Frontend регистрирует Vue-компонент для этого типа:
 
 ```ts
 import { registerWidget } from '@dskripchenko/laravel-admin'
@@ -264,6 +271,6 @@ public function boot(Admin $admin): void
 
 ## См. также
 
-- [Screens](screens.md)
-- [Permissions](../../en/concepts/permissions.md) (en)
-- [Архитектура](../architecture.md)
+- [Screens](screens.md) — `DashboardScreen` наследует `Screen`
+- [Permissions](permissions.md)
+- [Архитектура](../architecture.md) — форма `toArray()` виджета

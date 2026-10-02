@@ -443,7 +443,7 @@ class ApiServiceProvider extends BaseApiServiceProvider
 `admin_role_assignments`; ролей у пользователя может быть несколько. Каждый
 ресурс получает `admin.{slug}.view/create/update/delete` (плюс restore,
 replicate и т. д., если включены); screen'ы и настройки закрываются так же.
-См. [Permissions](../en/concepts/permissions.md) (en).
+См. [Permissions](concepts/permissions.md).
 
 ```bash
 php artisan admin:user --super                     # интерактивно; Super Admin = ['*']
@@ -502,7 +502,7 @@ npm run build
 Shell тогда грузит вашу Vite-сборку (`assets.vite_manifest` /
 `assets.vite_entry` в `config/admin.php`) вместо готовой копии. Держите
 npm-пакет той же версии, что и composer-пакет. См.
-[Frontend extension](../en/frontend-extension.md) (en).
+[Frontend extension](frontend-extension.md).
 
 ## 8. Обновление и типичные проблемы
 

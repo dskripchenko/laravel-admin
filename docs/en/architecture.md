@@ -7,9 +7,10 @@ locale: en
 
 # Architecture
 
-This document describes the high-level design of `laravel-admin`. For
-the deep, low-level architecture see also `docs/ARCHITECTURE.md` (RU,
-~1500 lines, design rationale).
+This document describes the high-level design of `laravel-admin`. The
+detailed design document with the rationale behind each decision lives in
+`docs/internal/architecture.md` in the repository (in Russian,
+~1500 lines).
 
 ## Goals
 
@@ -93,8 +94,9 @@ The single source of truth for the SPA, returned by `/api/admin/system/manifest`
 
 ```json
 {
-  "version": "sha256-...",
+  "version": "3f9a0c…",
   "locale": "en",
+  "panel": "admin",
   "resources": [{ "slug": "articles", "label": "Articles", "fields": [...], "columns": [...], ... }],
   "screens":   [{ "slug": "contact", "name": "Contact", "permission": null }],
   "settings":  [{ "slug": "brand", "fields": [...], ... }],
@@ -124,16 +126,23 @@ Universal payload for any screen (Generated or custom):
 
 ### Action dispatch
 
-Actions invoke a controller method. The standard payload:
+Actions invoke a method on the PHP side. A `Screen` action goes to
+`ScreenController::runMethod` and names the screen's public method:
 
 ```json
 { "method": "send", "payload": { "form_field": "value" } }
 ```
 
-`Resource` actions go to `ResourceController::action`; `Screen` actions
-to `ScreenController::runMethod`. Both return a normalized `payload`
-shape (`message`, `alerts`, `state`, `refresh`, `redirect_url`,
-`download_url`).
+A `Resource` action goes to `ResourceController::action`, names the action
+by its key and carries the selected records; the resource method is called
+as `$resource->{method}(array $ids, array $payload)`:
+
+```json
+{ "key": "publish", "ids": [1, 2], "payload": {} }
+```
+
+Both return a normalized `payload` shape (`message`, `alerts`, `state`,
+`refresh`, `redirect_url`, `download_url`).
 
 ## Permissions model
 
@@ -151,12 +160,12 @@ shape (`message`, `alerts`, `state`, `refresh`, `redirect_url`,
 | Area | Default | How to override |
 |---|---|---|
 | WYSIWYG | `@dskripchenko/wysiwyg` | `registerField('wysiwyg', QuillField)` |
-| File storage | `Storage::disk('admin')` | host configures disks |
-| PDF rendering | mPDF (if installed) | `app->bind(PdfRenderer::class, MyRenderer::class)` |
+| File storage | `config('admin.uploads.disk')` (`ADMIN_UPLOADS_DISK`, `local` by default) | config / host disks |
+| PDF rendering | mPDF or dompdf, whichever is installed | `admin.exports.pdf.driver` = `mpdf` / `dompdf` |
 | Charts | Built-in SVG widgets | `registerWidget('chart', MyChart)` |
 | Auth guard | `auth.guard = admin` | config |
 | User model | `AdminUser` | host `Authenticatable` |
-| Locale source | 5-step resolver | host config |
+| Locale source | 6-step `LocaleResolver` | `admin.ui.default_locale` and the other config |
 
 ## See also
 

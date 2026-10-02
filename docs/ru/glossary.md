@@ -4,7 +4,7 @@ audience: developer
 status: stable
 locale: ru
 translated_from: en/glossary.md
-translated_at: 2026-05-08
+translated_at: 2026-10-02
 ---
 
 # Глоссарий
@@ -17,9 +17,10 @@ translated_at: 2026-05-08
 
 Класс, наследующий `Dskripchenko\LaravelAdmin\Resource\Resource`.
 Описывает, как одна Eloquent-модель представлена в админке: поля
-(форма), колонки (таблица), фильтры, действия, разрешения. Работает
-через `Repository` и рендерится через `GeneratedListScreen` /
-`GeneratedEditScreen` / `GeneratedViewScreen`.
+(форма), колонки (таблица), фильтры, действия, разрешения. Рендерится
+через `GeneratedListScreen` (для иерархического ресурса —
+`GeneratedTreeScreen`) / `GeneratedCreateScreen` / `GeneratedEditScreen` /
+`GeneratedViewScreen`.
 
 ## Screen (Экран)
 
@@ -48,15 +49,14 @@ Renderable-контейнер, содержащий поля или другие
 
 Кнопка/ссылка/dropdown в commandBar, строке или bulk-выделении:
 `Button`, `Link`, `BulkAction`, `ModalAction`, `DropDown`,
-`AsyncAction`. Действие триггерит метод контроллера (например
-`Button::method('save')`).
+`AsyncAction`. Действие вызывает метод экрана или ресурса (например
+`Button::make('Сохранить')->method('save')`).
 
 ## Filter (Фильтр)
 
-Дескриптор фильтра для list-страниц: `BaseInputFilter`,
-`BaseDateFilter`, `BaseSwitcherFilter`, `BaseSelectFromModelFilter`,
-`BaseSelectFromQueryFilter`, `BaseSelectFromOptionsFilter`,
-`TrashedFilter`. Парсится из HTTP-query через `HttpFilterParser`.
+Дескриптор фильтра для list-страниц, создаётся через `::for('column')`:
+`InputFilter`, `OptionsFilter`, `DateRangeFilter`, `SwitcherFilter`,
+`SelectFromModelFilter`, `QueryFilter`, `TrashedFilter`. Парсится из HTTP-query через `HttpFilterParser`.
 
 ## Permission (Разрешение)
 
@@ -68,8 +68,8 @@ middleware'ом `AdminAccess` на каждое действие. Пользов
 ## Manifest (Манифест)
 
 Единый JSON-документ `/api/admin/system/manifest`, отдаваемый SPA на
-bootstrap: `{resources, screens, settings, dashboards, plugins,
-permissions, version}`. Frontend строит из него Vue Router маршруты и
+bootstrap: `{version, locale, panel, resources, screens, settings,
+dashboards, plugins, permissions}`. Frontend строит из него Vue Router маршруты и
 sidebar; кэширование через ETag.
 
 ## Plugin (Плагин)
@@ -87,7 +87,7 @@ trait `TenantScoped`). Стратегия резолвинга — на стор
 ## Widget / Dashboard
 
 `Widget` — одна плитка дашборда (`Stats`, `Chart`, `RecentList`,
-`Heatmap`, `Gauge`, `Markdown`, `Iframe`). `DashboardScreen` агрегирует
+`Heatmap`, `Gauge`, `Markdown`, `Iframe`, `Table`). `DashboardScreen` агрегирует
 виджеты с per-user layout-override'ами. Дашборды — на URL
 `/dashboard/{slug}`.
 
@@ -107,8 +107,8 @@ Append-only журнал действий администраторов (мод
 
 Field-level i18n для Eloquent-моделей через
 `dskripchenko/laravel-translatable`. Admin интегрируется с
-translatable-моделями через `TranslatableInput` / `TranslatableField`
-(табы по локалям).
+translatable-моделями через `TranslatableInput` (табы по локалям) и
+`TranslatableFieldBridge`.
 
 ## Bootstrap
 

@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Docs
+
+- Full Russian documentation: the concept pages (actions, i18n, permissions,
+  tenancy), the fields, layouts and API references, frontend extension,
+  testing and the migration guide are translated; code examples in both
+  languages were checked against the current API and corrected where they
+  had drifted.
+
 ## 1.36.0
 
 ### Added
