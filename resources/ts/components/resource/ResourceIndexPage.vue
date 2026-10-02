@@ -1734,6 +1734,9 @@ async function retryLoad(): Promise<void> {
 /* Bulk toolbar — a dark zinc-900 surface that replaces the filter bar */
 .admin-bulk-toolbar {
   display: flex;
+  /* Many selection actions in a narrow list wrap onto a second line instead
+     of running past the card's edge. */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--uid-space-sm);
   padding: var(--uid-space-sm) var(--uid-space-md);
@@ -1744,7 +1747,7 @@ async function retryLoad(): Promise<void> {
   border-bottom: 0;
   margin-top: var(--uid-space-md);
 }
-.admin-bulk-toolbar__count { font-size: 13px; }
+.admin-bulk-toolbar__count { font-size: 13px; white-space: nowrap; }
 .admin-bulk-toolbar__count b { font-weight: var(--uid-font-weight-semibold); }
 .admin-bulk-toolbar__divider {
   width: 1px;

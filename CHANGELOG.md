@@ -165,7 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cropper backgrounds and the status indicators. They use the kit's tokens
   now, and a test fails on any undefined token.
 - **A generated field's button ran past a narrow card**; it wraps under the
-  input now.
+  input now. The bulk toolbar wraps its actions too, and "Selected 1" no
+  longer breaks over two lines.
 - **Profile:** the language and theme selects had no visible labels.
 - **The tree page** used other padding and title size than the list pages.
 - **Russian search placeholder** read "Поиск по заказы"; it is "Поиск: заказы".
