@@ -63,4 +63,20 @@ describe('NotificationsPage', () => {
     expect(buttons).toHaveLength(1)
     expect(store.markAsRead).not.toHaveBeenCalled()
   })
+
+  it('отступает от краёв как остальные страницы — иначе липнет к сайдбару и шапке', () => {
+    const w = mount(NotificationsPage)
+
+    expect(w.classes()).toContain('admin-page')
+  })
+
+  it('показывает иконку уведомления с тоном уровня — info не серый', () => {
+    const w = mount(NotificationsPage)
+    const icons = w.findAll('.admin-notifs-page__icon')
+
+    expect(icons).toHaveLength(2)
+    expect(icons[0].attributes('data-kind')).toBe('info')
+    expect(icons[1].attributes('data-kind')).toBe('danger')
+    expect(icons[0].find('svg').exists()).toBe(true)
+  })
 })
