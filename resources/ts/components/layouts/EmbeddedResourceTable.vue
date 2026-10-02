@@ -36,6 +36,7 @@ import { useManifestStore } from '../../stores/manifest'
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
+import { apiErrorMessage } from '../../api/errors'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
 import { confirmDialog } from '../../composables/useConfirm'
 
@@ -177,8 +178,8 @@ async function deleteRow(row: Record<string, unknown>): Promise<void> {
     items.value = items.value.filter((r) => rowId(r) !== id)
     selection.value.delete(id)
     selection.value = new Set(selection.value)
-  } catch {
-    adminToast.error(tr('Не удалось удалить строку.'))
+  } catch (err) {
+    adminToast.error(apiErrorMessage(err, tr('Не удалось удалить строку.')))
   }
 }
 
@@ -191,8 +192,8 @@ async function bulkDelete(): Promise<void> {
     await Promise.all(ids.map((id) => getAdminClient().post(`/${props.resource}/delete`, { id })))
     selection.value = new Set()
     await load()
-  } catch {
-    adminToast.error(tr('Не удалось удалить часть строк.'))
+  } catch (err) {
+    adminToast.error(apiErrorMessage(err, tr('Не удалось удалить часть строк.')))
     await load()
   }
 }
@@ -214,8 +215,8 @@ async function commitDraft(): Promise<void> {
     await getAdminClient().post(`/${props.resource}/create`, draft.value)
     draft.value = null
     await load()
-  } catch {
-    adminToast.error(tr('Не удалось создать запись.'))
+  } catch (err) {
+    adminToast.error(apiErrorMessage(err, tr('Не удалось создать запись.')))
   }
 }
 

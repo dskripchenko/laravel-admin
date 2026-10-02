@@ -36,7 +36,7 @@ import { provideRecord } from '../infolist/recordContext'
 import AuditTimeline from './AuditTimeline.vue'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
-import { normalizeActions, useActionRunner, type AdminAction } from '../../composables/useActionRunner'
+import { actionErrorMessage, normalizeActions, useActionRunner, type AdminAction } from '../../composables/useActionRunner'
 import AdminActionDialogs from '../actions/AdminActionDialogs.vue'
 import AdminActionMenuItems from '../actions/AdminActionMenuItems.vue'
 
@@ -204,7 +204,7 @@ const runner = useActionRunner({
   },
   onError(action, err) {
     if (typeof console !== 'undefined') console.error('[admin] action failed:', err)
-    adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
+    adminToast.error(actionErrorMessage(action, err))
   },
   async refresh() {
     await form.load(props.slug, props.id, 'view').catch(() => undefined)

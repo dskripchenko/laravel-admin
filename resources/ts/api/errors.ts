@@ -90,3 +90,31 @@ export function toApiError(status: number, payload: ErrorEnvelope['payload']): A
     default:  return new ApiError(status, payload)
   }
 }
+
+/**
+ * The reason the server gave for refusing a request, or `fallback` when it
+ * gave none.
+ *
+ * A validation error answers with its first field message (the envelope's own
+ * message is usually a generic "The given data was invalid"), then the
+ * envelope's message — which is what an `action_failed` 422 carries. Any
+ * other ApiError answers with the envelope's message: a 403 says which
+ * permission is missing. A response with no envelope at all (see the
+ * client's `transport` marker) and the synthetic "API error 500" the ApiError
+ * constructor falls back to are not reasons, so they yield `fallback`. Plain
+ * errors (a network failure, a client-side check) answer with their message.
+ */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err instanceof ValidationError) {
+      const field = err.firstFieldMessage()
+      if (field) return field
+    }
+    if (err.payload?.transport === true) return fallback
+    const message = err.payload?.message
+    return typeof message === 'string' && message.trim() !== '' ? message : fallback
+  }
+  if (err instanceof Error && err.message) return err.message
+  if (typeof err === 'string' && err.trim() !== '') return err
+  return fallback
+}

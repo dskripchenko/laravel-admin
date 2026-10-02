@@ -25,6 +25,7 @@
  */
 import { computed, nextTick, ref } from 'vue'
 import { adminToast } from '../../stores/toast'
+import { apiErrorMessage } from '../../api/errors'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 type InlineInputType = 'text' | 'number' | 'select' | 'date' | 'textarea' | 'switcher'
@@ -116,7 +117,7 @@ async function commit(): Promise<void> {
     editing.value = false
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] inline-update failed:', err)
-    adminToast.error(tRaw('Не удалось обновить «:column».', { column: props.column }))
+    adminToast.error(apiErrorMessage(err, tRaw('Не удалось обновить «:column».', { column: props.column })))
   } finally {
     saving.value = false
   }

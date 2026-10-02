@@ -57,6 +57,7 @@ import { adminToast } from '../../stores/toast'
 import { formatLocale, useI18nStore } from '../../stores/i18n'
 import {
   needsSelection,
+  actionErrorMessage,
   normalizeActions,
   selectionAllows,
   useActionRunner,
@@ -197,7 +198,7 @@ const runner = useActionRunner({
   },
   onError(action, err) {
     if (typeof console !== 'undefined') console.error('[admin] header-action failed:', err)
-    adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
+    adminToast.error(actionErrorMessage(action, err))
   },
   async refresh() {
     await index.load().catch(() => undefined)

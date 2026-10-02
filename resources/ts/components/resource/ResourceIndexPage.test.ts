@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'
@@ -438,6 +438,90 @@ describe('ResourceIndexPage', () => {
       wrapper.unmount()
     })
   })
+  describe('refused actions show the server reason', () => {
+    const rows = {
+      success: true,
+      payload: {
+        data: [{ id: 1 }, { id: 2 }],
+        meta: { page: 1, per_page: 20, total: 2, last_page: 1 },
+      },
+    }
+    const action = (name: string, type: string, position: string[]) => ({
+      kind: 'action', name, label: name, type, position, confirm: null, attributes: { method: name },
+    })
+
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('a bulk action: the validation message', async () => {
+      const { adminToast } = await import('../../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      seedManifest({ actions: [action('archive', 'bulk', ['bulk'])] })
+      mock.onPost('/articles/search').reply(200, rows)
+      mock.onPost('/articles/action').reply(422, {
+        success: false,
+        payload: { errorKey: 'validation', message: 'invalid', messages: { ids: ['Pick at most one record.'] } },
+      })
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      const { useResourceIndexStore } = await import('../../stores/resourceIndex')
+      useResourceIndexStore().toggleRow(1)
+      await flushPromises()
+      await wrapper.find('[data-testid="action-archive"]').trigger('click')
+      await flushPromises()
+      expect(toast).toHaveBeenCalledWith('Pick at most one record.')
+      wrapper.unmount()
+    })
+
+    it('a row action: the 403 reason', async () => {
+      const { adminToast } = await import('../../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      seedManifest({ actions: [action('stamp', 'button', ['row'])] })
+      mock.onPost('/articles/search').reply(200, rows)
+      mock.onPost('/articles/action').reply(403, {
+        success: false,
+        payload: { errorKey: 'action_forbidden', message: 'Access denied: admin.articles.stamp' },
+      })
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      await wrapper.findAll('[data-testid="row-actions-menu"]')[0]!.trigger('click')
+      await flushPromises()
+      ;(document.body.querySelector('.uid-menu [data-testid="action-stamp"]') as HTMLElement).click()
+      await flushPromises()
+      expect(toast).toHaveBeenCalledWith('Access denied: admin.articles.stamp')
+      wrapper.unmount()
+    })
+
+    it('a toolbar action: the action_failed reason, or the generic text without one', async () => {
+      const { adminToast } = await import('../../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      seedManifest({ actions: [action('recalculate', 'button', ['command_bar'])] })
+      mock.onPost('/articles/search').reply(200, rows)
+      mock.onPost('/articles/action')
+        .replyOnce(422, { success: false, payload: { errorKey: 'action_failed', message: 'Nothing to recalculate' } })
+        .onPost('/articles/action')
+        .replyOnce(500, { success: false, payload: { errorKey: 'x', message: '' } })
+      const wrapper = await mountPage({}, true)
+      await flushPromises()
+      const runFromMenu = async () => {
+        await wrapper.find('.admin-page__more').trigger('click')
+        await flushPromises()
+        ;(document.body.querySelector('.uid-menu [data-testid="action-recalculate"]') as HTMLElement).click()
+        await flushPromises()
+      }
+      await runFromMenu()
+      expect(toast).toHaveBeenLastCalledWith('Nothing to recalculate')
+      await runFromMenu()
+      expect(toast).toHaveBeenLastCalledWith('Не удалось выполнить действие «recalculate».')
+      wrapper.unmount()
+    })
+  })
+
   describe('cells and columns', () => {
     const rows = {
       success: true,

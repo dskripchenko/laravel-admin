@@ -271,9 +271,11 @@ export const useScreenStore = defineStore('admin-screen', () => {
       }
       return res
     } catch (err) {
-      if (err instanceof ValidationError) {
+      if (err instanceof ValidationError && Object.keys(err.fields).length > 0) {
         errors.value = { ...err.fields }
       } else if (err instanceof ApiError) {
+        // A 422 with no field errors is a refusal on the merits
+        // (`action_failed`): its message is the page's alert, not nothing.
         error.value = err
       } else if (err instanceof Error) {
         error.value = err

@@ -7,6 +7,7 @@ import {
   ValidationError,
   NetworkError,
   toApiError,
+  apiErrorMessage,
 } from './errors'
 
 describe('errors', () => {
@@ -61,5 +62,41 @@ describe('errors', () => {
     // Here message is an empty string, so it stays '' and no fallback kicks in.
     // That is the exact behaviour, documented rather than a bug.
     expect(err.status).toBe(500)
+  })
+
+  describe('apiErrorMessage', () => {
+    it('gives the reason of an action_failed 422', () => {
+      const err = toApiError(422, { errorKey: 'action_failed', message: 'SMTP server is down' })
+      expect(apiErrorMessage(err, 'fallback')).toBe('SMTP server is down')
+    })
+
+    it('gives the reason of a 403', () => {
+      const err = toApiError(403, { errorKey: 'action_forbidden', message: 'Access denied: x.archive' })
+      expect(apiErrorMessage(err, 'fallback')).toBe('Access denied: x.archive')
+    })
+
+    it('prefers the first field message of a validation error', () => {
+      const err = toApiError(422, {
+        errorKey: 'validation',
+        message: 'The given data was invalid.',
+        messages: { ids: ['Select at least one record.'] },
+      })
+      expect(apiErrorMessage(err, 'fallback')).toBe('Select at least one record.')
+    })
+
+    it('falls back when the server gave no reason', () => {
+      expect(apiErrorMessage(toApiError(500, { errorKey: 'x', message: '' }), 'fallback')).toBe('fallback')
+      expect(apiErrorMessage(
+        toApiError(502, { errorKey: 'unknown', message: 'Request failed with status code 502', transport: true }),
+        'fallback',
+      )).toBe('fallback')
+      expect(apiErrorMessage(undefined, 'fallback')).toBe('fallback')
+      expect(apiErrorMessage(new Error(''), 'fallback')).toBe('fallback')
+    })
+
+    it('gives the message of a plain error', () => {
+      expect(apiErrorMessage(new NetworkError('Offline'), 'fallback')).toBe('Offline')
+      expect(apiErrorMessage('Nope', 'fallback')).toBe('Nope')
+    })
   })
 })

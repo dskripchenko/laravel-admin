@@ -97,6 +97,9 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
           error.response.data?.payload ?? {
             errorKey: 'unknown',
             message: error.message,
+            // No envelope came back (a proxy's 502, a bare 500): the message
+            // is axios's own "Request failed…", not the server's reason.
+            transport: true,
           }
         const apiError = toApiError(status, payload)
         if (apiError instanceof UnauthenticatedError) {

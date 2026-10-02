@@ -5,6 +5,24 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **A refused action shows the server's reason.** The record page's header
+  actions answered every refusal with "Could not run the action", whatever
+  the server said. Now the record page, the list's row, bulk and toolbar
+  actions, screen methods, the start of an async action and the quick-add,
+  delete and inline edits of an embedded resource table all show the reason:
+  the message of an `ActionFailedException` (422 `action_failed`), of a 403,
+  or the first message of a validation error. The generic text remains only
+  for a response that carries no message. A modal action keeps its field
+  errors in the form; a refusal with no field errors leaves the form open and
+  shows the reason. A screen method refused with `action_failed` shows its
+  reason in the page alert, also when it runs from a wizard's submit. The
+  shared helper is exported as `apiErrorMessage(err, fallback)`, with
+  `actionErrorMessage(action, err)` for action runners.
+
 ## 1.44.1
 
 ### Fixed

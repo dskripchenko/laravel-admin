@@ -9,6 +9,7 @@
  */
 import { useToast } from '@dskripchenko/ui'
 import { trSafe } from './i18n'
+import { apiErrorMessage } from '../api/errors'
 
 interface Options {
   title?: string
@@ -54,13 +55,7 @@ export const adminToast = {
  * pushes a toast.
  */
 export function toastError(err: unknown, fallback = trSafe('Произошла ошибка')): void {
-  const msg =
-    err instanceof Error
-      ? err.message || fallback
-      : typeof err === 'string'
-        ? err
-        : fallback
-  adminToast.error(msg)
+  adminToast.error(apiErrorMessage(err, fallback))
 }
 
 /** One entry of a screen method's `alerts` — see the ScreenAlert schema. */

@@ -111,6 +111,44 @@ describe('ScreenPage command bar', () => {
     wrapper.unmount()
   })
 
+  it('a refused screen method shows the server reason in the alert', async () => {
+    mock.onPost('/stats/runMethod').reply(422, {
+      success: false,
+      payload: { errorKey: 'action_failed', message: 'SMTP server is down' },
+    })
+    const { wrapper } = await mountScreen()
+
+    await wrapper.find('[data-testid="action-more"]').trigger('click')
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="action-recalc"]') as HTMLElement).click()
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="action-confirm-ok"]') as HTMLElement).click()
+    await flushPromises()
+
+    const alert = wrapper.find('.admin-screen-page__alert')
+    expect(alert.text()).toBe('SMTP server is down')
+    expect(wrapper.text()).not.toContain('Не удалось выполнить действие')
+    wrapper.unmount()
+  })
+
+  it('a forbidden screen method shows the 403 reason in the alert', async () => {
+    mock.onPost('/stats/runMethod').reply(403, {
+      success: false,
+      payload: { errorKey: 'action_forbidden', message: 'Access denied: admin.stats.recalc' },
+    })
+    const { wrapper } = await mountScreen()
+
+    await wrapper.find('[data-testid="action-more"]').trigger('click')
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="action-recalc"]') as HTMLElement).click()
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid="action-confirm-ok"]') as HTMLElement).click()
+    await flushPromises()
+
+    expect(wrapper.find('.admin-screen-page__alert').text()).toBe('Access denied: admin.stats.recalc')
+    wrapper.unmount()
+  })
+
   it('navigates a link item through the router', async () => {
     const { wrapper, router } = await mountScreen()
     const push = vi.spyOn(router, 'push')

@@ -21,7 +21,7 @@
 import { getCurrentScope, onScopeDispose, reactive, ref } from 'vue'
 import { useRouter, type Router } from 'vue-router'
 import { getAdminClient } from '../stores/registry'
-import { ValidationError } from '../api/errors'
+import { ValidationError, apiErrorMessage } from '../api/errors'
 import { adminToast } from '../stores/toast'
 import { trSafe as tr, tRaw } from '../stores/i18n'
 
@@ -191,10 +191,13 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function errorMessage(err: unknown, fallback: string): string {
-  if (err instanceof ValidationError) return err.firstFieldMessage() ?? err.message ?? fallback
-  if (err instanceof Error && err.message) return err.message
-  return fallback
+/**
+ * The server's reason for refusing an action, or the generic "could not run"
+ * text for it when the server gave none. Every page that runs actions reports
+ * failures with it, so a refusal reads the same everywhere.
+ */
+export function actionErrorMessage(action: Pick<AdminAction, 'label'>, err: unknown): string {
+  return apiErrorMessage(err, tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
 }
 
 /** The field errors keyed by the field name — `payload.x` becomes `x`. */
@@ -316,16 +319,18 @@ export function useActionRunner(executor: ActionExecutor) {
       closeModal()
       await executor.onSuccess?.(action, result, options)
     } catch (err) {
-      if (err instanceof ValidationError) {
+      if (err instanceof ValidationError && Object.keys(err.fields).length > 0) {
         // The form stays open with the errors next to the fields.
         modalState.errors = fieldErrors(err)
         const unplaced = Object.keys(modalState.errors).filter(
           (k) => !modalState.fields.some((f) => f.name === k),
         )
-        if (unplaced.length > 0 || Object.keys(modalState.errors).length === 0) {
-          adminToast.error(errorMessage(err, tr('Проверьте заполнение формы.')))
+        if (unplaced.length > 0) {
+          adminToast.error(modalState.errors[unplaced[0]]?.[0] ?? apiErrorMessage(err, tr('Проверьте заполнение формы.')))
         }
       } else {
+        // A refusal with no field errors (`action_failed`, a 403): the form
+        // stays open and the reason is reported like any action's.
         reportError(action, err)
       }
     } finally {
@@ -402,8 +407,10 @@ export function useActionRunner(executor: ActionExecutor) {
       }
     } catch (err) {
       asyncState.finished = true
-      asyncState.error = errorMessage(err, tr('Не удалось выполнить действие.'))
-      adminToast.error(tRaw('Не удалось выполнить действие «:action».', { action: action.label }))
+      // A refused start (no permission, a handler off the allowlist, bad
+      // params) carries its reason: the dialog and the toast both show it.
+      asyncState.error = apiErrorMessage(err, tr('Не удалось выполнить действие.'))
+      adminToast.error(actionErrorMessage(action, err))
       return false
     }
 
@@ -463,7 +470,7 @@ export function useActionRunner(executor: ActionExecutor) {
       executor.onError(action, err)
       return
     }
-    adminToast.error(errorMessage(err, tRaw('Не удалось выполнить действие «:action».', { action: action.label })))
+    adminToast.error(actionErrorMessage(action, err))
   }
 
   /**
