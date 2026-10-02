@@ -103,6 +103,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Server messages come in the language of the screen.** The SPA sends
+  `X-Admin-Locale` with the locale it renders on every request — from the
+  bootstrap on, after a switch and after a logout (which used to drop the
+  header, so the login form's errors and demo-mode toasts followed the
+  browser's `Accept-Language` instead). A user's saved locale still takes over
+  at login. On the server `AdminLocale` now runs before `AdminAuth` in
+  `admin.middleware.api`, so the refusals of the session, the account, 2FA and
+  demo mode are translated too; a published `config/admin.php` keeps its old
+  order — move `AdminLocale` right after `'web'` there. The resolver's order
+  (query > header > user > cookie > Accept-Language > default) is unchanged.
 - Choosing a language or a theme no longer fails on a users table without
   `locale` or `theme` columns (the shared strategy with a host's own table):
   the choice is kept in the cookie, and the column is written only when it

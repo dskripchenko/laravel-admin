@@ -142,25 +142,39 @@ describe('auth store', () => {
       expect(locale.current).toBe('ru')
     })
 
-    it('выход отпускает локаль — она не достаётся следующему', async () => {
-      // The X-Admin-Locale header sits ABOVE the account's saved preference in
-      // the chain: while the tab keeps sending it, it overrides that
-      // preference. After a logout it belongs to someone else — the next
-      // person to log in from the same tab would get their predecessor's
-      // language, having no preference of their own.
+    it('keeps sending the rendered locale after a logout, and takes the next user\'s saved one', async () => {
+      // The login form after a logout is still rendered in the same locale, so
+      // the server's answers to it (a refused login, a demo-mode toast) must
+      // come back in that locale too — not in the browser's Accept-Language.
       const locale = useLocaleStore()
       locale.hydrate(mkBootstrap({ locale: 'en', availableLocales: ['ru', 'en'] }))
 
       const auth = useAuthStore()
       mock.onPost('/auth/logout').reply(200, { success: true, payload: {} })
-
       await auth.logout()
 
+      const seen: unknown[] = []
       mock.onGet('/probe').reply((config) => {
-        expect(config.headers?.['X-Admin-Locale']).toBeUndefined()
+        seen.push(config.headers?.['X-Admin-Locale'])
         return [200, { success: true, payload: {} }]
       })
       await getAdminClient().get('/probe')
+
+      // The next person's saved preference still wins.
+      mock.onPost('/auth/login').reply(200, {
+        success: true,
+        payload: {
+          user: {
+            id: 2, name: 'Next', email: 'next@example.com',
+            avatar: null, locale: 'ru', theme: null, twoFactorEnabled: false,
+          },
+        },
+      })
+      await auth.login({ email: 'next@example.com', password: 'x' })
+      await getAdminClient().get('/probe')
+
+      expect(seen).toEqual(['en', 'ru'])
+      expect(locale.current).toBe('ru')
     })
 
     it('локаль не трогается, когда у пользователя её нет', async () => {

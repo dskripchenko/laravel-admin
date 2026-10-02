@@ -5,7 +5,9 @@
  * Changing it has three effects:
  *   - `<html lang="...">` is updated
  *   - AdminClient.setLocale() is called, so every later request carries the
- *     right X-Admin-Locale header
+ *     X-Admin-Locale the panel is rendering — from the bootstrap on, after a
+ *     switch and after a logout — and the server's messages come back in the
+ *     language of the screen
  *   - POST /system/setLocale persists it into user.locale and a cookie
  */
 
@@ -33,21 +35,15 @@ export const useLocaleStore = defineStore('admin-locale', () => {
   }
 
   /**
-   * Lets the locale go: the pinned header is removed, so that the server
-   * resolves it through the whole chain again.
-   *
-   * The header sits ABOVE the user's saved preference in that chain — while
-   * the tab keeps sending it, it overrides the account's setting. After a
-   * logout it belongs to someone else: the next person to log in from this tab
-   * would get their predecessor's language, unless they have a saved
-   * preference of their own.
+   * Called on logout. The header is NOT dropped: it carries the locale the
+   * panel is rendering, and the login form that follows is rendered in it
+   * too — without the header the server would fall back to Accept-Language
+   * and answer in another language than the screen. The next person's saved
+   * preference still wins: the login answer carries it and the auth store
+   * applies it (adoptUserLocale), header included.
    */
   function release(): void {
-    try {
-      getAdminClient().clearLocale()
-    } catch {
-      // The client is not registered yet, so there is nothing to let go of.
-    }
+    applySideEffects(current.value)
   }
 
   async function setLocale(locale: string): Promise<void> {
