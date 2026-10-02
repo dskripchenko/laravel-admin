@@ -135,8 +135,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for an ISO code (`$12,579.83`).
 - **"1681 record" in English.** The record count of a list used Russian
   plural rules in every language; it uses the panel language's rules now.
-- **Menu groups had a larger font than items.** A group's button reset its
-  font to the inherited 16px; it now uses the item's size.
 - **The sidebar footer drew two lines.** The pattern's own padding and border
   stacked on top of the admin footer's line.
 - **The view page showed raw data.** The default infolist labelled fields
