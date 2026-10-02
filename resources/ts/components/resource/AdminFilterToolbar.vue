@@ -367,17 +367,21 @@ function iconFor(name: string | null | undefined) {
         </div>
       </UidMenu>
 
-      <span class="admin-toolbar__spacer" />
-
+      <!-- Reset sits with the search and the filters it clears. -->
       <UidButton
         v-if="hasActiveAnything"
-        variant="ghost"
-        size="md"
+        variant="secondary"
+        size="sm"
+        class="admin-toolbar__reset"
+        data-testid="toolbar-reset"
         @click="emit('reset')"
       >
         <template #prepend><UidIcon :icon="RotateCcw" :size="14" /></template>
         {{ tr('Сбросить') }}
       </UidButton>
+
+      <span class="admin-toolbar__spacer" />
+
 
       <!-- Спейсер: отодвигает actions вправо в этой же строке -->
       <span
@@ -507,6 +511,12 @@ function iconFor(name: string | null | undefined) {
 }
 
 .admin-toolbar__spacer { flex: 1; }
+
+/* Reset: a kit button at the toolbar's own height and type size. */
+.admin-toolbar__reset.uid-button {
+  --uid-button-height: 32px;
+  font-size: 13px;
+}
 
 /* Search input */
 .admin-toolbar__search {

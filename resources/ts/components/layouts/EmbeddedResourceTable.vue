@@ -259,11 +259,19 @@ function columnCellMeta(col: string): CellMeta {
     </div>
 
     <UidSkeleton v-if="loading && items.length === 0" />
-    <UidErrorState v-else-if="error" :message="error.message" @retry="load" />
+    <UidErrorState
+      v-else-if="error"
+      :title="tr('Не удалось загрузить данные')"
+      :description="error.message"
+    >
+      <template #actions>
+        <UidButton variant="primary" @click="load">{{ tr('Обновить') }}</UidButton>
+      </template>
+    </UidErrorState>
     <UidEmptyState
       v-else-if="!loading && items.length === 0 && draft === null"
-      :title="tr('Нет данных')"
-      :hint="tr('Нажмите «Добавить», чтобы создать первую запись.')"
+      :title="tr('Пока пусто')"
+      :description="canCreate ? tr('Нажмите «Добавить», чтобы создать первую запись.') : tr('Здесь пока нет записей.')"
     />
     <UidTable
       v-else

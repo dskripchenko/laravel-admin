@@ -74,6 +74,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the file holds the rows in the order the table shows them. Before, the
   panel also sent the search text as `search`, which the endpoint never read,
   and filters in a shape the search does not use.
+- **A click on an editable cell opened the record instead of editing it.**
+  Inline editing started on a double click, and the first click of it
+  reached the row, which navigates to the view page. An editable cell now
+  starts its editor on a single click (or Enter) and keeps the click from the
+  row; a read-only cell still opens the record. Clicks on links, buttons,
+  checkboxes, switches, form controls and other interactive elements inside a
+  row, and a text selection, no longer open the record either.
+- **An empty cell had nothing to click.** A cell with no value renders a
+  quiet dash instead of nothing, so it reads as empty rather than broken, and
+  an empty editable cell still has a target for its editor.
+- **The resource list's empty and error states fell out of the card.** With a
+  search that matched nothing, the toolbar ended in mid-air and the empty
+  state was drawn on the bare page. The loading, error and empty states now
+  sit in the list's card, joined to the toolbar.
+- **Empty-state copy.** A search or filter that matches nothing says
+  "Nothing found", quotes the query and offers "Reset search and filters"; a
+  truly empty resource says "Nothing here yet" and offers creating the first
+  record only to who may create (the button never showed before: it read the
+  `createRouteName` prop rather than the resolved route).
+- **The toolbar's Reset** is a proper button next to the search and the
+  filters it clears, at the toolbar's height, instead of plain text floating
+  between the spacers.
+- **The tree page and the embedded resource table** passed props their
+  empty and error states do not have (`hint`, `message`, `@retry`): the hint
+  and the error message never showed and there was no retry button. Both use
+  the states' `description` and an actions slot now, and the tree page offers
+  resetting a search that matched nothing.
 
 ## 1.43.0
 

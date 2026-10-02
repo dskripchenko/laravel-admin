@@ -16,6 +16,7 @@
 import { computed } from 'vue'
 import { UidBadge, UidImage, UidLink } from '@dskripchenko/ui'
 import { badgeTone, formatCell, resolveLinkHref, type CellMeta } from './cellFormat'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   value?: unknown
@@ -87,6 +88,11 @@ const target = computed<string | undefined>(() => (meta.value.target as string |
     @click.stop
   >{{ text }}</UidLink>
   <span
+    v-else-if="text === ''"
+    class="admin-cell-empty"
+    :aria-label="tr('Нет значения')"
+  >—</span>
+  <span
     v-else
     class="admin-cell-truncate"
     :title="text"
@@ -112,6 +118,10 @@ const target = computed<string | undefined>(() => (meta.value.target as string |
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   word-break: break-word;
+}
+/* No value: a quiet dash, so an empty cell reads as empty rather than broken. */
+.admin-cell-empty {
+  color: var(--uid-text-tertiary);
 }
 .admin-cell-image {
   display: inline-flex;
