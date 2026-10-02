@@ -460,6 +460,16 @@ final class ResourceController extends ApiController
             });
         }
 
+        // Only the given keys: a ResourcePicker resolves the records it
+        // holds this way, through the same scope and permission as the list.
+        $ids = $request->input('ids');
+        if (is_array($ids)) {
+            $query = $query->whereKey(array_values(array_filter(
+                $ids,
+                static fn ($id): bool => is_int($id) || (is_string($id) && $id !== ''),
+            )));
+        }
+
         // Order. When the request carries no explicit order, fall back to
         // either the reorder column (for resources that support drag-n-drop
         // reordering — keeps the manual sequence stable) or the resource's
@@ -512,6 +522,11 @@ final class ResourceController extends ApiController
         }
 
         $items = $this->withPerRowEditable($resource, $paginator->items());
+        if ($request->boolean('picker')) {
+            foreach ($paginator->items() as $i => $model) {
+                $items[$i]['_picker'] = $resource->pickerItem($model);
+            }
+        }
 
         return $this->success([
             'data' => $items,

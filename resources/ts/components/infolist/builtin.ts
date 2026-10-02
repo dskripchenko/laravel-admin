@@ -29,6 +29,7 @@ import DateRangeEntry from './DateRangeEntry.vue'
 import MorphEntry from './MorphEntry.vue'
 import GroupEntry from './GroupEntry.vue'
 import HiddenEntry from './HiddenEntry.vue'
+import ResourcePickerEntry from './ResourcePickerEntry.vue'
 
 export function registerBuiltinInfolistEntries(): void {
   registerInfolistEntries({
@@ -88,5 +89,6 @@ export function registerBuiltinInfolistEntries(): void {
     time: TextEntry,
     'time-picker': TextEntry,
     'color-picker': ColorEntry,
+    resource_picker: ResourcePickerEntry,
   })
 }

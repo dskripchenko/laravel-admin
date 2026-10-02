@@ -53,7 +53,7 @@ abstract class Resource
      */
     protected const FIELD_VIEW_TYPES = [
         'markdown', 'code', 'rating', 'radio', 'tree_select', 'cascader',
-        'date_range', 'morph_switcher', 'group',
+        'date_range', 'morph_switcher', 'group', 'resource_picker',
     ];
 
     /**
@@ -216,6 +216,33 @@ abstract class Resource
         }
 
         return null;
+    }
+
+    /**
+     * The image a ResourcePicker shows for the record: a URL, or null for no
+     * preview. A resource of images, documents with thumbnails or users with
+     * avatars overrides it; the default has none.
+     */
+    public function pickerPreview(Model $row): ?string
+    {
+        return null;
+    }
+
+    /**
+     * The record as a ResourcePicker draws it — in the dialog, in the form
+     * and on the view page. Built from recordTitle(), recordSubtitle() and
+     * pickerPreview(); override it to change all three at once.
+     *
+     * @return array{id: mixed, title: string, subtitle: string|null, preview: string|null}
+     */
+    public function pickerItem(Model $row): array
+    {
+        return [
+            'id' => $row->getKey(),
+            'title' => $this->recordTitle($row),
+            'subtitle' => $this->recordSubtitle($row),
+            'preview' => $this->pickerPreview($row),
+        ];
     }
 
     /**
@@ -770,7 +797,7 @@ abstract class Resource
      *  - `color` fields render as a ColorEntry, a swatch with the value;
      *  - the fields whose value means little as plain text — markdown, code,
      *    rating, radio, tree_select, cascader, date_range, morph_switcher,
-     *    group — render as a FieldEntry, drawn by the SPA's view of that
+     *    group, resource_picker — render as a FieldEntry, drawn by the SPA's view of that
      *    field type;
      *  - `hidden` fields are left out.
      *

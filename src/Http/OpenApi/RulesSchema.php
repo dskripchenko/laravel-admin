@@ -200,6 +200,16 @@ final class RulesSchema
             $schema['items'] ??= ['type' => 'string'];
         }
 
+        if ($fieldType === 'resource_picker') {
+            // Primary keys of the target resource: one, or an ordered list.
+            $key = ['oneOf' => [['type' => 'integer'], ['type' => 'string']]];
+            if (($schema['type'] ?? null) === 'array') {
+                $schema['items'] ??= $key;
+            } else {
+                $schema = array_merge($schema, $key);
+            }
+        }
+
         if ($fieldType === 'key_value') {
             $schema['additionalProperties'] ??= ['type' => 'string'];
         }

@@ -31,7 +31,7 @@ final class ResourceOperationSchema
         return match ($action) {
             'create' => self::form($resource, 'create'),
             'update' => self::form($resource, 'update'),
-            'search' => self::listing($resource, withOrder: true, withGroupBy: true),
+            'search' => self::listing($resource, withOrder: true, withGroupBy: true, withPicker: true),
             'summary', 'tree' => self::listing($resource),
             'export' => self::export($resource),
             'action' => self::bulkAction($resource),
@@ -104,8 +104,12 @@ final class ResourceOperationSchema
     /**
      * @return array<string, mixed>
      */
-    private static function listing(Resource $resource, bool $withOrder = false, bool $withGroupBy = false): array
-    {
+    private static function listing(
+        Resource $resource,
+        bool $withOrder = false,
+        bool $withGroupBy = false,
+        bool $withPicker = false,
+    ): array {
         $properties = [
             'filters' => self::filters($resource),
             'q' => [
@@ -140,6 +144,18 @@ final class ResourceOperationSchema
             $properties['group_by'] = [
                 'type' => 'string',
                 'description' => 'A column to count the matching records by; the counts come back in meta.groups',
+            ];
+        }
+
+        if ($withPicker) {
+            $properties['ids'] = [
+                'type' => 'array',
+                'description' => 'Only the records with these primary keys',
+                'items' => ['oneOf' => [['type' => 'integer'], ['type' => 'string']]],
+            ];
+            $properties['picker'] = [
+                'type' => 'boolean',
+                'description' => 'Adds `_picker` {id, title, subtitle, preview} to every row, for a ResourcePicker',
             ];
         }
 

@@ -156,6 +156,32 @@ TableColumn::make('author.name')->label('Автор'),  // dot-notation auto-eag
 RelationSelect::make('author_id')->relation('author')->display('name')->searchable(),
 ```
 
+### Выбор записей другого ресурса
+
+`ResourcePicker` открывает диалог со списком записей целевого ресурса — с его
+поиском, фильтрами, пагинацией и правом `admin.{slug}.view`. Значение — ключ
+записи, а с `multiple()` — упорядоченный список ключей. При сохранении каждый
+ключ проверяется по `indexQuery()` целевого ресурса.
+
+```php
+ResourcePicker::make('cover_id')->resource(MediaResource::class),
+ResourcePicker::make('related_ids')->resource('products')->multiple()->maxItems(5),
+```
+
+Как запись выглядит в диалоге, задаёт целевой ресурс: заголовок —
+`recordTitle()`, подпись — `recordSubtitle()`, превью — `pickerPreview()`
+(URL картинки или `null`). Все три собирает `pickerItem()`.
+
+```php
+public function pickerPreview(Model $row): ?string
+{
+    return $row->avatar_url;
+}
+```
+
+Остальные настройки (`filters()`, `uploadTo()`, `layout()`, `dialogSize()`) —
+в [каталоге полей](../../en/fields-reference.md#resourcepicker) (en).
+
 ## См. также
 
 - [Screens](screens.md)
