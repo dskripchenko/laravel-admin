@@ -59,3 +59,26 @@ final class TestStatsBWidget extends Widget
         return ['stats' => [['label' => 'B', 'value' => 2]]];
     }
 }
+
+/**
+ * Two charts and two markdown blocks — instances of one class side by side.
+ *
+ * @internal
+ */
+final class TestTwinWidgetsDashboard extends DashboardScreen
+{
+    public function name(): string
+    {
+        return 'Twins';
+    }
+
+    public function widgets(): array
+    {
+        return [
+            Dskripchenko\LaravelAdmin\Widget\ChartWidget::make()->title('Revenue'),
+            Dskripchenko\LaravelAdmin\Widget\ChartWidget::make()->title('Signups'),
+            MarkdownWidget::make()->withSlug('notes')->content('a'),
+            MarkdownWidget::make()->withSlug('notes')->content('b'),
+        ];
+    }
+}

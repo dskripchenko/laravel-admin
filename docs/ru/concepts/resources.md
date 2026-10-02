@@ -103,6 +103,30 @@ TableColumn::make('cover')->asImage(),
 `asBytes()`, `asBadge()`, `asLink()`, `asImage()`, а для остального —
 `format(callable)`. Действия над строкой таблица рисует сама.
 
+`asBadge()` сопоставляет значению тон (`info`, `success`, `warning`, `danger`,
+`default` или названия цветов `green`, `red`, `yellow`, `blue`, `gray`) и,
+когда хранимое значение не для чтения людьми, — подпись:
+
+```php
+TableColumn::make('status')->asBadge([
+    'draft' => ['label' => 'Черновик', 'tone' => 'warning'],
+    'published' => ['label' => 'Опубликовано', 'tone' => 'success'],
+]),
+// или тона и подписи отдельно:
+TableColumn::make('status')->asBadge(['draft' => 'warning'], ['draft' => 'Черновик']),
+```
+
+Подписи переводятся как любые подписи; значение без подписи показывается как
+есть.
+
+`format(callable)` выполняется на сервере при сериализации строк — в списке и
+дереве ресурса, в `TableWidget` — как `fn ($value, array $row)`, и ячейка
+показывает то, что он вернул:
+
+```php
+TableColumn::make('author_id')->format(fn ($id, array $row) => $row['author']['name'] ?? '—'),
+```
+
 ## Filters
 
 ```php

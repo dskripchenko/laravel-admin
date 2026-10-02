@@ -205,14 +205,53 @@ final class TableColumn
     }
 
     /**
-     * A badge coloured by its value
-     * (`map: ['active' => 'green', 'banned' => 'red']`).
+     * A badge coloured — and, when asked, captioned — by its value.
      *
-     * @param  array<string, string>  $colorMap  value => UI color name
+     * Each entry of the map is either a tone, or an array with a `tone` (or
+     * `color`) and a `label`:
+     *
+     *     ->asBadge(['active' => 'success', 'banned' => 'danger'])
+     *     ->asBadge([
+     *         'draft' => ['label' => 'Draft', 'tone' => 'warning'],
+     *         'published' => ['label' => 'Published', 'tone' => 'success'],
+     *     ])
+     *     ->asBadge(['active' => 'success'], ['active' => 'Active'])
+     *
+     * The tones are the UI kit's (info, success, warning, danger, default) or
+     * the colour names green, red, yellow, blue, gray. A label is translated
+     * like any caption; a value with no label shows as it is.
+     *
+     * @param  array<string, string|array{label?: string, tone?: string, color?: string}>  $map  value => tone, or value => [label, tone]
+     * @param  array<string, string>  $labels  value => label, on top of the labels of $map
      */
-    public function asBadge(array $colorMap = []): self
+    public function asBadge(array $map = [], array $labels = []): self
     {
-        return $this->as('badge', ['colors' => $colorMap]);
+        $colors = [];
+        $mapLabels = [];
+        foreach ($map as $value => $entry) {
+            $value = (string) $value;
+            if (is_array($entry)) {
+                $tone = $entry['tone'] ?? $entry['color'] ?? '';
+                if ($tone !== '') {
+                    $colors[$value] = $tone;
+                }
+                if (isset($entry['label'])) {
+                    $mapLabels[$value] = $entry['label'];
+                }
+            } else {
+                $colors[$value] = (string) $entry;
+            }
+        }
+        foreach ($labels as $value => $label) {
+            $mapLabels[(string) $value] = (string) $label;
+        }
+
+        $meta = ['colors' => $colors];
+        if ($mapLabels !== []) {
+            $meta['labels'] = $mapLabels;
+        }
+
+        return $this->as('badge', $meta);
     }
 
     /**
@@ -249,7 +288,9 @@ final class TableColumn
 
     /**
      * A custom formatter — a server-side transformation of the value, called
-     * as `format($value, $row)` while the rows are serialized.
+     * as `format($value, $row)` while the rows are serialized: a resource's
+     * list and tree, a TableWidget. The cell shows what it returns, and so
+     * does an inline editor opened on that cell; `$row` is the raw row.
      *
      * @param  callable(mixed, array<string, mixed>): mixed  $formatter
      */
@@ -279,6 +320,45 @@ final class TableColumn
         return ($this->formatter)($value, $row);
     }
 
+    /**
+     * Runs the formatters of the given columns over serialized rows.
+     *
+     * Each formatter sees the raw row, whatever the other formatters return.
+     * A dotted column name (`author.name`) reaches into a nested relation; a
+     * column the row does not carry is left alone.
+     *
+     * @param  iterable<TableColumn>  $columns
+     * @param  array<int|string, array<string, mixed>>  $rows
+     * @return array<int|string, array<string, mixed>>
+     */
+    public static function formatRows(iterable $columns, array $rows): array
+    {
+        $formatted = [];
+        foreach ($columns as $column) {
+            if ($column->hasFormatter()) {
+                $formatted[] = $column;
+            }
+        }
+        if ($formatted === []) {
+            return $rows;
+        }
+
+        foreach ($rows as $i => $row) {
+            $out = $row;
+            foreach ($formatted as $column) {
+                $name = $column->name();
+                if (array_key_exists($name, $row)) {
+                    $out[$name] = $column->applyFormatter($row[$name], $row);
+                } elseif (str_contains($name, '.') && \Illuminate\Support\Arr::has($row, $name)) {
+                    \Illuminate\Support\Arr::set($out, $name, $column->applyFormatter(\Illuminate\Support\Arr::get($row, $name), $row));
+                }
+            }
+            $rows[$i] = $out;
+        }
+
+        return $rows;
+    }
+
     public function isSortable(): bool
     {
         return $this->sortable;
@@ -302,6 +382,9 @@ final class TableColumn
         }
         if (isset($meta['options']) && is_array($meta['options'])) {
             $meta['options'] = \Dskripchenko\LaravelAdmin\I18n\Localize::options($meta['options']);
+        }
+        if (isset($meta['labels']) && is_array($meta['labels'])) {
+            $meta['labels'] = \Dskripchenko\LaravelAdmin\I18n\Localize::options($meta['labels']);
         }
 
         return [

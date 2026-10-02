@@ -109,6 +109,27 @@ User layout (DashboardLayout row) sits on top — same slugs, different
 If the manifest changes (new widget added in code), it appears at the
 end of the user's grid by default.
 
+### Several widgets of one class
+
+A dashboard tells its widgets apart by slug, and a widget's slug comes from its
+class — so two `ChartWidget`s would share one. They don't: the second and the
+next instance of a slug get `-2`, `-3` appended in the order they are declared
+(`chart`, `chart-2`). The first keeps the plain slug, so a layout saved before
+still points at it.
+
+Since a suffix follows the declaration order, name the instances when the order
+may change, and the saved layouts stay attached to the right widget:
+
+```php
+public function widgets(): array
+{
+    return [
+        ChartWidget::make()->withSlug('revenue')->title('Revenue'),
+        ChartWidget::make()->withSlug('signups')->title('Sign-ups'),
+    ];
+}
+```
+
 ## Permissions
 
 A dashboard and each of its widgets can be guarded:

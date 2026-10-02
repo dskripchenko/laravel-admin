@@ -128,7 +128,7 @@ class TableWidget extends Widget
             ->all();
 
         return [
-            'rows' => $rows,
+            'rows' => TableColumn::formatRows($this->columns, $rows),
             'columns' => array_map(static fn (TableColumn $c): array => $c->toArray(), $this->columns),
         ];
     }

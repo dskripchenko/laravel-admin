@@ -5,6 +5,47 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Badge labels.** `TableColumn::asBadge()` takes a label next to the tone:
+  `asBadge(['draft' => ['label' => 'Draft', 'tone' => 'warning']])`, or the
+  labels apart as a second argument, `asBadge(['draft' => 'warning'],
+  ['draft' => 'Draft'])`. The labels are translated and sent as
+  `meta.labels`; a plain `value => tone` map serializes as before. The
+  resource list, `TableWidget` and `RelationTable` draw badge columns as a
+  `UidBadge` with the label and the tone (`TableWidget` and `RelationTable`
+  used to show plain text).
+- `Widget::withSlug()` gives a widget instance a slug of its own, and
+  `Widget::instanceSlug()` reads it.
+
+### Fixed
+
+- **A screen sees its query string.** `ScreenPage` now sends the page's query
+  string with the `state` request, so `Screen::query()` receives
+  `/admin/screens/reports?tab=billing` as it always did over the API; a change
+  of the query string reloads the snapshot, and a refresh after a command
+  method keeps it.
+- **`TableColumn::format()` is applied.** The formatter was stored and never
+  called; it now runs over the rows of a resource's list and tree and of a
+  `TableWidget`, as `fn ($value, array $row)` with the raw row.
+- **Two widgets of one class on a dashboard stay two.** A dashboard
+  deduplicated its widgets by the class slug, so a second `ChartWidget` was
+  silently dropped. The second and the next instance now get `-2`, `-3`
+  appended (or a slug of their own through `withSlug()`); the first keeps the
+  plain slug, so saved layouts keep pointing at it. A plugin widget is still
+  dropped when the screen places that class itself. `Layout::dashboard()`
+  keeps twins apart the same way.
+
+### Docs
+
+- The `Markdown::linkBase()` example pointed at `/admin/screens/docs/en/`,
+  an address no screen has: screen slugs are flat. The example and the
+  explanation now say how to link pages of a multi-page document.
+- `Screen::query()` receives the query string positionally, not as named
+  arguments as the docs said; the screens page now explains how to read it.
+
 ## 1.37.0
 
 ### Security

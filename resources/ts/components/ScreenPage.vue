@@ -52,6 +52,27 @@ const resolvedSlug = computed<string>(() => {
   return String(route.params.slug ?? route.meta?.slug ?? '')
 })
 
+// The page's query string goes to the backend's `state` action, which hands
+// it to Screen::query(): a screen can open on a tab, a period or a filter
+// named in the address (`/screens/reports?period=30`).
+const queryParams = computed<Record<string, string | string[]>>(() => {
+  const out: Record<string, string | string[]> = {}
+  for (const [key, value] of Object.entries(route.query ?? {})) {
+    if (Array.isArray(value)) {
+      const list = value.filter((v): v is string => typeof v === 'string')
+      if (list.length > 0) out[key] = list
+    } else if (typeof value === 'string') {
+      out[key] = value
+    }
+  }
+  return out
+})
+const queryKey = computed(() => JSON.stringify(queryParams.value))
+
+function loadScreen(slug: string): Promise<void> {
+  return screen.load(slug, queryParams.value)
+}
+
 // provideFormState MUST be called inside setup, so it is bound to store.state
 // here. Two things are provided: FormState for the editable fields, and Record
 // for the infolists.
@@ -78,7 +99,7 @@ const runner = useActionRunner({
     if (!screen.hasError) toastError(err)
   },
   refresh: async () => {
-    if (resolvedSlug.value) await screen.load(resolvedSlug.value).catch(() => undefined)
+    if (resolvedSlug.value) await loadScreen(resolvedSlug.value).catch(() => undefined)
   },
 })
 
@@ -127,15 +148,17 @@ const messageLinkIsInternal = computed(
 
 onMounted(async () => {
   if (resolvedSlug.value) {
-    await screen.load(resolvedSlug.value).catch(() => undefined)
+    await loadScreen(resolvedSlug.value).catch(() => undefined)
   }
 })
 
+// Another screen, or the same one under another query string (a link to
+// `?tab=…` from inside the screen), loads a fresh snapshot.
 watch(
-  () => resolvedSlug.value,
-  async (next) => {
+  () => [resolvedSlug.value, queryKey.value] as const,
+  async ([next]) => {
     if (next) {
-      await screen.load(next).catch(() => undefined)
+      await loadScreen(next).catch(() => undefined)
     } else {
       screen.reset()
     }

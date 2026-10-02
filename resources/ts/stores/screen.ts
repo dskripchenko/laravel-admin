@@ -96,6 +96,9 @@ export const useScreenStore = defineStore('admin-screen', () => {
   /** The field-keyed errors from a ValidationException. */
   const errors = ref<Record<string, string[]>>({})
 
+  /** The query parameters of the last load, kept for a refresh after runMethod. */
+  const query = ref<Record<string, unknown>>({})
+
   const loading = ref(false)
   const running = ref(false)
   const error = ref<Error | null>(null)
@@ -144,6 +147,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
 
   function reset(): void {
     slug.value = null
+    query.value = {}
     name.value = ''
     description.value = null
     layout.value = []
@@ -170,6 +174,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     lastMessageLink.value = null
     }
     slug.value = screenSlug
+    query.value = params === undefined ? {} : { ...params }
     loading.value = true
     error.value = null
     errors.value = {}
@@ -251,7 +256,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
       }
       if (res.refresh) {
         // The server asked for the snapshot to be reloaded — do it lazily.
-        await load(slug.value).catch(() => undefined)
+        await load(slug.value, query.value).catch(() => undefined)
       }
       return res
     } catch (err) {
@@ -294,6 +299,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     commandBar,
     permissions,
     etag,
+    query,
     state,
     initial,
     errors,

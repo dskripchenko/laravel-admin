@@ -15,6 +15,7 @@ use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedTreeScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedViewScreen;
+use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
 use Dskripchenko\LaravelApi\Services\OpenApi\OperationContext;
@@ -183,7 +184,7 @@ final class ResourceController extends ApiController
             }
         }
 
-        $tree = $this->buildTree($rows, $parentKey, $labelColumn, $extraLeaves, $actionsByRowId);
+        $tree = $this->buildTree($rows, $parentKey, $labelColumn, $extraLeaves, $actionsByRowId, $resource->columns());
 
         return $this->success([
             'data' => $tree['nodes'],
@@ -217,9 +218,10 @@ final class ResourceController extends ApiController
      * @param  list<\Illuminate\Database\Eloquent\Model>  $rows
      * @param  array<int|string, list<array<string, mixed>>>  $extraLeaves  parent_id → leaves
      * @param  array<int|string, list<array<string, mixed>>>  $actionsByRowId  row_id → actions
+     * @param  list<TableColumn>  $columns  whose formatters shape each node's record
      * @return array{nodes: list<array<string, mixed>>, max_depth: int}
      */
-    private function buildTree(array $rows, string $parentKey, string $labelColumn, array $extraLeaves = [], array $actionsByRowId = []): array
+    private function buildTree(array $rows, string $parentKey, string $labelColumn, array $extraLeaves = [], array $actionsByRowId = [], array $columns = []): array
     {
         $byId = [];
         foreach ($rows as $row) {
@@ -227,7 +229,7 @@ final class ResourceController extends ApiController
             $byId[$id] = [
                 'key' => $id,
                 'label' => (string) ($row->getAttribute($labelColumn) ?? ''),
-                'record' => $row->toArray(),
+                'record' => TableColumn::formatRows($columns, [$row->toArray()])[0],
                 'children' => [],
             ];
             if (isset($actionsByRowId[$id])) {
@@ -521,7 +523,7 @@ final class ResourceController extends ApiController
                 ->all();
         }
 
-        $items = $this->withPerRowEditable($resource, $paginator->items());
+        $items = TableColumn::formatRows($resource->columns(), $this->withPerRowEditable($resource, $paginator->items()));
         if ($request->boolean('picker')) {
             foreach ($paginator->items() as $i => $model) {
                 $items[$i]['_picker'] = $resource->pickerItem($model);

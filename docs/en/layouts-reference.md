@@ -402,7 +402,7 @@ anchor targets.
 ```php
 Layout::markdown(file_get_contents(base_path('docs/en/getting-started.md')))
     ->toc()                         // table of contents from the h2/h3 headings
-    ->linkBase('/admin/screens/docs/en/') // where relative links lead
+    ->linkBase('/admin/screens/')   // where relative links lead
     ->imageBase('/docs-assets/')    // where relative images load from
 ```
 
@@ -435,9 +435,18 @@ Options:
 |---|---|
 | `toc(bool $enabled = true, int $depth = 3)` | A table of contents from headings of levels 2 to `$depth`, beside the text on wide screens and above it on narrow ones |
 | `tocLabel(string $label)` | The caption above it; "On this page" by default |
-| `linkBase(string $base, bool $stripExtension = true)` | Relative links resolve against `$base` the way a browser resolves them against `<base href>`: with `/admin/screens/docs/en/`, `concepts/menu.md#items` opens `/admin/screens/docs/en/concepts/menu#items` and `../ru/intro.md` opens `/admin/screens/docs/ru/intro`. The `.md` extension is dropped unless `$stripExtension` is false. Links starting with `/`, `#` or a scheme are left alone |
+| `linkBase(string $base, bool $stripExtension = true)` | Relative links resolve against `$base` the way a browser resolves them against `<base href>`: with `/admin/screens/`, `docs-menu.md#items` opens `/admin/screens/docs-menu#items`, and with `https://example.com/docs/en/`, `concepts/menu.md` opens `https://example.com/docs/en/concepts/menu`. The `.md` extension is dropped unless `$stripExtension` is false. Links starting with `/`, `#` or a scheme are left alone |
 | `imageBase(string $base)` | The same for relative image paths, without touching extensions |
 | `card(bool $card = true)` | Draws the text inside a card |
+
+Screen slugs are flat — a screen lives at `/admin/screens/{slug}` and nothing
+below it — so a page of a multi-page document is a screen of its own, and a
+link between pages has to name the target screen's slug. Markdown written for
+a file tree (`concepts/menu.md`, `../intro.md`) does not map onto that by
+itself: either rewrite its links to slugs before handing the text over
+(`concepts/menu.md` → `docs-concepts-menu`) and use `/admin/screens/` as the
+base, or point the base at the place where the tree lives as is, such as the
+repository or a docs site.
 
 Links behave like a site's: anchors scroll within the page, links that stay
 inside the panel navigate without a reload, and external links open in a new

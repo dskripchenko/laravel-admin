@@ -409,7 +409,7 @@ public function filters(): array
 ```php
 Layout::markdown(file_get_contents(base_path('docs/ru/getting-started.md')))
     ->toc()                              // оглавление по заголовкам h2/h3
-    ->linkBase('/admin/screens/docs/ru/') // куда ведут относительные ссылки
+    ->linkBase('/admin/screens/')        // куда ведут относительные ссылки
     ->imageBase('/docs-assets/')         // откуда грузятся относительные картинки
 ```
 
@@ -442,9 +442,18 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 |---|---|
 | `toc(bool $enabled = true, int $depth = 3)` | Оглавление по заголовкам уровней 2…`$depth`: справа от текста на широком экране, над ним — на узком |
 | `tocLabel(string $label)` | Подпись над оглавлением; по умолчанию «На этой странице» |
-| `linkBase(string $base, bool $stripExtension = true)` | Относительные ссылки разрешаются от `$base` так же, как браузер разрешает их от `<base href>`: при `/admin/screens/docs/ru/` ссылка `concepts/menu.md#items` откроет `/admin/screens/docs/ru/concepts/menu#items`, а `../en/intro.md` — `/admin/screens/docs/en/intro`. Расширение `.md` отбрасывается, если `$stripExtension` не false. Ссылки, начинающиеся с `/`, `#` или схемы, не трогаются |
+| `linkBase(string $base, bool $stripExtension = true)` | Относительные ссылки разрешаются от `$base` так же, как браузер разрешает их от `<base href>`: при `/admin/screens/` ссылка `docs-menu.md#items` откроет `/admin/screens/docs-menu#items`, а при `https://example.com/docs/ru/` ссылка `concepts/menu.md` — `https://example.com/docs/ru/concepts/menu`. Расширение `.md` отбрасывается, если `$stripExtension` не false. Ссылки, начинающиеся с `/`, `#` или схемы, не трогаются |
 | `imageBase(string $base)` | То же для относительных путей картинок, расширения не трогаются |
 | `card(bool $card = true)` | Рисует текст в карточке |
+
+Slug экранов плоские — экран живёт по адресу `/admin/screens/{slug}`, и
+ничего вложенного под ним нет, — поэтому страница многостраничного документа
+— это отдельный экран, а ссылка между страницами должна называть slug
+экрана-цели. Markdown, написанный под дерево файлов (`concepts/menu.md`,
+`../intro.md`), сам на это не ложится: либо перепишите его ссылки в slug до
+передачи текста (`concepts/menu.md` → `docs-concepts-menu`) и возьмите базой
+`/admin/screens/`, либо направьте базу туда, где дерево лежит как есть, —
+в репозиторий или на сайт документации.
 
 Ссылки ведут себя как на сайте: якоря прокручивают страницу, ссылки внутри
 панели переходят без перезагрузки, внешние открываются в новой вкладке.

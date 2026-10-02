@@ -65,6 +65,32 @@ final class ContactScreen extends Screen
 Регистрация: `Admin::screen([ContactScreen::class])`.
 URL: `/admin/screens/contact`.
 
+Slug — один сегмент пути: у экрана есть только адрес `/admin/screens/{slug}`,
+вложенных `/admin/screens/{slug}/{что-то}` нет.
+
+## Query-строка
+
+Query-строка страницы уходит вместе с запросом состояния экрана, так что экран
+может открыться на вкладке, периоде или фильтре из адреса —
+`/admin/screens/reports?period=30&tab=billing`. Смена query-строки (ссылка с
+экрана на `?tab=…`) загружает свежий снимок, а перезагрузка после
+command-метода её сохраняет.
+
+`query()` получает значения позиционно, в порядке query-строки (ключи,
+начинающиеся с `_`, отбрасываются); по имени они доступны через запрос:
+
+```php
+public function query(mixed ...$params): array
+{
+    return [
+        'tab' => request()->query('tab', 'overview'),
+        'period' => (int) request()->query('period', 7),
+    ];
+}
+```
+
+Значения приходят из адресной строки — валидируйте их как любой ввод.
+
 ## Анатомия
 
 | Метод | Назначение |
@@ -73,7 +99,7 @@ URL: `/admin/screens/contact`.
 | `name()` | Заголовок в шапке и пункте меню. |
 | `description()` | Опциональный подзаголовок. |
 | `permission()` | Permission-gate (string или list). null = только аутентификация. |
-| `query(...$params)` | Возвращает initial state. Принимает `?key=value` из URL как named-arg'и. |
+| `query(...$params)` | Возвращает initial state. Получает значения query-строки страницы позиционными аргументами (см. ниже). |
 | `layout()` | Возвращает `Renderable[]` (Rows/Columns/Tabs/Block/...). |
 | `commandBar()` | Возвращает `Action[]` для шапки страницы. |
 | Public-методы | Любой другой public-метод (не из reserved) вызывается как command через `Button::make('…')->method('xxx')`. |

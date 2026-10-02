@@ -7,9 +7,9 @@
  * and the cells use the same presets as a resource list.
  */
 import { computed } from 'vue'
-import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
+import { UidBadge, UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import { formatCell, type CellMeta } from '../resource/cellFormat'
+import { formatTableRows, rowBadgeTone, type CellMeta } from '../resource/cellFormat'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface BackendColumn {
@@ -41,14 +41,16 @@ const form = useFormState()
 const rows = computed<Record<string, unknown>[]>(() => {
   const v = form.getField(props.name)
   if (!Array.isArray(v)) return []
-  return (v as Record<string, unknown>[]).map((row) => {
-    const out: Record<string, unknown> = { ...row }
-    for (const c of props.columns) {
-      out[c.name] = formatCell(row[c.name], c.preset ?? undefined, c.meta ?? {})
-    }
-    return out
-  })
+  return formatTableRows(v as Record<string, unknown>[], props.columns) as Record<string, unknown>[]
 })
+
+// A badge column is drawn as a UidBadge, its tone from the raw value.
+const badgeColumns = computed(() => props.columns.filter((c) => c.preset === 'badge'))
+
+// The UidTable scoped slot passes {row}.
+function slotRow(slotProps: unknown): Record<string, unknown> {
+  return (slotProps as { row?: Record<string, unknown> } | undefined)?.row ?? {}
+}
 
 const uidColumns = computed<UidTableColumn[]>(() =>
   props.columns.map((c) => ({
@@ -64,7 +66,11 @@ const uidColumns = computed<UidTableColumn[]>(() =>
   <div class="uid-form-field admin-relation-table">
     <label v-if="label" class="uid-form-field__label">{{ label }}</label>
     <UidCard padding="sm">
-      <UidTable :columns="uidColumns" :data="rows" :empty-text="tr(emptyText)" />
+      <UidTable :columns="uidColumns" :data="rows" :empty-text="tr(emptyText)">
+        <template v-for="col in badgeColumns" :key="col.name" #[col.name]="slotProps">
+          <UidBadge v-if="slotRow(slotProps)[col.name] !== ''" :variant="rowBadgeTone(slotRow(slotProps), col)">{{ slotRow(slotProps)[col.name] }}</UidBadge>
+        </template>
+      </UidTable>
     </UidCard>
     <p v-if="help" class="uid-form-field__hint">{{ help }}</p>
   </div>

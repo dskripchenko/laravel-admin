@@ -31,8 +31,10 @@ final class ScreenController extends ApiController
     /**
      * Compiles a screen snapshot: state, layout, command bar and meta.
      *
-     * It accepts arbitrary query parameters and passes them into Screen::query()
-     * as named arguments — there is no whitelist, the screen validates them.
+     * It accepts arbitrary query parameters and passes their values into
+     * Screen::query() as positional arguments, in the order of the query
+     * string (keys starting with `_` are dropped) — there is no whitelist,
+     * the screen validates them. By name they stay at hand through request().
      *
      * @output object $payload
      *
