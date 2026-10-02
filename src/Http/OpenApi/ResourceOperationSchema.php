@@ -46,26 +46,43 @@ final class ResourceOperationSchema
      */
     private static function reorder(Resource $resource): array
     {
+        $id = [
+            'description' => 'The primary key',
+            'oneOf' => [['type' => 'integer'], ['type' => 'string']],
+        ];
+
         return [
             'type' => 'object',
+            'description' => 'Either `ids` (the rows in their new order) or `items` (explicit positions)',
             'properties' => [
+                'ids' => [
+                    'type' => 'array',
+                    'description' => 'The rows in their new order. They trade the `'.$resource->reorderColumn()
+                        .'` positions they hold now, smallest first; when those are missing or repeat, they are numbered from `offset`',
+                    'items' => $id,
+                ],
+                'offset' => [
+                    'type' => 'integer',
+                    'minimum' => 0,
+                    'description' => 'The first position when `ids` are numbered afresh: the index of the page\'s first row',
+                ],
                 'items' => [
                     'type' => 'array',
                     'description' => 'New positions, written to the `'.$resource->reorderColumn().'` column',
                     'items' => [
                         'type' => 'object',
                         'properties' => [
-                            'id' => [
-                                'description' => 'The primary key',
-                                'oneOf' => [['type' => 'integer'], ['type' => 'string']],
-                            ],
+                            'id' => $id,
                             'position' => ['type' => 'integer', 'minimum' => 0],
                         ],
                         'required' => ['id', 'position'],
                     ],
                 ],
             ],
-            'required' => ['items'],
+            'oneOf' => [
+                ['required' => ['ids']],
+                ['required' => ['items']],
+            ],
         ];
     }
 

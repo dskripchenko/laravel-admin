@@ -68,6 +68,7 @@ trait AdminApiResourceSchemas
             ],
             'ResourceReorderedPayload' => [
                 'count' => 'integer! How many rows were given a new position',
+                'positions' => 'object! The new positions, by primary key',
                 'message' => 'string!',
             ],
 

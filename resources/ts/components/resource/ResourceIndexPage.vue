@@ -20,6 +20,7 @@ import { useRouter } from 'vue-router'
 import {
   Bookmark,
   ChevronDown,
+  Copy,
   Eye,
   GripVertical,
   MoreHorizontal,
@@ -45,11 +46,13 @@ import {
 import { useResourceIndexStore } from '../../stores/resourceIndex'
 import { useManifestStore } from '../../stores/manifest'
 import { useNavigationStore } from '../../stores/navigation'
+import { useAuthStore } from '../../stores/auth'
 import type { CellMeta } from './cellFormat'
 import AdminTableCell from './AdminTableCell.vue'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
+import { applyPositions, buildReorderPayload, canDragReorder, type ReorderResponse } from './reorder'
 import { adminToast } from '../../stores/toast'
 import { useI18nStore } from '../../stores/i18n'
 import {
@@ -268,7 +271,8 @@ async function onExport(format: string = 'csv'): Promise<void> {
     const client = getAdminClient()
     const blob = await client.post<Blob>(
       `/${props.slug}/export`,
-      { format, filters: index.filters, search: index.search },
+      // The same q, filters and order as the table: the file holds the rows shown.
+      { format, ...index.queryParams() },
       { responseType: 'blob' as const },
     )
     const url = URL.createObjectURL(blob as unknown as Blob)
@@ -393,6 +397,20 @@ const isReorderable = computed<boolean>(() => {
   return features.reorderable === true
 })
 
+/** The column the manual order lives in, features.reorderColumn. */
+const reorderColumn = computed<string | null>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  return typeof features.reorderColumn === 'string' ? features.reorderColumn : null
+})
+
+/**
+ * Dragging reorders only in the manual order: no sort, or the reorder column
+ * ascending. Sorted by anything else the handle is shown disabled.
+ */
+const canReorderNow = computed<boolean>(() =>
+  canDragReorder(isReorderable.value, reorderColumn.value, index.sortKey, index.sortDirection),
+)
+
 /** The resource supports creation unless features.creatable is false; true by default. */
 const isCreatable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
@@ -404,6 +422,18 @@ const isCreatable = computed<boolean>(() => {
 const isEditable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
   return features.editable !== false
+})
+
+/**
+ * Records may be copied — features.replicable, and the user holds the
+ * resource's replicate permission (the backend route checks it too).
+ */
+const auth = useAuthStore()
+const isReplicable = computed<boolean>(() => {
+  const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
+  if (features.replicable !== true) return false
+  const permission = resourceMeta.value?.permissions?.replicate
+  return typeof permission !== 'string' || auth.hasPermission(permission)
 })
 
 /**
@@ -912,6 +942,36 @@ async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<v
   }
 }
 
+/**
+ * Copies a record — POST /{slug}/replicate {id} — and opens the copy for
+ * editing, as the backend's redirect_url intends.
+ */
+async function onReplicate(row: Record<string, unknown>, e?: MouseEvent): Promise<void> {
+  e?.stopPropagation()
+  const id = rowId(row)
+  if (id === null) return
+  try {
+    nav.start()
+    const { getAdminClient } = await import('../../stores/registry')
+    const result = await getAdminClient().post<{ record?: Record<string, unknown> }>(
+      `/${props.slug}/replicate`,
+      { id },
+    )
+    adminToast.success(tr('Копия создана.'))
+    const copyId = result?.record ? rowId(result.record) : null
+    if (copyId !== null && router.hasRoute(`admin.resource.${props.slug}.edit`)) {
+      void router.push({ name: `admin.resource.${props.slug}.edit`, params: { id: String(copyId) } })
+    } else {
+      await index.load().catch(() => undefined)
+    }
+  } catch (err) {
+    if (typeof console !== 'undefined') console.error('[admin] replicate failed:', err)
+    adminToast.error(tr('Не удалось создать копию.'))
+  } finally {
+    nav.end()
+  }
+}
+
 /** Soft-deleted rows carry a non-empty `deleted_at`. */
 function isTrashed(row: Record<string, unknown>): boolean {
   return row.deleted_at !== null && row.deleted_at !== undefined
@@ -942,7 +1002,10 @@ const dragOverRowIdx = ref<number | null>(null)
 const dragOverSide = ref<'before' | 'after'>('before')
 
 function onRowDragStart(idx: number, e: DragEvent): void {
-  if (!isReorderable.value || !e.dataTransfer) return
+  if (!canReorderNow.value || !e.dataTransfer) {
+    e.preventDefault()
+    return
+  }
   const t = e.target as HTMLElement | null
   if (!t?.closest('[data-row-drag-handle="true"]')) {
     e.preventDefault()
@@ -953,7 +1016,7 @@ function onRowDragStart(idx: number, e: DragEvent): void {
   e.dataTransfer.setData('text/plain', String(idx))
 }
 function onRowDragOver(idx: number, e: DragEvent): void {
-  if (!isReorderable.value || dragRowIdx.value === null) return
+  if (!canReorderNow.value || dragRowIdx.value === null) return
   e.preventDefault()
   // The side is decided by the mid-Y of the current cell: the drop line goes
   // either above or below the row.
@@ -970,7 +1033,7 @@ function onRowDragEnd(): void {
 }
 async function onRowDrop(toIdx: number, e: DragEvent): Promise<void> {
   e.preventDefault()
-  if (!isReorderable.value || dragRowIdx.value === null) return
+  if (!canReorderNow.value || dragRowIdx.value === null) return
   const fromIdx = dragRowIdx.value
   // `adjusted` is the insertion index after the row, counted in the array
   // the dragged item has already been removed from.
@@ -984,13 +1047,18 @@ async function onRowDrop(toIdx: number, e: DragEvent): Promise<void> {
   const [moved] = items.splice(fromIdx, 1)
   items.splice(finalIdx, 0, moved)
   index.items = items
-  // Backend persistence: POST /{slug}/reorder body {ids: [orderedIds]}.
+  // Backend persistence: POST /{slug}/reorder, see ./reorder.ts for the contract.
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     const ids = items.map((r) => index.rowId(r))
-    await client.post(`/${props.slug}/reorder`, { ids })
+    const result = await client.post<ReorderResponse>(
+      `/${props.slug}/reorder`,
+      buildReorderPayload(ids, index.meta.page, index.meta.per_page),
+    )
+    // The rows show the positions the server gave them.
+    index.items = applyPositions(index.items, result?.positions, reorderColumn.value, index.rowId)
     adminToast.success(tt('admin.resource.reorder_saved', 'Порядок сохранён.'))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] reorder failed:', err)
@@ -1264,8 +1332,9 @@ async function retryLoad(): Promise<void> {
               },
             ]"
             data-row-drag-handle="true"
-            :draggable="isReorderable"
-            :title="tr('Перетащить')"
+            :data-disabled="canReorderNow ? undefined : 'true'"
+            :draggable="canReorderNow"
+            :title="canReorderNow ? tr('Перетащить') : tr('Сбросьте сортировку, чтобы менять порядок')"
             @dragstart="(e: DragEvent) => onRowDragStart(
               index.items.indexOf((rowFromSlot(slotProps) ?? {}) as Record<string, unknown>),
               e,
@@ -1305,6 +1374,16 @@ async function retryLoad(): Promise<void> {
                 @click.stop="onEdit(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="Pencil" :size="16" />
+              </button>
+              <button
+                v-if="isReplicable"
+                type="button"
+                class="admin-resource-index__row-action"
+                data-testid="row-replicate"
+                :title="tr('Создать копию')"
+                @click.stop="onReplicate(rowFromSlot(slotProps) ?? {}, $event)"
+              >
+                <UidIcon :icon="Copy" :size="16" />
               </button>
               <button
                 v-if="isEditable"
@@ -1440,6 +1519,11 @@ async function retryLoad(): Promise<void> {
   cursor: grab;
   color: var(--uid-text-tertiary);
   border-radius: var(--uid-radius-sm);
+}
+/* Sorted by another column: the order shown is not the stored one. */
+.admin-resource-index__row-drag[data-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 .admin-resource-index__row-drag:hover {
   background: var(--uid-color-surface-hover, var(--uid-border-subtle));

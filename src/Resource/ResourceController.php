@@ -472,24 +472,7 @@ final class ResourceController extends ApiController
             )));
         }
 
-        // Order. When the request carries no explicit order, fall back to
-        // either the reorder column (for resources that support drag-n-drop
-        // reordering — keeps the manual sequence stable) or the resource's
-        // defaultOrder() — typically PK DESC so newest rows surface first.
-        $orders = (array) $request->input('order', []);
-        $orders = array_values(array_filter(
-            $orders,
-            static fn ($o): bool => is_array($o) && isset($o['column']),
-        ));
-        if ($orders === []) {
-            $orders = $resource->reorderable()
-                ? [['column' => $resource->reorderColumn(), 'direction' => 'asc']]
-                : $resource->defaultOrder();
-        }
-        foreach ($orders as $order) {
-            $direction = ($order['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
-            $query = $query->orderBy((string) $order['column'], $direction);
-        }
+        $query = $this->applyOrder($resource, $request, $query);
 
         // Pagination
         $perPage = (int) $request->input('per_page', (int) config('admin.pagination.default_per_page', 25));
@@ -726,10 +709,42 @@ final class ResourceController extends ApiController
     }
 
     /**
+     * The order of the list, shared by search and export so a file comes out
+     * in the order the table shows. When the request carries no explicit
+     * order, fall back to either the reorder column (for resources that
+     * support drag-n-drop reordering — keeps the manual sequence stable) or
+     * the resource's defaultOrder() — typically PK DESC so newest rows
+     * surface first.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>
+     */
+    private function applyOrder(Resource $resource, Request $request, \Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        $orders = (array) $request->input('order', []);
+        $orders = array_values(array_filter(
+            $orders,
+            static fn ($o): bool => is_array($o) && isset($o['column']),
+        ));
+        if ($orders === []) {
+            $orders = $resource->reorderable()
+                ? [['column' => $resource->reorderColumn(), 'direction' => 'asc']]
+                : $resource->defaultOrder();
+        }
+        foreach ($orders as $order) {
+            $direction = ($order['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+            $query = $query->orderBy((string) $order['column'], $direction);
+        }
+
+        return $query;
+    }
+
+    /**
      * Streaming export of the list into any registered format.
      *
-     * Takes the filters, `q`, the columns and the format — one of the formats
-     * registered in ExporterRegistry, csv by default.
+     * Takes what the list's search takes — the filters, `q`, the `order` —
+     * plus the columns and the format, one of the formats registered in
+     * ExporterRegistry, csv by default.
      *
      * The body is the file itself, so there is nothing to describe field by
      * field: `@output file` never parsed — the generator wants a variable — and
@@ -777,6 +792,8 @@ final class ResourceController extends ApiController
                 }
             });
         }
+
+        $query = $this->applyOrder($resource, $request, $query);
 
         $requested = (array) $request->input('columns', []);
         $columns = [];
@@ -983,10 +1000,23 @@ final class ResourceController extends ApiController
 
     /**
      * Drag-and-drop reordering: a bulk update of several positions in one
-     * transaction.
+     * transaction. The resource must have `reorderable() === true`; positions
+     * go to its `reorderColumn()`.
      *
-     * Takes `items: [{id, position}]`. The resource must have
-     * `reorderable() === true` and a `reorderColumn()`.
+     * Two forms of the body, either one:
+     *
+     *  - `ids: [id, …]` — the rows in their new order, as the panel sends
+     *    them: the visible page after a drag. The rows trade the positions
+     *    they already hold — sorted ascending, the first row takes the
+     *    smallest — so a page of a paginated or filtered list moves only
+     *    within its own slots and never collides with the rows of the other
+     *    pages. When those positions are missing or repeat, the rows are
+     *    numbered from `offset` (0 by default; the panel passes the page's
+     *    first index) instead.
+     *  - `items: [{id, position}, …]` — explicit positions, written as given.
+     *
+     * The answer carries `positions`, `{id: position}`, for the client to
+     * update the rows it shows.
      *
      * @input [operationSchema]
      *
@@ -1000,8 +1030,11 @@ final class ResourceController extends ApiController
     public function reorder(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'items' => ['required', 'array'],
-            'items.*.id' => ['required'],
+            'ids' => ['required_without:items', 'array', 'min:1'],
+            'ids.*' => ['required', 'distinct'],
+            'offset' => ['sometimes', 'integer', 'min:0'],
+            'items' => ['required_without:ids', 'array', 'min:1'],
+            'items.*.id' => ['required', 'distinct'],
             'items.*.position' => ['required', 'integer', 'min:0'],
         ]);
 
@@ -1014,20 +1047,75 @@ final class ResourceController extends ApiController
         }
 
         $column = $resource->reorderColumn();
-        $modelClass = $resource::$model;
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $modelClass, $column): void {
-            foreach ($data['items'] as $item) {
-                $modelClass::query()
-                    ->whereKey($item['id'])
-                    ->update([$column => (int) $item['position']]);
+        /** @var array<array-key, int> $positions id => position */
+        $positions = isset($data['items'])
+            ? $this->explicitPositions($data['items'])
+            : $this->positionsFromOrder($resource, array_values($data['ids']), $column, (int) ($data['offset'] ?? 0));
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($resource, $positions, $column): void {
+            foreach ($positions as $id => $position) {
+                $resource->modelQuery()
+                    ->whereKey($id)
+                    ->update([$column => $position]);
             }
         });
 
         return $this->success([
-            'count' => count($data['items']),
+            'count' => count($positions),
+            'positions' => (object) $positions,
             'message' => 'Reordered',
         ]);
+    }
+
+    /**
+     * @param  list<array{id: int|string, position: int|string}>  $items
+     * @return array<array-key, int>
+     */
+    private function explicitPositions(array $items): array
+    {
+        $positions = [];
+        foreach ($items as $item) {
+            $positions[$item['id']] = (int) $item['position'];
+        }
+
+        return $positions;
+    }
+
+    /**
+     * The new positions of rows given in their new order: the positions they
+     * hold now, handed out again in that order; or offset + index when those
+     * are missing or repeat.
+     *
+     * @param  list<int|string>  $ids
+     * @return array<array-key, int>
+     */
+    private function positionsFromOrder(Resource $resource, array $ids, string $column, int $offset): array
+    {
+        $current = $resource->modelQuery()
+            ->whereKey($ids)
+            ->pluck($column, $resource->modelQuery()->getModel()->getKeyName())
+            ->all();
+
+        $slots = [];
+        foreach ($ids as $id) {
+            $value = $current[$id] ?? null;
+            $slots[] = is_numeric($value) ? (int) $value : null;
+        }
+
+        $usable = ! in_array(null, $slots, true) && count(array_unique($slots)) === count($slots);
+        if ($usable) {
+            sort($slots);
+        } else {
+            $slots = range($offset, $offset + count($ids) - 1);
+        }
+
+        $positions = [];
+        foreach ($ids as $i => $id) {
+            $positions[$id] = (int) $slots[$i];
+        }
+
+        return $positions;
     }
 
     /**
