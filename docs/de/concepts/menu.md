@@ -138,7 +138,7 @@ Das Frontend rendert Knoten rekursiv (`AdminSidebarNode.vue`):
   "items": [
     {
       "key": "content",
-      "label": "Content",
+      "label": "Inhalte",
       "icon": "book",
       "url": null,
       "routeName": null,
