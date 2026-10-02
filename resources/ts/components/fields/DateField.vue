@@ -129,11 +129,11 @@ function onTime(next: string | null): void {
   align-items: center;
 }
 .admin-date-time-field > :first-child {
-  flex: 1 1 12rem;
+  flex: 1 1 14rem;
   min-width: 0;
 }
 .admin-date-time-field > :last-child {
-  flex: 0 1 9rem;
-  min-width: 0;
+  flex: 0 0 13rem;
+  max-width: 100%;
 }
 </style>
