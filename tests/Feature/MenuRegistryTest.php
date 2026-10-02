@@ -142,7 +142,7 @@ it('GET /system/menu auto-fills missing screens by default', function (): void {
 
     /** @var MenuRegistry $registry */
     $registry = app(MenuRegistry::class);
-    $registry->add(MenuNode::make('shop', 'Магазин'));
+    $registry->add(MenuNode::make('shop', 'Магазин')->url('/shop'));
     // Auto-fill is ON: TestContactScreen must end up in the result as a
     // separate root item, because it is not in the custom tree.
 
@@ -163,7 +163,7 @@ it('GET /system/menu skips auto-fill when withAuto(false)', function (): void {
     /** @var MenuRegistry $registry */
     $registry = app(MenuRegistry::class);
     $registry->withAuto(false);
-    $registry->add(MenuNode::make('shop', 'Магазин'));
+    $registry->add(MenuNode::make('shop', 'Магазин')->url('/shop'));
 
     $response = $this->getJson('/api/admin/system/menu');
     $response->assertOk();
@@ -213,4 +213,53 @@ it('the menu keeps the order the host added the nodes in', function (): void {
 
     expect(array_column($items, 'key'))->toBe(['main', 'content', 'about'])
         ->and(array_column($items, 'order'))->toBe([0, 0, 0]);
+});
+
+it('GET /system/menu prunes parents left with no visible children (a dead "Jobs" item)', function (): void {
+    $editor = AdminUser::create(['name' => 'E', 'email' => 'e-'.uniqid().'@example.com', 'password' => 'secret']);
+    $role = Role::create(['name' => 'Editor', 'slug' => 'e-'.uniqid(), 'permissions' => ['admin.posts.view']]);
+    $editor->assignRole($role);
+    $this->actingAs($editor->refresh(), 'admin');
+
+    /** @var MenuRegistry $registry */
+    $registry = app(MenuRegistry::class);
+    $registry->withAuto(false);
+    $registry->add(MenuNode::make('blog', 'Blog')->children([
+        MenuNode::make('posts', 'Posts')->url('/r/posts')->permissions('admin.posts.view'),
+    ]));
+    $registry->add(MenuNode::make('system', 'System')->children([
+        MenuNode::make('users', 'Users')->url('/r/users')->permissions('admin.system.users.view'),
+        MenuNode::make('jobs', 'Jobs')->children([
+            MenuNode::make('failed', 'Failed jobs')->url('/r/failed')->permissions('admin.system.jobs.failed.view'),
+            MenuNode::make('batches', 'Batch jobs')->url('/r/batches')->permissions('admin.system.jobs.batches.view'),
+        ]),
+    ]));
+    $registry->add(MenuNode::make('empty', 'Nothing here'));
+
+    $items = $this->getJson('/api/admin/system/menu')->assertOk()->json('payload.items');
+
+    // System had nothing visible: its users item is forbidden and Jobs, left
+    // childless with no url, is pruned — so System goes too.
+    expect(array_column($items, 'key'))->toBe(['blog']);
+    expect(array_column($items[0]['children'], 'key'))->toBe(['posts']);
+});
+
+it('GET /system/menu keeps a parent that has a url of its own', function (): void {
+    $viewer = AdminUser::create(['name' => 'V', 'email' => 'v-'.uniqid().'@example.com', 'password' => 'secret']);
+    $role = Role::create(['name' => 'Viewer', 'slug' => 'v-'.uniqid(), 'permissions' => ['admin.x.view']]);
+    $viewer->assignRole($role);
+    $this->actingAs($viewer->refresh(), 'admin');
+
+    /** @var MenuRegistry $registry */
+    $registry = app(MenuRegistry::class);
+    $registry->withAuto(false);
+    $registry->add(MenuNode::make('reports', 'Reports')->url('/screens/reports')->children([
+        MenuNode::make('secret', 'Secret')->url('/r/secret')->permissions('admin.secret.view'),
+    ]));
+    $registry->add(MenuNode::make('wild', 'Wild')->url('/w')->permissions(['admin.nope', 'admin.x.*']));
+
+    $items = $this->getJson('/api/admin/system/menu')->assertOk()->json('payload.items');
+
+    expect(array_column($items, 'key'))->toBe(['reports']);
+    expect($items[0]['children'])->toBe([]);
 });

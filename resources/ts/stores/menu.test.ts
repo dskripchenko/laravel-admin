@@ -86,9 +86,9 @@ describe('menu store', () => {
       permissions: ['admin.users.view'],
     }))
     const items: MenuItem[] = [
-      { key: 'users', label: 'Users', permissions: ['admin.users.view'] },
-      { key: 'posts', label: 'Posts', permissions: ['admin.posts.view'] },
-      { key: 'public', label: 'Public' },
+      { key: 'users', label: 'Users', url: '/users', permissions: ['admin.users.view'] },
+      { key: 'posts', label: 'Posts', url: '/posts', permissions: ['admin.posts.view'] },
+      { key: 'public', label: 'Public', url: '/public' },
     ]
     m.setItems(items)
     const visible = m.visibleItems.map((i) => i.key)
@@ -107,12 +107,42 @@ describe('menu store', () => {
         key: 'group',
         label: 'Group',
         children: [
-          { key: 'users', label: 'Users', permissions: ['admin.users.view'] },
-          { key: 'posts', label: 'Posts', permissions: ['admin.posts.view'] },
+          { key: 'users', label: 'Users', url: '/users', permissions: ['admin.users.view'] },
+          { key: 'posts', label: 'Posts', url: '/posts', permissions: ['admin.posts.view'] },
         ],
       },
     ])
     expect(m.visibleItems[0].children?.map((c) => c.key)).toEqual(['users'])
+  })
+
+  it('visibleItems drops a parent left with no visible children and no url, recursively', () => {
+    const m = useMenuStore()
+    const auth = useAuthStore()
+    auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['admin.posts.view'] }))
+    m.setItems([
+      { key: 'blog', label: 'Blog', children: [{ key: 'posts', label: 'Posts', url: '/r/posts', permissions: ['admin.posts.view'] }] },
+      {
+        key: 'system',
+        label: 'System',
+        children: [
+          { key: 'users', label: 'Users', url: '/r/users', permissions: ['admin.users.view'] },
+          {
+            key: 'jobs',
+            label: 'Jobs',
+            children: [
+              { key: 'failed', label: 'Failed', url: '/r/failed', permissions: ['admin.jobs.failed.view'] },
+            ],
+          },
+        ],
+      },
+      { key: 'dead', label: 'Dead' },
+      { key: 'reports', label: 'Reports', url: '/screens/reports', children: [
+        { key: 'secret', label: 'Secret', url: '/r/secret', permissions: ['admin.secret.view'] },
+      ] },
+      { key: 'routed', label: 'Routed', routeName: 'admin.home' },
+    ])
+    expect(m.visibleItems.map((i) => i.key)).toEqual(['blog', 'reports', 'routed'])
+    expect(m.visibleItems[1].children).toEqual([])
   })
 
   it('wildcard `*` отдаёт всё', () => {
@@ -120,8 +150,8 @@ describe('menu store', () => {
     const auth = useAuthStore()
     auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['*'] }))
     m.setItems([
-      { key: 'a', label: 'A', permissions: ['admin.x'] },
-      { key: 'b', label: 'B' },
+      { key: 'a', label: 'A', url: '/a', permissions: ['admin.x'] },
+      { key: 'b', label: 'B', url: '/b' },
     ])
     expect(m.visibleItems).toHaveLength(2)
   })
@@ -131,10 +161,10 @@ describe('menu store', () => {
     const auth = useAuthStore()
     auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['*'] }))
     m.setItems([
-      { key: 'b', label: 'B', group: 'main', order: 2 },
-      { key: 'a', label: 'A', group: 'main', order: 1 },
-      { key: 'x', label: 'X', group: 'other' },
-      { key: 'y', label: 'Y' },
+      { key: 'b', label: 'B', url: '/b', group: 'main', order: 2 },
+      { key: 'a', label: 'A', url: '/a', group: 'main', order: 1 },
+      { key: 'x', label: 'X', url: '/x', group: 'other' },
+      { key: 'y', label: 'Y', url: '/y' },
     ])
     const groups = m.groupedItems
     expect(groups).toHaveLength(3)
@@ -149,9 +179,9 @@ describe('menu store', () => {
     const auth = useAuthStore()
     auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['*'] }))
     m.setItems([
-      { key: 'dashboard.main', label: 'Dashboard' },
-      { key: 'content', label: 'Content' },
-      { key: 'zeta', label: 'Alpha', order: -1 },
+      { key: 'dashboard.main', label: 'Dashboard', url: '/dashboard.main' },
+      { key: 'content', label: 'Content', url: '/content' },
+      { key: 'zeta', label: 'Alpha', url: '/zeta', order: -1 },
     ])
     expect(m.groupedItems[0]!.items.map((i) => i.key)).toEqual(['zeta', 'dashboard.main', 'content'])
   })

@@ -35,6 +35,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the widget dialog's "Resource slug" and "Limit" and the sidebar's "Docs"
   link are source strings translated per locale now; a test guards the
   component templates against English text typed straight into them.
+- **Dead parent items in the menu.** A parent with no url of its own whose
+  children were all hidden by permissions stayed in the sidebar as an item
+  that neither opened nor expanded (an editor saw "System › Jobs" with the
+  jobs resources filtered out). The menu now drops, recursively, every node
+  with neither a url nor a route and no visible children, and a group left
+  empty disappears with it. This applies both in the SPA and in
+  `GET /system/menu`, which now also leaves out the nodes whose permissions
+  the user holds none of — the rule the SPA already applied — instead of
+  describing sections the user cannot open. A menu node meant to be shown
+  needs a url, a route or a visible child.
+- **Group items in the sidebar looked muted.** The group button reset its
+  font with `font: inherit`, overriding the kit's item size and weight: groups
+  rendered at 16px/400 next to 14px/500 leaves. Only the family and the line
+  height are inherited now.
 
 ## 1.43.0
 

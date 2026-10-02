@@ -54,7 +54,8 @@ export const useMenuStore = defineStore('admin-menu', () => {
   /**
    * The visible items, filtered by permission through the auth store.
    * Wildcards (`*`, `admin.users.*`) work through auth.hasAnyPermission, and
-   * an item with no permissions is open to everyone.
+   * an item with no permissions is open to everyone. A parent with no url of
+   * its own and no visible children is dropped, recursively.
    */
   const visibleItems = computed<MenuItem[]>(() => {
     const auth = useAuthStore()
@@ -65,6 +66,10 @@ export const useMenuStore = defineStore('admin-menu', () => {
       const filteredChildren = (it.children ?? [])
         .map(filter)
         .filter((c): c is MenuItem => c !== null)
+      // A node that leads nowhere — no url, no route — and has no visible
+      // children left is a dead item: it neither opens nor expands. It goes,
+      // and a parent left with nothing but such nodes goes in turn.
+      if (filteredChildren.length === 0 && !it.url && !it.routeName) return null
       return { ...it, children: filteredChildren }
     }
     return items.value.map(filter).filter((i): i is MenuItem => i !== null)
