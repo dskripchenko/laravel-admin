@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Dskripchenko\LaravelAdmin\Models\AdminUser;
+use Dskripchenko\LaravelAdmin\Permission\Models\Role;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 
@@ -83,6 +84,11 @@ it('serves /api/admin/system/menu listing registered resources', function (): vo
     /** @var ResourceRegistry $rr */
     $rr = app(ResourceRegistry::class);
     $rr->add(TestUserResource::class);
+
+    // The menu lists what the user may open: the resource's view permission.
+    $user = auth('admin')->user();
+    $user->assignRole(Role::create(['name' => 'V', 'slug' => 'v-'.uniqid(), 'permissions' => ['admin.test-users.view']]));
+    $this->actingAs($user->refresh(), 'admin');
 
     $response = $this->getJson('/api/admin/system/menu');
 
@@ -220,3 +226,13 @@ final class WildStatusIndicatorStub implements Dskripchenko\LaravelAdmin\Status\
         return ['status' => 'на грани', 'label' => 'Что-то'];
     }
 }
+
+it('leaves out of /api/admin/system/menu the resources the user may not view', function (): void {
+    /** @var ResourceRegistry $rr */
+    $rr = app(ResourceRegistry::class);
+    $rr->add(TestUserResource::class);
+
+    // A user with no roles: the SPA would hide the item anyway; the server no
+    // longer describes it.
+    expect($this->getJson('/api/admin/system/menu')->assertOk()->json('payload.items'))->toBe([]);
+});

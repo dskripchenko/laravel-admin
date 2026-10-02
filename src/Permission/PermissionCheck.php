@@ -42,6 +42,34 @@ final class PermissionCheck
     }
 
     /**
+     * Whether the user holds at least one of the permissions — the rule the
+     * menu uses for a node, the same as the SPA's hasAnyPermission(). True
+     * when none are given.
+     *
+     * @param  list<string>|string|null  $permission
+     */
+    public static function allowsAny(array|string|null $permission, ?object $user = null): bool
+    {
+        $required = self::normalize($permission);
+        if ($required === []) {
+            return true;
+        }
+
+        $user ??= self::currentUser();
+        if ($user === null || ! method_exists($user, 'hasAccess')) {
+            return false;
+        }
+
+        foreach ($required as $key) {
+            if ($user->hasAccess($key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The first key the user lacks, for an error message; null when none.
      *
      * @param  list<string>|string|null  $permission

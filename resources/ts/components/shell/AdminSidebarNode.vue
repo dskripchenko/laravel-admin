@@ -214,7 +214,8 @@ function toggle(): void {
   border: 0;
   background: transparent;
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
+  line-height: inherit;
   color: var(--uid-sidebar-item-color, var(--uid-color-text-secondary));
   text-align: left;
 }

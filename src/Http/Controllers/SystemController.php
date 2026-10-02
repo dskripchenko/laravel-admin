@@ -7,6 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Http\Controllers;
 use Dskripchenko\LaravelAdmin\Admin;
 use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
 use Dskripchenko\LaravelAdmin\Menu\MenuRegistry;
+use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
@@ -187,6 +188,7 @@ final class SystemController extends ApiController
         $usedKeys = [];
         foreach ($this->menuRegistry->roots($panel) as $node) {
             $serialized = $this->withoutForbiddenDashboards($node->toArray($this->resources, $this->screens), $panel);
+            $serialized = $serialized === null ? null : self::prunedForUser($serialized);
             if ($serialized === null) {
                 continue;
             }
@@ -199,7 +201,10 @@ final class SystemController extends ApiController
         // repeat every resource in menu()->add().
         $auto = [];
         if ($this->menuRegistry->autoFillEnabled($panel)) {
-            $auto = $this->buildAutoItems($usedKeys, $panel);
+            $auto = array_values(array_filter(array_map(
+                self::prunedForUser(...),
+                $this->buildAutoItems($usedKeys, $panel),
+            )));
         }
 
         return $this->success(['items' => array_merge($custom, $auto)]);
@@ -240,6 +245,42 @@ final class SystemController extends ApiController
         }
 
         return $node;
+    }
+
+    /**
+     * The node as the signed-in user sees it, or null when there is nothing
+     * to see. Recursively:
+     *  - a node whose permissions the user holds none of goes, with its
+     *    subtree — the same rule the SPA applies, now also on the server, so
+     *    the menu does not describe sections the user cannot open;
+     *  - a node with neither a url nor a route and no visible children goes
+     *    too: a parent whose children were all filtered out would stay as a
+     *    dead item that neither opens nor expands, and an ancestor left with
+     *    nothing but such parents disappears in turn.
+     *
+     * @param  array<string, mixed>  $node
+     * @return array<string, mixed>|null
+     */
+    private static function prunedForUser(array $node): ?array
+    {
+        $permissions = is_array($node['permissions'] ?? null) ? array_values($node['permissions']) : [];
+        if (! PermissionCheck::allowsAny($permissions)) {
+            return null;
+        }
+
+        $children = [];
+        foreach (is_array($node['children'] ?? null) ? $node['children'] : [] as $child) {
+            $kept = is_array($child) ? self::prunedForUser($child) : null;
+            if ($kept !== null) {
+                $children[] = $kept;
+            }
+        }
+        $node['children'] = $children;
+
+        $hasTarget = (is_string($node['url'] ?? null) && $node['url'] !== '')
+            || (is_string($node['routeName'] ?? null) && $node['routeName'] !== '');
+
+        return $hasTarget || $children !== [] ? $node : null;
     }
 
     /**
