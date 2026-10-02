@@ -90,12 +90,26 @@ final class ValidationRulesExporter
             $explicit[] = 'required';
         }
 
+        // Likewise `confirmed`, from Password::confirmed().
+        if (($field->getAttribute('confirmed') ?? false) === true
+            && ! in_array('confirmed', $explicit, true)) {
+            $explicit[] = 'confirmed';
+        }
+
         // The explicit rules win; we add only the implicit ones that do not repeat a prefix.
         $merged = $explicit;
         foreach ($implicit as $rule) {
             if (! self::ruleAlreadyApplied($explicit, $rule)) {
                 $merged[] = $rule;
             }
+        }
+
+        // An optional field left empty arrives as null, and a format rule
+        // (`date`, `date_format:`) fails on null unless the field is nullable:
+        // an untouched optional DatePicker used to block the whole form.
+        if (in_array($field->fieldType(), ['date', 'date_range', 'time'], true)
+            && ! self::isPresenceConstrained($merged)) {
+            array_unshift($merged, 'nullable');
         }
 
         return [...array_unique($merged), ...$objects];
@@ -284,6 +298,25 @@ final class ValidationRulesExporter
 
         foreach ($existing as $rule) {
             if (str_starts_with($rule, $candidatePrefix.':') || $rule === $candidatePrefix) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the rules already say something about an empty value: it is
+     * required (in any form), explicitly nullable, or must be present.
+     *
+     * @param  list<string>  $rules
+     */
+    private static function isPresenceConstrained(array $rules): bool
+    {
+        foreach ($rules as $rule) {
+            $name = self::rulePrefix($rule);
+            if ($name === 'nullable' || $name === 'present' || $name === 'filled'
+                || str_starts_with($name, 'required')) {
                 return true;
             }
         }

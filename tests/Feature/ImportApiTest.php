@@ -176,3 +176,35 @@ it('ImportWizardLayout::for produces 4-step Wizard', function (): void {
     expect($arr['children'][3]['props']['title'])->toBe((string) __('Импорт'));
     expect($arr['props']['persistKey'])->toBe('import-test-users');
 });
+
+it('the import reports its progress to the delayed process per row batch', function (): void {
+    // 250 rows: reports after rows 100, 200 and the last one.
+    $csv = "name,email,password\n";
+    for ($i = 1; $i <= 250; $i++) {
+        $csv .= "User {$i},u{$i}@example.com,p\n";
+    }
+    Storage::disk('local')->put('imports/users.csv', $csv);
+
+    $reported = new class implements Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface
+    {
+        /** @var list<int> */
+        public array $values = [];
+
+        public function setProgress(int $percent): void
+        {
+            $this->values[] = $percent;
+        }
+    };
+    app()->instance(Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface::class, $reported);
+
+    $process = ImportProcess::create([
+        'resource_slug' => 'test-users',
+        'source_path' => 'imports/users.csv',
+        'mapping' => ['name' => 'name', 'email' => 'email', 'password' => 'password'],
+    ]);
+    $result = app(Dskripchenko\LaravelAdmin\Import\ImportRunner::class)->run($process->id);
+
+    expect($result->status)->toBe(ImportProcess::STATUS_COMPLETED);
+    expect((int) $result->created_count)->toBe(250);
+    expect($reported->values)->toBe([40, 80, 100]);
+});

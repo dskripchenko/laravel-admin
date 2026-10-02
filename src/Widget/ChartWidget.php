@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Widget;
 
+use Dskripchenko\LaravelAdmin\I18n\Localize;
 use InvalidArgumentException;
 
 /**
@@ -83,8 +84,17 @@ class ChartWidget extends Widget
     {
         return [
             'chartType' => $this->chartType,
-            'labels' => $this->labels,
-            'datasets' => $this->datasets,
+            // The axis labels and the dataset captions are translated per
+            // request; numeric labels pass through untouched.
+            'labels' => array_map(
+                static fn (string|int $label): string|int => is_string($label) ? (string) Localize::string($label) : $label,
+                $this->labels,
+            ),
+            'datasets' => array_map(static function (array $dataset): array {
+                $dataset['label'] = (string) Localize::string($dataset['label']);
+
+                return $dataset;
+            }, $this->datasets),
             'stacked' => $this->stacked,
         ];
     }

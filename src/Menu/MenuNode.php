@@ -236,12 +236,13 @@ final class MenuNode
             // are, the key being the fallback; resource labels have already
             // been localized by Resource::label(), and __() is idempotent on
             // them.
-            'label' => $this->label === '' ? '' : (string) __($this->label),
+            'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->label),
             'icon' => $this->icon,
             'url' => $this->url,
             'routeName' => $this->routeName,
-            'badge' => $this->badge,
-            'group' => $this->group === null ? null : (string) __($this->group),
+            // A text badge ("new", "beta") is a caption too; a count is not.
+            'badge' => is_string($this->badge) ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->badge) : $this->badge,
+            'group' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->group),
             'order' => $this->order,
             'permissions' => $this->permissions,
             'children' => $children,

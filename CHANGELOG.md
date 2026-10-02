@@ -5,6 +5,61 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- `Layout::drawer()` takes `->dismissable()` and `->footer([...])`, as
+  `Layout::modal()` does; the panel already drew both.
+- `message_link` of a screen method accepts, besides `['url' => …, 'label' =>
+  …]`, `['href' => …, 'text' => …]`, a positional `[$url, $label]` and a bare
+  URL string. A link without a label gets the default «Open» caption instead
+  of being dropped; one without a URL is still dropped. The label is
+  translated.
+- The resource `read` payload carries `title` — `Resource::recordTitle()` of
+  the record — and the edit and view pages use it as their heading.
+- `ImportRunner` reports its progress to the delayed process after every
+  `ImportRunner::PROGRESS_BATCH` (100) rows, so an import run through
+  delayed-process fills the progress bar. Requires
+  `dskripchenko/laravel-delayed-process` ^2.1.2; its progress reporting
+  (`ProcessProgressInterface::setProgress()`) is documented in the async
+  action docs.
+
+### Fixed
+
+- **A caption named like a translation group no longer breaks the page.** A
+  label such as "Auth" or "Validation" resolved to the group's array and
+  failed with "Array to string conversion"; only a string translation is
+  accepted now. Menu labels and groups go through the same check.
+- **Built-in widget captions are translated.** Stat labels, chart axis labels
+  and dataset labels, `RecentListWidget` column labels and heatmap axes follow
+  the request's locale, like the widget title.
+- **`RecentListWidget` shows accessor and relation columns.** It selected only
+  the listed columns, so an accessor came out empty (and failed outright on
+  MySQL/Postgres); it now loads the rows and reads each listed column from the
+  model, `author.name` included.
+- **`editableForRow()` is enforced on save.** `inlineUpdate` accepted an edit
+  of a cell the resource forbids for that row; it now answers 403.
+- **The trashed filter caption is translated** per request instead of being
+  fixed in Russian.
+- **`redirect_url` of a screen method is followed.** The panel ignored it; an
+  in-panel path now goes through the router (the panel base prefix is
+  stripped), anything else is a full page load, and the refresh is skipped.
+- **`ActionFailedException` from a screen method** answers 422 with
+  `errorKey: action_failed` and its message, as a resource action does,
+  instead of 500.
+- **More captions are translated:** block and step descriptions, accordion
+  section titles and text menu badges.
+- **An optional `DatePicker` (and date range and time) left empty passes
+  validation** — the implied `date`/`date_format` rule is now `nullable` when
+  the field is not required.
+- **`->rules()` after `->confirmed()` or `->required()` keeps the implied
+  rule** instead of replacing it.
+- **Infolist entries:** an entry nested in a `RepeatableEntry` keeps its money
+  and date settings (`asMoney()` and friends now also send `meta`), and an
+  entry without `label()` gets a caption from its name, like a field
+  (`unit_price` → "Unit Price"). An explicit `label('')` still hides it.
+
 ## 1.38.0
 
 ### Added

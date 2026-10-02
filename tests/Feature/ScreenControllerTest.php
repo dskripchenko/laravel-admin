@@ -95,16 +95,43 @@ it('runMethod отдаёт ссылку рядом с сообщением', fun
         ->toBe(['url' => '/r/jobs/7', 'label' => 'Открыть задание']);
 });
 
-it('полузаполненная ссылка до панели не доезжает', function (): void {
-    // A link without a label renders as a control with no name — worse than no
-    // link at all, because it looks broken rather than absent.
+it('ссылка без подписи получает подпись по умолчанию', function (): void {
+    // A link without a label would render as a control with no name; it gets
+    // the default caption rather than being dropped silently.
     $response = $this->postJson('/api/admin/test-contact/runMethod', [
         'method' => 'sendWithBrokenLink',
         'payload' => [],
     ]);
 
     $response->assertOk();
-    expect($response->json('payload.message_link'))->toBeNull();
+    expect($response->json('payload.message_link'))
+        ->toBe(['url' => '/r/jobs/7', 'label' => 'Open']);
+});
+
+it('message_link принимает строку, href/text и пару [url, label]', function (string $shape, ?array $expected): void {
+    $response = $this->postJson('/api/admin/test-contact/runMethod', [
+        'method' => 'sendWithLinkShape',
+        'payload' => ['shape' => $shape],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('payload.message_link'))->toBe($expected);
+})->with([
+    'bare url' => ['string', ['url' => '/r/jobs/7', 'label' => 'Open']],
+    'href + text' => ['href', ['url' => '/r/jobs/7', 'label' => 'Открыть задание']],
+    'positional pair' => ['pair', ['url' => '/r/jobs/7', 'label' => 'Открыть задание']],
+    'no url' => ['no_url', null],
+]);
+
+it('ActionFailedException из метода экрана — 422 с сообщением', function (): void {
+    $response = $this->postJson('/api/admin/test-contact/runMethod', [
+        'method' => 'refuse',
+        'payload' => [],
+    ]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.errorKey'))->toBe('action_failed');
+    expect($response->json('payload.message'))->toBe('SMTP-сервер недоступен');
 });
 
 it('POST /runMethod returns 422 on validation failure', function (): void {

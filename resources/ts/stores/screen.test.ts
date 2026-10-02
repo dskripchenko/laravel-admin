@@ -177,6 +177,22 @@ describe('useScreenStore', () => {
     expect(s.lastMessageLink).toBeNull()
   })
 
+  it('runMethod hands a redirect_url to ScreenPage and skips the refresh', async () => {
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onPost('/contact/runMethod').reply(200, {
+      success: true,
+      payload: { redirect_url: '/r/orders/7', refresh: true },
+    })
+
+    const s = useScreenStore()
+    await s.load('contact')
+    const getsBefore = mock.history.get.length
+    await s.runMethod('send')
+
+    expect(s.pendingRedirect).toBe('/r/orders/7')
+    expect(mock.history.get.length).toBe(getsBefore)
+  })
+
   it('runMethod populates errors on ValidationError (422)', async () => {
     mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
     mock.onPost('/contact/runMethod').reply(422, {

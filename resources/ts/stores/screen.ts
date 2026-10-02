@@ -105,6 +105,11 @@ export const useScreenStore = defineStore('admin-screen', () => {
   const lastMessage = ref<string | null>(null)
   /** Set together with `lastMessage`; cleared everywhere it is. */
   const lastMessageLink = ref<ScreenMessageLink | null>(null)
+  /**
+   * The `redirect_url` of the last method call, waiting for ScreenPage to
+   * navigate to it — the store has no router of its own. ScreenPage clears it.
+   */
+  const pendingRedirect = ref<string | null>(null)
 
   const hasError = computed(() => error.value !== null)
 
@@ -162,6 +167,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     error.value = null
     lastMessage.value = null
     lastMessageLink.value = null
+    pendingRedirect.value = null
   }
 
   /** Loads the screen snapshot. */
@@ -222,6 +228,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     errors.value = {}
     lastMessage.value = null
     lastMessageLink.value = null
+    pendingRedirect.value = null
 
     try {
       const client = getAdminClient()
@@ -254,7 +261,11 @@ export const useScreenStore = defineStore('admin-screen', () => {
         a.click()
         a.remove()
       }
-      if (res.refresh) {
+      if (typeof res.redirect_url === 'string' && res.redirect_url !== '') {
+        // The method sends the person elsewhere; reloading this screen
+        // first would be wasted.
+        pendingRedirect.value = res.redirect_url
+      } else if (res.refresh) {
         // The server asked for the snapshot to be reloaded — do it lazily.
         await load(slug.value, query.value).catch(() => undefined)
       }
@@ -308,6 +319,7 @@ export const useScreenStore = defineStore('admin-screen', () => {
     error,
     lastMessage,
     lastMessageLink,
+    pendingRedirect,
     // getters
     hasError,
     // actions

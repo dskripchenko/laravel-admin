@@ -28,6 +28,21 @@ final class TrashedFilter extends Filter
         return 'trashed';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+        if ($this->label === null) {
+            // The default caption, translated per request rather than fixed
+            // in Russian when the resource's filters are resolved.
+            $array['label'] = __('Удалённые');
+        }
+
+        return $array;
+    }
+
     public function apply(Builder $query, mixed $value): Builder
     {
         $value = is_string($value) ? $value : '';

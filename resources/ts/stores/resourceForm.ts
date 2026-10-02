@@ -27,8 +27,10 @@ import { useManifestStore } from './manifest'
 export type FormMode = 'create' | 'edit' | 'view'
 
 interface ReadResponse {
-  // The backend's ResourceController::read returns a payload of {record}.
+  // The backend's ResourceController::read returns a payload of {record, title}.
   record: Record<string, unknown>
+  /** Resource::recordTitle() of the record. */
+  title?: string
 }
 
 interface SaveResponse {
@@ -48,6 +50,9 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
   const state = ref<Record<string, unknown>>({})
   /** A snapshot of the initial values, taken after the load, for dirty detection. */
   const initial = ref<Record<string, unknown>>({})
+
+  /** The record's caption from Resource::recordTitle(); null until a record is loaded. */
+  const recordTitle = ref<string | null>(null)
 
   /** The field-keyed errors; cleared on a successful save. */
   const errors = ref<Record<string, string[]>>({})
@@ -95,6 +100,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     deleting.value = false
     error.value = null
     recordId.value = null
+    recordTitle.value = null
   }
 
   /** Prepares the store for create mode on a resource. */
@@ -102,6 +108,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     slug.value = resourceSlug
     mode.value = 'create'
     recordId.value = null
+    recordTitle.value = null
     replaceObject(state.value, defaults)
     replaceObject(initial.value, defaults)
     errors.value = {}
@@ -128,6 +135,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
       })
       replaceObject(state.value, res.record)
       replaceObject(initial.value, res.record)
+      recordTitle.value = typeof res.title === 'string' && res.title !== '' ? res.title : null
     } catch (err) {
       error.value = err instanceof Error ? err : new Error(String(err))
       throw err
@@ -256,6 +264,7 @@ export const useResourceFormStore = defineStore('admin-resource-form', () => {
     saving,
     deleting,
     error,
+    recordTitle,
     // getters
     isCreate,
     isEdit,

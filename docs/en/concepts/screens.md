@@ -126,9 +126,20 @@ Return values:
 - `JsonResponse` — passed through.
 - `null` / `void` — `{ok: true}`.
 
+`message_link` is the link under the message. Accepted shapes:
+`['url' => '/r/jobs/7', 'label' => 'Open the job']`,
+`['href' => …, 'text' => …]`, a pair `['/r/jobs/7', 'Open the job']` or a
+bare URL string. Without a label it gets the default "Open"; without a URL
+it is dropped. `redirect_url` — an in-panel path (`/r/orders`; the panel
+prefix may stay) is opened through the router, an external address with a
+full page load; `refresh` is skipped when redirecting.
+
 Validation: throw `\Illuminate\Validation\ValidationException` (e.g.
 via `validator(...)->validate()`) — frontend's `useScreenStore.errors`
-will surface field errors.
+will surface field errors. A refusal on the merits is an
+`ActionFailedException`
+(`Dskripchenko\LaravelAdmin\Resource\ActionFailedException`): a 422 with
+`errorKey: action_failed` and its message, shown by the panel as an error.
 
 ## Listeners
 

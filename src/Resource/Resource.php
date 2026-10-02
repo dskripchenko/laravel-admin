@@ -509,8 +509,9 @@ abstract class Resource
             }
         }
         if (! $hasTrashed && static::supportsSoftDeletes()) {
-            $declared[] = \Dskripchenko\LaravelAdmin\Filter\TrashedFilter::for('trashed')
-                ->label('Удалённые');
+            // Unlabelled on purpose: TrashedFilter translates its default
+            // caption at serialization, in the request's locale.
+            $declared[] = \Dskripchenko\LaravelAdmin\Filter\TrashedFilter::for('trashed');
         }
 
         return $declared;

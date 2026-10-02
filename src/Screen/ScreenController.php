@@ -6,6 +6,7 @@ namespace Dskripchenko\LaravelAdmin\Screen;
 
 use Dskripchenko\LaravelAdmin\Action\ActionLocator;
 use Dskripchenko\LaravelAdmin\I18n\Localize;
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
 use Illuminate\Http\JsonResponse;
@@ -79,7 +80,7 @@ final class ScreenController extends ApiController
      *
      * @response 200 {ScreenMethodResponse}
      * @response 403 {ForbiddenErrorResponse} An action that calls the method requires a permission the user lacks
-     * @response 422 {ValidationErrorResponse}
+     * @response 422 {ValidationErrorResponse} Also `action_failed`, when the method throws ActionFailedException
      */
     public function runMethod(Request $request): JsonResponse
     {
@@ -132,8 +133,18 @@ final class ScreenController extends ApiController
             }
         }
 
-        /** @var mixed $result */
-        $result = $screen->{$method}(...$args);
+        try {
+            /** @var mixed $result */
+            $result = $screen->{$method}(...$args);
+        } catch (ActionFailedException $e) {
+            // A refusal on the merits, as with a resource action: the method
+            // explains why it could not finish, and the panel shows that
+            // text — not a bare 500.
+            return $this->error([
+                'errorKey' => 'action_failed',
+                'message' => $e->getMessage(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         if ($result instanceof JsonResponse) {
             return $result;
@@ -261,22 +272,39 @@ final class ScreenController extends ApiController
     }
 
     /**
+     * Shapes the link under the message. Accepted:
+     *   - `['url' => …, 'label' => …]` — the canonical shape;
+     *   - `['href' => …, 'text' => …]` — `href` for `url`, `text` or `title`
+     *     for `label`;
+     *   - `[$url, $label]` — a positional pair;
+     *   - a bare URL string — the label defaults to «Открыть».
+     * A link without a URL is dropped; the label is translated.
+     *
      * @return array{url: string, label: string}|null
      */
     private static function normalizeMessageLink(mixed $link): ?array
     {
+        if (is_string($link)) {
+            $link = ['url' => $link];
+        }
         if (! is_array($link)) {
             return null;
         }
-
-        $url = $link['url'] ?? null;
-        $label = $link['label'] ?? null;
-
-        if (! is_string($url) || $url === '' || ! is_string($label) || $label === '') {
-            return null;
+        if (array_is_list($link)) {
+            $link = ['url' => $link[0] ?? null, 'label' => $link[1] ?? null];
         }
 
-        return ['url' => $url, 'label' => $label];
+        $url = $link['url'] ?? $link['href'] ?? null;
+        $label = $link['label'] ?? $link['text'] ?? $link['title'] ?? null;
+
+        if (! is_string($url) || trim($url) === '') {
+            return null;
+        }
+        if (! is_string($label) || trim($label) === '') {
+            $label = __('Открыть');
+        }
+
+        return ['url' => $url, 'label' => (string) Localize::string($label)];
     }
 
     private function currentScreen(): Screen|JsonResponse

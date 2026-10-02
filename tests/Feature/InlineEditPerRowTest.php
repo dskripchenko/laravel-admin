@@ -75,3 +75,34 @@ it('non-editable resources do not get _editable injected', function (): void {
     $rows = $response->json('payload.data');
     expect($rows[0])->not->toHaveKey('_editable');
 });
+
+it('inlineUpdate refuses a cell editableForRow forbids with 403', function (): void {
+    $bob = TestResourceUserModel::create([
+        'name' => 'Bob (locked)', 'email' => 'bob@e.com', 'password' => 'x',
+    ]);
+
+    $response = $this->postJson('/api/admin/test-per-row-editables/inlineUpdate', [
+        'id' => $bob->getKey(),
+        'column' => 'name',
+        'value' => 'Hijacked',
+    ]);
+
+    $response->assertStatus(403);
+    expect($response->json('payload.errorKey'))->toBe('forbidden');
+    expect($bob->refresh()->getAttribute('name'))->toBe('Bob (locked)');
+});
+
+it('inlineUpdate still edits a row editableForRow allows', function (): void {
+    $alice = TestResourceUserModel::create([
+        'name' => 'Alice', 'email' => 'alice@e.com', 'password' => 'x',
+    ]);
+
+    $response = $this->postJson('/api/admin/test-per-row-editables/inlineUpdate', [
+        'id' => $alice->getKey(),
+        'column' => 'name',
+        'value' => 'Alicia',
+    ]);
+
+    $response->assertOk();
+    expect($alice->refresh()->getAttribute('name'))->toBe('Alicia');
+});

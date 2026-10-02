@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Widget;
 
+use Dskripchenko\LaravelAdmin\I18n\Localize;
+
 /**
  * A heatmap — a two-dimensional matrix of values at (row, col).
  *
@@ -66,8 +68,8 @@ class HeatmapWidget extends Widget
     public function data(): array
     {
         return [
-            'rows' => $this->rows,
-            'cols' => $this->cols,
+            'rows' => Localize::options($this->rows),
+            'cols' => Localize::options($this->cols),
             'matrix' => $this->matrix,
             'colorScale' => $this->colorScale,
         ];

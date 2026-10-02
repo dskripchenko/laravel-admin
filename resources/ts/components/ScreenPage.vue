@@ -23,7 +23,7 @@
  *     calling a method; the layouts dispatch their own actions through it
  */
 import { computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
 import { useScreenStore } from '../stores/screen'
 import { normalizeAction, normalizeActions, useActionRunner } from '../composables/useActionRunner'
@@ -45,6 +45,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), { slug: null })
 
 const route = useRoute()
+const router = useRouter()
 const screen = useScreenStore()
 
 const resolvedSlug = computed<string>(() => {
@@ -151,6 +152,26 @@ onMounted(async () => {
     await loadScreen(resolvedSlug.value).catch(() => undefined)
   }
 })
+
+// A method's `redirect_url`: an in-panel path goes through the router (with
+// the panel's base stripped, so `/admin/r/orders` and `/r/orders` both work),
+// anything else is a full page load.
+watch(
+  () => screen.pendingRedirect,
+  (url) => {
+    if (!url) return
+    screen.pendingRedirect = null
+    if (url.startsWith('/') && !url.startsWith('//')) {
+      const base = router.options.history.base.replace(/\/+$/, '')
+      const path = base !== '' && (url === base || url.startsWith(`${base}/`) || url.startsWith(`${base}?`))
+        ? url.slice(base.length) || '/'
+        : url
+      void router.push(path)
+    } else if (typeof window !== 'undefined') {
+      window.location.assign(url)
+    }
+  },
+)
 
 // Another screen, or the same one under another query string (a link to
 // `?tab=…` from inside the screen), loads a fresh snapshot.

@@ -159,8 +159,9 @@ public function commandBar(): array
 
 A footer action with a method closes the overlay once the method succeeds;
 one named `close` or `cancel` just closes it. `Layout::drawer()` works the
-same way, with `->position('left'|'right'|'top'|'bottom')` and `->size()` (`sm`,
-`md`, `lg`, `xl` or a CSS length).
+same way — `->dismissable()` and `->footer([...])` included — with
+`->position('left'|'right'|'top'|'bottom')` and `->size()` (`sm`, `md`, `lg`,
+`xl` or a CSS length).
 
 ### Wrapper
 

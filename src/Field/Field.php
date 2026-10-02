@@ -158,10 +158,19 @@ abstract class Field implements Renderable
     }
 
     /**
+     * Replaces the field's own rules. The rules its modifiers imply —
+     * `required` from required(), `confirmed` from Password::confirmed() —
+     * are kept, so the order of the calls does not matter.
+     *
      * @param  list<string|array<string, mixed>>  $rules  Laravel-style.
      */
     public function rules(array $rules): static
     {
+        foreach (['required', 'confirmed'] as $implied) {
+            if (($this->attributes[$implied] ?? false) === true && ! in_array($implied, $rules, true)) {
+                $rules[] = $implied;
+            }
+        }
         $this->rules = $rules;
 
         return $this;

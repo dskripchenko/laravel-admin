@@ -123,6 +123,34 @@ SPA запускает процесс через `/api/admin/delayed/run`, по�
 показывая прогресс. Если action стоит в позиции `row`/`bulk`, в параметры
 добавляются выбранные ключи как `ids` — handler должен их принимать.
 
+Прогресс handler сообщает сам: внедрите
+`Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface` (или
+возьмите его через `app(ProcessProgressInterface::class)` внутри метода) и
+вызывайте `setProgress(0..100)`. Значение отдаёт `delayed/status`, и модалка
+показывает его полосой; по успешному завершению раннер сам ставит 100. Вне
+запуска через delayed-process вызов ничего не делает, так что handler можно
+вызывать и синхронно.
+
+```php
+use Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface;
+
+final class RecomputeStats
+{
+    public function __construct(private readonly ProcessProgressInterface $progress) {}
+
+    public function handle(string $period): array
+    {
+        $chunks = $this->chunks($period);
+        foreach ($chunks as $i => $chunk) {
+            $this->recompute($chunk);
+            $this->progress->setProgress(intdiv(($i + 1) * 100, count($chunks)));
+        }
+
+        return ['ok' => true];
+    }
+}
+```
+
 ## DropDown — группа actions под одну кнопку
 
 ```php

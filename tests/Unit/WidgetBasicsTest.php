@@ -99,7 +99,8 @@ it('RecentListWidget loads rows from Eloquent', function (): void {
     expect($data['rows'])->toHaveCount(2);
     expect($data['rows'][0]['name'])->toBe('New');
     expect($data['columns'])->toBe([
-        ['column' => 'name', 'label' => 'Имя'],
+        // The labels are translated per request; the panel locale here is en.
+        ['column' => 'name', 'label' => 'Name'],
         ['column' => 'email', 'label' => 'email'],
     ]);
     expect($data['linkTo'])->toBe('users');

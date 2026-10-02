@@ -118,7 +118,7 @@ public function runMethod(Request $request): JsonResponse;
 | `refresh` | перезагрузить экран |
 | `download_url` | файл для скачивания, или `null` |
 | `message` | текст баннера (пустая строка — баннера нет) |
-| `message_link` | `{url, label}` или `null`; ссылка без одного из полей отбрасывается |
+| `message_link` | `{url, label}` или `null`. Метод может вернуть `['url' => …, 'label' => …]`, `['href' => …, 'text' => …]`, пару `[$url, $label]` или просто строку-URL; без подписи ставится «Открыть», ссылка без URL отбрасывается; подпись переводится |
 | `extra` | все остальные ключи, которые вернул метод (только если они есть) |
 
 ### Ошибки
@@ -129,6 +129,7 @@ public function runMethod(Request $request): JsonResponse;
 | 404 | `screen_method_not_callable` | метода нет, он не публичный, статический или зарезервированный |
 | 403 | `action_forbidden` | метод вызывает только недоступные пользователю действия |
 | 422 | `screen_method_arguments_missing` | метод требует больше аргументов, чем передано |
+| 422 | `action_failed` | метод бросил `ActionFailedException`; `message` — её текст |
 
 ### Пример
 

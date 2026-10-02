@@ -620,6 +620,9 @@ final class ResourceController extends ApiController
         return $this->success([
             'record' => $resource->transformRecord($record),
             'state' => $resource->transformRecord($record),
+            // The record's caption as the resource defines it, for the
+            // headings of the edit and view pages.
+            'title' => $resource->recordTitle($record),
         ]);
     }
 
@@ -1223,6 +1226,7 @@ final class ResourceController extends ApiController
      * @security AdminSession
      *
      * @response 200 {ResourceInlineUpdatedResponse}
+     * @response 403 {ForbiddenErrorResponse} Resource::editableForRow() is false for this row and column
      * @response 404 {NotFoundErrorResponse}
      * @response 422 {ValidationErrorResponse}
      */
@@ -1255,6 +1259,15 @@ final class ResourceController extends ApiController
                 'errorKey' => 'not_found',
                 'message' => 'Record not found',
             ], 404);
+        }
+
+        // The per-row override the list screen honours must hold here too:
+        // the SPA hides the editor, but the endpoint is reachable directly.
+        if (! $resource->editableForRow($record, $columnName)) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => __('Эту ячейку нельзя редактировать'),
+            ], 403);
         }
 
         $record->forceFill([$columnName => $validated['value'] ?? null])->save();
