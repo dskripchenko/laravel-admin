@@ -163,6 +163,11 @@ Resource 的 `actions()` 或 Screen 命令栏中声明的 `AsyncAction` 启动�
 `row`/`bulk` 位置中，选中的键会以 `ids` 的形式加入参数。`->callback($url)`
 设置一个接收进度和结果的 webhook。
 
+参数按名称传给 handler：`withParams()` 的每个键（以及 `ids`）以任意顺序绑定到
+handler 的同名参数，未传的参数使用默认值，类型为类的必需参数从容器解析。因此每个键
+都必须是 handler 的参数；只要有一个不是，handler 就会改为以单个参数收到整个数组。
+`entity` 和 `method` 是保留名：`delayed/run` 对它们返回 422。
+
 handler 自行上报进度：注入
 `Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface`（或在方法内部用
 `app(ProcessProgressInterface::class)` 解析），然后调用 `setProgress(0..100)`。
