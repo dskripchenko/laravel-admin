@@ -125,9 +125,19 @@ public function send(array $state): array { ... }
 - `JsonResponse` — пробрасывается как есть.
 - `null`/`void` — `{ok: true}`.
 
+`message_link` — ссылка под сообщением. Принимается
+`['url' => '/r/jobs/7', 'label' => 'Открыть задание']`,
+`['href' => …, 'text' => …]`, пара `['/r/jobs/7', 'Открыть задание']` или
+просто строка-URL; без подписи ставится «Открыть», без URL ссылка
+отбрасывается. `redirect_url` — путь внутри панели (`/r/orders`, префикс
+панели можно не убирать) открывается роутером, внешний адрес — обычным
+переходом; `refresh` при редиректе не выполняется.
+
 Валидация: бросай `ValidationException` (например
 `validator(...)->validate()`) — фронтовый `useScreenStore.errors`
-получит field-ошибки.
+получит field-ошибки. Отказ по существу — `ActionFailedException`
+(`Dskripchenko\LaravelAdmin\Resource\ActionFailedException`): ответ 422 с
+`errorKey: action_failed` и её текстом, панель показывает его как ошибку.
 
 ## Listener — реактивная часть формы
 

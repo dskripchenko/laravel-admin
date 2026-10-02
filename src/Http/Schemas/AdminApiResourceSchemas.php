@@ -165,6 +165,7 @@ trait AdminApiResourceSchemas
             'ResourceReadPayload' => [
                 'record' => 'object!',
                 'state' => 'object!',
+                'title' => 'string! Resource::recordTitle() of the record',
                 'permissions' => '@ResourceRecordPermissions',
                 'audit_summary' => '@ResourceAuditSummary',
                 'etag' => 'string!',

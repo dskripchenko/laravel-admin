@@ -176,6 +176,33 @@ progress modal. In a `row`/`bulk` position the selected keys are added to
 the params as `ids`. `->callback($url)` sets a webhook that receives the
 progress and the result.
 
+The handler reports its own progress: inject
+`Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface` (or resolve
+it with `app(ProcessProgressInterface::class)` inside the method) and call
+`setProgress(0..100)`. `delayed/status` returns the value and the modal draws
+it as a bar; the runner sets 100 on success. Outside a delayed-process run
+the call does nothing, so the handler can still be called synchronously.
+
+```php
+use Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface;
+
+final class ReindexSearch
+{
+    public function __construct(private readonly ProcessProgressInterface $progress) {}
+
+    public function handle(string $model): array
+    {
+        $chunks = $this->chunks($model);
+        foreach ($chunks as $i => $chunk) {
+            $this->reindex($chunk);
+            $this->progress->setProgress(intdiv(($i + 1) * 100, count($chunks)));
+        }
+
+        return ['ok' => true];
+    }
+}
+```
+
 ## Response payload
 
 A command method returns an array which is normalized into:
@@ -203,7 +230,9 @@ Recognized keys:
 - `redirect_url` — SPA-internal navigation.
 - `refresh` — `true` triggers screen reload.
 - `download_url` — opens for download.
-- `message_link` — where the message leads, e.g. the page of a started job.
+- `message_link` — where the message leads, e.g. the page of a started job:
+  `['url' => …, 'label' => …]`, `['href' => …, 'text' => …]`, `[$url, $label]`
+  or a bare URL (labelled "Open"); see [Screens](screens.md#command-methods).
 
 Unknown keys are passed via `extra`.
 

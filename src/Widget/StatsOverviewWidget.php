@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Widget;
 
+use Dskripchenko\LaravelAdmin\I18n\Localize;
+
 /**
  * A set of KPI cards: a title, a value and an optional descriptor — an icon, a
  * trend, a colour.
@@ -55,6 +57,14 @@ class StatsOverviewWidget extends Widget
      */
     public function data(): array
     {
-        return ['stats' => $this->stats];
+        // Translated per request, like every other caption: the widget may be
+        // built once and served in several locales.
+        return ['stats' => array_map(static function (array $stat): array {
+            if (is_string($stat['label'] ?? null)) {
+                $stat['label'] = Localize::string($stat['label']);
+            }
+
+            return $stat;
+        }, $this->stats)];
     }
 }

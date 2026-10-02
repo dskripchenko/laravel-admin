@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Import;
 
+use Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -13,10 +14,15 @@ use Throwable;
  * Runs an import synchronously.
  *
  * For the asynchronous version, register it through AllowlistRegistrar and
- * call it through DelayedProcessController.run.
+ * call it through DelayedProcessController.run: the runner then reports its
+ * progress to the delayed process after every batch of rows, which is what the
+ * panel's progress bar reads. Run synchronously, the reports go nowhere.
  */
 final class ImportRunner
 {
+    /** How many rows pass between two progress reports. */
+    public const PROGRESS_BATCH = 100;
+
     public function __construct(private readonly ResourceRegistry $resources) {}
 
     public function run(int $importProcessId): ImportProcess
@@ -66,14 +72,27 @@ final class ImportRunner
         $localPath = Storage::disk($diskName)->path($process->source_path);
 
         $extension = strtolower((string) pathinfo($process->source_path, PATHINFO_EXTENSION));
-        $rows = match ($extension) {
+        $read = fn (): iterable => match ($extension) {
             'csv', 'tsv', 'txt' => $this->iterateCsv($localPath, $extension),
             'xlsx' => $this->iterateXlsx($localPath),
             default => throw new \RuntimeException("Unsupported file extension `{$extension}`"),
         };
 
+        // A first pass counts the rows, so progress can be told in percent.
+        $total = 0;
+        foreach ($read() as $ignored) {
+            $total++;
+        }
+        // Outside a delayed-process run the tracker is detached and ignores
+        // the reports; without the package's provider there is none at all.
+        $progress = app()->bound(ProcessProgressInterface::class)
+            ? app(ProcessProgressInterface::class)
+            : null;
+        $lastReported = -1;
+
         $rowIndex = 1;
-        foreach ($rows as $rawRow) {
+        $done = 0;
+        foreach ($read() as $rawRow) {
             $rowIndex++;
             $payload = ColumnMapper::applyMapping($rawRow, $mapping);
 
@@ -96,6 +115,14 @@ final class ImportRunner
                 $this->bumpError($process, $rowIndex, $e->getMessage());
             } finally {
                 $process->increment('processed_count');
+                $done++;
+                if ($done % self::PROGRESS_BATCH === 0 || $done === $total) {
+                    $percent = $total > 0 ? intdiv($done * 100, $total) : 100;
+                    if ($percent !== $lastReported) {
+                        $progress?->setProgress($percent);
+                        $lastReported = $percent;
+                    }
+                }
             }
         }
     }

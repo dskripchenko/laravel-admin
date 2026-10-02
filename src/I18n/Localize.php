@@ -37,13 +37,19 @@ final class Localize
             return $value;
         }
 
-        return (string) __($value);
+        // A source string that happens to match a translation group name
+        // ("Auth", "Validation"…) resolves to that group's array: only a
+        // string result counts as a translation.
+        $translated = __($value);
+
+        return is_string($translated) ? $translated : $value;
     }
 
     /**
      * Translates the known text keys of an attribute array — title, help,
-     * placeholder, label, trueLabel, falseLabel and the labels inside options
-     * — returning a copy, without mutating the original.
+     * placeholder, description, label, trueLabel, falseLabel, the labels
+     * inside options and the titles of an accordion's sections — returning a
+     * copy, without mutating the original.
      *
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
@@ -56,7 +62,7 @@ final class Localize
             // everything ending in label (label, keyLabel, trueLabel,
             // addLabel…). The list used to be fixed, and the captions of
             // key-value, repeater and tabs slipped past it.
-            $isTextKey = in_array($key, ['title', 'help', 'placeholder'], true)
+            $isTextKey = in_array($key, ['title', 'help', 'placeholder', 'description'], true)
                 || str_ends_with(mb_strtolower($key), 'label');
 
             if ($isTextKey && is_string($value)) {
@@ -65,6 +71,12 @@ final class Localize
                 && (in_array($key, ['options', 'labels'], true)
                     || str_ends_with(mb_strtolower($key), 'options'))) {
                 $attributes[$key] = self::options($value);
+            } elseif ($key === 'sections' && is_array($value)) {
+                // An accordion's sections: each carries its own title.
+                $attributes[$key] = array_map(
+                    static fn (mixed $section): mixed => is_array($section) ? self::attributes($section) : $section,
+                    $value,
+                );
             }
         }
 

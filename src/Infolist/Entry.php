@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
+use Illuminate\Support\Str;
 
 /**
  * A read-only entry of an infolist — the display counterpart of a field.
@@ -94,6 +95,21 @@ abstract class Entry implements Renderable
     }
 
     /**
+     * The caption: the declared label, or — as Field::defaultLabel() does for
+     * a field — the name made readable (`total_price` → "Total Price"). An
+     * explicit empty label() still hides it.
+     */
+    protected function defaultLabel(): string
+    {
+        $label = $this->attributes['label'] ?? null;
+        if (is_string($label)) {
+            return $label;
+        }
+
+        return $this->name === '' ? '' : Str::headline(str_replace('.', ' ', $this->name));
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -104,7 +120,7 @@ abstract class Entry implements Renderable
             'kind' => 'entry',
             'name' => $this->name,
             'type' => $this->entryType(),
-            'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string((string) ($this->attributes['label'] ?? '')),
+            'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->defaultLabel()),
             'help' => is_string($help) ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($help) : $help,
             'defaultValue' => $this->defaultValue,
             'attributes' => \Dskripchenko\LaravelAdmin\I18n\Localize::attributes($this->attributes),

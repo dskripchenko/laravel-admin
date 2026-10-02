@@ -178,6 +178,12 @@ AsyncAction::make('Re-index search')
 как `ids`. `->callback($url)` задаёт webhook, который получит прогресс и
 результат.
 
+Прогресс обработчик сообщает сам: внедрите
+`Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface` (или
+возьмите его через `app(ProcessProgressInterface::class)`) и вызывайте
+`setProgress(0..100)`; по успешному завершению раннер ставит 100. Пример —
+в [рецепте](../recipes/custom-actions.md#async-action--долгая-операция-через-delayed-process).
+
 ## Ответ
 
 Командный метод возвращает массив, который нормализуется в:
@@ -205,7 +211,9 @@ AsyncAction::make('Re-index search')
 - `redirect_url` — навигация внутри SPA.
 - `refresh` — `true` перезагружает экран.
 - `download_url` — открывается на скачивание.
-- `message_link` — куда ведёт сообщение, например на страницу запущенной задачи.
+- `message_link` — куда ведёт сообщение, например на страницу запущенной задачи:
+  `['url' => …, 'label' => …]`, `['href' => …, 'text' => …]`, `[$url, $label]`
+  или просто URL (с подписью «Открыть»); см. [Экраны](screens.md).
 
 Неизвестные ключи передаются в `extra`.
 

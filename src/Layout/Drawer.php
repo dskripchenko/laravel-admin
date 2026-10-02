@@ -53,4 +53,30 @@ final class Drawer extends Layout
 
         return $this;
     }
+
+    /**
+     * Whether a click on the backdrop, Esc and the close button dismiss the
+     * drawer. On by default; turned off, it closes only from an action.
+     */
+    public function dismissable(bool $dismissable = true): self
+    {
+        $this->props['dismissable'] = $dismissable;
+
+        return $this;
+    }
+
+    /**
+     * The actions pinned to the drawer's footer, as in Modal::footer().
+     *
+     * @param  list<Renderable>  $actions
+     */
+    public function footer(array $actions): self
+    {
+        $this->props['footer'] = array_map(
+            static fn (Renderable $a): array => $a->toArray(),
+            $actions,
+        );
+
+        return $this;
+    }
 }

@@ -140,6 +140,8 @@ const defaultMetrics = computed<MetricRow[]>(() => {
 const recordTitle = computed<string>(() => {
   // The record may carry a `title`, a `name` or a `label` — we try them in
   // turn, and fall back to "{ResourceLabel}: record #{id}".
+  // Resource::recordTitle(), unless it is only the bare `#id` fallback.
+  if (form.recordTitle && form.recordTitle !== `#${props.id}`) return form.recordTitle
   const r = form.state as Record<string, unknown>
   const t = r.title ?? r.name ?? r.label
   if (typeof t === 'string' && t.length > 0) return t

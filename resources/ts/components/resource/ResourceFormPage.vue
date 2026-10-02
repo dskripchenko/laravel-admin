@@ -179,6 +179,8 @@ function seedDefaultsFromManifest(): void {
 
 const titleLabel = computed(() => {
   if (form.isCreate) return `${tr('Создать')}: ${resourceMeta.value?.label ?? props.slug}`
+  // Resource::recordTitle(), unless it is only the bare `#id` fallback.
+  if (form.recordTitle && form.recordTitle !== `#${props.id}`) return form.recordTitle
   return `${resourceMeta.value?.label ?? props.slug}: ${tRaw('запись #:id', { id: props.id ?? '' })}`
 })
 

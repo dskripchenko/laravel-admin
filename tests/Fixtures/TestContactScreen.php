@@ -108,6 +108,37 @@ final class TestContactScreen extends Screen
     }
 
     /**
+     * The message_link shapes besides the canonical one, picked by `shape`.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    public function sendWithLinkShape(array $state): array
+    {
+        $links = [
+            'string' => '/r/jobs/7',
+            'href' => ['href' => '/r/jobs/7', 'text' => 'Открыть задание'],
+            'pair' => ['/r/jobs/7', 'Открыть задание'],
+            'no_url' => ['label' => 'Открыть задание'],
+        ];
+
+        return [
+            'message' => 'Задача поставлена',
+            'message_link' => $links[(string) ($state['shape'] ?? '')] ?? null,
+        ];
+    }
+
+    /**
+     * Refuses on the merits.
+     *
+     * @param  array<string, mixed>  $state
+     */
+    public function refuse(array $state): never
+    {
+        throw new Dskripchenko\LaravelAdmin\Resource\ActionFailedException('SMTP-сервер недоступен');
+    }
+
+    /**
      * Answers with a toast only — no message, so no banner.
      *
      * @param  array<string, mixed>  $state

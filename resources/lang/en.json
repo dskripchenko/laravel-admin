@@ -476,5 +476,7 @@
     "Осторожно": "Caution",
     "Демо-доступ": "Demo access",
     "Войти как :name": "Sign in as :name",
-    "Ваша роль требует двухфакторной аутентификации. Включите её, чтобы продолжить работу в панели.": "Your role requires two-factor authentication. Enable it to continue working in the panel."
+    "Ваша роль требует двухфакторной аутентификации. Включите её, чтобы продолжить работу в панели.": "Your role requires two-factor authentication. Enable it to continue working in the panel.",
+    "Эту ячейку нельзя редактировать": "This cell cannot be edited",
+    "Удалённые": "Trashed"
 }

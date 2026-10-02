@@ -162,9 +162,9 @@ public function commandBar(): array
 
 Action в футере, у которого есть метод, закрывает окно после успешного
 выполнения метода; action с именем `close` или `cancel` просто закрывает
-его. `Layout::drawer()` работает так же, плюс
-`->position('left'|'right'|'top'|'bottom')` и `->size()` (`sm`, `md`, `lg`,
-`xl` или CSS-длина).
+его. `Layout::drawer()` работает так же — включая `->dismissable()` и
+`->footer([...])`, — плюс `->position('left'|'right'|'top'|'bottom')` и
+`->size()` (`sm`, `md`, `lg`, `xl` или CSS-длина).
 
 ### Wrapper
 
