@@ -162,7 +162,7 @@ function plainText(html: string): string {
   return unescapeHtml(html.replace(/<[^>]+>/g, ''))
 }
 
-const LIST_ITEM = /^\s*([-*+]|\d+[.)])\s+(.*)$/
+const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/
 const TABLE_SEPARATOR = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/
 
 function splitRow(line: string): string[] {
@@ -305,20 +305,11 @@ export function renderMarkdown(source: string | null | undefined, opts: Markdown
       continue
     }
 
-    const item = LIST_ITEM.exec(line)
-    if (item) {
+    if (LIST_ITEM.test(line)) {
       flushParagraph()
-      const ordered = /\d/.test(item[1] ?? '')
-      const items: string[] = []
-      while (i < lines.length) {
-        const m = LIST_ITEM.exec(lines[i] ?? '')
-        if (!m || /\d/.test(m[1] ?? '') !== ordered) break
-        items.push(`<li>${inline(m[2] ?? '')}</li>`)
-        i++
-      }
-      i--
-      const tag = ordered ? 'ol' : 'ul'
-      html.push(`<${tag}>${items.join('')}</${tag}>`)
+      const list = renderList(lines, i, opts)
+      html.push(list.html)
+      i = list.next - 1
       continue
     }
 
@@ -327,6 +318,87 @@ export function renderMarkdown(source: string | null | undefined, opts: Markdown
   flushParagraph()
 
   return html.join('\n')
+}
+
+/** The width of a line's leading whitespace, a tab counting as four. */
+function indentOf(line: string): number {
+  const lead = /^[ \t]*/.exec(line)?.[0] ?? ''
+  return lead.replace(/\t/g, '    ').length
+}
+
+/** Whether a line starts a block of its own rather than continuing a list item's text. */
+function opensBlock(line: string): boolean {
+  return /^\s*(#{1,6}\s|&gt;|```|~~~|\|)/.test(line) || /^\s*([-*_])(\s*\1){2,}\s*$/.test(line)
+}
+
+/**
+ * A list starting at lines[start], nested lists included: a line indented
+ * past an item's marker belongs to that item — a sub-list, a continuation
+ * paragraph, a code block — and is rendered as the item's own markdown. A
+ * blank line inside the list does not end it while the list goes on below.
+ * The lines are escaped already.
+ */
+function renderList(lines: string[], start: number, opts: MarkdownOptions): { html: string; next: number } {
+  const first = LIST_ITEM.exec(lines[start] ?? '')
+  const indent = indentOf(first?.[1] ?? '')
+  const ordered = /\d/.test(first?.[2] ?? '')
+  const items: string[] = []
+  let i = start
+
+  while (i < lines.length) {
+    const m = LIST_ITEM.exec(lines[i] ?? '')
+    if (!m || indentOf(m[1] ?? '') > indent + 1 || indentOf(m[1] ?? '') < indent || /\d/.test(m[2] ?? '') !== ordered) break
+
+    const text: string[] = [m[3] ?? '']
+    const body: string[] = []
+    i++
+    while (i < lines.length) {
+      const next = lines[i] ?? ''
+      if (next.trim() === '') {
+        // A blank line: the item goes on only if something indented follows.
+        let j = i + 1
+        while (j < lines.length && (lines[j] ?? '').trim() === '') j++
+        if (j < lines.length && indentOf(lines[j] ?? '') > indent + 1) {
+          for (; i < j; i++) body.push('')
+          continue
+        }
+        break
+      }
+      if (indentOf(next) > indent + 1) {
+        body.push(next)
+        i++
+        continue
+      }
+      // A lazy continuation: plain text right under the item, before any nested block.
+      if (body.length === 0 && !LIST_ITEM.test(next) && !opensBlock(next)) {
+        text.push(next.trim())
+        i++
+        continue
+      }
+      break
+    }
+
+    let inner = renderInline(text.join('\n'), opts)
+    if (body.some((l) => l.trim() !== '')) {
+      const cut = Math.min(...body.filter((l) => l.trim() !== '').map(indentOf))
+      const dedented = body.map((l) => l.replace(/\t/g, '    ').slice(cut))
+      inner += renderEscapedBlocks(dedented, opts)
+    }
+    items.push(`<li>${inner}</li>`)
+
+    // Blank lines between the items of one list keep it going.
+    let j = i
+    while (j < lines.length && (lines[j] ?? '').trim() === '') j++
+    const after = LIST_ITEM.exec(lines[j] ?? '')
+    if (j > i && after && indentOf(after[1] ?? '') <= indent + 1 && indentOf(after[1] ?? '') >= indent && /\d/.test(after[2] ?? '') === ordered) {
+      i = j
+    }
+  }
+
+  const tag = ordered ? 'ol' : 'ul'
+  const startAt = ordered ? Number.parseInt(first?.[2] ?? '1', 10) : 1
+  const startAttr = ordered && startAt !== 1 && Number.isFinite(startAt) ? ` start="${startAt}"` : ''
+  return { html: `<${tag}${startAttr}>${items.join('')}</${tag}>`, next: i }
 }
 
 /**

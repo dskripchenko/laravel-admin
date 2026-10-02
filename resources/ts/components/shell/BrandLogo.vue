@@ -79,7 +79,7 @@ const cursorStyle = computed(() => ({
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  font-family: ui-monospace, 'IBM Plex Mono', 'Fira Code', Menlo, monospace;
+  font-family: var(--uid-font-family-mono);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;

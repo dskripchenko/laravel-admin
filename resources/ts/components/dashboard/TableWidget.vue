@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { UidBadge, UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
-import { formatTableRows, rowBadgeTone, type CellMeta } from '../resource/cellFormat'
+import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
+import AdminTableCell from '../resource/AdminTableCell.vue'
+import type { CellMeta } from '../resource/cellFormat'
 import { trSafe as tr } from '../../stores/i18n'
 
 /**
  * Backend TableWidget::data() — {rows, columns[TableColumn::toArray]}:
  * the columns come in the resource format ({name, label, preset, meta…}), so
- * the cells are formatted by the same formatCell as a resource list uses —
- * dates, money, booleans.
+ * the cells are drawn by the same AdminTableCell as a resource list uses —
+ * dates, money, booleans, badges, links and images.
  */
 interface BackendColumn {
   name: string
@@ -42,12 +43,6 @@ const uidColumns = computed<UidTableColumn[]>(() =>
   })),
 )
 
-const formattedRows = computed<Record<string, unknown>[]>(
-  () => formatTableRows(props.rows, props.columns) as Record<string, unknown>[],
-)
-
-// A badge column is drawn as a UidBadge, its tone from the raw value.
-const badgeColumns = computed(() => props.columns.filter((c) => c.preset === 'badge'))
 
 // The UidTable scoped slot passes {row}.
 function slotRow(slotProps: unknown): Record<string, unknown> {
@@ -60,9 +55,14 @@ function slotRow(slotProps: unknown): Record<string, unknown> {
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <UidTable :columns="uidColumns" :data="formattedRows" :empty-text="tr(emptyText)">
-      <template v-for="col in badgeColumns" :key="col.name" #[col.name]="slotProps">
-        <UidBadge v-if="slotRow(slotProps)[col.name] !== ''" :variant="rowBadgeTone(slotRow(slotProps), col)">{{ slotRow(slotProps)[col.name] }}</UidBadge>
+    <UidTable :columns="uidColumns" :data="rows" :empty-text="tr(emptyText)">
+      <template v-for="col in columns" :key="col.name" #[col.name]="slotProps">
+        <AdminTableCell
+          :value="slotRow(slotProps)[col.name]"
+          :preset="col.preset"
+          :meta="col.meta"
+          :row="slotRow(slotProps)"
+        />
       </template>
     </UidTable>
   </UidCard>

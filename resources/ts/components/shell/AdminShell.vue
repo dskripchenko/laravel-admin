@@ -21,6 +21,7 @@ import { UidSidebarLayout } from '@dskripchenko/ui'
 import AdminTopBar from './AdminTopBar.vue'
 import AdminSidebar from './AdminSidebar.vue'
 import GlobalSearch from './GlobalSearch.vue'
+import { useBreadcrumbs } from './breadcrumbs'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface ImpersonationData {
@@ -98,6 +99,9 @@ function applyDrawerMode(matches: boolean): void {
 }
 
 const route = useRoute()
+
+/** The trail in the top bar: menu path, then resource and record or screen. */
+const breadcrumbs = useBreadcrumbs()
 
 // Picking a menu item is a navigation, and the drawer has to go after it:
 // otherwise it stays on top of the page just opened and has to be closed by
@@ -209,8 +213,9 @@ onBeforeUnmount(() => {
         </slot>
       </template>
       <template #header>
-        <slot name="topbar" :open-search="() => (searchOpen = true)">
+        <slot name="topbar" :open-search="() => (searchOpen = true)" :breadcrumbs="breadcrumbs">
           <AdminTopBar
+            :breadcrumbs="breadcrumbs"
             @toggle-sidebar="onCollapseChange(!collapsed)"
             @open-search="searchOpen = true"
           />

@@ -17,7 +17,9 @@
  */
 import { computed } from 'vue'
 import { getInfolistEntry } from './registry'
+import { UidIcon } from '@dskripchenko/ui'
 import UnknownEntry from './UnknownEntry.vue'
+import { resolveIcon } from '../shell/iconRegistry'
 
 export interface InfolistNode extends Record<string, unknown> {
   type: string
@@ -79,6 +81,7 @@ const items = computed<InfolistNode[]>(
 )
 
 const sectionTitle = computed(() => (props.node.title as string | undefined) ?? null)
+const sectionIcon = computed(() => resolveIcon(props.node.icon as string | undefined))
 const sectionDescription = computed(
   () => (props.node.description as string | undefined) ?? null,
 )
@@ -154,7 +157,10 @@ const tabsList = computed<InfolistTab[]>(() => {
     class="admin-infolist-section"
   >
     <header v-if="sectionTitle || sectionDescription" class="admin-infolist-section__hd">
-      <h3 v-if="sectionTitle" class="admin-infolist-section__title">{{ sectionTitle }}</h3>
+      <h3 v-if="sectionTitle" class="admin-infolist-section__title">
+        <UidIcon v-if="sectionIcon" :icon="sectionIcon" :size="16" class="admin-infolist-section__icon" />
+        {{ sectionTitle }}
+      </h3>
       <p v-if="sectionDescription" class="admin-infolist-section__description">
         {{ sectionDescription }}
       </p>
@@ -235,7 +241,11 @@ const tabsList = computed<InfolistTab[]>(() => {
   background: var(--uid-surface-raised);
 }
 .admin-infolist-section__hd { margin-bottom: var(--uid-space-sm); }
+.admin-infolist-section__icon { flex: none; color: var(--uid-text-secondary); }
 .admin-infolist-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-xs);
   margin: 0;
   font-size: var(--uid-font-size-sm);
   font-weight: var(--uid-font-weight-semibold);

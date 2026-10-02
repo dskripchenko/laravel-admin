@@ -10,6 +10,7 @@ use Dskripchenko\LaravelAdmin\Field\Input;
 use Dskripchenko\LaravelAdmin\Field\Markdown;
 use Dskripchenko\LaravelAdmin\Field\MorphSwitcher;
 use Dskripchenko\LaravelAdmin\Field\Radio;
+use Dskripchenko\LaravelAdmin\Field\Switcher;
 use Dskripchenko\LaravelAdmin\Field\TreeSelect;
 use Dskripchenko\LaravelAdmin\Infolist\FieldEntry;
 use Dskripchenko\LaravelAdmin\Resource\Resource;
@@ -97,6 +98,29 @@ it('the default infolist gives field views, a colour swatch, and skips hidden fi
         ['value' => 'a', 'label' => 'A'],
         ['value' => 'b', 'label' => 'B'],
     ]);
+});
+
+it('the default infolist captions a switch with translated yes and no', function (): void {
+    $resource = new class extends Resource
+    {
+        public static string $model = TestResourceUserModel::class;
+
+        public function fields(): array
+        {
+            return [Switcher::make('active')];
+        }
+
+        public function columns(): array
+        {
+            return [];
+        }
+    };
+
+    app()->setLocale('en');
+    $attrs = $resource->infolist()[0]->toArray()['attributes'];
+
+    expect($attrs['trueLabel'])->toBe('Yes')
+        ->and($attrs['falseLabel'])->toBe('No');
 });
 
 it('TreeSelect::fromModel builds the nested tree at serialization', function (): void {

@@ -23,6 +23,8 @@ class GaugeWidget extends Widget
 
     private string $unit = '';
 
+    private ?int $precision = null;
+
     public function widgetType(): string
     {
         return 'gauge';
@@ -49,9 +51,14 @@ class GaugeWidget extends Widget
     /**
      * The coloured zones. For example:
      *
-     *     ->threshold(0, 50, 'green')
-     *     ->threshold(50, 80, 'yellow')
-     *     ->threshold(80, 100, 'red')
+     *     ->threshold(0, 50, 'success')
+     *     ->threshold(50, 80, 'warning')
+     *     ->threshold(80, 100, 'danger')
+     *
+     * The colour is a tone of the UI kit — success, warning, danger, info,
+     * primary, neutral — or one of the colour words green, amber, yellow,
+     * orange, red, blue, gray; the SPA draws them with the theme's own
+     * colours. Any other CSS colour (#hex, rgb()) is used as it is.
      */
     public function threshold(float $from, float $to, string $color): static
     {
@@ -68,6 +75,20 @@ class GaugeWidget extends Widget
     }
 
     /**
+     * The number of decimals shown. Unset, a whole value shows none and a
+     * fractional one up to two.
+     */
+    public function precision(int $decimals): static
+    {
+        if ($decimals < 0) {
+            throw new InvalidArgumentException('Gauge precision must be >= 0');
+        }
+        $this->precision = $decimals;
+
+        return $this;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function data(): array
@@ -78,6 +99,7 @@ class GaugeWidget extends Widget
             'max' => $this->max,
             'unit' => $this->unit,
             'thresholds' => $this->thresholds,
+            'precision' => $this->precision,
         ];
     }
 }

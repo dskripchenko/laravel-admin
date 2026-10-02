@@ -10,6 +10,8 @@
  *   - badge      → the label from meta.labels (TableColumn::asBadge), or the
  *                  value as it is; the tone comes from badgeTone().
  *   - bytes      → a human-readable size.
+ *   - image      → the URL; AdminTableCell draws the picture.
+ *   - link       → the caption; AdminTableCell draws the link.
  *   - text       → the fallback.
  *
  * Columns with no explicit preset are formatted automatically: a value that
@@ -17,9 +19,9 @@
  * T...Z — gets the default datetime format.
  */
 
-import { trSafe as tr } from '../../stores/i18n'
+import { currentLocale, trSafe as tr } from '../../stores/i18n'
 
-export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes'
+export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes' | 'image' | 'link'
 
 export interface CellMeta {
   format?: string
@@ -96,36 +98,27 @@ export function badgeLabel(value: unknown, meta: CellMeta = {}): string {
   return labels[String(value)] ?? String(value)
 }
 
-/** Where formatTableRows keeps the raw row next to the formatted one. */
-export const RAW_ROW: unique symbol = Symbol('admin.rawRow')
-
-export interface TableColumnLike {
-  name: string
-  preset?: string | null
-  meta?: CellMeta
-}
-
 /**
- * Formats every cell of the rows by their columns' presets, keeping the raw
- * row under RAW_ROW — a badge cell needs the raw value for its tone.
+ * The href of a link column (TableColumn::asLink): `{field}` stands for a
+ * field of the row, `:value` for the cell's own value. Empty when a field is
+ * missing or null — then the cell stays plain text.
  */
-export function formatTableRows(
-  rows: Record<string, unknown>[],
-  columns: TableColumnLike[],
-): Record<string | symbol, unknown>[] {
-  return rows.map((row) => {
-    const out: Record<string | symbol, unknown> = { ...row, [RAW_ROW]: row }
-    for (const c of columns) {
-      out[c.name] = formatCell(row[c.name], c.preset ?? undefined, c.meta ?? {})
-    }
-    return out
-  })
-}
-
-/** The tone of a badge cell of a row made by formatTableRows. */
-export function rowBadgeTone(row: unknown, column: TableColumnLike): BadgeTone {
-  const raw = (row as Record<symbol, Record<string, unknown> | undefined> | undefined)?.[RAW_ROW]
-  return badgeTone(raw?.[column.name], column.meta ?? {})
+export function resolveLinkHref(
+  template: string | null | undefined,
+  row: Record<string, unknown>,
+  value: unknown,
+): string {
+  if (!template) return ''
+  const str = (v: unknown): string => (v === null || v === undefined ? '' : String(v))
+  let unresolved = false
+  const href = template
+    .replace(/\{([\w.]+)\}/g, (_m, f: string) => {
+      const v = row[f]
+      if (v === null || v === undefined || v === '') unresolved = true
+      return str(v)
+    })
+    .replace(/:value/g, str(value))
+  return unresolved || href === '' ? '' : href
 }
 
 function safeJson(value: unknown): string {
@@ -137,48 +130,175 @@ function safeJson(value: unknown): string {
 }
 
 /**
- * PHP-style format strings applied to a JS Date.
- *
- * The tokens supported:
- *   d → 01-31, m → 01-12, Y → 2026, y → 26
- *   H → 00-23, h → 12-hour, i → minutes, s → seconds
- *   D → Mon-Sun (3-letter), l → full day name, M → Jan, F → January
- *   N → 1-7 (ISO weekday), w → 0-6
- *   U → Unix timestamp, c → ISO 8601
+ * Reads a date the way the backend sends it. A bare 'Y-m-d' is a calendar
+ * date, taken in local time — `new Date('2026-10-01')` would read it as UTC
+ * midnight and show the day before west of Greenwich. 'Y-m-d H:i:s' gets its
+ * 'T', which not every engine adds by itself; an ISO string with an offset
+ * or a 'Z' is converted to local time.
  */
-function formatDateString(input: string, format: string): string {
-  const date = new Date(input)
-  if (isNaN(date.getTime())) return input
+export function parseDateValue(input: string): Date | null {
+  const s = input.trim()
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s)
+  if (dateOnly) {
+    const [y, m, day] = [Number(dateOnly[1]), Number(dateOnly[2]), Number(dateOnly[3])]
+    const d = new Date(y, m - 1, day)
+    // 2026-13-45 is no date, though Date would roll it over into the next year.
+    return d.getFullYear() === y && d.getMonth() === m - 1 && d.getDate() === day ? d : null
+  }
+  const d = new Date(/^\d{4}-\d{2}-\d{2} \d/.test(s) ? s.replace(' ', 'T') : s)
+  return isNaN(d.getTime()) ? null : d
+}
 
+/** The locale the names of months and days are given in: the panel's own. */
+function dateLocale(): string {
+  const lang = currentLocale()
+  try {
+    return Intl.DateTimeFormat.supportedLocalesOf([lang]).length > 0 ? lang : 'en'
+  } catch {
+    return 'en'
+  }
+}
+
+function intlPart(date: Date, locale: string, options: Intl.DateTimeFormatOptions, type: Intl.DateTimeFormatPartTypes): string {
+  try {
+    return new Intl.DateTimeFormat(locale, options).formatToParts(date).find((p) => p.type === type)?.value ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function englishOrdinal(day: number): string {
+  if (day % 100 >= 11 && day % 100 <= 13) return 'th'
+  return ['th', 'st', 'nd', 'rd'][day % 10] ?? 'th'
+}
+
+function isoWeek(date: Date): { week: number; year: number } {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const day = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - day)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  return { week: Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7), year: d.getUTCFullYear() }
+}
+
+function offset(date: Date, colon: boolean): string {
+  const minutes = -date.getTimezoneOffset()
+  const sign = minutes >= 0 ? '+' : '-'
+  const abs = Math.abs(minutes)
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0')
+  const mm = String(abs % 60).padStart(2, '0')
+  return colon ? `${sign}${hh}:${mm}` : `${sign}${hh}${mm}`
+}
+
+/**
+ * Formats a date by a PHP date() format string — every token of PHP's
+ * date(), with the names of months and days in the panel's language:
+ *
+ *   day      d j D l N S w z      week  W
+ *   month    F m M n t            year  L o Y y
+ *   time     a A B g G h H i s u v
+ *   zone     e I O P p T Z        full  c r U
+ *
+ * F before or after a day number takes the form a date reads with, which in
+ * Russian is the genitive: «1 октября», not «1 октябрь». A backslash escapes
+ * the next character, as in PHP.
+ */
+export function formatPhpDate(date: Date, format: string): string {
+  const locale = dateLocale()
   const pad = (n: number, w = 2): string => String(n).padStart(w, '0')
+  const day = date.getDate()
+  const month = date.getMonth()
+  const year = date.getFullYear()
+  const hours = date.getHours()
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
+  const dayOfYear = Math.round(
+    (Date.UTC(year, month, day) - Date.UTC(year, 0, 1)) / 86_400_000,
+  )
+  // F next to a day number: the month as it reads inside a date.
+  const withDay = /(^|[^\\])[dj]/.test(format)
 
-  const tokens: Record<string, string> = {
-    d: pad(date.getDate()),
-    m: pad(date.getMonth() + 1),
-    Y: String(date.getFullYear()),
-    y: pad(date.getFullYear() % 100),
-    H: pad(date.getHours()),
-    h: pad(((date.getHours() + 11) % 12) + 1),
-    i: pad(date.getMinutes()),
-    s: pad(date.getSeconds()),
-    U: String(Math.floor(date.getTime() / 1000)),
-    c: date.toISOString(),
-    N: String(((date.getDay() + 6) % 7) + 1),
-    w: String(date.getDay()),
+  const token = (ch: string): string | null => {
+    switch (ch) {
+      case 'd': return pad(day)
+      case 'D': return intlPart(date, locale, { weekday: 'short' }, 'weekday')
+      case 'j': return String(day)
+      case 'l': return intlPart(date, locale, { weekday: 'long' }, 'weekday')
+      case 'N': return String(((date.getDay() + 6) % 7) + 1)
+      case 'S': return locale.startsWith('en') ? englishOrdinal(day) : ''
+      case 'w': return String(date.getDay())
+      case 'z': return String(dayOfYear)
+      case 'W': return pad(isoWeek(date).week)
+      case 'F':
+        return withDay
+          ? intlPart(date, locale, { day: 'numeric', month: 'long' }, 'month')
+          : intlPart(date, locale, { month: 'long' }, 'month')
+      case 'm': return pad(month + 1)
+      case 'M': return intlPart(date, locale, { month: 'short' }, 'month')
+      case 'n': return String(month + 1)
+      case 't': return String(new Date(year, month + 1, 0).getDate())
+      case 'L': return leap ? '1' : '0'
+      case 'o': return String(isoWeek(date).year)
+      case 'X':
+      case 'x':
+      case 'Y': return String(year)
+      case 'y': return pad(year % 100)
+      case 'a': return hours < 12 ? 'am' : 'pm'
+      case 'A': return hours < 12 ? 'AM' : 'PM'
+      case 'B': {
+        const utc = (date.getUTCHours() * 3600 + date.getUTCMinutes() * 60 + date.getUTCSeconds() + 3600) % 86_400
+        return pad(Math.floor(utc / 86.4), 3)
+      }
+      case 'g': return String(((hours + 11) % 12) + 1)
+      case 'G': return String(hours)
+      case 'h': return pad(((hours + 11) % 12) + 1)
+      case 'H': return pad(hours)
+      case 'i': return pad(date.getMinutes())
+      case 's': return pad(date.getSeconds())
+      case 'u': return pad(date.getMilliseconds() * 1000, 6)
+      case 'v': return pad(date.getMilliseconds(), 3)
+      case 'e': {
+        try {
+          return Intl.DateTimeFormat().resolvedOptions().timeZone ?? ''
+        } catch {
+          return ''
+        }
+      }
+      case 'I': {
+        const jan = new Date(year, 0, 1).getTimezoneOffset()
+        const jul = new Date(year, 6, 1).getTimezoneOffset()
+        return date.getTimezoneOffset() < Math.max(jan, jul) ? '1' : '0'
+      }
+      case 'O': return offset(date, false)
+      case 'P': return offset(date, true)
+      case 'p': return date.getTimezoneOffset() === 0 ? 'Z' : offset(date, true)
+      case 'T': return intlPart(date, 'en', { timeZoneName: 'short' }, 'timeZoneName')
+      case 'Z': return String(-date.getTimezoneOffset() * 60)
+      case 'c': return formatPhpDate(date, 'Y-m-d\\TH:i:sP')
+      case 'r': {
+        const en = (o: Intl.DateTimeFormatOptions, t: Intl.DateTimeFormatPartTypes): string => intlPart(date, 'en', o, t)
+        return `${en({ weekday: 'short' }, 'weekday')}, ${pad(day)} ${en({ month: 'short' }, 'month')} ${year} ${pad(hours)}:${pad(date.getMinutes())}:${pad(date.getSeconds())} ${offset(date, false)}`
+      }
+      case 'U': return String(Math.floor(date.getTime() / 1000))
+      default: return null
+    }
   }
 
-  // The replacement honours the '\\' escape, as PHP does: a backslash escapes the next character.
   let out = ''
   for (let i = 0; i < format.length; i++) {
-    const ch = format[i]
+    const ch = format[i] ?? ''
     if (ch === '\\' && i + 1 < format.length) {
       out += format[i + 1]
       i++
       continue
     }
-    out += tokens[ch] ?? ch
+    out += token(ch) ?? ch
   }
   return out
+}
+
+/** A stored date value by a PHP format; a value that is no date is shown as it is. */
+function formatDateString(input: string, format: string): string {
+  const date = parseDateValue(input)
+  return date === null ? input : formatPhpDate(date, format)
 }
 
 function formatMoney(value: unknown, currency: string, decimals: number): string {

@@ -529,3 +529,19 @@ describe('AuditTrailLayout', () => {
     expect(wrapper.find('.admin-audit-timeline').exists()).toBe(true)
   })
 })
+
+describe('SectionLayout', () => {
+  it('draws the Block::icon() before the title', () => {
+    const { wrapper } = mountNode({ kind: 'layout', type: 'block', title: 'Contacts', icon: 'bell', items: [field('a')] })
+    const title = wrapper.find('.admin-section__title')
+    expect(title.text()).toBe('Contacts')
+    expect(title.find('.admin-section__icon').exists()).toBe(true)
+  })
+
+  it('draws no icon when none is set or the name is unknown', () => {
+    for (const icon of [undefined, 'no-such-icon']) {
+      const { wrapper } = mountNode({ kind: 'layout', type: 'block', title: 'Contacts', icon, items: [] })
+      expect(wrapper.find('.admin-section__icon').exists()).toBe(false)
+    }
+  })
+})

@@ -9,7 +9,8 @@
  *
  * The props, after FieldRenderer has spread them:
  *   - name: string — the key in the record
- *   - label?: string
+ *   - label?: string — drawn by InfolistRenderer above the entry, as for any
+ *     other entry; the entry itself does not repeat it
  *   - entries: Entry[] — the metadata of the sub-entries
  *   - layout?: 'columns' | 'rows' | 'inline'; 'columns' by default
  *   - value?: array — when passed directly; otherwise record[name] is used
@@ -78,7 +79,7 @@ function subProps(entry: EntryMeta, item: Record<string, unknown>) {
   return {
     ...rest,
     ...attrs,
-    label: '',           // лейбл уже в шапке таблицы
+    label: '',           // the label is in the table header already
     value: item[entry.name],
     name: entry.name,
   }
@@ -87,8 +88,6 @@ function subProps(entry: EntryMeta, item: Record<string, unknown>) {
 
 <template>
   <div class="admin-repeatable">
-    <span v-if="label" class="admin-repeatable__lbl">{{ label }}</span>
-
     <p v-if="items.length === 0" class="admin-repeatable__empty">
       {{ placeholder }}
     </p>
@@ -165,13 +164,6 @@ function subProps(entry: EntryMeta, item: Record<string, unknown>) {
 
 <style>
 .admin-repeatable { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
-.admin-repeatable__lbl {
-  font-size: var(--uid-font-size-xs);
-  color: var(--uid-text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: var(--uid-font-weight-medium);
-}
 .admin-repeatable__empty {
   color: var(--uid-text-tertiary);
   font-size: var(--uid-font-size-sm);

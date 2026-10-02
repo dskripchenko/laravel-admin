@@ -12,8 +12,9 @@
  *   - breadcrumbs — replaces the breadcrumbs
  */
 import { computed } from 'vue'
+import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { PanelLeft, Search } from 'lucide-vue-next'
-import { UidIcon } from '@dskripchenko/ui'
+import { UidBreadcrumb, UidBreadcrumbItem, UidIcon } from '@dskripchenko/ui'
 import ThemeToggle from './widgets/ThemeToggle.vue'
 import LocaleSwitcher from './widgets/LocaleSwitcher.vue'
 import NotificationBell from './widgets/NotificationBell.vue'
@@ -23,7 +24,8 @@ import { trSafe as tr } from '../../stores/i18n'
 
 interface Crumb {
   label: string
-  to?: string | Record<string, unknown> | null
+  /** A router location, or a path within the panel. */
+  to?: RouteLocationRaw | null
 }
 
 interface Props {
@@ -44,6 +46,27 @@ const emit = defineEmits<{
 }>()
 
 const lastIdx = computed(() => props.breadcrumbs.length - 1)
+
+const router = useRouter()
+
+/** The crumb's href, for a middle click or a new tab; null without a target. */
+function hrefOf(crumb: Crumb): string | undefined {
+  if (!crumb.to) return undefined
+  try {
+    return router.resolve(crumb.to).href
+  } catch {
+    return typeof crumb.to === 'string' ? crumb.to : undefined
+  }
+}
+
+/** A plain click navigates in place, through the router; modified clicks stay the browser's. */
+function onCrumbClick(event: MouseEvent, crumb: Crumb): void {
+  if (!crumb.to || event.defaultPrevented) return
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  if (!(event.target as HTMLElement | null)?.closest('a')) return
+  event.preventDefault()
+  void router.push(crumb.to).catch(() => undefined)
+}
 </script>
 
 <template>
@@ -60,16 +83,17 @@ const lastIdx = computed(() => props.breadcrumbs.length - 1)
 
     <div class="admin-topbar__breadcrumbs">
       <slot name="breadcrumbs">
-        <template v-for="(crumb, idx) in breadcrumbs" :key="idx">
-          <span v-if="idx > 0" class="sep">›</span>
-          <component
-            :is="crumb.to ? 'a' : 'span'"
-            :href="typeof crumb.to === 'string' ? crumb.to : undefined"
+        <UidBreadcrumb v-if="breadcrumbs.length > 0" :label="tr('Навигация')" separator="›">
+          <UidBreadcrumbItem
+            v-for="(crumb, idx) in breadcrumbs"
+            :key="idx"
+            :href="hrefOf(crumb)"
+            :current="idx === lastIdx"
             :class="idx === lastIdx ? 'cur' : ''"
-          >
-            {{ crumb.label }}
-          </component>
-        </template>
+            :title="crumb.label"
+            @click="onCrumbClick($event, crumb)"
+          >{{ crumb.label }}</UidBreadcrumbItem>
+        </UidBreadcrumb>
       </slot>
     </div>
 

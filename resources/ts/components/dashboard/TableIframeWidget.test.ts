@@ -40,7 +40,7 @@ describe('IframeWidget', () => {
     const frame = wrapper.find('iframe')
     expect(frame.exists()).toBe(true)
     expect(frame.attributes('src')).toBe('https://example.com/board')
-    expect(frame.attributes('sandbox')).toBe('allow-scripts allow-same-origin')
+    expect(frame.attributes('sandbox')).toBe('allow-scripts allow-forms allow-popups')
     expect(frame.attributes('style')).toContain('480px')
   })
 

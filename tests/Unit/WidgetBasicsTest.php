@@ -131,6 +131,14 @@ it('IframeWidget stores src/height/sandbox', function (): void {
     expect($data['sandbox'])->toBe('allow-scripts');
 });
 
+it('IframeWidget sandboxes without allow-same-origin by default', function (): void {
+    $sandbox = IframeWidget::make()->src('https://example.com')->data()['sandbox'];
+
+    expect($sandbox)->toBe(IframeWidget::DEFAULT_SANDBOX)
+        ->and($sandbox)->toContain('allow-scripts')
+        ->and($sandbox)->not->toContain('allow-same-origin');
+});
+
 it('IframeWidget rejects URL outside allowedHosts', function (): void {
     expect(fn () => IframeWidget::make()
         ->allowedHosts(['*.trusted.com'])

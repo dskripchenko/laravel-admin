@@ -15,16 +15,7 @@
  */
 import { computed, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  AlertTriangle,
-  Check,
-  CheckCircle,
-  MessageSquare,
-  Trash2,
-  UserPlus,
-  X,
-  type LucideIcon,
-} from 'lucide-vue-next'
+import { Check, X } from 'lucide-vue-next'
 import { UidIcon } from '@dskripchenko/ui'
 import {
   useNotificationsStore,
@@ -32,6 +23,12 @@ import {
   type NotificationItem,
 } from '../../stores/notifications'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
+import {
+  notificationBody,
+  notificationIcon,
+  notificationTitle,
+  notificationTone,
+} from '../notifications/notificationView'
 
 const notifications = useNotificationsStore()
 const router = useRouter()
@@ -85,30 +82,6 @@ function close(): void {
   notifications.closeDrawer()
 }
 
-/**
- * The icon for a notification's type. Laravel's notifications put an FQCN into
- * `type` ('App\\Notifications\\ImportFinished' and the like), so we match on a
- * substring. The default is the bell.
- */
-function iconFor(item: NotificationItem): LucideIcon {
-  const t = item.type.toLowerCase()
-  if (t.includes('import') || t.includes('finished') || t.includes('success')) return CheckCircle
-  if (t.includes('comment') || t.includes('message') || t.includes('mention')) return MessageSquare
-  if (t.includes('user') || t.includes('member') || t.includes('role')) return UserPlus
-  if (t.includes('warning') || t.includes('schedule')) return AlertTriangle
-  if (t.includes('delete') || t.includes('failed') || t.includes('error')) return Trash2
-  return CheckCircle
-}
-
-function variantFor(item: NotificationItem): 'success' | 'info' | 'warning' | 'danger' | 'neutral' {
-  const t = item.type.toLowerCase()
-  if (t.includes('import') || t.includes('success') || t.includes('finished')) return 'success'
-  if (t.includes('warning') || t.includes('schedule')) return 'warning'
-  if (t.includes('delete') || t.includes('failed') || t.includes('error')) return 'danger'
-  if (t.includes('comment') || t.includes('message')) return 'info'
-  return 'neutral'
-}
-
 function relativeTime(iso: string | null): string {
   if (!iso) return ''
   const ts = new Date(iso).getTime()
@@ -126,21 +99,13 @@ interface ItemView {
   title: string
   description: string
 }
+/**
+ * The title and body: AdminNotification's {title, body}, or the usual
+ * subject, description, message and text keys of a notification of the
+ * host's own.
+ */
 function viewOf(item: NotificationItem): ItemView {
-  // The backend puts the payload into `data`; we support the usual
-  // `title`, `message` and `description` keys, falling back to data.text.
-  const d = item.data
-  const title =
-    typeof d.title === 'string' ? d.title : typeof d.subject === 'string' ? d.subject : tr('Уведомление')
-  const description =
-    typeof d.description === 'string'
-      ? d.description
-      : typeof d.message === 'string'
-        ? d.message
-        : typeof d.text === 'string'
-          ? d.text
-          : ''
-  return { title, description }
+  return { title: notificationTitle(item, tr('Уведомление')), description: notificationBody(item) }
 }
 
 const tabCounts = computed<Record<NotificationFilter, number>>(() => {
@@ -256,10 +221,10 @@ onUnmounted(() => {
               >
                 <span
                   class="admin-notif-drawer__icon"
-                  :data-variant="variantFor(item)"
+                  :data-variant="notificationTone(item)"
                   aria-hidden="true"
                 >
-                  <UidIcon :icon="iconFor(item)" :size="14" />
+                  <UidIcon :icon="notificationIcon(item)" :size="14" />
                 </span>
                 <div class="admin-notif-drawer__content">
                   <div class="admin-notif-drawer__row">
@@ -508,8 +473,8 @@ onUnmounted(() => {
   color: var(--uid-color-danger, #dc2626);
 }
 .admin-notif-drawer__icon[data-variant='info'] {
-  background: color-mix(in srgb, var(--uid-accent) 14%, transparent);
-  color: var(--uid-accent);
+  background: color-mix(in srgb, var(--uid-color-info, var(--uid-accent)) 14%, transparent);
+  color: var(--uid-color-info, var(--uid-accent));
 }
 .admin-notif-drawer__icon[data-variant='neutral'] {
   background: var(--uid-border-subtle);

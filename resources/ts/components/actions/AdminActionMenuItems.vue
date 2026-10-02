@@ -40,9 +40,8 @@ const emit = defineEmits<{ run: [action: AdminAction] }>()
       :data-testid="`action-${action.name}`"
       @click="emit('run', action)"
     >
-      <template v-if="resolveIcon(action.icon)" #icon>
-        <UidIcon :icon="resolveIcon(action.icon)!" :size="14" />
-      </template>
+      <!-- UidMenuItem has a single default slot: the icon goes in with the label. -->
+      <UidIcon v-if="resolveIcon(action.icon)" :icon="resolveIcon(action.icon)!" :size="14" />
       {{ action.label }}
     </UidMenuItem>
   </template>

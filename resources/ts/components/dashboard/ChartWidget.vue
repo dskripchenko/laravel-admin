@@ -7,7 +7,8 @@
  * stacked}`. This wrapper resolves the series (colours included) and leaves
  * the drawing to the specialized components: CartesianChartWidget for line,
  * area and bar — every dataset becomes a series — RadarChartWidget for radar,
- * and DonutChartWidget for pie and doughnut, which slice the first dataset.
+ * and DonutChartWidget for pie and doughnut, which slice the first dataset —
+ * a pie as a full disc, a doughnut with a hole.
  */
 import { computed } from 'vue'
 import CartesianChartWidget from './CartesianChartWidget.vue'
@@ -16,6 +17,7 @@ import RadarChartWidget from './RadarChartWidget.vue'
 import UnknownWidget from './UnknownWidget.vue'
 import { CHART_RENDERERS } from './chartTypes'
 import { resolveLabels, toSeries, type RawDataset } from './chartGeometry'
+import { toneColor } from './toneColor'
 
 interface ChartData {
   /**
@@ -84,16 +86,17 @@ const donutData = computed(() => {
   return ds.data.map((v, i) => ({
     label: String(source.value.labels?.[i] ?? i + 1),
     value: Number(v) || 0,
-    color: ds.color ?? DEFAULT_PALETTE[i % DEFAULT_PALETTE.length],
+    color: toneColor(ds.color) || DEFAULT_PALETTE[i % DEFAULT_PALETTE.length],
   }))
 })
 </script>
 
 <template>
   <DonutChartWidget
-    v-if="renderer === 'donut'"
+    v-if="renderer === 'donut' || renderer === 'pie'"
     :title="title"
     :data="donutData"
+    :hole="renderer === 'donut'"
   />
   <RadarChartWidget
     v-else-if="renderer === 'radar'"

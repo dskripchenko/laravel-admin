@@ -30,6 +30,25 @@ export function trSafe(text: string): string {
   }
 }
 
+/**
+ * The panel's current language, for formatting — month names, numbers: the
+ * document's lang, else the bootstrap locale, else Russian, the source
+ * language.
+ */
+export function currentLocale(): string {
+  // The locale store keeps <html lang> in step with a switch made in place.
+  if (typeof document !== 'undefined' && document.documentElement.lang) {
+    return document.documentElement.lang
+  }
+  try {
+    const locale = useI18nStore().locale
+    if (locale) return locale
+  } catch {
+    // no active Pinia
+  }
+  return 'ru'
+}
+
 export const useI18nStore = defineStore('admin-i18n', () => {
   const messages = ref<Record<string, string>>({})
   const locale = ref<string>('ru')
