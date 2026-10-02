@@ -319,6 +319,94 @@ describe('useActionRunner', () => {
     await m.runner().run(act({ type: 'bulk', position: ['bulk'], attributes: { requiresAtLeast: 2 } }))
     expect(execute).not.toHaveBeenCalled()
   })
+
+  describe('a refused action shows the server reason', () => {
+    it('a button action: the action_failed message, not the generic text', async () => {
+      const { toApiError } = await import('../api/errors')
+      const { adminToast } = await import('../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      const execute = vi.fn().mockRejectedValue(toApiError(422, { errorKey: 'action_failed', message: 'Host is unreachable' }))
+      const m = await mountRunner({ execute })
+      wrapper = m.wrapper
+      expect(await m.runner().run(act({}))).toBe(false)
+      expect(toast).toHaveBeenCalledWith('Host is unreachable')
+    })
+
+    it('falls back to the generic text when the server sent none', async () => {
+      const { toApiError } = await import('../api/errors')
+      const { adminToast } = await import('../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      const execute = vi.fn().mockRejectedValue(toApiError(500, { errorKey: 'x', message: '' }))
+      const m = await mountRunner({ execute })
+      wrapper = m.wrapper
+      await m.runner().run(act({}))
+      expect(toast).toHaveBeenCalledWith('Не удалось выполнить действие «Act».')
+    })
+
+    it('a modal action refused on the merits keeps the form open and toasts the reason', async () => {
+      const { toApiError } = await import('../api/errors')
+      const { adminToast } = await import('../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      const execute = vi.fn().mockRejectedValue(toApiError(422, { errorKey: 'action_failed', message: 'Already frozen' }))
+      const m = await mountRunner({ execute })
+      wrapper = m.wrapper
+      await m.runner().run(act({ type: 'modal', attributes: { fields: [{ kind: 'field', type: 'input', name: 'reason' }] } }))
+      await flushPromises()
+      $('action-modal-submit')!.click()
+      await flushPromises()
+      expect(toast).toHaveBeenCalledWith('Already frozen')
+      expect(m.runner().modalState.open).toBe(true)
+      expect(m.runner().modalState.errors).toEqual({})
+    })
+
+    it('a modal action with field errors keeps them in the form, no toast', async () => {
+      const { toApiError } = await import('../api/errors')
+      const { adminToast } = await import('../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      const execute = vi.fn().mockRejectedValue(toApiError(422, {
+        errorKey: 'validation', message: 'invalid', messages: { 'payload.reason': ['Too short.'] },
+      }))
+      const m = await mountRunner({ execute })
+      wrapper = m.wrapper
+      await m.runner().run(act({ type: 'modal', attributes: { fields: [{ kind: 'field', type: 'input', name: 'reason' }] } }))
+      await flushPromises()
+      $('action-modal-submit')!.click()
+      await flushPromises()
+      expect(m.runner().modalState.errors).toEqual({ reason: ['Too short.'] })
+      expect(toast).not.toHaveBeenCalled()
+    })
+
+    it('a modal field error with no field of its own is toasted', async () => {
+      const { toApiError } = await import('../api/errors')
+      const { adminToast } = await import('../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      const execute = vi.fn().mockRejectedValue(toApiError(422, {
+        errorKey: 'validation', message: 'invalid', messages: { ids: ['Select a record first.'] },
+      }))
+      const m = await mountRunner({ execute })
+      wrapper = m.wrapper
+      await m.runner().run(act({ type: 'modal', attributes: { fields: [{ kind: 'field', type: 'input', name: 'reason' }] } }))
+      await flushPromises()
+      $('action-modal-submit')!.click()
+      await flushPromises()
+      expect(toast).toHaveBeenCalledWith('Select a record first.')
+    })
+
+    it('an async action refused at its start shows the reason in the dialog and the toast', async () => {
+      const { adminToast } = await import('../stores/toast')
+      const toast = vi.spyOn(adminToast, 'error')
+      mock.onPost('/delayed/run').reply(403, {
+        success: false,
+        payload: { errorKey: 'forbidden', message: 'Handler is not allowlisted' },
+      })
+      const m = await mountRunner({ execute: vi.fn() })
+      wrapper = m.wrapper
+      const ok = await m.runner().run(act({ type: 'async', attributes: { handler: { entity: 'E', method: 'm' } } }))
+      expect(ok).toBe(false)
+      expect(m.runner().asyncState.error).toBe('Handler is not allowlisted')
+      expect(toast).toHaveBeenCalledWith('Handler is not allowlisted')
+    })
+  })
 })
 
 describe('AdminActionButton', () => {

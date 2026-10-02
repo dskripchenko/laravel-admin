@@ -210,6 +210,21 @@ describe('useScreenStore', () => {
     expect(s.errors.email).toEqual(['Введите email'])
   })
 
+  it('runMethod keeps an action_failed 422 as the error, so its reason is shown', async () => {
+    mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)
+    mock.onPost('/contact/runMethod').reply(422, {
+      success: false,
+      payload: { errorKey: 'action_failed', message: 'SMTP server is down' },
+    })
+
+    const s = useScreenStore()
+    await s.load('contact')
+    await expect(s.runMethod('send')).rejects.toBeInstanceOf(ValidationError)
+    expect(s.hasError).toBe(true)
+    expect(s.error?.message).toBe('SMTP server is down')
+    expect(s.errors).toEqual({})
+  })
+
 
   it('переход на другой экран сбрасывает lastMessage; reload того же — нет', async () => {
     mock.onGet('/contact/state').reply(200, STATE_ENVELOPE)

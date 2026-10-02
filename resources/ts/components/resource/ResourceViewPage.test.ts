@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createMemoryHistory, type Router } from 'vue-router'
@@ -120,6 +120,33 @@ describe('ResourceViewPage', () => {
     await triggers[0].trigger('click')
     await flushPromises()
     expect(document.body.textContent ?? '').toContain('Удалить')
+  })
+
+  it('a refused header action shows the server reason, not the generic text', async () => {
+    const { adminToast } = await import('../../stores/toast')
+    const toast = vi.spyOn(adminToast, 'error')
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const manifest = useManifestStore()
+    manifest.manifest!.resources[0]!.actions = [{
+      kind: 'action', name: 'freeze', label: 'Freeze', type: 'button',
+      position: ['row'], confirm: null, attributes: { method: 'freeze' },
+    }]
+    mock.onGet('/articles/read').reply(200, { success: true, payload: { record: { id: 7 } } })
+    mock.onPost('/articles/action').reply(422, {
+      success: false,
+      payload: { errorKey: 'action_failed', message: 'The document is already frozen' },
+    })
+    const wrapper = await mountPage()
+    await flushPromises()
+    await wrapper.find('[aria-label="Действия"]').trigger('click')
+    await flushPromises()
+    ;(document.body.querySelector('.uid-menu [data-testid="action-freeze"]') as HTMLElement).click()
+    await flushPromises()
+    expect(toast).toHaveBeenCalledWith('The document is already frozen')
+    expect(toast).not.toHaveBeenCalledWith('Не удалось выполнить действие «Freeze».')
+    toast.mockRestore()
+    quiet.mockRestore()
+    wrapper.unmount()
   })
 
   it('shows skeleton during load', async () => {

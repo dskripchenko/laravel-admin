@@ -50,6 +50,7 @@ export { loadBootstrap, readInlineBootstrap, readCsrfFromMeta } from './api/boot
 export { useBrand, BRAND_KEY } from './composables/useBrand'
 export {
   useActionRunner,
+  actionErrorMessage,
   normalizeAction,
   normalizeActions,
   type ActionRunner,
@@ -83,6 +84,7 @@ export {
   ValidationError,
   NetworkError,
   toApiError,
+  apiErrorMessage,
 } from './api/errors'
 
 export type {

@@ -26,6 +26,7 @@ import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
 import { useScreenStore } from '../stores/screen'
+import { apiErrorMessage } from '../api/errors'
 import { normalizeAction, normalizeActions, toRouterPath, useActionRunner } from '../composables/useActionRunner'
 import AdminActionButton from './actions/AdminActionButton.vue'
 import AdminActionDialogs from './actions/AdminActionDialogs.vue'
@@ -216,7 +217,7 @@ watch(
       class="admin-screen-page__alert"
       role="alert"
     >
-      {{ screen.error?.message ?? tr('Не удалось выполнить действие') }}
+      {{ apiErrorMessage(screen.error, tr('Не удалось выполнить действие')) }}
     </UidAlert>
 
     <UidAlert
