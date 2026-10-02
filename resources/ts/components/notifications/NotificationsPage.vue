@@ -12,10 +12,16 @@
  * them in batches.
  */
 import { computed, onMounted, ref } from 'vue'
-import { UidButton, UidCard, UidSpinner } from '@dskripchenko/ui'
+import { UidButton, UidCard, UidIcon, UidSpinner } from '@dskripchenko/ui'
 import { useNotificationsStore, type NotificationFilter, type NotificationItem } from '../../stores/notifications'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
-import { notificationBody, notificationTitle, notificationTone } from './notificationView'
+import {
+  notificationBody,
+  notificationIcon,
+  notificationTitle,
+  notificationTone,
+  type NotificationTone,
+} from './notificationView'
 
 const notifications = useNotificationsStore()
 const filter = ref<NotificationFilter>('all')
@@ -58,11 +64,11 @@ const itemTitle = (i: NotificationItem): string => notificationTitle(i, '—')
 const itemBody = (i: NotificationItem): string => notificationBody(i)
 const itemUrl = (i: NotificationItem): string | null => (i.data.url as string | undefined) ?? null
 
-/** AdminNotification's level — 'error' included — as the page's tone. */
-function itemKind(i: NotificationItem): 'info' | 'success' | 'warning' | 'danger' {
-  const tone = notificationTone(i)
-  return tone === 'neutral' ? 'info' : tone
-}
+/**
+ * AdminNotification's level ('error' included) as a tone — the same one the
+ * drawer uses, so an item looks alike in both places.
+ */
+const itemKind = (i: NotificationItem): NotificationTone => notificationTone(i)
 
 /**
  * The time is absolute, not "5 min ago".
@@ -83,7 +89,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-notifs-page">
+  <div class="admin-page admin-notifs-page">
     <div class="admin-notifs-page__head">
       <div>
         <h1 class="admin-page__title">{{ tr('Уведомления') }}</h1>
@@ -129,7 +135,9 @@ onMounted(() => {
       :class="{ 'admin-notifs-page__item--unread': !item.read_at }"
     >
       <div class="admin-notifs-page__row">
-        <span class="admin-notifs-page__dot" :data-kind="itemKind(item)" />
+        <span class="admin-notifs-page__icon" :data-kind="itemKind(item)" aria-hidden="true">
+          <UidIcon :icon="notificationIcon(item)" :size="14" />
+        </span>
         <div class="admin-notifs-page__body">
           <component
             :is="itemUrl(item) ? 'a' : 'span'"
@@ -217,17 +225,35 @@ onMounted(() => {
   align-items: flex-start;
   gap: 10px;
 }
-.admin-notifs-page__dot {
-  width: 8px;
-  height: 8px;
-  margin-top: 6px;
-  border-radius: 50%;
+/* The same tinted icon disc as in NotificationsDrawer, coloured by the kit's tone tokens. */
+.admin-notifs-page__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
-  background: var(--uid-color-text-secondary, #9ca3af);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  /* neutral: a notification with no level and no telling type */
+  background: var(--uid-border-subtle);
+  color: var(--uid-text-secondary);
 }
-.admin-notifs-page__dot[data-kind='success'] { background: var(--uid-success, #10b981); }
-.admin-notifs-page__dot[data-kind='warning'] { background: var(--uid-warning, #f59e0b); }
-.admin-notifs-page__dot[data-kind='danger'] { background: var(--uid-danger, #ef4444); }
+.admin-notifs-page__icon[data-kind='info'] {
+  background: var(--uid-info-subtle, color-mix(in srgb, var(--uid-info) 14%, transparent));
+  color: var(--uid-info);
+}
+.admin-notifs-page__icon[data-kind='success'] {
+  background: var(--uid-success-subtle, color-mix(in srgb, var(--uid-success) 14%, transparent));
+  color: var(--uid-success);
+}
+.admin-notifs-page__icon[data-kind='warning'] {
+  background: var(--uid-warning-subtle, color-mix(in srgb, var(--uid-warning) 14%, transparent));
+  color: var(--uid-warning);
+}
+.admin-notifs-page__icon[data-kind='danger'] {
+  background: var(--uid-danger-subtle, color-mix(in srgb, var(--uid-danger) 14%, transparent));
+  color: var(--uid-danger);
+}
 .admin-notifs-page__body {
   flex: 1;
   min-width: 0;

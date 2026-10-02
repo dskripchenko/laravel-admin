@@ -26,7 +26,7 @@ import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
 import { useScreenStore } from '../stores/screen'
-import { normalizeAction, normalizeActions, useActionRunner } from '../composables/useActionRunner'
+import { normalizeAction, normalizeActions, toRouterPath, useActionRunner } from '../composables/useActionRunner'
 import AdminActionButton from './actions/AdminActionButton.vue'
 import AdminActionDialogs from './actions/AdminActionDialogs.vue'
 import { toastError } from '../stores/toast'
@@ -143,9 +143,13 @@ const isReady = computed(() => !screen.loading && resolvedSlug.value !== '')
 
 // An in-panel address goes through the router: a full page load would throw
 // away the screen's state and, on a slow stand, look like the panel restarting.
-const messageLinkIsInternal = computed(
-  () => screen.lastMessageLink?.url?.startsWith('/') ?? false,
-)
+// The panel's base is stripped the same way as for `redirect_url` — the router
+// already prepends it, so `/admin/screens/x` handed over as is would land on
+// `/admin/admin/screens/x`.
+const messageLinkPath = computed<string | null>(() => {
+  const url = screen.lastMessageLink?.url
+  return url ? toRouterPath(router, url) : null
+})
 
 onMounted(async () => {
   if (resolvedSlug.value) {
@@ -161,11 +165,8 @@ watch(
   (url) => {
     if (!url) return
     screen.pendingRedirect = null
-    if (url.startsWith('/') && !url.startsWith('//')) {
-      const base = router.options.history.base.replace(/\/+$/, '')
-      const path = base !== '' && (url === base || url.startsWith(`${base}/`) || url.startsWith(`${base}?`))
-        ? url.slice(base.length) || '/'
-        : url
+    const path = toRouterPath(router, url)
+    if (path !== null) {
       void router.push(path)
     } else if (typeof window !== 'undefined') {
       window.location.assign(url)
@@ -229,9 +230,9 @@ watch(
            person — the job's own page. Without the link the message names a
            place and leaves finding it to the reader. -->
       <router-link
-        v-if="messageLinkIsInternal"
+        v-if="messageLinkPath !== null"
         class="admin-screen-page__alert-link"
-        :to="screen.lastMessageLink!.url"
+        :to="messageLinkPath"
       >
         {{ screen.lastMessageLink!.label }}
       </router-link>

@@ -402,7 +402,7 @@
     "Ошибка": "Error",
     "В очереди…": "Queued…",
     "Выполняется…": "Running…",
-    "Окно можно закрыть — о результате придёт уведомление.": "You can close this window — the result will arrive as a notification.",
+    "Окно можно закрыть — процесс продолжится, а результат появится во всплывающем сообщении.": "You can close this window — the process keeps running, and the result will pop up as a message.",
     "Проверьте заполнение формы.": "Please check the form.",
     "Не удалось выполнить действие.": "The action could not be completed.",
     "Действие «:action» не настроено.": "The action “:action” is not configured.",

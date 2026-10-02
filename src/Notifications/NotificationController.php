@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Notifications;
 
+use Dskripchenko\LaravelAdmin\I18n\Localize;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -245,6 +246,12 @@ final class NotificationController extends ApiController
     }
 
     /**
+     * The text keys the SPA reads a notification's title and body from:
+     * AdminNotification's own and the ones a host notification may use instead.
+     */
+    private const TEXT_KEYS = ['title', 'subject', 'body', 'description', 'message', 'text'];
+
+    /**
      * @return array<string, mixed>
      */
     private static function serialize(DatabaseNotification $n): array
@@ -252,10 +259,58 @@ final class NotificationController extends ApiController
         return [
             'id' => $n->getKey(),
             'type' => (string) $n->getAttribute('type'),
-            'data' => $n->getAttribute('data'),
+            'data' => self::localizeData($n->getAttribute('data')),
             'read_at' => $n->getAttribute('read_at')?->toIso8601String(),
             'created_at' => $n->getAttribute('created_at')?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Translates the stored text into the reader's locale.
+     *
+     * A notification is stored once, in whatever locale was current when it was
+     * sent (usually the source language), and read later by someone who may
+     * have switched the panel's language. So the text is translated here, per
+     * request, through the same JSON dictionaries as every other caption. A
+     * string with no translation comes back as it is — a notification stored
+     * with ready-made text keeps showing it. `params`, when stored, fill the
+     * `:name` placeholders; `{key}_params` (title_params…) take precedence for
+     * that key.
+     */
+    private static function localizeData(mixed $data): mixed
+    {
+        if (! is_array($data)) {
+            return $data;
+        }
+        $shared = self::params($data['params'] ?? null);
+        foreach (self::TEXT_KEYS as $key) {
+            if (isset($data[$key]) && is_string($data[$key])) {
+                $own = self::params($data[$key.'_params'] ?? null);
+                $data[$key] = Localize::string($data[$key], array_merge($shared, $own));
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Only scalar placeholder values: anything else cannot be put into a string.
+     *
+     * @return array<string, string|int|float|bool>
+     */
+    private static function params(mixed $params): array
+    {
+        if (! is_array($params)) {
+            return [];
+        }
+        $out = [];
+        foreach ($params as $name => $value) {
+            if (is_string($name) && is_scalar($value)) {
+                $out[$name] = $value;
+            }
+        }
+
+        return $out;
     }
 
     /**

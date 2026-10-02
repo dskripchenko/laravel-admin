@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { computed, h, ref, watch, type Component } from 'vue'
+import { computed, h, inject, provide, ref, watch, type Component } from 'vue'
 import { useRoute } from 'vue-router'
 import { Box, ChevronRight } from 'lucide-vue-next'
 import { UidIcon, UidSidebarItem } from '@dskripchenko/ui'
 import type { MenuItem } from '../../stores/menu'
 import { resolveIcon } from './iconRegistry'
+import {
+  ACTIVE_MENU_TRAIL,
+  findMenuTrail,
+  injectActiveMenuTrail,
+  MENU_NODE_PATH,
+  pathOnTrail,
+  type RouteLike,
+} from './menuTrail'
 
 interface Props {
   item: MenuItem
@@ -31,26 +39,28 @@ const hasChildren = computed(
 
 const open = ref(false)
 
-function isActive(item: MenuItem): boolean {
-  // An exact match
-  if (item.routeName && route.name === item.routeName) return true
-  if (item.url && route.path === item.url) return true
-  // A prefix match: the list route stays active on the resource's detail
-  // pages — resource.{slug}.list covers .create, .{id}.edit and .{id}.view.
-  if (item.routeName && typeof route.name === 'string') {
-    const base = String(item.routeName).replace(/\.(list|index)$/, '')
-    if (route.name.startsWith(base + '.')) return true
-  }
-  if (item.url && route.path.startsWith(item.url + '/')) return true
-  return false
-}
+/*
+ * The active item is the one findMenuTrail() picks — the same the breadcrumbs
+ * show. Matching each item against the route on its own lit up every copy of
+ * a page linked from two places, and opened both branches. Inside the sidebar
+ * the trail over the whole menu is provided; a node mounted on its own
+ * resolves it over its own subtree and hands it down to its children.
+ */
+const injectedTrail = injectActiveMenuTrail()
+const trail = injectedTrail
+  ?? computed<MenuItem[]>(() => findMenuTrail([props.item], route as unknown as RouteLike))
+if (injectedTrail === null) provide(ACTIVE_MENU_TRAIL, trail)
 
-function containsActive(item: MenuItem): boolean {
-  if (isActive(item)) return true
-  return (item.children ?? []).some(containsActive)
-}
+const parentPath = inject(MENU_NODE_PATH, [])
+// The v-for key is the item's key, so a node keeps its item — and its path.
+const path: string[] = [...parentPath, props.item.key]
+provide(MENU_NODE_PATH, path)
 
-const groupActive = computed(() => containsActive(props.item))
+/** This node is the page's own item. */
+const isActive = computed(() => pathOnTrail(path, trail.value, true))
+
+/** This node is the page's item or one of its parents. */
+const groupActive = computed(() => pathOnTrail(path, trail.value))
 
 watch(
   () => groupActive.value,
@@ -138,7 +148,7 @@ function toggle(): void {
       class="admin-sidebar-node__leaf"
       :data-testid="`menu-${item.key}`"
       :to="itemTarget"
-      :active="isActive(item)"
+      :active="isActive"
       :badge="item.badge ?? undefined"
       :title="collapsed ? item.label : undefined"
     >

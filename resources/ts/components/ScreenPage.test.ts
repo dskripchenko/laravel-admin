@@ -171,3 +171,83 @@ describe('ScreenPage query string', () => {
     wrapper.unmount()
   })
 })
+
+describe('ScreenPage links under a panel base', () => {
+  let mock: MockAdapter
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    const c = createAdminClient({ baseURL: 'http://api.test' })
+    setAdminClient(c)
+    mock = new MockAdapter(c.raw)
+    mock.onGet('/stats/state').reply(200, {
+      success: true,
+      payload: {
+        state: {},
+        name: 'Статистика',
+        description: null,
+        layout: [],
+        command_bar: [
+          { kind: 'action', name: 'go', label: 'Go', type: 'button', position: ['command_bar'], confirm: null, attributes: { method: 'go' } },
+        ],
+        permissions: [],
+        etag: 'e1',
+      },
+    })
+  })
+
+  afterEach(() => {
+    mock.reset()
+    clearAdminClient()
+  })
+
+  async function mountUnderBase() {
+    const router = createRouter({
+      history: createMemoryHistory('/admin'),
+      routes: [
+        { path: '/s/:slug', component: Stub },
+        { path: '/screens/:slug', component: Stub },
+      ],
+    })
+    await router.push('/s/stats')
+    await router.isReady()
+    const wrapper = mount(ScreenPage, {
+      props: { slug: 'stats' },
+      global: { plugins: [router] },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    return { wrapper, router }
+  }
+
+  it('strips the panel prefix from message_link — no /admin/admin/…', async () => {
+    mock.onPost('/stats/runMethod').reply(200, {
+      success: true,
+      payload: { message: 'Запущено', message_link: { url: '/admin/screens/jobs', label: 'Открыть' } },
+    })
+    const { wrapper, router } = await mountUnderBase()
+
+    await wrapper.find('[data-testid="action-go"]').trigger('click')
+    await flushPromises()
+    const link = wrapper.find('.admin-screen-page__alert-link')
+    expect(link.attributes('href')).toBe('/admin/screens/jobs')
+
+    await link.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/screens/jobs')
+    wrapper.unmount()
+  })
+
+  it('strips the panel prefix from redirect_url the same way', async () => {
+    mock.onPost('/stats/runMethod').reply(200, {
+      success: true,
+      payload: { redirect_url: '/admin/screens/jobs' },
+    })
+    const { wrapper, router } = await mountUnderBase()
+
+    await wrapper.find('[data-testid="action-go"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/screens/jobs')
+    wrapper.unmount()
+  })
+})

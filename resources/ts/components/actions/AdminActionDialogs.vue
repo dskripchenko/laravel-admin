@@ -121,8 +121,11 @@ const asyncStatusLabel = computed<string>(() => {
       <UidAlert v-if="runner.asyncState.error" variant="danger">
         {{ runner.asyncState.error }}
       </UidAlert>
+      <!-- The result is a toast on this page (see useActionRunner.runAsync), not
+           an entry in the notification centre: the process is polled from the
+           browser, and nothing on the server records it as a notification. -->
       <p v-else-if="!runner.asyncState.finished" class="admin-action-async__hint">
-        {{ tr('Окно можно закрыть — о результате придёт уведомление.') }}
+        {{ tr('Окно можно закрыть — процесс продолжится, а результат появится во всплывающем сообщении.') }}
       </p>
     </div>
     <template #footer>

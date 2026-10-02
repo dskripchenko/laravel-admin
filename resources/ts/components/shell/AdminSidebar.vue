@@ -11,11 +11,12 @@
  * and the docs link, following
  * docs/design_handoff_laravel_admin/screens-shell.jsx (Sidebar).
  */
-import { computed } from 'vue'
+import { computed, provide } from 'vue'
 import { UidSidebar, UidSidebarGroup, UidSkeleton } from '@dskripchenko/ui'
 import { useMenuStore } from '../../stores/menu'
 import { useAppReady } from '../../composables/useAppReady'
 import AdminSidebarNode from './AdminSidebarNode.vue'
+import { ACTIVE_MENU_TRAIL, useActiveMenuTrail } from './menuTrail'
 import BrandLogo from './BrandLogo.vue'
 
 interface Props {
@@ -50,6 +51,10 @@ withDefaults(defineProps<Props>(), {
 })
 
 const menu = useMenuStore()
+
+// One active trail for every node, resolved over the whole menu: the same
+// item the breadcrumbs name (see menuTrail.ts).
+provide(ACTIVE_MENU_TRAIL, useActiveMenuTrail())
 
 const groups = computed(() => menu.groupedItems)
 

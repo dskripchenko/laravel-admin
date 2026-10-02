@@ -25,6 +25,16 @@ use InvalidArgumentException;
  * notification with a colour and an icon to match, and the url opens a page
  * when clicked.
  *
+ * The title and the body are stored as source strings and translated when
+ * they are read, into the reader's locale (see NotificationController). The
+ * variable parts go into `params`, so the stored text stays a translation key:
+ *
+ *     new AdminNotification(
+ *         title: 'Импорт завершён',
+ *         body: 'Импортировано записей: :count',
+ *         params: ['count' => 1234],
+ *     );
+ *
  * It can be extended for domain-specific notifications, with their own
  * channels and via() configuration.
  */
@@ -40,6 +50,8 @@ class AdminNotification extends Notification implements ShouldQueue
         public readonly string $level = 'info',
         public readonly ?string $url = null,
         public readonly ?string $icon = null,
+        /** @var array<string, scalar|null> `:name` placeholders of the title and the body */
+        public readonly array $params = [],
     ) {
         if (! in_array($this->level, self::LEVELS, true)) {
             throw new InvalidArgumentException(
@@ -61,12 +73,21 @@ class AdminNotification extends Notification implements ShouldQueue
      */
     public function toArray(mixed $notifiable): array
     {
-        return [
+        $data = [
             'title' => $this->title,
             'body' => $this->body,
             'level' => $this->level,
             'url' => $this->url,
             'icon' => $this->icon,
         ];
+        // `??`: a notification queued by a version without params comes back
+        // from the queue with the property uninitialized. Stored only when
+        // given, so a notification without them keeps its old shape.
+        $params = $this->params ?? []; // @phpstan-ignore nullCoalesce.property
+        if ($params !== []) {
+            $data['params'] = $params;
+        }
+
+        return $data;
     }
 }

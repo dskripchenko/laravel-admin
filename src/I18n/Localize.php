@@ -31,7 +31,10 @@ final class Localize
         return $brand;
     }
 
-    public static function string(?string $value): ?string
+    /**
+     * @param  array<string, mixed>  $replace  `:name` placeholders, as for __()
+     */
+    public static function string(?string $value, array $replace = []): ?string
     {
         if ($value === null || $value === '') {
             return $value;
@@ -40,7 +43,7 @@ final class Localize
         // A source string that happens to match a translation group name
         // ("Auth", "Validation"…) resolves to that group's array: only a
         // string result counts as a translation.
-        $translated = __($value);
+        $translated = __($value, $replace);
 
         return is_string($translated) ? $translated : $value;
     }

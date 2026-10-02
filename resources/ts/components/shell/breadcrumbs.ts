@@ -1,9 +1,9 @@
 /**
  * The top bar's breadcrumbs, derived from where the visitor is.
  *
- * The trail is the sidebar's: the menu item that matches the route — the way
- * AdminSidebarNode marks its active item — preceded by its group and its
- * parent items. A resource route adds what lies below the list: the record
+ * The trail is the sidebar's: the menu item that matches the route — the very
+ * one AdminSidebarNode marks active, through the shared findMenuTrail() —
+ * preceded by its group and its parent items. A resource route adds what lies below the list: the record
  * (named by its title, name or label, else #id) and "Editing" or "Creating".
  * A page the menu does not hold is named by its own title.
  *
@@ -11,57 +11,19 @@
  */
 import { computed, type ComputedRef } from 'vue'
 import { useRoute, type RouteLocationRaw } from 'vue-router'
-import { useMenuStore, type MenuItem } from '../../stores/menu'
+import type { MenuItem } from '../../stores/menu'
 import { useManifestStore } from '../../stores/manifest'
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { trSafe as tr } from '../../stores/i18n'
+import { findMenuTrail, menuMatchScore, useActiveMenuTrail, type RouteLike } from './menuTrail'
 
 export interface Crumb {
   label: string
   to?: RouteLocationRaw | null
 }
 
-interface RouteLike {
-  name?: unknown
-  path: string
-  params: Record<string, unknown>
-  meta: Record<string, unknown>
-}
-
-/** How well a menu item matches the route: 0 is no match, an exact one beats a prefix. */
-export function menuMatchScore(item: MenuItem, route: RouteLike): number {
-  const name = typeof route.name === 'string' ? route.name : ''
-  if (item.routeName && name === item.routeName) return 10_000
-  if (item.url && route.path === item.url) return 10_000
-  if (item.routeName && name !== '') {
-    const base = String(item.routeName).replace(/\.(list|index)$/, '')
-    if (name.startsWith(base + '.')) return 1_000 + base.length
-  }
-  if (item.url && route.path.startsWith(item.url + '/')) return 1_000 + item.url.length
-  return 0
-}
-
-/**
- * The best-matching menu item with the chain of its parents, outermost first.
- * When several items lead to the same page, the shallowest one wins, then the
- * first in menu order.
- */
-export function findMenuTrail(items: MenuItem[], route: RouteLike): MenuItem[] {
-  let best: MenuItem[] = []
-  let bestScore = 0
-  const walk = (list: MenuItem[], parents: MenuItem[]): void => {
-    for (const item of list) {
-      const score = menuMatchScore(item, route)
-      if (score > bestScore || (score > 0 && score === bestScore && parents.length + 1 < best.length)) {
-        bestScore = score
-        best = [...parents, item]
-      }
-      if (item.children?.length) walk(item.children, [...parents, item])
-    }
-  }
-  walk(items, [])
-  return best
-}
+// The trail is shared with the sidebar: one rule for both (see menuTrail.ts).
+export { findMenuTrail, menuMatchScore }
 
 function itemTarget(item: MenuItem): RouteLocationRaw | null {
   if (item.routeName) return { name: item.routeName }
@@ -80,7 +42,7 @@ function recordLabel(record: Record<string, unknown>, id: string): string {
 
 export function useBreadcrumbs(): ComputedRef<Crumb[]> {
   const route = useRoute()
-  const menu = useMenuStore()
+  const activeTrail = useActiveMenuTrail()
   const manifest = useManifestStore()
   const form = useResourceFormStore()
 
@@ -89,7 +51,7 @@ export function useBreadcrumbs(): ComputedRef<Crumb[]> {
     const name = typeof r.name === 'string' ? r.name : ''
     const kind = r.meta.kind
     const slug = typeof r.meta.slug === 'string' ? r.meta.slug : ''
-    const trail = findMenuTrail(menu.visibleItems, r)
+    const trail = activeTrail.value
     const crumbs: Crumb[] = []
 
     const group = trail[0]?.group
