@@ -5,6 +5,20 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **Side-by-side columns touched each other.** Grids on their default gap
+  (`Layout::columns()`, dashboards) rendered with no gap in the browser: the
+  UI kit's `UidGrid` cleared the `gap` shorthand while writing the unset
+  row/column gaps. Requires `@dskripchenko/ui` ^1.6.2, which writes the gaps
+  as longhands.
+- **Raw node keys no longer leak onto layout elements.** The backend's
+  `children` and `props` keys of a layout node are passed only to a layout
+  that declares them; before, they fell through to the root element as a
+  `props=""` attribute and an attempt to set the read-only DOM `children`.
+
 ## 1.42.0
 
 ### Added

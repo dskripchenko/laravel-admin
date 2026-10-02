@@ -21,6 +21,22 @@ describe('LayoutRenderer', () => {
     registerBuiltinComponents()
   })
 
+  it('does not fall the raw backend `children`/`props` through to the root element', () => {
+    const kids = [
+      { kind: 'layout', type: 'markdown', content: 'a' },
+      { kind: 'layout', type: 'markdown', content: 'b' },
+    ]
+    const wrapper = mount(Wrapper, {
+      props: {
+        node: { id: 'l-1', kind: 'layout', type: 'columns', props: [], children: kids, items: kids },
+      },
+    })
+    const grid = wrapper.find('.uid-grid')
+    expect(grid.attributes('props')).toBeUndefined()
+    expect(grid.attributes('children')).toBeUndefined()
+    expect(grid.attributes('style')).toContain('gap: var(--uid-space-md)')
+  })
+
   it('renders rows-layout (UidStack) с дочерними field-узлами', () => {
     const wrapper = mount(Wrapper, {
       props: {

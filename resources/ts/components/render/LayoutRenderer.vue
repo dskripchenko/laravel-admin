@@ -47,8 +47,30 @@ const resolved = computed<Resolved>(() => {
   return { kind: 'unknown' }
 })
 
+/**
+ * Keys of the raw backend node that are not meant as attributes: the original
+ * `children` (aliased to `items` by the screen store) and the unpacked `props`
+ * bag. They are only passed to a layout that declares them as props; as
+ * fallthrough attributes they reach the root element, and setting the
+ * read-only DOM `children` throws in the browser and aborts the rest of the
+ * patch (the grid lost its `gap` style).
+ */
+const RAW_NODE_KEYS = ['children', 'props'] as const
+
+function declaredProps(component: unknown): Set<string> {
+  const declared = (component as { props?: unknown } | null)?.props
+  if (Array.isArray(declared)) return new Set(declared as string[])
+  if (declared && typeof declared === 'object') return new Set(Object.keys(declared))
+  return new Set()
+}
+
 const layoutProps = computed(() => {
   const { type: _type, kind: _kind, ...rest } = props.node
+  const resolvedNow = resolved.value
+  const declared = resolvedNow.kind === 'layout' ? declaredProps(resolvedNow.component) : new Set<string>()
+  for (const key of RAW_NODE_KEYS) {
+    if (key in rest && !declared.has(key)) delete (rest as Record<string, unknown>)[key]
+  }
   return rest
 })
 
