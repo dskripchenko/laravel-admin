@@ -37,7 +37,7 @@ Button::make('Publish')
     ->primary()                           // visual variant
     ->destructive()                       // red variant
     ->confirm('Publish this article?')    // confirmation prompt
-    ->permission('admin.articles.update') // permission key, sent with the action
+    ->permission('admin.articles.update') // required to see and to run it
     ->position(['command_bar', 'row'])    // where to show
     ->canSee(fn () => auth()->user()?->is_publisher)
     ->withName('publish-action');         // unique key
@@ -48,9 +48,21 @@ Button::make('Publish')
 которое вычисляется один раз при сериализации схемы, — это не условие
 для отдельной строки.
 
-`permission()` публикуется вместе со схемой action'а, но сервер сам его не
-проверяет. Эндпоинт `action` ресурса требует права `.view` ресурса, так что
-более строгое правило проверяйте в методе (`$user->hasAccess(...)`).
+`permission()` и `canSee()` проверяются на сервере. Action, на который у
+пользователя нет права (или чей `canSee()` ложен), не попадает ни в
+`actions` ресурса в манифесте, ни в командную панель и layout экрана; то же
+относится к пунктам выпадающего меню, которые он закрывает. Попытка
+выполнить его всё равно отклоняется ответом `403` с
+`errorKey: action_forbidden`:
+
+- эндпоинт `action` ресурса — для row-, bulk-, header-, standalone- и
+  modal-action'ов и для пунктов `DropDown` (право самого меню закрывает все
+  его пункты);
+- `runMethod` экрана — для метода, который вызывает `Button` или
+  `ModalAction` из командной панели или layout'а; метод, который не назван
+  ни в одном action'е, защищён только `permission()` экрана;
+- `delayed/run` — для обработчика, который запускает `AsyncAction` с правом
+  (см. ниже).
 
 ## Позиции
 
@@ -140,6 +152,8 @@ public function setPrice(array $ids, array $payload): int
 ```php
 // AppServiceProvider::boot(AllowlistRegistrar $allowlist)
 $allowlist->allow(\App\Jobs\ReindexSearch::class, 'handle');
+// или с правом, без которого его не запустить:
+$allowlist->allow(\App\Jobs\ReindexSearch::class, 'handle', 'admin.search.reindex');
 
 AsyncAction::make('Re-index search')
     ->handler(\App\Jobs\ReindexSearch::class, 'handle')
@@ -149,7 +163,10 @@ AsyncAction::make('Re-index search')
 
 Обработчик должен быть разрешён в
 `Dskripchenko\LaravelAdmin\DelayedProcess\AllowlistRegistrar` парой
-`entity::method`, иначе SPA не сможет его запустить. SPA стартует процесс
+`entity::method`, иначе SPA не сможет его запустить. `delayed/run` требует
+право, переданное в `allow()`, а если обработчик запускают `AsyncAction`'ы
+из `actions()` ресурсов или командных панелей экранов, пользователю должен
+быть доступен хотя бы один из них. SPA стартует процесс
 через `/api/admin/delayed/run` и опрашивает
 `/api/admin/delayed/status?uuid=...` до завершения, показывая модалку с
 прогрессом. В позиции `row`/`bulk` выбранные ключи добавляются в параметры

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Screen;
 
+use Dskripchenko\LaravelAdmin\Action\ActionLocator;
 use Dskripchenko\LaravelAdmin\I18n\Localize;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Dskripchenko\LaravelApi\Facades\ApiRequest;
@@ -75,6 +76,7 @@ final class ScreenController extends ApiController
      * @security AdminSession
      *
      * @response 200 {ScreenMethodResponse}
+     * @response 403 {ForbiddenErrorResponse} An action that calls the method requires a permission the user lacks
      * @response 422 {ValidationErrorResponse}
      */
     public function runMethod(Request $request): JsonResponse
@@ -96,6 +98,15 @@ final class ScreenController extends ApiController
                 'errorKey' => 'screen_method_not_callable',
                 'message' => "Method `{$method}` is not callable on screen `".$screen::slug().'`',
             ], Response::HTTP_NOT_FOUND);
+        }
+
+        // A method bound to a button with a permission() or a canSee() runs
+        // only for the users that button is shown to. A method no action
+        // names stays callable as before: the screen's own permission and the
+        // method's own checks guard it.
+        $declared = ActionLocator::byMethod([...$screen->commandBar(), ...$screen->layout()], $method);
+        if (! ActionLocator::permits($declared)) {
+            return $this->error(ActionLocator::forbidden($declared), Response::HTTP_FORBIDDEN);
         }
 
         $args = self::resolveArguments($request);

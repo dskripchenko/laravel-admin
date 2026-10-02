@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Resource;
 
 use Dskripchenko\LaravelAdmin\Action\Action;
-use Dskripchenko\LaravelAdmin\Action\DropDown;
+use Dskripchenko\LaravelAdmin\Action\ActionLocator;
 use Dskripchenko\LaravelAdmin\Action\ModalAction;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
 use Dskripchenko\LaravelAdmin\Filter\HttpFilterParser;
@@ -829,6 +829,7 @@ final class ResourceController extends ApiController
      * @security AdminSession
      *
      * @response 200 {AffectedResponse}
+     * @response 403 {ForbiddenErrorResponse} The user lacks the action's permission, or its canSee() is false
      * @response 404 {NotFoundErrorResponse} The resource declares no such action
      * @response 422 {ValidationErrorResponse}
      * @response 501 The action is declared and the resource has no method for it
@@ -847,13 +848,19 @@ final class ResourceController extends ApiController
 
         // Find the action whose name equals $actionKey among Resource->actions(),
         // including the ones nested in a DropDown.
-        $action = self::findAction($resource->actions(), $actionKey);
-        if ($action === null) {
+        $found = ActionLocator::byName($resource->actions(), $actionKey);
+        if ($found === null) {
             return $this->error([
                 'errorKey' => 'unknown_action',
                 'message' => "Action `{$actionKey}` not declared on resource",
             ], 404);
         }
+        // Its permission() and canSee() hide it from the user's panel; a
+        // request that names it anyway is refused here, not merely unseen.
+        if (! $found['allowed']) {
+            return $this->error(ActionLocator::forbidden([$found]), 403);
+        }
+        $action = $found['action'];
 
         // An action that applies to records cannot run on none of them.
         if ($action->requiresSelection()) {
@@ -906,26 +913,6 @@ final class ResourceController extends ApiController
             'affected' => is_int($result) ? $result : count($ids),
             'message' => 'Action `'.$actionKey.'` applied',
         ]);
-    }
-
-    /**
-     * @param  array<int, Action>  $actions
-     */
-    private static function findAction(array $actions, string $key): ?Action
-    {
-        foreach ($actions as $action) {
-            if ($action->name() === $key) {
-                return $action;
-            }
-            if ($action instanceof DropDown) {
-                $nested = self::findAction($action->getItems(), $key);
-                if ($nested !== null) {
-                    return $nested;
-                }
-            }
-        }
-
-        return null;
     }
 
     /**

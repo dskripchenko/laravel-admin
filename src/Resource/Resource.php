@@ -450,7 +450,12 @@ abstract class Resource
             // Default — a TextEntry per field, see Resource::infolist.
             'infolist' => array_map(static fn (Entry $e): array => $e->toArray(), $this->infolist()),
             'filters' => $this->compiledFilters(),
-            'actions' => array_map(static fn (Action $a): array => $a->toArray(), $this->actions()),
+            // Only what the user may run: canSee() and permission() leave an
+            // action out here, and ResourceController::action refuses it.
+            'actions' => array_map(
+                static fn (Action $a): array => $a->toArray(),
+                array_values(array_filter($this->actions(), static fn (Action $a): bool => $a->isVisible())),
+            ),
             'searchable' => $this->searchableFields(),
             'with' => $this->with(),
             'view_mode' => $this->viewMode(),

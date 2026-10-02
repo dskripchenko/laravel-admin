@@ -6,6 +6,14 @@ namespace Dskripchenko\LaravelAdmin\DelayedProcess;
 
 use Dskripchenko\DelayedProcess\Contracts\ProcessFactoryInterface;
 use Dskripchenko\DelayedProcess\Models\DelayedProcess;
+use Dskripchenko\LaravelAdmin\Action\Action;
+use Dskripchenko\LaravelAdmin\Action\ActionLocator;
+use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
+use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
+use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
+use Dskripchenko\LaravelAdmin\Screen\Screen;
+use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
+use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +23,8 @@ use Illuminate\Http\Request;
  *
  * The endpoints:
  *   - run(entity, method, params?) creates a DelayedProcess, validating it
- *     against AllowlistRegistrar.
+ *     against AllowlistRegistrar and against the permissions of the async
+ *     actions that start the handler.
  *   - status(uuid) returns the process's current state: status, progress, data
  *     and error.
  */
@@ -38,7 +47,7 @@ final class DelayedProcessController extends ApiController
      * @security AdminSession
      *
      * @response 200 {DelayedProcessRunResponse}
-     * @response 403 {ForbiddenErrorResponse}
+     * @response 403 {ForbiddenErrorResponse} The handler is not allowlisted, or the user lacks a permission it requires
      * @response 422 {ValidationErrorResponse}
      */
     public function run(Request $request, ProcessFactoryInterface $factory): JsonResponse
@@ -55,6 +64,21 @@ final class DelayedProcessController extends ApiController
                 'errorKey' => 'forbidden',
                 'message' => 'This async handler is not allowlisted',
             ], 403);
+        }
+
+        // The permission the pair was allowlisted with, then the actions that
+        // start it: an AsyncAction with a permission() or a canSee() is a
+        // promise that only the users it is shown to can start its handler.
+        $missing = PermissionCheck::firstMissing($this->allowlist->permissionsFor($data['entity'], $data['method']));
+        if ($missing !== null) {
+            return $this->error([
+                'errorKey' => 'action_forbidden',
+                'message' => __('Доступ запрещён: :permission', ['permission' => $missing]),
+            ], 403);
+        }
+        $declared = ActionLocator::byAsyncHandler(self::declaredActions(), $data['entity'], $data['method']);
+        if (! ActionLocator::permits($declared)) {
+            return $this->error(ActionLocator::forbidden($declared), 403);
         }
 
         $params = (array) ($data['params'] ?? []);
@@ -76,6 +100,42 @@ final class DelayedProcessController extends ApiController
             'uuid' => $process->uuid,
             'status' => $process->status->value,
         ]);
+    }
+
+    /**
+     * The actions every registered resource and custom screen declares: the
+     * resources' actions() and the screens' command bars, where async actions
+     * live. A screen whose command bar cannot be built outside its own page
+     * is skipped; allowlist the handler with a permission to cover it.
+     *
+     * @return list<Action>
+     */
+    private static function declaredActions(): array
+    {
+        $actions = [];
+
+        $resources = app(ResourceRegistry::class);
+        foreach (array_keys($resources->all()) as $slug) {
+            $resource = $resources->resolve($slug);
+            if ($resource !== null) {
+                array_push($actions, ...$resource->actions());
+            }
+        }
+
+        foreach (app(ScreenRegistry::class)->all() as $class) {
+            if (is_subclass_of($class, GeneratedScreen::class) || is_subclass_of($class, DashboardScreen::class)) {
+                continue;
+            }
+            try {
+                /** @var Screen $screen */
+                $screen = app($class);
+                array_push($actions, ...$screen->commandBar());
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return $actions;
     }
 
     /**

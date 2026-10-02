@@ -18,6 +18,16 @@ beforeEach(function (): void {
             $t->timestamps();
         });
     }
+
+    // The command bars hold actions with permissions; a super administrator
+    // sees all of them.
+    $admin = Dskripchenko\LaravelAdmin\Models\AdminUser::create([
+        'name' => 'Super', 'email' => 'super-'.uniqid().'@example.com', 'password' => 'secret',
+    ]);
+    $admin->assignRole(Dskripchenko\LaravelAdmin\Permission\Models\Role::create([
+        'name' => 'Super', 'slug' => 'super-'.uniqid(), 'permissions' => ['*'],
+    ]));
+    $this->actingAs($admin->refresh(), 'admin');
 });
 
 it('GeneratedListScreen compile() returns generated.list type + columns/filters', function (): void {
