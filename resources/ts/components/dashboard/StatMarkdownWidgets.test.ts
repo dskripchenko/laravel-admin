@@ -56,7 +56,7 @@ describe('MarkdownWidget', () => {
 
 describe('StatWidget number formatting follows the panel locale', () => {
   const stats = [
-    { label: 'Revenue', value: 1591285, format: { style: 'currency', currency: 'USD', decimals: 0 } },
+    { label: 'Revenue', value: 1591285, format: { style: 'currency' as const, currency: 'USD', decimals: 0 } },
     { label: 'Orders', value: 1681 },
     { label: 'Per order', value: 2.5, precision: 1 },
   ]
