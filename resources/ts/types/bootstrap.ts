@@ -14,6 +14,25 @@ export interface AdminUser {
   locale: string | null
   theme: string | null
   twoFactorEnabled: boolean
+  /**
+   * Whether this user must have 2FA on (admin.auth.two_factor.enforce_for);
+   * until they enable it the panel keeps them on the profile.
+   */
+  twoFactorRequired?: boolean
+}
+
+/** One "Sign in as …" button of demo mode (admin.demo.accounts). */
+export interface AdminDemoAccount {
+  label: string
+  email: string
+  password: string
+  description?: string | null
+}
+
+/** Demo mode (admin.demo); the bootstrap carries null when it is off. */
+export interface AdminDemo {
+  readonly: boolean
+  accounts: AdminDemoAccount[]
 }
 
 export interface AdminBrand {
@@ -32,6 +51,8 @@ export interface AdminBrand {
 export interface AdminBootstrapConfig {
   manifest: { etag: boolean }
   bootstrap: { strategy: 'inline' | 'xhr' }
+  /** admin.auth.two_factor.enabled; older backends do not send it. */
+  twoFactor?: { enabled: boolean }
 }
 
 export interface AdminBootstrap {
@@ -51,6 +72,8 @@ export interface AdminBootstrap {
   plugins: string[]
   unread_notifications_count: number
   config: AdminBootstrapConfig
+  /** Demo mode; null or absent when it is off. */
+  demo?: AdminDemo | null
 }
 
 declare global {

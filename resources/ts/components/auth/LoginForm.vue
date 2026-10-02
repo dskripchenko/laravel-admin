@@ -8,7 +8,8 @@ import { computed, ref } from 'vue'
 import { UidAlert, UidButton, UidCheckbox, UidInput } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { ApiError, NetworkError, ValidationError } from '../../api/errors'
-import { trSafe as tr } from '../../stores/i18n'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
+import type { AdminDemoAccount } from '../../types/bootstrap'
 
 interface Props {
   /** The "Forgot your password?" URL; when set, a link appears to the right of remember. */
@@ -40,6 +41,16 @@ const fieldErrors = ref<Record<string, string[]>>({})
 
 const emailError = computed<string | undefined>(() => fieldErrors.value.email?.[0])
 const passwordError = computed<string | undefined>(() => fieldErrors.value.password?.[0])
+
+// Demo mode (admin.demo.accounts): one click signs in as a demo account,
+// through the same login request as the form.
+const demoAccounts = computed<AdminDemoAccount[]>(() => auth.demo?.accounts ?? [])
+
+function signInAs(account: AdminDemoAccount): void {
+  email.value = account.email
+  password.value = account.password
+  void submit()
+}
 
 async function submit(): Promise<void> {
   if (submitting.value) return
@@ -134,6 +145,23 @@ async function submit(): Promise<void> {
       {{ submitting ? tr('Вход…') : tr('Войти') }}
     </UidButton>
 
+    <div v-if="demoAccounts.length > 0" class="admin-auth-demo" data-testid="login-demo">
+      <div class="admin-auth-demo__title">{{ tr('Демо-доступ') }}</div>
+      <UidButton
+        v-for="account in demoAccounts"
+        :key="account.email"
+        type="button"
+        variant="secondary"
+        class="admin-auth-demo__account"
+        :disabled="submitting"
+        :data-testid="`login-demo-${account.email}`"
+        @click="signInAs(account)"
+      >
+        <span class="admin-auth-demo__label">{{ tRaw('Войти как :name', { name: account.label }) }}</span>
+        <span v-if="account.description" class="admin-auth-demo__description">{{ account.description }}</span>
+      </UidButton>
+    </div>
+
     <div
       v-if="ssoLinkLabel && ssoUrl"
       style="text-align: center; font-size: var(--uid-font-size-xs); color: var(--uid-text-secondary); padding-top: 4px;"
@@ -143,3 +171,37 @@ async function submit(): Promise<void> {
     </div>
   </form>
 </template>
+
+<style>
+.admin-auth-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-xs, 6px);
+  padding-top: var(--uid-space-sm, 8px);
+  border-top: 1px solid var(--uid-border-subtle);
+}
+.admin-auth-demo__title {
+  font-size: var(--uid-font-size-xs);
+  color: var(--uid-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-auth-demo__account.uid-button {
+  height: auto;
+  min-height: var(--uid-size-lg, 40px);
+  padding-top: var(--uid-space-xs, 6px);
+  padding-bottom: var(--uid-space-xs, 6px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  white-space: normal;
+  text-align: left;
+}
+.admin-auth-demo__label { font-weight: var(--uid-font-weight-medium); }
+.admin-auth-demo__description {
+  font-size: var(--uid-font-size-xs);
+  color: var(--uid-text-secondary);
+  font-weight: normal;
+  line-height: 1.3;
+}
+</style>

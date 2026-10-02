@@ -13,4 +13,4 @@
 /phpstan.neon          export-ignore
 /pint.json             export-ignore
 /tests                 export-ignore
-/docs                  export-ignore
+/docs/internal         export-ignore

@@ -234,6 +234,8 @@ class AdminApi extends BaseApi
                 // plus dashboard polling and e2e — so the default is 240.
                 \Illuminate\Routing\Middleware\ThrottleRequests::class.':'
                     .(string) config('admin.api.throttle', '240,1'),
+                // Demo mode's read-only guard; a no-op unless admin.demo is on.
+                Middleware\DemoReadonly::class,
             ],
             'controllers' => $controllers,
         ];

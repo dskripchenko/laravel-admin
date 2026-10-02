@@ -99,6 +99,11 @@ found by its key, and the resource method is called as
 its own row as a one-element list. An integer return value is reported as
 the number of affected records (otherwise `count($ids)`).
 
+The method may also answer with a `string` — the message for the toast — or
+an array with either: `['message' => 'Sent to 12 subscribers', 'affected' => 12]`.
+With no message the panel says that the action was applied. Throw
+`ActionFailedException('...')` to refuse with a reason (422).
+
 ## Screen commandBar
 
 ```php

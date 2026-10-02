@@ -261,6 +261,12 @@ trait AdminApiSystemSchemas
                 'manifestVersion' => 'string',
                 'pluginVersions' => 'object!',                       // id => version
                 'config' => 'object!',
+                'demo' => '@DemoConfig',
+            ],
+            // Demo mode (admin.demo); null when it is off.
+            'DemoConfig' => [
+                'readonly' => 'boolean!',
+                'accounts' => 'array!',                           // {label, email, password, description}[]
             ],
             'BrandConfig' => [
                 'name' => 'string!',
@@ -465,6 +471,9 @@ trait AdminApiSystemSchemas
                 'secret' => 'string',
                 'qr_uri' => 'string',
                 'recovery_codes' => 'array',                         // string[]
+                'recovery_codes_remaining' => 'integer',
+                'available' => 'boolean',                            // admin.auth.two_factor.enabled
+                'required' => 'boolean',                             // admin.auth.two_factor.enforce_for
             ],
 
             'TwoFactorSetupResponse' => [

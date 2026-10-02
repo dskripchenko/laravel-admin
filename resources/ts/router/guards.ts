@@ -6,7 +6,9 @@
  *      /login with ?redirect=...
  *   2. When the user has a pendingChallenge (2FA), every protected route
  *      redirects to /login, where the challenge form lives.
- *   3. When route.meta.permissions is set, hasAnyPermission() decides; none of
+ *   3. A user who must enable 2FA (twoFactorRequired) and has not is kept on
+ *      the profile's security section.
+ *   4. When route.meta.permissions is set, hasAnyPermission() decides; none of
  *      them means /forbidden (or the route named 'admin.forbidden').
  *
  * The guards use useAuthStore but never touch the client directly: everything
@@ -42,6 +44,11 @@ export interface AuthGuardOptions {
    * the login; 'redirect' by default.
    */
   redirectQueryKey?: string
+  /**
+   * The profile route, where a user who must enable 2FA is kept until they do;
+   * 'admin.profile' by default.
+   */
+  profileRouteName?: string
 }
 
 /**
@@ -53,6 +60,7 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
   const loginRouteName = opts.loginRouteName ?? 'admin.login'
   const forbiddenRouteName = opts.forbiddenRouteName ?? 'admin.forbidden'
   const redirectQueryKey = opts.redirectQueryKey ?? 'redirect'
+  const profileRouteName = opts.profileRouteName ?? 'admin.profile'
 
   return (to: RouteLocationNormalized) => {
     // The login route is always reachable.
@@ -76,6 +84,12 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
         name: loginRouteName,
         query: { [redirectQueryKey]: to.fullPath },
       }
+    }
+
+    // admin.auth.two_factor.enforce_for: the profile, where 2FA is set up, is
+    // the only page open until it is on.
+    if (requiresAuth && auth.needsTwoFactorSetup && to.name !== profileRouteName) {
+      return { name: profileRouteName, query: { section: 'security' } }
     }
 
     // The permission check, with ANY semantics: one match is enough.

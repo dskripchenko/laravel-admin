@@ -216,3 +216,21 @@ it('a bulk action without ids is a 422', function (): void {
     $response->assertStatus(422);
     expect($response->json('payload.messages'))->toHaveKey('ids');
 });
+
+it('action endpoint returns the message and count the method answered with', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A']);
+
+    $response = $this->postJson('/api/admin/test-actions/action', ['key' => 'announce', 'ids' => [$a->id]]);
+
+    $response->assertOk()
+        ->assertJsonPath('payload.message', 'Announced to 1 records')
+        ->assertJsonPath('payload.affected', 7);
+});
+
+it('action endpoint falls back to the generic message', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A']);
+
+    $this->postJson('/api/admin/test-actions/action', ['key' => 'archive', 'ids' => [$a->id]])
+        ->assertOk()
+        ->assertJsonPath('payload.message', 'Action `archive` applied');
+});
