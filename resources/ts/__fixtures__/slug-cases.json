@@ -1,0 +1,33 @@
+{
+  "_comment": "Shared cases for Slug::generate() (PHP) and slugify() (TS): [source, separator, expected].",
+  "cases": [
+    ["Hello World!", "-", "hello-world"],
+    ["Привет, мир!", "-", "privet-mir"],
+    ["Щука, ёж и Йошкар-Ола", "-", "shchuka-yozh-i-yoshkar-ola"],
+    ["Съезд ЦЮЯ: хочу чай", "-", "sezd-tsyuya-khochu-chay"],
+    ["ЖЭКа Ёлка", "-", "zheka-yolka"],
+    ["Їжак, ґанок, є і", "-", "yizhak-ganok-ye-i"],
+    ["Ўсё добра", "-", "usyo-dobra"],
+    ["Ђорђе Љубић Џеп", "-", "djordje-ljubic-dzep"],
+    ["Қазақстан Өскемен", "-", "qazaqstan-oskemen"],
+    ["Ελληνικά κείμενα", "-", "ellinika-keimena"],
+    ["ΣΟΦΙΑ", "-", "sofia"],
+    ["Beyoncé Knowles — Übergröße straße", "-", "beyonce-knowles-ubergrosse-strasse"],
+    ["Ça va? Øre Åse Łódź", "-", "ca-va-ore-ase-lodz"],
+    ["ğüşıöç İstanbul", "-", "gusioc-istanbul"],
+    ["Ærø Œuvre Þing", "-", "aero-oeuvre-thing"],
+    ["Tiếng Việt", "-", "tieng-viet"],
+    ["user@example.com", "-", "user-at-examplecom"],
+    ["Hello_World  foo--bar", "-", "hello-world-foo-bar"],
+    ["  --leading and trailing--  ", "-", "leading-and-trailing"],
+    ["100% чисто", "-", "100-chisto"],
+    ["中文 title", "-", "title"],
+    ["", "-", ""],
+    ["Two Words", "_", "two_words"],
+    ["two_words", "_", "two_words"],
+    ["Новая статья", "_", "novaya_statya"],
+    ["a.b c", ".", "a.b.c"],
+    ["Mixed   CASE\tText\nLine", "-", "mixed-case-text-line"],
+    ["Привет мир", "", "privetmir"]
+  ]
+}
