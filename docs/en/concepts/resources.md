@@ -100,6 +100,30 @@ Formatters: `asDate()`, `asDateTime()`, `asMoney()`, `asBoolean()`,
 `asBytes()`, `asBadge()`, `asLink()`, `asImage()`, or `format(callable)` for
 anything else. Row actions are rendered by the table itself.
 
+`asBadge()` maps a value to a tone (`info`, `success`, `warning`, `danger`,
+`default`, or the colour names `green`, `red`, `yellow`, `blue`, `gray`) and,
+when the stored value is not what people should read, to a label:
+
+```php
+TableColumn::make('status')->asBadge([
+    'draft' => ['label' => 'Draft', 'tone' => 'warning'],
+    'published' => ['label' => 'Published', 'tone' => 'success'],
+]),
+// or the tones and the labels apart:
+TableColumn::make('status')->asBadge(['draft' => 'warning'], ['draft' => 'Draft']),
+```
+
+Labels are translated like any other caption; a value with no label is shown
+as it is.
+
+`format(callable)` runs on the server while the rows are serialized — a
+resource's list and tree, a `TableWidget` — as `fn ($value, array $row)`, and
+the cell shows what it returns:
+
+```php
+TableColumn::make('author_id')->format(fn ($id, array $row) => $row['author']['name'] ?? '—'),
+```
+
 ## Filters
 
 ```php

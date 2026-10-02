@@ -197,6 +197,31 @@ describe('ResourceIndexPage', () => {
 
   })
 
+  it('draws a badge column with its label and tone', async () => {
+    seedManifest({
+      columns: [
+        { type: 'text', key: 'id', label: 'ID' },
+        {
+          type: 'badge', key: 'status', label: 'Status', preset: 'badge',
+          meta: { colors: { draft: 'warning', live: 'green' }, labels: { draft: 'Черновик' } },
+        },
+      ],
+    })
+    mock.onPost('/articles/search').reply(200, {
+      success: true,
+      payload: {
+        data: [{ id: 1, status: 'draft' }, { id: 2, status: 'live' }],
+        meta: { page: 1, per_page: 20, total: 2, last_page: 1 },
+      },
+    })
+    const wrapper = await mountPage()
+    await flushPromises()
+    const badges = wrapper.findAll('.uid-badge')
+    expect(badges.map((b) => b.text())).toEqual(['Черновик', 'live'])
+    expect(badges[0].classes().join(' ')).toContain('warning')
+    expect(badges[1].classes().join(' ')).toContain('success')
+  })
+
   it('shows pagination footer when items present', async () => {
     mock.onPost('/articles/search').reply(200, {
       success: true,

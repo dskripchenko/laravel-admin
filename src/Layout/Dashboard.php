@@ -22,7 +22,7 @@ final class Dashboard extends Layout
     {
         $instance = new self;
         foreach ($widgets as $widget) {
-            $instance->children[] = $widget;
+            $instance->add($widget);
         }
 
         return $instance;
@@ -33,8 +33,14 @@ final class Dashboard extends Layout
         return 'dashboard';
     }
 
+    /**
+     * Adds a widget. One whose slug an earlier widget already has — a second
+     * chart, say — gets a distinct one, see Widget::distinctSlugs().
+     */
     public function add(Widget $widget): self
     {
+        $placed = array_values(array_filter($this->children, static fn (mixed $c): bool => $c instanceof Widget));
+        Widget::distinctSlugs([...$placed, $widget]);
         $this->children[] = $widget;
 
         return $this;

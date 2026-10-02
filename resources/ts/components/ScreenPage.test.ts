@@ -7,6 +7,7 @@ import MockAdapter from 'axios-mock-adapter'
 import ScreenPage from './ScreenPage.vue'
 import { setAdminClient, clearAdminClient } from '../stores/registry'
 import { createAdminClient } from '../api/client'
+import { useScreenStore } from '../stores/screen'
 
 const Stub = defineComponent({ name: 'Stub', render: () => h('div') })
 
@@ -42,7 +43,7 @@ const commandBar = [
   },
 ]
 
-async function mountScreen() {
+async function mountScreen(path = '/s/stats') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -50,7 +51,7 @@ async function mountScreen() {
       { path: '/reports', component: Stub },
     ],
   })
-  await router.push('/s/stats')
+  await router.push(path)
   await router.isReady()
   const wrapper = mount(ScreenPage, {
     props: { slug: 'stats' },
@@ -120,6 +121,53 @@ describe('ScreenPage command bar', () => {
     await flushPromises()
 
     expect(push).toHaveBeenCalledWith('/reports')
+    wrapper.unmount()
+  })
+})
+
+describe('ScreenPage query string', () => {
+  let mock: MockAdapter
+  const seen: unknown[] = []
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    const c = createAdminClient({ baseURL: 'http://api.test' })
+    setAdminClient(c)
+    mock = new MockAdapter(c.raw)
+    seen.length = 0
+    mock.onGet('/stats/state').reply((config) => {
+      seen.push(config.params)
+      return [200, {
+        success: true,
+        payload: {
+          state: {}, name: 'Статистика', description: null, layout: [],
+          command_bar: [], permissions: [], etag: 'e1',
+        },
+      }]
+    })
+  })
+
+  afterEach(() => {
+    mock.reset()
+    clearAdminClient()
+  })
+
+  it('passes the page query to the state action', async () => {
+    const { wrapper } = await mountScreen('/s/stats?period=30&tag=a&tag=b')
+    expect(seen).toEqual([{ period: '30', tag: ['a', 'b'] }])
+    wrapper.unmount()
+  })
+
+  it('reloads the snapshot when the query changes, and keeps it on refresh', async () => {
+    mock.onPost('/stats/runMethod').reply(200, { success: true, payload: { refresh: true } })
+    const { wrapper, router } = await mountScreen('/s/stats?tab=one')
+    await router.push('/s/stats?tab=two')
+    await flushPromises()
+    expect(seen).toEqual([{ tab: 'one' }, { tab: 'two' }])
+
+    await useScreenStore().runMethod('recalc')
+    await flushPromises()
+    expect(seen.at(-1)).toEqual({ tab: 'two' })
     wrapper.unmount()
   })
 })

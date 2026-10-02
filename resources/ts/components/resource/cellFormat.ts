@@ -7,8 +7,8 @@
  *   - datetime   → 'd.m.Y H:i:s' by default.
  *   - money      → '{value} {currency}', with decimals.
  *   - boolean    → the trueLabel or falseLabel from the meta.
- *   - badge      → the text; the styling happens in the UI, through a slot or
- *                  a CSS class.
+ *   - badge      → the label from meta.labels (TableColumn::asBadge), or the
+ *                  value as it is; the tone comes from badgeTone().
  *   - bytes      → a human-readable size.
  *   - text       → the fallback.
  *
@@ -58,6 +58,8 @@ export function formatCell(
       return formatBoolean(value, tr(meta.trueLabel ?? 'Да'), tr(meta.falseLabel ?? 'Нет'))
     case 'bytes':
       return formatBytes(value)
+    case 'badge':
+      return badgeLabel(value, meta)
     case 'json':
       return safeJson(value)
     default:
@@ -66,6 +68,64 @@ export function formatCell(
       }
       return String(value)
   }
+}
+
+export type BadgeTone = 'info' | 'success' | 'warning' | 'danger' | 'default'
+
+/**
+ * Tone names pass through; the colour names the docs use (green, red, …) map
+ * onto the UI kit's tones.
+ */
+const BADGE_TONES: Record<string, BadgeTone> = {
+  info: 'info', success: 'success', warning: 'warning', danger: 'danger', default: 'default',
+  blue: 'info', green: 'success', yellow: 'warning', amber: 'warning', orange: 'warning',
+  red: 'danger', gray: 'default', grey: 'default', neutral: 'default',
+}
+
+/** The badge tone of a value: the column's colour map, meta.colors. */
+export function badgeTone(value: unknown, meta: CellMeta = {}): BadgeTone {
+  const colors = (meta.colors as Record<string, string> | undefined) ?? {}
+  const color = value === null || value === undefined ? undefined : colors[String(value)]
+  return (color && BADGE_TONES[color]) || 'default'
+}
+
+/** The badge caption of a value: meta.labels, or the value itself. */
+export function badgeLabel(value: unknown, meta: CellMeta = {}): string {
+  if (value === null || value === undefined) return ''
+  const labels = (meta.labels as Record<string, string> | undefined) ?? {}
+  return labels[String(value)] ?? String(value)
+}
+
+/** Where formatTableRows keeps the raw row next to the formatted one. */
+export const RAW_ROW: unique symbol = Symbol('admin.rawRow')
+
+export interface TableColumnLike {
+  name: string
+  preset?: string | null
+  meta?: CellMeta
+}
+
+/**
+ * Formats every cell of the rows by their columns' presets, keeping the raw
+ * row under RAW_ROW — a badge cell needs the raw value for its tone.
+ */
+export function formatTableRows(
+  rows: Record<string, unknown>[],
+  columns: TableColumnLike[],
+): Record<string | symbol, unknown>[] {
+  return rows.map((row) => {
+    const out: Record<string | symbol, unknown> = { ...row, [RAW_ROW]: row }
+    for (const c of columns) {
+      out[c.name] = formatCell(row[c.name], c.preset ?? undefined, c.meta ?? {})
+    }
+    return out
+  })
+}
+
+/** The tone of a badge cell of a row made by formatTableRows. */
+export function rowBadgeTone(row: unknown, column: TableColumnLike): BadgeTone {
+  const raw = (row as Record<symbol, Record<string, unknown> | undefined> | undefined)?.[RAW_ROW]
+  return badgeTone(raw?.[column.name], column.meta ?? {})
 }
 
 function safeJson(value: unknown): string {

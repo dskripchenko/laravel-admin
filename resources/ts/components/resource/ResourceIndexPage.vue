@@ -46,7 +46,7 @@ import {
 import { useResourceIndexStore } from '../../stores/resourceIndex'
 import { useManifestStore } from '../../stores/manifest'
 import { useNavigationStore } from '../../stores/navigation'
-import { formatCell, type CellMeta } from './cellFormat'
+import { badgeTone, formatCell, type BadgeTone, type CellMeta } from './cellFormat'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
@@ -544,22 +544,9 @@ function columnIsBadge(key: string): boolean {
   return columnMeta.value[key]?.preset === 'badge'
 }
 
-/**
- * The badge tone of a cell: the column's colour map (`asBadge(['active' =>
- * 'success'])`) by the raw value. Tone names pass through; the colour names
- * the docs use (green, red, …) map onto the UI kit's tones.
- */
-const BADGE_TONES: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'default'> = {
-  info: 'info', success: 'success', warning: 'warning', danger: 'danger', default: 'default',
-  blue: 'info', green: 'success', yellow: 'warning', amber: 'warning', orange: 'warning',
-  red: 'danger', gray: 'default', grey: 'default', neutral: 'default',
-}
-
-function badgeVariant(key: string, slotProps: unknown): 'info' | 'success' | 'warning' | 'danger' | 'default' {
-  const colors = (columnMeta.value[key]?.meta as { colors?: Record<string, string> } | undefined)?.colors ?? {}
-  const value = rowFromSlot(slotProps)?.[key]
-  const color = colors[String(value)]
-  return (color && BADGE_TONES[color]) || 'default'
+/** The badge tone of a cell, by the column's colour map — see badgeTone. */
+function badgeVariant(key: string, slotProps: unknown): BadgeTone {
+  return badgeTone(rowFromSlot(slotProps)?.[key], columnMeta.value[key]?.meta ?? {})
 }
 
 /** A link column — preset 'link', see TableColumn::asLink. */

@@ -64,6 +64,33 @@ Register: `Admin::screen([ContactScreen::class])`.
 
 URL: `/admin/screens/contact`.
 
+The slug is a single path segment: `/admin/screens/{slug}` is the only
+address a screen has, and there is no `/admin/screens/{slug}/{anything}`.
+
+## Query string
+
+The page's query string travels with the request for the screen's state, so
+a screen can open on a tab, a period or a filter named in the address —
+`/admin/screens/reports?period=30&tab=billing`. A change of the query string
+(a link from the screen to `?tab=…`) loads a fresh snapshot, and a refresh
+after a command method keeps it.
+
+`query()` receives the values positionally, in the order of the query string
+(keys starting with `_` are dropped); by name they are at hand through the
+request:
+
+```php
+public function query(mixed ...$params): array
+{
+    return [
+        'tab' => request()->query('tab', 'overview'),
+        'period' => (int) request()->query('period', 7),
+    ];
+}
+```
+
+The values come from the address bar, so validate them like any other input.
+
 ## Anatomy
 
 | Method | Purpose |
@@ -72,7 +99,7 @@ URL: `/admin/screens/contact`.
 | `name()` | Display title in the header and sidebar. |
 | `description()` | Optional subtitle under the title. |
 | `permission()` | Permission gate (string or list). null = any authenticated admin. |
-| `query(...$params)` | Returns initial state. Receives `?key=value` from URL as named args. |
+| `query(...$params)` | Returns initial state. Receives the values of the page's query string as positional arguments (see below). |
 | `layout()` | Returns `Renderable[]` (Rows/Columns/Tabs/Block/...). |
 | `commandBar()` | Returns `Action[]` rendered in the page header. |
 | Public methods | Any other public method (not in the reserved set) is callable as a command via `Button::make('…')->method('xxx')`. |

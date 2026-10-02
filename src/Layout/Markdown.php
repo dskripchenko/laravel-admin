@@ -19,7 +19,7 @@ use Closure;
  *
  *     Layout::markdown(file_get_contents($path))
  *         ->toc()
- *         ->linkBase('/admin/screens/docs/')
+ *         ->linkBase('/admin/screens/')   // screen slugs are flat
  *
  * The text is sent as is: picking the right language version is the caller's
  * business.

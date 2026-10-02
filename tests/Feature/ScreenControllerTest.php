@@ -190,3 +190,18 @@ it('runMethod reads an alert level as its type', function (): void {
         ['message' => 'Plain', 'type' => 'info'],
     ]);
 });
+
+it('GET /state hands the query string to Screen::query()', function (): void {
+    app(ScreenRegistry::class)->add(TestQueryScreen::class);
+    AdminApi::clearCache();
+
+    $this->getJson('/api/admin/test-query/state')
+        ->assertOk()
+        ->assertJsonPath('payload.state.params', [])
+        ->assertJsonPath('payload.state.tab', 'overview');
+
+    $this->getJson('/api/admin/test-query/state?tab=billing&period=30&_t=1')
+        ->assertOk()
+        ->assertJsonPath('payload.state.params', ['billing', '30'])
+        ->assertJsonPath('payload.state.tab', 'billing');
+});

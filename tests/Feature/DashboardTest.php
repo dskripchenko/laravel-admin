@@ -221,3 +221,38 @@ final class DashboardWithPluginWidget extends Dskripchenko\LaravelAdmin\Widget\D
         return [(new PluginRegisteredWidget)->title('Свой заголовок')];
     }
 }
+
+it('keeps two instances of one widget class apart', function (): void {
+    $children = (new TestTwinWidgetsDashboard)->compile()['layout'][0]['children'];
+
+    expect(array_column($children, 'slug'))->toBe(['chart', 'chart-2', 'notes', 'notes-2'])
+        ->and(array_column($children, 'title'))->toBe(['Revenue', 'Signups', null, null]);
+});
+
+it('restores a saved layout onto twin widgets', function (): void {
+    DashboardLayout::create([
+        'dashboard_key' => (new TestTwinWidgetsDashboard)->key(),
+        'owner_type' => $this->admin->getMorphClass(),
+        'owner_id' => $this->admin->id,
+        'widgets' => [
+            ['slug' => 'chart-2', 'size' => 12, 'position' => 0],
+            ['slug' => 'chart', 'size' => 3, 'position' => 1],
+            ['slug' => 'notes', 'hidden' => true, 'position' => 2],
+        ],
+    ]);
+
+    $children = (new TestTwinWidgetsDashboard)->compile()['layout'][0]['children'];
+
+    expect(array_column($children, 'slug'))->toBe(['chart-2', 'chart', 'notes-2'])
+        ->and(array_column($children, 'title'))->toBe(['Signups', 'Revenue', null])
+        ->and(array_column($children, 'size'))->toBe([12, 3, 6]);
+});
+
+it('the dashboard layout keeps twin widgets apart too', function (): void {
+    $layout = Dskripchenko\LaravelAdmin\Layout\Dashboard::make([
+        Dskripchenko\LaravelAdmin\Widget\ChartWidget::make(),
+        Dskripchenko\LaravelAdmin\Widget\ChartWidget::make(),
+    ])->add(Dskripchenko\LaravelAdmin\Widget\ChartWidget::make());
+
+    expect(array_column($layout->toArray()['children'], 'slug'))->toBe(['chart', 'chart-2', 'chart-3']);
+});

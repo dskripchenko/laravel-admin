@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
-import { formatCell, type CellMeta } from '../resource/cellFormat'
+import { UidBadge, UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
+import { formatTableRows, rowBadgeTone, type CellMeta } from '../resource/cellFormat'
 import { trSafe as tr } from '../../stores/i18n'
 
 /**
@@ -42,15 +42,17 @@ const uidColumns = computed<UidTableColumn[]>(() =>
   })),
 )
 
-const formattedRows = computed<Record<string, unknown>[]>(() =>
-  props.rows.map((row) => {
-    const out: Record<string, unknown> = { ...row }
-    for (const c of props.columns) {
-      out[c.name] = formatCell(row[c.name], c.preset ?? undefined, c.meta ?? {})
-    }
-    return out
-  }),
+const formattedRows = computed<Record<string, unknown>[]>(
+  () => formatTableRows(props.rows, props.columns) as Record<string, unknown>[],
 )
+
+// A badge column is drawn as a UidBadge, its tone from the raw value.
+const badgeColumns = computed(() => props.columns.filter((c) => c.preset === 'badge'))
+
+// The UidTable scoped slot passes {row}.
+function slotRow(slotProps: unknown): Record<string, unknown> {
+  return (slotProps as { row?: Record<string, unknown> } | undefined)?.row ?? {}
+}
 </script>
 
 <template>
@@ -58,6 +60,10 @@ const formattedRows = computed<Record<string, unknown>[]>(() =>
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <UidTable :columns="uidColumns" :data="formattedRows" :empty-text="tr(emptyText)" />
+    <UidTable :columns="uidColumns" :data="formattedRows" :empty-text="tr(emptyText)">
+      <template v-for="col in badgeColumns" :key="col.name" #[col.name]="slotProps">
+        <UidBadge v-if="slotRow(slotProps)[col.name] !== ''" :variant="rowBadgeTone(slotRow(slotProps), col)">{{ slotRow(slotProps)[col.name] }}</UidBadge>
+      </template>
+    </UidTable>
   </UidCard>
 </template>

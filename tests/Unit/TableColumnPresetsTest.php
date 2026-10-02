@@ -42,6 +42,37 @@ it('asBadge stores color map', function (): void {
     expect($meta['colors'])->toBe(['active' => 'green', 'banned' => 'red']);
 });
 
+it('asBadge without labels keeps the old meta shape', function (): void {
+    $meta = TableColumn::make('status')->asBadge(['active' => 'green'])->toArray()['meta'];
+    expect($meta)->toBe(['colors' => ['active' => 'green']]);
+});
+
+it('asBadge takes labels from the map entries and from the second argument', function (): void {
+    $meta = TableColumn::make('status')->asBadge([
+        'draft' => ['label' => 'Draft', 'tone' => 'warning'],
+        'published' => ['label' => 'Published', 'color' => 'green'],
+        'archived' => 'gray',
+        'hidden' => ['label' => 'Hidden'],
+    ], ['archived' => 'Archived'])->toArray()['meta'];
+
+    expect($meta['colors'])->toBe(['draft' => 'warning', 'published' => 'green', 'archived' => 'gray'])
+        ->and($meta['labels'])->toBe([
+            'draft' => 'Draft',
+            'published' => 'Published',
+            'hidden' => 'Hidden',
+            'archived' => 'Archived',
+        ]);
+});
+
+it('asBadge translates its labels', function (): void {
+    app('translator')->addLines(['*.Черновик' => 'Draft'], 'en');
+    app()->setLocale('en');
+
+    $meta = TableColumn::make('status')->asBadge(['draft' => ['label' => 'Черновик', 'tone' => 'warning']])->toArray()['meta'];
+
+    expect($meta['labels'])->toBe(['draft' => 'Draft']);
+});
+
 it('asLink with string template', function (): void {
     $arr = TableColumn::make('email')
         ->asLink('mailto::value', '_blank')

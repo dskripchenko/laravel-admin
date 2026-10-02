@@ -179,7 +179,7 @@ abstract class DashboardScreen extends Screen
         $forbidden = [];
         foreach ($this->declaredWidgets() as $widget) {
             if (! $this->isWidgetVisible($widget)) {
-                $forbidden[] = $widget::slug();
+                $forbidden[] = $widget->instanceSlug();
             }
         }
 
@@ -301,7 +301,7 @@ abstract class DashboardScreen extends Screen
     {
         $visibleBySlug = [];
         foreach ($this->visibleWidgets() as $w) {
-            $visibleBySlug[$w::slug()] = $w;
+            $visibleBySlug[$w->instanceSlug()] = $w;
         }
 
         $persisted = $this->loadPersistedLayout();
@@ -338,10 +338,12 @@ abstract class DashboardScreen extends Screen
     }
 
     /**
-     * The declared widgets and the plugin ones, deduplicated by slug, the
-     * screen's own instance winning: a host that places a plugin's widget
-     * itself — with its own title or size — must not then get a second copy
-     * of it appended. Memoised, so that a plugin widget is built once.
+     * The declared widgets and the plugin ones. A plugin's widget is dropped
+     * when the screen places that class itself — with its own title or size —
+     * so the host does not get a second copy appended; the screen's own
+     * widgets all stay, two instances of one class included, and get
+     * distinct slugs (Widget::distinctSlugs). Memoised, so that a plugin
+     * widget is built once.
      *
      * @return list<Widget>
      */
@@ -351,12 +353,19 @@ abstract class DashboardScreen extends Screen
             return $this->declared;
         }
 
-        $bySlug = [];
-        foreach ([...$this->widgets(), ...$this->pluginWidgets()] as $w) {
-            $bySlug[$w::slug()] ??= $w;
+        $widgets = $this->widgets();
+        $placed = [];
+        foreach ($widgets as $w) {
+            $placed[$w::slug()] = true;
+        }
+        foreach ($this->pluginWidgets() as $w) {
+            if (! isset($placed[$w::slug()])) {
+                $placed[$w::slug()] = true;
+                $widgets[] = $w;
+            }
         }
 
-        return $this->declared = array_values($bySlug);
+        return $this->declared = Widget::distinctSlugs($widgets);
     }
 
     /**

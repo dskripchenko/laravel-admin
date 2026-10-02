@@ -12,7 +12,8 @@ use Illuminate\Support\Str;
  *
  * Every widget has:
  *   - a `slug`, by default the kebab-cased class basename without the 'Widget'
- *     suffix;
+ *     suffix; an instance may carry its own (withSlug), and two instances of
+ *     one class on a dashboard get distinct ones (distinctSlugs);
  *   - a `widgetType()` — the UI type: stats, chart, table, markdown and so on;
  *   - a `data()` — the payload for the SPA, which may be computed lazily
  *     through the data endpoint;
@@ -52,6 +53,9 @@ abstract class Widget implements Renderable
 
     private ?DashboardContext $dashboardContext = null;
 
+    /** This instance's own slug — see withSlug(). */
+    private ?string $instanceSlug = null;
+
     /**
      * Set once data() has read the context: such a widget depends on the
      * period whether or not it said so.
@@ -86,6 +90,62 @@ abstract class Widget implements Renderable
         }
 
         return Str::kebab($base);
+    }
+
+    /**
+     * Gives this instance a slug of its own, in place of the class's.
+     *
+     * A dashboard tells its widgets apart by slug — in the SPA and in the
+     * per-user layout it saves — so two instances of one class, two charts
+     * say, need two. Without a name of their own the second and the next get
+     * `-2`, `-3` appended in the order they are declared (distinctSlugs);
+     * naming them keeps a saved layout attached when that order changes:
+     *
+     *     ChartWidget::make()->withSlug('revenue'),
+     *     ChartWidget::make()->withSlug('signups'),
+     */
+    public function withSlug(string $slug): static
+    {
+        $this->instanceSlug = $slug;
+
+        return $this;
+    }
+
+    /**
+     * The slug this instance is known by: its own (withSlug) or the class's.
+     */
+    public function instanceSlug(): string
+    {
+        return $this->instanceSlug ?? static::slug();
+    }
+
+    /**
+     * Makes the slugs of a set of widgets distinct: a widget whose slug is
+     * already taken by an earlier one gets `-2`, `-3`, … appended. The first
+     * keeps the slug as it is, so a layout saved before keeps pointing at it.
+     *
+     * @template T of Widget
+     *
+     * @param  list<T>  $widgets
+     * @return list<T>
+     */
+    public static function distinctSlugs(array $widgets): array
+    {
+        $taken = [];
+        foreach ($widgets as $widget) {
+            $slug = $widget->instanceSlug();
+            if (isset($taken[$slug])) {
+                $n = 2;
+                while (isset($taken[$slug.'-'.$n])) {
+                    $n++;
+                }
+                $slug .= '-'.$n;
+                $widget->withSlug($slug);
+            }
+            $taken[$slug] = true;
+        }
+
+        return $widgets;
     }
 
     public function title(string $title): static
@@ -206,7 +266,7 @@ abstract class Widget implements Renderable
     {
         return [
             'kind' => 'widget',
-            'slug' => static::slug(),
+            'slug' => $this->instanceSlug(),
             'type' => $this->widgetType(),
             'title' => is_string($this->title) ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->title) : $this->title,
             'size' => $this->size,
