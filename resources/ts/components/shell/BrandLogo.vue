@@ -1,98 +1,93 @@
 <script setup lang="ts">
 /**
- * The LAdmin brand mark — the "Terminal Block".
- * A Vue port of docs/design_handoff_laravel_admin/brand/Logo.tsx.
+ * The LAdmin brand mark — the "Rounded block": two rounded corners of a
+ * selection frame and a teal block in the middle, a selected record.
  *
- * The palette is a zinc-900 background with a teal-400 ">_" and a blinking
- * cursor. Every inner dimension scales off the `size` prop, so the mark stays
- * crisp at any size: 28 in the sidebar, 40 on the login page and so on.
- *
- * Under prefers-reduced-motion the cursor does not blink; see the CSS below.
+ * Drawn on a 24×24 grid with a 2.4 stroke and round caps and joins, like the
+ * Lucide icons of the interface, so it scales cleanly: 28 in the sidebar, 40
+ * on the auth pages. The tile follows the theme (zinc-900 in light, zinc-950
+ * in dark); teal is used for the central block only. The mark is static.
  */
-import { computed } from 'vue'
-
 interface Props {
-  /** The square's side, in pixels. */
+  /** The side of the square, in pixels. */
   size?: number
-  /** The blinking cursor. */
-  animated?: boolean
-  /** color uses the brand palette, mono a single tone through currentColor. */
-  variant?: 'color' | 'mono'
+  /**
+   * tile — the mark on its dark tile (default); glyph — without the tile, for
+   * headers on a light or dark surface; mono — a single tone, the tile takes
+   * currentColor.
+   */
+  variant?: 'tile' | 'glyph' | 'mono' | 'color'
   title?: string
+  /** Kept for compatibility with the former animated mark; ignored. */
+  animated?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 28,
-  animated: true,
-  variant: 'color',
+  variant: 'tile',
   title: 'LAdmin',
+  animated: false,
 })
 
-const TEAL = '#2dd4bf'
-const INK = '#18181b'
-
-const radius = computed(() => Math.round(props.size * 0.25))
-const fontSize = computed(() => Math.round(props.size * 0.42))
-const padX = computed(() => Math.round(props.size * 0.18))
-const cursorW = computed(() => Math.max(2, Math.round(props.size * 0.18)))
-const cursorH = computed(() => Math.round(props.size * 0.3))
-const cursorGap = computed(() => Math.max(1, Math.round(props.size * 0.04)))
-
-const bg = computed(() => (props.variant === 'mono' ? 'currentColor' : INK))
-const fg = computed(() =>
-  props.variant === 'mono' ? 'var(--ladmin-logo-fg, #fff)' : TEAL,
-)
-
-const wrapStyle = computed(() => ({
-  width: `${props.size}px`,
-  height: `${props.size}px`,
-  padding: `0 ${padX.value}px`,
-  borderRadius: `${radius.value}px`,
-  background: bg.value,
-  color: fg.value,
-  fontSize: `${fontSize.value}px`,
-}))
-
-const cursorStyle = computed(() => ({
-  width: `${cursorW.value}px`,
-  height: `${cursorH.value}px`,
-  marginLeft: `${cursorGap.value}px`,
-  background: fg.value,
-}))
+// 'color' was the former name of the default variant.
+const kind = props.variant === 'color' ? 'tile' : props.variant
 </script>
 
 <template>
-  <span
+  <svg
+    class="ladmin-logo"
+    :class="`ladmin-logo--${kind}`"
+    :width="size"
+    :height="size"
+    viewBox="0 0 24 24"
     role="img"
     :aria-label="title"
-    class="ladmin-logo"
-    :class="{ 'ladmin-logo--animated': animated }"
-    :style="wrapStyle"
   >
-    <span aria-hidden="true">&gt;_</span>
-    <span aria-hidden="true" class="ladmin-logo__cursor" :style="cursorStyle" />
-  </span>
+    <rect v-if="kind !== 'glyph'" class="ladmin-logo__tile" width="24" height="24" rx="5.3" />
+    <path
+      class="ladmin-logo__corners"
+      d="M5.5 11V5.5H11M18.5 13v5.5H13"
+      fill="none"
+      stroke-width="2.4"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <rect class="ladmin-logo__block" x="9.4" y="9.4" width="5.2" height="5.2" rx="1.6" />
+  </svg>
 </template>
 
 <style>
 .ladmin-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  font-family: var(--uid-font-family-mono);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
+  display: block;
   flex: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --ladmin-logo-tile: #18181b;
+  --ladmin-logo-fg: #ffffff;
+  --ladmin-logo-accent: #2dd4bf;
 }
-.ladmin-logo--animated .ladmin-logo__cursor {
-  animation: ladmin-cursor 1.1s steps(1, end) infinite;
+.ladmin-logo__tile { fill: var(--ladmin-logo-tile); }
+.ladmin-logo__corners { stroke: var(--ladmin-logo-fg); }
+.ladmin-logo__block { fill: var(--ladmin-logo-accent); }
+
+/* Without the tile the corners take the text colour of the surface. */
+.ladmin-logo--glyph {
+  --ladmin-logo-fg: #18181b;
+  --ladmin-logo-accent: #14b8a6;
 }
-@keyframes ladmin-cursor {
-  50% { opacity: 0; }
+.ladmin-logo--mono {
+  --ladmin-logo-tile: currentColor;
+  --ladmin-logo-accent: #ffffff;
 }
-@media (prefers-reduced-motion: reduce) {
-  .ladmin-logo--animated .ladmin-logo__cursor { animation: none; }
+
+:root[data-theme='dark'] .ladmin-logo--tile {
+  --ladmin-logo-tile: #09090b;
+  --ladmin-logo-fg: #f4f4f5;
+}
+:root[data-theme='dark'] .ladmin-logo--mono {
+  --ladmin-logo-fg: #09090b;
+  --ladmin-logo-accent: #09090b;
+}
+:root[data-theme='dark'] .ladmin-logo--glyph {
+  --ladmin-logo-fg: #f4f4f5;
+  --ladmin-logo-accent: #2dd4bf;
 }
 </style>
