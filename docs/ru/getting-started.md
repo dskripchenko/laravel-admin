@@ -167,3 +167,5 @@ public function boot(): void
 - [Каталог полей](fields-reference.md) — все типы полей.
 - [Каталог layout'ов](layouts-reference.md) — Tabs/Wizard/
   Modal/Drawer.
+- [Демо-режим](demo-mode.md) — публичный демо-стенд: вход под демо-аккаунтом
+  в один клик и защита от записи.
