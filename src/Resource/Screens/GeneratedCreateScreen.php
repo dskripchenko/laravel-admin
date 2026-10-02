@@ -23,7 +23,15 @@ final class GeneratedCreateScreen extends GeneratedScreen
 
     public function name(): string
     {
-        return __('admin::admin.common.create').': '.\Dskripchenko\LaravelAdmin\I18n\Localize::string($this->resource::label());
+        // "Create author" when the resource names one record, otherwise a
+        // phrase that needs no singular: "New record: Authors".
+        $singular = $this->resource::localizedSingularLabel();
+
+        return $singular !== null
+            ? (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string('Создать: :singular', ['singular' => $singular])
+            : (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string('Новая запись: :label', [
+                'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->resource::label()),
+            ]);
     }
 
     /**

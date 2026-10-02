@@ -507,5 +507,20 @@
     "Создайте первую запись.": "Create the first record.",
     "Здесь пока нет записей.": "There are no records here yet.",
     "По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск.": "Nothing matches “:query”. Change the query or reset the search.",
-    "Сбросить поиск": "Reset search"
+    "Сбросить поиск": "Reset search",
+    "Создать: :singular": "Create :singular",
+    "Новая запись: :label": "New record: :label",
+    "Редактирование: :title": "Edit :singular: :title",
+    "Редактирование: :singular #:id": "Edit :singular #:id",
+    "Редактирование: :singular": "Edit :singular",
+    "Редактирование записи: :label": "Edit record: :label",
+    "Удалить «:title»?": "Delete :singular “:title”?",
+    "Удалить эту запись?": "Delete this :singular?",
+    "Новая запись создана.": ":Singular created.",
+    "Запись успешно удалена.": ":Singular deleted.",
+    "Пока нет ни одной записи — создайте первую.": "No :plural yet. Create the first :singular.",
+    "В этом разделе пока нет записей.": "No :plural yet.",
+    "Запись восстановлена.": "Record restored.",
+    "Удалить запись НАВСЕГДА? Действие необратимо.": "Delete the record FOREVER? This cannot be undone.",
+    "Запись удалена навсегда.": "The record has been deleted permanently."
 }

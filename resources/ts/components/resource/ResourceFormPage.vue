@@ -16,7 +16,6 @@
  * useFormState on their own.
  */
 import { computed, onMounted, watch } from 'vue'
-import { tRaw } from '../../stores/i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
   UidAlert,
@@ -31,6 +30,7 @@ import { provideFormState } from '../render/formState'
 import { provideListenerEndpoint } from '../render/listenerContext'
 import { ApiError } from '../../api/errors'
 import { resolveStatusLabel } from './statusLabel'
+import { createTitle, createdToast, deleteConfirmText, deletedToast, editTitle, recordTitleOf } from './resourceNoun'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
@@ -177,11 +177,20 @@ function seedDefaultsFromManifest(): void {
   if (Object.keys(defaults).length > 0) form.seedDefaults(defaults)
 }
 
-const titleLabel = computed(() => {
-  if (form.isCreate) return `${tr('Создать')}: ${resourceMeta.value?.label ?? props.slug}`
-  // Resource::recordTitle(), unless it is only the bare `#id` fallback.
+/**
+ * The record's title: Resource::recordTitle(), unless it is only the bare
+ * `#id` fallback, then the loaded record's own title, name or label.
+ */
+const recordTitle = computed<string | null>(() => {
   if (form.recordTitle && form.recordTitle !== `#${props.id}`) return form.recordTitle
-  return `${resourceMeta.value?.label ?? props.slug}: ${tRaw('запись #:id', { id: props.id ?? '' })}`
+  return recordTitleOf(form.initial as Record<string, unknown>)
+})
+
+// "Create author" / "Edit author: Ivan Petrov" — the singular, not the
+// plural label; see resourceNoun.ts.
+const titleLabel = computed(() => {
+  if (form.isCreate) return createTitle(resourceMeta.value, props.slug)
+  return editTitle(resourceMeta.value, props.slug, props.id ?? '', recordTitle.value)
 })
 
 const statusValue = computed<string | null>(() => {
@@ -237,7 +246,7 @@ async function onSave(): Promise<void> {
 
   try {
     const newId = await form.save()
-    adminToast.success(wasCreate ? tr('Запись создана.') : tr('Изменения сохранены.'))
+    adminToast.success(wasCreate ? createdToast(resourceMeta.value, props.slug) : tr('Изменения сохранены.'))
     if (wasCreate) {
       // After a create, go to edit with the new id; the host does the routing.
       void router.push({
@@ -266,10 +275,11 @@ const resolvedIndexRouteName = computed<string>(() => {
 })
 
 async function onDelete(): Promise<void> {
-  if (!(await confirmDialog({ message: tr('Удалить запись?'), destructive: true }))) return
+  const message = deleteConfirmText(resourceMeta.value, props.slug, recordTitle.value)
+  if (!(await confirmDialog({ message, destructive: true }))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
-    adminToast.success(tr('Запись удалена.'))
+    adminToast.success(deletedToast(resourceMeta.value, props.slug))
     void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
   }
 }

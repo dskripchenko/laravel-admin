@@ -10,6 +10,7 @@ import { setAdminClient, clearAdminClient } from '../../stores/registry'
 import { createAdminClient } from '../../api/client'
 import { useManifestStore } from '../../stores/manifest'
 import { useResourceFormStore } from '../../stores/resourceForm'
+import { useI18nStore } from '../../stores/i18n'
 import { clearRegistry } from '../render/registry'
 import { registerBuiltinComponents as registerBuiltin } from '../render/builtin'
 
@@ -103,9 +104,26 @@ describe('ResourceFormPage', () => {
   it('create-mode: renders «Создать» title and primary button', async () => {
     const wrapper = await mountPage()
     await flushPromises()
-    expect(wrapper.find('.admin-page__title').text()).toContain('Создать')
+    // No singular_label: a phrase that needs no singular, not "Создать: Статьи".
+    expect(wrapper.find('.admin-page__title').text()).toBe('Новая запись: Статьи')
     const primary = wrapper.findAll('button').find((b) => b.text() === 'Создать')
     expect(primary).toBeDefined()
+  })
+
+  it('create-mode: names one record when the resource has a singular', async () => {
+    useManifestStore().manifest!.resources[0]!.singular_label = 'статья'
+    const wrapper = await mountPage()
+    await flushPromises()
+    expect(wrapper.find('.admin-page__title').text()).toBe('Создать: статья')
+  })
+
+  it('create-mode: an English panel reads "Create article"', async () => {
+    useManifestStore().manifest!.resources[0]!.label = 'Articles'
+    useManifestStore().manifest!.resources[0]!.singular_label = 'article'
+    useI18nStore().setMessages({ 'Создать: :singular': 'Create :singular' })
+    const wrapper = await mountPage()
+    await flushPromises()
+    expect(wrapper.find('.admin-page__title').text()).toBe('Create article')
   })
 
   it('create-mode: no Удалить button', async () => {
@@ -122,11 +140,35 @@ describe('ResourceFormPage', () => {
     })
     const wrapper = await mountPage({ id: 7 })
     await flushPromises()
-    expect(wrapper.find('.admin-page__title').text()).toContain('#7')
+    // The record's own title, not "Статьи: запись #7".
+    expect(wrapper.find('.admin-page__title').text()).toBe('Редактирование: Old')
     const saveBtn = wrapper.findAll('button').find((b) => b.text() === 'Сохранить')
     const delBtn = wrapper.findAll('button').find((b) => b.text() === 'Удалить')
     expect(saveBtn).toBeDefined()
     expect(delBtn).toBeDefined()
+  })
+
+  it('edit-mode: a record without a title is "<singular> #id"', async () => {
+    useManifestStore().manifest!.resources[0]!.singular_label = 'статья'
+    mock.onGet('/articles/read').reply(200, {
+      success: true,
+      payload: { record: { id: 7, body: 'B' } },
+    })
+    const wrapper = await mountPage({ id: 7 })
+    await flushPromises()
+    expect(wrapper.find('.admin-page__title').text()).toBe('Редактирование: статья #7')
+  })
+
+  it('edit-mode: the English title carries the singular the Russian one leaves out', async () => {
+    useManifestStore().manifest!.resources[0]!.singular_label = 'article'
+    useI18nStore().setMessages({ 'Редактирование: :title': 'Edit :singular: :title' })
+    mock.onGet('/articles/read').reply(200, {
+      success: true,
+      payload: { record: { id: 7, title: 'Old', body: 'B' } },
+    })
+    const wrapper = await mountPage({ id: 7 })
+    await flushPromises()
+    expect(wrapper.find('.admin-page__title').text()).toBe('Edit article: Old')
   })
 
   it('renders form fields from manifest layout', async () => {

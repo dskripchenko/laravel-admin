@@ -10,6 +10,7 @@ import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
 import { formatNumber, trSafe as tr } from '../../stores/i18n'
 import { toneColor } from './toneColor'
+import { formatValue, type ChartValueFormat } from './chartGeometry'
 
 interface Slice {
   label: string
@@ -22,11 +23,14 @@ interface Props {
   data: Slice[]
   /** A doughnut's hole; a pie is drawn without one. */
   hole?: boolean
+  /** ChartWidget::money() / precision(): how the values read. */
+  format?: ChartValueFormat | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
   hole: true,
+  format: null,
 })
 
 const PALETTE = [
@@ -90,7 +94,7 @@ const slices = computed(() => {
           stroke="var(--uid-surface-raised)"
           stroke-width="1"
         >
-          <title>{{ s.label }}: {{ formatNumber(s.value) }} ({{ s.pct }}%)</title>
+          <title>{{ s.label }}: {{ formatValue(s.value, format) }} ({{ s.pct }}%)</title>
         </path>
         <circle v-if="hole" cx="60" cy="60" r="30" fill="var(--uid-surface-raised)" />
       </svg>

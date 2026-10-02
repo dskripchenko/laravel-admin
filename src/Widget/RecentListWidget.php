@@ -6,7 +6,7 @@ namespace Dskripchenko\LaravelAdmin\Widget;
 
 use BackedEnum;
 use DateTimeInterface;
-use Dskripchenko\LaravelAdmin\I18n\Localize;
+use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -15,7 +15,15 @@ use Illuminate\Support\Carbon;
  * "The latest N" — a list of a model's most recent records.
  *
  * It is configured with the model, the count, the columns to show and an
- * optional link to the view page.
+ * optional link to the view page. A column is a name and a label, or a
+ * TableColumn with the formatting a resource list has — asMoney(), asDate(),
+ * asBadge(), asLink(), format(), align():
+ *
+ *     RecentListWidget::make('latest-orders')
+ *         ->model(Order::class)
+ *         ->column('number', 'Number')
+ *         ->column(TableColumn::make('total')->label('Total')->asMoney('USD')->align('right'))
+ *         ->column(TableColumn::make('created_at')->label('Placed')->asDateTime('d.m.Y H:i'));
  */
 class RecentListWidget extends Widget
 {
@@ -28,7 +36,7 @@ class RecentListWidget extends Widget
 
     private int $limit = 5;
 
-    /** @var list<array{column: string, label: string}> */
+    /** @var list<TableColumn> */
     private array $columns = [];
 
     private ?string $linkResourceSlug = null;
@@ -65,9 +73,33 @@ class RecentListWidget extends Widget
         return $this;
     }
 
-    public function column(string $column, ?string $label = null): static
+    /**
+     * Adds a column: a name with an optional label, or a TableColumn carrying
+     * its own label and formatting. A label given next to a TableColumn
+     * replaces the column's own.
+     */
+    public function column(string|TableColumn $column, ?string $label = null): static
     {
-        $this->columns[] = ['column' => $column, 'label' => $label ?? $column];
+        if (is_string($column)) {
+            $column = TableColumn::make($column)->label($label ?? $column);
+        } elseif ($label !== null) {
+            $column->label($label);
+        }
+        $this->columns[] = $column;
+
+        return $this;
+    }
+
+    /**
+     * Adds several columns at once; see column().
+     *
+     * @param  list<string|TableColumn>  $columns
+     */
+    public function columns(array $columns): static
+    {
+        foreach ($columns as $column) {
+            $this->column($column);
+        }
 
         return $this;
     }
@@ -140,7 +172,7 @@ class RecentListWidget extends Widget
         $serialized = $model->toArray();
         $row = ['id' => $model->getKey()];
         foreach ($this->columns as $column) {
-            $name = $column['column'];
+            $name = $column->name();
             $value = array_key_exists($name, $serialized)
                 ? $serialized[$name]
                 : data_get($model, $name);
@@ -149,20 +181,25 @@ class RecentListWidget extends Widget
             } elseif ($value instanceof BackedEnum) {
                 $value = $value->value;
             }
-            $row[$name] = $value;
+            // TableColumn::format(): the same ($value, $row) call as a
+            // resource list makes, with the whole serialized record.
+            $row[$name] = $column->applyFormatter($value, $serialized);
         }
 
         return $row;
     }
 
     /**
-     * @return list<array{column: string, label: string}>
+     * The columns as TableColumn::toArray() gives them — label, preset, meta,
+     * align — plus `column`, the key older SPA builds read.
+     *
+     * @return list<array<string, mixed>>
      */
     private function localizedColumns(): array
     {
-        return array_map(static fn (array $c): array => [
-            'column' => $c['column'],
-            'label' => (string) Localize::string($c['label']),
-        ], $this->columns);
+        return array_map(
+            static fn (TableColumn $c): array => ['column' => $c->name()] + $c->toArray(),
+            $this->columns,
+        );
     }
 }

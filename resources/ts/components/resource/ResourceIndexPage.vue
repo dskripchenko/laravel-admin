@@ -49,6 +49,7 @@ import { useNavigationStore } from '../../stores/navigation'
 import { useAuthStore } from '../../stores/auth'
 import type { CellMeta } from './cellFormat'
 import AdminTableCell from './AdminTableCell.vue'
+import { createTooltip, deleteConfirmText, deletedToast, emptyDescription, nounCase, nounParams } from './resourceNoun'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
@@ -602,7 +603,7 @@ const manifestColumns = computed(
   () => (resourceMeta.value?.columns ?? []) as unknown as Array<Record<string, unknown>>,
 )
 const searchPlaceholder = computed(() => {
-  const label = (resourceMeta.value?.label ?? props.slug).toLowerCase()
+  const label = nounCase(resourceMeta.value?.label ?? props.slug)
   // "Поиск по :label" would need the label in the dative case, which a
   // resource label (nominative) is not: "поиск по заказы".
   return tRaw('Поиск: :label…', { label })
@@ -822,7 +823,7 @@ const scopeLabel = computed<string>(() => {
     if (v) return v.name
   }
   const label = resourceMeta.value?.label ?? props.slug
-  return `${tr('Все')} ${label.toLowerCase()}`
+  return `${tr('Все')} ${nounCase(label)}`
 })
 
 /**
@@ -963,14 +964,14 @@ async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<v
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!(await runner.confirm(tt('admin.resource.delete_confirm', 'Удалить запись?'), true))) return
+  if (!(await runner.confirm(tt('admin.resource.delete_confirm', deleteConfirmText(resourceMeta.value, props.slug), nounParams(resourceMeta.value, props.slug)), true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     await client.post(`/${props.slug}/delete`, { id })
     await index.load().catch(() => undefined)
-    adminToast.success(tt('admin.resource.deleted', 'Запись удалена.'))
+    adminToast.success(tt('admin.resource.deleted', deletedToast(resourceMeta.value, props.slug), nounParams(resourceMeta.value, props.slug)))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] delete failed:', err)
     adminToast.error(tt('admin.resource.delete_failed', 'Не удалось удалить запись.'))
@@ -1024,7 +1025,7 @@ async function onRestore(row: Record<string, unknown>, e?: MouseEvent): Promise<
     const client = getAdminClient()
     await client.post(`/${props.slug}/restore`, { id })
     await index.load().catch(() => undefined)
-    adminToast.success(tt('admin.resource.restored', 'Запись восстановлена.'))
+    adminToast.success(tt('admin.resource.restored', tr('Запись восстановлена.'), nounParams(resourceMeta.value, props.slug)))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] restore failed:', err)
     adminToast.error(tt('admin.resource.restore_failed', 'Не удалось восстановить запись.'))
@@ -1110,14 +1111,14 @@ async function onForceDelete(row: Record<string, unknown>, e?: MouseEvent): Prom
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!(await runner.confirm(tt('admin.resource.force_delete_confirm', 'Удалить запись НАВСЕГДА? Действие необратимо.'), true))) return
+  if (!(await runner.confirm(tt('admin.resource.force_delete_confirm', tr('Удалить запись НАВСЕГДА? Действие необратимо.'), nounParams(resourceMeta.value, props.slug)), true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     await client.post(`/${props.slug}/forceDelete`, { id })
     await index.load().catch(() => undefined)
-    adminToast.success(tt('admin.resource.force_deleted', 'Запись удалена навсегда.'))
+    adminToast.success(tt('admin.resource.force_deleted', tr('Запись удалена навсегда.'), nounParams(resourceMeta.value, props.slug)))
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] force-delete failed:', err)
     adminToast.error(tt('admin.resource.force_delete_failed', 'Не удалось удалить запись навсегда.'))
@@ -1168,7 +1169,7 @@ async function retryLoad(): Promise<void> {
             </UidButton>
           </template>
           <UidMenuItem @click="onResetView">
-            {{ tr('Все') }} {{ (resourceMeta?.label ?? slug).toLowerCase() }}
+            {{ tr('Все') }} {{ nounCase(resourceMeta?.label ?? slug) }}
           </UidMenuItem>
           <UidMenuItem
             v-for="v in savedViews"
@@ -1225,6 +1226,7 @@ async function retryLoad(): Promise<void> {
           v-if="resolvedCreateRouteName && isCreatable"
           variant="primary"
           size="md"
+          :title="createTooltip(resourceMeta, slug)"
           @click="$router.push({ name: resolvedCreateRouteName })"
         >
           <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
@@ -1342,9 +1344,7 @@ async function retryLoad(): Promise<void> {
       <UidEmptyState
         v-else
         :title="tr('Пока пусто')"
-        :description="resolvedCreateRouteName && isCreatable
-          ? tr('Создайте первую запись.')
-          : tr('Здесь пока нет записей.')"
+        :description="emptyDescription(resourceMeta, slug, Boolean(resolvedCreateRouteName && isCreatable))"
         class="admin-resource-index__state"
         data-testid="resource-empty"
       >

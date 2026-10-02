@@ -46,7 +46,16 @@ public static ?string $group = 'Catalog';      // 侧边栏分区
 
 public static function slug(): string { return 'articles'; }    // URL = /admin/r/articles
 public static function label(): string { return '文章'; }   // 侧边栏标签
+public static function singularLabel(): ?string { return '文章'; } // 单条记录
 ```
+
+`singularLabel()` 表示单条记录的名称，按其在句中出现的形式书写。凡是复数
+`label()` 读起来不通的地方，面板都会使用它：新建页和编辑页标题、记录的面包屑、
+“新建”按钮的提示、删除确认、提示消息以及空状态。它以 `singular_label` 出现在
+manifest 中，并像 `label()` 一样在每次请求时通过 JSON 翻译进行翻译。默认情况下，
+英文标签通过 `Str::singular()` 转为单数；其他文字的标签返回 `null`，面板改用无需
+单数的措辞。翻译可以使用 `:singular`、`:Singular`、`:label` 和 `:plural`，即使
+源字符串中没有它们。
 
 ## 字段
 

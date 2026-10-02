@@ -5,6 +5,37 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **`Resource::singularLabel()`** — the name of one record, as it reads
+  mid-sentence (`'author'`), sent in the manifest as `singular_label` and
+  translated per request. The panel uses it where the plural label read
+  wrong: the create and edit page titles ("Create author", "Edit author: Ivan
+  Petrov"), the record crumb and view title without a record title ("Author
+  #12"), the Create button's tooltip, delete confirmations ("Delete this
+  author?"), toasts ("Author created.", "Author deleted.") and empty states
+  ("No authors yet. Create the first author."). By default an English label
+  is singularized with `Str::singular()`; a label in another script gets
+  `null`, and the panel then uses wording that needs no singular ("Новая
+  запись: Авторы", "Редактирование: <record title>"). A singular left
+  untranslated while the label is translated is dropped as well.
+- **Formatted `RecentListWidget` columns.** `column()` takes a `TableColumn`
+  (and `columns()` a list of them), so a dashboard list formats like a
+  resource list: `format()`, `asMoney()`, `asDate()`/`asDateTime()`,
+  `asBadge()`, `asLink()`, `align()`. The SPA draws the cells with the shared
+  cell renderer in the panel's locale; a plain name and label still work.
+- **`ChartWidget::money()` and `precision()`** — chart tooltips, the data
+  table and the axis show money in the panel's locale (`$1,591,285`,
+  `1 591 285 $`) or fixed decimals.
+
+### Changed
+
+- The edit page's title is the record's title ("Редактирование: Иван Петров")
+  instead of the plural label with the record id, and the English resource
+  toasts and confirmations name the record's kind.
+
 ## 1.45.1
 
 ### Fixed

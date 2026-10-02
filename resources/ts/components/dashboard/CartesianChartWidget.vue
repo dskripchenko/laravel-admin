@@ -25,6 +25,7 @@ import {
   estimateTextWidth,
   formatTick,
   formatValue,
+  type ChartValueFormat,
   isEmptySeries,
   niceScale,
   stackSeries,
@@ -42,6 +43,8 @@ interface Props {
   stacked?: boolean
   /** The minimum plot height in px; the chart grows with its cell beyond it. */
   height?: number
+  /** ChartWidget::money() / precision(): how the values read. */
+  format?: ChartValueFormat | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,6 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
   description: '',
   stacked: false,
   height: 200,
+  format: null,
 })
 
 const box = ref<HTMLElement | null>(null)
@@ -91,7 +95,7 @@ const scale = computed(() => {
   return niceScale(lo, hi, boxHeight.value < 160 ? 3 : 4)
 })
 
-const tickLabels = computed(() => scale.value.ticks.map((t) => formatTick(t)))
+const tickLabels = computed(() => scale.value.ticks.map((t) => formatTick(t, props.format)))
 const padLeft = computed(
   () => Math.ceil(Math.max(...tickLabels.value.map((l) => estimateTextWidth(l, AXIS_FONT)), 8)) + 10,
 )
@@ -251,7 +255,7 @@ const tooltip = computed(() => {
     x: x(i),
     y: PAD_TOP,
     title: props.labels[i] ?? '',
-    rows: props.series.map((s) => ({ label: s.label, color: s.color, value: formatValue(s.data[i] ?? null) })),
+    rows: props.series.map((s) => ({ label: s.label, color: s.color, value: formatValue(s.data[i] ?? null, props.format) })),
   }
 })
 
@@ -403,7 +407,7 @@ const legend = computed(() => props.series.map((s) => ({ label: s.label, color: 
         <tbody>
           <tr v-for="(label, i) in labels" :key="i">
             <th scope="row">{{ label }}</th>
-            <td v-for="(s, si) in series" :key="si">{{ formatValue(s.data[i] ?? null) }}</td>
+            <td v-for="(s, si) in series" :key="si">{{ formatValue(s.data[i] ?? null, format) }}</td>
           </tr>
         </tbody>
       </table>

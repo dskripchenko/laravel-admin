@@ -34,6 +34,7 @@ import InfolistRenderer from '../infolist/InfolistRenderer.vue'
 import type { InfolistNode } from '../infolist/InfolistRenderer.vue'
 import { provideRecord } from '../infolist/recordContext'
 import AuditTimeline from './AuditTimeline.vue'
+import { deleteConfirmText, deletedToast, recordFallbackTitle, recordTitleOf } from './resourceNoun'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
 import { actionErrorMessage, normalizeActions, useActionRunner, type AdminAction } from '../../composables/useActionRunner'
@@ -137,16 +138,18 @@ const defaultMetrics = computed<MetricRow[]>(() => {
   if (author) rows.push({ label: tr('Автор'), value: author })
   return rows
 })
-const recordTitle = computed<string>(() => {
-  // The record may carry a `title`, a `name` or a `label` — we try them in
-  // turn, and fall back to "{ResourceLabel}: record #{id}".
-  // Resource::recordTitle(), unless it is only the bare `#id` fallback.
+/**
+ * The record's own title: Resource::recordTitle(), unless it is only the bare
+ * `#id` fallback, then the record's `title`, `name` or `label`.
+ */
+const ownTitle = computed<string | null>(() => {
   if (form.recordTitle && form.recordTitle !== `#${props.id}`) return form.recordTitle
-  const r = form.state as Record<string, unknown>
-  const t = r.title ?? r.name ?? r.label
-  if (typeof t === 'string' && t.length > 0) return t
-  return `${resourceMeta.value?.label ?? props.slug}: ${tRaw('запись #:id', { id: props.id })}`
+  return recordTitleOf(form.state as Record<string, unknown>)
 })
+// Without a title of its own the record is "Author #12" (see resourceNoun.ts).
+const recordTitle = computed<string>(
+  () => ownTitle.value ?? recordFallbackTitle(resourceMeta.value, props.slug, props.id),
+)
 const indexLabel = computed<string>(
   () => resourceMeta.value?.label ?? props.slug,
 )
@@ -259,10 +262,10 @@ function onEdit(): void {
 }
 
 async function onDelete(): Promise<void> {
-  if (!(await runner.confirm(tr('Удалить запись?'), true))) return
+  if (!(await runner.confirm(deleteConfirmText(resourceMeta.value, props.slug, ownTitle.value), true))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
-    adminToast.success(tr('Запись удалена.'))
+    adminToast.success(deletedToast(resourceMeta.value, props.slug))
     router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
   }
 }

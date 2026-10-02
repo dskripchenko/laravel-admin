@@ -16,7 +16,7 @@ import DonutChartWidget from './DonutChartWidget.vue'
 import RadarChartWidget from './RadarChartWidget.vue'
 import UnknownWidget from './UnknownWidget.vue'
 import { CHART_RENDERERS } from './chartTypes'
-import { resolveLabels, toSeries, type RawDataset } from './chartGeometry'
+import { resolveLabels, toSeries, type ChartValueFormat, type RawDataset } from './chartGeometry'
 import { toneColor } from './toneColor'
 
 interface ChartData {
@@ -29,6 +29,8 @@ interface ChartData {
   labels?: Array<string | number>
   datasets?: RawDataset[]
   stacked?: boolean
+  /** ChartWidget::money() / precision(); null — plain numbers. */
+  format?: ChartValueFormat | null
 }
 
 interface Props {
@@ -45,6 +47,7 @@ interface Props {
   labels?: Array<string | number>
   datasets?: RawDataset[]
   stacked?: boolean
+  format?: ChartValueFormat | null
 }
 const props = defineProps<Props>()
 
@@ -53,6 +56,7 @@ const source = computed<ChartData>(() => props.data ?? {
   labels: props.labels,
   datasets: props.datasets,
   stacked: props.stacked,
+  format: props.format,
 })
 
 const resolvedType = computed<string>(
@@ -78,6 +82,7 @@ const DEFAULT_PALETTE = [
 const chartSeries = computed(() => toSeries(source.value.datasets))
 const chartLabels = computed(() => resolveLabels(source.value.labels, chartSeries.value))
 const isStacked = computed(() => source.value.stacked === true)
+const valueFormat = computed<ChartValueFormat | null>(() => source.value.format ?? null)
 
 /** In a donut or a pie each item gets its share of the total. */
 const donutData = computed(() => {
@@ -97,6 +102,7 @@ const donutData = computed(() => {
     :title="title"
     :data="donutData"
     :hole="renderer === 'donut'"
+    :format="valueFormat"
   />
   <RadarChartWidget
     v-else-if="renderer === 'radar'"
@@ -104,6 +110,7 @@ const donutData = computed(() => {
     :description="description"
     :labels="chartLabels"
     :series="chartSeries"
+    :format="valueFormat"
   />
   <CartesianChartWidget
     v-else-if="renderer === 'bar' || renderer === 'line' || renderer === 'area'"
@@ -113,6 +120,7 @@ const donutData = computed(() => {
     :labels="chartLabels"
     :series="chartSeries"
     :stacked="isStacked"
+    :format="valueFormat"
   />
   <UnknownWidget v-else :type="`chart:${resolvedType}`" />
 </template>
