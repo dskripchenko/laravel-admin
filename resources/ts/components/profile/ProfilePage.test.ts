@@ -45,7 +45,15 @@ describe('ProfilePage', () => {
 
   it('renders page header', () => {
     const w = mount(ProfilePage)
-    expect(w.find('.admin-page__title').text()).toBe('Profile')
+    // The default title is a source string, translated like the rest of the
+    // page — it used to be a hardcoded English "Profile" in every language.
+    expect(w.find('.admin-page__title').text()).toBe('Профиль')
+    expect(w.find('.admin-profile__nav').attributes('aria-label')).toBe('Разделы профиля')
+  })
+
+  it('keeps a title given by the host', () => {
+    const w = mount(ProfilePage, { props: { title: 'Account' } })
+    expect(w.find('.admin-page__title').text()).toBe('Account')
   })
 
   it('renders only the library sections when the host fills no slots', () => {

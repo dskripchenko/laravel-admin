@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Field;
 
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
+use Dskripchenko\LaravelAdmin\I18n\AutoLabel;
 use Dskripchenko\LaravelAdmin\I18n\Localize;
 
 /**
@@ -317,6 +318,6 @@ abstract class Field implements Renderable
             return $title;
         }
 
-        return $this->name === '' ? '' : \Illuminate\Support\Str::headline(str_replace('.', ' ', $this->name));
+        return AutoLabel::headline($this->name);
     }
 }

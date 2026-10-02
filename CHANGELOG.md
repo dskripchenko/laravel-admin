@@ -19,6 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A default favicon.** When `admin.brand.favicon` is not set, the shell
   serves the mark as an inline SVG favicon.
 
+### Fixed
+
+- **Labels made from a column name were English in every language.** A
+  column, filter, field or entry declared without a label got its name made
+  readable ("Created at"), which no dictionary translated, so a Russian panel
+  showed English headers. The common names (`id`, `created_at`, `updated_at`,
+  `deleted_at`, `published_at`, `title`, `description`, `status`, `type`,
+  `locale`, `is_active`, `password`, `phone`, `position`, `ip`, `user_agent`)
+  now get a caption of the source language that is translated like any other
+  ("Создано" / "Created"); other names are made readable as before.
+- **Captions that skipped the translation.** A modal action's `modalTitle()`
+  and `submitLabel()` (any attribute ending in `title`, `label` or
+  `description`), builder block labels, slider `marks()`, a `Label` field's
+  static `->value()` text and a gauge's `unit()` are now translated into the
+  panel's language like the other captions.
+- **The profile page's title and its section navigation's accessible name were
+  hardcoded in English.** They are source strings translated per locale now.
+
 ## 1.42.1
 
 ### Fixed

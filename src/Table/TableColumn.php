@@ -407,6 +407,6 @@ final class TableColumn
 
     private function humanize(string $field): string
     {
-        return ucfirst(str_replace(['_', '.'], ' ', $field));
+        return \Dskripchenko\LaravelAdmin\I18n\AutoLabel::sentence($field);
     }
 }

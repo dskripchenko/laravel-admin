@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Infolist;
 
 use Dskripchenko\LaravelAdmin\Contracts\Renderable;
-use Illuminate\Support\Str;
+use Dskripchenko\LaravelAdmin\I18n\AutoLabel;
 
 /**
  * A read-only entry of an infolist — the display counterpart of a field.
@@ -106,7 +106,7 @@ abstract class Entry implements Renderable
             return $label;
         }
 
-        return $this->name === '' ? '' : Str::headline(str_replace('.', ' ', $this->name));
+        return AutoLabel::headline($this->name);
     }
 
     /**

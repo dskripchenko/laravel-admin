@@ -483,5 +483,12 @@
     "Создание": "Creating",
     "Редактирование": "Editing",
     "Параметры передаются списком или объектом с именами параметров обработчика": "Params are either a list or an object keyed by the handler's parameter names",
-    "Имя параметра зарезервировано: :name": "Reserved parameter name: :name"
+    "Имя параметра зарезервировано: :name": "Reserved parameter name: :name",
+    "Удалено": "Deleted",
+    "Опубликовано": "Published",
+    "Статус": "Status",
+    "Активен": "Active",
+    "Телефон": "Phone",
+    "Позиция": "Position",
+    "Разделы профиля": "Profile sections"
 }

@@ -46,8 +46,9 @@ it('ModalAction has type=modal and serializes fields', function (): void {
     expect($arr['attributes']['fields'])->toHaveCount(2);
     expect($arr['attributes']['fields'][0]['name'])->toBe('subject');
     expect($arr['attributes']['modalSize'])->toBe('lg');
-    expect($arr['attributes']['modalTitle'])->toBe('Уведомление');
-    expect($arr['attributes']['submitLabel'])->toBe('Отправить');
+    // The captions are translated into the (English) test locale.
+    expect($arr['attributes']['modalTitle'])->toBe(__('Уведомление'));
+    expect($arr['attributes']['submitLabel'])->toBe(__('Отправить'));
 });
 
 it('DropDown has type=dropdown and serializes nested items', function (): void {

@@ -97,7 +97,7 @@ class GaugeWidget extends Widget
             'value' => $this->value,
             'min' => $this->min,
             'max' => $this->max,
-            'unit' => $this->unit,
+            'unit' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->unit),
             'thresholds' => $this->thresholds,
             'precision' => $this->precision,
         ];
