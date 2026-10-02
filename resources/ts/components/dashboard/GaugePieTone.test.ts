@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { computed, defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { UidGauge } from '@dskripchenko/ui'
+import { UidGauge, provideLocale, en as uidEn } from '@dskripchenko/ui'
 import GaugeWidget from './GaugeWidget.vue'
 import ChartWidget from './ChartWidget.vue'
 import { toneColor } from './toneColor'
@@ -23,6 +24,18 @@ describe('toneColor', () => {
   })
 })
 
+// The kit formats numbers by the provided locale (ru-RU when none is), as
+// the panel provides its own in AdminApp; these tests read English digits.
+function mountEn(props: Record<string, unknown>) {
+  const Host = defineComponent({
+    setup() {
+      provideLocale(computed(() => uidEn))
+      return () => h(GaugeWidget, props)
+    },
+  })
+  return mount(Host)
+}
+
 describe('GaugeWidget', () => {
   it('draws the zones in the kit tokens', () => {
     const w = mount(GaugeWidget, {
@@ -44,14 +57,14 @@ describe('GaugeWidget', () => {
 
   it('shows a fractional value with its decimals, a whole one without', () => {
     expect(mount(GaugeWidget, { props: { value: 82.6 } }).findComponent(UidGauge).props('precision')).toBe(1)
-    expect(mount(GaugeWidget, { props: { value: 82.6 } }).find('.uid-gauge__value').text()).toContain('82.6')
+    expect(mountEn({ value: 82.6 }).find('.uid-gauge__value').text()).toContain('82.6')
     expect(mount(GaugeWidget, { props: { value: 83 } }).findComponent(UidGauge).props('precision')).toBe(0)
     expect(mount(GaugeWidget, { props: { value: 1.23456 } }).findComponent(UidGauge).props('precision')).toBe(2)
   })
 
   it('takes the precision the backend sets', () => {
-    expect(mount(GaugeWidget, { props: { value: 82.6, precision: 0 } }).find('.uid-gauge__value').text()).toContain('83')
-    expect(mount(GaugeWidget, { props: { value: 5, precision: 2 } }).find('.uid-gauge__value').text()).toContain('5.00')
+    expect(mountEn({ value: 82.6, precision: 0 }).find('.uid-gauge__value').text()).toContain('83')
+    expect(mountEn({ value: 5, precision: 2 }).find('.uid-gauge__value').text()).toContain('5.00')
   })
 })
 

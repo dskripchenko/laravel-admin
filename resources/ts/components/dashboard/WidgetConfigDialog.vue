@@ -329,11 +329,11 @@ function close(): void {
             </template>
             <template v-else-if="configKind(selectedType) === 'recent'">
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Resource slug</label>
+                <label class="admin-dialog__label">{{ tr('Slug ресурса') }}</label>
                 <UidInput v-model="recentResource" placeholder="articles" />
               </div>
               <div class="admin-dialog__field">
-                <label class="admin-dialog__label">Limit</label>
+                <label class="admin-dialog__label">{{ tr('Лимит') }}</label>
                 <UidInput v-model="recentLimit" type="number" />
               </div>
             </template>

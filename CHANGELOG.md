@@ -5,6 +5,37 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **Requires `@dskripchenko/ui` ^1.7.0.** The kit release brings floating
+  layers that open inside modals, a shared z-index scale, numbers and captions
+  in the panel's locale, consistent control heights and the tokens the panel
+  styles read. Clearing a date range field, which the kit's picker now
+  reports as `null`, empties the field.
+
+### Fixed
+
+- **Labels made from a column name were English in every language.** A
+  column, filter, field or entry declared without a label got its name made
+  readable ("Created at"), which no dictionary translated, so a Russian panel
+  showed English headers. The common names (`id`, `created_at`, `updated_at`,
+  `deleted_at`, `published_at`, `title`, `description`, `status`, `type`,
+  `locale`, `is_active`, `password`, `phone`, `position`, `ip`, `user_agent`)
+  now get a caption of the source language that is translated like any other
+  ("Создано" / "Created"); other names are made readable as before.
+- **Captions that skipped the translation.** A modal action's `modalTitle()`
+  and `submitLabel()` (any attribute ending in `title`, `label` or
+  `description`), builder block labels, slider `marks()`, a `Label` field's
+  static `->value()` text and a gauge's `unit()` are now translated into the
+  panel's language like the other captions.
+- **Hardcoded English captions in the panel.** The profile page's title and
+  its section navigation's accessible name, the list toolbar's "Filter" chip,
+  the widget dialog's "Resource slug" and "Limit" and the sidebar's "Docs"
+  link are source strings translated per locale now; a test guards the
+  component templates against English text typed straight into them.
+
 ## 1.43.0
 
 ### Changed

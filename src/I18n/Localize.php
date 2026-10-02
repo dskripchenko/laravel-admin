@@ -49,10 +49,11 @@ final class Localize
     }
 
     /**
-     * Translates the known text keys of an attribute array — title, help,
-     * placeholder, description, label, trueLabel, falseLabel, the labels
-     * inside options and the titles of an accordion's sections — returning a
-     * copy, without mutating the original.
+     * Translates the known text keys of an attribute array — help,
+     * placeholder, anything ending in title, description or label (title,
+     * modalTitle, submitLabel, trueLabel…), the labels inside options and a
+     * slider's marks, a builder's block labels and the titles of an
+     * accordion's sections — returning a copy, without mutating the original.
      *
      * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
@@ -65,15 +66,26 @@ final class Localize
             // everything ending in label (label, keyLabel, trueLabel,
             // addLabel…). The list used to be fixed, and the captions of
             // key-value, repeater and tabs slipped past it.
-            $isTextKey = in_array($key, ['title', 'help', 'placeholder', 'description'], true)
-                || str_ends_with(mb_strtolower($key), 'label');
+            // So are the keys ending in title (modalTitle) and description.
+            $lower = mb_strtolower($key);
+            $isTextKey = in_array($key, ['help', 'placeholder'], true)
+                || str_ends_with($lower, 'label')
+                || str_ends_with($lower, 'title')
+                || str_ends_with($lower, 'description');
 
             if ($isTextKey && is_string($value)) {
                 $attributes[$key] = self::string($value);
             } elseif (is_array($value)
-                && (in_array($key, ['options', 'labels'], true)
-                    || str_ends_with(mb_strtolower($key), 'options'))) {
+                && (in_array($key, ['options', 'labels', 'marks'], true)
+                    || str_ends_with($lower, 'options'))) {
+                // marks: a slider's value => caption.
                 $attributes[$key] = self::options($value);
+            } elseif ($key === 'blocks' && is_array($value)) {
+                // A builder's block types, each with its own label.
+                $attributes[$key] = array_map(
+                    static fn (mixed $block): mixed => is_array($block) ? self::attributes($block) : $block,
+                    $value,
+                );
             } elseif ($key === 'sections' && is_array($value)) {
                 // An accordion's sections: each carries its own title.
                 $attributes[$key] = array_map(

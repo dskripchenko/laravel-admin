@@ -87,8 +87,6 @@ abstract class Filter
 
     private function humanizeField(): string
     {
-        $name = str_replace(['_', '.'], ' ', $this->field);
-
-        return ucfirst(trim($name));
+        return \Dskripchenko\LaravelAdmin\I18n\AutoLabel::sentence($this->field);
     }
 }

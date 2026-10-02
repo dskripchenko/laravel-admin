@@ -44,7 +44,8 @@ it('BadgeEntry has type=badge and stores colors/labels maps', function (): void 
     $arr = $e->toArray();
     expect($arr['type'])->toBe('badge');
     expect($arr['attributes']['colors'])->toBe(['active' => 'green', 'banned' => 'red']);
-    expect($arr['attributes']['labels'])->toBe(['active' => 'Активен', 'banned' => 'Забанен']);
+    // The labels are translated into the (English) test locale where a translation exists.
+    expect($arr['attributes']['labels'])->toBe(['active' => __('Активен'), 'banned' => 'Забанен']);
 });
 
 it('IconEntry has type=icon and stores icons map', function (): void {

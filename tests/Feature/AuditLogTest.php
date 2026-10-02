@@ -8,6 +8,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
+    // A change of updated_at is part of an update's diff: with a create and
+    // an update in different seconds the snapshots would carry it too.
+    $this->freezeSecond();
+
     Schema::create('logged_posts', function (Blueprint $t): void {
         $t->id();
         $t->string('title')->nullable();

@@ -251,7 +251,8 @@ abstract class Action implements Renderable
             'primary' => (bool) ($this->attributes['primary'] ?? false),
             'destructive' => (bool) ($this->attributes['destructive'] ?? false),
             'position' => $this->position,
-            'attributes' => $this->attributes,
+            // modalTitle, submitLabel and the other captions among them.
+            'attributes' => \Dskripchenko\LaravelAdmin\I18n\Localize::attributes($this->attributes),
         ];
     }
 }

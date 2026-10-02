@@ -31,7 +31,7 @@ import TwoFactorSetup from './TwoFactorSetup.vue'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface Props {
-  /** The page's title; "Profile" by default. */
+  /** The page's title; «Профиль», translated, by default. */
   title?: string
   /** The subtitle; taken from the handoff by default. */
   subtitle?: string
@@ -40,7 +40,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: 'Profile',
+  title: undefined,
   subtitle: undefined,
   section: 'general',
 })
@@ -170,13 +170,13 @@ function onTwoFactorDisabled(): void {
   <section class="admin-page admin-profile">
     <header class="admin-page__hd">
       <div class="admin-page__title-wrap">
-        <h1 class="admin-page__title">{{ title }}</h1>
+        <h1 class="admin-page__title">{{ title ?? tr('Профиль') }}</h1>
         <div class="admin-page__count">{{ subtitle ?? tr('Личные данные, безопасность, токены') }}</div>
       </div>
     </header>
 
     <div class="admin-profile__layout">
-      <nav class="admin-profile__nav" aria-label="Profile sections">
+      <nav class="admin-profile__nav" :aria-label="tr('Разделы профиля')">
         <button
           v-for="item in navItems"
           :key="item.id"
