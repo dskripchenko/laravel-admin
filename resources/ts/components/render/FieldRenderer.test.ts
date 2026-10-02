@@ -28,6 +28,8 @@ describe('FieldRenderer', () => {
     })
     // UnknownField is a UidAlert now, so we look for the text carrying the type
     expect(wrapper.text()).toContain('no-such-type')
+    // The heading goes through UidAlert's `title` prop: it has no title slot.
+    expect(wrapper.find('.uid-alert__title').text()).toBe('Неизвестный тип поля: no-such-type')
   })
 
   it('renders TextField (UidInput) from builtin registry', () => {

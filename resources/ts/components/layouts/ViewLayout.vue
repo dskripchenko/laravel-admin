@@ -39,8 +39,12 @@ const passProps = computed<Record<string, unknown>>(() => {
 
 <template>
   <component :is="resolved" v-if="resolved" v-bind="passProps" />
-  <UidAlert v-else variant="warning" class="admin-view-layout__missing">
-    <template #title>{{ tRaw('Компонент не зарегистрирован: :name', { name: component ?? '' }) }}</template>
+  <UidAlert
+    v-else
+    variant="warning"
+    class="admin-view-layout__missing"
+    :title="tRaw('Компонент не зарегистрирован: :name', { name: component ?? '' })"
+  >
     <code>registerLayout('{{ component }}', YourComponent)</code>
   </UidAlert>
 </template>

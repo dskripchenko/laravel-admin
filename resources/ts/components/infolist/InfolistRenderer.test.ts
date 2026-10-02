@@ -129,6 +129,7 @@ describe('InfolistRenderer', () => {
     // 'rows' is registered as a layout, but kind:entry forces the entry
     // registry — there is no such entry, hence UnknownEntry
     expect(w.text()).toContain('rows')
+    expect(w.find('.uid-alert__title').text()).toBe('Неизвестный тип элемента: rows')
   })
   it('BadgeEntry maps colors variant and localizes label', () => {
     const wrapper = mount(Wrap, {

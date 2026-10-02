@@ -83,6 +83,8 @@ describe('ImportWizardPage', () => {
     expect(w.text()).toContain('Создано')
     expect(w.text()).toContain('Обновлено')
     expect(w.text()).toContain('Ошибки')
+    // UidProgress takes `value`; the processed count fills the bar.
+    expect(w.find('[role="progressbar"]').attributes('aria-valuenow')).toBe('17')
   })
 
   it('emits cancel from header button', async () => {

@@ -405,6 +405,7 @@ describe('ViewLayout', () => {
     const { wrapper } = mountNode({ kind: 'layout', type: 'view', component: 'nope', html: '<b>x</b>' })
     expect(wrapper.find('.admin-view-layout__missing').exists()).toBe(true)
     expect(wrapper.text()).toContain("registerLayout('nope'")
+    expect(wrapper.find('.uid-alert__title').text()).toBe('Компонент не зарегистрирован: nope')
     expect(wrapper.find('b').exists()).toBe(false)
   })
 

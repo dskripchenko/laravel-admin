@@ -263,7 +263,7 @@ function onCancel(): void {
       <template v-else>
         <UidProgress
           v-if="progress.total > 0"
-          :model-value="progress.created + progress.updated + progress.errors"
+          :value="progress.created + progress.updated + progress.errors"
           :max="progress.total"
         />
         <div class="admin-import-wizard__kpi">
