@@ -16,9 +16,10 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * The URL is `/api/admin/{slug}/{action}`, where `slug` is Screen::slug().
  *
- * It implements two actions:
+ * It implements three actions:
  *   - GET  /state           → compile()
  *   - POST /runMethod       → dispatches the screen's command methods
+ *   - POST /listener        → re-renders a Listener layout
  *
  * Per-screen middleware and permissions are attached by ScreenCompiler.
  */
@@ -132,6 +133,46 @@ final class ScreenController extends ApiController
     }
 
     /**
+     * Re-renders one of the screen's Listener layouts against the form state.
+     *
+     * The listener is looked up by its id among the listeners the screen's
+     * `layout()` declares; its handler, when it has one, runs with the state
+     * and returns a patch, and the listener's children are rendered with the
+     * patched state. Nothing else on the screen can be reached this way.
+     *
+     * The body looks like:
+     *   {
+     *     "listener": "listener-1a2b3c4d5e6f",
+     *     "state": {...form-state...}
+     *   }
+     *
+     * @input string $listener The listener's id, as the layout serialized it
+     * @input object ?$state The current form state
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ListenerResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function listener(Request $request): JsonResponse
+    {
+        $screen = $this->currentScreen();
+        if ($screen instanceof JsonResponse) {
+            return $screen;
+        }
+
+        return \Dskripchenko\LaravelAdmin\Layout\ListenerResponder::respond(
+            $this,
+            $screen,
+            $screen->layout(),
+            $request,
+        );
+    }
+
+    /**
      * The default shape of runMethod's response payload — see the
      * ScreenMethodPayload schema.
      *
@@ -154,7 +195,8 @@ final class ScreenController extends ApiController
             'redirect_url' => $result['redirect_url'] ?? null,
             'refresh' => (bool) ($result['refresh'] ?? false),
             'download_url' => $result['download_url'] ?? null,
-            'message' => (string) ($result['message'] ?? 'OK'),
+            // No message means no banner: the panel shows one only when there is text.
+            'message' => (string) ($result['message'] ?? ''),
             // Where the message leads: a screen that starts background work
             // has somewhere to send the person — the job's own page. Shaped
             // rather than passed through, so a half-filled link never reaches
@@ -186,6 +228,13 @@ final class ScreenController extends ApiController
         $out = [];
         foreach (array_values($alerts) as $alert) {
             if (is_array($alert)) {
+                // `level` and `variant` read naturally for a toast and are
+                // what people write; the schema's key is `type`.
+                if (! isset($alert['type'])) {
+                    $alias = $alert['level'] ?? $alert['variant'] ?? null;
+                    $alert['type'] = is_string($alias) && $alias !== '' ? $alias : 'info';
+                }
+                unset($alert['level'], $alert['variant']);
                 foreach (['message', 'title'] as $key) {
                     if (isset($alert[$key]) && is_string($alert[$key])) {
                         $alert[$key] = Localize::string($alert[$key]);

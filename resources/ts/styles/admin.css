@@ -552,3 +552,60 @@
     flex-wrap: wrap;
   }
 }
+
+/* Rendered markdown (renderMarkdown): the field's preview, MarkdownEntry and
+   the markdown widget. Theme tokens only, so both themes follow. */
+.admin-markdown {
+  font-size: var(--uid-font-size-sm);
+  line-height: var(--uid-line-height-normal, 1.5);
+  color: var(--uid-text-primary);
+  word-break: break-word;
+}
+.admin-markdown > :first-child { margin-top: 0; }
+.admin-markdown > :last-child { margin-bottom: 0; }
+.admin-markdown p,
+.admin-markdown ul,
+.admin-markdown ol,
+.admin-markdown blockquote,
+.admin-markdown pre { margin: 0 0 var(--uid-space-sm, 8px); }
+.admin-markdown h1,
+.admin-markdown h2,
+.admin-markdown h3,
+.admin-markdown h4,
+.admin-markdown h5,
+.admin-markdown h6 {
+  margin: var(--uid-space-md, 12px) 0 var(--uid-space-xs, 6px);
+  font-weight: var(--uid-font-weight-semibold);
+  line-height: 1.25;
+}
+.admin-markdown h1 { font-size: 1.5em; }
+.admin-markdown h2 { font-size: 1.3em; }
+.admin-markdown h3 { font-size: 1.15em; }
+.admin-markdown ul,
+.admin-markdown ol { padding-left: 1.5em; }
+.admin-markdown blockquote {
+  padding-left: var(--uid-space-md, 12px);
+  border-left: 3px solid var(--uid-border-subtle);
+  color: var(--uid-text-secondary);
+}
+.admin-markdown code {
+  font-family: var(--uid-font-family-mono);
+  font-size: 0.9em;
+  padding: 0 0.25em;
+  border-radius: var(--uid-radius-sm);
+  background: var(--uid-surface-sunken, var(--uid-surface-raised));
+}
+.admin-markdown pre {
+  padding: var(--uid-space-sm, 8px);
+  border-radius: var(--uid-radius-md);
+  background: var(--uid-surface-sunken, var(--uid-surface-raised));
+  overflow: auto;
+}
+.admin-markdown pre code { padding: 0; background: none; }
+.admin-markdown img { max-width: 100%; }
+.admin-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--uid-border-subtle);
+  margin: var(--uid-space-md, 12px) 0;
+}
+.admin-markdown a { color: var(--uid-accent); }

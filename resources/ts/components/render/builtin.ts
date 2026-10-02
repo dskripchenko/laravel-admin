@@ -56,6 +56,7 @@ import ViewLayout from '../layouts/ViewLayout.vue'
 import WrapperLayout from '../layouts/WrapperLayout.vue'
 import InfolistLayout from '../layouts/InfolistLayout.vue'
 import AuditTrailLayout from '../layouts/AuditTrailLayout.vue'
+import ListenerLayout from '../layouts/ListenerLayout.vue'
 
 /**
  * A TextField with the input's `type` preset.
@@ -187,6 +188,9 @@ export function registerBuiltinComponents(): void {
       wrapper: WrapperLayout,
       infolist: InfolistLayout,
       audit_trail: AuditTrailLayout,
+      // `Layout::listener([...])->listen([...])` — re-rendered by the server
+      // as the watched fields change.
+      listener: ListenerLayout,
       // Widgets on an ordinary screen: `Layout\Dashboard::make([...])`.
       dashboard: DashboardLayout,
       'admin.resource-table': EmbeddedResourceTable,

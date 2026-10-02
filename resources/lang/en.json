@@ -456,5 +456,7 @@
     "Ничего не найдено": "Nothing found",
     "Повторить": "Retry",
     "Ресурс :resource не зарегистрирован.": "The resource :resource is not registered.",
-    "Убрать": "Remove"
+    "Убрать": "Remove",
+    "Не удалось обновить форму": "Could not update the form",
+    "Обновление…": "Updating…"
 }

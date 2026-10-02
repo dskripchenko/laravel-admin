@@ -23,6 +23,7 @@ import {
   Eye,
   GripVertical,
   MoreHorizontal,
+  MoreVertical,
   Pencil,
   Plus,
   RotateCcw,
@@ -144,14 +145,18 @@ const resolvedCreateRouteName = computed<string | null>(() => {
 /**
  * Resource actions from manifest.actions — `Resource->actions()` on the
  * backend, every type of them (button, bulk, modal, async, link, dropdown).
- * The ones needing no selection live in the ⋯ menu; row and bulk actions live
- * in the bulk toolbar, which appears once rows are picked. They all run
- * through useActionRunner; the server-side ones POST to /{slug}/action with
- * {key, ids[], payload?}.
+ * The ones needing no selection live in the ⋯ menu and run without ids; the
+ * ones placed in rows get a ⋮ menu on every row and run for that row alone;
+ * the selection ones live in the bulk toolbar, which appears once rows are
+ * picked. They all run through useActionRunner; the server-side ones POST to
+ * /{slug}/action with {key, ids[], payload?}.
  */
 const allActions = computed<AdminAction[]>(() => normalizeActions(resourceMeta.value?.actions))
 const headerActions = computed<AdminAction[]>(() => allActions.value.filter((a) => !needsSelection(a)))
 const selectionActions = computed<AdminAction[]>(() => allActions.value.filter((a) => needsSelection(a)))
+const rowActions = computed<AdminAction[]>(() =>
+  allActions.value.filter((a) => a.position.includes('row') && needsSelection(a)),
+)
 
 /** A bulk action outside its requiresAtLeast/requiresAtMost range is disabled. */
 const isActionDisabled = (action: AdminAction): boolean =>
@@ -159,7 +164,7 @@ const isActionDisabled = (action: AdminAction): boolean =>
 
 const runner = useActionRunner({
   ids: () => [...index.selection],
-  async execute(action, payload) {
+  async execute(action, payload, options) {
     nav.start()
     try {
       const { getAdminClient } = await import('../../stores/registry')
@@ -169,7 +174,9 @@ const runner = useActionRunner({
         `/${props.slug}/action`,
         {
           key: action.name,
-          ids: [...index.selection],
+          // A row's own menu runs the action for that row; a standalone
+          // action is sent with no ids at all.
+          ids: options?.ids ?? (needsSelection(action) ? [...index.selection] : []),
           ...(payload ? { payload } : {}),
         },
       )
@@ -177,9 +184,9 @@ const runner = useActionRunner({
       nav.end()
     }
   },
-  async onSuccess(action, raw) {
+  async onSuccess(action, raw, options) {
     const result = (raw ?? {}) as { affected?: number; message?: string }
-    if (needsSelection(action)) index.clearSelection()
+    if (needsSelection(action) && !options?.ids) index.clearSelection()
     await index.load().catch(() => undefined)
     adminToast.success(
       result.message ?? tRaw('Действие «:action» применено к :count записям.', { action: action.label, count: result.affected ?? 0 }),
@@ -203,6 +210,13 @@ async function onCustomAction(action: AdminAction): Promise<void> {
   }
   emit('header-action', action.name)
   await runner.run(action)
+}
+
+/** An action from a row's own menu: it applies to that row alone. */
+async function onRowAction(action: AdminAction, row: Record<string, unknown>): Promise<void> {
+  const id = rowId(row)
+  if (id === null) return
+  await runner.run(action, { ids: [id] })
 }
 
 const bulkDeleting = ref(false)
@@ -456,7 +470,8 @@ const columns = computed<UidTableColumn[]>(() => {
       label: '',
       sortable: false,
       align: 'right',
-      width: '120px',
+      // Room for the ⋮ menu when the resource has row actions.
+      width: rowActions.value.length > 0 ? '156px' : '120px',
     },
   ]
 })
@@ -1357,6 +1372,26 @@ async function retryLoad(): Promise<void> {
                 <UidIcon :icon="Trash2" :size="16" />
               </button>
             </template>
+            <!-- The resource's row actions: a menu per row, run for that row. -->
+            <!-- The wrapper keeps the click from opening the row. -->
+            <span v-if="rowActions.length > 0" class="admin-resource-index__row-menu-wrap" @click.stop>
+              <UidMenu>
+                <template #trigger>
+                  <UidButton
+                    variant="ghost"
+                    size="sm"
+                    class="admin-resource-index__row-menu"
+                    :icon="MoreVertical"
+                    :aria-label="tr('Действия')"
+                    data-testid="row-actions-menu"
+                  />
+                </template>
+                <AdminActionMenuItems
+                  :actions="rowActions"
+                  @run="(a: AdminAction) => onRowAction(a, rowFromSlot(slotProps) ?? {})"
+                />
+              </UidMenu>
+            </span>
           </div>
           <slot
             v-else
@@ -1500,6 +1535,9 @@ async function retryLoad(): Promise<void> {
   background: var(--uid-color-surface-hover);
   color: var(--uid-text-primary);
   border-color: var(--uid-border-subtle);
+}
+.admin-resource-index__row-menu-wrap {
+  display: inline-flex;
 }
 .admin-resource-index__row-action--danger:hover {
   color: var(--uid-color-danger, #dc2626);

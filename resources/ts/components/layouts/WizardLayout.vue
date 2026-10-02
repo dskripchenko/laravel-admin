@@ -120,16 +120,11 @@ async function submit(): Promise<void> {
   if (ok && props.persistKey) clearProgress(props.persistKey)
 }
 
-function canVisit(idx: number): boolean {
-  return idx !== current.value && (props.freeForm || idx < current.value)
-}
+/** Free form: any step; otherwise only the ones already passed. */
+const selectable = computed<'all' | 'completed'>(() => (props.freeForm ? 'all' : 'completed'))
 
-/** UidStepper has no click of its own; the step is found from the event. */
-function onStepperClick(event: MouseEvent): void {
-  const li = (event.target as HTMLElement | null)?.closest('.uid-stepper__step')
-  if (!li?.parentElement) return
-  const idx = Array.from(li.parentElement.children).indexOf(li)
-  if (idx >= 0 && canVisit(idx)) wizard.value?.goTo(idx)
+function onStepSelect(idx: number): void {
+  wizard.value?.goTo(idx)
 }
 
 /* --- persistence --- */
@@ -169,14 +164,13 @@ watch(
   <UidWizard ref="wizard" v-model="current" :steps="steps" class="admin-wizard-layout">
     <UidWizardLayout>
       <template #stepper>
-        <!-- The click is delegated: UidStepper renders the steps without one. -->
-        <div
+        <UidStepper
           class="admin-wizard-layout__stepper"
-          :class="{ 'admin-wizard-layout__stepper--free': freeForm }"
-          @click="onStepperClick"
-        >
-          <UidStepper :steps="steps" :current="current" />
-        </div>
+          :steps="steps"
+          :current="current"
+          :selectable="selectable"
+          @select="onStepSelect"
+        />
       </template>
 
       <UidWizardStep
@@ -230,9 +224,5 @@ watch(
 .admin-wizard-layout .uid-layout-wizard__nav {
   padding-left: 0;
   padding-right: 0;
-}
-.admin-wizard-layout__stepper .uid-stepper__step--completed,
-.admin-wizard-layout__stepper--free .uid-stepper__step:not(.uid-stepper__step--current) {
-  cursor: pointer;
 }
 </style>

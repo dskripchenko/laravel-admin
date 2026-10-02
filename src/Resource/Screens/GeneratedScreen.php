@@ -87,6 +87,20 @@ abstract class GeneratedScreen extends Screen
     }
 
     /**
+     * The generated forms keep the record under `record`; its fields are
+     * what a listener watches.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    protected function listenerState(array $state): array
+    {
+        $record = $state['record'] ?? [];
+
+        return is_array($record) ? $record : [];
+    }
+
+    /**
      * Loads a record by id, or throws a 404. The edit and view screens' query()
      * uses it, and it returns the payload in query()'s shape: the record and
      * the id.

@@ -15,6 +15,7 @@ import AdminShell from './shell/AdminShell.vue'
 import AdminBootSkeleton from './shell/AdminBootSkeleton.vue'
 import AdminLoadingBar from './AdminLoadingBar.vue'
 import NotificationsDrawer from './shell/NotificationsDrawer.vue'
+import AdminConfirmDialog from './shell/AdminConfirmDialog.vue'
 import { useAuthStore } from '../stores/auth'
 import { adminToast } from '../stores/toast'
 import { useBrand } from '../composables/useBrand'
@@ -126,6 +127,9 @@ const pageTransition = computed<string>(() => (booted.value ? 'admin-page' : 'ad
   <!-- Toast-stack для админских уведомлений (success/error/info).
        useToast() из @dskripchenko/ui — push'ит сообщения в общий store. -->
   <UidToastProvider />
+
+  <!-- The confirmation dialog behind useConfirm(). -->
+  <AdminConfirmDialog />
 </template>
 
 <style>

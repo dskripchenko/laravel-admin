@@ -28,12 +28,14 @@ import {
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { useManifestStore } from '../../stores/manifest'
 import { provideFormState } from '../render/formState'
+import { provideListenerEndpoint } from '../render/listenerContext'
 import { ApiError } from '../../api/errors'
 import { resolveStatusLabel } from './statusLabel'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
+import { confirmDialog } from '../../composables/useConfirm'
 
 interface Props {
   /** The resource slug: articles, users and so on. */
@@ -98,6 +100,15 @@ const ctx = provideFormState(
   form.errors,
   props.id !== null && props.id !== undefined ? 'update' : 'create',
 )
+
+// The Listener layouts of the form ask the resource's `listener` action, with
+// the form's context — the server checks the create or update permission by it.
+provideListenerEndpoint({
+  url: () => `/${props.slug}/listener`,
+  extra: () => (form.isCreate
+    ? { context: 'create' }
+    : { context: 'update', id: props.id }),
+})
 
 // Changes made through ctx.setField are synced back into the store so that
 // isDirty works. Since state.value === ctx.state — the same reactive object,
@@ -253,7 +264,7 @@ const resolvedIndexRouteName = computed<string>(() => {
 })
 
 async function onDelete(): Promise<void> {
-  if (!confirm(tr('Удалить запись?'))) return
+  if (!(await confirmDialog({ message: tr('Удалить запись?'), destructive: true }))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
     adminToast.success(tr('Запись удалена.'))
@@ -261,8 +272,8 @@ async function onDelete(): Promise<void> {
   }
 }
 
-function onCancel(): void {
-  if (form.isDirty && !confirm(tr('Несохранённые изменения будут потеряны. Продолжить?'))) {
+async function onCancel(): Promise<void> {
+  if (form.isDirty && !(await confirmDialog(tr('Несохранённые изменения будут потеряны. Продолжить?')))) {
     return
   }
   void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)

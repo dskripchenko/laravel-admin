@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+/**
+ * The stats widget — the backend's StatsOverviewWidget, whose data() returns
+ * `stats: [{label, value, change: {delta, direction}, color, icon}]`.
+ *
+ * One stat renders as a single UidStat card; several render as a responsive
+ * row of cards, each with its own label, value, trend, color and icon, under
+ * the widget's title when it has one.
+ *
+ * It also works with the older scalar props, where the widget sent `value`
+ * directly; a non-empty `stats` array wins.
+ */
+import { computed, type Component } from 'vue'
 import { UidStat } from '@dskripchenko/ui'
 import type { StatTone } from '@dskripchenko/ui'
+import { resolveIcon } from '../shell/iconRegistry'
 
 type SemanticTone = 'neutral' | 'positive' | 'negative' | 'warning' | 'info'
 
-/**
- * The backend's StatsOverviewWidget::data() returns an array of
- * `stats: [{label, value, change: {delta, direction}, color, icon}]`. This
- * StatWidget takes the first stat and renders a UidStat; several stats in one
- * widget are not supported yet, and a host that needs them declares several
- * StatWidgets.
- *
- * It also works with the older scalar values, where the widget sent `value`
- * directly, but stats[0] wins.
- */
 interface StatChange {
   delta?: number
   direction?: 'up' | 'down' | 'flat'
@@ -55,46 +57,127 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
 })
 
-const TONE_MAP: Record<SemanticTone, StatTone> = {
+/** Semantic and kit tone names, plus the usual color words, onto UidStat tones. */
+const TONES: Record<string, StatTone> = {
   neutral: 'primary',
+  primary: 'primary',
+  default: 'primary',
   positive: 'success',
+  success: 'success',
+  green: 'success',
   negative: 'danger',
+  danger: 'danger',
+  error: 'danger',
+  red: 'danger',
   warning: 'warning',
+  yellow: 'warning',
+  orange: 'warning',
   info: 'info',
+  blue: 'info',
 }
 
-const uidTone = computed<StatTone>(() => TONE_MAP[props.tone])
+function toneOf(color: string | null | undefined): StatTone {
+  return TONES[(color ?? '').toLowerCase()] ?? TONES[props.tone] ?? 'primary'
+}
 
-/**
- * Resolves the first stat of the array, falling back to the scalar props.
- * UidStat takes a label on top, a value beneath and an optional trend.
- */
-const first = computed<StatItem>(() => props.stats[0] ?? {})
+/** A trend's sign follows its direction: `down` with a positive delta is a fall. */
+function trendOf(change: StatChange | null | undefined): number | undefined {
+  if (!change || typeof change.delta !== 'number') return undefined
+  const abs = Math.abs(change.delta)
+  if (change.direction === 'down') return -abs
+  if (change.direction === 'up') return abs
+  return change.delta
+}
 
-const statLabel = computed<string>(
-  () => first.value.label ?? props.title ?? '',
-)
-const statValue = computed<number | string>(
-  () => first.value.value ?? props.value,
-)
-const statPrefix = computed<string>(() => first.value.prefix ?? props.prefix)
-const statSuffix = computed<string>(() => first.value.suffix ?? props.suffix)
-const statTrend = computed<number | undefined>(() => {
-  const c = first.value.change
-  if (c && typeof c.delta === 'number') return c.delta
-  return props.trend
+interface ResolvedStat {
+  title: string
+  value: number | string
+  prefix: string
+  suffix: string
+  trend: number | undefined
+  tone: StatTone
+  icon: Component | undefined
+}
+
+const items = computed<ResolvedStat[]>(() => {
+  if (props.stats.length === 0) {
+    return [{
+      title: props.title,
+      value: props.value,
+      prefix: props.prefix,
+      suffix: props.suffix,
+      trend: props.trend,
+      tone: toneOf(null),
+      icon: undefined,
+    }]
+  }
+  const single = props.stats.length === 1
+  return props.stats.map((s) => ({
+    // A single stat keeps the widget's title on its card, as before.
+    title: (single && props.title ? props.title : s.label) ?? '',
+    value: s.value ?? '',
+    prefix: s.prefix ?? '',
+    suffix: s.suffix ?? '',
+    trend: trendOf(s.change),
+    tone: toneOf(s.color),
+    icon: resolveIcon(s.icon) ?? undefined,
+  }))
 })
+
+const multiple = computed(() => items.value.length > 1)
 </script>
 
 <template>
   <UidStat
-    :title="title || statLabel"
-    :value="statValue"
-    :prefix="statPrefix"
-    :suffix="statSuffix"
-    :trend="statTrend"
+    v-if="!multiple"
+    :title="items[0]!.title"
+    :value="items[0]!.value"
+    :prefix="items[0]!.prefix"
+    :suffix="items[0]!.suffix"
+    :trend="items[0]!.trend"
     :precision="precision"
-    :tone="uidTone"
+    :tone="items[0]!.tone"
+    :icon="items[0]!.icon"
     :loading="loading"
   />
+  <section v-else class="admin-stats-widget">
+    <header v-if="title" class="admin-stats-widget__hd">
+      <h3 class="admin-stats-widget__title">{{ title }}</h3>
+    </header>
+    <div class="admin-stats-widget__grid">
+      <UidStat
+        v-for="(stat, idx) in items"
+        :key="idx"
+        :title="stat.title"
+        :value="stat.value"
+        :prefix="stat.prefix"
+        :suffix="stat.suffix"
+        :trend="stat.trend"
+        :precision="precision"
+        :tone="stat.tone"
+        :icon="stat.icon"
+        :loading="loading"
+      />
+    </div>
+  </section>
 </template>
+
+<style>
+.admin-stats-widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-sm);
+  min-width: 0;
+}
+.admin-stats-widget__title {
+  margin: 0;
+  font-size: var(--uid-font-size-sm);
+  font-weight: var(--uid-font-weight-semibold);
+  color: var(--uid-text-primary);
+}
+.admin-stats-widget__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--uid-space-md);
+}
+</style>
