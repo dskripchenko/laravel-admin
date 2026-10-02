@@ -5,6 +5,15 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **Native input attributes reach the input.** The allowed-keys list of a
+  KeyValue field (`list`) and the length limit of the 2FA code (`maxlength`)
+  now work: `@dskripchenko/ui` ^1.9.0 forwards native attributes from its
+  field components to the control instead of the wrapper.
+
 ## 1.45.0
 
 ### Fixed

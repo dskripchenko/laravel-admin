@@ -32,14 +32,7 @@ const coreRoot = resolve(here, '../..')
 const kitDist = resolve(coreRoot, 'node_modules/@dskripchenko/ui/dist')
 
 /** `file → [kind:Component:name]` entries that are deliberate. Keep it short. */
-const ALLOWED: Record<string, string[]> = {
-  // Known gaps in the kit, not in core: UidInput puts unknown attributes on its
-  // wrapper <div>, not on the <input>, so `list` (the datalist of allowed keys)
-  // and `maxlength` do nothing yet. The fix belongs in UidInput; drop these
-  // entries once it forwards native input attributes.
-  'resources/ts/components/fields/KeyValueField.vue': ['prop:UidInput:list'],
-  'resources/ts/components/profile/TwoFactorSetup.vue': ['prop:UidInput:maxlength'],
-}
+const ALLOWED: Record<string, string[]> = {}
 
 /**
  * Kit components whose slot type takes any name. Their .d.ts cannot tell a
@@ -138,8 +131,23 @@ const FALLTHROUGH_ATTRS = new Set([
   'key', 'ref', 'is',
 ])
 
-function isFallthroughAttr(name: string): boolean {
+/**
+ * Kit field components that forward unknown attributes to their native control
+ * (@dskripchenko/ui ^1.9 `useControlAttrs`), so a native input attribute bound
+ * on them reaches the <input>/<textarea> and is not a drift.
+ */
+const CONTROL_FORWARDING = new Set([
+  'UidInput', 'UidTextarea', 'UidNumberInput', 'UidCheckbox', 'UidSwitch', 'UidRadio',
+  'UidSlider', 'UidTagsInput', 'UidCombobox', 'UidMention', 'UidPageSize',
+])
+const NATIVE_CONTROL_ATTRS = new Set([
+  'list', 'maxlength', 'minlength', 'pattern', 'spellcheck', 'enterkeyhint', 'autocapitalize',
+  'autocorrect', 'min', 'max', 'step', 'size', 'rows', 'cols', 'wrap', 'accept', 'capture',
+])
+
+function isFallthroughAttr(name: string, comp?: string): boolean {
   const n = name.toLowerCase()
+  if (comp && CONTROL_FORWARDING.has(comp) && NATIVE_CONTROL_ATTRS.has(n)) return true
   return FALLTHROUGH_ATTRS.has(n) || n.startsWith('aria-') || n.startsWith('data-')
 }
 
@@ -206,12 +214,12 @@ function checkFile(file: string, src = readFileSync(file, 'utf8')): { findings: 
         checked++
         for (const p of el.props) {
           if (p.type === NodeTypes.ATTRIBUTE) {
-            if (!api.props.has(camelize(p.name)) && !isFallthroughAttr(p.name)) report(el, 'prop', comp, p.name)
+            if (!api.props.has(camelize(p.name)) && !isFallthroughAttr(p.name, comp)) report(el, 'prop', comp, p.name)
             continue
           }
           const arg = p.arg && p.arg.type === NodeTypes.SIMPLE_EXPRESSION && p.arg.isStatic ? p.arg.content : null
           if (p.name === 'bind' && arg) {
-            if (!api.props.has(camelize(arg)) && !isFallthroughAttr(arg)) report(el, 'prop', comp, arg)
+            if (!api.props.has(camelize(arg)) && !isFallthroughAttr(arg, comp)) report(el, 'prop', comp, arg)
           } else if (p.name === 'on' && arg) {
             const declared = api.emits.has(arg) || api.emits.has(camelize(arg)) || api.emits.has(hyphenate(arg))
             if (!declared && !isNativeEvent(arg)) report(el, 'event', comp, arg)
