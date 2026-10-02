@@ -10,8 +10,7 @@ defineProps<Props>()
 </script>
 
 <template>
-  <UidAlert variant="warning">
-    <template #title>{{ tRaw('Неизвестный тип элемента: :type', { type }) }}</template>
+  <UidAlert variant="warning" :title="tRaw('Неизвестный тип элемента: :type', { type })">
     {{ tr('Зарегистрируйте через') }} <code>registerInfolistEntry('{{ type }}', YourComponent)</code>.
   </UidAlert>
 </template>

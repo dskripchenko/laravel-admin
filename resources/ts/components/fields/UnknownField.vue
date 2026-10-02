@@ -15,8 +15,7 @@ defineProps<Props>()
 </script>
 
 <template>
-  <UidAlert variant="warning">
-    <template #title>{{ tRaw('Неизвестный тип поля: :type', { type }) }}</template>
+  <UidAlert variant="warning" :title="tRaw('Неизвестный тип поля: :type', { type })">
     <template v-if="name">
       <code>{{ name }}</code> — {{ tr('зарегистрируйте компонент поля через') }}
       <code>registerField('{{ type }}', YourComponent)</code>.

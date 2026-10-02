@@ -24,9 +24,13 @@ import {
   UidButton,
   UidEmptyState,
   UidErrorState,
-  UidIcon,
+  UidFormField,
+  UidInput,
+  UidSelect,
   UidSkeleton,
+  UidSwitch,
   UidTable,
+  UidTextarea,
   type UidTableColumn,
 } from '@dskripchenko/ui'
 import InlineEditCell from '../resource/InlineEditCell.vue'
@@ -65,12 +69,17 @@ interface SearchResponse {
   meta: { total: number; page: number; per_page: number; last_page: number }
 }
 
+type InputKind = 'text' | 'number' | 'select' | 'date' | 'textarea' | 'switcher'
+
 interface EditableMeta {
   field: string
   validation: unknown[]
-  as: 'text' | 'number' | 'select' | 'date' | 'textarea' | 'switcher'
+  as: InputKind
   options: Record<string | number, string>
 }
+
+/** The trailing column with the row's delete button; UidTable fills it through its slot. */
+const ACTIONS_KEY = '__actions'
 
 const manifest = useManifestStore()
 const parentForm = useResourceFormStore()
@@ -88,42 +97,64 @@ const parentId = computed<string | number | null>(() => {
   return v as string | number
 })
 
+/** The manifest's column key: `name` from TableColumn, `key` from older manifests. */
+function columnKey(c: Record<string, unknown>): string {
+  return String(c.key ?? c.name ?? '')
+}
+
 const visibleColumns = computed<Array<Record<string, unknown>>>(() => {
   const cols = (childMeta.value?.columns ?? []) as Array<Record<string, unknown>>
   return cols.filter((c) => {
-    const name = String(c.name ?? '')
+    const name = columnKey(c)
     // No column switcher here: a defaultHidden() column stays hidden.
-    return !props.hide_columns.includes(name) && (c.defaultHidden !== true || c.cantHide === true)
+    return name !== '' && !props.hide_columns.includes(name) && (c.defaultHidden !== true || c.cantHide === true)
   })
 })
 
-const tableColumns = computed<UidTableColumn[]>(() =>
+/** The data columns, without the actions column: the draft form shows these. */
+const dataColumns = computed<UidTableColumn[]>(() =>
   visibleColumns.value.map((c) => ({
-    key: String(c.name ?? ''),
+    key: columnKey(c),
     label: String(c.label ?? c.name ?? ''),
-    sortable: Boolean(c.sortable),
     align: (c.align as 'left' | 'center' | 'right' | undefined) ?? 'left',
-    width: c.width as string | undefined,
+    width: typeof c.width === 'string' ? c.width : undefined,
   })),
 )
 
-const canCreate = computed(() => props.features.create && Boolean(childMeta.value?.permissions?.create))
-const canDelete = computed(() => props.features.delete && Boolean(childMeta.value?.permissions?.delete))
-const canBulkDelete = computed(() => props.features.bulkDelete && Boolean(childMeta.value?.permissions?.delete))
+const canCreate = computed(() => Boolean(props.features.create) && Boolean(childMeta.value?.permissions?.create))
+const canDelete = computed(() => Boolean(props.features.delete) && Boolean(childMeta.value?.permissions?.delete))
+const canBulkDelete = computed(() => Boolean(props.features.bulkDelete) && Boolean(childMeta.value?.permissions?.delete))
+
+const tableColumns = computed<UidTableColumn[]>(() =>
+  canDelete.value
+    ? [...dataColumns.value, { key: ACTIONS_KEY, label: '', align: 'right', width: '48px' }]
+    : dataColumns.value,
+)
 
 function editableMeta(colName: string): EditableMeta | null {
-  for (const c of visibleColumns.value) {
-    if (String(c.name ?? '') === colName) {
-      const editable = c.editable as EditableMeta | null | undefined
-      return editable ?? null
-    }
+  const c = visibleColumns.value.find((col) => columnKey(col) === colName)
+  const editable = c?.editable as Partial<EditableMeta> | null | undefined
+  if (!editable) return null
+  return {
+    field: editable.field ?? colName,
+    validation: editable.validation ?? [],
+    as: editable.as ?? 'text',
+    options: editable.options ?? {},
   }
-  return null
+}
+
+function inputKind(colName: string): InputKind {
+  return editableMeta(colName)?.as ?? 'text'
+}
+
+function selectOptions(colName: string): Array<{ value: string; label: string }> {
+  return Object.entries(editableMeta(colName)?.options ?? {}).map(([value, label]) => ({ value, label: String(label) }))
 }
 
 async function load(): Promise<void> {
   if (parentId.value === null) {
     items.value = []
+    selection.value = new Set()
     return
   }
   loading.value = true
@@ -136,6 +167,9 @@ async function load(): Promise<void> {
       filters: { [props.foreign_key]: parentId.value },
     })
     items.value = res.data
+    // A row that is gone is no longer selected.
+    const present = new Set(items.value.map(rowId))
+    selection.value = new Set([...selection.value].filter((id) => present.has(id)))
   } catch (err) {
     error.value = err instanceof Error ? err : new Error(String(err))
     items.value = []
@@ -151,23 +185,13 @@ function rowId(row: Record<string, unknown>): string | number {
   return (row.id ?? '') as string | number
 }
 
-function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
-  return (slotProps as { row?: Record<string, unknown> } | undefined)?.row
+/** UidTable passes `{ row }` to a column slot. */
+function rowFromSlot(slotProps: unknown): Record<string, unknown> {
+  return (slotProps as { row?: Record<string, unknown> } | undefined)?.row ?? {}
 }
 
-function toggleSelection(row: Record<string, unknown>): void {
-  const id = rowId(row)
-  const next = new Set(selection.value)
-  if (next.has(id)) next.delete(id); else next.add(id)
-  selection.value = next
-}
-
-function toggleSelectAll(): void {
-  if (selection.value.size === items.value.length) {
-    selection.value = new Set()
-  } else {
-    selection.value = new Set(items.value.map(rowId))
-  }
+function onSelectionUpdate(next: Set<string | number>): void {
+  selection.value = new Set(next)
 }
 
 async function deleteRow(row: Record<string, unknown>): Promise<void> {
@@ -176,8 +200,9 @@ async function deleteRow(row: Record<string, unknown>): Promise<void> {
   try {
     await getAdminClient().post(`/${props.resource}/delete`, { id })
     items.value = items.value.filter((r) => rowId(r) !== id)
-    selection.value.delete(id)
-    selection.value = new Set(selection.value)
+    const next = new Set(selection.value)
+    next.delete(id)
+    selection.value = next
   } catch (err) {
     adminToast.error(apiErrorMessage(err, tr('Не удалось удалить строку.')))
   }
@@ -187,15 +212,23 @@ async function bulkDelete(): Promise<void> {
   if (selection.value.size === 0) return
   if (!(await confirmDialog({ message: tRaw('Удалить :count строк?', { count: selection.value.size }), destructive: true }))) return
   const ids = [...selection.value]
-  try {
-    // Deleting in parallel: the backend has no bulk endpoint yet, so they go one by one.
-    await Promise.all(ids.map((id) => getAdminClient().post(`/${props.resource}/delete`, { id })))
-    selection.value = new Set()
-    await load()
-  } catch (err) {
-    adminToast.error(apiErrorMessage(err, tr('Не удалось удалить часть строк.')))
-    await load()
+  // There is no bulk endpoint: one /delete per id, one after another, as on
+  // the list page. A row that failed stays selected.
+  const failed: Array<string | number> = []
+  let firstError: unknown = null
+  for (const id of ids) {
+    try {
+      await getAdminClient().post(`/${props.resource}/delete`, { id })
+    } catch (err) {
+      failed.push(id)
+      firstError ??= err
+    }
   }
+  selection.value = new Set(failed)
+  if (failed.length > 0) {
+    adminToast.error(apiErrorMessage(firstError, tr('Не удалось удалить часть строк.')))
+  }
+  await load()
 }
 
 function startDraft(): void {
@@ -220,13 +253,17 @@ async function commitDraft(): Promise<void> {
   }
 }
 
+function draftValue(col: string): unknown {
+  return draft.value?.[col] ?? null
+}
+
 function updateDraftField(col: string, value: unknown): void {
   if (draft.value === null) return
   draft.value = { ...draft.value, [col]: value }
 }
 
 function columnDef(col: string): Record<string, unknown> {
-  return visibleColumns.value.find((c) => String(c.name ?? '') === col) ?? {}
+  return visibleColumns.value.find((c) => columnKey(c) === col) ?? {}
 }
 function columnPreset(col: string): string | null {
   const p = columnDef(col).preset
@@ -239,23 +276,27 @@ function columnCellMeta(col: string): CellMeta {
 
 <template>
   <div class="admin-embedded-table">
-    <div class="admin-embedded-table__toolbar">
+    <div v-if="canCreate || (canBulkDelete && selection.size > 0)" class="admin-embedded-table__toolbar">
       <UidButton
         v-if="canCreate"
         variant="primary"
         size="sm"
+        :icon="Plus"
         :disabled="draft !== null"
+        data-testid="embedded-add"
         @click="startDraft"
       >
-        <UidIcon :icon="Plus" /> {{ tr('Добавить') }}
+        {{ tr('Добавить') }}
       </UidButton>
       <UidButton
         v-if="canBulkDelete && selection.size > 0"
         variant="danger"
         size="sm"
+        :icon="Trash2"
+        data-testid="embedded-bulk-delete"
         @click="bulkDelete"
       >
-        <UidIcon :icon="Trash2" /> {{ tRaw('Удалить выбранные (:count)', { count: selection.size }) }}
+        {{ tRaw('Удалить выбранные (:count)', { count: selection.size }) }}
       </UidButton>
     </div>
 
@@ -281,93 +322,100 @@ function columnCellMeta(col: string): CellMeta {
       :selectable="canBulkDelete"
       :selection="selection"
       row-key="id"
-      @select-row="toggleSelection"
-      @select-all="toggleSelectAll"
+      @update:selection="onSelectionUpdate"
     >
       <template
         v-for="col in tableColumns"
         :key="col.key"
         #[col.key]="slotProps"
       >
-        <template v-if="rowFromSlot(slotProps) && editableMeta(col.key)">
-          <InlineEditCell
-            :resource-slug="resource"
-            :row-id="rowId(rowFromSlot(slotProps)!)"
-            :column="col.key"
-            :value="rowFromSlot(slotProps)![col.key]"
-            :editable="true"
-            :input-type="editableMeta(col.key)!.as"
-            :options="editableMeta(col.key)!.options"
-            :row-override="(rowFromSlot(slotProps)!._editable as Record<string, boolean> | undefined) ?? {}"
-            @saved="(v) => { const r = rowFromSlot(slotProps); if (r) r[col.key] = v }"
-          >
-            <AdminTableCell
-              :value="rowFromSlot(slotProps)![col.key]"
-              :preset="columnPreset(col.key)"
-              :meta="columnCellMeta(col.key)"
-              :row="rowFromSlot(slotProps)"
-            />
-          </InlineEditCell>
-        </template>
+        <UidButton
+          v-if="col.key === ACTIONS_KEY"
+          variant="ghost"
+          size="sm"
+          :icon="Trash2"
+          class="admin-embedded-table__row-delete"
+          :aria-label="tr('Удалить')"
+          :title="tr('Удалить')"
+          data-testid="embedded-row-delete"
+          @click="deleteRow(rowFromSlot(slotProps))"
+        />
+        <InlineEditCell
+          v-else-if="editableMeta(col.key)"
+          :resource-slug="resource"
+          :row-id="rowId(rowFromSlot(slotProps))"
+          :column="col.key"
+          :value="rowFromSlot(slotProps)[col.key]"
+          :editable="true"
+          :input-type="inputKind(col.key)"
+          :options="editableMeta(col.key)!.options"
+          :row-override="(rowFromSlot(slotProps)._editable as Record<string, boolean> | undefined) ?? {}"
+          @saved="(v) => { rowFromSlot(slotProps)[col.key] = v }"
+        >
+          <AdminTableCell
+            :value="rowFromSlot(slotProps)[col.key]"
+            :preset="columnPreset(col.key)"
+            :meta="columnCellMeta(col.key)"
+            :row="rowFromSlot(slotProps)"
+          />
+        </InlineEditCell>
         <AdminTableCell
           v-else
-          :value="(rowFromSlot(slotProps) ?? {})[col.key]"
+          :value="rowFromSlot(slotProps)[col.key]"
           :preset="columnPreset(col.key)"
           :meta="columnCellMeta(col.key)"
           :row="rowFromSlot(slotProps)"
         />
       </template>
-
-      <template v-if="canDelete" #actions="slotProps">
-        <button
-          type="button"
-          class="admin-embedded-table__row-delete"
-          :aria-label="tr('Удалить')"
-          @click="rowFromSlot(slotProps) && deleteRow(rowFromSlot(slotProps)!)"
-        >
-          <UidIcon :icon="Trash2" :size="14" />
-        </button>
-      </template>
     </UidTable>
 
-    <!-- Draft row (для quick-add) — рендерим отдельной мини-формой под таблицей,
-         т.к. UidTable не имеет slot'а для prepend-row. UX-простой. -->
-    <div v-if="draft !== null" class="admin-embedded-table__draft">
+    <!-- The quick-add draft: a small form under the table, since UidTable has
+         no slot for an extra row. -->
+    <div v-if="draft !== null" class="admin-embedded-table__draft" data-testid="embedded-draft">
       <div class="admin-embedded-table__draft-cells">
-        <div
-          v-for="col in tableColumns"
+        <UidFormField
+          v-for="col in dataColumns"
           :key="col.key"
+          :label="col.label"
           class="admin-embedded-table__draft-cell"
         >
-          <label class="admin-embedded-table__draft-label">{{ col.label }}</label>
-          <select
-            v-if="editableMeta(col.key)?.as === 'select'"
-            class="admin-embedded-table__draft-input"
-            :value="(draft[col.key] as string) ?? ''"
-            @change="(e) => updateDraftField(col.key, (e.target as HTMLSelectElement).value)"
-          >
-            <option value=""></option>
-            <option
-              v-for="(label, value) in editableMeta(col.key)!.options"
-              :key="value"
-              :value="value"
-            >{{ label }}</option>
-          </select>
-          <input
-            v-else
-            class="admin-embedded-table__draft-input"
-            :type="editableMeta(col.key)?.as === 'number' ? 'number' : editableMeta(col.key)?.as === 'date' ? 'date' : 'text'"
-            :value="(draft[col.key] as string) ?? ''"
-            @input="(e) => updateDraftField(col.key, (e.target as HTMLInputElement).value)"
+          <UidSelect
+            v-if="inputKind(col.key) === 'select'"
+            :model-value="(draftValue(col.key) as string | null)"
+            :options="selectOptions(col.key)"
+            clearable
+            size="sm"
+            @update:model-value="(v) => updateDraftField(col.key, v)"
           />
-        </div>
+          <UidSwitch
+            v-else-if="inputKind(col.key) === 'switcher'"
+            :model-value="Boolean(draftValue(col.key))"
+            size="sm"
+            @update:model-value="(v) => updateDraftField(col.key, v)"
+          />
+          <UidTextarea
+            v-else-if="inputKind(col.key) === 'textarea'"
+            :model-value="String(draftValue(col.key) ?? '')"
+            :rows="2"
+            size="sm"
+            @update:model-value="(v) => updateDraftField(col.key, v)"
+          />
+          <UidInput
+            v-else
+            :model-value="String(draftValue(col.key) ?? '')"
+            :type="inputKind(col.key) === 'number' ? 'number' : inputKind(col.key) === 'date' ? 'date' : 'text'"
+            :name="col.key"
+            size="sm"
+            @update:model-value="(v) => updateDraftField(col.key, v)"
+          />
+        </UidFormField>
       </div>
       <div class="admin-embedded-table__draft-actions">
-        <UidButton variant="primary" size="sm" @click="commitDraft">
-          <UidIcon :icon="Check" /> {{ tr('Создать') }}
+        <UidButton variant="primary" size="sm" :icon="Check" data-testid="embedded-draft-commit" @click="commitDraft">
+          {{ tr('Создать') }}
         </UidButton>
-        <UidButton variant="ghost" size="sm" @click="cancelDraft">
-          <UidIcon :icon="X" /> {{ tr('Отмена') }}
+        <UidButton variant="ghost" size="sm" :icon="X" @click="cancelDraft">
+          {{ tr('Отмена') }}
         </UidButton>
       </div>
     </div>
@@ -385,16 +433,7 @@ function columnCellMeta(col: string): CellMeta {
   align-items: center;
   gap: var(--uid-space-sm);
 }
-.admin-embedded-table__row-delete {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--uid-color-text-secondary, #62686f);
-  padding: 4px;
-  border-radius: var(--uid-radius-sm, 4px);
-}
 .admin-embedded-table__row-delete:hover {
-  background: var(--uid-color-surface-hover);
   color: var(--uid-color-danger, #dc2626);
 }
 .admin-embedded-table__draft {
@@ -410,23 +449,6 @@ function columnCellMeta(col: string): CellMeta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--uid-space-sm);
-}
-.admin-embedded-table__draft-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.admin-embedded-table__draft-label {
-  font-size: var(--uid-font-size-sm, 12px);
-  color: var(--uid-color-text-secondary, #62686f);
-}
-.admin-embedded-table__draft-input {
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--uid-color-border, #e5e7eb);
-  border-radius: var(--uid-radius-sm, 4px);
-  font: inherit;
-  font-size: 13px;
 }
 .admin-embedded-table__draft-actions {
   display: flex;

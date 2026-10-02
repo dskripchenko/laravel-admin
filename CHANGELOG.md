@@ -22,6 +22,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reason in the page alert, also when it runs from a wizard's submit. The
   shared helper is exported as `apiErrorMessage(err, fallback)`, with
   `actionErrorMessage(action, err)` for action runners.
+- **Embedded resource tables select and delete rows again.** The table of
+  `ResourceTable` (the `admin.resource-table` layout) still spoke UidTable's
+  old API: it listened for `select-row`/`select-all` and filled an `#actions`
+  slot, none of which UidTable has, so a row checkbox selected nothing, the
+  bulk delete button never appeared and the per-row delete button was not
+  rendered. It now uses UidTable's selection model (`selection` +
+  `update:selection`) and a trailing actions column filled through the
+  column slot, as the list page does. Bulk delete goes one `/delete` per id,
+  keeps the rows that failed selected and shows the server's reason; a reload
+  drops the ids of rows that are gone. The quick-add form is built from kit
+  controls (UidInput, UidSelect, UidSwitch, UidTextarea) and a column given as
+  `key` or `name` is accepted.
+- **Headings of the "unknown component" alerts.** UnknownField, UnknownEntry,
+  UnknownWidget and ViewLayout's missing-component alert passed their heading
+  through a `#title` slot UidAlert does not have, so it was never shown; it
+  now goes through the `title` prop.
+- **Import progress bar.** The import wizard bound `model-value` to
+  UidProgress, which takes `value`, so the bar stayed empty.
+
+### Added
+
+- **A contract test between core templates and @dskripchenko/ui.**
+  `resources/ts/kitContract.test.ts` reads every core `.vue` template and fails
+  when a kit component gets an event, a slot or a prop the installed kit does
+  not declare (runtime `emits`/`props`, slots from the kit's `.vue.d.ts`).
+  Native DOM events and fallthrough attributes are allowed; known kit gaps are
+  listed with their reason.
 
 ## 1.44.1
 

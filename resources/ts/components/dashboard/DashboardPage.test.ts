@@ -121,6 +121,7 @@ describe('DashboardPage', () => {
       props: { widgets: [{ type: 'mystery' }] },
     })
     expect(w.text()).toContain('mystery')
+    expect(w.find('.uid-alert__title').text()).toBe('Неизвестный тип виджета: mystery')
   })
 
   it('renders Stat widget value', () => {
