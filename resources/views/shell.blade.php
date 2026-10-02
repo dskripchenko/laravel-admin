@@ -10,6 +10,9 @@
 
     @if($brand['favicon'] ?? false)
         <link rel="icon" href="{{ $brand['favicon'] }}">
+    @else
+        {{-- The LAdmin mark, inline, when the host sets no favicon of its own. --}}
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5.3' fill='%2318181b'/%3E%3Cpath d='M5.5 11V5.5H11M18.5 13v5.5H13' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='9.4' y='9.4' width='5.2' height='5.2' rx='1.6' fill='%232dd4bf'/%3E%3C/svg%3E">
     @endif
 
     {{-- Стили SPA --}}

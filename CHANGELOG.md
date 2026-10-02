@@ -5,6 +5,20 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **New brand mark.** The LAdmin mark is now the "Rounded block": two rounded
+  corners of a selection frame and a teal block in the middle, drawn on a
+  24×24 grid like the Lucide icons of the interface. It replaces the animated
+  ">_" terminal mark in the sidebar and on the sign-in, forgot and reset pages,
+  follows the light/dark theme and is static. `BrandLogo` gains a `glyph`
+  variant (no tile); `variant="color"` still works as the default tile, and the
+  `animated` prop is accepted and ignored.
+- **A default favicon.** When `admin.brand.favicon` is not set, the shell
+  serves the mark as an inline SVG favicon.
+
 ## 1.42.1
 
 ### Fixed

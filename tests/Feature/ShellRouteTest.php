@@ -138,3 +138,20 @@ it('плашка стоит выше приложения, а не внутри 
 
     expect(strpos($html, 'admin-notice'))->toBeLessThan(strpos($html, 'id="admin-app"'));
 });
+
+it('falls back to the LAdmin mark as the favicon', function (): void {
+    config()->set('admin.brand.favicon', null);
+
+    $this->get('/admin')
+        ->assertOk()
+        ->assertSee('rel="icon" type="image/svg+xml"', false);
+});
+
+it('uses the configured favicon instead of the default mark', function (): void {
+    config()->set('admin.brand.favicon', '/favicon-custom.ico');
+
+    $this->get('/admin')
+        ->assertOk()
+        ->assertSee('href="/favicon-custom.ico"', false)
+        ->assertDontSee('image/svg+xml', false);
+});
