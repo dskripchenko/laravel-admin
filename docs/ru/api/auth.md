@@ -1,66 +1,89 @@
 # API: Auth
 
-Контроллер `auth` — login, logout, password-reset, email-verification, 2FA-challenge во время логина, impersonation.
+Контроллер `auth` (`Dskripchenko\LaravelAdmin\Auth\Controllers\AuthController`) — вход, выход, сброс пароля, подтверждение email, второй шаг 2FA при входе, impersonation.
 
-> Конвенции — [conventions.md](conventions.md). Profile-related (смена пароля, 2FA-setup, API-токены) — в [profile.md](profile.md).
+> Конвенции — [conventions.md](conventions.md). Профиль (смена пароля, настройка 2FA, API-токены) — [profile.md](profile.md).
 
-URL: `api/admin/auth/{action}`.
+URL: `/api/admin/auth/{action}`. API работает на сессии (`web`-группа в стеке панели), поэтому POST-запросы проходят CSRF-проверку: браузерный клиент шлёт `X-XSRF-TOKEN` из cookie `XSRF-TOKEN`.
 
 ---
 
-## AuthController
-
-### Регистрация
+## Регистрация в `AdminApi::getMethods()`
 
 ```php
 'auth' => [
     'controller' => AuthController::class,
     'actions' => [
-        'login'                 => ['method' => ['post'], 'middleware' => [ThrottleRequests::class . ':5,1'], 'exclude-middleware' => [AdminAuth::class]],
-        'logout'                => ['method' => ['post']],
-        'forgotPassword'        => ['method' => ['post'], 'middleware' => [ThrottleRequests::class . ':3,5'], 'exclude-middleware' => [AdminAuth::class]],
-        'resetPassword'         => ['method' => ['post'], 'exclude-middleware' => [AdminAuth::class]],
-        'verifyEmail'           => ['method' => ['post'], 'exclude-middleware' => [AdminAuth::class]],
-        'resendEmailVerification' => ['method' => ['post'], 'middleware' => [ThrottleRequests::class . ':3,1']],
-        'twoFactorChallenge'    => ['method' => ['post'], 'middleware' => [ThrottleRequests::class . ':10,1'], 'exclude-middleware' => [AdminAuth::class]],
-        'twoFactorRecovery'     => ['method' => ['post'], 'middleware' => [ThrottleRequests::class . ':10,1'], 'exclude-middleware' => [AdminAuth::class]],
-        'startImpersonation'    => ['method' => ['post'], 'middleware' => [AdminAccess::class . ':admin.impersonate']],
-        'stopImpersonation'     => ['method' => ['post']],
+        'login' => [
+            'method' => ['post'],
+            'middleware' => [ThrottleRequests::class.':'.config('admin.auth.login_throttle', '5,1').',auth-{panel}'],
+            'exclude-middleware' => [AdminAuth::class],
+        ],
+        'logout' => ['method' => ['post']],
+        'forgotPassword' => [
+            'method' => ['post'],
+            'middleware' => [ThrottleRequests::class.':3,5,forgot-{panel}'],
+            'exclude-middleware' => [AdminAuth::class],
+        ],
+        'resetPassword' => ['method' => ['post'], 'exclude-middleware' => [AdminAuth::class]],
+        'verifyEmail'   => ['method' => ['post'], 'exclude-middleware' => [AdminAuth::class]],
+        'resendEmailVerification' => [
+            'method' => ['post'],
+            'middleware' => [ThrottleRequests::class.':3,1,verify-{panel}'],
+            'exclude-middleware' => [AdminAuth::class],
+        ],
+        'twoFactorChallenge' => [
+            'method' => ['post'],
+            'middleware' => [ThrottleRequests::class.':'.config('admin.auth.login_throttle', '5,1').',auth-{panel}'],
+            'exclude-middleware' => [AdminAuth::class],
+        ],
+        'twoFactorRecovery' => [/* тот же throttle, что у login */],
+        'startImpersonation' => ['method' => ['post']],
+        'stopImpersonation'  => ['method' => ['post']],
     ],
 ],
 ```
 
+`{panel}` — id панели (`AdminApi::panelId()`, у основной панели `admin`). У `login`, `twoFactorChallenge` и `twoFactorRecovery` один и тот же префикс `auth-{panel}`, то есть общий счётчик попыток; лимит задаётся `admin.auth.login_throttle` (env `ADMIN_LOGIN_THROTTLE`, по умолчанию `5,1` — 5 запросов в минуту). Превышение лимита — `429`.
+
+Без входа доступны все actions, кроме `logout`, `startImpersonation` и `stopImpersonation` (на них действует `AdminAuth`, см. [system.md](system.md)).
+
+Пользователь ищется через provider guard'а текущей панели, письма сброса пароля идут через password broker панели (`admin.auth.password_broker` для основной).
+
 ---
 
-## Действия
+## Форма пользователя в ответах
 
-### `auth.login`
+`login`, `twoFactorChallenge`, `twoFactorRecovery`, `resetPassword`, `startImpersonation`, `stopImpersonation` возвращают пользователя в одной форме:
 
-```php
-/**
- * Аутентификация по email/паролю.
- * При включённой 2FA для пользователя возвращает challenge_token,
- * который надо использовать в auth.twoFactorChallenge.
- *
- * @input string(email) $email Email администратора.
- * @input string $password Пароль.
- * @input boolean ?$remember Запомнить сессию.
- *
- * @output object $payload AdminUserSummary + redirect.
- * @output object $payload.user Данные пользователя.
- * @output string $payload.redirect_url Куда вести SPA после логина.
- *
- * @security Public
- * @response 200 {LoginResponse}
- * @response 200 {TwoFactorRequiredResponse} 2FA требуется (errorKey=two_factor_required).
- * @response 401 {InvalidCredentialsResponse} Неверные креды или забаненный юзер.
- * @response 422 {ValidationErrorResponse}
- * @response 429 {ThrottledResponse}
- */
-public function login(Request $request): JsonResponse;
-```
+| Ключ | Описание |
+|---|---|
+| `id` | идентификатор |
+| `name`, `email`, `avatar` | атрибуты модели как есть |
+| `locale`, `theme` | атрибуты модели как есть, без подстановки значений по умолчанию (`null`, если не выбраны) |
+| `twoFactorEnabled` | `hasTwoFactorEnabled()` модели, иначе `false` |
+| `impersonator` | всегда `null` в этой форме (у `startImpersonation` исходный пользователь — в отдельном ключе ответа) |
 
-Special-case ответ `two_factor_required`:
+`redirect_url` во всех ответах — `/{admin.path}` (по умолчанию `/admin`).
+
+---
+
+## `auth.login`
+
+`POST /api/admin/auth/login` — без аутентификации.
+
+| Параметр | Правила |
+|---|---|
+| `email` | `required`, `email` |
+| `password` | `required`, `string` |
+| `remember` | `nullable`, `boolean` |
+
+Порядок проверок:
+
+1. Неверный email или пароль — `401 invalid_credentials` (диспатчится `Illuminate\Auth\Events\Failed`).
+2. Учётная запись отключена (`AccountState::isDisabled()`) — `403 account_inactive`.
+3. Нет доступа к панели (`PanelAccess::allows()`, актуально для стратегии `shared`) — `403 forbidden`.
+4. У пользователя включена 2FA (`hasTwoFactorEnabled()`) — сессия не создаётся, ответ **HTTP 200** с `success: false`:
 
 ```json
 {
@@ -68,214 +91,183 @@ Special-case ответ `two_factor_required`:
   "payload": {
     "errorKey": "two_factor_required",
     "message": "Введите код из приложения-аутентификатора",
-    "challenge_token": "..."
+    "challenge_token": "<64 символа>"
   }
 }
 ```
 
-`challenge_token` действителен 5 минут.
+`challenge_token` хранится в кэше 5 минут (вместе с флагом `remember`); следующий шаг — `auth.twoFactorChallenge` или `auth.twoFactorRecovery`.
 
-Events: `Admin\Events\LoginSucceeded` или `Admin\Events\LoginFailed` (audit).
+5. Иначе — вход: `Auth::guard()->login()`, запись `last_login_at`/`last_login_ip` (если у таблицы есть колонка `last_login_at`), регенерация сессии.
 
-### `auth.logout`
+Ответ `200`:
 
-```php
-/**
- * Выйти из сессии.
- * Инвалидирует session, axios сбрасывает auth-state.
- *
- * @output null $payload
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {SuccessResponse}
- */
-public function logout(Request $request): JsonResponse;
+```json
+{
+  "success": true,
+  "payload": {
+    "user": { "id": 1, "name": "...", "email": "...", "avatar": null, "locale": null, "theme": null, "twoFactorEnabled": false, "impersonator": null },
+    "permissions": ["..."],
+    "redirect_url": "/admin"
+  }
+}
 ```
 
-Events: `Admin\Events\LoggedOut` (audit).
+`permissions` — плоский список прав пользователя (`UserPermissions::resolve()`).
 
-### `auth.forgotPassword`
-
-```php
-/**
- * Запросить отправку письма для сброса пароля.
- * Ответ всегда успешный (даже если email не найден) — защита от user-enumeration.
- *
- * @input string(email) $email Email.
- *
- * @output object $payload
- * @output string $payload.message Сообщение для UI.
- *
- * @security Public
- * @response 200 {GenericMessageResponse}
- * @response 422 {ValidationErrorResponse}
- * @response 429 {ThrottledResponse}
- */
-public function forgotPassword(Request $request): JsonResponse;
-```
-
-### `auth.resetPassword`
-
-```php
-/**
- * Сбросить пароль по токену из письма.
- * При успехе — авто-логин, в payload приходят user + redirect_url.
- *
- * @input string(email) $email
- * @input string $token Токен из URL письма.
- * @input string $password Новый пароль (min:8).
- * @input string $password_confirmation Подтверждение.
- *
- * @output object $payload
- * @output object $payload.user
- * @output string $payload.redirect_url
- *
- * @security Public
- * @response 200 {LoginResponse}
- * @response 422 {ValidationErrorResponse} Token expired/invalid → messages.token.
- */
-public function resetPassword(Request $request): JsonResponse;
-```
-
-Events: `Admin\Events\PasswordReset` (audit).
-
-### `auth.verifyEmail`
-
-```php
-/**
- * Подтвердить email по signed-параметрам из письма.
- *
- * @input integer $id ID пользователя.
- * @input string  $hash Hash из подписи.
- * @input string  $expires Expires-таймстамп из URL.
- * @input string  $signature Подпись.
- *
- * @output object $payload
- * @output string $payload.message
- * @output string $payload.redirect_url
- *
- * @security Public
- * @response 200 {GenericMessageResponse}
- * @response 422 {ValidationErrorResponse} Невалидная подпись или просроченная.
- */
-public function verifyEmail(Request $request): JsonResponse;
-```
-
-### `auth.resendEmailVerification`
-
-```php
-/**
- * Повторно отправить письмо для верификации email.
- *
- * @output object $payload
- * @output string $payload.message
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {GenericMessageResponse}
- * @response 429 {ThrottledResponse}
- */
-public function resendEmailVerification(Request $request): JsonResponse;
-```
+Ошибка валидации — `422 validation` (`messages` — ошибки по полям).
 
 ---
 
-## 2FA challenge (во время логина)
+## `auth.twoFactorChallenge`
 
-### `auth.twoFactorChallenge`
+`POST /api/admin/auth/twoFactorChallenge` — без аутентификации.
 
-```php
-/**
- * Подтвердить TOTP-код после login, вернувшего two_factor_required.
- *
- * @input string $challenge_token Из login-ответа.
- * @input string $code 6-значный TOTP.
- *
- * @output object $payload
- * @output object $payload.user
- * @output string $payload.redirect_url
- *
- * @security Public
- * @response 200 {LoginResponse}
- * @response 401 {InvalidTwoFactorResponse} Неверный код или истёк challenge.
- * @response 422 {ValidationErrorResponse}
- * @response 429 {ThrottledResponse}
- */
-public function twoFactorChallenge(Request $request): JsonResponse;
-```
+| Параметр | Правила |
+|---|---|
+| `challenge_token` | `required`, `string` — из ответа `login` |
+| `code` | `required`, `string` — TOTP из приложения |
 
-### `auth.twoFactorRecovery`
+Код проверяется с окном `admin.auth.two_factor.window` (по умолчанию `1`). При успехе токен удаляется, выполняется вход (как в п. 5 `login`) и возвращается тот же ответ, что у успешного `login`.
 
-```php
-/**
- * Использовать одноразовый recovery-код вместо TOTP.
- * Использованный код инвалидируется. При остатке ≤2 кодов SPA показывает warning.
- *
- * @input string $challenge_token
- * @input string $recovery_code Одноразовый.
- *
- * @output object $payload
- * @output object $payload.user
- * @output string $payload.redirect_url
- * @output integer $payload.recovery_codes_remaining Осталось кодов.
- *
- * @security Public
- * @response 200 {RecoveryLoginResponse}
- * @response 401 {InvalidRecoveryCodeResponse}
- * @response 422 {ValidationErrorResponse}
- */
-public function twoFactorRecovery(Request $request): JsonResponse;
-```
+Ошибки: `401 challenge_expired` — токена нет в кэше (истёк или уже использован); `401 invalid_two_factor_code` — неверный код или у пользователя 2FA уже не включена; `422 validation`; `429`.
 
 ---
 
-## Impersonation
+## `auth.twoFactorRecovery`
 
-### `auth.startImpersonation`
+`POST /api/admin/auth/twoFactorRecovery` — без аутентификации.
 
-```php
-/**
- * Войти под другим пользователем.
- * Требует admin.impersonate. Опция block_higher_powered может запретить
- * impersonate юзеров с большим набором прав.
- *
- * @input integer $user_id ID целевого пользователя.
- *
- * @output object $payload
- * @output object $payload.user Целевой пользователь.
- * @output object $payload.impersonator Оригинал.
- * @output integer $payload.impersonator.id
- * @output string  $payload.impersonator.name
- * @output string $payload.redirect_url
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ImpersonationResponse}
- * @response 403 {ForbiddenErrorResponse} Нет admin.impersonate либо блокировка по power.
- * @response 404 {NotFoundErrorResponse} Юзер не найден.
- */
-public function startImpersonation(Request $request): JsonResponse;
+| Параметр | Правила |
+|---|---|
+| `challenge_token` | `required`, `string` |
+| `recovery_code` | `required`, `string` — одноразовый код восстановления |
+
+Использованный код удаляется из `two_factor_recovery_codes`. Ответ `200` — как у `login` плюс `recovery_codes_remaining` (сколько кодов осталось).
+
+Ошибки: `401 challenge_expired`; `401 invalid_recovery_code`; `422 validation`; `429`.
+
+---
+
+## `auth.logout`
+
+`POST /api/admin/auth/logout` — требует аутентификации.
+
+Выход из guard'а панели, инвалидация сессии и перегенерация CSRF-токена. Ответ `200`, `payload` — пустой массив.
+
+---
+
+## `auth.forgotPassword`
+
+`POST /api/admin/auth/forgotPassword` — без аутентификации, не чаще 3 раз за 5 минут.
+
+| Параметр | Правила |
+|---|---|
+| `email` | `required`, `email` |
+
+Отправляет ссылку для сброса через password broker панели. Ответ всегда успешный (защита от перебора адресов):
+
+```json
+{ "success": true, "payload": { "message": "Если такой email зарегистрирован, на него отправлено письмо со ссылкой для сброса пароля" } }
 ```
 
-Events: `Admin\Events\ImpersonationStarted` (audit с `impersonator_id` + `target_id`).
+Ошибки: `422 validation`; `429`.
 
-### `auth.stopImpersonation`
+---
 
-```php
-/**
- * Завершить impersonation, вернуться в свою сессию.
- *
- * @output object $payload
- * @output object $payload.user Оригинальный пользователь.
- * @output null   $payload.impersonator Всегда null.
- * @output string $payload.redirect_url
- *
- * @security AdminSession
- * @response 200 {LoginResponse}
- * @response 400 {NoActiveImpersonationResponse} Нет активной impersonation.
- */
-public function stopImpersonation(Request $request): JsonResponse;
+## `auth.resetPassword`
+
+`POST /api/admin/auth/resetPassword` — без аутентификации.
+
+| Параметр | Правила |
+|---|---|
+| `email` | `required`, `email` |
+| `token` | `required`, `string` — токен из письма |
+| `password` | `required`, `string`, `min:8`, `confirmed` |
+| `password_confirmation` | `required`, `string` |
+
+Пароль сбрасывается через broker (новый `remember_token`, событие `Illuminate\Auth\Events\PasswordReset`). Затем пользователь входит, если учётная запись не отключена и есть доступ к панели.
+
+Ответ `200`: `{"user": {...} | null, "redirect_url": "/admin"}`.
+
+Ошибки: `422 validation` — при ошибке валидации, а также когда broker отклонил сброс (неверный или просроченный токен): тогда сообщение broker'а лежит в `messages.token`.
+
+---
+
+## `auth.verifyEmail`
+
+`POST /api/admin/auth/verifyEmail` — без аутентификации.
+
+| Параметр | Описание |
+|---|---|
+| `id` | id пользователя |
+| `hash` | `sha1` от email пользователя |
+| `expires`, `signature` | параметры подписи; запрос должен проходить `URL::hasValidSignature()` |
+
+Пользователь ищется в модели панели и должен реализовывать `MustVerifyEmail`. При успехе ставится отметка о подтверждении и диспатчится `Illuminate\Auth\Events\Verified`.
+
+Ответ `200`: `{"message": "Email подтверждён", "redirect_url": "/admin"}` (или `"Email уже подтверждён"`, если адрес был подтверждён раньше).
+
+Ошибки: `422 validation` — неверная или просроченная подпись URL, пользователь не найден, не реализует `MustVerifyEmail` или `hash` не совпал.
+
+---
+
+## `auth.resendEmailVerification`
+
+`POST /api/admin/auth/resendEmailVerification` — не чаще 3 раз в минуту. `AdminAuth` на action не действует, но нужен вошедший пользователь, реализующий `MustVerifyEmail`.
+
+Ответ `200`: `{"message": "Письмо отправлено"}` или `{"message": "Email уже подтверждён"}`.
+
+Ошибки: `401 unauthenticated` — пользователя нет или модель не реализует `MustVerifyEmail`; `429`.
+
+---
+
+## `auth.startImpersonation`
+
+`POST /api/admin/auth/startImpersonation` — требует аутентификации.
+
+| Параметр | Правила |
+|---|---|
+| `user_id` | `required`, `integer` |
+
+Настройки — `admin.auth.impersonation`: `enabled`, `permission` (по умолчанию `admin.impersonate`), `block_higher_powered`. Право проверяется в контроллере через `hasAccess()` модели, не через middleware.
+
+Ошибки, в порядке проверок:
+
+| HTTP | errorKey | Условие |
+|---|---|---|
+| 403 | `impersonation_disabled` | `admin.auth.impersonation.enabled` выключен |
+| 422 | `validation` | невалидный `user_id` |
+| 403 | `forbidden` | у пользователя нет права из `admin.auth.impersonation.permission` (или модель без `hasAccess()`) |
+| 403 | `already_impersonating` | impersonation уже активна |
+| 404 | `not_found` | целевой пользователь не найден |
+| 403 | `forbidden` | попытка войти под самим собой |
+| 403 | `forbidden` | при `block_higher_powered`: у цели есть права, которых нет у текущего пользователя (сравнение `getAllPermissions()`; обладатель `*` проходит всегда) |
+
+Ответ `200`:
+
+```json
+{
+  "user": { "...": "целевой пользователь" },
+  "impersonator": { "id": 1, "name": "..." },
+  "redirect_url": "/admin"
+}
 ```
 
-Events: `Admin\Events\ImpersonationStopped` (audit).
+Id исходного пользователя хранится в сессии; `system.me` во время impersonation отдаёт его в `impersonator`.
+
+---
+
+## `auth.stopImpersonation`
+
+`POST /api/admin/auth/stopImpersonation` — требует аутентификации.
+
+Возвращает в сессию исходного пользователя. Ответ `200`: `{"user": {...исходный пользователь}, "impersonator": null, "redirect_url": "/admin"}`.
+
+Ошибки: `400 no_active_impersonation` — impersonation не активна; `400 impersonator_not_found` — исходный пользователь больше не существует (метка impersonation при этом снимается).
+
+---
+
+## Аудит
+
+Если включены `admin.audit.enabled` и `admin.audit.log_auth_events`, `AuthAuditListener` пишет в журнал аудита стандартные события Laravel: `Login`, `Logout`, `Failed`, `PasswordReset`, `Lockout`. Отдельного события для impersonation контроллер не диспатчит: начало и конец impersonation — это обычный `Auth::guard()->login()`, то есть событие `Login`.

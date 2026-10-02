@@ -1,136 +1,68 @@
 # API: Health
 
-Health-checks dashboard. Реализуется в sister-pack `dskripchenko/laravel-admin-health`. Контракт здесь — чтобы admin core знал, как embed-индикатор в шапке должен общаться с пакетом.
+Контроллера `health` в API нет — ни в ядре, ни в пакете `dskripchenko/laravel-admin-health`. Состояние системы попадает в панель двумя путями:
 
-> Полная спецификация — [../sister-packs/health.md](../sister-packs/health.md). Регистрация — [registration.md](registration.md).
+1. **Ядро** — общий механизм индикаторов верхней панели: action `system/status` и контракт `Dskripchenko\LaravelAdmin\Status\StatusIndicator`.
+2. **Пакет `dskripchenko/laravel-admin-health`** — health-проверки, которые используют этот механизм, плюс ресурс с историей результатов и виджет дашборда. Своих HTTP-маршрутов пакет не добавляет.
 
-URL: `api/admin/health/{action}`.
-
----
-
-## HealthController (sister-pack)
-
-### Регистрация (в sister-pack'е)
-
-```php
-'health' => [
-    'controller' => HealthController::class,
-    'middleware' => [AdminAuth::class],
-    'actions' => [
-        'summary' => ['method' => ['get']],
-        'checks'  => ['method' => ['get']],
-        'run'     => ['method' => ['post']],
-        'history' => ['method' => ['get']],
-    ],
-],
-```
+> Конвенции — [conventions.md](conventions.md). Описание пакета — [../sister-packs/health.md](../sister-packs/health.md).
 
 ---
 
-## Действия
+## Ядро: `system.status`
 
-### `health.summary`
+`GET /api/admin/system/status` — требует аутентификации (`AdminAuth`), отдельного права нет. Полное описание — [system.md](system.md#systemstatus).
 
-```php
-/**
- * Агрегированный статус для индикатора в шапке admin.
- *
- * @output object $payload
- * @output string $payload.overall ok|warning|failing.
- * @output object $payload.counts
- * @output integer $payload.counts.ok
- * @output integer $payload.counts.warning
- * @output integer $payload.counts.failing
- * @output string(date-time) $payload.last_run_at
- * @output array  $payload.failing_checks
- * @output string $payload.failing_checks[].id
- * @output string $payload.failing_checks[].name
- * @output string $payload.failing_checks[].message
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {HealthSummaryResponse}
- * @response 403 {ForbiddenErrorResponse} admin.system.health.view.
- */
-public function summary(Request $request): JsonResponse;
-```
-
-### `health.checks`
+Индикатор — класс, реализующий `StatusIndicator`:
 
 ```php
-/**
- * Полный список чекеров с их статусами.
- *
- * @output object $payload
- * @output array  $payload.checks Список HealthCheckStatus.
- * @output string $payload.checks[].id
- * @output string $payload.checks[].name
- * @output string $payload.checks[].category database|cache|queue|storage|custom.
- * @output string $payload.checks[].status ok|warning|failing.
- * @output string ?$payload.checks[].message
- * @output object $payload.checks[].meta
- * @output string $payload.checks[].frequency 1m|5m|1h.
- * @output string(date-time) $payload.checks[].last_run_at
- * @output integer $payload.checks[].duration_ms
- * @output string(date-time) $payload.last_run_at
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {HealthChecksResponse}
- * @response 403 {ForbiddenErrorResponse} admin.system.health.view.
- */
-public function checks(Request $request): JsonResponse;
+use Dskripchenko\LaravelAdmin\Status\StatusIndicator;
+
+final class QueueIndicator implements StatusIndicator
+{
+    public function key(): string
+    {
+        return 'app.queue';
+    }
+
+    /** @return array{status: 'ok'|'warning'|'error'|'unknown', label: string, detail?: string, url?: string} */
+    public function state(): array
+    {
+        return ['status' => 'warning', 'label' => 'Очередь стоит', 'detail' => 'Нет обработанных задач 10 минут'];
+    }
+}
 ```
 
-### `health.run`
+Регистрация — в `boot()` плагина или хоста: `$admin->statusIndicators([QueueIndicator::class])`. Индикаторы привязаны к панели, в которой их зарегистрировали; `system/status` отдаёт индикаторы текущей панели.
 
-```php
-/**
- * Ручной запуск чекера.
- *
- * @input string $id ID чекера.
- *
- * @output object $payload HealthCheckStatus — свежий результат.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {HealthCheckStatusResponse}
- * @response 404 {NotFoundErrorResponse}
- * @response 429 {ThrottledResponse} 5,1 per check id.
- * @response 403 {ForbiddenErrorResponse} admin.system.health.run.
- */
-public function run(Request $request): JsonResponse;
+Ответ:
+
+```json
+{
+  "success": true,
+  "payload": {
+    "indicators": [
+      { "key": "admin.health", "status": "error", "label": "...", "detail": "...", "url": "/r/system-health-results" }
+    ]
+  }
+}
 ```
 
-### `health.history`
-
-```php
-/**
- * История запусков одного чекера.
- *
- * @input string $id
- * @input string ?$range 24h|7d|30d (default 24h).
- * @input integer ?$page
- * @input integer ?$per_page
- *
- * @output object $payload
- * @output array  $payload.data
- * @output string(date-time) $payload.data[].ran_at
- * @output string $payload.data[].status ok|warning|failing.
- * @output integer $payload.data[].duration_ms
- * @output string ?$payload.data[].message
- * @output object $payload.meta Пагинация.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {HealthHistoryResponse}
- * @response 403 {ForbiddenErrorResponse}
- */
-public function history(Request $request): JsonResponse;
-```
+Статус вне `ok|warning|error|unknown` превращается в `unknown`; индикатор, бросивший исключение, пропускается. SPA опрашивает action раз в минуту и показывает только индикаторы со статусом не `ok`.
 
 ---
 
-## Events
+## Пакет `dskripchenko/laravel-admin-health`
 
-Sister-pack эмитит `Dskripchenko\\AdminHealth\\Events\\HealthCheckStatusChanged` при переходе ok ↔ failing/warning. Host-проект слушает для интеграции с Slack/Sentry/PagerDuty.
+Плагин `AdminHealthPlugin` при загрузке регистрирует:
+
+| Что | Описание |
+|---|---|
+| `HealthStatusIndicator` | индикатор с ключом `admin.health` для `system/status` (если `admin-health.topbar_indicator` не выключен). Сводный статус проверок переводится в словарь ядра: `failing` → `error`, `warning` → `warning`, `ok` → `ok`, прочее → `unknown`; `url` ведёт на `/r/system-health-results` |
+| `HealthResultResource` | ресурс результатов проверок, slug `system-health-results`, базовое право `admin.system.health`. Доступен через обычные эндпоинты ресурса `/api/admin/system-health-results/{action}` — см. [resources.md](resources.md) |
+| `HealthOverviewWidget` | виджет дашборда со сводкой, право `admin.system.health.view` |
+| права | группа «Системные»: `admin.system.health.view`, `admin.system.health.run` |
+
+Проверки запускаются не через API, а artisan-командой `admin:health:run` (по расписанию); старые результаты чистит `admin:health:cleanup`.
+
+Шаблоны `HealthSummaryResponse`, `HealthChecksResponse`, `HealthCheckStatusResponse`, `HealthHistoryResponse` в `AdminApiSisterPackSchemas` объявлены только для OpenAPI-документа: ни один action ядра или пакета их не возвращает.

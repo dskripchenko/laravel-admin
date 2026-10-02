@@ -1,283 +1,175 @@
 # API: Exports и Imports
 
-CSV/XLSX/PDF-экспорт + 4-шаговый import wizard. Реализуются как actions того же controller'а, что и Resource (`api/admin/{resource_slug}/{action}`).
+Экспорт списка — action `export` контроллера ресурса (`/api/admin/{slug}/export`), файл отдаётся сразу потоком. Импорт — отдельный контроллер `import` (`/api/admin/import/{action}`), ресурс указывается параметром.
 
-> Концепции — ARCHITECTURE.md п.5.21. Конвенции — [conventions.md](conventions.md). Resource CRUD — [resources.md](resources.md).
+> Конвенции — [conventions.md](conventions.md). Resource CRUD — [resources.md](resources.md).
 
 ---
 
 ## Export
 
-### `users.export`
+### `{slug}.export` (GET, POST)
 
 ```php
 /**
- * Запустить экспорт.
+ * Потоковый экспорт списка в любой зарегистрированный формат.
  *
- * @input string $format csv|xlsx|pdf.
- * @input string $scope all|filtered|selected.
- * @input array  ?$ids Если scope=selected.
- * @input integer ?$ids[]
- * @input array  ?$filters Если scope=filtered.
- * @input string  $filters[].column
- * @input string  $filters[].operator
- * @input mixed   ?$filters[].value
- * @input array  ?$order
- * @input array  ?$columns Только эти колонки; default — все видимые.
- * @input object ?$options Format-specific опции.
- * @input string ?$options.delimiter CSV.
- * @input boolean ?$options.bom CSV.
- * @input string ?$options.paper a4|a3|letter (PDF).
- * @input string ?$options.orientation portrait|landscape (PDF).
- * @input string ?$options.locale Для дат и форматирования.
+ * Принимает фильтры, `q`, колонки и формат — один из форматов ExporterRegistry, по умолчанию csv.
  *
- * @output object $payload Всегда delayed.
- * @output object $payload.delayed
- * @output string $payload.delayed.uuid
- * @output string $payload.delayed.status new.
+ * @input [operationSchema]
  *
  * @security AdminSession
- * @security AdminBearer
- * @response 202 {DelayedResponse}
- * @response 404 {NotFoundErrorResponse} Формат не поддерживается этим Resource.
- * @response 422 {MissingExportDriverResponse} PDF/XLSX driver не установлен.
- * @response 403 {ForbiddenErrorResponse} <resource>.view + <resource>.export.
+ *
+ * @response 200 {FileDownloadResponse}
+ * @response 422 {ValidationErrorResponse} Формат не поддерживается.
  */
-public function export(Request $request): JsonResponse;
+public function export(Request $request): StreamedResponse|JsonResponse;
 ```
 
-**Финальный payload** (после завершения, через `applyAxiosInterceptor` или manual poll):
+Регистрируется для каждого ресурса, требует `<base>.view` (`admin.{slug}.view`).
 
-```json
-{
-  "success": true,
-  "payload": {
-    "download_url": "/api/admin/users/exportDownload?uuid=01...",
-    "filename": "users-2026-04-30.xlsx",
-    "size_bytes": 123456,
-    "rows": 1234,
-    "expires_at": "2026-05-07T10:00:00Z",
-    "message": "Экспортировано записей: 1234"
-  }
-}
-```
+| Параметр | Описание |
+|---|---|
+| `format` | формат из `ExporterRegistry`, по умолчанию `csv` |
+| `filters` | те же значения фильтров ресурса, что у `search` |
+| `q` | строка поиска по `searchableFields()`, как у `search` |
+| `columns` | имена колонок для выгрузки; если не переданы — все колонки, кроме скрытых по умолчанию (`defaultHidden`) |
 
-`download_url` действителен ограниченное время (default 7 дней).
+Ответ — сам файл (`StreamedResponse` с `Content-Disposition: attachment`), без JSON-конверта. Имя файла — `{slug}-{Y-m-d-His}.{расширение}`. Строки — `Model::toArray()` каждой записи, заголовки — подписи колонок. Записи читаются курсором, поэтому большие выгрузки не держатся в памяти целиком.
 
-**MissingExportDriverResponse:**
+Незарегистрированный формат — `422`:
 
 ```json
 {
   "success": false,
   "payload": {
-    "errorKey": "missing_export_driver",
-    "message": "PDF-рендерер не установлен. Установите mpdf/mpdf или dompdf/dompdf",
-    "command": "composer require mpdf/mpdf"
+    "errorKey": "unsupported_format",
+    "message": "Format `pdf` is not registered. Available: csv, json"
   }
 }
 ```
 
-Events: `Admin\Events\ExportStarted` → `ExportCompleted` или `ExportFailed`.
+### Форматы
 
-### `users.exportStatus`
+| Формат | Класс | Когда доступен |
+|---|---|---|
+| `csv` | `CsvExporter` | всегда; настройки — `admin.exports.csv` (`delimiter`, `enclosure`, `bom`) |
+| `json` | `JsonExporter` | всегда; при `admin.exports.json.lines = true` — NDJSON (файл `.jsonl`), иначе JSON-массив |
+| `xlsx` | `XlsxExporter` | если установлен `openspout/openspout` |
+| `pdf` | `PdfExporter` | если установлен `mpdf/mpdf` или `dompdf/dompdf`; драйвер — `admin.exports.pdf.driver` (`mpdf` по умолчанию, при его отсутствии берётся установленный) |
 
-```php
-/**
- * Альтернатива polling'у через delayed.status — alias на ту же логику,
- * но проверяет принадлежность процесса к текущему resource (защита от
- * cross-resource обращения).
- *
- * @input string(uuid) $uuid
- *
- * @output object $payload DelayedProcessStatus (см. delayed.md).
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {DelayedStatusResponse}
- * @response 404 {NotFoundErrorResponse}
- * @response 403 {ForbiddenErrorResponse}
- */
-public function exportStatus(Request $request): JsonResponse;
-```
+Свой формат добавляется реализацией `Export\Exporter` и регистрацией в `ExporterRegistry` (`add()`).
 
-### `users.exportDownload`
-
-```php
-/**
- * Скачать готовый файл экспорта.
- *
- * @input string(uuid) $uuid
- *
- * @output file $payload Файл с Content-Disposition: attachment.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {FileDownloadResponse}
- * @response 404 {NotFoundErrorResponse} Файл удалён или uuid не существует.
- * @response 403 {ForbiddenErrorResponse} Не инициатор и нет admin.systems.exports.download_any.
- */
-public function exportDownload(Request $request): JsonResponse;
-```
-
-Это специальный case — action возвращает не JSON envelope, а файл с правильными headers (`Content-Disposition`, `Content-Type`). `laravel-api` поддерживает этот режим через специальный `ApiController::file()` helper.
+`Resource::exportable()` (по умолчанию `['csv']`) — список форматов, который попадает в `features.exportable` метаданных и определяет, какие кнопки экспорта показывает SPA; пустой список скрывает экспорт. Сам эндпоинт принимает любой формат из `ExporterRegistry`.
 
 ---
 
-## Import (4-шаговый wizard)
+## Import
 
-Включается через `Resource::importable()`.
-
-### `users.importUpload`
-
-**Шаг 1: Загрузка файла.**
+Четырёхшаговый мастер. Контроллер `import` регистрируется статически в `AdminApi::getMethods()`:
 
 ```php
-/**
- * Загрузить файл для импорта (CSV/XLSX). Возвращает upload_id и auto-detect
- * метаданных — колонки, sample rows, fuzzy-mapping.
- *
- * @input file $file CSV или XLSX.
- *
- * Альтернативно (если файл уже залит через uploads.upload):
- * @input string(uuid) ?$upload_id
- *
- * @output object $payload
- * @output string $payload.upload_id Токен для следующих шагов.
- * @output array  $payload.columns_detected Имена/индексы колонок из файла.
- * @output array  $payload.sample_rows Первые 5 строк для preview.
- * @output integer $payload.total_rows_estimate
- * @output array  $payload.target_fields Список полей Resource'а.
- * @output string $payload.target_fields[].name
- * @output string $payload.target_fields[].label
- * @output boolean $payload.target_fields[].required
- * @output object $payload.auto_mapping file_column → resource_field, fuzzy-match.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ImportUploadResponse}
- * @response 422 {InvalidImportFileResponse}
- * @response 403 {ForbiddenErrorResponse} <resource>.create + <resource>.import.
- */
-public function importUpload(Request $request): JsonResponse;
+'import' => [
+    'controller' => ImportController::class,
+    'actions' => [
+        'upload'  => ['method' => ['post']],
+        'preview' => ['method' => ['post']],
+        'start'   => ['method' => ['post']],
+        'status'  => ['method' => ['get']],
+    ],
+],
 ```
 
-### `users.importPreview`
+Отдельного права у этих actions нет — достаточно аутентификации в панели. `Resource::importable()` попадает в `features.importable` метаданных и определяет, показывает ли SPA мастер импорта для ресурса.
 
-**Шаг 2-3: Маппинг колонок + preview с валидацией.**
+Поддерживаемые файлы: `csv`, `tsv`, `txt` (разделитель определяется автоматически по первой строке, BOM пропускается) и `xlsx` (только первый лист; нужен `openspout/openspout`). Первая строка файла — заголовки.
 
-```php
-/**
- * Применить mapping и валидировать первые N строк, вернуть preview.
- *
- * @input string(uuid) $upload_id
- * @input object $mapping file_column → resource_field. null = пропустить колонку.
- * @input object $options
- * @input boolean $options.skip_errors
- * @input boolean $options.update_existing
- * @input string  ?$options.update_key Поле для upsert (например 'email').
- * @input boolean $options.skip_first_row
- *
- * @output object $payload
- * @output array  $payload.preview Список ImportPreviewRow.
- * @output integer $payload.preview[].row_number 1-based.
- * @output string  $payload.preview[].status create|update|skip|fail.
- * @output object  $payload.preview[].data Отмаппленные значения.
- * @output object  ?$payload.preview[].errors field → messages[].
- * @output object  $payload.summary
- * @output integer $payload.summary.total
- * @output integer $payload.summary.will_create
- * @output integer $payload.summary.will_update
- * @output integer $payload.summary.will_skip
- * @output integer $payload.summary.will_fail
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ImportPreviewResponse}
- * @response 422 {ValidationErrorResponse}
- * @response 404 {NotFoundErrorResponse} upload_id не существует.
- * @response 403 {ForbiddenErrorResponse}
- */
-public function importPreview(Request $request): JsonResponse;
-```
+Диск для файлов — `admin.imports.disk` (по умолчанию `local`).
 
-### `users.importRun`
+### `import.upload` (POST, multipart)
 
-**Шаг 4: Запуск.**
+**Шаг 1: загрузка файла.**
 
-```php
-/**
- * Запустить импорт в delayed-process.
- *
- * @input string(uuid) $upload_id
- * @input object $mapping
- * @input object $options (те же что у importPreview).
- *
- * @output object $payload Всегда delayed.
- * @output object $payload.delayed
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 202 {DelayedResponse}
- * @response 422 {ValidationErrorResponse}
- * @response 403 {ForbiddenErrorResponse}
- */
-public function importRun(Request $request): JsonResponse;
-```
+| Параметр | Описание |
+|---|---|
+| `file` | файл, не больше `admin.uploads.max_kilobytes` (по умолчанию 51200 КБ) |
+| `resource` | slug ресурса, в который идёт импорт |
 
-**Финальный payload** (через interceptor):
+Файл сохраняется в каталог `imports` диска. Ответ `200 {ImportUploadResponse}`: `{disk, path}`. Незарегистрированный ресурс — `422`, `errorKey: unknown_resource`.
+
+### `import.preview` (POST)
+
+**Шаг 2: заголовки, образец и автоматическое сопоставление.**
+
+| Параметр | Описание |
+|---|---|
+| `resource` | slug ресурса |
+| `path` | путь из `upload` |
+| `disk` | диск; по умолчанию `admin.imports.disk` |
+
+Ответ `200 {ImportPreviewResponse}`:
 
 ```json
 {
   "success": true,
   "payload": {
-    "imported": 1200,
-    "updated": 30,
-    "skipped": 4,
-    "failed": 0,
-    "errors_csv_url": null,
-    "duration_seconds": 18.4,
-    "message": "Импорт завершён успешно"
+    "headers": ["Name", "E-mail"],
+    "sample": [ { "Name": "Ivan", "E-mail": "ivan@example.com" } ],
+    "total": 1200,
+    "format": "csv",
+    "auto_mapping": { "Name": "name" }
   }
 }
 ```
 
-Events: `Admin\Events\ImportStarted` → `ImportProgressUpdated` → `ImportCompleted`/`ImportFailed`.
+- `sample` — первые 20 строк.
+- `total` — число строк данных (без заголовков); для пустого XLSX — `null`.
+- `auto_mapping` — `{заголовок файла: имя поля}` по полям ресурса: точное совпадение, без учёта регистра, по подписи поля, по snake_case заголовка. Несопоставленные заголовки в карту не попадают и при импорте пропускаются.
 
-### `users.importCancel`
+### `import.start` (POST)
 
-```php
-/**
- * Отменить импорт. До запуска через importRun — удаляет upload-сессию.
- * После — отменяет delayed-process (через delayed.cancel под капотом).
- *
- * @input string(uuid) $upload_id
- *
- * @output null $payload
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {SuccessResponse}
- * @response 404 {NotFoundErrorResponse}
- * @response 403 {ForbiddenErrorResponse}
- */
-public function importCancel(Request $request): JsonResponse;
+**Шаги 3–4: подтверждённое сопоставление и запуск.**
+
+| Параметр | Описание |
+|---|---|
+| `resource` | slug ресурса |
+| `path` | путь из `upload` |
+| `mapping` | `{заголовок файла: имя поля}` |
+| `disk` | диск, на котором проверяется наличие файла; по умолчанию `admin.imports.disk` |
+
+Создаёт запись `ImportProcess` (таблица `admin_import_processes`) и сразу выполняет импорт синхронно: каждая строка проходит `validationRules('create')` ресурса и сохраняется новой записью модели в своей транзакции. Строка с ошибкой не прерывает импорт — она попадает в `errors`.
+
+Ответ `200 {ImportStartResponse}`: `{process}` — состояние после завершения (формат — как у `status`).
+
+| HTTP | `errorKey` | Когда |
+|---|---|---|
+| 422 | `unknown_resource` | ресурс не зарегистрирован |
+| 422 | `file_missing` | файла по `path` нет на диске |
+
+### `import.status` (GET)
+
+`id` процесса. Ответ `200 {ImportStatusResponse}`:
+
+```json
+{
+  "success": true,
+  "payload": {
+    "process": {
+      "id": 7,
+      "resource_slug": "users",
+      "status": "completed",
+      "processed_count": 1200,
+      "created_count": 1196,
+      "updated_count": 0,
+      "error_count": 4,
+      "errors": [ { "row": 15, "error": "The email field must be a valid email address." } ],
+      "started_at": "2026-04-30T10:00:00+00:00",
+      "completed_at": "2026-04-30T10:00:18+00:00"
+    }
+  }
+}
 ```
 
-### `users.importErrors`
+`status` — `pending`, `running`, `completed` или `failed`. `row` в `errors` — номер строки файла с учётом строки заголовков; ошибка всего импорта записывается с `row: 0` и статусом `failed`. Нет процесса — `404`, `errorKey: not_found`.
 
-```php
-/**
- * Скачать CSV с ошибочными строками.
- *
- * @input string(uuid) $upload_id
- *
- * @output file $payload CSV.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {FileDownloadResponse}
- * @response 404 {NotFoundErrorResponse}
- * @response 403 {ForbiddenErrorResponse} Только инициатор импорта.
- */
-public function importErrors(Request $request): JsonResponse;
-```
+Импорт выполняется синхронно в запросе `start`. Для фонового выполнения зарегистрируйте свой обработчик в `AllowlistRegistrar` и запускайте его через `delayed/run` — см. [actions.md](actions.md#асинхронные-действия-asyncaction).

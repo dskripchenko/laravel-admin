@@ -1,325 +1,220 @@
 # API: Profile
 
-Контроллер `profile` — профиль текущего администратора, смена пароля, 2FA-setup, recovery codes, API-токены (Sanctum).
+Контроллер `profile` (`Dskripchenko\LaravelAdmin\Profile\Controllers\ProfileController`) — профиль текущего пользователя, смена пароля, настройка 2FA, коды восстановления, персональные API-токены (Sanctum).
 
-> Login/logout/2FA-challenge — в [auth.md](auth.md). Конвенции — в [conventions.md](conventions.md).
+> Вход, выход и второй шаг 2FA при входе — [auth.md](auth.md). Конвенции — [conventions.md](conventions.md).
 
-URL: `api/admin/profile/{action}`. Все actions требуют `AdminSession` или `AdminBearer`.
+URL: `/api/admin/profile/{action}`. Все actions требуют аутентификации (`AdminAuth` из стека панели, см. [system.md](system.md)) и работают только с текущим пользователем guard'а панели. Отдельных прав не требуется.
 
 ---
 
-## ProfileController
-
-### Регистрация
+## Регистрация в `AdminApi::getMethods()`
 
 ```php
 'profile' => [
     'controller' => ProfileController::class,
-    'middleware' => [AdminAuth::class],
     'actions' => [
-        'show'                       => ['method' => ['get']],
-        'update'                     => ['method' => ['post']],
-        'changePassword'             => ['method' => ['post']],
-        'twoFactorStatus'            => ['method' => ['get']],
-        'twoFactorEnable'            => ['method' => ['post']],
-        'twoFactorConfirm'           => ['method' => ['post']],
-        'twoFactorDisable'           => ['method' => ['post']],
-        'twoFactorRegenerateCodes'   => ['method' => ['post']],
-        'tokensList'                 => ['method' => ['get']],
-        'tokenCreate'                => ['method' => ['post']],
-        'tokenRevoke'                => ['method' => ['post']],
-        'tokenRegenerate'            => ['method' => ['post']],
+        'show'                     => ['method' => ['get']],
+        'update'                   => ['method' => ['post']],
+        'changePassword'           => ['method' => ['post']],
+        'twoFactorStatus'          => ['method' => ['get']],
+        'twoFactorEnable'          => ['method' => ['post']],
+        'twoFactorConfirm'         => ['method' => ['post']],
+        'twoFactorDisable'         => ['method' => ['post']],
+        'twoFactorRegenerateCodes' => ['method' => ['post']],
+        'tokensList'               => ['method' => ['get']],
+        'tokenCreate'              => ['method' => ['post']],
+        'tokenRevoke'              => ['method' => ['post']],
     ],
 ],
 ```
 
-> Actions `tokens*` доступны только при установленном `laravel/sanctum` и `config/admin.php → auth.api_tokens.enabled = true`. Иначе их регистрация пропускается, и URL отдают 404.
+Actions `token*` регистрируются всегда; без Sanctum они отвечают ошибкой (см. [API-токены](#api-токены-sanctum)).
 
 ---
 
-## Profile
+## Форма пользователя профиля
+
+`show` и `update` возвращают `user` в такой форме:
+
+| Ключ | Описание |
+|---|---|
+| `id`, `name`, `email` | данные пользователя |
+| `locale`, `theme` | атрибуты модели как есть (`null`, если не выбраны) |
+| `is_active` | `(bool) is_active` |
+| `email_verified_at` | ISO-8601 или `null` |
+
+---
+
+## Профиль
 
 ### `profile.show`
 
-```php
-/**
- * Получить профиль текущего пользователя.
- *
- * @output object $payload
- * @output object $payload.user AdminUserSummary с расширенными полями (locale, theme, ...).
- * @output array  $payload.available_locales
- * @output array  $payload.available_themes light|dark
- * @output object $payload.two_factor
- * @output boolean $payload.two_factor.enabled
- * @output string(date-time) ?$payload.two_factor.confirmed_at
- * @output integer $payload.two_factor.recovery_codes_remaining
- * @output boolean $payload.api_tokens_enabled Зависит от наличия Sanctum.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ProfileResponse}
- * @response 401 {UnauthenticatedErrorResponse}
- */
-public function show(Request $request): JsonResponse;
-```
+`GET /api/admin/profile/show`
+
+Ответ `200`:
+
+| Ключ | Описание |
+|---|---|
+| `user` | пользователь (форма выше) |
+| `available_locales` | `admin.ui.available_locales` |
+| `available_themes` | всегда `["light", "dark"]` |
+| `two_factor` | `{enabled, confirmed_at, recovery_codes_remaining}` — как у `twoFactorStatus` |
+| `api_tokens_enabled` | сейчас всегда `false` |
 
 ### `profile.update`
 
-```php
-/**
- * Обновить базовые поля профиля (имя, email, локаль, тема, аватар).
- * При смене email — отправляется письмо для верификации, email_verified_at обнуляется.
- *
- * @input string ?$name Имя.
- * @input string(email) ?$email Email.
- * @input string ?$locale Код локали (должен быть в available_locales).
- * @input string ?$theme light|dark.
- * @input string(uuid) ?$avatar_id ID upload'а из uploads.upload (null = удалить аватар).
- *
- * @output object $payload
- * @output object $payload.user
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ProfileUpdateResponse}
- * @response 422 {ValidationErrorResponse}
- */
-public function update(Request $request): JsonResponse;
-```
+`POST /api/admin/profile/update`
 
-Events: `Admin\Events\ProfileUpdated` (audit).
+Все поля необязательны; меняются только переданные.
+
+| Параметр | Правила |
+|---|---|
+| `name` | `sometimes`, `string`, `max:255` |
+| `email` | `sometimes`, `email`, уникален в таблице пользователя (кроме самого пользователя) |
+| `locale` | `sometimes`, `string`, одно из `admin.ui.available_locales` |
+| `theme` | `sometimes`, `string`, `light` или `dark` |
+
+При смене email сбрасывается `email_verified_at` (письмо подтверждения не отправляется). Ответ `200`: `{"user": {...}}` — перечитанный из БД.
+
+Ошибки: `422 validation`.
 
 ### `profile.changePassword`
 
-```php
-/**
- * Сменить пароль.
- *
- * @input string $current_password Текущий пароль для re-auth.
- * @input string $password Новый пароль (min:8).
- * @input string $password_confirmation Подтверждение.
- * @input boolean ?$revoke_other_sessions Завершить все остальные сессии (default false).
- *
- * @output null $payload
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {SuccessResponse}
- * @response 422 {ValidationErrorResponse} current_password неверен.
- */
-public function changePassword(Request $request): JsonResponse;
-```
+`POST /api/admin/profile/changePassword`
 
-Events: `Admin\Events\PasswordChanged` (audit).
+| Параметр | Правила |
+|---|---|
+| `current_password` | `required`, `string` |
+| `password` | `required`, `string`, `min:8`, `confirmed` |
+| `password_confirmation` | должен совпадать с `password` |
+
+Новый пароль записывается в атрибут `password` как есть — хэширует его каст модели (у `AdminUser` — `hashed`). Хэш пароля в текущей сессии обновляется, поэтому текущая сессия остаётся рабочей, а остальные сессии пользователя на следующем запросе получают `401 session_expired` от `AdminAuth`. Диспатчится `Illuminate\Auth\Events\PasswordReset`.
+
+Ответ `200`, `payload` — пустой массив.
+
+Ошибки: `422 validation`; при неверном текущем пароле — `422` с `errorKey: "validation"` и `messages.current_password`.
 
 ---
 
-## 2FA Setup
+## Настройка 2FA
+
+Используются атрибуты `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`. 2FA считается включённой, когда заданы и секрет, и `two_factor_confirmed_at`.
 
 ### `profile.twoFactorStatus`
 
-```php
-/**
- * Получить текущий статус 2FA. При state="pending" возвращает qr_code/secret/recovery_codes
- * (один раз, до подтверждения).
- *
- * @output object $payload
- * @output boolean $payload.enabled Включена ли 2FA.
- * @output string(date-time) ?$payload.confirmed_at Когда подтверждена.
- * @output string  ?$payload.qr_code_svg SVG inline (только при pending).
- * @output string  ?$payload.secret Base32-секрет для manual-ввода (только при pending).
- * @output string  ?$payload.qr_uri otpauth://... (только при pending).
- * @output array   ?$payload.recovery_codes Список одноразовых кодов (только при pending или после регенерации).
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {TwoFactorStatusResponse}
- */
-public function twoFactorStatus(Request $request): JsonResponse;
+`GET /api/admin/profile/twoFactorStatus`
+
+Ответ `200`:
+
+```json
+{ "enabled": true, "confirmed_at": "2026-01-01T10:00:00+00:00", "recovery_codes_remaining": 8 }
 ```
+
+Секрет и коды этот action не возвращает.
 
 ### `profile.twoFactorEnable`
 
-```php
-/**
- * Сгенерировать новый secret и recovery codes. После этого state=pending —
- * пользователь должен подтвердить TOTP-кодом через twoFactorConfirm.
- *
- * @input string ?$password Re-auth, требуется если включено в config.
- *
- * @output object $payload
- * @output string $payload.qr_code_svg
- * @output string $payload.secret
- * @output string $payload.qr_uri
- * @output array  $payload.recovery_codes 8 кодов.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {TwoFactorSetupResponse}
- * @response 422 {ValidationErrorResponse} Неверный password.
- */
-public function twoFactorEnable(Request $request): JsonResponse;
-```
+`POST /api/admin/profile/twoFactorEnable`
+
+Параметров нет. Генерирует новый секрет и набор кодов восстановления (`admin.auth.two_factor.recovery_codes`, по умолчанию 8), сбрасывает `two_factor_confirmed_at`. До подтверждения через `twoFactorConfirm` 2FA выключена — в том числе если она была включена до вызова.
+
+Ответ `200`:
+
+| Ключ | Описание |
+|---|---|
+| `qr_code_svg` | всегда `null` — QR рисует клиент по `qr_uri` |
+| `secret` | Base32-секрет для ручного ввода |
+| `qr_uri` | `otpauth://`-URI; issuer — `admin.brand.name`, аккаунт — email |
+| `recovery_codes` | коды восстановления |
 
 ### `profile.twoFactorConfirm`
 
-```php
-/**
- * Подтвердить включение 2FA вводом TOTP-кода с того же устройства.
- *
- * @input string $code 6-значный TOTP.
- *
- * @output object $payload
- * @output boolean $payload.enabled Всегда true.
- * @output string(date-time) $payload.confirmed_at Текущее время.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {TwoFactorConfirmedResponse}
- * @response 422 {InvalidTwoFactorResponse}
- */
-public function twoFactorConfirm(Request $request): JsonResponse;
-```
+`POST /api/admin/profile/twoFactorConfirm`
 
-Events: `Admin\Events\TwoFactorEnabled` (audit).
+| Параметр | Правила |
+|---|---|
+| `code` | `required`, `string` — TOTP |
+
+Код проверяется с окном `admin.auth.two_factor.window`. Ответ `200`: `{"enabled": true, "confirmed_at": "<ISO-8601>"}`.
+
+Ошибки: `422 validation`; `422 two_factor_not_initialised` — секрета нет (сначала `twoFactorEnable`); `422 invalid_two_factor_code`.
 
 ### `profile.twoFactorDisable`
 
-```php
-/**
- * Отключить 2FA.
- *
- * @input string $password Re-auth.
- *
- * @output null $payload
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {SuccessResponse}
- * @response 422 {ValidationErrorResponse} Неверный password.
- */
-public function twoFactorDisable(Request $request): JsonResponse;
-```
+`POST /api/admin/profile/twoFactorDisable`
 
-Events: `Admin\Events\TwoFactorDisabled` (audit).
+| Параметр | Правила |
+|---|---|
+| `password` | `required`, `string` — текущий пароль |
+
+Очищает секрет, коды и `two_factor_confirmed_at`. Ответ `200`, `payload` — пустой массив.
+
+Ошибки: `422 validation`; при неверном пароле — `422` с `errorKey: "validation"` и `messages.password`.
 
 ### `profile.twoFactorRegenerateCodes`
 
-```php
-/**
- * Сгенерировать новый набор recovery-кодов. Старый инвалидируется.
- *
- * @input string $password Re-auth.
- *
- * @output object $payload
- * @output array  $payload.recovery_codes 8 новых кодов (показываются один раз).
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {RecoveryCodesResponse}
- * @response 422 {ValidationErrorResponse}
- */
-public function twoFactorRegenerateCodes(Request $request): JsonResponse;
-```
+`POST /api/admin/profile/twoFactorRegenerateCodes`
 
-Events: `Admin\Events\TwoFactorRecoveryCodesRegenerated` (audit).
+| Параметр | Правила |
+|---|---|
+| `password` | `required`, `string` — текущий пароль |
+
+Заменяет коды восстановления новым набором. Ответ `200`: `{"recovery_codes": [...]}`.
+
+Ошибки: те же, что у `twoFactorDisable`.
 
 ---
 
-## API Tokens (Sanctum)
+## API-токены (Sanctum)
+
+Работают, когда установлен `laravel/sanctum` (в `composer.json` он в `suggest`), включён `admin.auth.api_tokens.enabled` (по умолчанию `true`) и модель пользователя использует `HasApiTokens`. Иначе каждый action отвечает `404` с `errorKey: "sanctum_unavailable"`.
 
 ### `profile.tokensList`
 
-```php
-/**
- * Получить список своих API-токенов.
- *
- * @output object $payload
- * @output array  $payload.data Список ApiToken.
- * @output integer $payload.data[].id
- * @output string  $payload.data[].name
- * @output array   $payload.data[].abilities ['admin.users.view', '*'].
- * @output string(date-time) ?$payload.data[].last_used_at
- * @output string(date-time) $payload.data[].created_at
- * @output string(date-time) ?$payload.data[].expires_at
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ApiTokenListResponse}
- * @response 404 {NotFoundErrorResponse} Sanctum не установлен.
- */
-public function tokensList(Request $request): JsonResponse;
-```
+`GET /api/admin/profile/tokensList`
+
+Ответ `200`: `{"data": [...]}`, токены текущего пользователя, новые первыми:
+
+| Ключ | Описание |
+|---|---|
+| `id` | id токена |
+| `name` | имя |
+| `abilities` | список abilities |
+| `last_used_at`, `expires_at`, `created_at` | ISO-8601 или `null` |
 
 ### `profile.tokenCreate`
 
-```php
-/**
- * Создать API-токен. Plain-text-токен возвращается ОДИН РАЗ — после ответа
- * восстановить нельзя.
- *
- * @input string $name Человекочитаемое имя.
- * @input array  ?$abilities Список разрешений (default ["*"]).
- * @input string ?$abilities[] Один из admin permissions либо "*".
- * @input integer ?$expires_in Секунд до expiration (null = бессрочный).
- *
- * @output object $payload
- * @output object $payload.token ApiToken meta.
- * @output integer $payload.token.id
- * @output string  $payload.token.name
- * @output array   $payload.token.abilities
- * @output string(date-time) ?$payload.token.expires_at
- * @output string  $payload.plain_text_token Показывается ОДИН раз.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 201 {ApiTokenCreatedResponse}
- * @response 422 {ValidationErrorResponse}
- * @response 404 {NotFoundErrorResponse} Sanctum не установлен.
- */
-public function tokenCreate(Request $request): JsonResponse;
+`POST /api/admin/profile/tokenCreate`
+
+| Параметр | Правила |
+|---|---|
+| `name` | `required`, `string`, `max:255` |
+| `abilities` | `nullable`, `array`; по умолчанию `["*"]` |
+| `abilities.*` | `string` |
+| `expires_in_days` | `nullable`, `integer`, `min:1`, `max:3650`; без него токен бессрочный |
+
+Ответ `200`:
+
+```json
+{
+  "plain_text_token": "1|...",
+  "token": { "id": 1, "name": "CI", "abilities": ["*"], "expires_at": null }
+}
 ```
 
-Events: `Admin\Events\ApiTokenCreated` (audit).
+`plain_text_token` возвращается только в этом ответе.
+
+Ошибки: `404 sanctum_unavailable`; `422 validation`.
 
 ### `profile.tokenRevoke`
 
-```php
-/**
- * Отозвать API-токен (удаление записи).
- *
- * @input integer $id ID токена.
- *
- * @output null $payload
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {SuccessResponse}
- * @response 404 {NotFoundErrorResponse} Токен не принадлежит юзеру.
- */
-public function tokenRevoke(Request $request): JsonResponse;
-```
+`POST /api/admin/profile/tokenRevoke`
 
-Events: `Admin\Events\ApiTokenRevoked` (audit).
+| Параметр | Правила |
+|---|---|
+| `id` | `required`, `integer` |
 
-### `profile.tokenRegenerate`
+Удаляет токен, если он принадлежит текущему пользователю. Ответ `200`, `payload` — пустой массив.
 
-```php
-/**
- * Регенерировать токен — старый отзывается, новый создаётся с теми же abilities/expires.
- *
- * @input integer $id
- * @input string ?$password Re-auth.
- *
- * @output object $payload
- * @output object $payload.token Новый ApiToken.
- * @output string $payload.plain_text_token
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ApiTokenCreatedResponse}
- * @response 404 {NotFoundErrorResponse}
- * @response 422 {ValidationErrorResponse}
- */
-public function tokenRegenerate(Request $request): JsonResponse;
-```
+Ошибки: `404 sanctum_unavailable`; `404 not_found` — токена нет у текущего пользователя; `422 validation`.

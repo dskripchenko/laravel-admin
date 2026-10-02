@@ -1,392 +1,255 @@
 # API: System
 
-Контроллер `system` — bootstrap, manifest, profile-summary, menu, locales, permissions, plugins, status, notifications, audit.
+Контроллер `system` (`Dskripchenko\LaravelAdmin\Http\Controllers\SystemController`) — служебные данные SPA: bootstrap, манифест, текущий пользователь, меню, глобальный поиск, локали, темы, группы прав, плагины, индикаторы статуса.
 
 > Конвенции — [conventions.md](conventions.md). Регистрация — [registration.md](registration.md).
 
-URL: `api/admin/system/{action}`. Все actions требуют `AdminSession` или `AdminBearer` security, кроме случаев явно отмеченных как public.
+URL: `/api/admin/system/{action}` (префикс — `laravel-api.prefix`, по умолчанию `api`; у дополнительной панели вместо `admin` стоит её id).
+
+Все ответы — в конверте laravel-api: `{"success": true, "payload": ...}` или `{"success": false, "payload": {"errorKey": "...", "message": "..."}}`.
 
 ---
 
-## SystemController
-
-### Регистрация в `getMethods()`
+## Регистрация в `AdminApi::getMethods()`
 
 ```php
 'system' => [
-    'controller' => SystemController::class,
-    'middleware' => [AdminAuth::class],
+    'controller' => Controllers\SystemController::class,
     'actions' => [
-        'bootstrap'                  => ['method' => ['get']],
-        'manifest'                   => ['method' => ['get']],
-        'me'                         => ['method' => ['get']],
-        'menu'                       => ['method' => ['get']],
-        'locales'                    => ['method' => ['get']],
-        'permissions'                => ['method' => ['get']],
-        'plugins'                    => ['method' => ['get']],
-        'status'                     => ['method' => ['get']],
-        'notifications'              => ['method' => ['get']],
-        'notificationsRead'          => ['method' => ['post']],
-        'notificationsMarkAllRead'   => ['method' => ['post']],
-        'notificationsDelete'        => ['method' => ['post']],
-        'audit'                      => ['method' => ['get']],
+        'bootstrap'   => ['method' => ['get'],  'exclude-middleware' => [Middleware\AdminAuth::class]],
+        'manifest'    => ['method' => ['get']],
+        'me'          => ['method' => ['get']],
+        'menu'        => ['method' => ['get']],
+        'search'      => ['method' => ['get']],
+        'locales'     => ['method' => ['get'],  'exclude-middleware' => [Middleware\AdminAuth::class]],
+        'setLocale'   => ['method' => ['post'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
+        'permissions' => ['method' => ['get']],
+        'plugins'     => ['method' => ['get']],
+        'status'      => ['method' => ['get']],
+        'theme'       => ['method' => ['get'],  'exclude-middleware' => [Middleware\AdminAuth::class]],
+        'setTheme'    => ['method' => ['post'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
     ],
 ],
 ```
 
----
+Middleware-стек панели (`config('admin.middleware.api')`): `web`, `CaptureApiRequest`, `AdminAuth`, `RunActionMiddleware`, `AdminLocale`, плюс глобальный лимит `ThrottleRequests` из `admin.api.throttle` (по умолчанию `240,1`).
 
-## Действия
+`AdminAuth` требует входа в guard текущей панели. Без него — `401 unauthenticated`; отключённая учётная запись — `403 account_inactive`; пользователь без доступа к панели — `403 forbidden`; сессия, чей пароль сменили, — `401 session_expired`. Actions с `exclude-middleware => [AdminAuth::class]` (`bootstrap`, `locales`, `setLocale`, `theme`, `setTheme`) доступны без входа.
 
-### `system.bootstrap`
+Отдельных прав (`AdminAccess`) на actions `system` нет: всё, что нужно, — аутентификация (где она требуется). Фильтрация по правам происходит внутри данных (меню, поиск, дашборды в манифесте).
 
-```php
-/**
- * Получить bootstrap-данные SPA.
- *
- * Используется при стратегии `xhr` (см. config admin.bootstrap.strategy).
- * При стратегии `inline` данные приходят inline в <script> shell.blade.php
- * и этот action не вызывается.
- *
- * @output object  $payload Bootstrap-данные.
- * @output string  $payload.csrf CSRF-токен сессии.
- * @output string  $payload.baseUrl Базовый URL admin (например /admin).
- * @output string  $payload.apiUrl URL admin API (например /api/admin).
- * @output string  $payload.locale Текущая локаль (ru/en/...).
- * @output array   $payload.availableLocales Доступные локали.
- * @output string  $payload.theme Тема (light/dark).
- * @output object  $payload.brand Бренд (name, logo, favicon).
- * @output object  ?$payload.user Текущий админ (null = редирект на login).
- * @output array   $payload.permissions Плоский список ключей permissions.
- * @output string  $payload.manifestVersion Хэш текущего manifest для cache-сравнения.
- * @output object  $payload.pluginVersions plugin_id → version.
- * @output object  $payload.config Подмножество публичных опций config/admin.php.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {BootstrapResponse}
- * @response 401 {UnauthenticatedErrorResponse}
- */
-public function bootstrap(Request $request): JsonResponse;
-```
-
-### `system.manifest`
-
-```php
-/**
- * Получить полный JSON-манифест admin: Resource'ы, Screen'ы, Widget'ы,
- * поля, колонки, фильтры, валидация. SPA кэширует по manifestVersion + If-None-Match.
- *
- * Состав фильтруется по permissions текущего пользователя — видны только
- * Resource/Action/Field, к которым есть доступ.
- *
- * @header string ?$If-None-Match Etag предыдущего ответа.
- *
- * @output object  $payload Манифест.
- * @output string  $payload.version Хэш (равен ETag).
- * @output string  $payload.locale Локаль.
- * @output array   $payload.resources Список Resource-схем.
- * @output array   $payload.screens Список Screen-схем.
- * @output array   $payload.settings Список SettingsResource-схем.
- * @output array   $payload.dashboards Список Dashboard-схем.
- * @output array   $payload.plugins Список зарегистрированных AdminPlugin'ов.
- * @output array   $payload.permissions Группы пермишенов для UI.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {ManifestResponse}
- * @response 304 {NotModifiedResponse}
- * @response 401 {UnauthenticatedErrorResponse}
- */
-public function manifest(Request $request): JsonResponse;
-```
-
-Header `ETag` ставится сервером. SPA при следующем запросе отправляет `If-None-Match: "<etag>"`. При совпадении — 304 без тела.
-
-### `system.me`
-
-```php
-/**
- * Получить данные текущего администратора.
- *
- * @output object  $payload AdminUserSummary.
- * @output integer $payload.id ID.
- * @output string  $payload.name Имя.
- * @output string(email) $payload.email Email.
- * @output string  ?$payload.avatar URL аватара.
- * @output string  $payload.locale Локаль интерфейса.
- * @output string  $payload.theme Тема.
- * @output boolean $payload.twoFactorEnabled 2FA включена.
- * @output object  ?$payload.impersonator Если работаем под impersonation.
- * @output integer $payload.impersonator.id ID оригинального юзера.
- * @output string  $payload.impersonator.name Имя оригинала.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {AdminUserSummaryResponse}
- * @response 401 {UnauthenticatedErrorResponse}
- */
-public function me(Request $request): JsonResponse;
-```
-
-### `system.menu`
-
-```php
-/**
- * Получить дерево меню сайдбара, отфильтрованное по permissions.
- *
- * @output object  $payload
- * @output array   $payload.items Список MenuItem.
- * @output string  $payload.items[].key Ключ.
- * @output string  $payload.items[].label Метка.
- * @output string  ?$payload.items[].icon Иконка.
- * @output string  ?$payload.items[].url URL (null для группы).
- * @output mixed   ?$payload.items[].badge Число/строка-бейдж (например, кол-во failed jobs).
- * @output array   ?$payload.items[].children Вложенные пункты.
- * @output integer $payload.items[].order Порядок сортировки.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {MenuResponse}
- * @response 401 {UnauthenticatedErrorResponse}
- */
-public function menu(Request $request): JsonResponse;
-```
-
-### `system.locales`
-
-```php
-/**
- * Получить список доступных локалей admin.
- *
- * @output object $payload
- * @output array  $payload.available Доступные коды (ru, en, ...).
- * @output string $payload.current Текущая.
- * @output string $payload.fallback Fallback.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {LocalesResponse}
- */
-public function locales(Request $request): JsonResponse;
-```
-
-### `system.permissions`
-
-```php
-/**
- * Получить плоский список permissions, сгруппированных через ItemPermission::group().
- * Используется в UI редактирования роли (матрица).
- *
- * @output object $payload
- * @output array  $payload.groups Группы.
- * @output string $payload.groups[].name Имя группы.
- * @output array  $payload.groups[].items Permissions в группе.
- * @output string $payload.groups[].items[].key Ключ permission.
- * @output string $payload.groups[].items[].label Локализованная метка.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {PermissionsResponse}
- * @response 403 {ForbiddenErrorResponse} Требуется admin.systems.roles.view.
- */
-public function permissions(Request $request): JsonResponse;
-```
-
-### `system.plugins`
-
-```php
-/**
- * Получить список зарегистрированных AdminPlugin'ов с их версиями.
- * Используется для отладки (Scalar UI и dev-tools).
- *
- * @output object $payload
- * @output array  $payload.plugins Список.
- * @output string $payload.plugins[].id ID плагина.
- * @output string $payload.plugins[].version Версия.
- * @output array  $payload.plugins[].requires Список зависимых plugin-ID.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {PluginsResponse}
- * @response 403 {ForbiddenErrorResponse} Требуется admin.system.api-docs.
- */
-public function plugins(Request $request): JsonResponse;
-```
-
-### `system.status`
-
-Состояние индикаторов верхней панели. Отдельный экшен, а не поле манифеста:
-манифест кэшируется по ETag и рассчитан на устаревание — форма панели меняется
-на деплое. Статус меняется сам по себе, и проверка здоровья, которой нужен
-hard-refresh, хуже отсутствующей.
-
-Индикаторы регистрирует хост или плагин — `$admin->statusIndicators([...])`,
-классы реализуют `Dskripchenko\LaravelAdmin\Status\StatusIndicator`. Упавший
-индикатор выбрасывается из ответа (и уходит в `report()`), а не роняет запрос:
-сломанная диагностика не должна утаскивать за собой шапку.
-
-```php
-/**
- * Состояние индикаторов верхней панели.
- *
- * @output object $payload
- * @output array  $payload.indicators Список.
- * @output string $payload.indicators[].key Идентификатор, например admin.health.
- * @output string $payload.indicators[].status ok|warning|error|unknown.
- * @output string $payload.indicators[].label Короткая подпись рядом с точкой.
- * @output string ?$payload.indicators[].detail Текст всплывающей подсказки.
- * @output string ?$payload.indicators[].url Куда ведёт клик.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {StatusResponse}
- */
-public function status(Request $request): JsonResponse;
-```
-
-Фронт (`StatusIndicators.vue`) опрашивает экшен раз в минуту и **не рисует
-`ok`**: зелёная точка на плагин — украшение, которое никто не читает, шапка
-говорит только когда что-то не так. Недоступный экшен тоже молчит — он падает
-на каждом рестарте деплоя.
+> Уведомления и журнал аудита — не actions `system`, а отдельные контроллеры: `notifications` (`list`, `unread`, `markAsRead`, `markAllAsRead`, `destroy`) и `audit` (`list`, `timeline`).
 
 ---
 
-## Notifications
+## `system.bootstrap`
 
-### `system.notifications`
+`GET /api/admin/system/bootstrap` — без аутентификации.
 
-```php
-/**
- * Получить список нотификаций текущего пользователя с пагинацией.
- *
- * @input integer ?$page Номер страницы (default 1).
- * @input integer ?$per_page Размер страницы (default 20, max 100).
- * @input boolean ?$unread Только непрочитанные (default false).
- * @input string(date-time) ?$since Только новее указанной даты.
- *
- * @output object $payload
- * @output array  $payload.data Список AdminNotification.
- * @output string $payload.data[].id UUID.
- * @output string $payload.data[].type FQCN класса нотификации.
- * @output object $payload.data[].data Данные.
- * @output string $payload.data[].data.title Заголовок.
- * @output string $payload.data[].data.message Текст.
- * @output string ?$payload.data[].data.icon Иконка.
- * @output string ?$payload.data[].data.color info|success|warning|danger.
- * @output string ?$payload.data[].data.action_url Ссылка на источник.
- * @output string ?$payload.data[].data.action_label Метка кнопки.
- * @output string(date-time) ?$payload.data[].read_at Когда прочитано.
- * @output string(date-time) $payload.data[].created_at Создано.
- * @output object $payload.meta Пагинация.
- * @output integer $payload.unread_count Кол-во непрочитанных всего.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {NotificationsListResponse}
- */
-public function notifications(Request $request): JsonResponse;
-```
+Bootstrap-данные SPA для стратегии `xhr` (`admin.bootstrap.strategy`). При стратегии `inline` (по умолчанию) те же данные вшиваются в `<script>` shell-страницы и этот action не вызывается. Данные собирает `Support\BootstrapBuilder`.
 
-### `system.notificationsRead`
+Параметров нет. Ответ `200`:
 
-```php
-/**
- * Пометить нотификацию прочитанной.
- *
- * @input string(uuid) $id ID нотификации.
- *
- * @output object $payload AdminNotification.
- * @output string $payload.id UUID.
- * @output string(date-time) $payload.read_at Когда прочитано.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {NotificationItemResponse}
- * @response 404 {NotFoundErrorResponse} Нотификация не принадлежит юзеру.
- */
-public function notificationsRead(Request $request): JsonResponse;
-```
-
-### `system.notificationsMarkAllRead`
-
-```php
-/**
- * Пометить все непрочитанные нотификации текущего юзера как прочитанные.
- *
- * @output object $payload
- * @output integer $payload.affected Сколько нотификаций было обновлено.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {AffectedResponse}
- */
-public function notificationsMarkAllRead(Request $request): JsonResponse;
-```
-
-### `system.notificationsDelete`
-
-```php
-/**
- * Удалить нотификацию (одну или все). Если id не передан, удаляются все
- * нотификации текущего юзера, в зависимости от флага only_read.
- *
- * @input string(uuid) ?$id ID конкретной нотификации.
- * @input boolean ?$only_read Удалить только прочитанные (default true). Игнорируется, если задан id.
- *
- * @output object $payload
- * @output integer $payload.affected Сколько удалено.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {AffectedResponse}
- * @response 404 {NotFoundErrorResponse} Конкретный id не принадлежит юзеру.
- */
-public function notificationsDelete(Request $request): JsonResponse;
-```
+| Ключ | Тип | Описание |
+|---|---|---|
+| `csrf` | string | CSRF-токен сессии |
+| `panel` | string | id панели |
+| `baseUrl` | string | абсолютный URL shell'а панели |
+| `apiUrl` | string | абсолютный URL API панели |
+| `locale` | string | текущая локаль (см. `LocaleResolver`) |
+| `availableLocales` | string[] | `admin.ui.available_locales`, по умолчанию `['ru', 'en']` |
+| `theme` | string | текущая тема |
+| `availableThemes` | string[] | `admin.ui.available_themes`, по умолчанию `['light', 'dark']` |
+| `brand` | object | бренд панели |
+| `user` | object\|null | `{id, name, email, avatar, locale, theme, twoFactorEnabled}`; `null` для гостя и для пользователя без доступа к панели |
+| `permissions` | string[] | плоский список прав пользователя (пустой для гостя) |
+| `manifestVersion` | string\|null | версия манифеста; `null` для гостя — манифест для гостя не строится |
+| `plugins` | string[] | классы зарегистрированных `AdminPlugin` |
+| `unread_notifications_count` | integer | число непрочитанных уведомлений (0, если таблицы `notifications` нет) |
+| `translations` | object | плоский словарь `{ключ: перевод}`: пространства из `admin.translations.namespaces` + JSON-переводы локали |
+| `config` | object | `{manifest: {etag: bool}, bootstrap: {strategy: string}}` |
 
 ---
 
-## Audit
+## `system.manifest`
 
-### `system.audit`
+`GET /api/admin/system/manifest` — требует аутентификации.
 
-```php
-/**
- * Получить глобальный журнал аудита (требует admin.systems.audit.view).
- * Per-resource history доступен через {resource}.audit.
- *
- * @input integer ?$page
- * @input integer ?$per_page
- * @input integer ?$filter_user_id
- * @input string  ?$filter_event created|updated|deleted|restored|...
- * @input string  ?$filter_subject_type Morph-type сущности.
- * @input string(date-time) ?$filter_created_at_from
- * @input string(date-time) ?$filter_created_at_to
- * @input string  ?$q Free-text search (по message/old/new).
- *
- * @output object $payload
- * @output array  $payload.data Список AuditLogEntry.
- * @output integer $payload.data[].id
- * @output object  ?$payload.data[].user
- * @output integer $payload.data[].user.id
- * @output string  $payload.data[].user.name
- * @output string(email) $payload.data[].user.email
- * @output string  $payload.data[].event
- * @output string  ?$payload.data[].subject_type
- * @output mixed   ?$payload.data[].subject_id
- * @output object  ?$payload.data[].attributes
- * @output object  ?$payload.data[].old
- * @output object  ?$payload.data[].new
- * @output string  ?$payload.data[].ip
- * @output string  ?$payload.data[].user_agent
- * @output string(date-time) $payload.data[].created_at
- * @output object  $payload.meta Пагинация.
- *
- * @security AdminSession
- * @security AdminBearer
- * @response 200 {AuditListResponse}
- * @response 403 {ForbiddenErrorResponse} Требуется admin.systems.audit.view.
- */
-public function audit(Request $request): JsonResponse;
+Полный JSON-манифест панели (`Support\Manifest::build()`), собранный в текущей локали запроса (`app()->getLocale()`).
+
+| Заголовок запроса | Описание |
+|---|---|
+| `If-None-Match` | ETag предыдущего ответа |
+
+Ответ `200`, заголовок `ETag: "<version>"`. Если `If-None-Match` совпал с ETag — `304` без тела (с тем же `ETag`).
+
+| Ключ | Описание |
+|---|---|
+| `version` | хэш содержимого (32 символа); равен ETag без кавычек |
+| `locale` | локаль сборки |
+| `panel` | id панели |
+| `resources` | описания ресурсов панели (`ResourceManifest::describe()`) |
+| `screens` | кастомные экраны: `{slug, name, description, permission}` (без `GeneratedScreen` и `DashboardScreen`) |
+| `settings` | `meta()` каждого SettingsResource |
+| `dashboards` | дашборды, доступные пользователю (`DashboardScreen::canAccess()`), в виде `toManifest()` |
+| `plugins` | классы зарегистрированных плагинов |
+| `permissions` | всегда пустой массив; группы прав отдаёт `system.permissions` |
+
+---
+
+## `system.me`
+
+`GET /api/admin/system/me` — требует аутентификации.
+
+Ответ `200`:
+
+| Ключ | Описание |
+|---|---|
+| `id`, `name`, `email` | данные пользователя |
+| `locale` | `user.locale` или локаль по умолчанию (`LocaleResolver::default()`) |
+| `theme` | `user.theme` или `admin.ui.default_theme` (`light`) |
+| `twoFactorEnabled` | `hasTwoFactorEnabled()` модели, иначе `false` |
+| `impersonator` | `{id, name}` исходного пользователя при активной impersonation, иначе `null` |
+| `unread_notifications_count` | число непрочитанных уведомлений (0, если таблицы `notifications` нет) |
+
+---
+
+## `system.menu`
+
+`GET /api/admin/system/menu` — требует аутентификации.
+
+Дерево меню сайдбара: сначала узлы, зарегистрированные через `Admin::menu()->add(...)` (`MenuRegistry`), затем — если автозаполнение не выключено — ресурсы и кастомные экраны, которых нет в дереве.
+
+Ответ `200`: `{"items": [MenuItem, ...]}`. Поля `MenuItem`:
+
+| Ключ | Описание |
+|---|---|
+| `key` | ключ узла |
+| `label` | метка (переводится при сериализации) |
+| `icon` | иконка или `null` |
+| `url` | путь SPA (`/r/{slug}`, `/screens/{slug}`, `/dashboard/{slug}`, ...) или `null` |
+| `routeName` | имя маршрута SPA или `null` |
+| `badge` | бейдж или `null` |
+| `group` | группа или `null` |
+| `order` | порядок |
+| `permissions` | права, нужные для показа узла (фильтрует SPA) |
+| `children` | вложенные узлы |
+
+Автоматические пункты: для ресурса — `permissions: ["{permission}.view"]`, `order: 0`; для экрана — права из `Screen::permission()`, группа «Инструменты», `order: 100`. Сортировка автоматических пунктов — по `order`, затем по метке. Узлы, ведущие на дашборд, который пользователю недоступен (`DashboardScreen::canAccess()`), сервер удаляет сам.
+
+---
+
+## `system.search`
+
+`GET /api/admin/system/search?q=...` — требует аутентификации. Глобальный поиск по ресурсам панели (палитра ⌘K). Подробности — [search.md](search.md).
+
+| Параметр | Тип | Описание |
+|---|---|---|
+| `q` | string, необязательный | строка поиска; короче 2 символов (после `trim`) — пустой результат |
+
+Ответ `200`: `{"query": "...", "groups": [...]}`.
+
+---
+
+## `system.locales`
+
+`GET /api/admin/system/locales` — без аутентификации.
+
+Ответ `200`:
+
+| Ключ | Описание |
+|---|---|
+| `available` | доступные локали (`admin.ui.available_locales`, по умолчанию `['ru', 'en']`) |
+| `current` | локаль запроса по цепочке `LocaleResolver`: `?locale=` → заголовок `X-Admin-Locale` → `user.locale` → cookie `admin_locale` → `Accept-Language` → по умолчанию |
+| `default` | `admin.ui.default_locale` (или локаль приложения), если она доступна, иначе первая доступная |
+| `fallback` | `admin.ui.fallback_locale` (по умолчанию `en`) |
+
+---
+
+## `system.setLocale`
+
+`POST /api/admin/system/setLocale` — без аутентификации.
+
+| Параметр | Правила |
+|---|---|
+| `locale` | `required`, `string`; должна входить в доступные локали |
+
+Сохраняет локаль в `user.locale` (если пользователь вошёл и у таблицы есть колонка `locale`) и в cookie `admin_locale` на год.
+
+Ответ `200`: `{"locale": "en"}`.
+
+Ошибки: `422 validation` — нет параметра; `422 unsupported_locale` — локали нет в списке доступных.
+
+---
+
+## `system.theme`
+
+`GET /api/admin/system/theme` — без аутентификации.
+
+Ответ `200`: `{"current": "...", "default": "...", "available": [...]}`. `current` — `user.theme` → cookie `admin_theme` → `admin.ui.default_theme` (по умолчанию `light`); `available` — `admin.ui.available_themes` (по умолчанию `['light', 'dark']`).
+
+---
+
+## `system.setTheme`
+
+`POST /api/admin/system/setTheme` — без аутентификации.
+
+| Параметр | Правила |
+|---|---|
+| `theme` | `required`, `string`; должна входить в доступные темы |
+
+Сохраняет тему в `user.theme` (если пользователь вошёл и у таблицы есть колонка `theme`) и в cookie `admin_theme` на год.
+
+Ответ `200`: `{"theme": "dark"}`.
+
+Ошибки: `422 validation`; `422 unsupported_theme` — темы нет в списке доступных.
+
+---
+
+## `system.permissions`
+
+`GET /api/admin/system/permissions` — требует аутентификации (отдельного права не требует).
+
+Группы прав текущей панели — для матрицы ролей в UI.
+
+Ответ `200`:
+
+```json
+{
+  "groups": [
+    { "name": "<группа>", "items": [ { "key": "<ключ права>", "label": "<локализованная метка>" } ] }
+  ]
+}
 ```
+
+Группы — это `ItemPermission`, зарегистрированные для панели (`$admin->permissions(...)`); `name` и `label` локализуются.
+
+---
+
+## `system.plugins`
+
+`GET /api/admin/system/plugins` — требует аутентификации.
+
+Ответ `200`: `{"plugins": [{"id": "<FQCN плагина>", "version": "0.0.0-dev", "requires": []}]}`. Поля `version` и `requires` сейчас заполняются константами.
+
+---
+
+## `system.status`
+
+`GET /api/admin/system/status` — требует аутентификации.
+
+Состояние индикаторов верхней панели. Отдельный action, а не поле манифеста: манифест кэшируется по ETag и меняется на деплое, а статус меняется сам по себе.
+
+Индикаторы регистрирует хост или плагин через `$admin->statusIndicators([...])`; классы реализуют `Dskripchenko\LaravelAdmin\Status\StatusIndicator` (`key()`, `state()`). Отдаются индикаторы текущей панели. Индикатор, бросивший исключение, пропускается (исключение уходит в `report()`), запрос не падает.
+
+Ответ `200`:
+
+| Ключ | Описание |
+|---|---|
+| `indicators[].key` | идентификатор, например `admin.health` |
+| `indicators[].status` | `ok` \| `warning` \| `error` \| `unknown` (любое другое значение превращается в `unknown`) |
+| `indicators[].label` | короткая подпись рядом с точкой |
+| `indicators[].detail` | текст подсказки или `null` |
+| `indicators[].url` | куда ведёт клик, или `null` |
+
+Фронт (`StatusIndicators.vue`) опрашивает action раз в минуту и не рисует индикаторы со статусом `ok`; недоступный action молча игнорируется.
