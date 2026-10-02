@@ -117,6 +117,44 @@ it('delayed.run validates input', function (): void {
     ])->assertStatus(422);
 });
 
+it('delayed.run stores named params as given', function (): void {
+    app(AllowlistRegistrar::class)->allow(TestAsyncHandler::class, 'process');
+
+    $response = $this->postJson('/api/admin/delayed/run', [
+        'entity' => TestAsyncHandler::class,
+        'method' => 'process',
+        'params' => ['message' => 'hi', 'ids' => [1, 2]],
+    ]);
+
+    $response->assertOk();
+    $process = DelayedProcess::where('uuid', $response->json('payload.uuid'))->firstOrFail();
+    expect($process->parameters)->toBe(['message' => 'hi', 'ids' => [1, 2]]);
+});
+
+it('delayed.run rejects params named after the factory arguments', function (string $key): void {
+    app(AllowlistRegistrar::class)->allow(TestAsyncHandler::class, 'process');
+
+    $this->postJson('/api/admin/delayed/run', [
+        'entity' => TestAsyncHandler::class,
+        'method' => 'process',
+        'params' => [$key => 'x'],
+    ])->assertStatus(422)->assertJsonPath('payload.messages.params.0', 'Reserved parameter name: '.$key);
+
+    expect(DelayedProcess::count())->toBe(0);
+})->with(['entity', 'method']);
+
+it('delayed.run rejects params that mix positions and names', function (): void {
+    app(AllowlistRegistrar::class)->allow(TestAsyncHandler::class, 'process');
+
+    $this->postJson('/api/admin/delayed/run', [
+        'entity' => TestAsyncHandler::class,
+        'method' => 'process',
+        'params' => ['message' => 'hi', '1' => 'x'],
+    ])->assertStatus(422);
+
+    expect(DelayedProcess::count())->toBe(0);
+});
+
 it('delayed.status returns process info', function (): void {
     /** @var AllowlistRegistrar $r */
     $r = app(AllowlistRegistrar::class);

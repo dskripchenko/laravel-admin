@@ -17,6 +17,7 @@ use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Starting and following async actions.
@@ -30,6 +31,12 @@ use Illuminate\Http\Request;
  */
 final class DelayedProcessController extends ApiController
 {
+    /**
+     * Named arguments of ProcessFactoryInterface::make() that come before
+     * the handler's parameters.
+     */
+    private const RESERVED_PARAMS = ['entity', 'method'];
+
     public function __construct(
         private readonly AllowlistRegistrar $allowlist,
     ) {}
@@ -82,6 +89,8 @@ final class DelayedProcessController extends ApiController
         }
 
         $params = (array) ($data['params'] ?? []);
+        self::assertBindableParams($params);
+
         try {
             $process = $factory->make($data['entity'], $data['method'], ...$params);
         } catch (\Throwable $e) {
@@ -100,6 +109,36 @@ final class DelayedProcessController extends ApiController
             'uuid' => $process->uuid,
             'status' => $process->status->value,
         ]);
+    }
+
+    /**
+     * The params are spread into the factory: a list goes to the handler by
+     * position and string keys go to it by name. Keys named after the
+     * factory's own arguments would overwrite them, and integer keys mixed
+     * into string ones cannot be spread, so both are rejected up front.
+     *
+     * @param  array<int|string, mixed>  $params
+     *
+     * @throws ValidationException
+     */
+    private static function assertBindableParams(array $params): void
+    {
+        if (array_is_list($params)) {
+            return;
+        }
+
+        foreach (array_keys($params) as $key) {
+            if (is_int($key)) {
+                throw ValidationException::withMessages([
+                    'params' => __('Параметры передаются списком или объектом с именами параметров обработчика'),
+                ]);
+            }
+            if (in_array($key, self::RESERVED_PARAMS, true)) {
+                throw ValidationException::withMessages([
+                    'params' => __('Имя параметра зарезервировано: :name', ['name' => $key]),
+                ]);
+            }
+        }
     }
 
     /**

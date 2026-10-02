@@ -179,6 +179,14 @@ Fortschritts-Modal. In einer `row`/`bulk`-Position werden die ausgewählten
 Schlüssel den Parametern als `ids` hinzugefügt. `->callback($url)` setzt einen
 Webhook, der den Fortschritt und das Ergebnis erhält.
 
+Die Parameter erreichen den Handler per Name: Jeder Schlüssel aus `withParams()`
+(und `ids`) wird in beliebiger Reihenfolge an den gleichnamigen Handler-Parameter
+gebunden, ausgelassene Parameter erhalten ihren Standardwert, und ein
+Pflichtparameter mit Klassentyp kommt aus dem Container. Daher muss jeder Schlüssel
+ein Parameter des Handlers sein; ist einer es nicht, erhält der Handler stattdessen
+das ganze Array als einziges Argument. `entity` und `method` sind reserviert:
+`delayed/run` antwortet darauf mit 422.
+
 Der Handler meldet seinen Fortschritt selbst: Injizieren Sie
 `Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface` (oder lösen Sie es
 mit `app(ProcessProgressInterface::class)` innerhalb der Methode auf) und rufen Sie

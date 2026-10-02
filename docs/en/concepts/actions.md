@@ -176,6 +176,13 @@ progress modal. In a `row`/`bulk` position the selected keys are added to
 the params as `ids`. `->callback($url)` sets a webhook that receives the
 progress and the result.
 
+The params reach the handler by name: each key of `withParams()` (and `ids`)
+binds to the handler parameter of that name, in any order, parameters left
+out take their defaults, and a required class-typed parameter comes from the
+container. So every key has to be a parameter of the handler; if one is not,
+the handler gets the whole array as its one argument instead. `entity` and
+`method` are reserved: `delayed/run` answers 422 for them.
+
 The handler reports its own progress: inject
 `Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface` (or resolve
 it with `app(ProcessProgressInterface::class)` inside the method) and call
