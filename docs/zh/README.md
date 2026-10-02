@@ -59,28 +59,30 @@ php artisan admin:install
 ```
 
 完成——管理后台 SPA 以预构建形式提供，无需 Node。访问 `/admin/login`。
-[Getting started](../en/getting-started.md) 介绍第一个 resource，以及为自定义
+[快速开始](getting-started.md) 介绍第一个 resource，以及为自定义
 Vue 组件使用自有构建的模式。
 
 ## 文档
 
-- [快速开始](../../docs/zh/getting-started.md)
-- [架构](../../docs/zh/architecture.md)
-- 概念: [Resources](../../docs/zh/concepts/resources.md) ·
-  [Screens](../../docs/zh/concepts/screens.md) ·
-  [Widgets & Dashboards](../../docs/zh/concepts/widgets-and-dashboards.md) ·
-  [菜单](../../docs/zh/concepts/menu.md) ·
-  [Actions](../../docs/en/concepts/actions.md) (en) ·
-  [权限](../../docs/en/concepts/permissions.md) (en) ·
-  [i18n](../../docs/en/concepts/i18n.md) (en) ·
-  [租户](../../docs/en/concepts/tenancy.md) (en)
-- [字段参考](../../docs/en/fields-reference.md) (en)
-- [布局参考](../../docs/en/layouts-reference.md) (en)
-- [API 参考](../../docs/en/api-reference.md) (en)
-- [前端扩展](../../docs/en/frontend-extension.md) (en)
-- [测试](../../docs/en/testing.md) (en)
-- [迁移指南](../../docs/en/migration-guide.md) (en)
-- [术语表](../../docs/zh/glossary.md)
+- [快速开始](getting-started.md)
+- [将管理后台集成到现有应用](integration.md)
+- [架构](architecture.md)
+- 概念：[Resources](concepts/resources.md) ·
+  [Screens](concepts/screens.md) ·
+  [小部件与仪表板](concepts/widgets-and-dashboards.md) ·
+  [菜单](concepts/menu.md) ·
+  [Actions](concepts/actions.md) ·
+  [权限](concepts/permissions.md) ·
+  [i18n](concepts/i18n.md) ·
+  [多租户](concepts/tenancy.md)
+- [字段参考](fields-reference.md)
+- [布局参考](layouts-reference.md)
+- [API 参考](api-reference.md)
+- [前端扩展](frontend-extension.md)
+- [测试](testing.md)
+- [迁移指南](migration-guide.md)
+- [演示模式](demo-mode.md)
+- [术语表](glossary.md)
 
 ## 技术栈
 
