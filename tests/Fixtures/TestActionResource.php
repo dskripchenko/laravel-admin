@@ -77,6 +77,9 @@ final class TestActionResource extends Resource
             BulkAction::make('Самопроверка')
                 ->method('selfValidating')
                 ->withName('self-validating'),
+            BulkAction::make('Announce')
+                ->method('announce')
+                ->withName('announce'),
             // A command bar button: standalone by its position.
             Button::make('Recalculate')
                 ->method('recalculate')
@@ -146,6 +149,12 @@ final class TestActionResource extends Resource
         Illuminate\Support\Facades\Validator::make($payload, ['note' => ['required']])->validate();
 
         return count($ids);
+    }
+
+    /** Answers with its own message and count. */
+    public function announce(array $ids, array $payload = []): array
+    {
+        return ['message' => 'Announced to '.count($ids).' records', 'affected' => 7];
     }
 
     /** A standalone action: no ids, it touches every record. */

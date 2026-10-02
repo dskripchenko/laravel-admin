@@ -268,6 +268,8 @@ export {
   WrapperLayout,
   InfolistLayout,
   AuditTrailLayout,
+  MarkdownLayout,
+  CodeLayout,
   ListenerLayout,
   createScreenContext,
   provideScreenContext,

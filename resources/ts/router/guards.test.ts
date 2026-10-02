@@ -167,3 +167,38 @@ describe('createTitleGuard', () => {
     expect(document.title).toBe('[X] Y')
   })
 })
+
+describe('createAuthGuard — enforced 2FA', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('keeps a user who must enable 2FA on the profile', () => {
+    const auth = useAuthStore()
+    auth.hydrate(mkBootstrap({ user: { ...mkUser(), twoFactorRequired: true } }))
+    const guard = createAuthGuard()
+
+    expect(guard(mkRoute({ meta: { requiresAuth: true } }), mkRoute())).toEqual({
+      name: 'admin.profile',
+      query: { section: 'security' },
+    })
+    expect(guard(mkRoute({ name: 'admin.profile', meta: { requiresAuth: true } }), mkRoute())).toBe(true)
+
+    auth.user!.twoFactorEnabled = true
+    expect(guard(mkRoute({ meta: { requiresAuth: true } }), mkRoute())).toBe(true)
+  })
+
+  it('reads demo mode and the 2FA switch from the bootstrap', () => {
+    const auth = useAuthStore()
+    auth.hydrate(mkBootstrap({
+      demo: { readonly: true, accounts: [] },
+      config: { manifest: { etag: true }, bootstrap: { strategy: 'inline' }, twoFactor: { enabled: false } },
+    }))
+    expect(auth.demo?.readonly).toBe(true)
+    expect(auth.twoFactorAvailable).toBe(false)
+
+    auth.hydrate(mkBootstrap())
+    expect(auth.demo).toBeNull()
+    expect(auth.twoFactorAvailable).toBe(true)
+  })
+})

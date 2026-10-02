@@ -79,6 +79,25 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * A block of markdown: headings with anchors, an optional table of
+     * contents, highlighted code, tables and callouts. See Markdown.
+     *
+     * @param  string|callable(): string  $markdown
+     */
+    public static function markdown(string|callable $markdown): Markdown
+    {
+        return Markdown::make($markdown);
+    }
+
+    /**
+     * A highlighted, copyable block of code. See Code.
+     */
+    public static function code(string $code, string $language = 'php'): Code
+    {
+        return Code::make($code, $language);
+    }
+
+    /**
      * @param  array<string, Renderable|list<Renderable>>  $sections
      */
     public static function accordion(array $sections = []): Accordion

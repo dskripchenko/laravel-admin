@@ -532,6 +532,7 @@ final class AuthController extends ApiController
             'locale' => $user->getAttribute('locale'),
             'theme' => $user->getAttribute('theme'),
             'twoFactorEnabled' => $twoFactorEnabled,
+            'twoFactorRequired' => \Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy::requiredFor($user),
             'impersonator' => null,
         ];
     }

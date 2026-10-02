@@ -58,6 +58,8 @@ import ViewLayout from '../layouts/ViewLayout.vue'
 import WrapperLayout from '../layouts/WrapperLayout.vue'
 import InfolistLayout from '../layouts/InfolistLayout.vue'
 import AuditTrailLayout from '../layouts/AuditTrailLayout.vue'
+import MarkdownLayout from '../layouts/MarkdownLayout.vue'
+import CodeLayout from '../layouts/CodeLayout.vue'
 import ListenerLayout from '../layouts/ListenerLayout.vue'
 
 /**
@@ -190,6 +192,9 @@ export function registerBuiltinComponents(): void {
       wrapper: WrapperLayout,
       infolist: InfolistLayout,
       audit_trail: AuditTrailLayout,
+      // `Layout::markdown($text)` and `Layout::code($code, 'php')`.
+      markdown: MarkdownLayout,
+      code: CodeLayout,
       // `Layout::listener([...])->listen([...])` — re-rendered by the server
       // as the watched fields change.
       listener: ListenerLayout,

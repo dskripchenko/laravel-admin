@@ -463,5 +463,18 @@
     "Недопустимый период: :period": "Invalid period: :period",
     "Нет доступа к дашборду": "You have no access to this dashboard",
     "За :n дн.": "Last :n days",
-    "Нет доступа к панели администратора": "You do not have access to the admin panel"
+    "Нет доступа к панели администратора": "You do not have access to the admin panel",
+    "Демо-режим: это действие отключено.": "Demo mode: this action is disabled.",
+    "Демо-режим: файл больше :size КБ.": "Demo mode: the file is larger than :size KB.",
+    "Включите двухфакторную аутентификацию в профиле, чтобы продолжить работу.": "Enable two-factor authentication in your profile to continue.",
+    "Двухфакторная аутентификация отключена в этой установке.": "Two-factor authentication is disabled on this installation.",
+    "На этой странице": "On this page",
+    "Примечание": "Note",
+    "Совет": "Tip",
+    "Важно": "Important",
+    "Внимание": "Warning",
+    "Осторожно": "Caution",
+    "Демо-доступ": "Demo access",
+    "Войти как :name": "Sign in as :name",
+    "Ваша роль требует двухфакторной аутентификации. Включите её, чтобы продолжить работу в панели.": "Your role requires two-factor authentication. Enable it to continue working in the panel."
 }

@@ -6,6 +6,7 @@ namespace Dskripchenko\LaravelAdmin\Http\Middleware;
 
 use Closure;
 use Dskripchenko\LaravelAdmin\Auth\SessionPasswordHash;
+use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy;
 use Dskripchenko\LaravelAdmin\Http\AdminApi;
 use Dskripchenko\LaravelApi\Components\BaseApi;
 use Dskripchenko\LaravelApi\Facades\ApiModule;
@@ -91,10 +92,34 @@ final class AdminAuth
             }
         }
 
+        // `admin.auth.two_factor.enforce_for`: a user who must have 2FA and
+        // has not set it up yet reaches the profile, the session and the
+        // shell — nothing else — until they do.
+        if ($user !== null && TwoFactorPolicy::setupPending($user) && ! $this->isTwoFactorSetupAction()) {
+            return response()->json([
+                'success' => false,
+                'payload' => [
+                    'errorKey' => 'two_factor_setup_required',
+                    'message' => __('Включите двухфакторную аутентификацию в профиле, чтобы продолжить работу.'),
+                ],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         /** @var SymfonyResponse $response */
         $response = $next($request);
 
         return $response;
+    }
+
+    /**
+     * The actions open to a user who still has to set 2FA up: the shell's own
+     * requests, the session and the profile, where the setup lives.
+     */
+    private function isTwoFactorSetupAction(): bool
+    {
+        $controller = ApiRequest::getApiControllerKey();
+
+        return in_array($controller, ['system', 'auth', 'profile', 'notifications'], true);
     }
 
     /**

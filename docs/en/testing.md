@@ -46,13 +46,16 @@ it('lists articles', function () {
 });
 ```
 
-`actingAsAdmin(array $attributes = [], array $permissions = [])` creates an
-`AdminUser` (the attributes override the generated name, email and
-password), assigns it a role with the given permissions when there are any,
-authenticates it against the `admin` guard and returns the user.
-Permissions can be exact (`admin.articles.view`), wildcards
-(`admin.articles.*`) or `*`. `actingAsSuperAdmin()` is the shortcut for a
-user with `*`.
+`actingAsAdmin(array $attributes = [], array $permissions = [])` creates a
+user of the panel's user model (`admin.auth.model`), gives it a role with the
+permissions when there are any, and signs it in on the panel's guard.
+Permissions can be `['admin.articles.*']` or `['*']`; `actingAsSuperAdmin()`
+is the shortcut for `['*']`.
+
+It works in both auth strategies: with `dedicated` it creates an `AdminUser`
+on the `admin` guard; with `shared` it creates your own `User` on your guard
+and always assigns a role, since a site user without one is not an
+administrator.
 
 ## Resource API helpers
 

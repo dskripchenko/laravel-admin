@@ -909,9 +909,26 @@ final class ResourceController extends ApiController
             ], 500);
         }
 
+        // The method may answer with the number of affected records, a
+        // message, or an array carrying either (`['message' => ..., 'affected' => ...]`).
+        $affected = count($ids);
+        $message = null;
+        if (is_int($result)) {
+            $affected = $result;
+        } elseif (is_string($result) && $result !== '') {
+            $message = $result;
+        } elseif (is_array($result)) {
+            if (is_int($result['affected'] ?? null)) {
+                $affected = $result['affected'];
+            }
+            if (is_string($result['message'] ?? null) && $result['message'] !== '') {
+                $message = $result['message'];
+            }
+        }
+
         return $this->success([
-            'affected' => is_int($result) ? $result : count($ids),
-            'message' => 'Action `'.$actionKey.'` applied',
+            'affected' => $affected,
+            'message' => $message ?? 'Action `'.$actionKey.'` applied',
         ]);
     }
 

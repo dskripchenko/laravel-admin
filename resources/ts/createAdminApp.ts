@@ -45,6 +45,8 @@ import { NotificationsPage } from './components/notifications'
 import { DashboardPage } from './components/dashboard'
 
 import { createAdminClient, type AdminClient } from './api/client'
+import { ApiError } from './api/errors'
+import { adminToast, suppressErrorToasts } from './stores/toast'
 import { setAdminClient } from './stores'
 import { BRAND_KEY } from './composables/useBrand'
 import { useAuthStore } from './stores/auth'
@@ -341,6 +343,30 @@ export function createAdminApp(
     // The host switched the manifest off explicitly — the gate opens at once.
     useManifestStore().bootResolved = true
   }
+
+  // 6.1 Refusals that mean the same thing wherever they come from are
+  //     explained once, here, instead of by each caller.
+  //   - demo_readonly: demo mode refused the operation. The caller's own
+  //     "could not save" toast would say nothing useful, so it is held back.
+  //   - two_factor_setup_required: the user must enable 2FA first — the
+  //     profile's security section is where that happens.
+  client.raw.interceptors.response.use(undefined, (error: unknown) => {
+    if (error instanceof ApiError) {
+      if (error.errorKey === 'demo_readonly') {
+        adminToast.warning(error.message)
+        suppressErrorToasts()
+      } else if (error.errorKey === 'two_factor_setup_required') {
+        const auth = useAuthStore()
+        if (auth.user) auth.user.twoFactorRequired = true
+        if (router.currentRoute.value.name !== 'admin.profile') {
+          adminToast.warning(error.message)
+          void router.push({ name: 'admin.profile', query: { section: 'security' } }).catch(() => undefined)
+        }
+        suppressErrorToasts()
+      }
+    }
+    return Promise.reject(error)
+  })
 
   // 7. host hook
   options.onAppCreated?.(app)

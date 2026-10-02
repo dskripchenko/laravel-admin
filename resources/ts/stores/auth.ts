@@ -18,7 +18,7 @@ import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
 import { useLocaleStore } from './locale'
 import { ApiError } from '../api/errors'
-import type { AdminUser, AdminBootstrap } from '../types/bootstrap'
+import type { AdminUser, AdminBootstrap, AdminDemo } from '../types/bootstrap'
 
 export interface PendingChallenge {
   challengeToken: string
@@ -36,13 +36,24 @@ export const useAuthStore = defineStore('admin-auth', () => {
   const permissions = ref<string[]>([])
   const pendingChallenge = ref<PendingChallenge | null>(null)
 
+  /** Demo mode (admin.demo): the login page's demo accounts; null when it is off. */
+  const demo = ref<AdminDemo | null>(null)
+  /** Whether users may set 2FA up at all (admin.auth.two_factor.enabled). */
+  const twoFactorAvailable = ref<boolean>(true)
+
   const isAuthenticated = computed(() => user.value !== null)
   const isChallengePending = computed(() => pendingChallenge.value !== null)
+  /** The user must enable 2FA before using the panel and has not yet. */
+  const needsTwoFactorSetup = computed(
+    () => user.value?.twoFactorRequired === true && user.value.twoFactorEnabled !== true,
+  )
 
   /** Fills the store from the bootstrap payload — the initial setup. */
   function hydrate(bootstrap: AdminBootstrap): void {
     user.value = bootstrap.user
     permissions.value = bootstrap.permissions
+    demo.value = bootstrap.demo ?? null
+    twoFactorAvailable.value = bootstrap.config?.twoFactor?.enabled !== false
   }
 
   /**
@@ -200,9 +211,12 @@ export const useAuthStore = defineStore('admin-auth', () => {
     user,
     permissions,
     pendingChallenge,
+    demo,
+    twoFactorAvailable,
     // getters
     isAuthenticated,
     isChallengePending,
+    needsTwoFactorSetup,
     // actions
     hydrate,
     hasPermission,
