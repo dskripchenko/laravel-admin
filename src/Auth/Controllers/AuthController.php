@@ -165,8 +165,7 @@ final class AuthController extends ApiController
 
         // A panel's own user model is not required to have the last_login
         // columns, so we write them only when the table has them.
-        if (\Illuminate\Support\Facades\Schema::connection($user->getConnectionName())
-            ->hasColumn($user->getTable(), 'last_login_at')) {
+        if (\Dskripchenko\LaravelAdmin\Support\TableColumns::has($user, 'last_login_at')) {
             $user->forceFill([
                 'last_login_at' => now(),
                 'last_login_ip' => $request->ip(),
