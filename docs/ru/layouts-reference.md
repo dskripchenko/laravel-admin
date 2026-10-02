@@ -33,6 +33,7 @@ Layout — это контейнер для полей и других layout'о
 | `AuditTrail` | `AuditTrail::for(User::class)` | Лента аудита показанной записи |
 | `Listener` | `Layout::listener([...])->listen([...])` | Часть формы, которую сервер перерисовывает при изменении отслеживаемых полей |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Таблица записей другого ресурса, принадлежащих редактируемой |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Живая страница списка ресурса (таблица или дерево) на экране |
 
 ## Примеры
 
@@ -398,6 +399,26 @@ public function filters(): array
 
 Размещайте таблицу в `formLayout('update')`: у создаваемой записи ещё нет
 ключа, и до сохранения таблица пуста.
+
+### ResourceIndex (живой список ресурса на экране)
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+
+public function layout(): array
+{
+    return [
+        Layout::markdown('Что показывает таблица…'),
+        Layout::resourceIndex(OrderResource::class),
+    ];
+}
+```
+
+Сама страница списка ресурса — поиск, фильтры, сортировка, действия над
+строками и выделением, правка в ячейках, порядок, корзина или дерево для
+иерархического ресурса — встроенная в экран. Щелчок по строке открывает
+запись, как на странице списка. Пользователю без права `view` на ресурс не
+показывается. Одна на экран: состояние списка общее.
 
 ### Markdown
 

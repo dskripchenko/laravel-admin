@@ -42,6 +42,8 @@ final class ContentDashboardScreen extends DashboardScreen
 }
 ```
 
+`stat()` 接收原始数字，面板按其语言环境格式化。金额请在卡片上调用 `money()`：`->stat('Revenue', $revenue)->money('USD')` 在英文中显示 `$1,591,285`，在俄文中显示 `1 591 285 $`。`precision()`、`prefix()` 和 `suffix()` 同样作用于最后添加的卡片。
+
 注册：`Admin::screen([ContentDashboardScreen::class])`。URL：
 `/admin/dashboard/content`。
 

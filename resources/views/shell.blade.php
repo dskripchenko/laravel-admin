@@ -96,6 +96,36 @@
         </div>
     @endif
 
+    @if(($notice['text'] ?? '') !== '' || ($assets['stale'] ?? false))
+        {{-- The banners above sit outside the SPA, and the shell fills the
+             viewport below them: it learns their height through
+             --admin-banner-height, or its bottom (the footer, the last rows of
+             a page) would be pushed off screen. --}}
+        <script @if($cspNonce) nonce="{{ $cspNonce }}" @endif>
+            (function () {
+                var ids = ['admin-notice', 'admin-assets-stale'];
+                function measure() {
+                    var h = 0;
+                    ids.forEach(function (id) {
+                        var el = document.getElementById(id);
+                        if (el) h += el.getBoundingClientRect().height;
+                    });
+                    document.documentElement.style.setProperty('--admin-banner-height', h + 'px');
+                }
+                measure();
+                if (typeof ResizeObserver !== 'undefined') {
+                    var ro = new ResizeObserver(measure);
+                    ids.forEach(function (id) {
+                        var el = document.getElementById(id);
+                        if (el) ro.observe(el);
+                    });
+                } else {
+                    window.addEventListener('resize', measure);
+                }
+            })();
+        </script>
+    @endif
+
     <div id="admin-app">
         @if($assets['missing'] ?? false)
             {{-- No frontend to load: say what to do instead of a blank page. --}}

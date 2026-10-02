@@ -165,3 +165,19 @@ it('Widget::toArray includes type=widget marker and widgetType', function (): vo
     expect($arr['kind'])->toBe('widget');
     expect($arr['type'])->toBe('stats');
 });
+
+it('StatsOverviewWidget money(), precision(), prefix() and suffix() describe the last card', function (): void {
+    $data = StatsOverviewWidget::make()
+        ->stat('Revenue', 1591285.4, 'green')->money('usd')->trend(12.5)
+        ->stat('Per order', 2.46)->precision(1)->suffix(' pcs')
+        ->stat('Rating', 4)->prefix('★ ')
+        ->data();
+
+    expect($data['stats'][0]['value'])->toBe(1591285.4);
+    expect($data['stats'][0]['format'])->toBe(['style' => 'currency', 'currency' => 'USD', 'decimals' => 0]);
+    expect($data['stats'][0]['change'])->toBe(['delta' => 12.5, 'direction' => 'up']);
+    expect($data['stats'][1]['precision'])->toBe(1);
+    expect($data['stats'][1]['suffix'])->toBe(' pcs');
+    expect($data['stats'][2]['prefix'])->toBe('★ ');
+    expect($data['stats'][2])->not->toHaveKey('format');
+});

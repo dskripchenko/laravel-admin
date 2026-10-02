@@ -798,11 +798,14 @@ function onExport(): void {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   /*
-   * grid-auto-rows is fixed — otherwise rowSpan would mean nothing. The 140px
-   * step is chosen so that one row fits the smallest stat card, two rows fit a
-   * chart or a table, and three or more fit the larger widgets.
+   * A row is 140px — so that rowSpan means something: one row fits the
+   * smallest stat card, two rows fit a chart or a table, and three or more fit
+   * the larger widgets. It is a minimum, not a cap: a widget whose content
+   * needs more (a stats group wrapping onto a second line, a longer table)
+   * stretches its rows instead of spilling over the next widget or being cut
+   * off by the page.
    */
-  grid-auto-rows: 140px;
+  grid-auto-rows: minmax(140px, auto);
   gap: var(--uid-space-md);
 }
 /*

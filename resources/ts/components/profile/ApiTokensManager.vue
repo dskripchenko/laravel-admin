@@ -14,7 +14,7 @@ import { onMounted, ref } from 'vue'
 import { Copy, Plus, Trash2 } from 'lucide-vue-next'
 import { UidButton, UidIcon, UidInput } from '@dskripchenko/ui'
 import { adminToast } from '../../stores/toast'
-import { trSafe as tr } from '../../stores/i18n'
+import { formatLocale, trSafe as tr } from '../../stores/i18n'
 import { confirmDialog } from '../../composables/useConfirm'
 
 interface Token {
@@ -95,7 +95,7 @@ function dismissJustCreated(): void {
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('ru-RU', {
+  return new Date(iso).toLocaleString(formatLocale(), {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

@@ -428,7 +428,7 @@ onBeforeUnmount(cleanupSource)
 .admin-image-cropper__drop:hover,
 .admin-image-cropper__drop--over {
   border-color: var(--uid-color-primary, #2dd4bf);
-  background: var(--uid-color-surface-2, #f3f4f6);
+  background: var(--uid-color-surface-hover);
 }
 .admin-image-cropper__hint {
   margin: 8px 0 0;
@@ -451,7 +451,7 @@ onBeforeUnmount(cleanupSource)
 }
 .admin-image-cropper__canvas-wrap {
   position: relative;
-  background: #f3f4f6;
+  background: var(--uid-color-bg-subtle);
   border: 1px solid var(--uid-color-border, #e5e7eb);
   border-radius: 8px;
   overflow: hidden;

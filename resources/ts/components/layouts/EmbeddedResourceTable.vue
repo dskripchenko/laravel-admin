@@ -377,12 +377,12 @@ function columnCellMeta(col: string): CellMeta {
 .admin-embedded-table {
   display: flex;
   flex-direction: column;
-  gap: var(--uid-spacing-sm, 12px);
+  gap: var(--uid-space-sm);
 }
 .admin-embedded-table__toolbar {
   display: flex;
   align-items: center;
-  gap: var(--uid-spacing-sm, 8px);
+  gap: var(--uid-space-sm);
 }
 .admin-embedded-table__row-delete {
   background: none;
@@ -393,22 +393,22 @@ function columnCellMeta(col: string): CellMeta {
   border-radius: var(--uid-radius-sm, 4px);
 }
 .admin-embedded-table__row-delete:hover {
-  background: var(--uid-color-surface-2, #f3f4f6);
+  background: var(--uid-color-surface-hover);
   color: var(--uid-color-danger, #dc2626);
 }
 .admin-embedded-table__draft {
-  background: var(--uid-color-surface-2, #f9fafb);
+  background: var(--uid-color-bg-subtle);
   border: 1px dashed var(--uid-color-border, #e5e7eb);
   border-radius: var(--uid-radius-md, 8px);
-  padding: var(--uid-spacing-md, 16px);
+  padding: var(--uid-space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--uid-spacing-sm, 12px);
+  gap: var(--uid-space-sm);
 }
 .admin-embedded-table__draft-cells {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: var(--uid-spacing-sm, 12px);
+  gap: var(--uid-space-sm);
 }
 .admin-embedded-table__draft-cell {
   display: flex;
@@ -429,6 +429,6 @@ function columnCellMeta(col: string): CellMeta {
 }
 .admin-embedded-table__draft-actions {
   display: flex;
-  gap: var(--uid-spacing-sm, 8px);
+  gap: var(--uid-space-sm);
 }
 </style>

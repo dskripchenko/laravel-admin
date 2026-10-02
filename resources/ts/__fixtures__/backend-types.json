@@ -39,6 +39,7 @@
     ],
     "layouts": [
         "accordion",
+        "admin.resource-index",
         "admin.resource-table",
         "audit_trail",
         "block",

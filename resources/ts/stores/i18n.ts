@@ -49,6 +49,54 @@ export function currentLocale(): string {
   return 'ru'
 }
 
+/**
+ * A panel locale as a tag Intl accepts: Laravel's `pt_BR` becomes `pt-BR`,
+ * and a tag Intl does not know falls back to English.
+ */
+export function intlLocale(locale: string): string {
+  const tag = locale.replace(/_/g, '-')
+  try {
+    return Intl.NumberFormat.supportedLocalesOf([tag]).length > 0 ? tag : 'en'
+  } catch {
+    return 'en'
+  }
+}
+
+/** The locale given to Intl: the panel's own; see intlLocale(). */
+export function formatLocale(): string {
+  return intlLocale(currentLocale())
+}
+
+const numberFormats = new Map<string, Intl.NumberFormat>()
+
+/**
+ * A number formatter in the panel's locale — decimal and group separators,
+ * currencies — cached per locale and options. Never the browser's locale:
+ * an English panel in a Russian browser shows English numbers.
+ */
+export function numberFormat(options: Intl.NumberFormatOptions = {}): Intl.NumberFormat {
+  const locale = formatLocale()
+  const key = `${locale}|${JSON.stringify(options)}`
+  let format = numberFormats.get(key)
+  if (!format) {
+    format = new Intl.NumberFormat(locale, options)
+    numberFormats.set(key, format)
+  }
+  return format
+}
+
+/** Formats a number in the panel's locale; see numberFormat(). */
+export function formatNumber(value: number, options: Intl.NumberFormatOptions = {}): string {
+  return numberFormat(options).format(value)
+}
+
+/** Formats a date in the panel's locale. */
+export function formatDate(value: Date | string, options: Intl.DateTimeFormatOptions = {}): string {
+  const date = typeof value === 'string' ? new Date(value) : value
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString(formatLocale(), options)
+}
+
 export const useI18nStore = defineStore('admin-i18n', () => {
   const messages = ref<Record<string, string>>({})
   const locale = ref<string>('ru')

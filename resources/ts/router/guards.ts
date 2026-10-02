@@ -131,7 +131,11 @@ export function createTitleGuard(
     if (typeof document === 'undefined') return
     // meta.title goes into document.title — the single place where the titles
     // of all the system routes are translated.
-    const t = trSafe((to.meta?.title as string | undefined) ?? fallback)
+    const base = trSafe((to.meta?.title as string | undefined) ?? fallback)
+    // "Orders: Creating" — the action is a phrase of its own, so that a
+    // translation never has to cover a glued-together string.
+    const action = to.meta?.titleAction as string | undefined
+    const t = action && base ? `${base}: ${trSafe(action)}` : base
     let title: string
     if (template) {
       title = template.replace('{title}', t).replace('{brand}', brand)

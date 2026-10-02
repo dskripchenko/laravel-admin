@@ -51,8 +51,11 @@ const frameStyle = computed(() => ({
 <style scoped>
 .admin-widget__iframe {
   width: 100%;
-  border: 0;
+  /* A framed viewport: the embedded page scrolls inside it, and without the
+     edge its content reads as cut off at the bottom. */
+  border: 1px solid var(--uid-border-subtle, var(--uid-color-border, #e4e4e7));
   border-radius: var(--uid-radius-md, 8px);
+  display: block;
   background: var(--uid-color-bg-subtle, transparent);
 }
 </style>

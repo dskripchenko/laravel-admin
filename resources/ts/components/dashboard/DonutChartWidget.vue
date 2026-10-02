@@ -8,7 +8,7 @@
  */
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
-import { trSafe as tr } from '../../stores/i18n'
+import { formatNumber, trSafe as tr } from '../../stores/i18n'
 import { toneColor } from './toneColor'
 
 interface Slice {
@@ -68,7 +68,7 @@ const slices = computed(() => {
       ...s,
       path,
       color: toneColor(s.color) || PALETTE[idx % PALETTE.length],
-      pct: ((s.value / total.value) * 100).toFixed(1),
+      pct: formatNumber((s.value / total.value) * 100, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
     }
   })
 })
@@ -90,7 +90,7 @@ const slices = computed(() => {
           stroke="var(--uid-surface-raised)"
           stroke-width="1"
         >
-          <title>{{ s.label }}: {{ s.value }} ({{ s.pct }}%)</title>
+          <title>{{ s.label }}: {{ formatNumber(s.value) }} ({{ s.pct }}%)</title>
         </path>
         <circle v-if="hole" cx="60" cy="60" r="30" fill="var(--uid-surface-raised)" />
       </svg>
@@ -108,6 +108,9 @@ const slices = computed(() => {
 <style>
 .admin-donut-widget__row {
   display: flex;
+  /* A narrow card puts the legend under the ring instead of cutting it off. */
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: var(--uid-space-md);
   flex: 1 1 auto;
@@ -130,7 +133,8 @@ const slices = computed(() => {
   list-style: none;
   margin: 0;
   padding: 0;
-  flex: 1;
+  flex: 1 1 140px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--uid-space-xs);
@@ -147,7 +151,14 @@ const slices = computed(() => {
   border-radius: var(--uid-radius-full);
   flex: none;
 }
-.admin-donut-widget__label { flex: 1; color: var(--uid-text-primary); }
+.admin-donut-widget__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--uid-text-primary);
+}
 .admin-donut-widget__value {
   color: var(--uid-text-tertiary);
   font-variant-numeric: tabular-nums;

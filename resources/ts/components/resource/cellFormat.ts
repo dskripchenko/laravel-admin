@@ -19,7 +19,7 @@
  * T...Z — gets the default datetime format.
  */
 
-import { currentLocale, trSafe as tr } from '../../stores/i18n'
+import { currentLocale, formatNumber, trSafe as tr } from '../../stores/i18n'
 
 export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes' | 'image' | 'link'
 
@@ -301,10 +301,23 @@ function formatDateString(input: string, format: string): string {
   return date === null ? input : formatPhpDate(date, format)
 }
 
+/**
+ * Money in the panel's locale: its separators, and the currency's sign where
+ * the currency is an ISO 4217 code. Anything else — a sign, a word — follows
+ * the number as it is.
+ */
 function formatMoney(value: unknown, currency: string, decimals: number): string {
   const n = typeof value === 'number' ? value : Number(value)
   if (isNaN(n)) return String(value)
-  return `${n.toFixed(decimals)} ${currency}`
+  const digits = { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+  if (/^[A-Za-z]{3}$/.test(currency)) {
+    try {
+      return formatNumber(n, { style: 'currency', currency: currency.toUpperCase(), ...digits })
+    } catch {
+      // An unknown code: the plain form below.
+    }
+  }
+  return `${formatNumber(n, digits)} ${currency}`
 }
 
 function formatBoolean(value: unknown, trueLabel: string, falseLabel: string): string {

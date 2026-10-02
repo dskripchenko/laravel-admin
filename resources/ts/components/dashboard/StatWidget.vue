@@ -14,6 +14,8 @@ import { computed, type Component } from 'vue'
 import { UidStat } from '@dskripchenko/ui'
 import type { StatTone } from '@dskripchenko/ui'
 import { resolveIcon } from '../shell/iconRegistry'
+import { currentLocale, formatNumber, intlLocale } from '../../stores/i18n'
+import { useLocaleStore } from '../../stores/locale'
 
 type SemanticTone = 'neutral' | 'positive' | 'negative' | 'warning' | 'info'
 
@@ -21,11 +23,20 @@ interface StatChange {
   delta?: number
   direction?: 'up' | 'down' | 'flat'
 }
+interface StatFormat {
+  style?: 'currency'
+  currency?: string
+  decimals?: number
+}
 interface StatItem {
   label?: string
   value?: number | string
   prefix?: string
   suffix?: string
+  /** StatsOverviewWidget::money(). */
+  format?: StatFormat | null
+  /** StatsOverviewWidget::precision(). */
+  precision?: number | null
   change?: StatChange | null
   color?: string | null
   icon?: string | null
@@ -97,6 +108,31 @@ interface ResolvedStat {
   trend: number | undefined
   tone: StatTone
   icon: Component | undefined
+  precision: number
+  formatter: ((value: number | string) => string) | undefined
+}
+
+/**
+ * Money is formatted here, by the panel's locale — UidStat only knows plain
+ * numbers. A value that is not a number is shown as it came.
+ */
+function moneyFormatter(format: StatFormat | null | undefined): ((value: number | string) => string) | undefined {
+  if (format?.style !== 'currency' || !format.currency) return undefined
+  const digits = format.decimals ?? 0
+  return (value) => {
+    const n = typeof value === 'number' ? value : Number(value)
+    if (typeof value === 'string' && (value.trim() === '' || Number.isNaN(n))) return value
+    try {
+      return formatNumber(n, {
+        style: 'currency',
+        currency: format.currency!,
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      })
+    } catch {
+      return `${formatNumber(n, { minimumFractionDigits: digits, maximumFractionDigits: digits })} ${format.currency}`
+    }
+  }
 }
 
 const items = computed<ResolvedStat[]>(() => {
@@ -109,6 +145,8 @@ const items = computed<ResolvedStat[]>(() => {
       trend: props.trend,
       tone: toneOf(null),
       icon: undefined,
+      precision: props.precision,
+      formatter: undefined,
     }]
   }
   const single = props.stats.length === 1
@@ -121,10 +159,22 @@ const items = computed<ResolvedStat[]>(() => {
     trend: trendOf(s.change),
     tone: toneOf(s.color),
     icon: resolveIcon(s.icon) ?? undefined,
+    precision: typeof s.precision === 'number' ? s.precision : props.precision,
+    formatter: moneyFormatter(s.format),
   }))
 })
 
 const multiple = computed(() => items.value.length > 1)
+/** The panel's locale for the plain numbers and the trends, as for the money. */
+// Reactive to a locale switch where the store is there; the document's
+// language otherwise (a widget mounted on its own, a test).
+let localeStore: ReturnType<typeof useLocaleStore> | null = null
+try {
+  localeStore = useLocaleStore()
+} catch {
+  // no active Pinia
+}
+const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()))
 </script>
 
 <template>
@@ -135,7 +185,9 @@ const multiple = computed(() => items.value.length > 1)
     :prefix="items[0]!.prefix"
     :suffix="items[0]!.suffix"
     :trend="items[0]!.trend"
-    :precision="precision"
+    :precision="items[0]!.precision"
+    :formatter="items[0]!.formatter"
+    :locale="locale"
     :tone="items[0]!.tone"
     :icon="items[0]!.icon"
     :loading="loading"
@@ -153,7 +205,9 @@ const multiple = computed(() => items.value.length > 1)
         :prefix="stat.prefix"
         :suffix="stat.suffix"
         :trend="stat.trend"
-        :precision="precision"
+        :precision="stat.precision"
+        :formatter="stat.formatter"
+        :locale="locale"
         :tone="stat.tone"
         :icon="stat.icon"
         :loading="loading"

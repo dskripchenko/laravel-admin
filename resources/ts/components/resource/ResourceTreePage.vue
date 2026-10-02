@@ -373,25 +373,29 @@ onMounted(load)
 .admin-resource-tree-page {
   display: flex;
   flex-direction: column;
-  gap: var(--uid-spacing-md, 16px);
-  padding: var(--uid-spacing-lg, 24px);
+  gap: var(--uid-space-md, 16px);
+  /* The same page padding as the list and form pages. */
+  padding: var(--admin-page-pad, 24px);
 }
 .admin-resource-tree-page__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--uid-spacing-md, 16px);
+  gap: var(--uid-space-md, 16px);
 }
 .admin-resource-tree-page__title {
   display: flex;
   align-items: center;
-  gap: var(--uid-spacing-sm, 8px);
-  font-size: var(--uid-font-size-xl, 20px);
-  font-weight: 600;
+  gap: var(--uid-space-sm, 8px);
+  /* Matches .admin-page__title of the list and form pages. */
+  font-family: var(--uid-font-family-display);
+  font-size: 22px;
+  font-weight: var(--uid-font-weight-semibold, 600);
+  letter-spacing: -0.015em;
   margin: 0;
 }
 .admin-resource-tree-page__count {
-  background: var(--uid-color-surface-2, #eef0f3);
+  background: var(--uid-color-surface-hover);
   color: var(--uid-color-text-secondary, #62686f);
   border-radius: 999px;
   padding: 2px 10px;
@@ -404,7 +408,7 @@ onMounted(load)
 .admin-resource-tree-page__toolbar {
   display: flex;
   align-items: center;
-  gap: var(--uid-spacing-sm, 8px);
+  gap: var(--uid-space-sm, 8px);
   flex-wrap: wrap;
 }
 .admin-resource-tree-page__search {
@@ -420,10 +424,10 @@ onMounted(load)
   font-weight: 500;
 }
 .admin-resource-tree-page__body {
-  background: var(--uid-color-surface-1, #fff);
+  background: var(--uid-surface-raised);
   border: 1px solid var(--uid-color-border, #e5e7eb);
   border-radius: var(--uid-radius-md, 8px);
-  padding: var(--uid-spacing-md, 16px);
+  padding: var(--uid-space-md, 16px);
   min-height: 240px;
 }
 

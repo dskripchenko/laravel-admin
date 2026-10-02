@@ -262,7 +262,7 @@
    Эталон — docs/design_handoff_laravel_admin/screens-secondary.jsx (Login/TwoFactor).
    ============================================================ */
 .admin-auth-page {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--admin-banner-height, 0px));
   display: grid;
   place-items: center;
   padding: var(--uid-space-xl);

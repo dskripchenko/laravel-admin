@@ -40,6 +40,11 @@ final class ContentDashboardScreen extends DashboardScreen
 }
 ```
 
+`stat()` takes the raw number; the panel formats it in its locale. For money
+call `money()` on the card: `->stat('Revenue', $revenue)->money('USD')` shows
+`$1,591,285` in English and `1 591 285 $` in Russian. `precision()`,
+`prefix()` and `suffix()` also describe the card added last.
+
 Register: `Admin::screen([ContentDashboardScreen::class])`. URL:
 `/admin/dashboard/content`.
 

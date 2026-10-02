@@ -39,6 +39,21 @@ final class TextEntry extends Entry
         return $this;
     }
 
+    /**
+     * Formats the value by one of the table's cell presets (money, date,
+     * datetime, badge, boolean, bytes) with that preset's settings — what a
+     * TableColumn serializes as `type` and `meta`.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public function preset(string $preset, array $meta = []): static
+    {
+        $this->attributes['preset'] = $preset;
+        $this->attributes['meta'] = $meta;
+
+        return $this;
+    }
+
     public function asMoney(string $currency = 'RUB', int $decimals = 2): static
     {
         $this->attributes['preset'] = 'money';

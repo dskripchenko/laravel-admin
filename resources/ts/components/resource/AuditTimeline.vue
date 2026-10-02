@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-vue-next'
 import { UidAvatar, UidIcon, UidSkeleton } from '@dskripchenko/ui'
-import { trSafe as tr, tRaw } from '../../stores/i18n'
+import { formatLocale, trSafe as tr, tRaw } from '../../stores/i18n'
 
 interface AuditActor {
   id: number | string
@@ -114,7 +114,7 @@ function relativeTime(iso: string): string {
   if (diff < 3600) return `${Math.floor(diff / 60)} ${tr('мин назад')}`
   if (diff < 86_400) return `${Math.floor(diff / 3600)} ${tr('ч назад')}`
   if (diff < 86_400 * 30) return `${Math.floor(diff / 86_400)} ${tr('д назад')}`
-  return new Date(iso).toLocaleDateString('ru-RU')
+  return new Date(iso).toLocaleDateString(formatLocale())
 }
 
 function hasDiff(entry: AuditEntry): boolean {

@@ -22,7 +22,7 @@ import {
   type NotificationFilter,
   type NotificationItem,
 } from '../../stores/notifications'
-import { trSafe as tr, tRaw } from '../../stores/i18n'
+import { formatLocale, trSafe as tr, tRaw } from '../../stores/i18n'
 import {
   notificationBody,
   notificationIcon,
@@ -92,7 +92,7 @@ function relativeTime(iso: string | null): string {
   if (diff < 86_400) return tRaw(':n ч назад', { n: Math.floor(diff / 3600) })
   if (diff < 86_400 * 2) return tr('вчера')
   if (diff < 86_400 * 7) return tRaw(':n д назад', { n: Math.floor(diff / 86_400) })
-  return new Date(iso).toLocaleDateString('ru-RU')
+  return new Date(iso).toLocaleDateString(formatLocale())
 }
 
 interface ItemView {

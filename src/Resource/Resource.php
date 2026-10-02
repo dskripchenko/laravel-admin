@@ -12,6 +12,8 @@ use Dskripchenko\LaravelAdmin\Infolist\ColorEntry;
 use Dskripchenko\LaravelAdmin\Infolist\Entry;
 use Dskripchenko\LaravelAdmin\Infolist\FieldEntry;
 use Dskripchenko\LaravelAdmin\Infolist\IconEntry;
+use Dskripchenko\LaravelAdmin\Infolist\KeyValueEntry;
+use Dskripchenko\LaravelAdmin\Infolist\RepeatableEntry;
 use Dskripchenko\LaravelAdmin\Infolist\TextEntry;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -54,6 +56,8 @@ abstract class Resource
     protected const FIELD_VIEW_TYPES = [
         'markdown', 'code', 'rating', 'radio', 'tree_select', 'cascader',
         'date_range', 'morph_switcher', 'group', 'resource_picker',
+        // Fields whose stored value is a key: the view shows the option's label.
+        'select', 'combobox', 'tags', 'relation_select',
     ];
 
     /**
@@ -814,25 +818,82 @@ abstract class Resource
      */
     public function infolist(): array
     {
+        $fields = $this->fields();
+        if ($fields === []) {
+            return $this->infolistFromColumns();
+        }
+
         $entries = [];
-        foreach ($this->fields() as $field) {
+        foreach ($fields as $field) {
             $name = $field->name();
-            $label = (string) ($field->getAttributes()['title'] ?? $name);
+            // The same label the form shows: title(), or the readable name —
+            // never the raw `payment_method`.
+            $label = (string) ($field->getAttributes()['title'] ?? Str::headline(str_replace('.', ' ', $name)));
             $type = $field->fieldType();
             if ($type === 'hidden') {
                 continue;
             }
+            $hasOptions = ($field->toArray()['options'] ?? []) !== [];
             $entries[] = match (true) {
-                $type === 'switch' => IconEntry::make($name)
+                $type === 'checkbox' && $hasOptions => FieldEntry::fromField($field),
+                $type === 'switch' || $type === 'checkbox' => IconEntry::make($name)
                     ->label($label)
                     ->trueLabel((string) __('admin::admin.common.yes'))
                     ->falseLabel((string) __('admin::admin.common.no'))
                     ->trueIcon('check-circle-2')
                     ->falseIcon('x-circle'),
                 $type === 'color' => ColorEntry::make($name)->label($label),
+                $type === 'key_value' => KeyValueEntry::make($name)->label($label),
+                // A list of records or objects: a table, not a JSON dump.
+                $type === 'relation_table' => RepeatableEntry::make($name)->label($label)->layout('columns')
+                    ->entries($this->entriesFromColumns((array) ($field->getAttributes()['columns'] ?? []))),
+                $type === 'repeater' => RepeatableEntry::make($name)->label($label)->layout('columns')
+                    ->entries(array_map(
+                        static fn (array $sub): Entry => TextEntry::make((string) $sub['name'])->label((string) ($sub['label'] ?? $sub['name'])),
+                        array_values(array_filter((array) ($field->getAttributes()['fields'] ?? []), 'is_array')),
+                    )),
                 in_array($type, static::FIELD_VIEW_TYPES, true) => FieldEntry::fromField($field),
                 default => TextEntry::make($name)->label($label),
             };
+        }
+
+        return $entries;
+    }
+
+    /**
+     * The view of a resource with no fields — a list-only one: an entry per
+     * column, with the column's label and its formatting (money, dates,
+     * badges), so the view page is not an empty card.
+     *
+     * @return list<Entry>
+     */
+    protected function infolistFromColumns(): array
+    {
+        return $this->entriesFromColumns(array_map(
+            static fn (TableColumn $column): array => $column->toArray(),
+            $this->columns(),
+        ));
+    }
+
+    /**
+     * A TextEntry per serialized table column, keeping its label and its
+     * formatting preset.
+     *
+     * @param  array<int, mixed>  $columns
+     * @return list<Entry>
+     */
+    private function entriesFromColumns(array $columns): array
+    {
+        $entries = [];
+        foreach ($columns as $col) {
+            if (! is_array($col) || ! isset($col['name'])) {
+                continue;
+            }
+            $entry = TextEntry::make((string) $col['name'])->label((string) ($col['label'] ?? $col['name']));
+            if (($col['type'] ?? 'text') !== 'text') {
+                $entry->preset((string) $col['type'], (array) ($col['meta'] ?? []));
+            }
+            $entries[] = $entry;
         }
 
         return $entries;

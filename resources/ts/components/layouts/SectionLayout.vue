@@ -43,6 +43,7 @@ const iconComponent = computed(() => resolveIcon(props.icon))
 
 <style>
 .admin-section { margin-bottom: var(--uid-space-md); }
+.admin-section:last-child { margin-bottom: 0; }
 .admin-section__header { margin-bottom: var(--uid-space-sm); }
 .admin-section__title {
   display: flex;

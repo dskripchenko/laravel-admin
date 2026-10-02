@@ -32,6 +32,7 @@ translated_at: 2026-10-02
 | `AuditTrail` | `AuditTrail::for(User::class)` | 所显示记录的审计时间线 |
 | `Listener` | `Layout::listener([...])->listen([...])` | 表单中的一部分，当被监听的字段变化时由服务器重新渲染 |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | 属于当前编辑记录的另一个 Resource 的记录表格 |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | 在 Screen 上嵌入资源的实时列表页（表格或树） |
 
 ## 示例
 
@@ -341,6 +342,22 @@ public function filters(): array
 ```
 
 请将其放在 `formLayout('update')` 中：正在创建的记录还没有键，在保存之前表格会保持为空。
+
+### ResourceIndex（在 Screen 上的资源实时列表）
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+
+public function layout(): array
+{
+    return [
+        Layout::markdown('表格展示的内容…'),
+        Layout::resourceIndex(OrderResource::class),
+    ];
+}
+```
+
+把资源的列表页本身——搜索、筛选、排序、行操作和批量操作、单元格内编辑、拖拽排序、回收站，或层级资源的树——嵌入到 Screen 中。点击行会像列表页一样打开记录。没有该资源 `view` 权限的用户看不到它。每个 Screen 只能放一个：列表状态是共享的。
 
 ### Markdown
 

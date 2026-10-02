@@ -46,13 +46,19 @@ function fromState(): Record<string, unknown>[] {
   return Array.isArray(v) ? (v as Record<string, unknown>[]).map((it) => ({ ...it })) : []
 }
 
+// A stable key per item, so moving or removing one does not hand another
+// item's sub-form to it.
+let keySeq = 0
+const nextKey = (): number => ++keySeq
 const items = ref<Record<string, unknown>[]>(fromState())
+const keys = ref<number[]>(items.value.map(nextKey))
 
 watch(
   () => form.getField(props.name),
   (next) => {
     if (JSON.stringify(next ?? []) !== JSON.stringify(items.value)) {
       items.value = fromState()
+      keys.value = items.value.map(nextKey)
     }
   },
 )
@@ -72,6 +78,7 @@ const canAdd = computed(() =>
 
 function addItem(): void {
   items.value.push({ ...props.defaultItem })
+  keys.value.push(nextKey())
   sync()
 }
 
@@ -81,6 +88,7 @@ const canRemove = computed(() =>
 
 function removeItem(idx: number): void {
   items.value.splice(idx, 1)
+  keys.value.splice(idx, 1)
   sync()
 }
 
@@ -90,6 +98,9 @@ function move(idx: number, dir: -1 | 1): void {
   const copy = [...items.value]
   ;[copy[idx], copy[target]] = [copy[target], copy[idx]]
   items.value = copy
+  const ks = [...keys.value]
+  ;[ks[idx], ks[target]] = [ks[target], ks[idx]]
+  keys.value = ks
   sync()
 }
 
@@ -104,7 +115,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 
     <UidCard
       v-for="(item, idx) in items"
-      :key="idx"
+      :key="keys[idx] ?? idx"
       padding="md"
       class="admin-repeater__item"
     >
@@ -159,7 +170,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 }
 .admin-repeater__item-no {
   font-size: 12px;
-  color: var(--uid-color-text-subtle, #6b7280);
+  color: var(--uid-text-tertiary);
 }
 .admin-repeater__add {
   align-self: flex-start;

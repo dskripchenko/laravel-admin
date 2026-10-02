@@ -54,7 +54,7 @@ import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
 import { applyPositions, buildReorderPayload, canDragReorder, type ReorderResponse } from './reorder'
 import { adminToast } from '../../stores/toast'
-import { useI18nStore } from '../../stores/i18n'
+import { formatLocale, useI18nStore } from '../../stores/i18n'
 import {
   needsSelection,
   normalizeActions,
@@ -602,7 +602,9 @@ const manifestColumns = computed(
 )
 const searchPlaceholder = computed(() => {
   const label = (resourceMeta.value?.label ?? props.slug).toLowerCase()
-  return tRaw('Поиск по :label…', { label })
+  // "Поиск по :label" would need the label in the dative case, which a
+  // resource label (nominative) is not: "поиск по заказы".
+  return tRaw('Поиск: :label…', { label })
 })
 
 const groupByCol = ref<string | null>(null)
@@ -759,10 +761,11 @@ const totalLabel = computed(() => {
  * slot.
  */
 function pluralRecords(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return tr('запись')
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return tr('записи')
+  // The form is chosen by the panel's language rules, not Russian ones: an
+  // English panel must not get "1681 record" because 1681 ends in a 1.
+  const form = new Intl.PluralRules(formatLocale()).select(n)
+  if (form === 'one') return tr('запись')
+  if (form === 'few' || form === 'two') return tr('записи')
   return tr('записей')
 }
 
@@ -1731,6 +1734,9 @@ async function retryLoad(): Promise<void> {
 /* Bulk toolbar — a dark zinc-900 surface that replaces the filter bar */
 .admin-bulk-toolbar {
   display: flex;
+  /* Many selection actions in a narrow list wrap onto a second line instead
+     of running past the card's edge. */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--uid-space-sm);
   padding: var(--uid-space-sm) var(--uid-space-md);
@@ -1741,7 +1747,7 @@ async function retryLoad(): Promise<void> {
   border-bottom: 0;
   margin-top: var(--uid-space-md);
 }
-.admin-bulk-toolbar__count { font-size: 13px; }
+.admin-bulk-toolbar__count { font-size: 13px; white-space: nowrap; }
 .admin-bulk-toolbar__count b { font-weight: var(--uid-font-weight-semibold); }
 .admin-bulk-toolbar__divider {
   width: 1px;

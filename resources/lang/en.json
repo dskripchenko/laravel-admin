@@ -369,7 +369,7 @@
     "Не удалось экспортировать данные в формате :format.": "Could not export the data as :format.",
     "Импорт завершён с ошибками: :imported записей, :failed ошибок.": "Import finished with errors: :imported records, :failed failures.",
     "Импортировано записей: :count.": "Records imported: :count.",
-    "Поиск по :label…": "Search :label…",
+    "Поиск: :label…": "Search :label…",
     "Удалить представление «:name»?": "Delete the view “:name”?",
     ":shown из :total :word": ":shown of :total :word",
     "Первые :count строк перед импортом": "The first :count rows before importing",

@@ -134,10 +134,14 @@ watch(
 <style>
 .admin-generated__row {
   display: flex;
+  /* In a narrow column the button moves under the input instead of running
+     past the card's edge. */
+  flex-wrap: wrap;
   gap: var(--uid-space-sm, 8px);
   align-items: flex-start;
 }
 .admin-generated__input {
-  flex: 1;
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 </style>

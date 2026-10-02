@@ -27,7 +27,9 @@ final class FieldEntry extends Entry
     public static function fromField(Field $field): self
     {
         $entry = self::make($field->name());
-        $entry->attributes['label'] = (string) ($field->getAttributes()['title'] ?? $field->name());
+        // The form's label: title(), or the readable name, never `payment_method`.
+        $entry->attributes['label'] = (string) ($field->getAttributes()['title']
+            ?? \Illuminate\Support\Str::headline(str_replace('.', ' ', $field->name())));
         $entry->attributes['field'] = $field->toArray();
 
         return $entry;

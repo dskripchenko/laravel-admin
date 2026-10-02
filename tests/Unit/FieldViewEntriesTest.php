@@ -168,3 +168,91 @@ it('MorphSwitcher serializes each type with its records as options', function ()
     // A failing query leaves the type without options instead of failing the manifest.
     expect($types['broken']['options'])->toBe([]);
 });
+
+it('default infolist labels untitled fields readably and shows choice fields by their option labels', function (): void {
+    $resource = new class extends Resource
+    {
+        public static string $model = TestResourceUserModel::class;
+
+        public function fields(): array
+        {
+            return [
+                Input::make('shipping_city'),
+                Dskripchenko\LaravelAdmin\Field\Select::make('payment_method')->options(['card' => 'Card']),
+                Dskripchenko\LaravelAdmin\Field\Checkbox::make('is_paid'),
+            ];
+        }
+
+        public function columns(): array
+        {
+            return [];
+        }
+    };
+
+    $entries = array_map(static fn ($e): array => $e->toArray(), $resource->infolist());
+
+    expect($entries[0]['type'])->toBe('text');
+    expect($entries[0]['label'])->toBe('Shipping City');
+    expect($entries[1]['type'])->toBe('field');
+    expect($entries[1]['label'])->toBe('Payment Method');
+    expect($entries[1]['attributes']['field']['type'])->toBe('select');
+    expect($entries[2]['type'])->toBe('icon');
+});
+
+it('default infolist of a resource without fields follows its columns', function (): void {
+    $resource = new class extends Resource
+    {
+        public static string $model = TestResourceUserModel::class;
+
+        public function fields(): array
+        {
+            return [];
+        }
+
+        public function columns(): array
+        {
+            return [
+                Dskripchenko\LaravelAdmin\Table\TableColumn::make('title'),
+                Dskripchenko\LaravelAdmin\Table\TableColumn::make('total')->label('Sum')->asMoney('USD'),
+            ];
+        }
+    };
+
+    $entries = array_map(static fn ($e): array => $e->toArray(), $resource->infolist());
+
+    expect(array_column($entries, 'name'))->toBe(['title', 'total']);
+    expect($entries[0]['label'])->toBe('Title');
+    expect($entries[1]['label'])->toBe('Sum');
+    expect($entries[1]['attributes']['preset'])->toBe('money');
+    expect($entries[1]['attributes']['meta'])->toMatchArray(['currency' => 'USD']);
+});
+
+it('default infolist shows a relation table as a table of its columns', function (): void {
+    $resource = new class extends Resource
+    {
+        public static string $model = TestResourceUserModel::class;
+
+        public function fields(): array
+        {
+            return [
+                Dskripchenko\LaravelAdmin\Field\RelationTable::make('items')->title('Line items')->columns([
+                    Dskripchenko\LaravelAdmin\Table\TableColumn::make('sku')->label('SKU'),
+                    Dskripchenko\LaravelAdmin\Table\TableColumn::make('total')->asMoney('USD'),
+                ]),
+            ];
+        }
+
+        public function columns(): array
+        {
+            return [];
+        }
+    };
+
+    $entry = $resource->infolist()[0]->toArray();
+
+    expect($entry['type'])->toBe('repeatable');
+    expect($entry['label'])->toBe('Line items');
+    expect($entry['attributes']['layout'])->toBe('columns');
+    expect(array_column($entry['attributes']['entries'], 'label'))->toBe(['SKU', 'Total']);
+    expect($entry['attributes']['entries'][1]['attributes']['preset'])->toBe('money');
+});

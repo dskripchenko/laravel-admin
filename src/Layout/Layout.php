@@ -162,6 +162,17 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * The live index of a resource — its table or tree with everything the
+     * list page offers — embedded into a screen. See ResourceIndex.
+     *
+     * @param  class-string<\Dskripchenko\LaravelAdmin\Resource\Resource>  $resourceClass
+     */
+    public static function resourceIndex(string $resourceClass): ResourceIndex
+    {
+        return ResourceIndex::for($resourceClass);
+    }
+
+    /**
      * A reactive part of the form: re-rendered by the server when the
      * watched fields change. See Listener.
      *

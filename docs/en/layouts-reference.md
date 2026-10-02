@@ -31,6 +31,7 @@ compose to arbitrary depth.
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
 | `Listener` | `Layout::listener([...])->listen([...])` | Part of a form re-rendered by the server when watched fields change |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Table of another resource's records belonging to the edited one |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Live list page of a resource (table or tree) on a screen |
 
 ## Examples
 
@@ -392,6 +393,26 @@ public function filters(): array
 
 Place it in `formLayout('update')`: a record being created has no key yet,
 and the table stays empty until it is saved.
+
+### ResourceIndex (live list of a resource on a screen)
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+
+public function layout(): array
+{
+    return [
+        Layout::markdown('What the table shows…'),
+        Layout::resourceIndex(OrderResource::class),
+    ];
+}
+```
+
+The very list page of the resource — search, filters, sorting, row and bulk
+actions, inline edits, reordering, trash, or the tree of a hierarchical
+resource — embedded into a screen. A row click opens the record, as on the
+list page. Hidden from a user without the resource's `view` permission. One
+per screen: the list's state is shared.
 
 ### Markdown
 

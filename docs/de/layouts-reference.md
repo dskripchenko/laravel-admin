@@ -33,6 +33,7 @@ sich beliebig tief verschachteln.
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit-Zeitleiste des angezeigten Datensatzes |
 | `Listener` | `Layout::listener([...])->listen([...])` | Teil eines Formulars, den der Server neu rendert, wenn sich beobachtete Felder ändern |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Tabelle der Datensätze einer anderen Resource, die zum bearbeiteten Datensatz gehören |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Live-Listenseite einer Resource (Tabelle oder Baum) auf einem Screen |
 
 ## Beispiele
 
@@ -403,6 +404,27 @@ public function filters(): array
 Platzieren Sie die Tabelle in `formLayout('update')`: Ein Datensatz, der gerade
 erstellt wird, hat noch keinen Schlüssel, und die Tabelle bleibt leer, bis er
 gespeichert ist.
+
+### ResourceIndex (Live-Liste einer Resource auf einem Screen)
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+
+public function layout(): array
+{
+    return [
+        Layout::markdown('Was die Tabelle zeigt…'),
+        Layout::resourceIndex(OrderResource::class),
+    ];
+}
+```
+
+Die Listenseite der Resource selbst — Suche, Filter, Sortierung, Zeilen- und
+Massenaktionen, Inline-Bearbeitung, Sortierung per Drag-and-drop, Papierkorb
+oder der Baum einer hierarchischen Resource — eingebettet in einen Screen. Ein
+Klick auf eine Zeile öffnet den Datensatz wie auf der Listenseite. Für
+Benutzer ohne `view`-Berechtigung der Resource ausgeblendet. Eine pro Screen:
+der Zustand der Liste ist geteilt.
 
 ### Markdown
 

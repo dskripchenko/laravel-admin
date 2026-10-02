@@ -27,6 +27,20 @@ watch(
   () => emit('update:modelValue', { ...state }),
   { deep: true },
 )
+
+// The parent may hand a different value to the same instance — an item moved
+// or removed in a repeater, a record reloaded. The local state follows it, in
+// place, so the sub-fields that injected it keep their reference.
+watch(
+  () => props.modelValue,
+  (next) => {
+    if (JSON.stringify(next ?? {}) === JSON.stringify(state)) return
+    for (const k of Object.keys(state)) {
+      if (!(k in (next ?? {}))) delete state[k]
+    }
+    Object.assign(state, next ?? {})
+  },
+)
 </script>
 
 <template>

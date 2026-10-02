@@ -192,7 +192,7 @@ function isInternal(indicator: Indicator): boolean {
 .admin-topbar__status {
   display: inline-flex;
   align-items: center;
-  gap: var(--uid-space-1, 4px);
+  gap: var(--uid-space-xs);
 }
 
 .admin-topbar__status-item {
@@ -205,7 +205,7 @@ function isInternal(indicator: Indicator): boolean {
 .admin-topbar__status-inner {
   display: inline-flex;
   align-items: center;
-  gap: var(--uid-space-1, 4px);
+  gap: var(--uid-space-xs);
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
@@ -213,17 +213,17 @@ function isInternal(indicator: Indicator): boolean {
 }
 
 .admin-topbar__status-item--warning .admin-topbar__status-inner {
-  color: var(--uid-color-warning-fg, #92400e);
-  background: var(--uid-color-warning-bg, #fef3c7);
+  color: var(--uid-color-warning);
+  background: var(--uid-color-warning-subtle);
 }
 
 .admin-topbar__status-item--error .admin-topbar__status-inner {
-  color: var(--uid-color-danger-fg, #991b1b);
-  background: var(--uid-color-danger-bg, #fee2e2);
+  color: var(--uid-color-danger);
+  background: var(--uid-color-danger-subtle);
 }
 
 .admin-topbar__status-item--unknown .admin-topbar__status-inner {
-  color: var(--uid-color-fg-muted, #6b7280);
+  color: var(--uid-text-secondary);
   background: var(--uid-color-bg-subtle, #f3f4f6);
 }
 
