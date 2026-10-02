@@ -2,13 +2,13 @@
 /**
  * SelectField — the backend's Field\Select over UidSelect.
  *
- * With `->multiple()` the value is a list and the field is a UidTreeSelect
- * over flat nodes, the kit's multi-choice dropdown with removable tags:
- * UidSelect picks one value only.
+ * With `->multiple()` the value is a list: UidSelect in its multiple mode,
+ * the chosen options shown as removable tags.
  */
 import { computed } from 'vue'
-import { UidSelect, UidFormField, UidTreeSelect } from '@dskripchenko/ui'
+import { UidSelect, UidFormField, type SelectValue } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
+import { singleSelectValue } from './support/selectValue'
 
 export interface SelectOption {
   value: string | number
@@ -60,13 +60,9 @@ const value = computed<string | number | null>(() => {
 })
 const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
 
-function onUpdate(next: string | number | null): void {
-  form.setField(props.name, next)
+function onUpdate(next: SelectValue | SelectValue[] | null): void {
+  form.setField(props.name, singleSelectValue(next))
 }
-
-const nodes = computed(() =>
-  props.options.map((o) => ({ key: o.value, label: o.label, disabled: o.disabled })),
-)
 
 /**
  * The chosen values, as the options spell them: the state may hold 5 where
@@ -90,22 +86,7 @@ function onUpdateMany(next: unknown): void {
 </script>
 
 <template>
-  <UidTreeSelect
-    v-if="multiple"
-    :model-value="values"
-    :nodes="nodes"
-    multiple
-    :label="label ?? undefined"
-    :hint="help ?? undefined"
-    :error="errorMsg"
-    :required="required"
-    :placeholder="placeholder ?? undefined"
-    :disabled="isLocked"
-    :clearable="clearable"
-    @update:model-value="onUpdateMany"
-  />
   <UidFormField
-    v-else
     :label="label ?? undefined"
     :hint="help ?? undefined"
     :error="errorMsg"
@@ -113,6 +94,19 @@ function onUpdateMany(next: unknown): void {
     :disabled="isLocked"
   >
     <UidSelect
+      v-if="multiple"
+      :model-value="values"
+      :options="options"
+      multiple
+      :placeholder="placeholder ?? undefined"
+      :disabled="isLocked"
+      :searchable="searchable"
+      :clearable="clearable"
+      :size="size"
+      @update:model-value="onUpdateMany"
+    />
+    <UidSelect
+      v-else
       :model-value="value"
       :options="options"
       :placeholder="placeholder ?? undefined"

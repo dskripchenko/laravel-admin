@@ -457,6 +457,8 @@ const columns = computed<UidTableColumn[]>(() => {
         sortable: false,
         align: 'center',
         width: '32px',
+        // Pinned to the left edge, and the selection column with it.
+        fixed: 'left',
       }]
     : []
   // The trailing column of per-row actions: view, edit, delete.
@@ -472,6 +474,8 @@ const columns = computed<UidTableColumn[]>(() => {
       align: 'right',
       // Room for the ⋮ menu when the resource has row actions.
       width: rowActions.value.length > 0 ? '156px' : '120px',
+      // The row actions stay in view however wide the table is.
+      fixed: 'right',
     },
   ]
 })
@@ -1522,28 +1526,6 @@ async function retryLoad(): Promise<void> {
   line-height: 1.3;
 }
 
-/*
- * The row actions stay in view however wide the table is: the last column
- * sticks to the right edge of the horizontal scroll. UidTable has no fixed
- * columns of its own, hence the override here.
- */
-.admin-resource-index__table .uid-table__th:last-child,
-.admin-resource-index__table .uid-table__td:last-child:not(.uid-table__td--empty) {
-  position: sticky;
-  right: 0;
-  z-index: 1;
-  background: var(--uid-table-bg, var(--uid-color-surface));
-  box-shadow: inset 1px 0 0 var(--uid-border-subtle);
-}
-.admin-resource-index__table .uid-table__th:last-child {
-  background: var(--uid-table-head-bg, var(--uid-color-surface-raised));
-}
-.admin-resource-index__table .uid-table__row--selected > .uid-table__td:last-child {
-  background: var(--uid-table-row-bg-selected, var(--uid-color-surface-hover));
-}
-.admin-resource-index__table .uid-table__row:hover > .uid-table__td:last-child {
-  background: var(--uid-table-row-bg-hover, var(--uid-color-surface-hover));
-}
 .admin-resource-index__footer {
   display: flex;
   justify-content: flex-end;

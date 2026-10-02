@@ -520,8 +520,18 @@ describe('ResourceIndexPage', () => {
       await wrapper.find('[data-testid="row-actions-menu"]').trigger('click')
       await flushPromises()
       const item = document.body.querySelector('.uid-menu [data-testid="action-advance"]') as HTMLElement
-      expect(item.querySelector('svg')).not.toBeNull()
+      expect(item.querySelector('svg.uid-menu-item__icon')).not.toBeNull()
       wrapper.unmount()
+    })
+
+    it('pins the row actions column to the right edge', async () => {
+      seedManifest({ columns: [{ key: 'title', label: 'Title' }, { key: 'status', label: 'Status' }] })
+      mock.onPost('/articles/search').reply(200, rows)
+      const wrapper = await mountPage()
+      await flushPromises()
+      const heads = wrapper.findAll('.uid-table__th')
+      expect(heads[heads.length - 1]!.classes()).toContain('uid-table__cell--fixed-right')
+      expect(wrapper.findAll('.uid-table__cell--fixed-left')).toHaveLength(0)
     })
   })
 })
