@@ -226,3 +226,33 @@ it('default infolist of a resource without fields follows its columns', function
     expect($entries[1]['attributes']['preset'])->toBe('money');
     expect($entries[1]['attributes']['meta'])->toMatchArray(['currency' => 'USD']);
 });
+
+it('default infolist shows a relation table as a table of its columns', function (): void {
+    $resource = new class extends Resource
+    {
+        public static string $model = TestResourceUserModel::class;
+
+        public function fields(): array
+        {
+            return [
+                Dskripchenko\LaravelAdmin\Field\RelationTable::make('items')->title('Line items')->columns([
+                    Dskripchenko\LaravelAdmin\Table\TableColumn::make('sku')->label('SKU'),
+                    Dskripchenko\LaravelAdmin\Table\TableColumn::make('total')->asMoney('USD'),
+                ]),
+            ];
+        }
+
+        public function columns(): array
+        {
+            return [];
+        }
+    };
+
+    $entry = $resource->infolist()[0]->toArray();
+
+    expect($entry['type'])->toBe('repeatable');
+    expect($entry['label'])->toBe('Line items');
+    expect($entry['attributes']['layout'])->toBe('columns');
+    expect(array_column($entry['attributes']['entries'], 'label'))->toBe(['SKU', 'Total']);
+    expect($entry['attributes']['entries'][1]['attributes']['preset'])->toBe('money');
+});

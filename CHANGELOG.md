@@ -144,8 +144,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stored key, a relation's id and tags as JSON, and a resource without
   fields got an empty card. Labels are the form's readable labels now;
   select, combobox, tags and relation selects show their option labels; a
-  checkbox shows Yes/No; a resource without fields is described by its
-  columns, with their formatting.
+  checkbox shows Yes/No; relation tables and repeaters are tables of their
+  columns instead of a JSON dump, key-value fields a key-value list; a
+  resource without fields is described by its columns, with their
+  formatting. `TextEntry::preset()` applies a table cell preset to an entry.
 - **A read-only resource had a create page.** `/r/{slug}/create` (and edit)
   opened an empty form with a Create button for a resource that is neither
   creatable nor editable; those addresses now lead back to the list and to

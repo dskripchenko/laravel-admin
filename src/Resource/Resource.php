@@ -12,6 +12,8 @@ use Dskripchenko\LaravelAdmin\Infolist\ColorEntry;
 use Dskripchenko\LaravelAdmin\Infolist\Entry;
 use Dskripchenko\LaravelAdmin\Infolist\FieldEntry;
 use Dskripchenko\LaravelAdmin\Infolist\IconEntry;
+use Dskripchenko\LaravelAdmin\Infolist\KeyValueEntry;
+use Dskripchenko\LaravelAdmin\Infolist\RepeatableEntry;
 use Dskripchenko\LaravelAdmin\Infolist\TextEntry;
 use Dskripchenko\LaravelAdmin\Table\TableColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -841,6 +843,15 @@ abstract class Resource
                     ->trueIcon('check-circle-2')
                     ->falseIcon('x-circle'),
                 $type === 'color' => ColorEntry::make($name)->label($label),
+                $type === 'key_value' => KeyValueEntry::make($name)->label($label),
+                // A list of records or objects: a table, not a JSON dump.
+                $type === 'relation_table' => RepeatableEntry::make($name)->label($label)->layout('columns')
+                    ->entries($this->entriesFromColumns((array) ($field->getAttributes()['columns'] ?? []))),
+                $type === 'repeater' => RepeatableEntry::make($name)->label($label)->layout('columns')
+                    ->entries(array_map(
+                        static fn (array $sub): Entry => TextEntry::make((string) $sub['name'])->label((string) ($sub['label'] ?? $sub['name'])),
+                        array_values(array_filter((array) ($field->getAttributes()['fields'] ?? []), 'is_array')),
+                    )),
                 in_array($type, static::FIELD_VIEW_TYPES, true) => FieldEntry::fromField($field),
                 default => TextEntry::make($name)->label($label),
             };
@@ -858,13 +869,29 @@ abstract class Resource
      */
     protected function infolistFromColumns(): array
     {
+        return $this->entriesFromColumns(array_map(
+            static fn (TableColumn $column): array => $column->toArray(),
+            $this->columns(),
+        ));
+    }
+
+    /**
+     * A TextEntry per serialized table column, keeping its label and its
+     * formatting preset.
+     *
+     * @param  array<int, mixed>  $columns
+     * @return list<Entry>
+     */
+    private function entriesFromColumns(array $columns): array
+    {
         $entries = [];
-        foreach ($this->columns() as $column) {
-            $col = $column->toArray();
-            $entry = TextEntry::make($column->name())->label((string) $col['label']);
+        foreach ($columns as $col) {
+            if (! is_array($col) || ! isset($col['name'])) {
+                continue;
+            }
+            $entry = TextEntry::make((string) $col['name'])->label((string) ($col['label'] ?? $col['name']));
             if (($col['type'] ?? 'text') !== 'text') {
-                $entry->preset($col['type']);
-                $entry->meta($col['meta'] ?? []);
+                $entry->preset((string) $col['type'], (array) ($col['meta'] ?? []));
             }
             $entries[] = $entry;
         }
