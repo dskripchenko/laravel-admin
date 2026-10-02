@@ -70,10 +70,20 @@ A URL slug derived from another field of the form:
 Slug::make('slug')->from('title')->separator('-'),
 ```
 
-`from()` names the source field. The SPA currently renders the slug as a plain
-text input and does not fill it in by itself; to derive it on the server, use
-`Slug::generate($title)` (a wrapper over `Str::slug`), for example in the
-resource's save hook.
+`from()` names the source field. The SPA fills the slug as the source
+changes, until it is edited by hand; clearing it hands it back to the source.
+A saved slug that no longer matches its source is left alone. With
+`reactive(false)` only an empty slug is filled: a new record's slug follows
+the source until edited, a saved record's slug is never rewritten.
+
+The conversion is `Slug::generate($title, $separator)`, and the SPA runs a
+port of it over the same transliteration table, so the suggested slug is the
+one the server would produce: Cyrillic (Russian, Ukrainian, Belarusian,
+Serbian, Kazakh), Greek and Latin letters with diacritics are transliterated
+(`Щука и ёж` → `shchuka-i-yozh`), whitespace, dashes and `_` become the
+separator, `@` becomes `at`, other characters are dropped. Use
+`Slug::generate()` on the server where no form is involved — an import, a
+seeder, a save hook.
 
 ### Code
 
@@ -162,7 +172,11 @@ Radio::make('plan')->options([...])->inline(),
 ```php
 Checkbox::make('agree')->title('I agree'),
 Switcher::make('is_active')->title('Active'),
+Switcher::make('published')->title('Status')->labels('Published', 'Draft'),
 ```
+
+`Switcher` is a toggle switch. With `labels($on, $off)` the caption next to
+it follows the state, and the field's title sits above.
 
 ## Date / time
 
@@ -174,8 +188,10 @@ DateRange::make('period')->presets(['today', 'last_7_days']),
 TimePicker::make('start_time')->step(15),
 ```
 
-`withTime()` switches the stored format to `Y-m-d H:i:s`; the SPA's picker
-currently edits the date part only. `DateRange` stores
+`withTime()` adds a time picker next to the date and switches the stored
+format to `Y-m-d H:i:s`. Another `format()` decides how the value is written:
+`Y-m-d H:i` drops the seconds, `Y-m-d\TH:i:s` joins with a `T`. A time picked
+before the date is kept until the date is chosen; a missing time is midnight. `DateRange` stores
 `{from: 'YYYY-MM-DD', to: 'YYYY-MM-DD'}`.
 
 ## Numeric

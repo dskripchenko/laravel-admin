@@ -30,6 +30,7 @@ Layout — это контейнер для полей и других layout'о
 | `View` | `Layout::view('component-name', $props)` | Собственный Vue-компонент |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Лента аудита показанной записи |
 | `Listener` | `Layout::listener([...])->listen([...])` | Часть формы, которую сервер перерисовывает при изменении отслеживаемых полей |
+| `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Таблица записей другого ресурса, принадлежащих редактируемой |
 
 ## Примеры
 
@@ -337,6 +338,64 @@ listener'ом в `layout()` этого экрана или `formLayout()` это
 При обслуживании запроса listener'а `layout()` экрана вызывается без
 `query()`, поэтому listener'ы не должны зависеть от свойств, которые
 выставляет `query()`.
+
+### ResourceTable (встроенная таблица другого ресурса)
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\ResourceTable;
+
+public function formLayout(string $context): array
+{
+    if ($context !== 'update') {
+        return [];
+    }
+
+    return [
+        Layout::tabs([
+            'Основное' => $this->fields(),
+            'Элементы' => [
+                ResourceTable::for(DictionaryItemResource::class)
+                    ->foreignKey('dictionary_id')   // колонка дочерней записи, указывающая на родителя
+                    ->parentField('id')             // колонка родителя, которую она хранит; по умолчанию 'id'
+                    ->hideColumns(['dictionary_id'])
+                    ->features(['create' => true, 'delete' => true, 'bulkDelete' => true]),
+            ],
+        ]),
+    ];
+}
+```
+
+Показывает на странице редактирования родителя записи дочернего ресурса,
+которые ему принадлежат. Колонки берутся из манифеста дочернего ресурса (без
+перечисленных в `hideColumns()`), до 100 строк загружаются через
+`POST /{child}/search` с `filters: {foreign_key: parent[parent_field]}`, а
+ячейки колонок с `editable()` редактируются прямо в таблице. `features()`
+включает (по умолчанию всё выключено):
+
+- `create` — строку-черновик сверху, которая сохраняется через
+  `POST /{child}/create` с уже заполненным внешним ключом;
+- `delete` — кнопку удаления в каждой строке (`POST /{child}/delete`);
+- `bulkDelete` — выбор строк и массовое удаление.
+
+Каждый запрос проверяется по правам самого дочернего ресурса (`.view`,
+`.create`, `.update`, `.delete`).
+
+Внешний ключ попадает в запрос только через фильтр, объявленный в дочернем
+ресурсе на эту колонку, — без него таблица покажет записи всех родителей.
+Объявите в дочернем ресурсе фильтр с точным совпадением:
+
+```php
+public function filters(): array
+{
+    return [
+        QueryFilter::for('dictionary_id')
+            ->using(fn ($query, $value) => $query->where('dictionary_id', $value)),
+    ];
+}
+```
+
+Размещайте таблицу в `formLayout('update')`: у создаваемой записи ещё нет
+ключа, и до сохранения таблица пуста.
 
 ### View (собственный Vue-компонент)
 
