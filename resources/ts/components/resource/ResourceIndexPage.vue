@@ -457,7 +457,7 @@ const columns = computed<UidTableColumn[]>(() => {
         sortable: false,
         align: 'center',
         width: '32px',
-        // Pinned to the left edge, and the selection column with it.
+        // Pinned to the left edge, next to the selection column.
         fixed: 'left',
       }]
     : []
@@ -1231,6 +1231,7 @@ async function retryLoad(): Promise<void> {
         :sort-key="index.sortKey"
         :sort-direction="index.sortDirection"
         selectable
+        selection-fixed
         :selection="index.selection"
         :row-key="(row) => index.rowId(row)"
         @update:sort-key="onSortKeyUpdate"

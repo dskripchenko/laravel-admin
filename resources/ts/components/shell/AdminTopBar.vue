@@ -81,7 +81,7 @@ function targetOf(crumb: Crumb): string | Record<string, unknown> | undefined {
 
     <div class="admin-topbar__breadcrumbs">
       <slot name="breadcrumbs">
-        <UidBreadcrumb v-if="breadcrumbs.length > 0" :label="tr('Навигация')" separator="›">
+        <UidBreadcrumb v-if="breadcrumbs.length > 0" :label="tr('Навигация')" separator="›" collapse>
           <UidBreadcrumbItem
             v-for="(crumb, idx) in breadcrumbs"
             :key="idx"
@@ -101,6 +101,7 @@ function targetOf(crumb: Crumb): string | Record<string, unknown> | undefined {
         data-testid="topbar-search"
         role="button"
         tabindex="0"
+        :aria-label="tr('Поиск везде…')"
         @click="emit('open-search')"
         @keydown.enter.prevent="emit('open-search')"
         @keydown.space.prevent="emit('open-search')"

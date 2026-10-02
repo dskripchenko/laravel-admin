@@ -524,14 +524,16 @@ describe('ResourceIndexPage', () => {
       wrapper.unmount()
     })
 
-    it('pins the row actions column to the right edge', async () => {
+    it('pins the row actions column to the right edge and the selection column to the left', async () => {
       seedManifest({ columns: [{ key: 'title', label: 'Title' }, { key: 'status', label: 'Status' }] })
       mock.onPost('/articles/search').reply(200, rows)
       const wrapper = await mountPage()
       await flushPromises()
       const heads = wrapper.findAll('.uid-table__th')
       expect(heads[heads.length - 1]!.classes()).toContain('uid-table__cell--fixed-right')
-      expect(wrapper.findAll('.uid-table__cell--fixed-left')).toHaveLength(0)
+      // Only the selection column is pinned left (no drag handle here): the data columns scroll.
+      expect(heads[0]!.classes()).toContain('uid-table__cell--fixed-left')
+      expect(heads.filter((h) => h.classes('uid-table__cell--fixed-left'))).toHaveLength(1)
     })
   })
 })

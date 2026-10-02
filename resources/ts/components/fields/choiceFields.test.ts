@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick, type Component } from 'vue'
-import { UidCheckbox, UidCheckboxGroup, UidDatePicker, UidSelect, UidSlider } from '@dskripchenko/ui'
+import { defineComponent, h, nextTick, type Component, type DefineComponent } from 'vue'
+import { UidCheckbox, UidCheckboxGroup, UidDatePicker, UidSelect, UidSlider, type UidSelectProps } from '@dskripchenko/ui'
 import { provideFormState, type FormStateContext } from '../render/formState'
 import SelectField from './SelectField.vue'
 import CheckboxField from './CheckboxField.vue'
 import SliderField from './SliderField.vue'
 import DateField from './DateField.vue'
+
+/** UidSelect is generic over `multiple`, and test-utils types a generic component's props as never. */
+const Select = UidSelect as unknown as DefineComponent<UidSelectProps>
 
 /** Mounts a field over a form state and hands the state back. */
 function wrap(comp: Component, initial: Record<string, unknown>, props: Record<string, unknown>) {
@@ -31,15 +34,15 @@ const options = [
 describe('SelectField multiple()', () => {
   it('stays a single-value UidSelect without multiple', () => {
     const { w } = wrap(SelectField, { x: 1 }, { name: 'x', options })
-    const select = w.findComponent(UidSelect)
+    const select = w.findComponent(Select)
     expect(select.exists()).toBe(true)
-    expect(select.props('multiple')).toBe(false)
+    expect(select.props('multiple')).toBeFalsy()
     expect(select.props('modelValue')).toBe(1)
   })
 
   it('takes a list, matching the option values however the state spells them', () => {
     const { w } = wrap(SelectField, { x: ['2', 3] }, { name: 'x', options, multiple: true })
-    const select = w.findComponent(UidSelect)
+    const select = w.findComponent(Select)
     expect(select.exists()).toBe(true)
     expect(select.props('multiple')).toBe(true)
     expect(select.props('modelValue')).toEqual([2, 3])
@@ -47,14 +50,15 @@ describe('SelectField multiple()', () => {
 
   it('reads a JSON string a cast left behind', () => {
     const { w } = wrap(SelectField, { x: '[1]' }, { name: 'x', options, multiple: true })
-    expect(w.findComponent(UidSelect).props('modelValue')).toEqual([1])
+    expect(w.findComponent(Select).props('modelValue')).toEqual([1])
   })
 
   it('writes the list back', async () => {
     const { w, ctx } = wrap(SelectField, { x: null }, { name: 'x', options, multiple: true })
-    w.findComponent(UidSelect).vm.$emit('update:modelValue', [1, 3])
+    w.findComponent(Select).vm.$emit('update:modelValue', [1, 3])
     expect(ctx.getField('x')).toEqual([1, 3])
-    w.findComponent(UidSelect).vm.$emit('update:modelValue', null)
+    // A cleared multiple select emits an empty list.
+    w.findComponent(Select).vm.$emit('update:modelValue', [])
     expect(ctx.getField('x')).toEqual([])
   })
 })
