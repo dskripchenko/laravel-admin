@@ -47,9 +47,13 @@ const errorMsg = computed<string | undefined>(
 )
 const isLocked = computed<boolean>(() => props.disabled || props.readonly)
 
-function onUpdate(next: Range): void {
+// The picker emits null when it is cleared.
+function onUpdate(next: Range | null): void {
   if (props.readonly) return
-  form.setField(props.name, next.start === null && next.end === null ? null : { from: next.start, to: next.end })
+  form.setField(
+    props.name,
+    next === null || (next.start === null && next.end === null) ? null : { from: next.start, to: next.end },
+  )
 }
 
 const iso = (d: Date): string =>

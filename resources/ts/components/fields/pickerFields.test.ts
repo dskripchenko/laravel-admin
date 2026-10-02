@@ -225,6 +225,10 @@ describe('TimeField and DateRangeField', () => {
     expect(state.period).toEqual({ from: '2026-02-01', to: '2026-02-03' })
     p.vm.$emit('update:modelValue', { start: null, end: null })
     expect(state.period).toBeNull()
+    // The kit's clear button emits null rather than an empty range.
+    state.period = { from: '2026-02-01', to: '2026-02-03' }
+    p.vm.$emit('update:modelValue', null)
+    expect(state.period).toBeNull()
 
     expect(w.findAll('[data-preset]')).toHaveLength(1)
     await w.find('[data-preset="today"]').trigger('click')
