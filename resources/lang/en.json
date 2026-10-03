@@ -522,5 +522,13 @@
     "В этом разделе пока нет записей.": "No :plural yet.",
     "Запись восстановлена.": "Record restored.",
     "Удалить запись НАВСЕГДА? Действие необратимо.": "Delete the record FOREVER? This cannot be undone.",
-    "Запись удалена навсегда.": "The record has been deleted permanently."
+    "Запись удалена навсегда.": "The record has been deleted permanently.",
+    "Удаление": "Delete",
+    "Удаление навсегда": "Delete forever",
+    "Несохранённые изменения": "Unsaved changes",
+    "Уйти без сохранения": "Leave without saving",
+    "Сброс раскладки": "Reset the layout",
+    "Отзыв токена": "Revoke the token",
+    "Отключение 2FA": "Turn off 2FA",
+    "Отключить": "Turn off"
 }

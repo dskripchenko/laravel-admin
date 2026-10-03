@@ -67,7 +67,7 @@ async function create(): Promise<void> {
 }
 
 async function revoke(id: number): Promise<void> {
-  if (!(await confirmDialog({ message: tr('Отозвать токен? Запросы с ним перестанут работать.'), destructive: true }))) return
+  if (!(await confirmDialog({ title: tr('Отзыв токена'), confirmLabel: tr('Отозвать'), message: tr('Отозвать токен? Запросы с ним перестанут работать.'), destructive: true }))) return
   try {
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()

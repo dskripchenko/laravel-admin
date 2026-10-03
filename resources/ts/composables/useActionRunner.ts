@@ -486,7 +486,13 @@ export function useActionRunner(executor: ActionExecutor) {
       return false
     }
 
-    if (action.confirm && !(await confirm(action.confirm, action.destructive))) return false
+    if (action.confirm) {
+      // Without its own wording the question is titled and answered with the
+      // action's name ("Cancel order"), not a bare "Confirmation"/"Confirm".
+      const c = typeof action.confirm === 'string' ? { message: action.confirm } : action.confirm
+      const asked = { ...c, title: c.title ?? action.label, confirmLabel: c.confirmLabel ?? action.label }
+      if (!(await confirm(asked, action.destructive))) return false
+    }
 
     if (action.type === 'link') {
       openLink(action)

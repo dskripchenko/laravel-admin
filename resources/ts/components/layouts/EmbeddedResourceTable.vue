@@ -42,7 +42,7 @@ import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
 import { apiErrorMessage } from '../../api/errors'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
-import { confirmDialog } from '../../composables/useConfirm'
+import { confirmDialog, deleteWording } from '../../composables/useConfirm'
 
 interface Features {
   create?: boolean
@@ -196,7 +196,7 @@ function onSelectionUpdate(next: Set<string | number>): void {
 
 async function deleteRow(row: Record<string, unknown>): Promise<void> {
   const id = rowId(row)
-  if (!(await confirmDialog({ message: tr('Удалить строку?'), destructive: true }))) return
+  if (!(await confirmDialog({ ...deleteWording(), message: tr('Удалить строку?') }))) return
   try {
     await getAdminClient().post(`/${props.resource}/delete`, { id })
     items.value = items.value.filter((r) => rowId(r) !== id)
@@ -210,7 +210,7 @@ async function deleteRow(row: Record<string, unknown>): Promise<void> {
 
 async function bulkDelete(): Promise<void> {
   if (selection.value.size === 0) return
-  if (!(await confirmDialog({ message: tRaw('Удалить :count строк?', { count: selection.value.size }), destructive: true }))) return
+  if (!(await confirmDialog({ ...deleteWording(), message: tRaw('Удалить :count строк?', { count: selection.value.size }) }))) return
   const ids = [...selection.value]
   // There is no bulk endpoint: one /delete per id, one after another, as on
   // the list page. A row that failed stays selected.

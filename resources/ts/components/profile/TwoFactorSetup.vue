@@ -96,7 +96,7 @@ async function disable(): Promise<void> {
     error.value = tr('Введите текущий пароль.')
     return
   }
-  if (!(await confirmDialog({ message: tr('Отключить 2FA? Аккаунт станет менее защищённым.'), destructive: true }))) return
+  if (!(await confirmDialog({ title: tr('Отключение 2FA'), confirmLabel: tr('Отключить'), message: tr('Отключить 2FA? Аккаунт станет менее защищённым.'), destructive: true }))) return
   busy.value = true
   error.value = ''
   try {
