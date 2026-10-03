@@ -393,7 +393,7 @@ function onCancelEdit(): void {
 }
 async function onResetLayout(): Promise<void> {
   // Reset to the dashboard's default layout: the persisted record is deleted.
-  if (!(await confirmDialog({ message: t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'), destructive: true }))) return
+  if (!(await confirmDialog({ title: tr('Сброс раскладки'), confirmLabel: tr('Сбросить'), message: t('admin.dashboard.reset_confirm', 'Сбросить layout к настройкам по умолчанию?'), destructive: true }))) return
   await dashboardStore.resetToDefault().catch(() => undefined)
 }
 async function onSaveLayout(): Promise<void> {

@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **Confirmation dialogs say what they do.** A delete question is titled
+  "Delete" and answered with "Delete" (a permanent one with "Delete
+  forever") instead of the generic "Confirmation" / "Confirm" — on the
+  list, record, form, tree and embedded tables. An action's confirmation is
+  titled and answered with the action's name unless it sets its own wording,
+  and the dashboard reset, token revoke, 2FA turn-off and unsaved-changes
+  questions get their own title and button too.
+
 ## 1.46.0
 
 ### Added

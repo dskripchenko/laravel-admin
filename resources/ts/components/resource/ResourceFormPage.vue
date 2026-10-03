@@ -35,7 +35,7 @@ import RowsLayout from '../layouts/RowsLayout.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
-import { confirmDialog } from '../../composables/useConfirm'
+import { confirmDialog, deleteWording } from '../../composables/useConfirm'
 
 interface Props {
   /** The resource slug: articles, users and so on. */
@@ -276,7 +276,7 @@ const resolvedIndexRouteName = computed<string>(() => {
 
 async function onDelete(): Promise<void> {
   const message = deleteConfirmText(resourceMeta.value, props.slug, recordTitle.value)
-  if (!(await confirmDialog({ message, destructive: true }))) return
+  if (!(await confirmDialog({ ...deleteWording(), message }))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
     adminToast.success(deletedToast(resourceMeta.value, props.slug))
@@ -285,7 +285,7 @@ async function onDelete(): Promise<void> {
 }
 
 async function onCancel(): Promise<void> {
-  if (form.isDirty && !(await confirmDialog(tr('Несохранённые изменения будут потеряны. Продолжить?')))) {
+  if (form.isDirty && !(await confirmDialog({ title: tr('Несохранённые изменения'), message: tr('Несохранённые изменения будут потеряны. Продолжить?'), confirmLabel: tr('Уйти без сохранения'), destructive: true }))) {
     return
   }
   void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)

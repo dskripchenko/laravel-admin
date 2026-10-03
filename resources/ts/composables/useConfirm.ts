@@ -55,6 +55,16 @@ export function confirmDialog(opts: ConfirmOptions | string): Promise<boolean> {
   })
 }
 
+/** The title and button of a delete question: "Delete" rather than a bare "Confirm". */
+export function deleteWording(): { title: string; confirmLabel: string; destructive: true } {
+  return { title: tr('Удаление'), confirmLabel: tr('Удалить'), destructive: true }
+}
+
+/** The title and button of a permanent delete. */
+export function forceDeleteWording(): { title: string; confirmLabel: string; destructive: true } {
+  return { title: tr('Удаление навсегда'), confirmLabel: tr('Удалить навсегда'), destructive: true }
+}
+
 /** Answers the open question (the dialog's buttons, its cross, Escape). */
 export function resolveConfirmDialog(ok: boolean): void {
   confirmState.open = false

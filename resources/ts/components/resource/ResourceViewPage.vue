@@ -40,6 +40,7 @@ import { adminToast } from '../../stores/toast'
 import { actionErrorMessage, normalizeActions, useActionRunner, type AdminAction } from '../../composables/useActionRunner'
 import AdminActionDialogs from '../actions/AdminActionDialogs.vue'
 import AdminActionMenuItems from '../actions/AdminActionMenuItems.vue'
+import { deleteWording } from '../../composables/useConfirm'
 
 interface Props {
   slug: string
@@ -262,7 +263,7 @@ function onEdit(): void {
 }
 
 async function onDelete(): Promise<void> {
-  if (!(await runner.confirm(deleteConfirmText(resourceMeta.value, props.slug, ownTitle.value), true))) return
+  if (!(await runner.confirm({ ...deleteWording(), message: deleteConfirmText(resourceMeta.value, props.slug, ownTitle.value) }, true))) return
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
     adminToast.success(deletedToast(resourceMeta.value, props.slug))

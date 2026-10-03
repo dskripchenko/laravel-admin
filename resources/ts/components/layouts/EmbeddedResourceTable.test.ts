@@ -12,6 +12,7 @@ import { confirmDialog } from '../../composables/useConfirm'
 
 vi.mock('../../composables/useConfirm', () => ({
   confirmDialog: vi.fn(async () => true),
+  deleteWording: () => ({ title: 'Удаление', confirmLabel: 'Удалить', destructive: true }),
 }))
 
 function seed(): void {
@@ -184,6 +185,7 @@ describe('EmbeddedResourceTable on the UidTable API', () => {
     await w.find('[data-testid="embedded-bulk-delete"]').trigger('click')
     await flushPromises()
     expect(confirmDialog).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(confirmDialog).mock.calls[0]![0]).toMatchObject({ confirmLabel: 'Удалить', destructive: true })
     const deleted = mock.history.post.filter((r) => r.url === '/items/delete').map((r) => JSON.parse(r.data).id)
     expect(deleted.sort()).toEqual([1, 3])
     expect(bodyRows(w)).toHaveLength(1)

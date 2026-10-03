@@ -55,6 +55,7 @@ import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
 import { applyPositions, buildReorderPayload, canDragReorder, type ReorderResponse } from './reorder'
 import { adminToast } from '../../stores/toast'
+import { deleteWording, forceDeleteWording } from '../../composables/useConfirm'
 import { formatLocale, useI18nStore } from '../../stores/i18n'
 import {
   needsSelection,
@@ -229,7 +230,7 @@ const bulkDeleting = ref(false)
 async function onBulkDelete(): Promise<void> {
   const ids = [...index.selection]
   if (ids.length === 0) return
-  if (!(await runner.confirm(tRaw('Удалить выбранные записи (:count)?', { count: ids.length }), true))) return
+  if (!(await runner.confirm({ ...deleteWording(), message: tRaw('Удалить выбранные записи (:count)?', { count: ids.length }) }, true))) return
   bulkDeleting.value = true
   try {
     const { getAdminClient } = await import('../../stores/registry')
@@ -698,7 +699,7 @@ async function onResetView(): Promise<void> {
 async function onDeleteView(view: SavedViewItem, e?: MouseEvent): Promise<void> {
   e?.stopPropagation()
   if (!view.owned) return
-  if (!(await runner.confirm(tRaw('Удалить представление «:name»?', { name: view.name }), true))) return
+  if (!(await runner.confirm({ ...deleteWording(), message: tRaw('Удалить представление «:name»?', { name: view.name }) }, true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
@@ -964,7 +965,7 @@ async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<v
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!(await runner.confirm(tt('admin.resource.delete_confirm', deleteConfirmText(resourceMeta.value, props.slug), nounParams(resourceMeta.value, props.slug)), true))) return
+  if (!(await runner.confirm({ ...deleteWording(), message: tt('admin.resource.delete_confirm', deleteConfirmText(resourceMeta.value, props.slug), nounParams(resourceMeta.value, props.slug)) }, true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
@@ -1111,7 +1112,7 @@ async function onForceDelete(row: Record<string, unknown>, e?: MouseEvent): Prom
   e?.stopPropagation()
   const id = rowId(row)
   if (id === null) return
-  if (!(await runner.confirm(tt('admin.resource.force_delete_confirm', tr('Удалить запись НАВСЕГДА? Действие необратимо.'), nounParams(resourceMeta.value, props.slug)), true))) return
+  if (!(await runner.confirm({ ...forceDeleteWording(), message: tt('admin.resource.force_delete_confirm', tr('Удалить запись НАВСЕГДА? Действие необратимо.'), nounParams(resourceMeta.value, props.slug)) }, true))) return
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
