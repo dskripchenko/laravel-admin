@@ -60,6 +60,22 @@ final class ContentDashboardScreen extends DashboardScreen
 | `HeatmapWidget` | `heatmap` | 矩阵 `rows × cols × value`（例如按小时统计的活跃度）。 |
 | `GaugeWidget` | `gauge` | 带阈值的 0..max 单个数值。 |
 
+## 值的格式化
+
+`RecentListWidget` 的列接受 `TableColumn`，格式化方式与资源列表完全相同：
+`format()`、`asMoney()`、带 PHP 格式的 `asDate()`/`asDateTime()`、带标签的
+`asBadge()`、`asLink()`、`align()`，由同一个单元格渲染器按面板语言环境绘制：
+
+```php
+RecentListWidget::make()
+    ->model(Order::class)
+    ->column('number', 'Number')
+    ->column(TableColumn::make('total')->label('Total')->asMoney('USD')->align('right'));
+```
+
+图表可通过 `ChartWidget::money('USD')` 将数值显示为金额，或通过 `precision(2)`
+固定小数位数。
+
 ## 尺寸
 
 每个小部件都有 `size()`（1..12 列，默认 6）和可选的

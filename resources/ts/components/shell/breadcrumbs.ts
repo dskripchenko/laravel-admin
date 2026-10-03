@@ -16,6 +16,7 @@ import { useManifestStore } from '../../stores/manifest'
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { trSafe as tr } from '../../stores/i18n'
 import { findMenuTrail, menuMatchScore, useActiveMenuTrail, type RouteLike } from './menuTrail'
+import { recordTitleOf, singularOf } from '../resource/resourceNoun'
 
 export interface Crumb {
   label: string
@@ -31,13 +32,14 @@ function itemTarget(item: MenuItem): RouteLocationRaw | null {
   return null
 }
 
-function recordLabel(record: Record<string, unknown>, id: string): string {
-  for (const key of ['title', 'name', 'label']) {
-    const v = record[key]
-    if (typeof v === 'string' && v.trim() !== '') return v
-    if (typeof v === 'number') return String(v)
-  }
-  return `#${id}`
+/**
+ * A record's crumb: its title, name or label; without one "Author #12" when
+ * the resource names its records (Resource::singularLabel()), else "#12".
+ */
+function recordLabel(record: Record<string, unknown>, id: string, singular: string | null): string {
+  const own = recordTitleOf(record)
+  if (own !== null) return own
+  return singular !== null ? `${singular.charAt(0).toUpperCase()}${singular.slice(1)} #${id}` : `#${id}`
 }
 
 export function useBreadcrumbs(): ComputedRef<Crumb[]> {
@@ -77,6 +79,7 @@ export function useBreadcrumbs(): ComputedRef<Crumb[]> {
       }
 
       const id = typeof r.params.id === 'string' ? r.params.id : ''
+      const singular = singularOf(manifest.getResource(slug))
       const sameRecord = form.slug === slug && String(form.recordId ?? '') === id
       // Resource::recordTitle() first, then the record's own title, name or label.
       const record: Record<string, unknown> = sameRecord
@@ -85,10 +88,10 @@ export function useBreadcrumbs(): ComputedRef<Crumb[]> {
       if (name.endsWith('.create')) {
         crumbs.push({ label: tr('Создание') })
       } else if (name.endsWith('.view') && id !== '') {
-        crumbs.push({ label: recordLabel(record, id) })
+        crumbs.push({ label: recordLabel(record, id, singular) })
       } else if (name.endsWith('.edit') && id !== '') {
         crumbs.push({
-          label: recordLabel(record, id),
+          label: recordLabel(record, id, singular),
           to: { name: `admin.resource.${slug}.view`, params: { id } },
         })
         crumbs.push({ label: tr('Редактирование') })

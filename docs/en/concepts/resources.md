@@ -44,7 +44,29 @@ public static ?string $group = 'Catalog';      // sidebar section
 
 public static function slug(): string { return 'articles'; }    // URL = /admin/r/articles
 public static function label(): string { return 'Articles'; }   // sidebar label
+public static function singularLabel(): ?string { return 'article'; } // one record
 ```
+
+`singularLabel()` names one record, written as it reads mid-sentence. The panel
+uses it wherever the plural label would read wrong: the create and edit page
+titles ("Create article", "Edit article: Hello world"), the record crumb, the
+Create button's tooltip, delete confirmations ("Delete this article?"), toasts
+("Article created.") and empty states ("No articles yet. Create the first
+article."). It reaches the SPA as `singular_label` in the manifest and is
+translated per request through the JSON translations, like `label()`.
+
+The default needs no configuration. An English label is singularized with
+`Str::singular()` ("Blog Posts" → "blog post"; an all-caps word such as "API"
+keeps its case). A label in another script gets `null`: Russian has no reliable
+automatic singular, so the panel uses wording that needs none, for example
+"Новая запись: Статьи" for the create page and "Редактирование: <record title>"
+for the edit page. A singular that stays untranslated while `label()` is
+translated is dropped too, so a Russian panel never reads "Создать: article".
+
+The Russian source strings keep the singular in the nominative ("Создать:
+статья") and leave it out where Russian would need another case, such as
+"Удалить эту запись?". A translation may use `:singular`, `:Singular`, `:label`
+and `:plural` even when the source does not; the English one does.
 
 ## Fields
 

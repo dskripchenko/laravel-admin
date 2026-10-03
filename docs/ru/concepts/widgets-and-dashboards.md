@@ -63,6 +63,28 @@ final class ContentDashboardScreen extends DashboardScreen
 | `HeatmapWidget` | `heatmap` | Матрица `rows × cols × value`. |
 | `GaugeWidget` | `gauge` | Одно значение 0..max с зонами. |
 
+## Форматирование значений
+
+Колонки `RecentListWidget` принимают `TableColumn` и форматируются так же, как
+в списке ресурса: `format()`, `asMoney()`, `asDate()`/`asDateTime()` с
+PHP-форматом, `asBadge()` с подписями, `asLink()`, `align()`. SPA рисует их
+тем же рендерером ячеек, в локали панели. Имя с подписью по-прежнему работает:
+
+```php
+RecentListWidget::make()
+    ->model(Order::class)
+    ->column('number', 'Номер')
+    ->column(TableColumn::make('total')->label('Сумма')->asMoney('RUB')->align('right'))
+    ->column(TableColumn::make('status')->asBadge(['paid' => ['label' => 'Оплачен', 'tone' => 'success']]))
+    ->column(TableColumn::make('created_at')->label('Создан')->asDateTime('d.m.Y H:i'))
+    ->linkTo('orders');
+```
+
+`TableWidget::columns()` принимает те же `TableColumn`. График показывает
+значения (тултипы, таблица данных, ось) деньгами через
+`ChartWidget::money('RUB')` или с фиксированным числом знаков через
+`precision(2)`; сами наборы данных остаются числами.
+
 ## Размеры
 
 Каждый widget имеет `size()` (1..12 cols, default 6) и опциональный

@@ -26,6 +26,13 @@ export interface ManifestNode extends Record<string, unknown> {
 export interface ManifestResourceMeta {
   slug: string
   label: string
+  /**
+   * The name of one record as it reads mid-sentence ("author"), for the
+   * panel's titles, confirmations and toasts; null when the resource has none
+   * in this locale. Older backends do not send it. See
+   * Resource::singularLabel().
+   */
+  singular_label?: string | null
   icon?: string
   group?: string | null
   /**

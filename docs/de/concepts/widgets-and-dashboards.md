@@ -64,6 +64,24 @@ Registrierung: `Admin::screen([ContentDashboardScreen::class])`. URL:
 | `HeatmapWidget` | `heatmap` | Matrix `rows × cols × value` (z. B. Aktivität nach Stunde). |
 | `GaugeWidget` | `gauge` | Einzelner Wert 0..max mit Schwellenwerten. |
 
+## Werte formatieren
+
+Spalten von `RecentListWidget` nehmen eine `TableColumn` an und werden wie in
+einer Ressourcenliste formatiert: `format()`, `asMoney()`,
+`asDate()`/`asDateTime()` mit PHP-Formaten, `asBadge()` mit Beschriftungen,
+`asLink()`, `align()` — gezeichnet vom selben Zellen-Renderer, in der Sprache des
+Panels:
+
+```php
+RecentListWidget::make()
+    ->model(Order::class)
+    ->column('number', 'Nummer')
+    ->column(TableColumn::make('total')->label('Summe')->asMoney('EUR')->align('right'));
+```
+
+Ein Diagramm zeigt seine Werte mit `ChartWidget::money('EUR')` als Geldbeträge
+oder mit `precision(2)` mit festen Nachkommastellen.
+
 ## Größen
 
 Jedes Widget hat `size()` (1..12 Spalten, Standard 6) und optional

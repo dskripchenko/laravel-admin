@@ -24,7 +24,15 @@ final class GeneratedEditScreen extends GeneratedScreen
 
     public function name(): string
     {
-        return __('admin::admin.common.edit').': '.\Dskripchenko\LaravelAdmin\I18n\Localize::string($this->resource::label());
+        // The record is not loaded yet when the name is asked for: "Edit
+        // author" with a singular, "Edit record: Authors" without.
+        $singular = $this->resource::localizedSingularLabel();
+
+        return $singular !== null
+            ? (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string('Редактирование: :singular', ['singular' => $singular])
+            : (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string('Редактирование записи: :label', [
+                'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->resource::label()),
+            ]);
     }
 
     /**
@@ -64,7 +72,12 @@ final class GeneratedEditScreen extends GeneratedScreen
                 ->withName('delete')
                 ->method('delete')
                 ->permission($base.'.delete')
-                ->confirm('Удалить запись?'),
+                // "Delete this author?" in English; the Russian source needs
+                // no noun, so it reads right without the accusative.
+                ->confirm((string) \Dskripchenko\LaravelAdmin\I18n\Localize::string('Удалить эту запись?', [
+                    'singular' => $this->resource::localizedSingularLabel()
+                        ?? (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string('запись'),
+                ])),
             $this->buildBackLink(),
         ];
     }

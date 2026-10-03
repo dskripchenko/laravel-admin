@@ -106,6 +106,65 @@ abstract class Resource
         return Str::headline(Str::pluralStudly($base));
     }
 
+    /**
+     * The name of ONE record, written as it reads mid-sentence: "author",
+     * "API key". The panel puts it into its titles, confirmations and
+     * toasts — "Create author", "Delete author “Ivan Petrov”?" — where the
+     * plural label() would read wrong.
+     *
+     * By default it is derived from an English label() through Str::singular()
+     * ("Blog Posts" → "blog post"; all-caps words such as "API" are kept). For
+     * a label in another script there is no reliable rule, so the default is
+     * null, and the panel then words those phrases without the noun ("New
+     * record: Authors"). Override it to name the record yourself; the value is
+     * translated like label(), through the JSON translations.
+     */
+    public static function singularLabel(): ?string
+    {
+        $label = trim(static::label());
+        // Str::singular() only knows English: anything outside printable ASCII
+        // (Cyrillic, accented letters…) gets no automatic singular.
+        if ($label === '' || preg_match('/[^\x20-\x7E]/', $label) === 1) {
+            return null;
+        }
+
+        $words = explode(' ', Str::singular($label));
+
+        return implode(' ', array_map(
+            // An acronym ("API", "URL") keeps its case; any other word is
+            // lowered, so that the noun reads naturally inside a sentence.
+            static fn (string $word): string => $word !== '' && mb_strtoupper($word) === $word && mb_strlen($word) > 1
+                ? $word
+                : mb_strtolower($word),
+            $words,
+        ));
+    }
+
+    /**
+     * singularLabel() in the current locale, or null when it cannot be shown
+     * in it: a singular that stays untranslated while label() IS translated
+     * belongs to another language ("author" on a Russian panel whose
+     * "Authors" got translated), and a phrase without the noun reads better
+     * than a phrase in two languages.
+     */
+    public static function localizedSingularLabel(): ?string
+    {
+        $singular = static::singularLabel();
+        if ($singular === null || trim($singular) === '') {
+            return null;
+        }
+
+        $localized = \Dskripchenko\LaravelAdmin\I18n\Localize::string($singular);
+        if ($localized === $singular) {
+            $label = static::label();
+            if (\Dskripchenko\LaravelAdmin\I18n\Localize::string($label) !== $label) {
+                return null;
+            }
+        }
+
+        return $localized;
+    }
+
     /* -----------------------------------------------------------------
      * Declaration (for subclasses)
      * ----------------------------------------------------------------- */
@@ -423,6 +482,9 @@ abstract class Resource
         return [
             'slug' => static::slug(),
             'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string(static::label()),
+            // One record's name for the panel's phrases; null when there is
+            // none in this locale (see singularLabel()).
+            'singular_label' => static::localizedSingularLabel(),
             'icon' => static::$icon,
             'group' => \Dskripchenko\LaravelAdmin\I18n\Localize::string(static::$group),
             // The model's Eloquent morph class — the frontend needs it for

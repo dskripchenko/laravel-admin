@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ChartWidget from './ChartWidget.vue'
 import BarChartWidget from './BarChartWidget.vue'
@@ -157,5 +157,28 @@ describe('chartGeometry', () => {
     const s = toSeries([{ label: 'x', data: [1, 'oops', '2.5', null] }])
     expect(s[0].data).toEqual([1, null, 2.5, null])
     expect(resolveLabels(['a'], s)).toEqual(['a', '2', '3', '4'])
+  })
+})
+
+describe('chart values (ChartWidget::money / precision)', () => {
+  afterEach(() => {
+    document.documentElement.lang = ''
+  })
+
+  it('reads as money in the panel locale', async () => {
+    const { formatValue, formatTick } = await import('./chartGeometry')
+    document.documentElement.lang = 'en'
+    const money = { style: 'currency', currency: 'USD', decimals: 0 }
+    expect(formatValue(1591285, money)).toBe('$1,591,285')
+    expect(formatTick(1591285, money)).toBe('$1.6M')
+    document.documentElement.lang = 'ru'
+    expect(formatValue(1591285, money).replace(/\s/g, ' ')).toBe('1 591 285 $')
+  })
+
+  it('keeps fixed decimals and the plain default', async () => {
+    const { formatValue } = await import('./chartGeometry')
+    document.documentElement.lang = 'en'
+    expect(formatValue(12.5, { style: 'decimal', decimals: 2 })).toBe('12.50')
+    expect(formatValue(1591285)).toBe('1,591,285')
   })
 })

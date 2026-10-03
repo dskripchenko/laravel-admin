@@ -155,7 +155,7 @@ describe('ResourceIndexPage — row clicks', () => {
     const w = mountPage()
     await flushPromises()
     const empty = w.find('[data-testid="resource-empty"]')
-    expect(empty.text()).toContain('Создайте первую запись.')
+    expect(empty.text()).toContain('Пока нет ни одной записи — создайте первую.')
     expect(empty.find('button').exists()).toBe(true)
     w.unmount()
   })

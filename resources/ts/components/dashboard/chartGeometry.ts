@@ -134,14 +134,54 @@ export function niceScale(min: number, max: number, count = 4): NiceScale {
   return { min: lo, max: hi, ticks }
 }
 
-/** An axis tick: compact (1.2K, 3M), in the panel's locale. */
-export function formatTick(v: number): string {
+/**
+ * How a chart shows its values (ChartWidget::money() / precision()): money in
+ * a currency, or a number with fixed decimals. Absent — a plain number.
+ */
+export interface ChartValueFormat {
+  style?: 'currency' | 'decimal' | string
+  currency?: string
+  decimals?: number
+}
+
+function currencyOptions(format: ChartValueFormat | null | undefined): Intl.NumberFormatOptions | null {
+  if (format?.style !== 'currency' || !format.currency || !/^[A-Za-z]{3}$/.test(format.currency)) return null
+  return { style: 'currency', currency: format.currency.toUpperCase() }
+}
+
+/** An axis tick: compact (1.2K, 3M — $1.2K with money), in the panel's locale. */
+export function formatTick(v: number, format?: ChartValueFormat | null): string {
+  const money = currencyOptions(format)
+  if (money) {
+    try {
+      return formatNumber(v, { ...money, notation: 'compact', maximumFractionDigits: 1 })
+    } catch {
+      // An engine without compact currency: the plain compact number.
+    }
+  }
   return formatNumber(v, { notation: 'compact', maximumFractionDigits: 1 })
 }
 
-/** A value in a tooltip or the data table: full, with grouping, in the panel's locale. */
-export function formatValue(v: number | null): string {
-  return v === null ? '—' : formatNumber(v, { maximumFractionDigits: 2 })
+/**
+ * A value in a tooltip or the data table: full, with grouping, in the panel's
+ * locale — as money when the chart says so.
+ */
+export function formatValue(v: number | null, format?: ChartValueFormat | null): string {
+  if (v === null) return '—'
+  const decimals = typeof format?.decimals === 'number' ? format.decimals : null
+  const digits: Intl.NumberFormatOptions = decimals === null
+    ? { maximumFractionDigits: 2 }
+    : { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+  const money = currencyOptions(format)
+  if (money) {
+    try {
+      return formatNumber(v, { ...money, ...digits })
+    } catch {
+      // An unknown currency: the number with the code after it.
+    }
+  }
+  const plain = formatNumber(v, digits)
+  return format?.style === 'currency' && format.currency ? `${plain} ${format.currency}` : plain
 }
 
 /** A rough text width in px for the axis font — enough to keep labels apart. */

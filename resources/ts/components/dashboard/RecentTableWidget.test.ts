@@ -41,4 +41,25 @@ describe('RecentTableWidget', () => {
     expect(wrapper.text()).toContain('7')
     expect(wrapper.text()).toContain('done')
   })
+
+  it('formats a column by its TableColumn preset, as a resource list does', () => {
+    document.documentElement.lang = 'en'
+    const wrapper = mount(RecentTableWidget, {
+      props: {
+        columns: [
+          { column: 'total', name: 'total', label: 'Total', preset: 'money', meta: { currency: 'USD', decimals: 2 }, align: 'right' },
+          { column: 'status', name: 'status', label: 'Status', preset: 'badge', meta: { colors: { paid: 'success' }, labels: { paid: 'Paid' } } },
+          { column: 'placed', name: 'placed', label: 'Placed', preset: 'date', meta: { format: 'd.m.Y' } },
+        ],
+        rows: [{ id: 1, total: 15912.85, status: 'paid', placed: '2026-08-05' }],
+      },
+      global: { mocks: { $route: {} }, stubs: { RouterLink: true } },
+    })
+    document.documentElement.lang = ''
+
+    expect(wrapper.text()).toContain('$15,912.85')
+    expect(wrapper.text()).not.toContain('15912.85')
+    expect(wrapper.text()).toContain('Paid')
+    expect(wrapper.text()).toContain('05.08.2026')
+  })
 })

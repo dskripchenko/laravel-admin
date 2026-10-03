@@ -28,6 +28,9 @@ class ChartWidget extends Widget
 
     private bool $stacked = false;
 
+    /** @var array{style: string, currency?: string, decimals: int}|null */
+    private ?array $format = null;
+
     public function widgetType(): string
     {
         return 'chart';
@@ -78,6 +81,34 @@ class ChartWidget extends Widget
     }
 
     /**
+     * Shows the values — tooltips, the data table, the axis ticks — as money
+     * in that currency (an ISO 4217 code), formatted by the panel's locale:
+     * `$1,591,285` in English, `1 591 285 $` in Russian. The datasets keep
+     * the raw numbers.
+     */
+    public function money(string $currency = 'USD', int $decimals = 0): static
+    {
+        $this->format = [
+            'style' => 'currency',
+            'currency' => strtoupper($currency),
+            'decimals' => max(0, $decimals),
+        ];
+
+        return $this;
+    }
+
+    /**
+     * The decimals the values are shown with; they are formatted by the
+     * panel's locale either way.
+     */
+    public function precision(int $decimals): static
+    {
+        $this->format = ['style' => 'decimal', 'decimals' => max(0, $decimals)];
+
+        return $this;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function data(): array
@@ -96,6 +127,9 @@ class ChartWidget extends Widget
                 return $dataset;
             }, $this->datasets),
             'stacked' => $this->stacked,
+            // How the SPA shows a value; null — a plain number in the
+            // panel's locale.
+            'format' => $this->format,
         ];
     }
 }

@@ -98,10 +98,11 @@ it('RecentListWidget loads rows from Eloquent', function (): void {
     $data = $w->data();
     expect($data['rows'])->toHaveCount(2);
     expect($data['rows'][0]['name'])->toBe('New');
-    expect($data['columns'])->toBe([
-        // The labels are translated per request; the panel locale here is en.
-        ['column' => 'name', 'label' => 'Name'],
-        ['column' => 'email', 'label' => 'email'],
+    // The labels are translated per request; the panel locale here is en.
+    // Each column is a TableColumn::toArray() plus the older `column` key.
+    expect(array_map(static fn (array $c): array => [$c['column'], $c['name'], $c['label'], $c['type']], $data['columns']))->toBe([
+        ['name', 'name', 'Name', 'text'],
+        ['email', 'email', 'email', 'text'],
     ]);
     expect($data['linkTo'])->toBe('users');
 });

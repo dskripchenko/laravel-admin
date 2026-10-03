@@ -39,6 +39,7 @@ import { getAdminClient } from '../../stores/registry'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
 import { confirmDialog } from '../../composables/useConfirm'
+import { createTooltip, deletedToast, emptyDescription } from './resourceNoun'
 
 interface Props {
   slug: string
@@ -242,7 +243,7 @@ async function deleteSelected(): Promise<void> {
     const client = getAdminClient()
     await client.post(`/${selectedSlug.value}/delete`, { id: selectedRecordId.value })
     selectedKeys.value = []
-    adminToast.success(tr('Запись удалена.'))
+    adminToast.success(deletedToast(manifest.getResource(selectedSlug.value), selectedSlug.value))
     await load()
   } catch (err) {
     error.value = err instanceof Error ? err : new Error(String(err))
@@ -276,7 +277,7 @@ onMounted(load)
         </p>
       </div>
       <div class="admin-resource-tree-page__actions">
-        <UidButton v-if="canCreate" variant="primary" @click="gotoCreate">
+        <UidButton v-if="canCreate" variant="primary" :title="createTooltip(resourceMeta, slug)" @click="gotoCreate">
           <UidIcon :icon="Plus" /> {{ tr('Создать') }}
         </UidButton>
       </div>
@@ -354,7 +355,7 @@ onMounted(load)
       <UidEmptyState
         v-else-if="nodes.length === 0"
         :title="tr('Пока пусто')"
-        :description="tr('Здесь пока нет записей.')"
+        :description="emptyDescription(resourceMeta, slug, canCreate)"
       />
       <UidTreeView
         v-else

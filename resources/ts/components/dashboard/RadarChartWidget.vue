@@ -13,7 +13,7 @@ import ChartLegend from './ChartLegend.vue'
 import ChartTooltip from './ChartTooltip.vue'
 import { useChartSize } from './useChartSize'
 import './chart.css'
-import { formatTick, formatValue, isEmptySeries, niceScale, type ChartSeries } from './chartGeometry'
+import { formatTick, formatValue, isEmptySeries, niceScale, type ChartSeries, type ChartValueFormat } from './chartGeometry'
 
 interface Props {
   title?: string
@@ -21,12 +21,15 @@ interface Props {
   labels: string[]
   series: ChartSeries[]
   height?: number
+  /** ChartWidget::money() / precision(): how the values read. */
+  format?: ChartValueFormat | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
   description: '',
   height: 180,
+  format: null,
 })
 
 const box = ref<HTMLElement | null>(null)
@@ -65,7 +68,7 @@ const rings = computed(() =>
     .filter((t) => t > 0)
     .map((t) => ({
       value: t,
-      label: formatTick(t),
+      label: formatTick(t, props.format),
       d:
         props.labels.map((_, i) => {
           const p = point(i, t)
@@ -128,7 +131,7 @@ const tooltip = computed(() => {
     x: p.x,
     y: Math.max(0, p.y - 8),
     title: props.labels[i] ?? '',
-    rows: props.series.map((s) => ({ label: s.label, color: s.color, value: formatValue(s.data[i] ?? null) })),
+    rows: props.series.map((s) => ({ label: s.label, color: s.color, value: formatValue(s.data[i] ?? null, props.format) })),
   }
 })
 
@@ -227,7 +230,7 @@ const legend = computed(() => props.series.map((s) => ({ label: s.label, color: 
         <tbody>
           <tr v-for="(label, i) in labels" :key="i">
             <th scope="row">{{ label }}</th>
-            <td v-for="(s, si) in series" :key="si">{{ formatValue(s.data[i] ?? null) }}</td>
+            <td v-for="(s, si) in series" :key="si">{{ formatValue(s.data[i] ?? null, format) }}</td>
           </tr>
         </tbody>
       </table>

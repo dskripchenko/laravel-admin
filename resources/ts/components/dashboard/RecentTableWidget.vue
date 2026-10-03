@@ -2,19 +2,27 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
-import { formatCell } from '../resource/cellFormat'
+import AdminTableCell from '../resource/AdminTableCell.vue'
+import type { CellMeta } from '../resource/cellFormat'
 import { trSafe as tr } from '../../stores/i18n'
 
 /**
- * The backend's RecentListWidget::data() returns the columns as
- * `[{column, label}]` while UidTable expects `{key, label}`, so they are
- * converted here.
+ * The backend's RecentListWidget::data() sends each column as
+ * TableColumn::toArray() — {name, label, preset, meta, align} — plus the
+ * older `column` key; UidTable expects `{key, label}`, so they are converted
+ * here. The cells are drawn by the AdminTableCell a resource list uses, so
+ * asMoney(), asDate(), asBadge() and asLink() look the same on a dashboard.
+ * A column with no preset still gets its ISO dates formatted (formatCell).
  */
 interface BackendColumn {
   column?: string
+  name?: string
   key?: string
   label: string
   align?: 'left' | 'center' | 'right'
+  width?: string | null
+  preset?: string | null
+  meta?: CellMeta | null
 }
 
 interface Props {
@@ -42,32 +50,36 @@ function onRowClick(row: Record<string, unknown>): void {
   void router?.push(`/r/${props.linkTo}/${id}`)
 }
 
-const normalizedColumns = computed<UidTableColumn[]>(() =>
+interface CellColumn {
+  key: string
+  preset: string | null
+  meta: CellMeta | null
+}
+
+const cellColumns = computed<CellColumn[]>(() =>
   props.columns.map((c) => {
-    const key = (c as BackendColumn).column ?? (c as UidTableColumn).key
+    const b = c as BackendColumn
     return {
-      key: String(key ?? ''),
-      label: c.label,
-      align: c.align,
-    } as UidTableColumn
+      key: String(b.column ?? b.name ?? (c as UidTableColumn).key ?? ''),
+      preset: b.preset ?? null,
+      meta: b.meta ?? null,
+    }
   }),
 )
 
-/**
- * RecentListWidget sends no column presets, but formatCell recognizes an ISO
- * date by itself and renders it as `d.m.Y H:i:s`. Without this pass the widget
- * showed a raw `2026-08-05T03:03:44.000000Z`, while the resource's own list
- * draws the same date as `05.08.2026 03:03:44`.
- */
-const formattedRows = computed<Record<string, unknown>[]>(() =>
-  props.rows.map((row) => {
-    const out: Record<string, unknown> = { ...row }
-    for (const c of normalizedColumns.value) {
-      out[c.key] = formatCell(row[c.key], undefined, {})
-    }
-    return out
-  }),
+const normalizedColumns = computed<UidTableColumn[]>(() =>
+  props.columns.map((c, i) => ({
+    key: cellColumns.value[i]!.key,
+    label: c.label,
+    align: c.align,
+    width: (c as BackendColumn).width ?? undefined,
+  }) as UidTableColumn),
 )
+
+// The UidTable scoped slot passes {row}.
+function slotRow(slotProps: unknown): Record<string, unknown> {
+  return (slotProps as { row?: Record<string, unknown> } | undefined)?.row ?? {}
+}
 </script>
 
 <template>
@@ -77,11 +89,20 @@ const formattedRows = computed<Record<string, unknown>[]>(() =>
     </header>
     <UidTable
       :columns="normalizedColumns"
-      :data="formattedRows"
+      :data="rows"
       :empty-text="tr(emptyText)"
       :class="{ 'admin-widget__table--clickable': !!linkTo }"
       @row-click="onRowClick"
-    />
+    >
+      <template v-for="col in cellColumns" :key="col.key" #[col.key]="slotProps">
+        <AdminTableCell
+          :value="slotRow(slotProps)[col.key]"
+          :preset="col.preset"
+          :meta="col.meta"
+          :row="slotRow(slotProps)"
+        />
+      </template>
+    </UidTable>
   </UidCard>
 </template>
 

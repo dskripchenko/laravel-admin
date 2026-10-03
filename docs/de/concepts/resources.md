@@ -46,7 +46,19 @@ public static ?string $group = 'Katalog';      // Abschnitt der Seitenleiste
 
 public static function slug(): string { return 'articles'; }    // URL = /admin/r/articles
 public static function label(): string { return 'Artikel'; }   // Label in der Seitenleiste
+public static function singularLabel(): ?string { return 'Artikel'; } // ein Datensatz
 ```
+
+`singularLabel()` benennt einen einzelnen Datensatz, so wie er mitten im Satz
+steht. Das Panel verwendet ihn überall dort, wo das Plural-Label falsch klänge:
+Titel der Anlege- und Bearbeitungsseite, Breadcrumb des Datensatzes, Tooltip des
+Anlegen-Buttons, Löschbestätigungen, Toasts und leere Zustände. Er erreicht die
+SPA als `singular_label` im Manifest und wird pro Anfrage über die
+JSON-Übersetzungen übersetzt, wie `label()`. Standardmäßig wird ein englisches
+Label mit `Str::singular()` in den Singular gesetzt; ein Label in einer anderen
+Schrift ergibt `null`, und das Panel wählt dann eine Formulierung ohne Singular.
+Die Übersetzungen dürfen `:singular`, `:Singular`, `:label` und `:plural`
+verwenden, auch wenn der Quelltext sie nicht enthält.
 
 ## Felder
 

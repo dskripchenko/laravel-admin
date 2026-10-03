@@ -61,6 +61,27 @@ Register: `Admin::screen([ContentDashboardScreen::class])`. URL:
 | `HeatmapWidget` | `heatmap` | Matrix `rows × cols × value` (e.g. activity by hour). |
 | `GaugeWidget` | `gauge` | Single value 0..max with thresholds. |
 
+## Formatting values
+
+`RecentListWidget` columns take a `TableColumn`, so they format exactly like a
+resource list: `format()`, `asMoney()`, `asDate()`/`asDateTime()` with PHP
+formats, `asBadge()` with labels, `asLink()`, `align()`. The SPA draws them with
+the same cell renderer, in the panel's locale. A name and a label still work:
+
+```php
+RecentListWidget::make()
+    ->model(Order::class)
+    ->column('number', 'Number')
+    ->column(TableColumn::make('total')->label('Total')->asMoney('USD')->align('right'))
+    ->column(TableColumn::make('status')->asBadge(['paid' => ['label' => 'Paid', 'tone' => 'success']]))
+    ->column(TableColumn::make('created_at')->label('Placed')->asDateTime('d.m.Y H:i'))
+    ->linkTo('orders');
+```
+
+`TableWidget::columns()` takes the same `TableColumn`s. A chart shows its values
+(tooltips, the data table, the axis) as money with `ChartWidget::money('USD')`,
+or with fixed decimals with `precision(2)`; the datasets keep the raw numbers.
+
 ## Sizing
 
 Each widget has `size()` (1..12 cols, default 6) and optional
