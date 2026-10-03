@@ -24,13 +24,22 @@ describe('StatWidget', () => {
     expect(stats[0]!.text()).toContain('5')
   })
 
-  it('keeps the single-stat look for one stat', () => {
+  it('keeps one bare card for a stat labelled like the widget', () => {
     const wrapper = mount(StatWidget, {
-      props: { title: 'Revenue', stats: [{ label: 'Sum', value: 100 }] },
+      props: { title: 'Revenue', stats: [{ label: 'Revenue', value: 100 }] },
     })
     expect(wrapper.find('.admin-stats-widget').exists()).toBe(false)
     expect(wrapper.findAll('.uid-stat')).toHaveLength(1)
     expect(wrapper.find('.uid-stat__title').text()).toBe('Revenue')
+  })
+
+  it('puts a lone stat with a label of its own under the widget title', () => {
+    const wrapper = mount(StatWidget, {
+      props: { title: 'A single value', stats: [{ label: 'Customers', value: 400 }] },
+    })
+    expect(wrapper.find('.admin-stats-widget__title').text()).toBe('A single value')
+    expect(wrapper.findAll('.uid-stat')).toHaveLength(1)
+    expect(wrapper.find('.uid-stat__title').text()).toBe('Customers')
   })
 
   it('falls back to the scalar props without stats', () => {

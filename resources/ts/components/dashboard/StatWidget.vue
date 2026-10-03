@@ -149,10 +149,12 @@ const items = computed<ResolvedStat[]>(() => {
       formatter: undefined,
     }]
   }
-  const single = props.stats.length === 1
+  // A lone stat whose label is the widget's title (or that has none) is one
+  // card titled with it; one with a label of its own sits under the widget's
+  // title, like a set of cards does, so a row of stat widgets lines up.
+  const bare = props.stats.length === 1 && !hasOwnLabel.value
   return props.stats.map((s) => ({
-    // A single stat keeps the widget's title on its card, as before.
-    title: (single && props.title ? props.title : s.label) ?? '',
+    title: (bare && props.title ? props.title : s.label) ?? '',
     value: s.value ?? '',
     prefix: s.prefix ?? '',
     suffix: s.suffix ?? '',
@@ -165,6 +167,14 @@ const items = computed<ResolvedStat[]>(() => {
 })
 
 const multiple = computed(() => items.value.length > 1)
+/** A single stat labelled differently from the widget's title. */
+const hasOwnLabel = computed(() => {
+  if (props.stats.length !== 1 || !props.title) return false
+  const label = props.stats[0]!.label
+  return typeof label === 'string' && label !== '' && label !== props.title
+})
+/** Drawn as a titled section of cards rather than one bare card. */
+const sectioned = computed(() => multiple.value || hasOwnLabel.value)
 /** The panel's locale for the plain numbers and the trends, as for the money. */
 // Reactive to a locale switch where the store is there; the document's
 // language otherwise (a widget mounted on its own, a test).
@@ -179,7 +189,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
 
 <template>
   <UidStat
-    v-if="!multiple"
+    v-if="!sectioned"
     :title="items[0]!.title"
     :value="items[0]!.value"
     :prefix="items[0]!.prefix"
@@ -225,6 +235,10 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
   flex-direction: column;
   gap: var(--uid-space-sm);
   min-width: 0;
+  /* Fill the dashboard cell, so the cards of stat widgets in one row share
+     their height whatever each card holds. */
+  height: 100%;
+  box-sizing: border-box;
 }
 .admin-stats-widget__title {
   margin: 0;
@@ -238,6 +252,8 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
   box-sizing: border-box;
 }
 .admin-stats-widget__grid {
+  flex: 1;
+  grid-auto-rows: 1fr;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--uid-space-md);

@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **A lone stat with its own label sits under the widget title.** A stats
+  widget with one stat whose label differs from the widget's title (e.g.
+  title "This month", stat "Customers") is drawn like a set of cards — the
+  title above, the card with its own label below — so it lines up with the
+  stat widgets next to it instead of a taller card whose label was replaced
+  by the title. A stat labelled like the widget, or one without a label, is
+  still a single card.
+
 ## 1.46.1
 
 ### Changed
