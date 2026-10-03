@@ -77,6 +77,37 @@ it('HeatmapWidget stores axes/matrix/colorScale', function (): void {
     expect($data['colorScale'])->toBe('plasma');
 });
 
+it('HeatmapWidget sizes the matrix to the axes, keeping nulls as no data', function (): void {
+    $data = HeatmapWidget::make()
+        ->axes(['Mon', 'Tue'], ['May', 'Jun', 'Jul'])
+        ->matrix([[1, null, '2.5'], [4]])
+        ->data();
+
+    expect($data['matrix'])->toBe([[1, null, 2.5], [4, null, null]]);
+    expect($data['colorScale'])->toBe('default');
+    expect($data['format'])->toBeNull();
+    expect($data['min'])->toBeNull();
+    expect($data['max'])->toBeNull();
+});
+
+it('HeatmapWidget passes custom stops, the domain and the value format', function (): void {
+    $data = HeatmapWidget::make()
+        ->axes(['A'], ['x'])
+        ->matrix([[1]])
+        ->colorScale(['#fff', '#000'])
+        ->range(0, 10)
+        ->money('eur', 2)
+        ->data();
+
+    expect($data['colorScale'])->toBe(['#fff', '#000']);
+    expect($data['min'])->toBe(0.0);
+    expect($data['max'])->toBe(10.0);
+    expect($data['format'])->toBe(['style' => 'currency', 'currency' => 'EUR', 'decimals' => 2]);
+
+    expect(HeatmapWidget::make()->precision(1)->data()['format'])
+        ->toBe(['style' => 'decimal', 'decimals' => 1]);
+});
+
 it('GaugeWidget stores value/range/unit/thresholds', function (): void {
     $w = GaugeWidget::make()
         ->value(75)

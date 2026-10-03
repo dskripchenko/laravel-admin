@@ -5,6 +5,35 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **The heatmap widget draws the matrix it is given.** `HeatmapWidget` now
+  renders with the kit's `UidHeatmapMatrix` (@dskripchenko/ui 1.10): every
+  column is labelled (rotated and thinned when the labels do not fit) instead
+  of every third one, `colorScale()` is applied instead of always the accent,
+  a cell shows "row × column: value" on hover and keyboard focus, a legend runs
+  from min to max, and the grid has row/column headers and arrow-key
+  navigation for screen readers. A zero is a coloured cell; previously it was
+  invisible, as if there were no data.
+
+### Added
+
+- **`HeatmapWidget`: no-data cells, a colour domain and value formats.** A
+  `null` (or missing) matrix cell is "no data" — an empty outlined cell —
+  and the matrix is sized to the axes. `colorScale()` takes `default`,
+  `viridis`, `magma`, `plasma`, `inferno`, `blues`, `greens`, `reds`, one CSS
+  colour or a list of custom stops; `range($min, $max)` fixes the domain;
+  `money('USD')` and `precision(2)` format the tooltip and the legend like a
+  chart.
+
+### Changed
+
+- **`HeatmapWidget`'s default colour scale is `default`** — the panel's
+  accent, which is what the widget always drew — rather than the `viridis` it
+  declared but never applied.
+
 ## 1.46.2
 
 ### Changed

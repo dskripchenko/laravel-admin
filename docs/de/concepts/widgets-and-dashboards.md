@@ -82,6 +82,32 @@ RecentListWidget::make()
 Ein Diagramm zeigt seine Werte mit `ChartWidget::money('EUR')` als Geldbeträge
 oder mit `precision(2)` mit festen Nachkommastellen.
 
+## Heatmap
+
+`HeatmapWidget` zeichnet eine Matrix Zeilen × Spalten mit `UidHeatmapMatrix` aus
+dem Kit. Jede Spalte wird beschriftet (gedreht und ausgedünnt, wenn die
+Beschriftungen nicht passen), eine Zelle zeigt bei Hover und Fokus
+„Zeile × Spalte: Wert“, und eine Legende reicht vom kleinsten zum größten Wert.
+
+```php
+HeatmapWidget::make()->title('Orders by weekday and month')
+    ->axes(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'])
+    ->matrix($rows)          // $rows[$weekday][$month]: int|float|null
+    ->colorScale('viridis')
+    ->precision(1);
+```
+
+- `matrix()` wird auf die Achsen zugeschnitten. `null` — oder eine fehlende
+  Zelle — bedeutet „keine Daten“: eine leere umrandete Zelle, anders als `0`.
+  So zeigt man einen Tag, der noch nicht gekommen ist.
+- `colorScale()` nimmt `default` (die Akzentfarbe des Panels, Standard),
+  `viridis`, `magma`, `plasma`, `inferno`, `blues`, `greens`, `reds`, eine
+  CSS-Farbe oder eine Liste von CSS-Farben als eigene Stützfarben, niedrig → hoch.
+- `range($min, $max)` legt die Farbdomäne fest; standardmäßig sind es Min und
+  Max der Matrix.
+- `money('EUR')` und `precision(2)` formatieren Tooltip und Legende in der
+  Sprache des Panels, wie bei einem Diagramm.
+
 ## Größen
 
 Jedes Widget hat `size()` (1..12 Spalten, Standard 6) und optional
