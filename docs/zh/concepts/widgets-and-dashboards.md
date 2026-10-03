@@ -76,6 +76,24 @@ RecentListWidget::make()
 图表可通过 `ChartWidget::money('USD')` 将数值显示为金额，或通过 `precision(2)`
 固定小数位数。
 
+## 热力图
+
+`HeatmapWidget` 通过 kit 中的 `UidHeatmapMatrix` 绘制行 × 列矩阵。每一列都有标签
+（放不下时旋转并抽稀），悬停或聚焦单元格时显示"行 × 列：值"，图例从最小值延伸到最大值。
+
+```php
+HeatmapWidget::make()->title('Orders by weekday and month')
+    ->axes(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'])
+    ->matrix($rows)          // $rows[$weekday][$month]: int|float|null
+    ->colorScale('viridis')
+    ->precision(1);
+```
+
+- `matrix()` 会按坐标轴尺寸对齐。`null`（或缺失的单元格）表示"无数据"：带描边的空单元格，与 `0` 不同。可用于尚未到来的日期。
+- `colorScale()` 接受 `default`（面板强调色，默认值）、`viridis`、`magma`、`plasma`、`inferno`、`blues`、`greens`、`reds`、单个 CSS 颜色，或 CSS 颜色数组作为从低到高的自定义色标。
+- `range($min, $max)` 固定颜色映射范围；默认取矩阵自身的最小值和最大值。
+- `money('USD')` 和 `precision(2)` 按面板语言环境格式化 tooltip 和图例，与图表一致。
+
 ## 尺寸
 
 每个小部件都有 `size()`（1..12 列，默认 6）和可选的

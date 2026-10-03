@@ -82,6 +82,31 @@ RecentListWidget::make()
 (tooltips, the data table, the axis) as money with `ChartWidget::money('USD')`,
 or with fixed decimals with `precision(2)`; the datasets keep the raw numbers.
 
+## Heatmap
+
+`HeatmapWidget` draws a rows × columns matrix with the kit's `UidHeatmapMatrix`.
+Every column is labelled (rotated and thinned when the labels do not fit), a
+cell shows "row × column: value" on hover and focus, and a legend runs from the
+smallest value to the largest.
+
+```php
+HeatmapWidget::make()->title('Orders by weekday and month')
+    ->axes(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'])
+    ->matrix($rows)          // $rows[$weekday][$month]: int|float|null
+    ->colorScale('viridis')
+    ->precision(1);
+```
+
+- `matrix()` is sized to the axes. `null` — or a missing cell — is "no data": an
+  empty outlined cell, unlike `0`. Use it for a day that has not come yet.
+- `colorScale()` takes `default` (the panel's accent, the default), `viridis`,
+  `magma`, `plasma`, `inferno`, `blues`, `greens`, `reds`, one CSS colour, or a
+  list of CSS colours as custom stops from low to high.
+- `range($min, $max)` fixes the colour domain; by default it is the matrix's
+  own min and max.
+- `money('USD')` and `precision(2)` format the tooltip and the legend, in the
+  panel's locale, like a chart.
+
 ## Sizing
 
 Each widget has `size()` (1..12 cols, default 6) and optional

@@ -2,26 +2,32 @@
 /**
  * HeatmapWidget — a matrix heatmap of rows × cols.
  *
- * The backend's HeatmapWidget::toArray() gives {rows: ['Mon',...],
- * cols: ['00h',...], matrix: [[..24..], [..24..], ...]}, where every
- * matrix[r][c] is a number.
- *
- * We use a CSS grid of our own rather than UidHeatmap, which is a calendar
- * over data=[{date,value}] — a different case entirely. The colour follows a
- * 0..max scale: the opacity is value/max over the accent colour.
+ * The backend's HeatmapWidget::data() gives {rows: ['Mon',...], cols:
+ * ['May',...], matrix: [[...], ...], colorScale, min, max, format}, where
+ * matrix[r][c] is a number or null ("no data" — an empty outlined cell, unlike
+ * 0). It is drawn by the kit's UidHeatmapMatrix: every column labelled, the
+ * colour scale, a "row × column: value" tooltip and a min → max legend.
  */
 import { computed } from 'vue'
-import { UidCard } from '@dskripchenko/ui'
+import { UidCard, UidHeatmapMatrix } from '@dskripchenko/ui'
 import { trSafe as tr } from '../../stores/i18n'
+import { formatValue as formatChartValue, type ChartValueFormat } from './chartGeometry'
 
 interface Props {
   title?: string
   rows?: string[]
   cols?: string[]
-  matrix?: number[][]
-  /** How the value is formatted in the hover label. */
-  formatValue?: (v: number, row: string, col: string) => string
-  /** The cell's CSS colour; the accent token by default. */
+  matrix?: (number | null)[][]
+  /** A scale name ('default', 'viridis', 'magma', 'blues'…), a CSS colour or custom stops. */
+  colorScale?: string | string[]
+  /** The colour domain; the matrix's own min/max when null. */
+  min?: number | null
+  max?: number | null
+  /** How a value is shown — HeatmapWidget::money() / precision(). */
+  format?: ChartValueFormat | null
+  /** A custom formatter, for a heatmap mounted from code. */
+  formatValue?: (v: number) => string
+  /** A single CSS colour; kept for heatmaps mounted from code, colorScale wins. */
   color?: string
 }
 
@@ -30,31 +36,21 @@ const props = withDefaults(defineProps<Props>(), {
   rows: () => [],
   cols: () => [],
   matrix: () => [],
+  colorScale: undefined,
+  min: null,
+  max: null,
+  format: null,
   formatValue: undefined,
-  color: 'var(--uid-color-primary, #14b8a6)',
+  color: undefined,
 })
 
-const maxValue = computed(() => {
-  let max = 0
-  for (const row of props.matrix) {
-    for (const v of row) {
-      if (typeof v === 'number' && v > max) max = v
-    }
-  }
-  return max || 1
-})
+const scale = computed<string | string[]>(() => props.colorScale ?? props.color ?? 'default')
 
-function cellOpacity(v: number): number {
-  if (typeof v !== 'number' || v <= 0) return 0
-  return Math.max(0.1, Math.min(1, v / maxValue.value))
-}
+const formatter = computed<(v: number) => string>(() =>
+  props.formatValue ?? ((v: number) => formatChartValue(v, props.format)),
+)
 
-function cellTitle(value: number, rowIdx: number, colIdx: number): string {
-  const r = props.rows[rowIdx] ?? ''
-  const c = props.cols[colIdx] ?? ''
-  if (props.formatValue) return props.formatValue(value, r, c)
-  return `${r} ${c}: ${value}`
-}
+const hasData = computed(() => props.rows.length > 0 && props.cols.length > 0 && props.matrix.length > 0)
 </script>
 
 <template>
@@ -62,88 +58,23 @@ function cellTitle(value: number, rowIdx: number, colIdx: number): string {
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <div
-      v-if="rows.length > 0 && cols.length > 0 && matrix.length > 0"
+    <UidHeatmapMatrix
+      v-if="hasData"
       class="admin-heatmap"
-      :style="{ '--admin-heatmap-cols': cols.length }"
-    >
-      <div class="admin-heatmap__cols-axis" aria-hidden="true">
-        <span
-          v-for="(col, ci) in cols"
-          :key="`c-${ci}`"
-          class="admin-heatmap__col-label"
-        >{{ ci % 3 === 0 ? col : '' }}</span>
-      </div>
-      <div
-        v-for="(rowValues, ri) in matrix"
-        :key="`r-${ri}`"
-        class="admin-heatmap__row"
-      >
-        <span class="admin-heatmap__row-label">{{ rows[ri] ?? '' }}</span>
-        <div class="admin-heatmap__cells">
-          <span
-            v-for="(v, ci) in rowValues"
-            :key="`cell-${ri}-${ci}`"
-            class="admin-heatmap__cell"
-            :style="{ background: color, opacity: cellOpacity(v) }"
-            :title="cellTitle(v, ri, ci)"
-          />
-        </div>
-      </div>
-    </div>
+      :rows="rows"
+      :cols="cols"
+      :values="matrix"
+      :color-scale="scale"
+      :min="min ?? undefined"
+      :max="max ?? undefined"
+      :format-value="formatter"
+      :aria-label="title || undefined"
+    />
     <div v-else class="admin-heatmap__empty">{{ tr('Нет данных') }}</div>
   </UidCard>
 </template>
 
 <style>
-.admin-heatmap {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: var(--uid-font-size-xs, 11px);
-}
-.admin-heatmap__cols-axis {
-  display: grid;
-  grid-template-columns: 32px repeat(var(--admin-heatmap-cols), 1fr);
-  gap: 2px;
-  color: var(--uid-text-tertiary, #9ca3af);
-  margin-bottom: 4px;
-}
-.admin-heatmap__cols-axis::before { content: ''; }
-.admin-heatmap__col-label {
-  font-size: 10px;
-  text-align: center;
-  white-space: nowrap;
-}
-.admin-heatmap__row {
-  display: grid;
-  grid-template-columns: 32px 1fr;
-  gap: 6px;
-  align-items: center;
-}
-.admin-heatmap__row-label {
-  color: var(--uid-text-secondary, #6b7280);
-  font-size: 11px;
-  text-align: right;
-}
-.admin-heatmap__cells {
-  display: grid;
-  grid-template-columns: repeat(var(--admin-heatmap-cols), 1fr);
-  gap: 2px;
-}
-.admin-heatmap__cell {
-  display: block;
-  width: 100%;
-  height: 14px;
-  border-radius: 2px;
-  background: var(--uid-color-primary, #14b8a6);
-  opacity: 0;
-  transition: transform 80ms ease;
-}
-.admin-heatmap__cell:hover {
-  transform: scale(1.4);
-  z-index: 1;
-}
 .admin-heatmap__empty {
   padding: var(--uid-space-md);
   text-align: center;
