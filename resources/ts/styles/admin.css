@@ -153,20 +153,17 @@
 }
 /*
  * The kit's `collapse` keeps the trail on one line: crumbs ellipsize, and when
- * the trail overflows the middle ones fold into a "…" menu. The trail grows
- * into the free room of the bar, so its width follows the bar's: sized by its
- * content, a collapsed trail would stay collapsed when the window widens.
+ * the trail overflows the middle ones (and, on a very narrow bar, the first
+ * one too) fold into a "…" menu. The trail is sized by its content and may
+ * shrink below it; the kit watches the whole bar (`container`), so a collapsed
+ * trail expands again when the bar widens.
  */
 .admin-topbar__breadcrumbs {
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   --uid-breadcrumb-font-size: 13px;
   --uid-breadcrumb-sep-color: var(--uid-text-tertiary);
   --uid-breadcrumb-item-max-width: 16rem;
-}
-.admin-topbar__breadcrumbs > .uid-breadcrumb {
-  flex: 1 1 auto;
 }
 .admin-topbar__search {
   display: flex;
@@ -193,8 +190,8 @@
   color: var(--uid-text-tertiary);
 }
 /*
- * A narrow top bar leaves the trail too little room for its first, "…" and
- * current crumbs: the search field shrinks to its icon (⌘K still opens it).
+ * On a narrow top bar the search field shrinks to its icon (⌘K still opens
+ * it): a 220px pill would leave the trail little more than "… › current".
  */
 @media (max-width: 1100px) {
   .admin-topbar__search {

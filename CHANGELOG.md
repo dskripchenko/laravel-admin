@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+Requires `@dskripchenko/ui` ^1.11.0.
+
 ### Changed
 
 - **Behaviour change: `dskripchenko/laravel-translatable` is no longer a
@@ -27,6 +29,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the SPA sources under `resources/ts`. The prebuilt bundle in `public/`
   still ships, and so does the transliteration table `Field\Slug` reads. The
   tar archive went from 9.8 MB / 780 files to 4.2 MB / 423 files.
+- **The top-bar breadcrumbs collapse against the whole bar.** The trail uses
+  the kit's new `collapse-first` and `container` (@dskripchenko/ui 1.11):
+  - it watches the top bar's width, so a collapsed trail expands again when
+    the window widens or the sidebar folds;
+  - on a very narrow bar the first crumb folds into the "…" too, and the
+    current crumb keeps the room.
+
+  The CSS workaround that stretched the trail across the bar
+  (`flex: 1 1 auto` on `.admin-topbar__breadcrumbs` and its
+  `.uid-breadcrumb`) is gone. The search field still shrinks to its icon below
+  1100px.
+- **The status pill in the top bar stays on one line.** It no longer shrinks
+  and wraps onto two lines. Below 1100px (previously 720px) it shows just its
+  icon and colour, and the tooltip still names it, leaving the breadcrumbs room.
 
 ### Added
 

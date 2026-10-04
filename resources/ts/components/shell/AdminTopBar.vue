@@ -81,7 +81,14 @@ function targetOf(crumb: Crumb): string | Record<string, unknown> | undefined {
 
     <div class="admin-topbar__breadcrumbs">
       <slot name="breadcrumbs">
-        <UidBreadcrumb v-if="breadcrumbs.length > 0" :label="tr('Навигация')" separator="›" collapse>
+        <UidBreadcrumb
+          v-if="breadcrumbs.length > 0"
+          :label="tr('Навигация')"
+          separator="›"
+          collapse
+          collapse-first
+          container=".admin-topbar"
+        >
           <UidBreadcrumbItem
             v-for="(crumb, idx) in breadcrumbs"
             :key="idx"

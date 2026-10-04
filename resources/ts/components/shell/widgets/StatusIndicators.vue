@@ -233,6 +233,9 @@ function isInternal(indicator: Indicator): boolean {
   display: inline-flex;
   align-items: center;
   gap: var(--uid-space-xs);
+  /* A squeezed pill wraps onto two lines; the breadcrumbs give way instead. */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .admin-topbar__status-item {
@@ -268,8 +271,9 @@ function isInternal(indicator: Indicator): boolean {
 }
 
 /* The word goes first on a narrow screen: the icon and its colour already
-   carry the alarm, and the header has other things to fit. */
-@media (max-width: 720px) {
+   carry the alarm (the tooltip still names it), and the header has the
+   breadcrumbs to fit. The same width shrinks the search field to its icon. */
+@media (max-width: 1100px) {
   .admin-topbar__status-label {
     display: none;
   }

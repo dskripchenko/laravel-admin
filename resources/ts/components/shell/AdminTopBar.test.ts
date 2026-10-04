@@ -107,6 +107,17 @@ describe('AdminTopBar', () => {
     expect(wrapper.findAll('.admin-topbar__breadcrumbs [aria-current="page"]')).toHaveLength(1)
   })
 
+  it('collapses the trail against the whole bar and lets the first crumb fold too', async () => {
+    const wrapper = await mountBar({
+      breadcrumbs: [{ label: 'Shop', to: '/' }, { label: 'Products', to: '/r/products' }, { label: 'Editing' }],
+    })
+    const trail = wrapper.findComponent({ name: 'UidBreadcrumb' })
+    expect(trail.props('collapse')).toBe(true)
+    expect(trail.props('collapseFirst')).toBe(true)
+    // The trail's wrapper is sized by its content; the bar's width tells when the room grows.
+    expect(trail.props('container')).toBe('.admin-topbar')
+  })
+
   it('leaves a crumb whose route is not registered yet a plain caption', async () => {
     const wrapper = await mountBar({
       breadcrumbs: [{ label: 'Orders', to: { name: 'admin.resource.orders.index' } }, { label: 'Editing' }],
