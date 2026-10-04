@@ -39,6 +39,14 @@ describe('formatPhpDate', () => {
     expect(formatPhpDate(date, 'jS')).toBe('1')
   })
 
+  it('gives the short month the genitive inside a date too', () => {
+    setLang('ru')
+    const may = new Date(2026, 4, 8)
+    expect(formatPhpDate(may, 'j M Y')).toBe('8 мая 2026')
+    expect(formatPhpDate(may, 'd F Y')).toBe('08 мая 2026')
+    expect(formatPhpDate(may, 'M Y')).toBe('май 2026')
+  })
+
   it('honours the backslash escape', () => {
     setLang('en')
     expect(formatPhpDate(date, '\\Y\\-Y')).toBe('Y-2026')

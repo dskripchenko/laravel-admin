@@ -25,6 +25,12 @@ class StatsOverviewWidget extends Widget
 
     /**
      * Adds one card.
+     *
+     * The colour is a name from the panel's tone vocabulary, the same one a
+     * badge, a chart and a gauge take: success, warning, danger, info,
+     * primary, neutral, or a colour word — green, amber, yellow, orange, red,
+     * blue, gray/grey and the like. The icon is a Lucide name (`users`,
+     * `edit`, `shopping-cart`…).
      */
     public function stat(string $label, mixed $value, ?string $color = null, ?string $icon = null): static
     {

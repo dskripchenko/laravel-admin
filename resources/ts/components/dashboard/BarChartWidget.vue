@@ -12,6 +12,7 @@
  */
 import { computed } from 'vue'
 import CartesianChartWidget from './CartesianChartWidget.vue'
+import { toneColor } from './toneColor'
 
 interface Datum {
   label: string
@@ -41,7 +42,7 @@ const series = computed(() => [
   {
     label: props.seriesLabel || props.title || '',
     data: (props.data ?? []).map((d) => (Number.isFinite(Number(d.value)) ? Number(d.value) : null)),
-    color: props.accent,
+    color: toneColor(props.accent) || 'var(--uid-accent)',
   },
 ])
 </script>

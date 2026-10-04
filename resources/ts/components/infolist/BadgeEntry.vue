@@ -5,26 +5,27 @@
  *
  * Manifest:
  *   { type: 'badge', name: 'status', label: 'Status',
- *     map: { published: 'success', draft: 'warning', archived: 'danger' } }
+ *     map: { published: 'success', draft: 'amber', archived: 'gray' } }
+ *
+ * Variants and colours come from the panel's tone vocabulary (../tones.ts).
  */
 import { computed } from 'vue'
 import { UidBadge } from '@dskripchenko/ui'
 import { tryUseRecord } from './recordContext'
-
-type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info'
+import { badgeVariant, type BadgeVariant } from '../tones'
 
 interface Props {
   name?: string
   label?: string
   value?: string | null
   /** Maps a value to a variant; without it, the default is used. */
-  map?: Record<string, BadgeVariant>
+  map?: Record<string, string>
   /** The backend's BadgeEntry::colors(): value → variant, an alias of map. */
-  colors?: Record<string, BadgeVariant>
+  colors?: Record<string, string>
   /** Maps a value to the label shown — the localization: active → "Active". */
   labels?: Record<string, string>
   /** Forces a particular variant. */
-  variant?: BadgeVariant
+  variant?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,13 +46,14 @@ const value = computed<string>(() => {
   }
   return v === null || v === undefined ? '' : String(v)
 })
-const variantMap = computed<Record<string, BadgeVariant>>(() => ({
+const variantMap = computed<Record<string, string>>(() => ({
   ...props.map,
   ...props.colors,
 }))
 const resolvedVariant = computed<BadgeVariant>(() => {
-  if (props.variant) return props.variant
-  return variantMap.value[value.value] ?? 'default'
+  // Variant names and colour words alike — the panel's one tone vocabulary.
+  if (props.variant) return badgeVariant(props.variant)
+  return badgeVariant(variantMap.value[value.value])
 })
 const displayLabel = computed<string>(() => props.labels[value.value] ?? value.value)
 </script>

@@ -3,8 +3,7 @@ import { computed } from 'vue'
 import { UidCard, UidGauge } from '@dskripchenko/ui'
 import type { GaugeTone, GaugeRange } from '@dskripchenko/ui'
 import { toneColor } from './toneColor'
-
-type SemanticTone = 'neutral' | 'positive' | 'warning' | 'negative'
+import { resolveTone, toneToken } from '../tones'
 
 interface Props {
   title?: string
@@ -22,7 +21,8 @@ interface Props {
    */
   thresholds?: GaugeRange[]
   unit?: string
-  tone?: SemanticTone
+  /** A name from the panel's tone vocabulary (../tones.ts); primary when unset. */
+  tone?: string
   color?: string
   label?: string
   suffix?: string
@@ -42,21 +42,21 @@ const props = withDefaults(defineProps<Props>(), {
   ranges: () => [],
   thresholds: () => [],
   unit: '',
-  tone: 'neutral',
+  tone: undefined,
   color: undefined,
   label: '',
   suffix: '',
   precision: null,
 })
 
-const TONE_MAP: Record<SemanticTone, GaugeTone> = {
-  neutral: 'primary',
-  positive: 'success',
-  warning: 'warning',
-  negative: 'danger',
-}
+const panelTone = computed(() => resolveTone(props.tone) ?? 'primary')
 
-const uidTone = computed<GaugeTone>(() => TONE_MAP[props.tone])
+/** UidGauge has no neutral tone: a gray gauge is drawn through its colour. */
+const uidTone = computed<GaugeTone>(() => (panelTone.value === 'neutral' ? 'primary' : panelTone.value))
+
+const resolvedColor = computed<string | undefined>(() =>
+  toneColor(props.color) || (panelTone.value === 'neutral' ? toneToken('neutral') : undefined),
+)
 
 const resolvedRanges = computed<GaugeRange[]>(() =>
   (props.ranges.length > 0 ? props.ranges : props.thresholds).map((r) => ({
@@ -95,7 +95,7 @@ const resolvedSuffix = computed<string>(
         :size="size"
         :ranges="resolvedRanges"
         :tone="uidTone"
-        :color="toneColor(color) || undefined"
+        :color="resolvedColor"
         :label="label"
         :suffix="resolvedSuffix"
         :precision="resolvedPrecision"

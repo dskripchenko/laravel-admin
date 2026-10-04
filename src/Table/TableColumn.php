@@ -217,8 +217,10 @@ final class TableColumn
      *     ])
      *     ->asBadge(['active' => 'success'], ['active' => 'Active'])
      *
-     * The tones are the UI kit's (info, success, warning, danger, default) or
-     * the colour names green, red, yellow, blue, gray. A label is translated
+     * The tones are the panel's one vocabulary, shared with the stat cards,
+     * charts and gauges: info, success, warning, danger, primary, neutral
+     * (default), or the colour words green, amber, yellow, orange, red, blue,
+     * gray/grey and the like. A label is translated
      * like any caption; a value with no label shows as it is.
      *
      * @param  array<string, string|array{label?: string, tone?: string, color?: string}>  $map  value => tone, or value => [label, tone]

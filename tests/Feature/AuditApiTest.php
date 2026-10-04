@@ -72,6 +72,18 @@ it('audit.list filters by date range', function (): void {
     expect($events)->toBe(['new']);
 });
 
+it('audit.list date-only `to` includes the whole day', function (): void {
+    $late = AuditLog::create(['event' => 'late']);
+    $late->forceFill(['created_at' => '2025-06-01 18:30:00'])->save();
+
+    $next = AuditLog::create(['event' => 'next']);
+    $next->forceFill(['created_at' => '2025-06-02 00:00:00'])->save();
+
+    $response = $this->getJson('/api/admin/audit/list?to=2025-06-01');
+    $events = collect($response->json('payload.data'))->pluck('event')->all();
+    expect($events)->toBe(['late']);
+});
+
 it('audit.timeline requires subject_type + subject_id', function (): void {
     $this->getJson('/api/admin/audit/timeline')->assertStatus(422);
 });

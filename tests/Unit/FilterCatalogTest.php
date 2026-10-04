@@ -48,6 +48,29 @@ it('DateRangeFilter only-from is open-ended above', function (): void {
     expect($query->count())->toBe(1);
 });
 
+it('DateRangeFilter includes the whole last day on a datetime column', function (): void {
+    TestResourceUserModel::create(['name' => 'morning', 'created_at' => '2026-05-08 00:00:00']);
+    TestResourceUserModel::create(['name' => 'evening', 'created_at' => '2026-05-08 23:59:59']);
+    TestResourceUserModel::create(['name' => 'next', 'created_at' => '2026-05-09 00:00:00']);
+
+    $names = DateRangeFilter::for('created_at')
+        ->apply(TestResourceUserModel::query(), ['from' => '2026-05-08', 'to' => '2026-05-08'])
+        ->pluck('name')->all();
+
+    expect($names)->toEqualCanonicalizing(['morning', 'evening']);
+});
+
+it('DateRangeFilter keeps an explicit time in the upper bound inclusive', function (): void {
+    TestResourceUserModel::create(['name' => 'in', 'created_at' => '2026-05-08 12:00:00']);
+    TestResourceUserModel::create(['name' => 'out', 'created_at' => '2026-05-08 12:00:01']);
+
+    $names = DateRangeFilter::for('created_at')
+        ->apply(TestResourceUserModel::query(), ['to' => '2026-05-08 12:00:00'])
+        ->pluck('name')->all();
+
+    expect($names)->toBe(['in']);
+});
+
 it('DateRangeFilter ignores empty value', function (): void {
     $base = TestResourceUserModel::query()->getQuery()->wheres;
     $applied = DateRangeFilter::for('created_at')

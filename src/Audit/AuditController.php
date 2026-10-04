@@ -53,8 +53,8 @@ final class AuditController extends ApiController
         if ($from = $request->input('from')) {
             $query->where('created_at', '>=', $from);
         }
-        if ($to = $request->input('to')) {
-            $query->where('created_at', '<=', $to);
+        if (is_string($to = $request->input('to')) && $to !== '') {
+            \Dskripchenko\LaravelAdmin\Support\DateBound::applyUpper($query, 'created_at', $to);
         }
 
         $perPage = max(1, min(

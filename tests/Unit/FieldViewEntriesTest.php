@@ -256,3 +256,44 @@ it('default infolist shows a relation table as a table of its columns', function
     expect(array_column($entry['attributes']['entries'], 'label'))->toBe(['SKU', 'Total']);
     expect($entry['attributes']['entries'][1]['attributes']['preset'])->toBe('money');
 });
+
+it('formats a date entry of the view page by the field, then by the column', function (): void {
+    $resource = new class extends Resource
+    {
+        public static string $model = TestResourceUserModel::class;
+
+        public function fields(): array
+        {
+            return [
+                Dskripchenko\LaravelAdmin\Field\DatePicker::make('starts_on')->displayFormat('j F Y'),
+                Dskripchenko\LaravelAdmin\Field\DatePicker::make('published_at')->withTime(),
+                Dskripchenko\LaravelAdmin\Field\DatePicker::make('ends_on'),
+                Dskripchenko\LaravelAdmin\Field\Number::make('price'),
+                Input::make('name'),
+            ];
+        }
+
+        public function columns(): array
+        {
+            return [
+                Dskripchenko\LaravelAdmin\Table\TableColumn::make('starts_on')->asDate('d.m.Y'),
+                Dskripchenko\LaravelAdmin\Table\TableColumn::make('published_at')->asDateTime('d M Y, H:i'),
+                Dskripchenko\LaravelAdmin\Table\TableColumn::make('price')->asMoney('EUR'),
+            ];
+        }
+    };
+
+    $entries = array_map(static fn ($e): array => $e->toArray()['attributes'], $resource->infolist());
+
+    // The field's own displayFormat wins over the column.
+    expect($entries[0]['preset'])->toBe('date');
+    expect($entries[0]['meta'])->toBe(['format' => 'j F Y']);
+    // No displayFormat: the list column's format.
+    expect($entries[1]['preset'])->toBe('datetime');
+    expect($entries[1]['meta'])->toBe(['format' => 'd M Y, H:i']);
+    // Neither: the panel's default date format, not a raw ISO string.
+    expect($entries[2]['preset'])->toBe('date');
+    // A non-date column preset carries over too.
+    expect($entries[3]['preset'])->toBe('money');
+    expect($entries[4])->not->toHaveKey('preset');
+});
