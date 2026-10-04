@@ -30,7 +30,9 @@ php artisan admin:install
 сборку фронтенда в `public/vendor/admin`, запускает `migrate` и создаёт
 первого администратора. Появятся таблицы `admin_users`, `admin_roles`,
 `admin_settings`, `admin_audit_logs`, `admin_dashboard_layouts` и несколько
-других.
+других, а также `delayed_processes` из `dskripchenko/laravel-delayed-process`
+— очередь асинхронных действий. Других таблиц зависимости не добавляют; полный
+список — в разделе [подключение](integration.md#1-требования-и-что-меняет-установщик).
 
 Подключаете админку к приложению, где уже есть пользователи? С
 `php artisan admin:install --shared` они входят своими обычными учётками

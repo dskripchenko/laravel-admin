@@ -47,11 +47,26 @@ php artisan admin:install --shared   # входят ваши пользоват�
 Таблицы, которые создаёт `migrate`: `admin_users`, `admin_password_resets`,
 `admin_roles`, `admin_role_assignments`, `admin_saved_views`,
 `admin_dashboard_layouts`, `admin_audit_logs`, `admin_settings`,
-`admin_import_processes`. Две зависимости приносят свои миграции, и они тоже
-выполняются: `dskripchenko/laravel-delayed-process` (`delayed_processes`) и
-`dskripchenko/laravel-translatable` (`languages`, `translations`,
-`content_blocks`, `pages`, `page_content_block`). Миграции пакета грузятся из
-`vendor/`, даже если удалить опубликованные копии.
+`admin_import_processes`. Одна зависимость приносит свою миграцию, и она тоже
+выполняется: `dskripchenko/laravel-delayed-process` (`delayed_processes`) —
+очередь асинхронных действий и импорта, без неё админка не работает. Миграции
+пакета грузятся из `vendor/`, даже если удалить опубликованные копии.
+
+`dskripchenko/laravel-translatable` — по желанию. Админка его не требует,
+поэтому в свежем приложении нет его таблиц `languages`, `translations`,
+`pages`, `content_blocks` и `page_content_block`. Ставьте его, только если
+храните переводы моделей в БД через `TranslatableInput`
+(см. [i18n](concepts/i18n.md#перевод-контента-модели)):
+
+```bash
+composer require dskripchenko/laravel-translatable
+php artisan migrate
+```
+
+Обновление с 1.47 и раньше: раньше пакет подтягивался сам. Если вы им
+пользуетесь — подключите его явно до обновления админки, иначе
+`composer update` его удалит. Если нет — его таблицы остаются в БД, пока вы
+их не удалите (см. «Как откатить» ниже).
 
 Установщик не трогает `config/auth.php`, ваши модели, маршруты и `.env`. В
 стратегии dedicated guard `admin`, провайдер `admin_users` и password broker
@@ -65,7 +80,8 @@ php artisan admin:install --shared   # входят ваши пользоват�
 php artisan migrate:reset \
   --path=vendor/dskripchenko/laravel-admin/database/migrations \
   --path=database/migrations/2026_01_01_000100_add_admin_columns_to_users_table.php
-# Таблицы зависимостей — если больше ничто ваше их не использует:
+# Таблицы зависимостей — если больше ничто ваше их не использует
+# (второй путь — только если laravel-translatable установлен):
 php artisan migrate:reset \
   --path=vendor/dskripchenko/laravel-delayed-process/databases/migrations \
   --path=vendor/dskripchenko/laravel-translatable/databases/migrations

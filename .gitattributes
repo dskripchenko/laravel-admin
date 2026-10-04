@@ -3,14 +3,36 @@
 *.php diff=php
 *.md diff=markdown
 
-# Files exported when installing via Composer
+# Files left out of the Composer dist (git archive). The runtime needs src/,
+# config/, database/, routes/, public/ (the prebuilt SPA), resources/lang,
+# resources/views, resources/stubs and the transliteration table Field\Slug
+# reads; everything else is for developing the package or for npm.
 /.editorconfig         export-ignore
 /.github               export-ignore
 /.gitattributes        export-ignore
 /.gitignore            export-ignore
+/.storybook            export-ignore
 /CHANGELOG.md          export-ignore
 /phpunit.xml.dist      export-ignore
 /phpstan.neon          export-ignore
 /pint.json             export-ignore
 /tests                 export-ignore
+/examples              export-ignore
+/scripts               export-ignore
 /docs/internal         export-ignore
+/package.json          export-ignore
+/tsconfig.json         export-ignore
+/eslint.config.js      export-ignore
+/vite.config.ts        export-ignore
+/vite.app.config.ts    export-ignore
+/vitest.config.ts      export-ignore
+/*.tgz                 export-ignore
+/resources/fonts       export-ignore
+# The SPA sources: public/ already carries the built bundle. Field\Slug reads
+# its transliteration table from here at runtime, so that one file stays.
+# (Patterns by extension rather than the directory, since an ignored
+# directory cannot have a file re-included.)
+/resources/ts/**/*.ts      export-ignore
+/resources/ts/**/*.vue     export-ignore
+/resources/ts/**/*.css     export-ignore
+/resources/ts/__fixtures__ export-ignore

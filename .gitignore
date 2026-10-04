@@ -23,3 +23,6 @@ Thumbs.db
 .env.*
 !.env.example
 /storybook-static/
+
+# npm pack output
+*.tgz
