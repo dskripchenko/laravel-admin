@@ -186,9 +186,11 @@ describe('StatusIndicators', () => {
     const wrapper = mount(StatusIndicators, { global })
     await flushPromises()
     expect(wrapper.find('[data-testid="status-admin.health"]').exists()).toBe(true)
+    expect(Object.keys(sessionStorage).filter((k) => k.startsWith('admin.status:'))).toHaveLength(1)
 
     useAuthStore().user = null
     await flushPromises()
     expect(wrapper.find('[data-testid="status-admin.health"]').exists()).toBe(false)
+    expect(Object.keys(sessionStorage).filter((k) => k.startsWith('admin.status:'))).toHaveLength(0)
   })
 })

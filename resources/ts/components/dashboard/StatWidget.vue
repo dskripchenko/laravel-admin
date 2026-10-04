@@ -18,7 +18,6 @@ import { resolveTone, type PanelTone } from '../tones'
 import { currentLocale, formatNumber, intlLocale } from '../../stores/i18n'
 import { useLocaleStore } from '../../stores/locale'
 
-
 interface StatChange {
   delta?: number
   direction?: 'up' | 'down' | 'flat'

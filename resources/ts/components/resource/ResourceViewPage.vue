@@ -103,11 +103,6 @@ const resolvedSubjectType = computed<string | null>(() => {
   return (resourceMeta.value?.subject_type as string | null | undefined) ?? null
 })
 
-/**
- * The default metrics — created_at, updated_at and created_by from the record.
- * They are shown whenever the record has at least one of those fields, and
- * Eloquent's standard timestamps are on most models.
- */
 /** The metrics card's date format when the list does not set one. */
 const METRIC_DATETIME = 'd.m.Y H:i'
 
@@ -115,6 +110,12 @@ interface MetricRow {
   label: string
   value: string
 }
+
+/**
+ * The default metrics — created_at, updated_at and created_by from the record.
+ * They are shown whenever the record has at least one of those fields, and
+ * Eloquent's standard timestamps are on most models.
+ */
 const defaultMetrics = computed<MetricRow[]>(() => {
   const r = form.state as Record<string, unknown>
   const rows: MetricRow[] = []

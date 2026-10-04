@@ -192,4 +192,3 @@ describe('ResourceViewPage', () => {
     expect(wrapper.text()).toContain('9 мая 2026, 09:05')
   })
 })
-

@@ -145,6 +145,12 @@ function stop(): void {
   if (timer !== null) clearTimeout(timer)
   timer = null
   indicators.value = []
+  // The next user to sign in on this tab must not inherit this one's answer.
+  try {
+    sessionStorage.removeItem(cacheKey())
+  } catch {
+    // Storage unavailable: there is no cache to clear either.
+  }
 }
 
 /**
