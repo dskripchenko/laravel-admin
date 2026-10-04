@@ -5,6 +5,29 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **Behaviour change: `dskripchenko/laravel-translatable` is no longer a
+  dependency.** It moved to `suggest`. Core only touches it through the
+  `TranslatableInput` bridge, which already skipped saving when the package was
+  absent. A fresh application therefore no longer gets the `languages`,
+  `translations`, `pages`, `content_blocks` and `page_content_block` tables.
+  If you store model translations through `TranslatableInput`, run
+  `composer require dskripchenko/laravel-translatable` before updating, or
+  `composer update` removes it. `delayed_processes`
+  (`dskripchenko/laravel-delayed-process`) stays, because async actions and
+  imports need it. `Testing\PackageTestCase` registers the translatable
+  provider only when the package is installed.
+- **Leaner Composer dist.** The stray npm tarball
+  `dskripchenko-laravel-admin-1.23.0.tgz` (2.5 MB) is gone from the repository,
+  and `.gitattributes` now leaves out the development files: tests, examples,
+  scripts, Storybook, the Node/Vite/TS configs, `resources/fonts` (npm only)
+  and the SPA sources under `resources/ts`. The prebuilt bundle in `public/`
+  still ships, and so does the transliteration table `Field\Slug` reads. The
+  tar archive went from 9.8 MB / 780 files to 4.2 MB / 423 files.
+
 ## 1.47.0
 
 ### Fixed

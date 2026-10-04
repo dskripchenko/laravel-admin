@@ -44,11 +44,26 @@ What it writes:
 Tables created by `migrate`: `admin_users`, `admin_password_resets`,
 `admin_roles`, `admin_role_assignments`, `admin_saved_views`,
 `admin_dashboard_layouts`, `admin_audit_logs`, `admin_settings`,
-`admin_import_processes`. Two dependencies bring their own migrations, which
-also run: `dskripchenko/laravel-delayed-process` (`delayed_processes`) and
-`dskripchenko/laravel-translatable` (`languages`, `translations`,
-`content_blocks`, `pages`, `page_content_block`). The package's migrations
-are loaded from `vendor/` even if you delete the published copies.
+`admin_import_processes`. One dependency brings its own migration, which also
+runs: `dskripchenko/laravel-delayed-process` (`delayed_processes`), the queue
+behind async actions and imports, which the admin needs. The package's
+migrations are loaded from `vendor/` even if you delete the published copies.
+
+`dskripchenko/laravel-translatable` is optional. The admin does not require
+it, so a fresh application does not get its `languages`, `translations`,
+`pages`, `content_blocks` and `page_content_block` tables. Install it only if
+you store model translations in the database through `TranslatableInput`
+(see [i18n](concepts/i18n.md#content-translation-models)):
+
+```bash
+composer require dskripchenko/laravel-translatable
+php artisan migrate
+```
+
+Upgrading from 1.47 or earlier: the package used to be pulled in
+automatically. If you rely on it, require it explicitly before updating
+the admin, or `composer update` removes it. If you don't, its tables stay in
+the database until you drop them (see "Undoing it" below).
 
 The installer does not touch `config/auth.php`, your models, routes or
 `.env`. In the dedicated strategy the `admin` guard, the `admin_users`
@@ -63,7 +78,8 @@ yourself.
 php artisan migrate:reset \
   --path=vendor/dskripchenko/laravel-admin/database/migrations \
   --path=database/migrations/2026_01_01_000100_add_admin_columns_to_users_table.php
-# The dependencies' tables, if nothing else of yours uses them:
+# The dependencies' tables, if nothing else of yours uses them
+# (the second path only if laravel-translatable is installed):
 php artisan migrate:reset \
   --path=vendor/dskripchenko/laravel-delayed-process/databases/migrations \
   --path=vendor/dskripchenko/laravel-translatable/databases/migrations

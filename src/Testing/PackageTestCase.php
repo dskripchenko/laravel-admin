@@ -45,7 +45,9 @@ abstract class PackageTestCase extends Orchestra
         return [
             ApiServiceProvider::class,
             DelayedProcessServiceProvider::class,
-            TranslatableServiceProvider::class,
+            // Optional since core no longer requires laravel-translatable: a
+            // sister pack that does not install it simply goes without it.
+            ...(class_exists(TranslatableServiceProvider::class) ? [TranslatableServiceProvider::class] : []),
             AdminServiceProvider::class,
             ...$this->additionalProviders(),
         ];

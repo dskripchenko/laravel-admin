@@ -28,7 +28,10 @@ php artisan admin:install
 the prebuilt frontend to `public/vendor/admin`, runs `migrate` and creates
 the first administrator. It creates `admin_users`, `admin_roles`,
 `admin_settings`, `admin_audit_logs`, `admin_dashboard_layouts` and a few
-more tables.
+more tables, plus `delayed_processes` from
+`dskripchenko/laravel-delayed-process`, the queue behind async actions. That
+is the only table a dependency adds; the full list is in
+[integration](integration.md#1-prerequisites-and-what-the-installer-changes).
 
 Adding the admin to an application that already has users? With
 `php artisan admin:install --shared` they sign in with their usual accounts

@@ -27,11 +27,11 @@
         "ext-json": "*",
         "dskripchenko/laravel-api": "^5.11",
         "dskripchenko/laravel-delayed-process": "^2.2.0",
-        "dskripchenko/laravel-translatable": "^2.0",
         "dskripchenko/php-array-helper": "^1.1",
         "laravel/framework": "^11.0 || ^12.0 || ^13.0"
     },
     "require-dev": {
+        "dskripchenko/laravel-translatable": "^2.0",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "laravel/sanctum": "^4",
@@ -44,6 +44,7 @@
         "phpunit/phpunit": "^11.0 || ^12.0"
     },
     "suggest": {
+        "dskripchenko/laravel-translatable": "Для TranslatableInput с хранением переводов в БД (создаёт таблицы languages, translations, pages, content_blocks, page_content_block)",
         "laravel/sanctum": "Для API-токенов администраторов в ProfileScreen",
         "openspout/openspout": "Для XLSX-экспорта (Action\\Export::xlsx())",
         "mpdf/mpdf": "Для PDF-экспорта — рекомендуемый рендерер (GPL-2.0-only, проверьте лицензию)",
