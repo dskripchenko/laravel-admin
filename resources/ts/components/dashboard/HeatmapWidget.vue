@@ -12,13 +12,14 @@ import { computed } from 'vue'
 import { UidCard, UidHeatmapMatrix } from '@dskripchenko/ui'
 import { trSafe as tr } from '../../stores/i18n'
 import { formatValue as formatChartValue, type ChartValueFormat } from './chartGeometry'
+import { toneColor } from './toneColor'
 
 interface Props {
   title?: string
   rows?: string[]
   cols?: string[]
   matrix?: (number | null)[][]
-  /** A scale name ('default', 'viridis', 'magma', 'blues'…), a CSS colour or custom stops. */
+  /** A scale name ('default', 'viridis', 'magma', 'blues'…), a tone or CSS colour, or custom stops. */
   colorScale?: string | string[]
   /** The colour domain; the matrix's own min/max when null. */
   min?: number | null
@@ -44,7 +45,19 @@ const props = withDefaults(defineProps<Props>(), {
   color: undefined,
 })
 
-const scale = computed<string | string[]>(() => props.colorScale ?? props.color ?? 'default')
+/** The kit's named scales; any other string is a colour. */
+const KIT_SCALES = new Set(['default', 'viridis', 'magma', 'plasma', 'inferno', 'blues', 'greens', 'reds'])
+
+/**
+ * A kit scale name stays as it is; a tone or colour word from the panel's
+ * vocabulary (green, amber, gray…) becomes the theme's token, as on a stat or
+ * a badge; custom stops get the same treatment one by one.
+ */
+const scale = computed<string | string[]>(() => {
+  const raw = props.colorScale ?? props.color ?? 'default'
+  if (Array.isArray(raw)) return raw.map((stop) => toneColor(stop) || stop)
+  return KIT_SCALES.has(raw.trim().toLowerCase()) ? raw : toneColor(raw) || 'default'
+})
 
 const formatter = computed<(v: number) => string>(() =>
   props.formatValue ?? ((v: number) => formatChartValue(v, props.format)),

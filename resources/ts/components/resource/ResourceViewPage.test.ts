@@ -174,4 +174,21 @@ describe('ResourceViewPage', () => {
     // form.error.message is either 'Network Error' or the template's fallback
     expect(wrapper.find('.uid-alert').exists()).toBe(true)
   })
+
+  it('shows the metrics dates in the panel format, or in the list column format', async () => {
+    mock.onGet('/articles/read').reply(200, {
+      success: true,
+      payload: { record: { id: 7, created_at: '2026-05-08 14:30:00', updated_at: '2026-05-09 09:05:00' } },
+    })
+    const wrapper = await mountPage()
+    await flushPromises()
+    // Never the browser's US-style "05/08/2026, 02:30 PM".
+    expect(wrapper.text()).toContain('08.05.2026 14:30')
+
+    const manifest = useManifestStore()
+    const res = manifest.manifest!.resources[0] as unknown as Record<string, unknown>
+    res.columns = [{ name: 'updated_at', label: 'Updated', type: 'datetime', meta: { format: 'j M Y, H:i' } }]
+    await flushPromises()
+    expect(wrapper.text()).toContain('9 мая 2026, 09:05')
+  })
 })

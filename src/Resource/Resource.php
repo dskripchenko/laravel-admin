@@ -885,6 +885,7 @@ abstract class Resource
             return $this->infolistFromColumns();
         }
 
+        $columnPresets = null;
         $entries = [];
         foreach ($fields as $field) {
             $name = $field->name();
@@ -915,11 +916,62 @@ abstract class Resource
                         array_values(array_filter((array) ($field->getAttributes()['fields'] ?? []), 'is_array')),
                     )),
                 in_array($type, static::FIELD_VIEW_TYPES, true) => FieldEntry::fromField($field),
-                default => TextEntry::make($name)->label($label),
+                default => $this->formattedTextEntry(
+                    TextEntry::make($name)->label($label),
+                    $field,
+                    $columnPresets ??= $this->columnPresets(),
+                ),
             };
         }
 
         return $entries;
+    }
+
+    /**
+     * Gives a field's TextEntry the formatting the panel already shows for it
+     * elsewhere, so the view page does not fall back to the raw value or to a
+     * US-style date: the field's own displayFormat() for a date, else the
+     * preset of the list column of the same name (asDate, asDateTime,
+     * asMoney…), else the panel's default date or datetime format.
+     *
+     * @param  array<string, array{type: string, meta: array<string, mixed>}>  $columnPresets
+     */
+    private function formattedTextEntry(TextEntry $entry, Field $field, array $columnPresets): TextEntry
+    {
+        $attributes = $field->getAttributes();
+        $isDate = $field->fieldType() === 'date';
+        $datePreset = ($attributes['withTime'] ?? false) ? 'datetime' : 'date';
+
+        if ($isDate && is_string($attributes['displayFormat'] ?? null) && $attributes['displayFormat'] !== '') {
+            return $entry->preset($datePreset, ['format' => $attributes['displayFormat']]);
+        }
+
+        $column = $columnPresets[$field->name()] ?? null;
+        if ($column !== null) {
+            return $entry->preset($column['type'], $column['meta']);
+        }
+
+        return $isDate ? $entry->preset($datePreset) : $entry;
+    }
+
+    /**
+     * The formatting presets of the list columns, by column name: only the
+     * columns that have one.
+     *
+     * @return array<string, array{type: string, meta: array<string, mixed>}>
+     */
+    private function columnPresets(): array
+    {
+        $presets = [];
+        foreach ($this->columns() as $column) {
+            $col = $column->toArray();
+            $type = (string) ($col['type'] ?? 'text');
+            if ($type !== 'text') {
+                $presets[(string) $col['name']] = ['type' => $type, 'meta' => (array) ($col['meta'] ?? [])];
+            }
+        }
+
+        return $presets;
     }
 
     /**

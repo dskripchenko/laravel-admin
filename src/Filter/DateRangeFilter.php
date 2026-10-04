@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Filter;
 
+use Dskripchenko\LaravelAdmin\Support\DateBound;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 
 /**
  * A date range filter, translating into a BETWEEN.
  *
  * It takes `{from, to}` as `Y-m-d` (or ISO) strings. A null `from` or `to`
- * means there is no lower or upper bound.
+ * means there is no lower or upper bound. A date-only `to` includes that
+ * whole day — on a datetime column it is applied as `< next day`.
  *
  * URL: `?filters[created_at][from]=2024-01-01&filters[created_at][to]=2024-12-31`
  */
@@ -34,7 +36,7 @@ final class DateRangeFilter extends Filter
             $query = $query->where($this->field, '>=', $from);
         }
         if (is_string($to) && $to !== '') {
-            $query = $query->where($this->field, '<=', $to);
+            $query = DateBound::applyUpper($query, $this->field, $to);
         }
 
         return $query;

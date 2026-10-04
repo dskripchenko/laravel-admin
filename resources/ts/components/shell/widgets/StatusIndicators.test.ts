@@ -5,6 +5,7 @@ import MockAdapter from 'axios-mock-adapter'
 import StatusIndicators from './StatusIndicators.vue'
 import { setAdminClient, clearAdminClient } from '../../../stores/registry'
 import { createAdminClient } from '../../../api/client'
+import { useAuthStore } from '../../../stores/auth'
 
 const global = { stubs: { RouterLink: RouterLinkStub } }
 
@@ -14,6 +15,7 @@ describe('StatusIndicators', () => {
   beforeEach(() => {
     sessionStorage.clear()
     setActivePinia(createPinia())
+    signIn()
     const client = createAdminClient({ baseURL: 'http://api.test' })
     setAdminClient(client)
     mock = new MockAdapter(client.raw)
@@ -24,6 +26,10 @@ describe('StatusIndicators', () => {
     clearAdminClient()
     vi.useRealTimers()
   })
+
+  function signIn(): void {
+    useAuthStore().user = { id: 1, name: 'Admin', email: 'admin@example.com' } as never
+  }
 
   function reply(indicators: unknown[]): void {
     mock.onGet('/system/status').reply(200, { success: true, payload: { indicators } })
@@ -157,5 +163,34 @@ describe('StatusIndicators', () => {
     // down as one.
     const after = JSON.parse(sessionStorage.getItem(key)!)
     expect(after.indicators).toHaveLength(1)
+  })
+
+  it('does not ask before anyone is signed in, and starts once they are', async () => {
+    useAuthStore().user = null
+    reply([{ key: 'admin.health', status: 'error', label: 'Проверки' }])
+    const wrapper = mount(StatusIndicators, { global })
+    await flushPromises()
+
+    // The shell mounts before the router sends a guest to the login page;
+    // an unauthenticated request could only answer 401.
+    expect(mock.history.get.filter((r) => r.url === '/system/status')).toHaveLength(0)
+
+    signIn()
+    await flushPromises()
+    expect(mock.history.get.filter((r) => r.url === '/system/status')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="status-admin.health"]').exists()).toBe(true)
+  })
+
+  it('stops and clears on logout', async () => {
+    reply([{ key: 'admin.health', status: 'error', label: 'Проверки' }])
+    const wrapper = mount(StatusIndicators, { global })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="status-admin.health"]').exists()).toBe(true)
+    expect(Object.keys(sessionStorage).filter((k) => k.startsWith('admin.status:'))).toHaveLength(1)
+
+    useAuthStore().user = null
+    await flushPromises()
+    expect(wrapper.find('[data-testid="status-admin.health"]').exists()).toBe(false)
+    expect(Object.keys(sessionStorage).filter((k) => k.startsWith('admin.status:'))).toHaveLength(0)
   })
 })

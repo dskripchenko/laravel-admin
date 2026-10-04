@@ -11,11 +11,12 @@
  * registered gets no empty slot in its header, and neither does one whose
  * endpoint failed. A header that reports its own inability to report is noise.
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { UidIcon, UidTooltip } from '@dskripchenko/ui'
 import { CircleAlert, CircleCheck, CircleHelp, TriangleAlert } from 'lucide-vue-next'
 import { getAdminClient } from '../../../stores/registry'
+import { useAuthStore } from '../../../stores/auth'
 import { trSafe as tr } from '../../../stores/i18n'
 
 type StatusLevel = 'ok' | 'warning' | 'error' | 'unknown'
@@ -49,6 +50,8 @@ type CachedStatus = { at: number; indicators: Indicator[] }
 
 const indicators = ref<Indicator[]>([])
 let timer: ReturnType<typeof setTimeout> | null = null
+/** Whether the session is signed in and the header is polling. */
+let running = false
 
 const icons: Record<StatusLevel, Component> = {
   ok: CircleCheck,
@@ -98,6 +101,7 @@ async function load(): Promise<void> {
   try {
     const client = getAdminClient()
     const response = await client.get<{ indicators: Indicator[] }>('/system/status')
+    if (!running) return
     indicators.value = Array.isArray(response?.indicators) ? response.indicators : []
     writeCache(indicators.value)
   } catch {
@@ -111,11 +115,16 @@ async function load(): Promise<void> {
 
 function schedule(delay: number): void {
   timer = setTimeout(() => {
-    void load().then(() => schedule(POLL_MS))
+    void load().then(() => {
+      if (running) schedule(POLL_MS)
+    })
   }, delay)
 }
 
-onMounted(() => {
+function start(): void {
+  if (running) return
+  running = true
+
   const cached = readCache()
   const age = cached === null ? Number.POSITIVE_INFINITY : Date.now() - cached.at
 
@@ -126,10 +135,41 @@ onMounted(() => {
     return
   }
 
-  void load().then(() => schedule(POLL_MS))
-})
+  void load().then(() => {
+    if (running) schedule(POLL_MS)
+  })
+}
+
+function stop(): void {
+  running = false
+  if (timer !== null) clearTimeout(timer)
+  timer = null
+  indicators.value = []
+  // The next user to sign in on this tab must not inherit this one's answer.
+  try {
+    sessionStorage.removeItem(cacheKey())
+  } catch {
+    // Storage unavailable: there is no cache to clear either.
+  }
+}
+
+/**
+ * The endpoint sits behind the panel's auth. The shell — and this header with
+ * it — mounts before the router has resolved the first navigation, so an
+ * unauthenticated visitor on their way to the login page used to fire a
+ * request that could only answer 401 and leave a red line in the console.
+ * Polling therefore follows the session: it starts once a user is signed in
+ * and stops on logout.
+ */
+const auth = useAuthStore()
+watch(
+  () => auth.isAuthenticated,
+  (signedIn) => (signedIn ? start() : stop()),
+  { immediate: true },
+)
 
 onBeforeUnmount(() => {
+  running = false
   if (timer !== null) clearTimeout(timer)
   timer = null
 })

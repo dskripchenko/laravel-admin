@@ -28,6 +28,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still ships, and so does the transliteration table `Field\Slug` reads. The
   tar archive went from 9.8 MB / 780 files to 4.2 MB / 423 files.
 
+### Fixed
+
+- **A date range includes its last day.** `DateRangeFilter` compared a
+  date-only `to` bound with `<= 'Y-m-d'`, which on a datetime column stops at
+  midnight and dropped every record of the last day. A date-only `to` is now
+  applied as `< next day`; a `to` carrying a time is still compared with `<=`.
+  The audit log's `to` filter had the same bug and is fixed the same way.
+  *Behaviour change:* lists filtered up to a date now show that day's records.
+- **No 401 in the console on the login page.** The top bar's status
+  indicators polled `/system/status` as soon as the shell mounted — before the
+  router had sent a guest to the login page. Polling now follows the session:
+  it starts once a user is signed in and stops (and clears) on logout.
+- **One tone vocabulary for stats, badges, charts, gauges and heatmaps.**
+  Stat cards ignored `amber`, `gray` and `grey`, infolist badges accepted only
+  variant names, and a heatmap took `amber` for an invalid colour. Every
+  renderer now reads the same names: `primary`, `success`, `warning`,
+  `danger`, `info`, `neutral` and the colour words (`green`, `amber`,
+  `yellow`, `orange`, `red`, `blue`, `gray`/`grey`, `default` and a few
+  more), case-insensitively. A neutral/gray stat card gets a grey icon.
+  *Behaviour change:* an explicit `tone: 'neutral'` on a stat or gauge widget
+  mounted from code is now grey; the default (no tone) stays primary.
+- **More Lucide icon names resolve.** Added `edit` (and `edit-2`, `edit-3`,
+  `square-pen`, `pen`), `trash`, `x`, `chevron-*`, `arrow-*`, `eye-off`,
+  `unlock`, `log-in`, `external-link`, `more-horizontal`, `more-vertical`,
+  `alert-triangle`, `menu`, `save`, `share`, `printer` and others. Names
+  written as `ShoppingCart`, `shopping_cart` or `lucide-shopping-cart` resolve
+  to `shopping-cart`.
+- **Russian dates take the genitive for `M` too.** A short month next to a day
+  number read "8 май 2026"; it now reads "8 мая 2026", as Carbon's
+  `translatedFormat()` does (`F` already did).
+- **The resource view page formats dates like the rest of the panel.** The
+  default infolist gives a date field its own `displayFormat()`, else the
+  format of the list column of the same name (`asDate`, `asDateTime`, and
+  also `asMoney` and other presets), else the panel's default date format —
+  instead of the raw value. The "Metrics" card shows created/updated in the
+  column's format or `d.m.Y H:i`, no longer in the browser's US style.
+
 ## 1.47.0
 
 ### Fixed
@@ -744,7 +781,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `locale` or `theme` columns (the shared strategy with a host's own table):
   the choice is kept in the cookie, and the column is written only when it
   exists. The column list is read once per request.
-
 
 ### Docs
 

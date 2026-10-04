@@ -16,7 +16,8 @@
  *   └──────────────────────────────┴─────────────────┘
  */
 import { computed, onMounted, watch } from 'vue'
-import { formatLocale, tRaw } from '../../stores/i18n'
+import { tRaw } from '../../stores/i18n'
+import { formatCell, parseDateValue } from './cellFormat'
 import { useRouter } from 'vue-router'
 import { ArrowLeft, MoreHorizontal, Pencil, Trash2 } from 'lucide-vue-next'
 import {
@@ -102,33 +103,38 @@ const resolvedSubjectType = computed<string | null>(() => {
   return (resourceMeta.value?.subject_type as string | null | undefined) ?? null
 })
 
+/** The metrics card's date format when the list does not set one. */
+const METRIC_DATETIME = 'd.m.Y H:i'
+
+interface MetricRow {
+  label: string
+  value: string
+}
+
 /**
  * The default metrics — created_at, updated_at and created_by from the record.
  * They are shown whenever the record has at least one of those fields, and
  * Eloquent's standard timestamps are on most models.
  */
-interface MetricRow {
-  label: string
-  value: string
-}
 const defaultMetrics = computed<MetricRow[]>(() => {
   const r = form.state as Record<string, unknown>
   const rows: MetricRow[] = []
-  const fmt = (iso: unknown): string | null => {
+  const fmt = (iso: unknown, column: string): string | null => {
     if (typeof iso !== 'string' || iso === '') return null
-    const ts = new Date(iso)
-    if (Number.isNaN(ts.getTime())) return null
-    return ts.toLocaleString(formatLocale(), {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    if (parseDateValue(iso) === null) return null
+    // The format the list shows this column in (asDateTime('…')), else the
+    // panel's own default — never the browser's US-style toLocaleString().
+    const col = (resourceMeta.value?.columns ?? []).find((c) => c.name === column) as
+      | { type?: string; meta?: Record<string, unknown> }
+      | undefined
+    const preset = col?.type === 'date' || col?.type === 'datetime' ? col.type : 'datetime'
+    const meta = { format: METRIC_DATETIME, ...(preset === col?.type ? (col?.meta ?? {}) : {}) }
+    const out = formatCell(iso, preset, meta)
+    return out === '' ? null : out
   }
-  const created = fmt(r.created_at)
+  const created = fmt(r.created_at, 'created_at')
   if (created) rows.push({ label: tr('Создано'), value: created })
-  const updated = fmt(r.updated_at)
+  const updated = fmt(r.updated_at, 'updated_at')
   if (updated && updated !== created) rows.push({ label: tr('Обновлено'), value: updated })
   const author =
     typeof r.created_by_name === 'string' && r.created_by_name !== ''

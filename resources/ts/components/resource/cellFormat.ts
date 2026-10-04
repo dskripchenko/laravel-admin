@@ -20,6 +20,7 @@
  */
 
 import { currentLocale, formatNumber, trSafe as tr } from '../../stores/i18n'
+import { badgeVariant, type BadgeVariant } from '../tones'
 
 export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes' | 'image' | 'link'
 
@@ -72,23 +73,17 @@ export function formatCell(
   }
 }
 
-export type BadgeTone = 'info' | 'success' | 'warning' | 'danger' | 'default'
+export type BadgeTone = BadgeVariant
 
 /**
- * Tone names pass through; the colour names the docs use (green, red, …) map
- * onto the UI kit's tones.
+ * The badge tone of a value: the column's colour map, meta.colors, read
+ * through the panel's one tone vocabulary (see ../tones.ts) — the same names
+ * a stat card, a chart or a gauge takes.
  */
-const BADGE_TONES: Record<string, BadgeTone> = {
-  info: 'info', success: 'success', warning: 'warning', danger: 'danger', default: 'default',
-  blue: 'info', green: 'success', yellow: 'warning', amber: 'warning', orange: 'warning',
-  red: 'danger', gray: 'default', grey: 'default', neutral: 'default',
-}
-
-/** The badge tone of a value: the column's colour map, meta.colors. */
 export function badgeTone(value: unknown, meta: CellMeta = {}): BadgeTone {
   const colors = (meta.colors as Record<string, string> | undefined) ?? {}
   const color = value === null || value === undefined ? undefined : colors[String(value)]
-  return (color && BADGE_TONES[color]) || 'default'
+  return badgeVariant(color)
 }
 
 /** The badge caption of a value: meta.labels, or the value itself. */
@@ -198,8 +193,9 @@ function offset(date: Date, colon: boolean): string {
  *   time     a A B g G h H i s u v
  *   zone     e I O P p T Z        full  c r U
  *
- * F before or after a day number takes the form a date reads with, which in
- * Russian is the genitive: «1 октября», not «1 октябрь». A backslash escapes
+ * F and M before or after a day number take the form a date reads with, which
+ * in Russian is the genitive: «8 мая», not «8 май» — as Carbon's
+ * translatedFormat() does. A backslash escapes
  * the next character, as in PHP.
  */
 export function formatPhpDate(date: Date, format: string): string {
@@ -213,7 +209,7 @@ export function formatPhpDate(date: Date, format: string): string {
   const dayOfYear = Math.round(
     (Date.UTC(year, month, day) - Date.UTC(year, 0, 1)) / 86_400_000,
   )
-  // F next to a day number: the month as it reads inside a date.
+  // F or M next to a day number: the month as it reads inside a date.
   const withDay = /(^|[^\\])[dj]/.test(format)
 
   const token = (ch: string): string | null => {
@@ -232,7 +228,10 @@ export function formatPhpDate(date: Date, format: string): string {
           ? intlPart(date, locale, { day: 'numeric', month: 'long' }, 'month')
           : intlPart(date, locale, { month: 'long' }, 'month')
       case 'm': return pad(month + 1)
-      case 'M': return intlPart(date, locale, { month: 'short' }, 'month')
+      case 'M':
+        return withDay
+          ? intlPart(date, locale, { day: 'numeric', month: 'short' }, 'month')
+          : intlPart(date, locale, { month: 'short' }, 'month')
       case 'n': return String(month + 1)
       case 't': return String(new Date(year, month + 1, 0).getDate())
       case 'L': return leap ? '1' : '0'

@@ -14,10 +14,9 @@ import { computed, type Component } from 'vue'
 import { UidStat } from '@dskripchenko/ui'
 import type { StatTone } from '@dskripchenko/ui'
 import { resolveIcon } from '../shell/iconRegistry'
+import { resolveTone, type PanelTone } from '../tones'
 import { currentLocale, formatNumber, intlLocale } from '../../stores/i18n'
 import { useLocaleStore } from '../../stores/locale'
-
-type SemanticTone = 'neutral' | 'positive' | 'negative' | 'warning' | 'info'
 
 interface StatChange {
   delta?: number
@@ -52,7 +51,8 @@ interface Props {
   suffix?: string
   trend?: number
   precision?: number
-  tone?: SemanticTone
+  /** A name from the panel's tone vocabulary (../tones.ts); primary when unset. */
+  tone?: string
   loading?: boolean
 }
 
@@ -64,31 +64,26 @@ const props = withDefaults(defineProps<Props>(), {
   suffix: '',
   trend: undefined,
   precision: 0,
-  tone: 'neutral',
+  tone: undefined,
   loading: false,
 })
 
-/** Semantic and kit tone names, plus the usual color words, onto UidStat tones. */
-const TONES: Record<string, StatTone> = {
-  neutral: 'primary',
-  primary: 'primary',
-  default: 'primary',
-  positive: 'success',
-  success: 'success',
-  green: 'success',
-  negative: 'danger',
-  danger: 'danger',
-  error: 'danger',
-  red: 'danger',
-  warning: 'warning',
-  yellow: 'warning',
-  orange: 'warning',
-  info: 'info',
-  blue: 'info',
+/**
+ * A stat's colour, from the panel's one tone vocabulary (../tones.ts): the
+ * stat's own `color`, else the widget's `tone`, else primary. UidStat has no
+ * neutral tone, so a gray stat is drawn as primary and greyed by a class.
+ */
+function panelToneOf(color: string | null | undefined): PanelTone {
+  return resolveTone(color) ?? resolveTone(props.tone) ?? 'primary'
 }
 
 function toneOf(color: string | null | undefined): StatTone {
-  return TONES[(color ?? '').toLowerCase()] ?? TONES[props.tone] ?? 'primary'
+  const tone = panelToneOf(color)
+  return tone === 'neutral' ? 'primary' : tone
+}
+
+function toneClass(color: string | null | undefined): string | undefined {
+  return panelToneOf(color) === 'neutral' ? 'admin-stat--neutral' : undefined
 }
 
 /** A trend's sign follows its direction: `down` with a positive delta is a fall. */
@@ -107,6 +102,7 @@ interface ResolvedStat {
   suffix: string
   trend: number | undefined
   tone: StatTone
+  toneClass: string | undefined
   icon: Component | undefined
   precision: number
   formatter: ((value: number | string) => string) | undefined
@@ -144,6 +140,7 @@ const items = computed<ResolvedStat[]>(() => {
       suffix: props.suffix,
       trend: props.trend,
       tone: toneOf(null),
+      toneClass: toneClass(null),
       icon: undefined,
       precision: props.precision,
       formatter: undefined,
@@ -160,6 +157,7 @@ const items = computed<ResolvedStat[]>(() => {
     suffix: s.suffix ?? '',
     trend: trendOf(s.change),
     tone: toneOf(s.color),
+    toneClass: toneClass(s.color),
     icon: resolveIcon(s.icon) ?? undefined,
     precision: typeof s.precision === 'number' ? s.precision : props.precision,
     formatter: moneyFormatter(s.format),
@@ -202,7 +200,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
     :icon="items[0]!.icon"
     :loading="loading"
     trend-placement="below"
-    class="admin-stats-widget__single"
+    :class="['admin-stats-widget__single', items[0]!.toneClass]"
   />
   <section v-else class="admin-stats-widget">
     <header v-if="title" class="admin-stats-widget__hd">
@@ -223,6 +221,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
         :tone="stat.tone"
         :icon="stat.icon"
         :loading="loading"
+        :class="stat.toneClass"
         trend-placement="below"
       />
     </div>
@@ -250,6 +249,11 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
   /* A lone card fills its dashboard cell, level with the cards next to it. */
   height: 100%;
   box-sizing: border-box;
+}
+/* UidStat has no neutral tone: a gray stat is primary with a grey icon. */
+.admin-stat--neutral .uid-stat__icon {
+  background: color-mix(in srgb, var(--uid-color-zinc-400) 16%, transparent);
+  color: var(--uid-color-zinc-500, var(--uid-color-zinc-400));
 }
 .admin-stats-widget__grid {
   flex: 1;
