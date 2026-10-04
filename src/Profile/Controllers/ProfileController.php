@@ -402,8 +402,13 @@ class ProfileController extends ApiController
         }
 
         $abilities = (array) ($data['abilities'] ?? ['*']);
-        $expires = isset($data['expires_in_days'])
-            ? now()->addDays((int) $data['expires_in_days'])
+        // A request that does not mention expiry gets admin.auth.api_tokens.default_expiry
+        // (days, null = never); an explicit null still asks for a token that never expires.
+        $days = array_key_exists('expires_in_days', $data)
+            ? $data['expires_in_days']
+            : config('admin.auth.api_tokens.default_expiry');
+        $expires = $days !== null && (int) $days > 0
+            ? now()->addDays((int) $days)
             : null;
 
         /** @var \Laravel\Sanctum\NewAccessToken $newToken */

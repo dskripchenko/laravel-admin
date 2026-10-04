@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\File;
 afterEach(function (): void {
     File::deleteDirectory(PrebuiltAssets::publishedPath());
     File::delete([config_path('admin.php'), base_path('vite.config.js'), base_path('resources/js/admin.js')]);
+    // admin:install publishes the package's migrations into the skeleton app.
+    foreach (File::files(__DIR__.'/../../database/migrations') as $migration) {
+        File::delete(database_path('migrations/'.$migration->getFilename()));
+    }
 });
 
 it('installs non-interactively with the prebuilt frontend', function (): void {

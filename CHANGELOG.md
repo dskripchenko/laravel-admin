@@ -28,6 +28,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   still ships, and so does the transliteration table `Field\Slug` reads. The
   tar archive went from 9.8 MB / 780 files to 4.2 MB / 423 files.
 
+### Added
+
+- **`admin.auth.api_tokens.default_expiry` works.** A token created without
+  `expires_in_days` (the profile page sends none) now expires after this many
+  days; `null`, the default, keeps such tokens without an expiry. An explicit
+  `expires_in_days: null` still asks for a token that never expires.
+
+### Removed
+
+- **Config keys that nothing read.** These were removed from
+  `config/admin.php`; a published config that still has them keeps working,
+  and they are simply ignored as before:
+  - `auth.api_tokens.rate_limit`: the admin API's limit is `api.throttle`;
+  - `middleware.public`;
+  - `notifications.table` and `notifications.use_host_table`;
+  - `audit.table` and `audit.retention_days`;
+  - `exports.pdf.fallback`: when the configured driver is missing, the other
+    installed one is used, as before;
+  - `exports.xlsx.driver` and `exports.xlsx.options`;
+  - `manifest.cache_store`.
+
+  A test now fails when a key of `config/admin.php` is not read anywhere.
+
 ### Fixed
 
 - **A date range includes its last day.** `DateRangeFilter` compared a
@@ -64,6 +87,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   also `asMoney` and other presets), else the panel's default date format —
   instead of the raw value. The "Metrics" card shows created/updated in the
   column's format or `d.m.Y H:i`, no longer in the browser's US style.
+
+- **`pest --parallel` is reliably green.** Every test runs on Testbench's
+  skeleton app, and some write into it:
+  - `admin:install` publishes `config/admin.php` and the migrations;
+  - `admin:publish` fills `public/vendor/admin`;
+  - the shared-strategy install adds a migration.
+
+  Parallel workers shared that one directory, so one worker loaded another's
+  published config or migrated a file that was deleted mid-listing. Random
+  failures followed, in `PanelsTest`, `DashboardAccessTest`, `ImportApiTest`,
+  `SoftDeleteTest` and others. Each parallel worker now runs on its own copy
+  of the skeleton, and the install tests remove the migrations they publish.
 
 ## 1.47.0
 

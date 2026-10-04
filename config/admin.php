@@ -66,7 +66,8 @@ return [
 
         'api_tokens' => [
             'enabled' => true,
-            'rate_limit' => '60,1',
+            // The lifetime in days of a token created without `expires_in_days`
+            // (the profile page sends none); null — such tokens never expire.
             'default_expiry' => null,
         ],
     ],
@@ -101,9 +102,6 @@ return [
             Dskripchenko\LaravelAdmin\Http\Middleware\CaptureApiRequest::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\AdminAuth::class,
             Dskripchenko\LaravelAdmin\Http\Middleware\RunActionMiddleware::class,
-        ],
-        'public' => [
-            'web',
         ],
     ],
 
@@ -230,24 +228,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Notifications
-    |--------------------------------------------------------------------------
-    */
-
-    'notifications' => [
-        'table' => 'admin_notifications',
-        'use_host_table' => false,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Audit
     |--------------------------------------------------------------------------
     */
 
     'audit' => [
         'enabled' => true,
-        'table' => 'admin_audit_logs',
         'log_auth_events' => true,
         // Attributes whose changes are stripped from the diff snapshot.
         // Default: credentials/secrets + bookkeeping timestamps that fire on
@@ -266,7 +252,6 @@ return [
         // left to record, skip writing the audit row entirely instead of
         // leaving an empty "Changed" entry in the timeline.
         'skip_empty_updates' => true,
-        'retention_days' => 365,
         'user_agent_max_length' => 1024,
         'url_max_length' => 2048,
         // Human-readable labels for actor_type and subject_type: FQCN → label.
@@ -288,7 +273,8 @@ return [
         // in the service list of system roles — neither in the list nor
         // through a direct edit URL. Useful so that roles of another domain
         // (the client-side `client-*` ones, say) do not mix with the admin
-        // roles. Nothing is hidden by default.
+        // roles. Nothing is hidden by default. Read by the RoleResource of
+        // dskripchenko/laravel-admin-starter.
         'hidden_slug_prefixes' => [],
     ],
 
@@ -324,16 +310,12 @@ return [
 
     'exports' => [
         'pdf' => [
+            // When this driver is not installed, the other one is used if it is.
             'driver' => env('ADMIN_PDF_DRIVER', 'mpdf'),
-            'fallback' => 'dompdf',
             'options' => [
                 'mpdf' => ['mode' => 'utf-8', 'format' => 'A4'],
                 'dompdf' => ['paper' => 'a4', 'orientation' => 'portrait'],
             ],
-        ],
-        'xlsx' => [
-            'driver' => 'openspout',
-            'options' => ['memory_limit' => '512M'],
         ],
         'csv' => [
             'delimiter' => ';',
@@ -349,7 +331,6 @@ return [
     */
 
     'manifest' => [
-        'cache_store' => null,
         'etag' => true,
     ],
 
