@@ -87,6 +87,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   also `asMoney` and other presets), else the panel's default date format —
   instead of the raw value. The "Metrics" card shows created/updated in the
   column's format or `d.m.Y H:i`, no longer in the browser's US style.
+- **`admin:make-section` / `admin:make-resource` generate code that runs.**
+  The generated resource used to call methods that do not exist
+  (`TableColumn::sortable()`, `searchable()`, `preset()`, `view()`) and a
+  `BaseDateFilter` class that does not exist, so registering it took the whole
+  panel down. The generator now emits only the real API (`sort()`,
+  `asDateTime()`, `asBadge()`, `asMoney()`, `DateRangeFilter`,
+  `OptionsFilter`, `SwitcherFilter`, `SelectFromModelFilter`,
+  `RelationSelect::relation(Model::class, 'column')`, `Select::fromEnum()`),
+  imports exactly the classes it uses, and reads enum values from SQLite and
+  PostgreSQL `CHECK … IN` constraints and from backed-enum casts. A new
+  contract test generates resources for users, posts with foreign keys, enums,
+  JSON, dates and a bare table, loads them, and checks the manifest, the list
+  and the create endpoints.
+- **Secrets stay out of generated resources.** `password`, `remember_token`,
+  `*_token`, `*_secret`, `*_password`, `two_factor_*`, `hashed` casts and the
+  model's `$hidden` are no longer offered for the form, the list, the filters
+  or `searchableFields()`. The model written for a bare table hides them and
+  casts booleans, JSON and dates.
+- **One broken resource no longer takes the panel down.** A resource, screen,
+  settings page or dashboard that throws while the manifest or the API routes
+  are built is logged and left out, and the menu and the global search skip
+  it too. With `app.debug` on, the manifest lists it under `diagnostics` and
+  the panel shows a warning to the administrator.
+- **The wizards register their plugin.** `admin:make-section`,
+  `admin:make-resource` and `admin:make-screen` add the generated
+  `App\Admin\AdminPlugin` to `plugins` in `config/admin.php` when it is not
+  loaded yet, or print the line to add when the config is not published.
+- **Inserts keep the file's formatting.** Adding a class to
+  `$admin->resources([...])`, `$admin->screen([...])` or the `plugins` list
+  now keeps one-line lists on one line, puts a multi-line list's new item on
+  its own line with the items' indentation, and leaves comments alone.
+- **Class names and slugs are derived word by word.** "Contact us" gives
+  `ContactUsScreen` and `contact-us` (it used to give `ContactUScreen` and
+  `contact-u`); "Blog post" gives `BlogPostResource` and `blog-posts`.
+- **No more `npm run build` in the wizards' next steps.** The panel reads a
+  new resource from the manifest; no frontend rebuild is needed.
+  `admin:make-resource` no longer asks about the menu or a role.
 
 - **`pest --parallel` is reliably green.** Every test runs on Testbench's
   skeleton app, and some write into it:

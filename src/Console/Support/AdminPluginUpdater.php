@@ -92,8 +92,72 @@ final class AdminPluginUpdater
     }
 
     /**
+     * Makes sure the plugin the generators write into is loaded: it is listed
+     * in config('admin.plugins'). When the running config lacks it and
+     * config/admin.php exists, the class is appended to its `plugins` list,
+     * keeping the file's formatting. Without a published config — or with a
+     * `plugins` key the updater cannot find — nothing is written and the
+     * result carries the line to add by hand.
+     *
+     * @return array{status: 'listed'|'registered'|'manual', class: string, config: string, instructions: ?string}
+     */
+    public function ensurePluginRegistered(?string $pluginPath = null): array
+    {
+        $pluginPath ??= $this->findOrCreatePlugin();
+        $class = $this->classOf($pluginPath) ?? 'App\\Admin\\AdminPlugin';
+        $configPath = config_path('admin.php');
+        $line = '\\'.$class.'::class';
+        $manual = "Add {$line} to the 'plugins' list in config/admin.php"
+            .' (publish it first: php artisan vendor:publish --tag=admin-config).';
+
+        $listed = in_array($class, array_map(
+            static fn (mixed $c): string => is_string($c) ? ltrim($c, '\\') : '',
+            (array) config('admin.plugins', []),
+        ), true);
+
+        if (! $this->files->exists($configPath)) {
+            return ['status' => $listed ? 'listed' : 'manual', 'class' => $class, 'config' => $configPath, 'instructions' => $listed ? null : $manual];
+        }
+
+        $source = (string) $this->files->get($configPath);
+        $short = class_basename($class);
+        if ($listed || preg_match('/(?<![\\w])'.preg_quote($class, '/').'::class/', $source) === 1
+            || preg_match('/(?<![\\w\\\\])'.preg_quote($short, '/').'::class/', $source) === 1) {
+            return ['status' => 'listed', 'class' => $class, 'config' => $configPath, 'instructions' => null];
+        }
+
+        $open = PhpListEditor::findConfigKeyList($source, 'plugins');
+        $updated = $open !== null ? PhpListEditor::append($source, $open, $line) : null;
+        if ($updated === null) {
+            return ['status' => 'manual', 'class' => $class, 'config' => $configPath, 'instructions' => $manual];
+        }
+
+        $this->files->put($configPath, $updated);
+
+        return ['status' => 'registered', 'class' => $class, 'config' => $configPath, 'instructions' => null];
+    }
+
+    /**
+     * The fully qualified class name declared in a PHP file.
+     */
+    private function classOf(string $path): ?string
+    {
+        if (! $this->files->exists($path)) {
+            return null;
+        }
+        $source = (string) $this->files->get($path);
+        if (preg_match('/^\s*(?:final\s+|abstract\s+|readonly\s+)*class\s+(\w+)/m', $source, $class) !== 1) {
+            return null;
+        }
+        $namespace = preg_match('/^\s*namespace\s+([^;]+);/m', $source, $ns) === 1 ? trim($ns[1]).'\\' : '';
+
+        return $namespace.$class[1];
+    }
+
+    /**
      * Finds an existing plugin class in app/Admin/, or generates a new
-     * AdminPlugin and registers it in config('admin.plugins').
+     * AdminPlugin. ensurePluginRegistered() then makes sure it is listed in
+     * config('admin.plugins').
      */
     private function findOrCreatePlugin(): string
     {
@@ -162,8 +226,10 @@ final class AdminPlugin implements AdminPluginContract
 
     public function boot(Admin $admin): void
     {
-        $admin->resources([]);
-        $admin->screen([]);
+        $admin->resources([
+        ]);
+        $admin->screen([
+        ]);
     }
 }
 PHP;
@@ -199,30 +265,13 @@ PHP;
             $contents = $this->insertImport($contents, $useLine);
         }
 
-        // Find `$admin->resources([...])` or `$admin->screen([...])` and add
-        // to it. When there is no such call, add a new one before boot() closes.
-        $callPattern = $kind === 'resources'
-            ? '/\$admin->resources\(\[(.*?)\]\)/s'
-            : '/\$admin->screen\(\[(.*?)\]\)/s';
-
-        if (preg_match($callPattern, $contents, $m)) {
-            $existing = trim($m[1]);
-            $newList = $existing === ''
-                ? "\n            {$shortClass}::class,\n        "
-                : rtrim($existing, " \n,").",\n            {$shortClass}::class,\n        ";
-            $replaced = preg_replace_callback(
-                $callPattern,
-                fn (): string => '$admin->'.($kind === 'resources' ? 'resources' : 'screen')."([{$newList}])",
-                $contents,
-                1,
-            );
-            if ($replaced !== null) {
-                $contents = $replaced;
-            }
-        } else {
-            $newCall = '        $admin->'.($kind === 'resources' ? 'resources' : 'screen')."([{$shortClass}::class]);";
-            $contents = $this->insertIntoBoot($contents, $newCall);
-        }
+        // Add to `$admin->resources([...])` or `$admin->screen([...])`, keeping
+        // the list's formatting; with no such call, add one at the end of boot().
+        $method = $kind === 'resources' ? 'resources' : 'screen';
+        $open = PhpListEditor::findMethodCallList($contents, $method);
+        $appended = $open !== null ? PhpListEditor::append($contents, $open, $shortClass.'::class') : null;
+        $contents = $appended
+            ?? $this->insertIntoBoot($contents, '        $admin->'.$method."([{$shortClass}::class]);");
 
         $this->files->put($plugin, $contents);
 

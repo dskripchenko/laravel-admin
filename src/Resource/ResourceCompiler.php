@@ -6,6 +6,8 @@ namespace Dskripchenko\LaravelAdmin\Resource;
 
 use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
 use Dskripchenko\LaravelAdmin\Table\SavedViewsController;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Compiles ResourceRegistry into the `controllers` array of
@@ -29,16 +31,27 @@ final class ResourceCompiler
     {
         $controllers = [];
         foreach ($registry->all($panel) as $slug => $class) {
-            $resource = $registry->resolve($slug);
-            if ($resource === null) {
+            // The routes are compiled on every API request: a resource that
+            // throws here would fail the whole panel. It gets no routes and a
+            // log line instead; the manifest leaves it out the same way.
+            try {
+                $resource = $registry->resolve($slug);
+                if ($resource === null) {
+                    continue;
+                }
+                $entry = self::buildControllerEntry($resource);
+                // The saved views follow a flag on the resource, as the other
+                // features do: four routes per resource make sense where the
+                // list really is filtered.
+                $views = $resource->savedViews() ? self::buildSavedViewsEntry($resource::permission()) : null;
+            } catch (Throwable $e) {
+                Log::error("laravel-admin: no routes for the resource '{$slug}' ({$class}): {$e->getMessage()}", ['exception' => $e]);
+
                 continue;
             }
-            $controllers[$slug] = self::buildControllerEntry($resource);
-            // The saved views follow a flag on the resource, as the other
-            // features do: four routes per resource make sense where the list
-            // really is filtered.
-            if ($resource->savedViews()) {
-                $controllers[$slug.'_views'] = self::buildSavedViewsEntry($resource::permission());
+            $controllers[$slug] = $entry;
+            if ($views !== null) {
+                $controllers[$slug.'_views'] = $views;
             }
         }
 

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Settings;
 
 use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Compiles SettingsRegistry into the `controllers` array of
@@ -23,11 +25,16 @@ final class SettingsCompiler
     {
         $controllers = [];
         foreach ($registry->all($panel) as $slug => $class) {
-            $resource = $registry->resolve($slug);
-            if ($resource === null) {
-                continue;
+            // One settings page that throws must not fail every API route.
+            try {
+                $resource = $registry->resolve($slug);
+                if ($resource === null) {
+                    continue;
+                }
+                $controllers['settings_'.$slug] = self::buildEntry($resource::permission());
+            } catch (Throwable $e) {
+                Log::error("laravel-admin: no routes for the settings page '{$slug}' ({$class}): {$e->getMessage()}", ['exception' => $e]);
             }
-            $controllers['settings_'.$slug] = self::buildEntry($resource::permission());
         }
 
         return $controllers;

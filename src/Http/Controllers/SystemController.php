@@ -329,24 +329,29 @@ final class SystemController extends ApiController
             if (isset($used[$slug]) || isset($hidden[$slug])) {
                 continue;
             }
-            $resource = $this->resources->resolve($slug);
-            if ($resource === null) {
+            // A resource that throws is left out of the menu, as it is of
+            // the manifest (which logs it), instead of failing the shell.
+            try {
+                $resource = $this->resources->resolve($slug);
+                if ($resource === null) {
+                    continue;
+                }
+
+                $items[] = [
+                    'key' => $slug,
+                    'label' => $resource::label(),
+                    'icon' => $resource::$icon,
+                    'url' => '/r/'.$slug,
+                    'routeName' => 'admin.resource.'.$slug.'.index',
+                    'group' => $resource::$group === null ? null : (string) __($resource::$group),
+                    'badge' => null,
+                    'order' => 0,
+                    'permissions' => [$resource::permission().'.view'],
+                    'children' => [],
+                ];
+            } catch (\Throwable) {
                 continue;
             }
-            $viewPermission = $resource::permission().'.view';
-
-            $items[] = [
-                'key' => $slug,
-                'label' => $resource::label(),
-                'icon' => $resource::$icon,
-                'url' => '/r/'.$slug,
-                'routeName' => 'admin.resource.'.$slug.'.index',
-                'group' => $resource::$group === null ? null : (string) __($resource::$group),
-                'badge' => null,
-                'order' => 0,
-                'permissions' => [$viewPermission],
-                'children' => [],
-            ];
         }
 
         foreach ($this->screens->all($panel) as $slug => $class) {
@@ -359,11 +364,16 @@ final class SystemController extends ApiController
             if (is_subclass_of($class, DashboardScreen::class)) {
                 continue;
             }
-            $screen = $this->admin->resolveScreen($slug);
-            if ($screen === null) {
+            try {
+                $screen = $this->admin->resolveScreen($slug);
+                if ($screen === null) {
+                    continue;
+                }
+                $permission = $screen->permission();
+                $label = $screen->name();
+            } catch (\Throwable) {
                 continue;
             }
-            $permission = $screen->permission();
             $permissions = match (true) {
                 $permission === null => [],
                 is_string($permission) => [$permission],
@@ -371,7 +381,7 @@ final class SystemController extends ApiController
             };
             $items[] = [
                 'key' => 'screen.'.$slug,
-                'label' => $screen->name(),
+                'label' => $label,
                 'icon' => null,
                 'url' => '/screens/'.$slug,
                 'routeName' => 'admin.screen.'.$slug,

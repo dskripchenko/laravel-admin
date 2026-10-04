@@ -7,6 +7,8 @@ namespace Dskripchenko\LaravelAdmin\Screen;
 use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
 use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Compiles ScreenRegistry into the `controllers` array of
@@ -42,9 +44,16 @@ final class ScreenCompiler
                 continue;
             }
 
-            /** @var Screen $instance */
-            $instance = app($class);
-            $middleware = self::buildPermissionMiddleware($instance->permission());
+            // One screen that throws must not fail every API route.
+            try {
+                /** @var Screen $instance */
+                $instance = app($class);
+                $middleware = self::buildPermissionMiddleware($instance->permission());
+            } catch (Throwable $e) {
+                Log::error("laravel-admin: no routes for the screen '{$slug}' ({$class}): {$e->getMessage()}", ['exception' => $e]);
+
+                continue;
+            }
 
             $controllers[$slug] = [
                 'controller' => ScreenController::class,

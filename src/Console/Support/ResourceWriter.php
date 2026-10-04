@@ -27,11 +27,20 @@ final class ResourceWriter
             return false;
         }
 
-        $stub = $this->files->get($stubPath);
-        $content = $this->replace($stub, $vars);
+        return $this->write($targetPath, $this->replace($this->files->get($stubPath), $vars), $force);
+    }
+
+    /**
+     * Writes a generated file, unless it exists and $force is off.
+     */
+    public function write(string $targetPath, string $contents, bool $force = false): bool
+    {
+        if (! $force && $this->files->exists($targetPath)) {
+            return false;
+        }
 
         $this->files->ensureDirectoryExists(dirname($targetPath));
-        $this->files->put($targetPath, $content);
+        $this->files->put($targetPath, $contents);
 
         return true;
     }
@@ -82,10 +91,47 @@ final class ResourceWriter
     }
 
     /**
-     * Derives a class name from the label or name the user typed.
+     * Derives a class name from the label the user typed, word by word:
+     * "Contact us" → ContactUsScreen, "Статья" → StatiaResource. The label is
+     * taken as it is — the wizards ask for the singular already, and
+     * singularizing the whole phrase mangled it ("Contact us" → "Contact u").
      */
-    public function classNameFor(string $singularLabel, string $suffix = 'Resource'): string
+    public function classNameFor(string $label, string $suffix = 'Resource'): string
     {
-        return Str::studly(Str::singular($singularLabel)).$suffix;
+        $words = preg_split('/[^A-Za-z0-9]+/', Str::ascii($label), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $base = implode('', array_map(static fn (string $w): string => Str::ucfirst($w), $words));
+        if ($base === '' || ctype_digit($base[0])) {
+            $base = 'Admin'.$base;
+        }
+        if ($suffix !== '' && str_ends_with($base, $suffix)) {
+            $base = substr($base, 0, -strlen($suffix)) ?: $base;
+        }
+
+        return $base.$suffix;
+    }
+
+    /**
+     * The URL slug of a label: "Contact us" → contact-us.
+     */
+    public function slugFor(string $label): string
+    {
+        $slug = Str::slug(Str::ascii($label));
+
+        return $slug !== '' ? $slug : 'section';
+    }
+
+    /**
+     * The plural slug of a resource: "Blog post" → blog-posts.
+     */
+    public function resourceSlugFor(string $singularLabel): string
+    {
+        $words = preg_split('/[^A-Za-z0-9]+/', Str::ascii($singularLabel), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if ($words === []) {
+            return 'records';
+        }
+        $last = array_pop($words);
+        $words[] = Str::plural($last);
+
+        return Str::lower(implode('-', $words));
     }
 }

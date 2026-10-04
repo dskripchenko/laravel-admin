@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Console;
 
 use Dskripchenko\LaravelAdmin\Console\Support\AdminPluginUpdater;
+use Dskripchenko\LaravelAdmin\Console\Support\PluginRegistrationReport;
 use Dskripchenko\LaravelAdmin\Console\Support\ResourceWriter;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -42,7 +42,7 @@ final class MakeScreenCommand extends Command
         $label = text(label: 'Title (e.g. Contact the team)', required: true);
         $slug = text(
             label: 'Slug',
-            default: Str::kebab(Str::singular($label)),
+            default: $writer->slugFor($label),
             required: true,
         );
         $description = text(label: 'Description (optional)', default: '');
@@ -99,9 +99,10 @@ final class MakeScreenCommand extends Command
         $vars = [
             'namespace' => $namespace,
             'class' => $className,
-            'label' => $label,
-            'description' => $description !== '' ? "'{$description}'" : 'null',
-            'permission' => $permission !== '' ? "'{$permission}'" : 'null',
+            'slug' => $this->escape($slug),
+            'label' => $this->escape($label),
+            'description' => $description !== '' ? "'".$this->escape($description)."'" : 'null',
+            'permission' => $permission !== '' ? "'".$this->escape($permission)."'" : 'null',
             'stateInit' => $stateInit,
             'layoutFields' => $layoutFields,
             'commandBar' => $commandBar,
@@ -129,10 +130,18 @@ final class MakeScreenCommand extends Command
             info('Menu item added');
         }
 
+        $plugin = $updater->ensurePluginRegistered($reg['path']);
+        PluginRegistrationReport::print($this, $plugin);
+
         info('Done.');
-        note("Open /admin/screens/{$slug} (after composer dump-autoload).");
+        note('Open /'.trim((string) config('admin.path', 'admin'), '/')."/screens/{$slug}");
 
         return self::SUCCESS;
+    }
+
+    private function escape(string $value): string
+    {
+        return str_replace(['\\', "'"], ['\\\\', "\\'"], $value);
     }
 
     /** @param list<array{name: string, type: string}> $fields */

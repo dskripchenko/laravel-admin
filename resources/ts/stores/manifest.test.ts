@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import MockAdapter from 'axios-mock-adapter'
 import { useManifestStore } from './manifest'
 import { setAdminClient, clearAdminClient } from './registry'
 import { createAdminClient } from '../api/client'
+import { adminToast } from './toast'
 
 describe('manifest store', () => {
   let mock: MockAdapter
@@ -18,6 +19,25 @@ describe('manifest store', () => {
   afterEach(() => {
     mock.reset()
     clearAdminClient()
+  })
+
+  it('warns once about each section the backend left out', async () => {
+    const warning = vi.spyOn(adminToast, 'warning').mockImplementation(() => {})
+    const m = useManifestStore()
+    const diagnostics = [
+      { kind: 'resource', slug: 'posts', class: 'App\\Admin\\PostResource', message: 'The section posts failed to load' },
+    ]
+    mock.onGet('/system/manifest').reply(200, {
+      success: true,
+      payload: { version: 'v1', locale: 'en', resources: [], screens: [], settings: [], dashboards: [], plugins: [], permissions: [], diagnostics },
+    })
+
+    await m.load()
+    await m.load(true)
+
+    expect(warning).toHaveBeenCalledTimes(1)
+    expect(warning).toHaveBeenCalledWith('The section posts failed to load', { duration: 0 })
+    warning.mockRestore()
   })
 
   it('starts empty', () => {

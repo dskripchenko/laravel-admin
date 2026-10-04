@@ -43,61 +43,83 @@ final class GlobalSearch
                 break;
             }
 
-            $resource = $this->resources->resolve($slug);
-            if ($resource === null) {
+            // A resource that throws — while it is built or while its search
+            // runs — is skipped, so that one broken section does not fail the
+            // search over all the others.
+            try {
+                $group = $this->searchIn($slug, $user, $needle, $perResource);
+            } catch (\Throwable $e) {
+                report($e);
+
                 continue;
             }
-
-            $fields = array_values(array_filter(
-                $resource->searchableFields(),
-                static fn (string $f): bool => preg_match('/^[a-zA-Z0-9_]+$/', $f) === 1,
-            ));
-            if ($fields === []) {
-                continue;
+            if ($group !== null) {
+                $groups[] = $group;
             }
-
-            if (! $this->canView($user, $resource::permission())) {
-                continue;
-            }
-
-            $builder = $resource->indexQuery();
-            // On pgsql, ILIKE is properly case-insensitive over Unicode —
-            // that is production and the stands. The other drivers (sqlite in
-            // the tests) get LIKE, which ignores case for ASCII and matches
-            // Unicode character by character, which is enough for a substring
-            // search.
-            $operator = $builder->getConnection() instanceof \Illuminate\Database\PostgresConnection ? 'ilike' : 'like';
-            $builder->where(static function ($where) use ($fields, $needle, $operator): void {
-                foreach ($fields as $field) {
-                    $where->orWhere($field, $operator, $needle);
-                }
-            });
-
-            /** @var \Illuminate\Database\Eloquent\Collection<int, Model> $rows */
-            $rows = $builder->limit($perResource + 1)->get();
-            if ($rows->isEmpty()) {
-                continue;
-            }
-
-            $hasMore = $rows->count() > $perResource;
-            $items = $rows->take($perResource)->map(static fn (Model $row): array => [
-                'id' => $row->getKey(),
-                'title' => $resource->recordTitle($row),
-                'subtitle' => $resource->recordSubtitle($row),
-                'url' => '/r/'.$slug.'/'.$row->getKey(),
-            ])->values()->all();
-
-            $groups[] = [
-                'slug' => $slug,
-                'label' => (string) $resource::label(),
-                'icon' => $resource::$icon,
-                'items' => $items,
-                'hasMore' => $hasMore,
-                'moreUrl' => '/r/'.$slug,
-            ];
         }
 
         return $groups;
+    }
+
+    /**
+     * The search group of one resource, or null when it has nothing to show.
+     *
+     * @return array{slug: string, label: string, icon: string|null, items: list<array{id: mixed, title: string, subtitle: string|null, url: string}>, hasMore: bool, moreUrl: string}|null
+     */
+    private function searchIn(string $slug, ?object $user, string $needle, int $perResource): ?array
+    {
+        $resource = $this->resources->resolve($slug);
+        if ($resource === null) {
+            return null;
+        }
+
+        $fields = array_values(array_filter(
+            $resource->searchableFields(),
+            static fn (string $f): bool => preg_match('/^[a-zA-Z0-9_]+$/', $f) === 1,
+        ));
+        if ($fields === []) {
+            return null;
+        }
+
+        if (! $this->canView($user, $resource::permission())) {
+            return null;
+        }
+
+        $builder = $resource->indexQuery();
+        // On pgsql, ILIKE is properly case-insensitive over Unicode —
+        // that is production and the stands. The other drivers (sqlite in
+        // the tests) get LIKE, which ignores case for ASCII and matches
+        // Unicode character by character, which is enough for a substring
+        // search.
+        $operator = $builder->getConnection() instanceof \Illuminate\Database\PostgresConnection ? 'ilike' : 'like';
+        $builder->where(static function ($where) use ($fields, $needle, $operator): void {
+            foreach ($fields as $field) {
+                $where->orWhere($field, $operator, $needle);
+            }
+        });
+
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Model> $rows */
+        $rows = $builder->limit($perResource + 1)->get();
+        if ($rows->isEmpty()) {
+            return null;
+        }
+
+        $hasMore = $rows->count() > $perResource;
+        $items = $rows->take($perResource)->map(static fn (Model $row): array => [
+            'id' => $row->getKey(),
+            'title' => $resource->recordTitle($row),
+            'subtitle' => $resource->recordSubtitle($row),
+            'url' => '/r/'.$slug.'/'.$row->getKey(),
+        ])->values()->all();
+
+        return [
+            'slug' => $slug,
+            'label' => (string) $resource::label(),
+            'icon' => $resource::$icon,
+            'items' => $items,
+            'hasMore' => $hasMore,
+            'moreUrl' => '/r/'.$slug,
+        ];
     }
 
     private function canView(?object $user, string $permissionBase): bool
