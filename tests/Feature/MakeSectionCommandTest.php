@@ -106,21 +106,21 @@ it('FieldTypeInferrer maps belongs-to FK to RelationSelect', function (): void {
             'foreign_key' => 'author_id', 'owner_key' => 'id']],
     );
     expect($code)->toContain("RelationSelect::make('author_id')")
-        ->toContain("->relation('author')");
+        ->toContain("->relation(\\App\\Models\\User::class, 'name')");
 });
 
 it('FieldTypeInferrer column code: badge for status, money for price', function (): void {
     $i = new FieldTypeInferrer;
 
     expect($i->inferColumnCode(['name' => 'status', 'type' => 'varchar', 'is_indexed' => false, 'enum_values' => null]))
-        ->toContain("preset('badge')");
+        ->toContain('->asBadge()');
 
     expect($i->inferColumnCode(['name' => 'price', 'type' => 'decimal', 'is_indexed' => false, 'enum_values' => null]))
-        ->toContain("preset('money')")
+        ->toContain('->asMoney()')
         ->toContain("align('right')");
 
     expect($i->inferColumnCode(['name' => 'created_at', 'type' => 'datetime', 'is_indexed' => false, 'enum_values' => null]))
-        ->toContain("preset('datetime')");
+        ->toContain('->asDateTime()');
 });
 
 it('ResourceWriter generates from stub', function (): void {

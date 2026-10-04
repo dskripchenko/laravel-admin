@@ -16,6 +16,11 @@ use Dskripchenko\LaravelAdmin\Support\Repository;
  */
 final class {{ class }} extends Screen
 {
+    public static function slug(): string
+    {
+        return '{{ slug }}';
+    }
+
     public function name(): string
     {
         return '{{ label }}';

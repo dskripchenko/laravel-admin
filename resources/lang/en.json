@@ -228,6 +228,7 @@
     "Прочитанные": "Read",
     "Прочитать все": "Mark all as read",
     "Развернуть все": "Expand all",
+    "Раздел :slug (:class) не загрузился и скрыт: :error": "The section :slug (:class) failed to load and is hidden: :error",
     "Редактировать": "Edit",
     "Ресурсы": "Resources",
     "С удалёнными": "With deleted",

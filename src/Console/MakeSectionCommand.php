@@ -6,6 +6,8 @@ namespace Dskripchenko\LaravelAdmin\Console;
 
 use Dskripchenko\LaravelAdmin\Console\Support\AdminPluginUpdater;
 use Dskripchenko\LaravelAdmin\Console\Support\FieldTypeInferrer;
+use Dskripchenko\LaravelAdmin\Console\Support\PluginRegistrationReport;
+use Dskripchenko\LaravelAdmin\Console\Support\ResourceGenerator;
 use Dskripchenko\LaravelAdmin\Console\Support\ResourceWriter;
 use Dskripchenko\LaravelAdmin\Console\Support\SchemaIntrospector;
 use Dskripchenko\LaravelAdmin\Permission\Models\Role;
@@ -49,13 +51,15 @@ final class MakeSectionCommand extends Command
 {
     protected $signature = 'admin:make-section
                             {--force : Overwrite an existing resource}
-                            {--tree : Force tree mode (generates hierarchyParentKey() = parent_id)}';
+                            {--tree : Force tree mode (generates hierarchyParentKey() = parent_id)}
+                            {--no-menu : Do not add a menu item}
+                            {--no-role : Do not offer to create a role}';
 
     protected $description = 'Create an admin section from a database table or an Eloquent model (interactive)';
 
     public function handle(
         SchemaIntrospector $schema,
-        FieldTypeInferrer $inferrer,
+        ResourceGenerator $generator,
         ResourceWriter $writer,
         AdminPluginUpdater $updater,
         Filesystem $files,
@@ -115,33 +119,42 @@ final class MakeSectionCommand extends Command
             return $rel;
         }, $relations);
 
-        $allColumnNames = array_map(fn ($c) => $c['name'], $columns);
-        $defaultFormColumns = array_values(array_filter(
-            $allColumnNames,
-            static fn (string $n): bool => ! in_array($n, ['id', 'created_at', 'updated_at', 'deleted_at', 'remember_token'], true),
+        // What the model adds to the table: its hidden attributes and casts.
+        // Secrets and hidden attributes never reach the form, the list or the
+        // search, and are not offered at all.
+        $context = [
+            'hidden' => array_values($analysis['hidden'] ?? []),
+            'casts' => $analysis['casts'] ?? [],
+            'columns' => array_map(static fn (array $c): string => $c['name'], $columns),
+        ];
+        $inferrer = new FieldTypeInferrer;
+        $offered = array_values(array_filter(
+            $context['columns'],
+            static fn (string $n): bool => ! $inferrer->isSecret($n, $context),
         ));
+        $skipped = array_values(array_diff($context['columns'], $offered));
+        if ($skipped !== []) {
+            note('Left out as secret or hidden: '.implode(', ', $skipped)
+                .'. Add a Password field by hand if the form must set one.');
+        }
 
         $selectedFormColumns = multiselect(
             label: 'Form fields (create/edit)',
-            options: array_combine($allColumnNames, $allColumnNames),
-            default: $defaultFormColumns,
+            options: array_combine($offered, $offered),
+            default: $generator->defaultFormColumns($columns, $context),
             scroll: 20,
             hint: 'Space — toggle, Enter — confirm',
         );
 
-        $defaultTableColumns = array_values(array_filter(
-            $allColumnNames,
-            static fn (string $n): bool => ! in_array($n, ['updated_at', 'deleted_at', 'password', 'remember_token'], true),
-        ));
         $selectedTableColumns = multiselect(
             label: 'Table columns (list)',
-            options: array_combine($allColumnNames, $allColumnNames),
-            default: $defaultTableColumns,
+            options: array_combine($offered, $offered),
+            default: $generator->defaultTableColumns($columns, $context),
             scroll: 20,
         );
 
         // === 4. Permissions ===
-        $slug = Str::kebab(Str::pluralStudly($singular));
+        $slug = $writer->resourceSlugFor($singular);
         $permission = text(
             label: 'Base permission (derived: .view/.create/.update/.delete)',
             default: 'admin.'.$slug,
@@ -161,7 +174,7 @@ final class MakeSectionCommand extends Command
         );
 
         // === 7. The menu ===
-        $addMenu = confirm(label: 'Add to the menu?', default: true);
+        $addMenu = ! $this->option('no-menu') && confirm(label: 'Add to the menu?', default: true);
         $menuParent = '';
         if ($addMenu) {
             $menuParent = text(
@@ -172,7 +185,7 @@ final class MakeSectionCommand extends Command
         }
 
         // === 8. Role ===
-        $createRole = confirm(label: 'Create a role with these permissions?', default: false);
+        $createRole = ! $this->option('no-role') && confirm(label: 'Create a role with these permissions?', default: false);
         $roleName = '';
         $rolePerms = [];
         if ($createRole) {
@@ -200,18 +213,6 @@ final class MakeSectionCommand extends Command
             $modelClass = $this->ensureModel($tableName, $analysis, $writer, $files);
         }
 
-        // Prepare the strings for the stub
-        $fieldsBlock = $this->buildFieldsBlock(
-            $columns, $relations, $inferrer, $selectedFormColumns,
-        );
-        $columnsBlock = $this->buildColumnsBlock(
-            $columns, $inferrer, $selectedTableColumns,
-        );
-        $filtersBlock = $this->buildFiltersBlock($columns, $inferrer);
-        $searchableNames = $this->pickSearchable($columns);
-
-        $extraImports = $this->buildExtraImports($columns, $relations);
-
         // Hierarchy autodetection: a BelongsTo pointing at the same model, a
         // parent_id self-reference. --tree forces the tree mode on even when
         // the detection missed.
@@ -223,33 +224,28 @@ final class MakeSectionCommand extends Command
         if ($treeMode) {
             info("Tree mode: hierarchy through the `{$hierarchyKey}` self-reference.");
         }
-        $hierarchyMethod = $treeMode
-            ? "\n    public function hierarchyParentKey(): ?string\n    {\n        return '{$hierarchyKey}';\n    }\n"
-            : '';
 
-        $vars = [
+        $source = $generator->render([
             'namespace' => $namespace,
             'class' => $className,
-            'modelClass' => $modelClass,
-            'modelShort' => class_basename($modelClass),
-            'extraImports' => $extraImports,
-            'icon' => $icon,
-            'group' => $group !== '' ? "'{$group}'" : 'null',
+            'model' => $modelClass,
             'slug' => $slug,
             'label' => $plural,
             'singularLabel' => $singular,
             'permission' => $permission,
-            'fields' => $fieldsBlock,
-            'columns' => $columnsBlock,
-            'filters' => $filtersBlock,
-            'searchable' => $searchableNames,
-            'hierarchyMethod' => $hierarchyMethod,
-            'date' => date('Y-m-d'),
-        ];
+            'icon' => $icon,
+            'group' => $group !== '' ? $group : null,
+            'columns' => $columns,
+            'relations' => $relations,
+            'context' => $context,
+            'formColumns' => $selectedFormColumns,
+            'tableColumns' => $selectedTableColumns,
+            'hierarchyKey' => $treeMode ? $hierarchyKey : null,
+            'stub' => $writer->stubPath('resource.stub'),
+        ]);
 
-        $stub = $writer->stubPath('resource.stub');
         $target = $writer->classPath($namespace, $className);
-        $created = $writer->fromStub($stub, $target, $vars, force: (bool) $this->option('force'));
+        $created = $writer->write($target, $source, force: (bool) $this->option('force'));
 
         if (! $created) {
             warning("File already exists: {$target}. Use --force to overwrite it.");
@@ -276,12 +272,15 @@ final class MakeSectionCommand extends Command
             info("Role \"{$roleName}\" created with ".count($rolePerms).' permissions');
         }
 
+        $plugin = $updater->ensurePluginRegistered($reg['path']);
+        PluginRegistrationReport::print($this, $plugin);
+
         info('Done.');
         $this->newLine();
         note('Next steps:');
         $this->line('  1. Open '.$target.' and tidy up the fields, columns and filters');
-        $this->line('  2. Rebuild (composer dump-autoload && npm run build)');
-        $this->line("  3. Open /admin/r/{$slug}");
+        $this->line('  2. Open /'.trim((string) config('admin.path', 'admin'), '/')."/r/{$slug}");
+        $this->line('  The panel reads the resource from the manifest: no frontend rebuild is needed.');
 
         return self::SUCCESS;
     }
@@ -341,6 +340,9 @@ final class MakeSectionCommand extends Command
 
         $analysis = $schema->analyzeTable($picked);
         $analysis['relations'] = [];
+        // The model generated for the table casts its columns, so that the
+        // fields round-trip: a JSON column as an array, a boolean as a bool.
+        $analysis['casts'] = (new FieldTypeInferrer)->modelCasts($analysis['columns']);
 
         return $analysis;
     }
@@ -366,180 +368,31 @@ final class MakeSectionCommand extends Command
             ->map(fn (string $n): string => "'{$n}'")
             ->implode(', ');
 
+        $inferrer = new FieldTypeInferrer;
+        $hidden = collect($analysis['columns'] ?? [])
+            ->pluck('name')
+            ->filter(fn (string $n): bool => $inferrer->isSecret($n))
+            ->map(fn (string $n): string => "'{$n}'")
+            ->implode(', ');
+
+        $casts = collect($analysis['casts'] ?? [])
+            ->map(fn (string $cast, string $column): string => "        '{$column}' => '{$cast}',")
+            ->implode("\n");
+
         $contents = "<?php\n\ndeclare(strict_types=1);\n\n"
             ."namespace App\\Models;\n\n"
             ."use Illuminate\\Database\\Eloquent\\Model;\n\n"
             ."class {$shortName} extends Model\n{\n"
-            ."    protected \$table = '{$table}';\n"
+            ."    protected \$table = '{$table}';\n\n"
             ."    protected \$fillable = [{$fillable}];\n"
+            .($hidden !== '' ? "\n    protected \$hidden = [{$hidden}];\n" : '')
+            .($casts !== '' ? "\n    protected \$casts = [\n{$casts}\n    ];\n" : '')
             ."}\n";
 
         $files->ensureDirectoryExists(dirname($path));
         $files->put($path, $contents);
 
         return $modelClass;
-    }
-
-    /**
-     * @param  list<array{name: string, type: string, nullable: bool, default: mixed, comment: ?string, is_primary: bool, is_unique: bool, is_indexed: bool, enum_values: ?list<string>}>  $columns
-     * @param  list<array{name: string, type: string, related: ?class-string, foreign_key: ?string, owner_key: ?string}>  $relations
-     * @param  list<string>  $selected
-     */
-    private function buildFieldsBlock(array $columns, array $relations, FieldTypeInferrer $inferrer, array $selected): string
-    {
-        $lines = [];
-        foreach ($columns as $col) {
-            if (! in_array($col['name'], $selected, true)) {
-                continue;
-            }
-            $code = $inferrer->inferFieldCode($col, $relations);
-            if ($code === null) {
-                continue;
-            }
-            $lines[] = '            '.$code.',';
-        }
-
-        return implode("\n", $lines);
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $columns
-     * @param  list<string>  $selected
-     */
-    private function buildColumnsBlock(array $columns, FieldTypeInferrer $inferrer, array $selected): string
-    {
-        $lines = [];
-        foreach ($columns as $col) {
-            if (! in_array($col['name'], $selected, true)) {
-                continue;
-            }
-            $code = $inferrer->inferColumnCode($col);
-            if ($code === null) {
-                continue;
-            }
-            $lines[] = '            '.$code.',';
-        }
-        // Built-in row-actions column
-        $lines[] = "            TableColumn::make('actions')->view(),";
-
-        return implode("\n", $lines);
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $columns
-     */
-    private function buildFiltersBlock(array $columns, FieldTypeInferrer $inferrer): string
-    {
-        $lines = [];
-        foreach ($columns as $col) {
-            $code = $inferrer->inferFilterCode($col);
-            if ($code === null) {
-                continue;
-            }
-            $lines[] = '            '.$code.',';
-        }
-        if ($lines === []) {
-            return "            // BaseInputFilter::make('search')->searchableFields([...]),";
-        }
-
-        return implode("\n", $lines);
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $columns
-     */
-    private function pickSearchable(array $columns): string
-    {
-        $candidates = [];
-        foreach ($columns as $col) {
-            $type = strtolower($col['type']);
-            if (in_array($col['name'], ['name', 'title', 'email', 'slug', 'description'], true)
-                || in_array($type, ['varchar', 'string', 'text'], true)
-            ) {
-                $candidates[] = "'".$col['name']."'";
-            }
-            if (count($candidates) >= 4) {
-                break;
-            }
-        }
-
-        return implode(', ', $candidates);
-    }
-
-    /**
-     * Collects the use statements for the Field and Filter classes in play.
-     *
-     * @param  list<array<string, mixed>>  $columns
-     * @param  list<array<string, mixed>>  $relations
-     */
-    private function buildExtraImports(array $columns, array $relations): string
-    {
-        $needed = [];
-
-        foreach ($columns as $col) {
-            $type = strtolower($col['type']);
-            $name = strtolower($col['name']);
-
-            // By name patterns:
-            if (in_array($name, ['avatar', 'image', 'photo', 'cover', 'logo'], true)
-                || str_ends_with($name, '_image') || str_ends_with($name, '_file')
-                || in_array($name, ['file', 'attachment', 'document'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\FileUpload';
-            }
-            if ($name === 'slug') {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Slug';
-            }
-            if (in_array($name, ['body', 'content', 'html'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Wysiwyg';
-            }
-
-            // By type:
-            if (in_array($type, ['boolean', 'bool', 'tinyint(1)'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Switcher';
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Filter\\BaseSwitcherFilter';
-            }
-            if (in_array($type, ['date', 'datetime', 'timestamp'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\DatePicker';
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Filter\\BaseDateFilter';
-            }
-            if (in_array($type, ['time'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\TimePicker';
-            }
-            if (in_array($type, ['integer', 'int', 'bigint', 'smallint', 'mediumint',
-                'decimal', 'float', 'double', 'numeric'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Number';
-            }
-            if (in_array($type, ['text', 'mediumtext', 'longtext', 'tinytext'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Textarea';
-            }
-            if (in_array($type, ['json', 'jsonb'], true)) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\KeyValue';
-            }
-            // varchar / unknown → Input
-            $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Input';
-
-            if (! empty($col['enum_values'])) {
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Select';
-                $needed[] = 'Dskripchenko\\LaravelAdmin\\Filter\\BaseSelectFromOptionsFilter';
-            }
-        }
-
-        if ($relations !== []) {
-            foreach ($relations as $rel) {
-                if ($rel['type'] === 'BelongsTo') {
-                    $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\RelationSelect';
-                    break;
-                }
-            }
-        }
-
-        // Hidden fields, for the skipped columns
-        $needed[] = 'Dskripchenko\\LaravelAdmin\\Field\\Hidden';
-
-        $needed = array_values(array_unique($needed));
-        sort($needed);
-
-        return implode("\n", array_map(static fn (string $cls): string => "use {$cls};", $needed));
     }
 
     /**

@@ -25,6 +25,8 @@ final class MakeResourceCommand extends Command
 
         return $this->call('admin:make-section', [
             '--force' => $this->option('force'),
+            '--no-menu' => true,
+            '--no-role' => true,
         ]);
     }
 }

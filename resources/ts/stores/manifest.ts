@@ -13,6 +13,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
+import { adminToast } from './toast'
 
 /**
  * A manifest node with a mandatory `type`. It is compatible with LayoutNode,
@@ -82,6 +83,18 @@ export interface ManifestSettingsMeta {
   fields: ManifestNode[]
 }
 
+/**
+ * A section the backend left out of the manifest because it threw while it
+ * was described. Sent only with app.debug on; `message` is already
+ * translated.
+ */
+export interface ManifestDiagnostic {
+  kind: 'resource' | 'screen' | 'settings' | 'dashboard' | string
+  slug: string
+  class: string
+  message: string
+}
+
 export interface AdminManifest {
   version: string
   locale: string
@@ -91,6 +104,8 @@ export interface AdminManifest {
   dashboards: unknown[]
   plugins: string[]
   permissions: unknown[]
+  /** The sections left out, debug mode only. Older backends do not send it. */
+  diagnostics?: ManifestDiagnostic[]
 }
 
 export const useManifestStore = defineStore('admin-manifest', () => {
@@ -111,6 +126,21 @@ export const useManifestStore = defineStore('admin-manifest', () => {
    * route has been re-resolved and the manifest has either loaded or failed.
    */
   const bootResolved = ref(false)
+
+  /** The diagnostics already shown, so a refresh does not repeat them. */
+  const shownDiagnostics = new Set<string>()
+
+  /**
+   * Warns the administrator about every section the backend had to leave
+   * out (debug mode only), once per message for the store's lifetime.
+   */
+  function announceDiagnostics(result: AdminManifest): void {
+    for (const entry of result.diagnostics ?? []) {
+      if (!entry?.message || shownDiagnostics.has(entry.message)) continue
+      shownDiagnostics.add(entry.message)
+      adminToast.warning(entry.message, { duration: 0 })
+    }
+  }
 
   const isLoaded = computed(() => manifest.value !== null)
   const version = computed(() => manifest.value?.version ?? null)
@@ -167,6 +197,7 @@ export const useManifestStore = defineStore('admin-manifest', () => {
       const client = getAdminClient()
       const result = await client.get<AdminManifest>('/system/manifest')
       manifest.value = result
+      announceDiagnostics(result)
       return result
     } catch (err) {
       error.value = err instanceof Error ? err : new Error(String(err))

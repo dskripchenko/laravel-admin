@@ -94,7 +94,7 @@ final class SchemaIntrospector
      *
      * @return array{
      *     table: string,
-     *     columns: list<array{name: string, type: string, nullable: bool, default: mixed, comment: ?string, is_primary: bool, is_unique: bool, is_indexed: bool, enum_values: ?list<string>}>,
+     *     columns: list<array{name: string, type: string, full_type: string, nullable: bool, default: mixed, comment: ?string, is_primary: bool, is_unique: bool, is_indexed: bool, enum_values: ?list<string>}>,
      *     soft_deletes: bool,
      *     timestamps: bool,
      *     primary_key: string
@@ -123,6 +123,8 @@ final class SchemaIntrospector
             }
         }
 
+        $checkEnums = $this->checkConstraintEnums($table);
+
         $columns = [];
         $hasSoftDeletes = false;
         $hasTimestamps = ['created_at' => false, 'updated_at' => false];
@@ -138,7 +140,7 @@ final class SchemaIntrospector
                 $hasTimestamps[$name] = true;
             }
 
-            $enumValues = null;
+            $enumValues = $checkEnums[$name] ?? null;
             if (str_starts_with($type, 'enum')) {
                 // MySQL: 'enum(\'a\',\'b\')'
                 if (preg_match('/enum\\(([^)]*)\\)/i', $col['type'] ?? '', $m)) {
@@ -152,6 +154,7 @@ final class SchemaIntrospector
             $columns[] = [
                 'name' => $name,
                 'type' => $type,
+                'full_type' => strtolower((string) ($col['type'] ?? $type)),
                 'nullable' => (bool) ($col['nullable'] ?? false),
                 'default' => $col['default'] ?? null,
                 'comment' => $col['comment'] ?? null,
@@ -169,6 +172,68 @@ final class SchemaIntrospector
             'timestamps' => $hasTimestamps['created_at'] && $hasTimestamps['updated_at'],
             'primary_key' => $primaryKey,
         ];
+    }
+
+    /**
+     * The allowed values of the enum-like columns that live in a CHECK
+     * constraint: Laravel's `enum()` on SQLite and PostgreSQL is a varchar
+     * with `CHECK (column IN (...))`, which Schema::getColumns() does not
+     * report. MySQL has a real ENUM type, read from the column itself.
+     *
+     * @return array<string, list<string>>
+     */
+    private function checkConstraintEnums(string $table): array
+    {
+        try {
+            $connection = Schema::getConnection();
+            $driver = $connection->getDriverName();
+            $definitions = [];
+            if ($driver === 'sqlite') {
+                $sql = $connection->selectOne(
+                    "select sql from sqlite_master where type = 'table' and name = ?",
+                    [$connection->getTablePrefix().$table],
+                );
+                $definitions[] = (string) ($sql->sql ?? '');
+            } elseif ($driver === 'pgsql') {
+                $rows = $connection->select(
+                    "select pg_get_constraintdef(c.oid) as def from pg_constraint c where c.contype = 'c' and c.conrelid = ?::regclass",
+                    [$connection->getTablePrefix().$table],
+                );
+                foreach ($rows as $row) {
+                    $definitions[] = (string) $row->def;
+                }
+            } else {
+                return [];
+            }
+        } catch (Throwable) {
+            return [];
+        }
+
+        $enums = [];
+        foreach ($definitions as $definition) {
+            // SQLite: check ("status" in ('draft', 'published'))
+            if (preg_match_all('/check\s*\(\s*["`]?(\w+)["`]?\s+in\s*\(([^)]*)\)\s*\)/i', $definition, $m, PREG_SET_ORDER)) {
+                foreach ($m as $match) {
+                    $enums[$match[1]] = $this->quotedValues($match[2]);
+                }
+            }
+            // PostgreSQL: CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, ...])::text[])))
+            if (preg_match('/\(+\s*"?(\w+)"?\s*\)?::text\s*=\s*ANY\s*\(+ARRAY\[(.*?)\]/i', $definition, $match)) {
+                $enums[$match[1]] = $this->quotedValues($match[2]);
+            }
+        }
+
+        return array_filter($enums, static fn (array $values): bool => $values !== []);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function quotedValues(string $list): array
+    {
+        preg_match_all("/'((?:[^']|'')*)'/", $list, $m);
+
+        return array_map(static fn (string $v): string => str_replace("''", "'", $v), $m[1]);
     }
 
     /**
