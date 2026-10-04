@@ -192,7 +192,7 @@ Actions `token*` регистрируются всегда; без Sanctum он�
 | `name` | `required`, `string`, `max:255` |
 | `abilities` | `nullable`, `array`; по умолчанию `["*"]` |
 | `abilities.*` | `string` |
-| `expires_in_days` | `nullable`, `integer`, `min:1`, `max:3650`; без него токен бессрочный |
+| `expires_in_days` | `nullable`, `integer`, `min:1`, `max:3650`; без параметра срок берётся из `admin.auth.api_tokens.default_expiry` (дни; `null` по умолчанию — бессрочный), явный `null` — бессрочный токен |
 
 Ответ `200`:
 

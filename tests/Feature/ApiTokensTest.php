@@ -68,6 +68,32 @@ it('profile.tokenCreate with no abilities defaults to [*]', function (): void {
     expect($response->json('payload.token.abilities'))->toBe(['*']);
 });
 
+it('profile.tokenCreate without expires_in_days uses admin.auth.api_tokens.default_expiry', function (): void {
+    config()->set('admin.auth.api_tokens.default_expiry', 30);
+
+    $response = $this->postJson('/api/admin/profile/tokenCreate', ['name' => 'Default'])->assertOk();
+    $expiresAt = Carbon\CarbonImmutable::parse($response->json('payload.token.expires_at'));
+    expect(abs($expiresAt->diffInDays(now()->addDays(30), true)))->toBeLessThan(1);
+
+    // An explicit null still asks for a token that never expires.
+    $this->postJson('/api/admin/profile/tokenCreate', ['name' => 'Forever', 'expires_in_days' => null])
+        ->assertOk()
+        ->assertJsonPath('payload.token.expires_at', null);
+
+    // An explicit value wins over the default.
+    $explicit = $this->postJson('/api/admin/profile/tokenCreate', ['name' => 'Week', 'expires_in_days' => 7])->assertOk();
+    $weekAt = Carbon\CarbonImmutable::parse($explicit->json('payload.token.expires_at'));
+    expect(abs($weekAt->diffInDays(now()->addDays(7), true)))->toBeLessThan(1);
+});
+
+it('profile.tokenCreate without expires_in_days and no default never expires', function (): void {
+    config()->set('admin.auth.api_tokens.default_expiry', null);
+
+    $this->postJson('/api/admin/profile/tokenCreate', ['name' => 'Plain'])
+        ->assertOk()
+        ->assertJsonPath('payload.token.expires_at', null);
+});
+
 it('profile.tokenCreate validates input', function (): void {
     $this->postJson('/api/admin/profile/tokenCreate', [])
         ->assertStatus(422); // missing name

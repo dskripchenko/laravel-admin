@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\Hash;
 afterEach(function (): void {
     File::deleteDirectory(PrebuiltAssets::publishedPath());
     File::delete(config_path('admin.php'));
-    File::delete(database_path('migrations/2026_01_01_000100_add_admin_columns_to_users_table.php'));
+    // admin:install --shared publishes both the package's migrations and the shared one.
+    foreach ([...File::files(__DIR__.'/../../database/migrations'), ...File::files(__DIR__.'/../../database/shared-migrations')] as $migration) {
+        File::delete(database_path('migrations/'.$migration->getFilename()));
+    }
 });
 
 it('creates an administrator on a users table without the admin columns', function (): void {
