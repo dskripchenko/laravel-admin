@@ -92,7 +92,7 @@ final class ResourceWriter
 
     /**
      * Derives a class name from the label the user typed, word by word:
-     * "Contact us" → ContactUsScreen, "Статья" → StatiaResource. The label is
+     * "Contact us" → ContactUsScreen, a Cyrillic "Statya" (transliterated) → StatyaResource. The label is
      * taken as it is — the wizards ask for the singular already, and
      * singularizing the whole phrase mangled it ("Contact us" → "Contact u").
      */
