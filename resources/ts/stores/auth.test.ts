@@ -346,6 +346,24 @@ describe('auth store', () => {
       expect(auth.permissions).toEqual([])
     })
 
+    it('returns where to go next when the panel signs out at the provider too', async () => {
+      const auth = useAuthStore()
+      mock.onPost('/auth/logout').reply(200, { success: true, payload: { redirect: 'https://sso.example/logout?x=1' } })
+
+      expect(await auth.logout()).toBe('https://sso.example/logout?x=1')
+      expect(auth.user).toBeNull()
+    })
+
+    it('returns null without a redirect, and on an API error', async () => {
+      const auth = useAuthStore()
+      mock.onPost('/auth/logout').replyOnce(200, { success: true, payload: { redirect: null } })
+      expect(await auth.logout()).toBeNull()
+
+      mock.onPost('/auth/logout').replyOnce(500)
+      await expect(auth.logout()).rejects.toBeTruthy()
+      expect(auth.user).toBeNull()
+    })
+
     it('clears state even on API error', async () => {
       const auth = useAuthStore()
       auth.hydrate(mkBootstrap({

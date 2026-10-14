@@ -264,6 +264,23 @@ final class Admin
         return $this;
     }
 
+    /**
+     * Registers a resolver of where the browser goes after a sign-out from the
+     * panel being registered — an identity provider's own sign-out page, for
+     * one (see {@see Auth\LogoutRedirectRegistry}).
+     *
+     *   $admin->logoutRedirect(fn (Request $request, string $panel, ?Authenticatable $user) =>
+     *       $request->session()->has('sso.id_token') ? 'https://sso.example/logout?...' : null);
+     *
+     * @param  callable(\Illuminate\Http\Request, string, \Illuminate\Contracts\Auth\Authenticatable|null): (string|null)  $resolver
+     */
+    public function logoutRedirect(callable $resolver): self
+    {
+        $this->app->make(Auth\LogoutRedirectRegistry::class)->add($this->registrationPanel, $resolver);
+
+        return $this;
+    }
+
     public function version(): string
     {
         return '0.1.0-dev';

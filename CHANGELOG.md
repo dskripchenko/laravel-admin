@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **`Admin::logoutRedirect()` — where the browser goes after a sign-out**
+  (`Auth\LogoutRedirectRegistry`), per panel: an identity provider's own
+  sign-out page, so that leaving the panel ends the session the person
+  signed in with (RP-initiated logout). The resolver runs before the session
+  is cleared; its address — absolute http(s) or a path, anything else is
+  ignored — comes back from `auth/logout` as `payload.redirect`, and the SPA
+  navigates there instead of opening its own login page. The auth store's
+  `logout()` now returns that address or null.
+
 ## 1.50.2
 
 ### Fixed

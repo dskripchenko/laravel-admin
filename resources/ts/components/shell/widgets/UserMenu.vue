@@ -12,10 +12,17 @@ const auth = useAuthStore()
 const router = useRouter()
 
 async function logout(): Promise<void> {
+  let redirect: string | null = null
   try {
-    await auth.logout()
+    redirect = await auth.logout()
   } finally {
-    await router.push({ name: 'admin.login' })
+    if (redirect !== null) {
+      // The identity provider's own sign-out: a full navigation, it comes
+      // back to the login page by itself.
+      window.location.assign(redirect)
+    } else {
+      await router.push({ name: 'admin.login' })
+    }
   }
 }
 

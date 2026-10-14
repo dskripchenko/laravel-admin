@@ -295,7 +295,11 @@ final class AuthController extends ApiController
     /**
      * Ends the session.
      *
-     * @output object $payload Empty: the action answers with the envelope alone
+     * When the panel signs people out at their identity provider too
+     * (Admin::logoutRedirect), the payload says where the browser goes next.
+     *
+     * @output object $payload
+     * @output string ?$payload.redirect Where to send the browser after the sign-out; null — the panel's own login page
      *
      * @security AdminSession
      * @security AdminBearer
@@ -304,8 +308,12 @@ final class AuthController extends ApiController
      */
     public function logout(Request $request): JsonResponse
     {
-        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current();
+        $guard = $panel->guard;
         $user = Auth::guard($guard)->user();
+
+        // Before the session goes: a resolver reads what the sign-in kept there.
+        $redirect = app(\Dskripchenko\LaravelAdmin\Auth\LogoutRedirectRegistry::class)->for($request, $panel->id, $user);
 
         Auth::guard($guard)->logout();
 
@@ -314,7 +322,7 @@ final class AuthController extends ApiController
             $request->session()->regenerateToken();
         }
 
-        return $this->success([]);
+        return $this->success(['redirect' => $redirect]);
     }
 
     /**

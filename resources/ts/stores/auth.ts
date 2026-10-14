@@ -193,11 +193,16 @@ export const useAuthStore = defineStore('admin-auth', () => {
     pendingChallenge.value = null
   }
 
-  /** POST /auth/logout. Clears the store. */
-  async function logout(): Promise<void> {
+  /**
+   * POST /auth/logout. Clears the store. Returns where the browser goes next
+   * when the panel signs people out at their identity provider too, or null —
+   * the panel's own login page.
+   */
+  async function logout(): Promise<string | null> {
     const client = getAdminClient()
     try {
-      await client.post('/auth/logout')
+      const result = await client.post<{ redirect?: string | null }>('/auth/logout')
+      return typeof result?.redirect === 'string' && result.redirect !== '' ? result.redirect : null
     } finally {
       user.value = null
       permissions.value = []
