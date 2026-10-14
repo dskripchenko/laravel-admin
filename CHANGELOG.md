@@ -5,6 +5,27 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **An audited request could fail on PostgreSQL and MySQL.** The audit log
+  cuts the request's URL and User-Agent to `admin.audit.url_max_length`
+  (2048) and `user_agent_max_length` (1024), but its columns were
+  `varchar(255)`: a longer value — an OAuth callback with its code, a long
+  browser string — failed the insert, and the request with it (a sign-in
+  through SSO answered 500). A migration turns both columns into `text`.
+  SQLite does not check string lengths, which is why the tests never saw it.
+
+### Security
+
+- **Credentials no longer reach the audit log through the URL.** Query
+  parameters named in the new `admin.audit.redacted_query` — `code`,
+  `state`, `token`, `access_token`, `id_token`, `signature` and the like —
+  are masked as `[redacted]` in the audited URL. `AuditLog::requestContext()`
+  and `AuditLog::redactUrl()` are there for packages that write audit rows
+  of their own.
+
 ## 1.50.0
 
 ### Added

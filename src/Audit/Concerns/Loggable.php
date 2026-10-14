@@ -122,9 +122,7 @@ trait Loggable
             'subject_id' => $subject->getKey(),
             'event' => $event,
             'changes' => $changes !== [] ? $changes : null,
-            'ip' => request()->ip(),
-            'user_agent' => substr((string) request()->userAgent(), 0, (int) config('admin.audit.user_agent_max_length', 1024)),
-            'url' => substr((string) request()->fullUrl(), 0, (int) config('admin.audit.url_max_length', 2048)),
+            ...AuditLog::requestContext(),
         ]);
     }
 
