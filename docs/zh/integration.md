@@ -273,6 +273,26 @@ return redirect('/admin/login');
 
 该提示保存在会话中，直到下一次 bootstrap 将其取走，因此在两种 bootstrap 策略下都只显示一次。
 
+### 同时在身份提供方处退出
+
+通过身份提供方登录的面板也可以结束那边的会话（RP-initiated logout）：注册退出后浏览器跳转的地址。
+
+```php
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request;
+
+$admin->logoutRedirect(function (Request $request, string $panel, ?Authenticatable $user): ?string {
+    $idToken = $request->session()->get('sso.id_token');
+
+    return $idToken === null ? null : 'https://sso.example/logout?'.http_build_query([
+        'id_token_hint' => $idToken,
+        'post_logout_redirect_uri' => url('/admin/login'),
+    ]);
+});
+```
+
+解析器在清除面板会话之前运行，因此登录时保存在会话中的内容仍可读取。它返回绝对的 http(s) 地址或路径，不相关时返回 null；第一个地址生效，退出接口的响应以 `payload.redirect` 返回它。SPA 随后跳转到该地址，而不是打开自己的登录页。其他地址会被忽略；抛出异常的解析器会被记录并跳过——退出本身已经完成。
+
 ## 3. 路径、域名、API、会话、代理
 
 | 设置 | 默认 | 作用 |

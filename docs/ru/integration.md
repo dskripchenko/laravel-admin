@@ -312,6 +312,33 @@ return redirect('/admin/login');
 Сообщение лежит в сессии, пока его не заберёт следующий bootstrap, поэтому
 показывается один раз при обеих стратегиях bootstrap.
 
+### Выход и у провайдера
+
+Панель, в которую входят через провайдера идентификации, может завершать и
+эту сессию (RP-initiated logout): зарегистрируйте, куда браузер уходит после
+выхода.
+
+```php
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request;
+
+$admin->logoutRedirect(function (Request $request, string $panel, ?Authenticatable $user): ?string {
+    $idToken = $request->session()->get('sso.id_token');
+
+    return $idToken === null ? null : 'https://sso.example/logout?'.http_build_query([
+        'id_token_hint' => $idToken,
+        'post_logout_redirect_uri' => url('/admin/login'),
+    ]);
+});
+```
+
+Резолвер вызывается до очистки сессии панели — то, что сохранил вход, ещё
+можно прочитать. Он возвращает абсолютный http(s)-адрес или путь либо null,
+если его это не касается; побеждает первый адрес, ответ выхода несёт его в
+`payload.redirect`. SPA переходит туда вместо своего экрана входа. Другие
+адреса игнорируются, а резолвер, бросивший исключение, логируется и
+пропускается — сам выход уже состоялся.
+
 ## 3. Путь, домен, API, сессии, прокси
 
 | Настройка | По умолчанию | Что делает |

@@ -313,6 +313,34 @@ return redirect('/admin/login');
 The notice lives in the session until the next bootstrap takes it, so it is
 shown once in both bootstrap strategies.
 
+### Signing out at the provider too
+
+A panel whose people sign in through an identity provider can end that
+session as well ("RP-initiated logout"): register where the browser goes after
+the sign-out.
+
+```php
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request;
+
+$admin->logoutRedirect(function (Request $request, string $panel, ?Authenticatable $user): ?string {
+    $idToken = $request->session()->get('sso.id_token');
+
+    return $idToken === null ? null : 'https://sso.example/logout?'.http_build_query([
+        'id_token_hint' => $idToken,
+        'post_logout_redirect_uri' => url('/admin/login'),
+    ]);
+});
+```
+
+The resolver runs before the panel's session is cleared, so what the sign-in
+kept there is still readable. It returns an absolute http(s) address or a
+path, or null to stay out of it; the first address wins and the logout's
+answer carries it as `payload.redirect`. The SPA then navigates there instead
+of opening its own login page. Any other address is ignored, and a resolver
+that throws is reported and skipped — the sign-out itself has already
+happened.
+
 ## 3. Path, domain, API, sessions, proxies
 
 | Setting | Default | Effect |

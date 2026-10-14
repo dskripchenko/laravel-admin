@@ -124,4 +124,31 @@ describe('UserMenu logout integration', () => {
     // the component; here we check only the main effects on the store.
     wrapper.unmount()
   })
+
+  it('follows the redirect of the logout, or opens the login page', async () => {
+    const assign = vi.fn()
+    vi.stubGlobal('location', { ...window.location, assign })
+    useAuthStore().hydrate(mkBootstrap({ user: mkUser() }))
+    const wrapper = await mountMenu()
+    await wrapper.find('.admin-user-menu__trigger').trigger('click')
+    await flushPromises()
+    const item = () => wrapper.findAllComponents({ name: 'UidMenuItem' }).find((c) => c.props('variant') === 'danger')
+    expect(item()).toBeTruthy()
+
+    mock.onPost('/auth/logout').replyOnce(200, { success: true, payload: { redirect: 'https://sso.example/logout' } })
+    item()!.vm.$emit('click')
+    await flushPromises()
+    expect(assign).toHaveBeenCalledWith('https://sso.example/logout')
+    expect(pushSpy).not.toHaveBeenCalled()
+
+    useAuthStore().hydrate(mkBootstrap({ user: mkUser() }))
+    mock.onPost('/auth/logout').replyOnce(200, { success: true, payload: {} })
+    item()!.vm.$emit('click')
+    await flushPromises()
+    expect(pushSpy).toHaveBeenCalledWith({ name: 'admin.login' })
+    expect(assign).toHaveBeenCalledTimes(1)
+
+    vi.unstubAllGlobals()
+    wrapper.unmount()
+  })
 })

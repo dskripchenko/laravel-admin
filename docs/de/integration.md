@@ -315,6 +315,35 @@ return redirect('/admin/login');
 Die Meldung liegt in der Session, bis der nächste Bootstrap sie abholt; sie
 erscheint daher in beiden Bootstrap-Strategien genau einmal.
 
+### Auch beim Anbieter abmelden
+
+Ein Panel, in das man sich über einen Identitätsanbieter anmeldet, kann auch
+diese Sitzung beenden („RP-initiated logout“): Registrieren Sie, wohin der
+Browser nach der Abmeldung geht.
+
+```php
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request;
+
+$admin->logoutRedirect(function (Request $request, string $panel, ?Authenticatable $user): ?string {
+    $idToken = $request->session()->get('sso.id_token');
+
+    return $idToken === null ? null : 'https://sso.example/logout?'.http_build_query([
+        'id_token_hint' => $idToken,
+        'post_logout_redirect_uri' => url('/admin/login'),
+    ]);
+});
+```
+
+Der Resolver läuft, bevor die Session des Panels geleert wird — was die
+Anmeldung dort abgelegt hat, ist noch lesbar. Er gibt eine absolute
+http(s)-Adresse oder einen Pfad zurück, oder null, wenn er nicht zuständig
+ist; die erste Adresse gewinnt, die Antwort der Abmeldung trägt sie als
+`payload.redirect`. Die SPA navigiert dann dorthin statt zur eigenen
+Anmeldeseite. Andere Adressen werden ignoriert, und ein Resolver, der eine
+Ausnahme wirft, wird protokolliert und übersprungen — die Abmeldung selbst ist
+bereits erfolgt.
+
 ## 3. Pfad, Domain, API, Sessions, Proxys
 
 | Einstellung | Standard | Wirkung |
