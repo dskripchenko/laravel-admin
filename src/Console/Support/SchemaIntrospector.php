@@ -109,11 +109,11 @@ final class SchemaIntrospector
         $uniques = [];
         $indexed = [];
         foreach ($indexes as $idx) {
-            $cols = $idx['columns'] ?? [];
-            if ($idx['primary'] ?? false) {
+            $cols = (array) self::field($idx, 'columns', []);
+            if ((bool) self::field($idx, 'primary', false)) {
                 $primaryKey = $cols[0] ?? 'id';
             }
-            if ($idx['unique'] ?? false) {
+            if ((bool) self::field($idx, 'unique', false)) {
                 foreach ($cols as $c) {
                     $uniques[$c] = true;
                 }
@@ -131,7 +131,7 @@ final class SchemaIntrospector
 
         foreach ($rawCols as $col) {
             $name = $col['name'];
-            $type = strtolower($col['type_name'] ?? $col['type'] ?? 'string');
+            $type = strtolower((string) (self::field($col, 'type_name') ?? self::field($col, 'type', 'string')));
 
             if ($name === 'deleted_at') {
                 $hasSoftDeletes = true;
@@ -143,7 +143,7 @@ final class SchemaIntrospector
             $enumValues = $checkEnums[$name] ?? null;
             if (str_starts_with($type, 'enum')) {
                 // MySQL: 'enum(\'a\',\'b\')'
-                if (preg_match('/enum\\(([^)]*)\\)/i', $col['type'] ?? '', $m)) {
+                if (preg_match('/enum\\(([^)]*)\\)/i', (string) self::field($col, 'type', ''), $m)) {
                     $enumValues = array_map(
                         static fn (string $s): string => trim($s, " '\""),
                         explode(',', $m[1]),
@@ -154,8 +154,8 @@ final class SchemaIntrospector
             $columns[] = [
                 'name' => $name,
                 'type' => $type,
-                'full_type' => strtolower((string) ($col['type'] ?? $type)),
-                'nullable' => (bool) ($col['nullable'] ?? false),
+                'full_type' => strtolower((string) self::field($col, 'type', $type)),
+                'nullable' => (bool) self::field($col, 'nullable', false),
                 'default' => $col['default'] ?? null,
                 'comment' => $col['comment'] ?? null,
                 'is_primary' => $name === $primaryKey,
@@ -376,7 +376,7 @@ final class SchemaIntrospector
             }
             // The fallback: the first string column
             foreach (Schema::getColumns($instance->getTable()) as $col) {
-                $type = strtolower($col['type_name'] ?? '');
+                $type = strtolower((string) self::field($col, 'type_name', ''));
                 if (in_array($type, ['varchar', 'char', 'text', 'string'], true)) {
                     return $col['name'];
                 }
@@ -386,5 +386,19 @@ final class SchemaIntrospector
         }
 
         return $instance->getKeyName();
+    }
+
+    /**
+     * A field of a column or an index as the schema builder reports it. Its
+     * shape differs between Laravel versions and drivers — keys the newer
+     * ones always send were optional before — so the rows are read as plain
+     * arrays: a `??` on a typed shape would be "always set" to the analyser
+     * on Laravel 12+, and a missing key would be fatal on the older ones.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private static function field(array $row, string $key, mixed $default = null): mixed
+    {
+        return $row[$key] ?? $default;
     }
 }

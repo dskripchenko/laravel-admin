@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import MockAdapter from 'axios-mock-adapter'
@@ -112,6 +112,32 @@ describe('LoginForm', () => {
     const btn = wrapper.find('button[type="submit"]')
     expect((btn.element as HTMLButtonElement).disabled).toBe(true)
     expect(btn.text()).toContain('Вход')
+  })
+
+  it('shows no external ways in unless the bootstrap sends some', () => {
+    const wrapper = mount(LoginForm)
+    expect(wrapper.find('[data-testid="login-external"]').exists()).toBe(false)
+  })
+
+  it('leads an external way in to its URL, a full navigation', async () => {
+    useAuthStore().hydrate({
+      user: null, permissions: [], config: {}, externalLogins: [
+        { label: 'Sign in with SSO', url: '/admin/sso/redirect', icon: 'key-round', description: 'Company accounts' },
+      ],
+    } as never)
+    const assign = vi.fn()
+    const original = window.location
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...original, assign } })
+    try {
+      const wrapper = mount(LoginForm)
+      const button = wrapper.find('[data-testid="login-external-/admin/sso/redirect"]')
+      expect(button.text()).toContain('Sign in with SSO')
+      expect(button.text()).toContain('Company accounts')
+      await button.trigger('click')
+      expect(assign).toHaveBeenCalledWith('/admin/sso/redirect')
+    } finally {
+      Object.defineProperty(window, 'location', { configurable: true, value: original })
+    }
   })
 
   it('shows no demo accounts unless demo mode sends some', () => {

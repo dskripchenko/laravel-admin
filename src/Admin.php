@@ -246,6 +246,24 @@ final class Admin
         return array_values(array_unique(array_merge(...array_values($this->widgets) ?: [[]])));
     }
 
+    /**
+     * Registers a resolver of the login page's external ways in — "Sign in
+     * with SSO" buttons under the password form — for the panel being
+     * registered (see {@see Auth\ExternalLoginRegistry}).
+     *
+     *   $admin->externalLogins(fn (Request $request, string $panel) => [
+     *       new ExternalLogin('Sign in with SSO', url('/admin/sso/redirect'), 'key-round'),
+     *   ]);
+     *
+     * @param  callable(\Illuminate\Http\Request, string): iterable<Auth\ExternalLogin|array<string, mixed>>  $resolver
+     */
+    public function externalLogins(callable $resolver): self
+    {
+        $this->app->make(Auth\ExternalLoginRegistry::class)->add($this->registrationPanel, $resolver);
+
+        return $this;
+    }
+
     public function version(): string
     {
         return '0.1.0-dev';

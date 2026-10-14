@@ -245,6 +245,22 @@ ADMIN_PROVIDER=users
 - 测试辅助工具 `ActsAsAdmin` 遵循所选策略：在 shared 应用中，它会创建您自己的用户
   （`admin.auth.model`），为其分配角色，并通过您的 guard 登录。
 
+### 其他登录方式：登录页上的按钮
+
+宿主或扩展包可以在密码表单之外添加登录方式——"通过 SSO 登录"、合作方的身份提供方——以按钮形式显示在表单下方。核心只负责绘制按钮；URL 背后的协议（OpenID Connect、SAML 或其他）由扩展包负责，例如 `dskripchenko/laravel-admin-oidc`。
+
+```php
+use Dskripchenko\LaravelAdmin\Auth\ExternalLogin;
+use Illuminate\Http\Request;
+
+// 在插件的 boot() 中：为正在注册的面板添加登录方式。
+$admin->externalLogins(fn (Request $request, string $panel) => [
+    new ExternalLogin('通过 SSO 登录', url('/admin/sso/redirect'), icon: 'key-round'),
+]);
+```
+
+解析器在每次 bootstrap 时运行，可以依赖请求——例如某公司通过专属链接使用自己的身份提供方。在 `xhr` bootstrap 策略下，该请求是 bootstrap 调用而非页面本身：解析器需要的状态请放在会话中。抛出异常的解析器会被记录并跳过；密码表单不受影响。
+
 ## 3. 路径、域名、API、会话、代理
 
 | 设置 | 默认 | 作用 |

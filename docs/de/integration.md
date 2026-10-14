@@ -275,6 +275,31 @@ wird getrennt gehalten.
   shared-Anwendung erstellt er Ihren eigenen Benutzer (`admin.auth.model`),
   weist ihm eine Rolle zu und meldet ihn über Ihren Guard an.
 
+### Weitere Anmeldewege: Schaltflächen auf der Anmeldeseite
+
+Ein Host oder Paket ergänzt Anmeldewege neben dem Passwortformular —
+„Mit SSO anmelden", der Identitätsanbieter eines Partners — als
+Schaltflächen unter dem Formular. Der Kern zeichnet sie nur; das Protokoll
+hinter der URL (OpenID Connect, SAML oder anderes) gehört dem Paket, etwa
+`dskripchenko/laravel-admin-oidc`.
+
+```php
+use Dskripchenko\LaravelAdmin\Auth\ExternalLogin;
+use Illuminate\Http\Request;
+
+// In boot() eines Plugins: die Anmeldewege des registrierten Panels.
+$admin->externalLogins(fn (Request $request, string $panel) => [
+    new ExternalLogin('Mit SSO anmelden', url('/admin/sso/redirect'), icon: 'key-round'),
+]);
+```
+
+Der Resolver läuft bei jedem Bootstrap und darf von der Anfrage abhängen —
+etwa der eigene Anbieter eines Unternehmens hinter einem eigenen Link. In
+der Bootstrap-Strategie `xhr` ist das die Bootstrap-Anfrage, nicht die
+Seite: Was der Resolver braucht, gehört in die Session. Ein Resolver, der
+eine Ausnahme wirft, wird protokolliert und übersprungen; das
+Passwortformular bleibt.
+
 ## 3. Pfad, Domain, API, Sessions, Proxys
 
 | Einstellung | Standard | Wirkung |
