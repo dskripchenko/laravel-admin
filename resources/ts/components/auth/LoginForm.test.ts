@@ -140,6 +140,12 @@ describe('LoginForm', () => {
     }
   })
 
+  it('shows the server\'s login notice above the form', () => {
+    useAuthStore().hydrate({ user: null, permissions: [], config: {}, loginNotice: { message: 'No access: ask your administrator', tone: 'danger' } } as never)
+    const wrapper = mount(LoginForm)
+    expect(wrapper.find('[data-testid="login-notice"]').text()).toContain('No access: ask your administrator')
+  })
+
   it('shows no demo accounts unless demo mode sends some', () => {
     const wrapper = mount(LoginForm)
     expect(wrapper.find('[data-testid="login-demo"]').exists()).toBe(false)

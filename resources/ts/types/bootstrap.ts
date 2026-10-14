@@ -48,6 +48,12 @@ export interface AdminExternalLogin {
   description?: string | null
 }
 
+/** A message above the login form — Auth\LoginNotice on the server. */
+export interface AdminLoginNotice {
+  message: string
+  tone: 'danger' | 'warning' | 'info' | 'success'
+}
+
 export interface AdminBrand {
   name?: string
   /** The logo image's URL, for the sidebar and the auth pages. */
@@ -89,6 +95,8 @@ export interface AdminBootstrap {
   demo?: AdminDemo | null
   /** The login page's external ways in; absent on older backends. */
   externalLogins?: AdminExternalLogin[]
+  /** A message for the login page (why an external sign-in failed), shown once. */
+  loginNotice?: AdminLoginNotice | null
 }
 
 declare global {

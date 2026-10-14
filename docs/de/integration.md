@@ -300,6 +300,21 @@ Seite: Was der Resolver braucht, gehört in die Session. Ein Resolver, der
 eine Ausnahme wirft, wird protokolliert und übersprungen; das
 Passwortformular bleibt.
 
+Wenn eine externe Anmeldung jemanden abweist — kein Zugriff, Anbieter nicht
+erreichbar —, schicken Sie ihn mit einem Grund über dem Formular zur
+Anmeldeseite zurück:
+
+```php
+use Dskripchenko\LaravelAdmin\Auth\LoginNotice;
+
+LoginNotice::put(__('Kein Zugriff: Wenden Sie sich an Ihren Administrator'), 'danger');
+
+return redirect('/admin/login');
+```
+
+Die Meldung liegt in der Session, bis der nächste Bootstrap sie abholt; sie
+erscheint daher in beiden Bootstrap-Strategien genau einmal.
+
 ## 3. Pfad, Domain, API, Sessions, Proxys
 
 | Einstellung | Standard | Wirkung |

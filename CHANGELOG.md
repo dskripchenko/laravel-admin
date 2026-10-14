@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **A message on the login page.** `Auth\LoginNotice::put($message, $tone)`
+  leaves a reason for the login page — why an external sign-in turned someone
+  away — and the next bootstrap takes it (`loginNotice`), so the page shows it
+  once above the form, in both bootstrap strategies. Tones: `danger`,
+  `warning`, `info`, `success`.
+
 ## 1.49.0
 
 ### Added

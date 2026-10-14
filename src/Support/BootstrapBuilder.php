@@ -79,6 +79,8 @@ final class BootstrapBuilder
             // signed-in user as well: a logout leaves the SPA on the login page
             // without a new bootstrap, and the buttons must be there.
             'externalLogins' => app(\Dskripchenko\LaravelAdmin\Auth\ExternalLoginRegistry::class)->for($request, $panel->id),
+            // A message for the login page (Auth\LoginNotice), taken once.
+            'loginNotice' => $user === null ? \Dskripchenko\LaravelAdmin\Auth\LoginNotice::take() : null,
         ];
     }
 

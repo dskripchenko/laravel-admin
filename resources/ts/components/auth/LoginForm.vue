@@ -111,6 +111,15 @@ async function submit(): Promise<void> {
       {{ generalError }}
     </UidAlert>
 
+    <UidAlert
+      v-if="auth.loginNotice && !generalError"
+      :variant="auth.loginNotice.tone"
+      role="alert"
+      data-testid="login-notice"
+    >
+      {{ auth.loginNotice.message }}
+    </UidAlert>
+
     <UidInput
       v-model="email"
       type="email"

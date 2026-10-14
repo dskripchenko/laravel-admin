@@ -57,3 +57,22 @@ it('keeps each panel to its own ways in', function (): void {
     expect($registry->for(request(), 'admin'))->toBe([])
         ->and($registry->for(request(), 'client'))->toHaveCount(1);
 });
+
+it('carries a login notice to the next bootstrap, once', function (): void {
+    $this->withSession([Dskripchenko\LaravelAdmin\Auth\LoginNotice::SESSION_KEY => ['message' => 'No access: ask your administrator', 'tone' => 'danger']]);
+
+    $this->getJson('/api/admin/system/bootstrap')
+        ->assertOk()
+        ->assertJsonPath('payload.loginNotice', ['message' => 'No access: ask your administrator', 'tone' => 'danger']);
+
+    $this->getJson('/api/admin/system/bootstrap')
+        ->assertOk()
+        ->assertJsonPath('payload.loginNotice', null);
+});
+
+it('puts a notice with a known tone only', function (): void {
+    $this->startSession();
+    Dskripchenko\LaravelAdmin\Auth\LoginNotice::put('Provider unreachable', 'shouting');
+
+    expect(session(Dskripchenko\LaravelAdmin\Auth\LoginNotice::SESSION_KEY))->toBe(['message' => 'Provider unreachable', 'tone' => 'danger']);
+});
