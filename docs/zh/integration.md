@@ -261,6 +261,18 @@ $admin->externalLogins(fn (Request $request, string $panel) => [
 
 解析器在每次 bootstrap 时运行，可以依赖请求——例如某公司通过专属链接使用自己的身份提供方。在 `xhr` bootstrap 策略下，该请求是 bootstrap 调用而非页面本身：解析器需要的状态请放在会话中。抛出异常的解析器会被记录并跳过；密码表单不受影响。
 
+当外部登录拒绝某人（无权限、身份提供方不可用）时，可将其带回登录页，并在表单上方显示原因：
+
+```php
+use Dskripchenko\LaravelAdmin\Auth\LoginNotice;
+
+LoginNotice::put(__('无访问权限：请联系管理员'), 'danger');
+
+return redirect('/admin/login');
+```
+
+该提示保存在会话中，直到下一次 bootstrap 将其取走，因此在两种 bootstrap 策略下都只显示一次。
+
 ## 3. 路径、域名、API、会话、代理
 
 | 设置 | 默认 | 作用 |

@@ -299,6 +299,20 @@ strategy that request is the bootstrap call, not the page: keep what the
 resolver needs in the session. A resolver that throws is reported and
 skipped; the password form stays. The password form itself is not affected.
 
+When an external sign-in turns someone away — no access, a provider down —
+send them back to the login page with a reason above the form:
+
+```php
+use Dskripchenko\LaravelAdmin\Auth\LoginNotice;
+
+LoginNotice::put(__('No access: ask your administrator'), 'danger');
+
+return redirect('/admin/login');
+```
+
+The notice lives in the session until the next bootstrap takes it, so it is
+shown once in both bootstrap strategies.
+
 ## 3. Path, domain, API, sessions, proxies
 
 | Setting | Default | Effect |
