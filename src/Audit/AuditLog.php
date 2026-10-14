@@ -142,4 +142,41 @@ final class AuditLog extends Model
             ->where('actor_type', $actor->getMorphClass())
             ->where('actor_id', $actor->getKey());
     }
+
+    /**
+     * Where an audited change came from: the client's IP, its User-Agent and
+     * the URL, cut to the configured lengths. Query parameters that carry a
+     * credential — an OAuth code or token, a signed link's signature — are
+     * masked (`admin.audit.redacted_query`): the audit log outlives them and
+     * is read by more people than they were meant for.
+     *
+     * @return array{ip: string|null, user_agent: string, url: string}
+     */
+    public static function requestContext(): array
+    {
+        $request = request();
+
+        return [
+            'ip' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, (int) config('admin.audit.user_agent_max_length', 1024)),
+            'url' => substr(self::redactUrl($request->fullUrl()), 0, (int) config('admin.audit.url_max_length', 2048)),
+        ];
+    }
+
+    /** The URL with the credential-carrying query parameters masked. */
+    public static function redactUrl(string $url): string
+    {
+        $query = parse_url($url, PHP_URL_QUERY);
+        if (! is_string($query) || $query === '') {
+            return $url;
+        }
+        $redacted = array_map('strtolower', (array) config('admin.audit.redacted_query', []));
+        $parts = [];
+        foreach (explode('&', $query) as $pair) {
+            [$name] = explode('=', $pair, 2);
+            $parts[] = in_array(strtolower(urldecode($name)), $redacted, true) ? $name.'=[redacted]' : $pair;
+        }
+
+        return str_replace('?'.$query, '?'.implode('&', $parts), $url);
+    }
 }
