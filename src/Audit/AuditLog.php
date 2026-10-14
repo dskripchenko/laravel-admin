@@ -163,6 +163,14 @@ final class AuditLog extends Model
         ];
     }
 
+    /**
+     * Masked unless `admin.audit.redacted_query` says otherwise. The default
+     * lives here, not only in the config file: a host that published
+     * config/admin.php before the key existed has no such key, and without a
+     * default nothing would be masked at all.
+     */
+    public const DEFAULT_REDACTED_QUERY = ['code', 'state', 'session_state', 'token', 'access_token', 'id_token', 'refresh_token', 'password', 'signature', 'secret', 'key'];
+
     /** The URL with the credential-carrying query parameters masked. */
     public static function redactUrl(string $url): string
     {
@@ -170,7 +178,7 @@ final class AuditLog extends Model
         if (! is_string($query) || $query === '') {
             return $url;
         }
-        $redacted = array_map('strtolower', (array) config('admin.audit.redacted_query', []));
+        $redacted = array_map('strtolower', (array) config('admin.audit.redacted_query', self::DEFAULT_REDACTED_QUERY));
         $parts = [];
         foreach (explode('&', $query) as $pair) {
             [$name] = explode('=', $pair, 2);

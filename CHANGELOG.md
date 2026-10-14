@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **The audited URL was not masked in hosts with a published
+  `config/admin.php`.** Such a config predates `admin.audit.redacted_query`,
+  and the code fell back to an empty list, so 1.50.1 masked nothing there.
+  The default list is now `AuditLog::DEFAULT_REDACTED_QUERY` and applies when
+  the key is missing; set the key to `[]` to switch masking off.
+
 ## 1.50.1
 
 ### Fixed

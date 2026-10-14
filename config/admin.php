@@ -257,7 +257,7 @@ return [
         // Query parameters masked in the audited URL: they carry credentials
         // (OAuth codes and tokens, signed links' signatures) that the audit
         // log must not keep.
-        'redacted_query' => ['code', 'state', 'session_state', 'token', 'access_token', 'id_token', 'refresh_token', 'password', 'signature', 'secret', 'key'],
+        'redacted_query' => Dskripchenko\LaravelAdmin\Audit\AuditLog::DEFAULT_REDACTED_QUERY,
         // Human-readable labels for actor_type and subject_type: FQCN → label.
         // An FQCN means nothing to an operator, so the host writes
         // "Administrator" and the like here. A class outside the map falls back
