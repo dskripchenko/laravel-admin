@@ -5,6 +5,21 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **A sign-out could be undone by a request still running.** The sign-out
+  invalidates the session, but a request already in flight with it — the
+  shell's manifest, a status poll — saved it back under the old id when it
+  finished and returned the old cookie, so the next page load was signed in
+  again. Unnoticed while the SPA stayed on its login page after a sign-out;
+  visible since 1.51.0, when a sign-out at an identity provider reloads the
+  page. A sign-out now remembers the ended session id for the session's
+  lifetime (`Auth\EndedSessions`, in the cache), and a request carrying it is
+  signed out and gets a fresh session — in the API, the bootstrap and the
+  shell alike. A cache that is down only skips the check.
+
 ## 1.51.0
 
 ### Added

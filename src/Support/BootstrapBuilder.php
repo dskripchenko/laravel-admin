@@ -44,6 +44,8 @@ final class BootstrapBuilder
         $request ??= request();
 
         $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current();
+        // The shell's inline bootstrap does not pass AdminAuth.
+        \Dskripchenko\LaravelAdmin\Auth\EndedSessions::clearIfEnded($request, $panel->guard);
         $locale = $this->locales->resolve($request);
         $user = $this->serializeUser();
 
