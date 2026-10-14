@@ -58,6 +58,7 @@ final class AdminServiceProvider extends ServiceProvider
         );
         $this->app->singleton(Plugin\PluginRegistry::class);
         $this->app->singleton(Panel\PanelRegistry::class);
+        $this->app->singleton(Auth\ExternalLoginRegistry::class);
 
         // Tenancy is bound as `scoped()` — per request — rather than as a
         // singleton: in long-running runtimes (Octane, queue workers) the

@@ -5,6 +5,21 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **External ways in on the login page.** `Admin::externalLogins(callable)`
+  registers, for the panel being registered, a resolver of buttons shown under
+  the password form — "Sign in with SSO", a partner's identity provider. Each
+  is an `Auth\ExternalLogin` (label, URL, optional icon and description); a
+  click is a full navigation to the URL, where the package that registered it
+  takes over. The core knows no protocol: OpenID Connect lives in
+  `dskripchenko/laravel-admin-oidc`. The resolver gets the request and the
+  panel's id and runs on every bootstrap (`externalLogins` in the payload); one
+  that throws is reported and skipped, so the password form never goes with
+  it. Nothing registered — the login page is as before.
+
 ## 1.48.0
 
 Requires `@dskripchenko/ui` ^1.11.0.

@@ -18,7 +18,7 @@ import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
 import { useLocaleStore } from './locale'
 import { ApiError } from '../api/errors'
-import type { AdminUser, AdminBootstrap, AdminDemo } from '../types/bootstrap'
+import type { AdminUser, AdminBootstrap, AdminDemo, AdminExternalLogin } from '../types/bootstrap'
 
 export interface PendingChallenge {
   challengeToken: string
@@ -38,6 +38,8 @@ export const useAuthStore = defineStore('admin-auth', () => {
 
   /** Demo mode (admin.demo): the login page's demo accounts; null when it is off. */
   const demo = ref<AdminDemo | null>(null)
+  /** The login page's external ways in ("Sign in with SSO"), from the guest bootstrap. */
+  const externalLogins = ref<AdminExternalLogin[]>([])
   /** Whether users may set 2FA up at all (admin.auth.two_factor.enabled). */
   const twoFactorAvailable = ref<boolean>(true)
 
@@ -53,6 +55,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
     user.value = bootstrap.user
     permissions.value = bootstrap.permissions
     demo.value = bootstrap.demo ?? null
+    externalLogins.value = bootstrap.externalLogins ?? []
     twoFactorAvailable.value = bootstrap.config?.twoFactor?.enabled !== false
   }
 
@@ -212,6 +215,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
     permissions,
     pendingChallenge,
     demo,
+    externalLogins,
     twoFactorAvailable,
     // getters
     isAuthenticated,

@@ -9,7 +9,8 @@ import { UidAlert, UidButton, UidCheckbox, UidInput } from '@dskripchenko/ui'
 import { useAuthStore } from '../../stores/auth'
 import { ApiError, NetworkError, ValidationError } from '../../api/errors'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
-import type { AdminDemoAccount } from '../../types/bootstrap'
+import type { AdminDemoAccount, AdminExternalLogin } from '../../types/bootstrap'
+import { resolveIcon } from '../shell/iconRegistry'
 
 interface Props {
   /** The "Forgot your password?" URL; when set, a link appears to the right of remember. */
@@ -45,6 +46,14 @@ const passwordError = computed<string | undefined>(() => fieldErrors.value.passw
 // Demo mode (admin.demo.accounts): one click signs in as a demo account,
 // through the same login request as the form.
 const demoAccounts = computed<AdminDemoAccount[]>(() => auth.demo?.accounts ?? [])
+
+// External ways in (Admin::externalLogins) — "Sign in with SSO" and the like.
+// A full navigation: the package behind the URL takes over, outside the SPA.
+const externalLogins = computed<AdminExternalLogin[]>(() => auth.externalLogins ?? [])
+
+function signInWith(login: AdminExternalLogin): void {
+  window.location.assign(login.url)
+}
 
 function signInAs(account: AdminDemoAccount): void {
   email.value = account.email
@@ -145,6 +154,25 @@ async function submit(): Promise<void> {
       {{ submitting ? tr('Вход…') : tr('Войти') }}
     </UidButton>
 
+    <div v-if="externalLogins.length > 0" class="admin-auth-external" data-testid="login-external">
+      <div class="admin-auth-external__divider"><span>{{ tr('или') }}</span></div>
+      <UidButton
+        v-for="login in externalLogins"
+        :key="login.url"
+        type="button"
+        variant="secondary"
+        size="lg"
+        class="admin-auth-external__button"
+        :disabled="submitting"
+        :data-testid="`login-external-${login.url}`"
+        @click="signInWith(login)"
+      >
+        <component :is="resolveIcon(login.icon)" v-if="login.icon && resolveIcon(login.icon)" class="admin-auth-external__icon" aria-hidden="true" />
+        <span class="admin-auth-external__label">{{ login.label }}</span>
+        <span v-if="login.description" class="admin-auth-external__description">{{ login.description }}</span>
+      </UidButton>
+    </div>
+
     <div v-if="demoAccounts.length > 0" class="admin-auth-demo" data-testid="login-demo">
       <div class="admin-auth-demo__title">{{ tr('Демо-доступ') }}</div>
       <UidButton
@@ -173,6 +201,39 @@ async function submit(): Promise<void> {
 </template>
 
 <style>
+.admin-auth-external {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-auth-external__divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--uid-text-tertiary);
+  font-size: var(--uid-font-size-xs);
+}
+.admin-auth-external__divider::before,
+.admin-auth-external__divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--uid-border-subtle);
+}
+.admin-auth-external__button.uid-button {
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.admin-auth-external__icon {
+  width: 16px;
+  height: 16px;
+}
+.admin-auth-external__description {
+  flex-basis: 100%;
+  font-size: var(--uid-font-size-xs);
+  color: var(--uid-text-secondary);
+}
 .admin-auth-demo {
   display: flex;
   flex-direction: column;

@@ -35,6 +35,19 @@ export interface AdminDemo {
   accounts: AdminDemoAccount[]
 }
 
+/**
+ * A way to sign in other than the password form — "Sign in with SSO" — that a
+ * host or a package registered for the panel (Admin::externalLogins).
+ */
+export interface AdminExternalLogin {
+  label: string
+  /** Where the button leads — a full page navigation, not a SPA route. */
+  url: string
+  /** An icon name from the panel's icon set. */
+  icon?: string | null
+  description?: string | null
+}
+
 export interface AdminBrand {
   name?: string
   /** The logo image's URL, for the sidebar and the auth pages. */
@@ -74,6 +87,8 @@ export interface AdminBootstrap {
   config: AdminBootstrapConfig
   /** Demo mode; null or absent when it is off. */
   demo?: AdminDemo | null
+  /** The login page's external ways in; absent on older backends. */
+  externalLogins?: AdminExternalLogin[]
 }
 
 declare global {

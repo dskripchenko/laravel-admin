@@ -275,6 +275,30 @@ kept apart.
   application it creates your own user (`admin.auth.model`), assigns it a role
   and signs it in on your guard.
 
+### Other ways in: buttons on the login page
+
+A host or a package adds ways to sign in other than the password form —
+"Sign in with SSO", a partner's identity provider — as buttons under the
+form. The core only draws them; the protocol behind the URL (OpenID Connect,
+SAML, anything else) is the package's, for instance
+`dskripchenko/laravel-admin-oidc`.
+
+```php
+use Dskripchenko\LaravelAdmin\Auth\ExternalLogin;
+use Illuminate\Http\Request;
+
+// In a plugin's boot(): the ways in of the panel being registered.
+$admin->externalLogins(fn (Request $request, string $panel) => [
+    new ExternalLogin('Sign in with SSO', url('/admin/sso/redirect'), icon: 'key-round'),
+]);
+```
+
+The resolver runs on every bootstrap and may depend on the request — a
+company's own provider behind a link of its own. In the `xhr` bootstrap
+strategy that request is the bootstrap call, not the page: keep what the
+resolver needs in the session. A resolver that throws is reported and
+skipped; the password form stays. The password form itself is not affected.
+
 ## 3. Path, domain, API, sessions, proxies
 
 | Setting | Default | Effect |

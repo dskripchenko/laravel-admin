@@ -531,5 +531,6 @@
     "Сброс раскладки": "Reset the layout",
     "Отзыв токена": "Revoke the token",
     "Отключение 2FA": "Turn off 2FA",
-    "Отключить": "Turn off"
+    "Отключить": "Turn off",
+    "или": "or"
 }

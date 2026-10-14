@@ -23,8 +23,9 @@ use Illuminate\Support\Facades\Schema;
  *
  * The payload holds: csrf, baseUrl, apiUrl, the current locale,
  * availableLocales, the current theme, availableThemes, brand, user (or null),
- * permissions[], manifestVersion, plugins[], unread_notifications_count and
- * config — the manifest etag and the bootstrap strategy.
+ * permissions[], manifestVersion, plugins[], unread_notifications_count,
+ * config — the manifest etag and the bootstrap strategy — and the login
+ * page's externalLogins.
  */
 final class BootstrapBuilder
 {
@@ -74,6 +75,10 @@ final class BootstrapBuilder
             // Demo mode (admin.demo): the login page's demo accounts and the
             // read-only flag; null when it is off.
             'demo' => \Dskripchenko\LaravelAdmin\Demo\DemoMode::bootstrap(),
+            // The login page's external ways in ("Sign in with SSO"). Sent to a
+            // signed-in user as well: a logout leaves the SPA on the login page
+            // without a new bootstrap, and the buttons must be there.
+            'externalLogins' => app(\Dskripchenko\LaravelAdmin\Auth\ExternalLoginRegistry::class)->for($request, $panel->id),
         ];
     }
 
