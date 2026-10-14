@@ -19,6 +19,14 @@ it('masks the credential-carrying query parameters of the audited URL', function
         ->and(AuditLog::redactUrl('https://app.test/rendered/1/download?expires=1&Signature=abc'))->toBe('https://app.test/rendered/1/download?expires=1&Signature=[redacted]');
 });
 
+it('masks by default when a published config has no redacted_query key', function (): void {
+    $audit = config('admin.audit');
+    unset($audit['redacted_query']);
+    config(['admin.audit' => $audit]);
+
+    expect(AuditLog::redactUrl('https://app.test/cb?code=abc&page=1'))->toBe('https://app.test/cb?code=[redacted]&page=1');
+});
+
 it('builds the context from the request, cut to the configured lengths', function (): void {
     config(['admin.audit.url_max_length' => 40]);
     $this->get('/admin/login?code=secret-code-value&x=1');
