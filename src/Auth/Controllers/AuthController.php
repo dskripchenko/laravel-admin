@@ -318,6 +318,8 @@ final class AuthController extends ApiController
         Auth::guard($guard)->logout();
 
         if ($request->hasSession()) {
+            // A request still running with this session must not save it back to life.
+            \Dskripchenko\LaravelAdmin\Auth\EndedSessions::end($request->session()->getId());
             $request->session()->invalidate();
             $request->session()->regenerateToken();
         }

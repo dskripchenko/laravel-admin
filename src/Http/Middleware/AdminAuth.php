@@ -31,14 +31,17 @@ final class AdminAuth
 {
     public function handle(Request $request, Closure $next): SymfonyResponse
     {
+        // Before the public actions too: the bootstrap of a signed-out
+        // session must not see the user again.
+        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
+        \Dskripchenko\LaravelAdmin\Auth\EndedSessions::clearIfEnded($request, $guard);
+
         if ($this->isExcludedForCurrentAction()) {
             /** @var SymfonyResponse $response */
             $response = $next($request);
 
             return $response;
         }
-
-        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
 
         if (! Auth::guard($guard)->check()) {
             return response()->json([
