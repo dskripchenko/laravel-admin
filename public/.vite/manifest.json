@@ -1,12 +1,12 @@
 {
   "node_modules/@dskripchenko/diagrams/dist/index.mjs": {
-    "file": "assets/index-DPX9zGIg.js",
+    "file": "assets/index-CzbXDq-t.js",
     "name": "index",
     "src": "node_modules/@dskripchenko/diagrams/dist/index.mjs",
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-qGmdl5eZ.js",
+    "file": "assets/app-CxjxDLre.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -14,7 +14,7 @@
       "node_modules/@dskripchenko/diagrams/dist/index.mjs"
     ],
     "css": [
-      "assets/app-CYHz_ghU.css"
+      "assets/app-Kdga0MQ9.css"
     ]
   }
 }
