@@ -5,6 +5,14 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- Sequence diagrams in markdown: a block's tab ("loop", "alt") is no longer
+  cut by an activation bar on the lifeline under it
+  (@dskripchenko/diagrams 1.0.2).
+
 ## 1.54.0
 
 ### Added
