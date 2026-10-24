@@ -16,6 +16,7 @@ import AdminBootSkeleton from './shell/AdminBootSkeleton.vue'
 import AdminLoadingBar from './AdminLoadingBar.vue'
 import NotificationsDrawer from './shell/NotificationsDrawer.vue'
 import AdminConfirmDialog from './shell/AdminConfirmDialog.vue'
+import AdminRevealDialog from './shell/AdminRevealDialog.vue'
 import { useAuthStore } from '../stores/auth'
 import { adminToast } from '../stores/toast'
 import { useBrand } from '../composables/useBrand'
@@ -135,6 +136,7 @@ const pageTransition = computed<string>(() => (booted.value ? 'admin-page' : 'ad
 
   <!-- The confirmation dialog behind useConfirm(). -->
   <AdminConfirmDialog />
+  <AdminRevealDialog />
 </template>
 
 <style>

@@ -64,6 +64,9 @@ export { default as AdminActionDialogs } from './components/actions/AdminActionD
 export { useConfirm, confirmDialog } from './composables/useConfirm'
 export type { ConfirmOptions } from './composables/useConfirm'
 export { default as AdminConfirmDialog } from './components/shell/AdminConfirmDialog.vue'
+export { revealOnce, closeReveal, actionReveal } from './composables/useReveal'
+export type { RevealOptions } from './composables/useReveal'
+export { default as AdminRevealDialog } from './components/shell/AdminRevealDialog.vue'
 export { default as AdminActionMenuItems } from './components/actions/AdminActionMenuItems.vue'
 
 export {

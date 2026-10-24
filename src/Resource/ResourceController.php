@@ -933,8 +933,12 @@ final class ResourceController extends ApiController
 
         // The method may answer with the number of affected records, a
         // message, or an array carrying either (`['message' => ..., 'affected' => ...]`).
+        // The array may also carry `reveal` — a value shown once, such as a
+        // new token: the panel shows it in a dialog with a copy button, not in
+        // a toast that is gone before it is copied.
         $affected = count($ids);
         $message = null;
+        $reveal = is_array($result) ? self::reveal($result['reveal'] ?? null) : null;
         if (is_int($result)) {
             $affected = $result;
         } elseif (is_string($result) && $result !== '') {
@@ -948,10 +952,30 @@ final class ResourceController extends ApiController
             }
         }
 
-        return $this->success([
+        $response = $this->success([
             'affected' => $affected,
             'message' => $message ?? 'Action `'.$actionKey.'` applied',
-        ]);
+        ] + ($reveal !== null ? ['reveal' => $reveal] : []));
+
+        // A value shown once is no business of any cache on the way.
+        return $reveal !== null ? $response->header('Cache-Control', 'no-store') : $response;
+    }
+
+    /**
+     * `reveal` of an action's answer: a string, or `['value' => ..., 'label' => ...]`.
+     *
+     * @return array{value: string, label: string|null}|null
+     */
+    private static function reveal(mixed $reveal): ?array
+    {
+        if (is_string($reveal) && $reveal !== '') {
+            return ['value' => $reveal, 'label' => null];
+        }
+        if (is_array($reveal) && is_string($reveal['value'] ?? null) && $reveal['value'] !== '') {
+            return ['value' => $reveal['value'], 'label' => is_string($reveal['label'] ?? null) ? $reveal['label'] : null];
+        }
+
+        return null;
     }
 
     /**

@@ -5,6 +5,17 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **A value an action shows once — `reveal`.** A resource action may answer
+  `['message' => ..., 'reveal' => $token]` (or `['value' => ..., 'label' => ...]`):
+  the action endpoint passes it on as `payload.reveal` with
+  `Cache-Control: no-store`, and the panel shows it in a dialog with a copy
+  button that closes only by hand (`AdminRevealDialog`, `revealOnce()`), not
+  in a success toast that was gone before a new API token could be copied.
+
 ## 1.51.1
 
 ### Fixed

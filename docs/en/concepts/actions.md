@@ -114,6 +114,12 @@ an array with either: `['message' => 'Sent to 12 subscribers', 'affected' => 12]
 With no message the panel says that the action was applied. Throw
 `ActionFailedException('...')` to refuse with a reason (422).
 
+A value shown once (a new token, a password) goes in `reveal`:
+`['message' => 'Copy the token now', 'reveal' => $token]` or
+`'reveal' => ['value' => $token, 'label' => 'Token']`. The panel shows it not in
+a toast but in a dialog with a «Copy» button that closes only by hand; the
+answer goes with `Cache-Control: no-store`.
+
 ## Screen commandBar
 
 ```php

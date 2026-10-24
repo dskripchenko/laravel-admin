@@ -37,6 +37,12 @@ trait AdminApiCommonSchemas
             'AffectedPayload' => [
                 'affected' => 'integer!',
                 'message' => 'string! What was applied, in words',
+                'reveal' => '@ActionReveal',                        // optional
+            ],
+            // A value an action shows once (a new token): the panel shows it in a dialog with a copy button.
+            'ActionReveal' => [
+                'value' => 'string!',
+                'label' => 'string The caption of the value',
             ],
 
             // { success: true, payload: { message: string } }
