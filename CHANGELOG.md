@@ -2970,7 +2970,7 @@ Multiple independent admin surfaces on one core (Filament-Panels parity):
 - Quill through `defineAsyncComponent` — lazy loaded (~200 KB off the initial
   bundle).
 
-## 1.54.0
+## [Unreleased]
 
 ### Added
 - Initial scaffold (composer/package skeleton, AdminServiceProvider, base config).
