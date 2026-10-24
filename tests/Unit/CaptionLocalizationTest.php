@@ -141,6 +141,19 @@ it('an optional DatePicker accepts an empty value; a required one does not', fun
     expect(validator(['starts_at' => null, 'ends_at' => '2026-01-01'], $rules)->passes())->toBeTrue();
 });
 
+it('an optional Number accepts an empty value; a required one does not', function (): void {
+    $rules = ValidationRulesExporter::export([
+        Dskripchenko\LaravelAdmin\Field\Number::make('daily_limit')->integer()->min(1),
+        Dskripchenko\LaravelAdmin\Field\Number::make('timeout')->required()->min(1),
+    ]);
+
+    expect($rules['daily_limit'])->toBe(['nullable', 'integer', 'min:1']);
+    expect($rules['timeout'])->toBe(['required', 'numeric', 'min:1']);
+    expect(validator(['daily_limit' => null, 'timeout' => 30], $rules)->passes())->toBeTrue();
+    expect(validator(['daily_limit' => 0, 'timeout' => 30], $rules)->passes())->toBeFalse();
+    expect(validator(['daily_limit' => 5, 'timeout' => null], $rules)->passes())->toBeFalse();
+});
+
 it('rules() after confirmed() keeps the confirmed rule', function (): void {
     $field = Password::make('password')->confirmed()->rules(['min:8']);
 

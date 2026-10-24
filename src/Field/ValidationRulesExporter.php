@@ -105,9 +105,10 @@ final class ValidationRulesExporter
         }
 
         // An optional field left empty arrives as null, and a format rule
-        // (`date`, `date_format:`) fails on null unless the field is nullable:
-        // an untouched optional DatePicker used to block the whole form.
-        if (in_array($field->fieldType(), ['date', 'date_range', 'time'], true)
+        // (`date`, `date_format:`, `integer`, `numeric`) fails on null unless
+        // the field is nullable: an untouched optional DatePicker, or a Number
+        // cleared to mean «no limit», used to block the whole form.
+        if (in_array($field->fieldType(), ['date', 'date_range', 'time', 'number', 'slider'], true)
             && ! self::isPresenceConstrained($merged)) {
             array_unshift($merged, 'nullable');
         }
