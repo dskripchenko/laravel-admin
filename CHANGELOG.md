@@ -5,7 +5,7 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## 1.54.0
 
 ### Added
 
@@ -2970,7 +2970,7 @@ Multiple independent admin surfaces on one core (Filament-Panels parity):
 - Quill through `defineAsyncComponent` — lazy loaded (~200 KB off the initial
   bundle).
 
-## [Unreleased]
+## 1.54.0
 
 ### Added
 - Initial scaffold (composer/package skeleton, AdminServiceProvider, base config).
