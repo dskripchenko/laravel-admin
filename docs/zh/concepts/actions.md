@@ -106,6 +106,11 @@ public function archiveBulk(array $ids, array $payload = []): int
 `['message' => 'Sent to 12 subscribers', 'affected' => 12]`。没有消息时，面板会
 提示 Action 已执行。抛出 `ActionFailedException('...')` 可附带原因拒绝执行（422）。
 
+只显示一次的值（新令牌、密码）放在 `reveal` 中：
+`['message' => 'Copy the token now', 'reveal' => $token]` 或
+`'reveal' => ['value' => $token, 'label' => 'Token']`。面板不会用 toast 显示它，
+而是在带有「复制」按钮的对话框中显示，只能手动关闭；响应带有 `Cache-Control: no-store`。
+
 ## Screen commandBar
 
 ```php

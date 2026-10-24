@@ -227,6 +227,25 @@ it('action endpoint returns the message and count the method answered with', fun
         ->assertJsonPath('payload.affected', 7);
 });
 
+it('action endpoint hands a value to show once, not to be cached', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A']);
+
+    $response = $this->postJson('/api/admin/test-actions/action', ['key' => 'issue-key', 'ids' => [$a->id]]);
+
+    $response->assertOk()
+        ->assertJsonPath('payload.message', 'Copy the key now')
+        ->assertJsonPath('payload.reveal', ['value' => 'k-'.$a->id, 'label' => 'Key']);
+    expect($response->headers->get('Cache-Control'))->toContain('no-store');
+});
+
+it('action endpoint gives no reveal when the method has none', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A']);
+
+    $this->postJson('/api/admin/test-actions/action', ['key' => 'announce', 'ids' => [$a->id]])
+        ->assertOk()
+        ->assertJsonMissingPath('payload.reveal');
+});
+
 it('action endpoint falls back to the generic message', function (): void {
     $a = TestResourceUserModel::create(['name' => 'A']);
 

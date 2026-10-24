@@ -38,6 +38,7 @@ import AuditTimeline from './AuditTimeline.vue'
 import { deleteConfirmText, deletedToast, recordFallbackTitle, recordTitleOf } from './resourceNoun'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
+import { actionReveal, revealOnce } from '../../composables/useReveal'
 import { actionErrorMessage, normalizeActions, useActionRunner, type AdminAction } from '../../composables/useActionRunner'
 import AdminActionDialogs from '../actions/AdminActionDialogs.vue'
 import AdminActionMenuItems from '../actions/AdminActionMenuItems.vue'
@@ -209,7 +210,10 @@ const runner = useActionRunner({
   },
   async onSuccess(action, raw) {
     const result = (raw ?? {}) as { message?: string }
-    adminToast.success(result.message ?? tRaw('Действие «:action» выполнено.', { action: action.label }))
+    const message = result.message ?? tRaw('Действие «:action» выполнено.', { action: action.label })
+    const reveal = actionReveal(raw)
+    if (reveal) void revealOnce({ ...reveal, title: action.label, message })
+    else adminToast.success(message)
     await form.load(props.slug, props.id, 'view').catch(() => undefined)
   },
   onError(action, err) {

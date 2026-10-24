@@ -55,6 +55,7 @@ import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
 import { applyPositions, buildReorderPayload, canDragReorder, type ReorderResponse } from './reorder'
 import { adminToast } from '../../stores/toast'
+import { actionReveal, revealOnce } from '../../composables/useReveal'
 import { deleteWording, forceDeleteWording } from '../../composables/useConfirm'
 import { formatLocale, useI18nStore } from '../../stores/i18n'
 import {
@@ -194,9 +195,13 @@ const runner = useActionRunner({
     const result = (raw ?? {}) as { affected?: number; message?: string }
     if (needsSelection(action) && !options?.ids) index.clearSelection()
     await index.load().catch(() => undefined)
-    adminToast.success(
-      result.message ?? tRaw('Действие «:action» применено к :count записям.', { action: action.label, count: result.affected ?? 0 }),
-    )
+    const message = result.message ?? tRaw('Действие «:action» применено к :count записям.', { action: action.label, count: result.affected ?? 0 })
+    const reveal = actionReveal(raw)
+    if (reveal) {
+      void revealOnce({ ...reveal, title: action.label, message })
+      return
+    }
+    adminToast.success(message)
   },
   onError(action, err) {
     if (typeof console !== 'undefined') console.error('[admin] header-action failed:', err)

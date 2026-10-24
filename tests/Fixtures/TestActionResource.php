@@ -80,6 +80,10 @@ final class TestActionResource extends Resource
             BulkAction::make('Announce')
                 ->method('announce')
                 ->withName('announce'),
+            Button::make('Issue a key')
+                ->method('issueKey')
+                ->withName('issue-key')
+                ->position(['row']),
             // A command bar button: standalone by its position.
             Button::make('Recalculate')
                 ->method('recalculate')
@@ -155,6 +159,12 @@ final class TestActionResource extends Resource
     public function announce(array $ids, array $payload = []): array
     {
         return ['message' => 'Announced to '.count($ids).' records', 'affected' => 7];
+    }
+
+    /** Shows a new key once. */
+    public function issueKey(array $ids, array $payload = []): array
+    {
+        return ['message' => 'Copy the key now', 'reveal' => ['value' => 'k-'.$ids[0], 'label' => 'Key']];
     }
 
     /** A standalone action: no ids, it touches every record. */

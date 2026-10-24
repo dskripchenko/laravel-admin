@@ -64,6 +64,9 @@ public function action(Request $request): JsonResponse;
 
 `affected` — то, что вернул метод, если это целое число, иначе количество переданных `ids`.
 
+`reveal` — только если метод вернул его (значение, показываемое один раз):
+`{"value": "…", "label": "Токен"}`; такой ответ идёт с `Cache-Control: no-store`.
+
 ### Ошибки
 
 | HTTP | `errorKey` | Когда |

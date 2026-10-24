@@ -118,6 +118,12 @@ oder mit einem Array mit einem von beiden: `['message' => 'An 12 Abonnenten gese
 Ohne Nachricht meldet das Panel, dass die Action angewendet wurde. Werfen Sie
 `ActionFailedException('...')`, um mit einer Begründung abzulehnen (422).
 
+Ein Wert, der nur einmal angezeigt wird (ein neues Token, ein Passwort), gehört
+in `reveal`: `['message' => 'Token jetzt kopieren', 'reveal' => $token]` oder
+`'reveal' => ['value' => $token, 'label' => 'Token']`. Das Panel zeigt ihn nicht
+als Toast, sondern in einem Dialog mit der Schaltfläche «Kopieren», der sich nur
+von Hand schließt; die Antwort trägt `Cache-Control: no-store`.
+
 ## Screen-commandBar
 
 ```php
