@@ -19,6 +19,12 @@ export interface AdminUser {
    * until they enable it the panel keeps them on the profile.
    */
   twoFactorRequired?: boolean
+  /** The original user while this session is an impersonation. */
+  impersonator?: { id: number | string; name: string } | null
+  /** The role the panel is viewed as (admin.auth.role_preview), or null. */
+  rolePreview?: { slug: string; name: string } | null
+  /** Whether the user may view the panel as a role — by their own roles. */
+  canPreviewRoles?: boolean
 }
 
 /** One "Sign in as …" button of demo mode (admin.demo.accounts). */

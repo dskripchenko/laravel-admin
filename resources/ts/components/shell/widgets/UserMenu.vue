@@ -2,8 +2,13 @@
 /**
  * The user menu: an avatar plus a dropdown, through UidMenu from
  * @dskripchenko/ui. The trigger is a small UidAvatar, showing initials or a src.
+ *
+ * «View as a role…» is there for those the backend allows to
+ * (user.canPreviewRoles — a Super Admin by default).
  */
+import { ref } from 'vue'
 import { UidAvatar, UidMenu, UidMenuItem, UidMenuSeparator } from '@dskripchenko/ui'
+import RolePreviewDialog from './RolePreviewDialog.vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
 import { trSafe as tr } from '../../../stores/i18n'
@@ -29,6 +34,8 @@ async function logout(): Promise<void> {
 function goProfile(): void {
   void router.push({ name: 'admin.profile' })
 }
+
+const rolePreviewOpen = ref<boolean>(false)
 </script>
 
 <template>
@@ -51,7 +58,15 @@ function goProfile(): void {
     </template>
 
     <UidMenuItem @click="goProfile">{{ tr('Профиль') }}</UidMenuItem>
+    <UidMenuItem
+      v-if="auth.user?.canPreviewRoles"
+      data-testid="role-preview-open"
+      @click="rolePreviewOpen = true"
+    >
+      {{ tr('Смотреть как роль…') }}
+    </UidMenuItem>
     <UidMenuSeparator />
     <UidMenuItem variant="danger" @click="logout">{{ tr('Выйти') }}</UidMenuItem>
   </UidMenu>
+  <RolePreviewDialog v-if="auth.user?.canPreviewRoles" v-model="rolePreviewOpen" />
 </template>

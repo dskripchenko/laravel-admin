@@ -75,6 +75,9 @@ OpenAPI 3.0 规范自动生成，并在 `/api/admin/doc` 提供（使用 Scalar 
 | POST | `auth/resendEmailVerification` | |
 | POST | `auth/startImpersonation` | 管理员模拟另一个用户。 |
 | POST | `auth/stopImpersonation` | |
+| GET | `auth/previewRoles` | 可以用来查看面板的角色。 |
+| POST | `auth/startRolePreview` | 以某个角色查看面板。 |
+| POST | `auth/stopRolePreview` | 返回自己的角色。 |
 
 ### profile
 

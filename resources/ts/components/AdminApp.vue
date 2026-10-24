@@ -22,6 +22,7 @@ import { adminToast } from '../stores/toast'
 import { useBrand } from '../composables/useBrand'
 import { useAppReady } from '../composables/useAppReady'
 import { useShellVisibility } from '../composables/useShellVisibility'
+import { stopRolePreview } from '../composables/useRolePreview'
 import { provideLocale, ru as uidRu, en as uidEn } from '@dskripchenko/ui'
 import { useLocaleStore } from '../stores/locale'
 import { intlLocale, trSafe as tr } from '../stores/i18n'
@@ -45,15 +46,26 @@ provideLocale(computed(() => ({
  * backend puts a `{name, email}` object into bootstrap.user.impersonator, and
  * the frontend shows a banner above the shell.
  */
-const impersonation = computed<{ asName: string } | null>(() => {
-  const u = auth.user as Record<string, unknown> | null
-  const imp = u?.impersonator as Record<string, unknown> | null | undefined
-  if (!imp) return null
-  // u.name is whom we are impersonating, imp.name is the real administrator.
-  return { asName: String(u?.name ?? '?') }
+const impersonation = computed<{ asName: string; kind: 'user' | 'role' } | null>(() => {
+  const u = auth.user
+  if (u?.impersonator) {
+    // u.name is whom we are impersonating, imp.name is the real administrator.
+    return { asName: String(u.name ?? '?'), kind: 'user' }
+  }
+  // Viewing the panel as a role (admin.auth.role_preview) shows the same banner.
+  if (u?.rolePreview) return { asName: u.rolePreview.name, kind: 'role' }
+  return null
 })
 
 async function exitImpersonation(): Promise<void> {
+  if (impersonation.value?.kind === 'role') {
+    try {
+      await stopRolePreview()
+    } catch {
+      adminToast.error(tr('Не удалось вернуться к своим ролям.'))
+    }
+    return
+  }
   try {
     const { getAdminClient } = await import('../stores/registry')
     const client = getAdminClient()

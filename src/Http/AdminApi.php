@@ -140,6 +140,9 @@ class AdminApi extends BaseApi
                     ],
                     'startImpersonation' => ['method' => ['post']],
                     'stopImpersonation' => ['method' => ['post']],
+                    'previewRoles' => ['method' => ['get']],
+                    'startRolePreview' => ['method' => ['post']],
+                    'stopRolePreview' => ['method' => ['post']],
                 ],
             ],
             'profile' => [

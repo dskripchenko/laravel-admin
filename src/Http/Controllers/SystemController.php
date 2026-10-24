@@ -9,6 +9,7 @@ use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
 use Dskripchenko\LaravelAdmin\Menu\MenuRegistry;
 use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
 use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
+use Dskripchenko\LaravelAdmin\Permission\RolePreview;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
@@ -125,19 +126,8 @@ final class SystemController extends ApiController
             return $this->success([]);
         }
 
-        $impersonator = null;
-        if ($impersonation->isActive()) {
-            $provider = Auth::createUserProvider(
-                \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
-            );
-            $original = $provider?->retrieveById($impersonation->impersonatorId());
-            if ($original instanceof Model) {
-                $impersonator = [
-                    'id' => $original->getKey(),
-                    'name' => $original->getAttribute('name'),
-                ];
-            }
-        }
+        $impersonator = $impersonation->describeImpersonator();
+        $preview = app(RolePreview::class);
 
         // The notifications table may be missing in the host project (the
         // default Laravel migration was never run) — fall back to 0 so that
@@ -161,6 +151,8 @@ final class SystemController extends ApiController
                 : false,
             'twoFactorRequired' => \Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy::requiredFor($user),
             'impersonator' => $impersonator,
+            'rolePreview' => $preview->describe($user),
+            'canPreviewRoles' => $preview->allowedFor($user) && $impersonator === null,
             'unread_notifications_count' => $unreadNotifications,
         ]);
     }

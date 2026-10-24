@@ -93,6 +93,8 @@ final class AuditTimelineProjector
             $event === 'password.reset' => 'Сброс пароля',
             str_starts_with($event, 'two-factor.') => '2FA: '.$event,
             str_starts_with($event, 'impersonation.') => 'Impersonation: '.$event,
+            $event === 'role_preview.started' => 'Просмотр панели как роль',
+            $event === 'role_preview.stopped' => 'Возврат из просмотра как роль',
             default => $event,
         };
     }

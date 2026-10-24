@@ -16,6 +16,10 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  * permissions (`*`, `admin.users.*`) are handled inside
  * `Role::hasPermission()`.
  *
+ * While the user views the panel as a role (RolePreview), hasAccess() and
+ * getAllPermissions() answer by that role alone; hasRealAccess() always
+ * answers by the user's own roles.
+ *
  * @mixin \Illuminate\Database\Eloquent\Model
  *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Role> $roles
@@ -40,6 +44,21 @@ trait HasAdminAccess
      * Tells whether the user holds a permission through any of their roles.
      */
     public function hasAccess(string $permission): bool
+    {
+        foreach ($this->effectiveRoles() as $role) {
+            if ($role->hasPermission($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Tells whether the user's own roles grant a permission, whatever role
+     * they are viewing the panel as.
+     */
+    public function hasRealAccess(string $permission): bool
     {
         foreach ($this->roles as $role) {
             if ($role->hasPermission($permission)) {
@@ -115,12 +134,24 @@ trait HasAdminAccess
     public function getAllPermissions(): array
     {
         $all = [];
-        foreach ($this->roles as $role) {
+        foreach ($this->effectiveRoles() as $role) {
             foreach ((array) $role->permissions as $key) {
                 $all[] = (string) $key;
             }
         }
 
         return array_values(array_unique($all));
+    }
+
+    /**
+     * The roles the checks go by: the previewed one, or the user's own.
+     *
+     * @return iterable<Role>
+     */
+    protected function effectiveRoles(): iterable
+    {
+        $preview = app(\Dskripchenko\LaravelAdmin\Permission\RolePreview::class)->roleFor($this);
+
+        return $preview !== null ? [$preview] : $this->roles;
     }
 }

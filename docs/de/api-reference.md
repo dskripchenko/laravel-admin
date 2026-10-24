@@ -76,6 +76,9 @@ Basispräfix: `/api/admin/`.
 | POST | `auth/resendEmailVerification` | |
 | POST | `auth/startImpersonation` | Ein Admin agiert als ein anderer Benutzer. |
 | POST | `auth/stopImpersonation` | |
+| GET | `auth/previewRoles` | Rollen, als die das Panel angesehen werden kann. |
+| POST | `auth/startRolePreview` | Das Panel als Rolle ansehen. |
+| POST | `auth/stopRolePreview` | Zurück zu den eigenen Rollen. |
 
 ### profile
 

@@ -152,3 +152,32 @@ describe('UserMenu logout integration', () => {
     wrapper.unmount()
   })
 })
+
+describe('UserMenu — view as a role', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    setAdminClient(createAdminClient({ baseURL: 'http://api.test' }))
+  })
+
+  afterEach(() => clearAdminClient())
+
+  const items = async (wrapper: Awaited<ReturnType<typeof mountMenu>>) => {
+    await wrapper.find('.admin-user-menu__trigger').trigger('click')
+    await flushPromises()
+    return wrapper.findAllComponents({ name: 'UidMenuItem' }).map((c) => c.text())
+  }
+
+  it('offers it to whom the backend allows', async () => {
+    useAuthStore().hydrate(mkBootstrap({ user: mkUser({ canPreviewRoles: true }) }))
+    const wrapper = await mountMenu()
+    expect(await items(wrapper)).toContain('Смотреть как роль…')
+    wrapper.unmount()
+  })
+
+  it('hides it from everyone else', async () => {
+    useAuthStore().hydrate(mkBootstrap({ user: mkUser() }))
+    const wrapper = await mountMenu()
+    expect(await items(wrapper)).not.toContain('Смотреть как роль…')
+    wrapper.unmount()
+  })
+})

@@ -145,6 +145,10 @@ genügt.
 Jede `SettingsResource` erhält `admin.settings.{slug}.view` /
 `admin.settings.{slug}.update`.
 
+## Das Panel als Rolle ansehen
+
+Ein Super Admin (die Berechtigung `admin.auth.role_preview.permission`, standardmäßig `*`, in seinen **eigenen** Rollen) wählt im Benutzermenü «View as a role…»: Menü, Screens, Aktionen und die Prüfungen im Backend antworten nach dieser Rolle, bis er in der Leiste oben «Come back» drückt. `hasAccess()` und `getAllPermissions()` folgen der Ansicht selbst — die Prüfungen des Hosts bleiben unverändert; `hasRealAccess()` antwortet nach den eigenen Rollen. Betroffen ist nur die Sitzung, die sie gestartet hat; Bearer-Anfragen und andere Benutzer nicht. Abschalten mit `admin.auth.role_preview.enabled = false`. Endpunkte: `auth/previewRoles`, `auth/startRolePreview`, `auth/stopRolePreview`.
+
 ## 2FA
 
 Unabhängig von RBAC. Ist sie für einen Benutzer aktiviert, verlangt der

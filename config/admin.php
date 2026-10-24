@@ -64,6 +64,14 @@ return [
             'block_higher_powered' => true,
         ],
 
+        // Viewing the panel as a role: the menu, screens and checks answer as
+        // if the chosen role were the user's only one, until they come back.
+        // `permission` is checked against the user's own roles; `*` — Super Admin.
+        'role_preview' => [
+            'enabled' => true,
+            'permission' => '*',
+        ],
+
         'api_tokens' => [
             'enabled' => true,
             // The lifetime in days of a token created without `expires_in_days`

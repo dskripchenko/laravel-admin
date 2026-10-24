@@ -25,8 +25,10 @@ import { useBreadcrumbs } from './breadcrumbs'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface ImpersonationData {
-  /** Whom we are logged in as. */
+  /** Whom we are logged in as — a user, or the role the panel is viewed as. */
   asName: string
+  /** `role` — viewing the panel as a role (admin.auth.role_preview); `user` by default. */
+  kind?: 'user' | 'role'
 }
 
 interface BrandData {
@@ -184,7 +186,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="admin-shell-root">
     <div v-if="impersonation" class="admin-impersonation-banner" role="status">
-      <span>
+      <span v-if="impersonation.kind === 'role'">
+        {{ tr('Вы смотрите панель как') }} <b>«{{ impersonation.asName }}»</b>
+      </span>
+      <span v-else>
         {{ tr('Вы вошли как') }} <b>{{ impersonation.asName }}</b> ·
         {{ tr('режим имперсонации') }}
       </span>
@@ -193,7 +198,7 @@ onBeforeUnmount(() => {
         class="admin-impersonation-banner__exit"
         @click="exitImpersonation"
       >
-        {{ tr('Выйти из режима') }}
+        {{ impersonation.kind === 'role' ? tr('Вернуться') : tr('Выйти из режима') }}
       </button>
     </div>
     <UidSidebarLayout

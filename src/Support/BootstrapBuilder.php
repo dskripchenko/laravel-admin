@@ -155,6 +155,8 @@ final class BootstrapBuilder
         if (! $user instanceof Model) {
             return null;
         }
+        $impersonator = app(\Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager::class)->describeImpersonator();
+        $preview = app(\Dskripchenko\LaravelAdmin\Permission\RolePreview::class);
 
         return [
             'id' => $user->getKey(),
@@ -169,6 +171,10 @@ final class BootstrapBuilder
             // admin.auth.two_factor.enforce_for: the SPA keeps such a user on
             // the profile until 2FA is on.
             'twoFactorRequired' => \Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy::requiredFor($user),
+            // The shell's banners: whose session this is, and the role the panel is viewed as.
+            'impersonator' => $impersonator,
+            'rolePreview' => $preview->describe($user),
+            'canPreviewRoles' => $preview->allowedFor($user) && $impersonator === null,
         ];
     }
 

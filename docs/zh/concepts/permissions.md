@@ -136,6 +136,10 @@ public function permission(): array|string|null
 每个 `SettingsResource` 获得 `admin.settings.{slug}.view` /
 `admin.settings.{slug}.update`。
 
+## 以角色查看面板
+
+Super Admin（其**自身**角色拥有 `admin.auth.role_preview.permission` 权限，默认 `*`）在用户菜单中选择「View as a role…」后，菜单、Screen、操作以及后端的权限检查都按该角色回答，直到点击顶部横幅中的「Come back」。`hasAccess()` 和 `getAllPermissions()` 会自动跟随，宿主的检查无需修改；`hasRealAccess()` 始终按用户自身的角色回答。只影响发起查看的会话，Bearer 请求和其他用户不受影响。关闭：`admin.auth.role_preview.enabled = false`。端点：`auth/previewRoles`、`auth/startRolePreview`、`auth/stopRolePreview`。
+
 ## 2FA
 
 独立于 RBAC。如果为某个用户启用了 2FA，无论其角色如何，登录流程都要求输入 TOTP

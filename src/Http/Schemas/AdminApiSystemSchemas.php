@@ -431,6 +431,27 @@ trait AdminApiSystemSchemas
                 'payload' => '@SimpleErrorPayload',                   // errorKey=no_active_impersonation
             ],
 
+            'RolePreviewOptionsResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@RolePreviewOptionsPayload',
+            ],
+            'RolePreviewOptionsPayload' => [
+                'roles' => 'array!',                                  // RoleRef[]
+                'current' => '@RoleRef',                              // null when no role is previewed
+            ],
+            'RolePreviewResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@RolePreviewPayload',
+            ],
+            'RolePreviewPayload' => [
+                'rolePreview' => '@RoleRef',                          // null after stopRolePreview
+                'redirect_url' => 'string!',
+            ],
+            'NoActiveRolePreviewResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@SimpleErrorPayload',                   // errorKey=no_active_role_preview
+            ],
+
             /* ------------------------------------------------------------------
              * profile.*
              * ------------------------------------------------------------------ */

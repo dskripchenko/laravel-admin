@@ -110,6 +110,8 @@ Bootstrap-данные SPA для стратегии `xhr` (`admin.bootstrap.str
 | `theme` | `user.theme` или `admin.ui.default_theme` (`light`) |
 | `twoFactorEnabled` | `hasTwoFactorEnabled()` модели, иначе `false` |
 | `impersonator` | `{id, name}` исходного пользователя при активной impersonation, иначе `null` |
+| `rolePreview` | `{slug, name}` роли, как которую смотрят панель (см. [auth.md](auth.md)), иначе `null` |
+| `canPreviewRoles` | может ли пользователь смотреть панель как роль — по собственным ролям |
 | `unread_notifications_count` | число непрочитанных уведомлений (0, если таблицы `notifications` нет) |
 
 ---

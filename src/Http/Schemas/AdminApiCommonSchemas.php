@@ -157,9 +157,15 @@ trait AdminApiCommonSchemas
                 'twoFactorEnabled' => 'boolean!',
                 'twoFactorRequired' => 'boolean',        // admin.auth.two_factor.enforce_for
                 'impersonator' => '@ImpersonatorRef',
+                'rolePreview' => '@RoleRef',             // the role the panel is viewed as, or null
+                'canPreviewRoles' => 'boolean',          // admin.auth.role_preview.permission by the user's own roles
             ],
             'ImpersonatorRef' => [
                 'id' => 'integer!',
+                'name' => 'string!',
+            ],
+            'RoleRef' => [
+                'slug' => 'string!',
                 'name' => 'string!',
             ],
 
