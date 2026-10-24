@@ -67,7 +67,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # npm 10.8 (Node 20) fails to resolve vitest's peer set without a lock
+          # («Cannot read properties of null (reading 'edgesOut')»); Node 22 ships npm 10.9.
+          node-version: '22'
 
       - name: Install
         # Library-пакет: package-lock.json не коммитится (см. .gitignore).

@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button that closes only by hand (`AdminRevealDialog`, `revealOnce()`), not
   in a success toast that was gone before a new API token could be copied.
 
+### Changed
+
+- CI and the npm publish run on Node 22: npm 10.8 of Node 20 no longer
+  installs the package's dev dependencies without a lock file.
+
 ## 1.51.1
 
 ### Fixed
