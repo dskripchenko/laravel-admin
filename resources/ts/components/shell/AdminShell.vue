@@ -246,7 +246,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-.admin-shell-root[data-admin-impersonating='true'] {
+/* The marker sits on <html> (HTML_ATTR), not on the shell root. */
+:root[data-admin-impersonating='true'] .admin-shell-root {
   /* Sidebar/topbar sticky already account for `--admin-page-pad` and the offset through CSS classes. */
   padding-top: 32px;
 }
@@ -325,9 +326,9 @@ onBeforeUnmount(() => {
 }
 
 /* The impersonation banner adds 32px above the shell — adjust the height. */
-.admin-shell-root[data-admin-impersonating='true'] .admin-shell.uid-layout-sidebar,
-.admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__sidebar,
-.admin-shell-root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__main {
+:root[data-admin-impersonating='true'] .admin-shell.uid-layout-sidebar,
+:root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__sidebar,
+:root[data-admin-impersonating='true'] .admin-shell .uid-layout-sidebar__main {
   height: calc(100vh - 32px - var(--admin-banner-height, 0px));
   max-height: calc(100vh - 32px - var(--admin-banner-height, 0px));
 }

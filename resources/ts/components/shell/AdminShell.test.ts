@@ -4,6 +4,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { defineComponent, h } from 'vue'
 import AdminShell from './AdminShell.vue'
+import shellSource from './AdminShell.vue?raw'
 
 const Stub = defineComponent({ name: 'Stub', render: () => h('div') })
 
@@ -128,5 +129,13 @@ describe('AdminShell — the banner of another view', () => {
     expect(w.find('.admin-impersonation-banner__exit').text()).toBe('Вернуться')
     await w.find('.admin-impersonation-banner__exit').trigger('click')
     expect(w.emitted('exit-impersonation')).toHaveLength(1)
+  })
+
+  it('makes room for the banner where the marker is — on <html>', async () => {
+    await mountShell({ impersonation: { asName: 'Андеррайтер', kind: 'role' } })
+    expect(document.documentElement.getAttribute('data-admin-impersonating')).toBe('true')
+    // The offset and the heights read the marker from :root; on the shell root it never is.
+    expect(shellSource).toContain(":root[data-admin-impersonating='true'] .admin-shell-root")
+    expect(shellSource).not.toContain(".admin-shell-root[data-admin-impersonating")
   })
 })

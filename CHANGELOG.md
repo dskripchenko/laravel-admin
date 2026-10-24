@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sequence diagrams in markdown: a block's tab ("loop", "alt") is no longer
   cut by an activation bar on the lifeline under it
   (@dskripchenko/diagrams 1.0.2).
+- **The impersonation and role-preview banner was hidden under the topbar**:
+  the shell's offset and heights looked for `data-admin-impersonating` on the
+  shell root, while it is set on `<html>` — only an amber corner over the
+  sidebar showed. The selectors now read it from `:root`, and the banner
+  stands above the sticky topbar.
 
 ## 1.54.0
 

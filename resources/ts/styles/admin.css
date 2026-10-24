@@ -62,7 +62,8 @@
   left: 0;
   right: 0;
   height: 32px;
-  z-index: var(--uid-z-sticky, 200);
+  /* Above the sticky topbar, below drop-downs and dialogs. */
+  z-index: var(--uid-z-fixed, 150);
   background: var(--uid-warning);
   color: var(--uid-color-amber-950, #4c2a02);
   display: flex;
