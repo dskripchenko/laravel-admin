@@ -106,6 +106,8 @@ Markdown::make('content')->height('300px'),
 Markdown::make('notes')->preview(false)->toolbar(false),
 ```
 
+Предпросмотр рисует и диаграммы из блоков ```` ```mermaid ```` (см. [Markdown-раскладку](layouts-reference.md#markdown)); ссылки в нём открываются в новой вкладке, чтобы не уйти с формы.
+
 ### Wysiwyg
 
 Редактор по умолчанию — `@dskripchenko/wysiwyg` (без зависимостей).

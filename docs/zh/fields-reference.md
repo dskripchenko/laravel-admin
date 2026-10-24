@@ -88,6 +88,8 @@ Markdown::make('content')->height('300px'),
 Markdown::make('notes')->preview(false)->toolbar(false),
 ```
 
+预览同样会绘制 ```` ```mermaid ```` 图表（参见 [Markdown 布局](layouts-reference.md#markdown)）；其中的链接在新标签页打开，以免离开表单。
+
 ### Wysiwyg
 
 默认编辑器：`@dskripchenko/wysiwyg`（无依赖）。

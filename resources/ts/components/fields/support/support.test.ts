@@ -1,43 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { renderMarkdown } from './markdown'
 import { formatColor, parseColor, toHex } from './color'
 import { cascaderLabels, findLabelPath, normalizeTree, optionLabel } from './tree'
 import { readDateRange } from './dateRange'
-
-describe('renderMarkdown', () => {
-  it('renders headings, emphasis, code, lists and quotes', () => {
-    const html = renderMarkdown('# Title\n\nSome **bold** and _it_ with `x<y`\n\n- one\n- two\n\n1. a\n2. b\n\n> quoted *text*')
-    expect(html).toContain('<h1>Title</h1>')
-    expect(html).toContain('<strong>bold</strong>')
-    expect(html).toContain('<em>it</em>')
-    expect(html).toContain('<code>x&lt;y</code>')
-    expect(html).toContain('<ul><li>one</li><li>two</li></ul>')
-    expect(html).toContain('<ol><li>a</li><li>b</li></ol>')
-    expect(html).toContain('<blockquote><p>quoted <em>text</em></p></blockquote>')
-  })
-
-  it('renders fenced code verbatim', () => {
-    const html = renderMarkdown('```php\n$a = **1**;\n```')
-    expect(html).toBe('<pre><code class="language-php">$a = **1**;</code></pre>')
-  })
-
-  it('leaves snake_case words alone', () => {
-    expect(renderMarkdown('use some_var_name here')).toBe('<p>use some_var_name here</p>')
-  })
-
-  it('escapes raw HTML and refuses script URLs', () => {
-    const html = renderMarkdown('<img src=x onerror=alert(1)> [x](javascript:alert(1)) [ok](https://e.com/?a=1&b=2)')
-    expect(html).not.toContain('<img')
-    expect(html).toContain('&lt;img')
-    expect(html).not.toContain('href="javascript')
-    expect(html).toContain('<a href="https://e.com/?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">ok</a>')
-  })
-
-  it('returns an empty string for an empty source', () => {
-    expect(renderMarkdown('')).toBe('')
-    expect(renderMarkdown(null)).toBe('')
-  })
-})
 
 describe('colour conversions', () => {
   it('parses hex, short hex, rgb and hsl', () => {

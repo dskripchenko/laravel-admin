@@ -5,6 +5,32 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Diagrams in markdown.** A fenced ```` ```mermaid ```` block in
+  `Layout::markdown`, the Markdown field's preview, the markdown widget and
+  `MarkdownEntry` becomes a diagram — flowchart (with subgraphs), sequence,
+  state, pie and gantt — drawn as SVG by
+  [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) in the
+  panel's colours, in both themes. The package has no dependencies and is
+  imported only when a page has a diagram; a block it cannot read shows as
+  code with the reason and the line. `builtinMarkdownRenderers` is exported
+  for hosts that add renderers of their own through the kit's
+  `markdownBlockRenderersKey`.
+
+### Changed
+
+- Markdown is drawn by the kit's `UidMarkdown` (`@dskripchenko/ui` 1.12)
+  instead of the panel's own renderer, which moved into the kit; the safety
+  rules are the same. Fenced code in the field preview, the widget and
+  entries is now highlighted as in the layout. The table of contents carries
+  the kit's classes (`uid-markdown__toc…`) rather than
+  `admin-markdown-layout__toc…` — a host that styled it needs the new names.
+- Requires `@dskripchenko/ui` ^1.12.0; adds the dependency
+  `@dskripchenko/diagrams` ^1.0.0.
+
 ## 1.52.1
 
 ### Fixed

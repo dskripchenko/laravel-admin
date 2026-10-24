@@ -61,6 +61,8 @@ export default defineConfig({
         'axios',
         /^@dskripchenko\/ui($|\/)/,
         /^@dskripchenko\/wysiwyg($|\/)/,
+        // Loaded on demand by the ```mermaid renderer; resolved from the host's node_modules.
+        /^@dskripchenko\/diagrams($|\/)/,
         /^@tiptap\//,
         'marked',
         // The WYSIWYG peer deps: used by TinymceField/QuillField and supplied by

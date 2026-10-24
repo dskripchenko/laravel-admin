@@ -457,12 +457,28 @@ Was der Renderer unterstützt:
 |---|---|
 | `# Heading` … `###### Heading` | Überschriften mit Anker-IDs: `## Getting started` → `#getting-started` (Buchstaben jeder Schrift bleiben erhalten, Duplikate erhalten `-1`, `-2`) |
 | Umzäunte Codeblöcke (drei Backticks und eine Sprache) | Hervorgehobener, kopierbarer Code; die Sprache kommt aus der Umzäunung (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
+| ` ```mermaid `-Blöcke | Diagramme: Flowchart, Sequence, State, Pie und Gantt in Mermaid-Syntax, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tabellen, mit Spaltenausrichtung |
 | `> quote` | Blockzitat |
 | `> **Note** …`, `> **Warning** …` | Hinweisbox; außerdem `Tip`, `Important`, `Caution` und die GitHub-Form `> [!NOTE]` |
 | `**bold**`, `*italic*`, `~~struck~~`, Code-Spans in Backticks | Inline-Markup |
 | `[text](url)`, `![alt](src)` | Links und Bilder |
 | `-`/`*`/`1.`-Listen, `---` | Listen und Trennlinien |
+
+**Diagramme.** Ein umzäunter Block mit der Sprache `mermaid` wird zum
+Diagramm — `flowchart` (mit Subgraphen), `sequenceDiagram`, `stateDiagram-v2`,
+`pie` und `gantt`, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams)
+in den Farben und dem Theme des Panels. Das Paket hat keine Abhängigkeiten und
+wird nur geladen, wenn eine Seite ein Diagramm enthält. Beschriftungen werden
+wie der übrige Text maskiert, ein Diagramm kann also weder Markup noch Skripte
+tragen. Ein Block, der sich nicht lesen lässt, erscheint als Code mit dem Grund
+und der Zeile. Die unterstützte Syntax steht in der Dokumentation des Pakets.
+
+Ein Host ergänzt Renderer für weitere Sprachen auf dieselbe Weise, in
+`onAppCreated`:
+`app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
+(`markdownBlockRenderersKey` aus `@dskripchenko/ui`,
+`builtinMarkdownRenderers` aus `@dskripchenko/laravel-admin`).
 
 Optionen:
 

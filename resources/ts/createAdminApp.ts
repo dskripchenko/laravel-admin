@@ -49,6 +49,7 @@ import { ApiError } from './api/errors'
 import { adminToast, suppressErrorToasts } from './stores/toast'
 import { setAdminClient } from './stores'
 import { BRAND_KEY } from './composables/useBrand'
+import { provideBuiltinMarkdownRenderers } from './components/markdown/blockRenderers'
 import { useAuthStore } from './stores/auth'
 import { useLocaleStore } from './stores/locale'
 import { useI18nStore } from './stores/i18n'
@@ -194,6 +195,9 @@ export function createAdminApp(
   const brand = bootstrap.brand ?? {}
   app.provide(BRAND_KEY, brand)
   applyFavicon(brand.favicon)
+
+  // Fenced-block renderers for every markdown in the panel: ```mermaid → diagram.
+  provideBuiltinMarkdownRenderers(app)
 
   // 3. Pinia stores hydrate
   useAuthStore().hydrate(bootstrap)

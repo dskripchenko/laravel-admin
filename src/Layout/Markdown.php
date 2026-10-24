@@ -7,7 +7,7 @@ namespace Dskripchenko\LaravelAdmin\Layout;
 use Closure;
 
 /**
- * A block of markdown, rendered by the SPA's built-in safe renderer.
+ * A block of markdown, rendered by the kit's safe renderer (UidMarkdown).
  *
  * The source is escaped before any markup is produced, so raw HTML in it is
  * shown as text and never executed; links and images are limited to http(s),
@@ -16,6 +16,8 @@ use Closure;
  * Supported: headings (with anchor ids), paragraphs, emphasis, inline code,
  * fenced code blocks (highlighted by language), tables, block quotes and
  * callouts (`> **Note**`, `> [!WARNING]`), lists, rules, links and images.
+ * Fenced ```mermaid blocks become diagrams (flowchart, sequence, state, pie,
+ * gantt), drawn by @dskripchenko/diagrams.
  *
  *     Layout::markdown(file_get_contents($path))
  *         ->toc()

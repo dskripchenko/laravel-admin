@@ -3,8 +3,9 @@
  * MarkdownField — the backend's Field\Markdown: a markdown source in a
  * UidTextarea, a small formatting toolbar and a live preview.
  *
- * The preview is drawn by the built-in renderer (support/markdown.ts), which
- * escapes the source first, so raw HTML in the text is never executed. Three
+ * The preview is drawn by the kit's UidMarkdown, which escapes the source
+ * first, so raw HTML in the text is never executed; ```mermaid blocks become
+ * diagrams, and links open in a new tab so the form is not left. Three
  * modes: write, preview, and split (both side by side). `->preview(false)`
  * hides the preview, `->toolbar(false)` the toolbar, `->height()` sets the
  * editor's height.
@@ -12,9 +13,9 @@
 import { computed, nextTick, ref } from 'vue'
 import type { Component } from 'vue'
 import { Bold, Code, Heading2, Italic, Link, List } from 'lucide-vue-next'
-import { UidButton, UidFormField, UidIcon, UidTextarea } from '@dskripchenko/ui'
+import { UidButton, UidFormField, UidIcon, UidMarkdown, UidTextarea } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
-import { renderMarkdown } from './support/markdown'
+import { useCalloutTitles } from '../markdown/calloutTitles'
 import { trSafe as tr } from '../../stores/i18n'
 
 type Mode = 'write' | 'preview' | 'split'
@@ -58,7 +59,7 @@ const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0]
 const isLocked = computed<boolean>(() => props.disabled || props.readonly)
 
 const mode = ref<Mode>('write')
-const html = computed<string>(() => renderMarkdown(value.value))
+const calloutTitles = useCalloutTitles()
 const showEditor = computed<boolean>(() => !props.preview || mode.value !== 'preview')
 const showPreview = computed<boolean>(() => props.preview && mode.value !== 'write')
 
@@ -175,8 +176,14 @@ const ACTIONS: Array<{ key: string; label: string; icon: Component; run: () => P
             @update:model-value="onUpdate"
           />
         </div>
-        <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes the source before adding markup -->
-        <div v-if="showPreview" class="admin-markdown admin-markdown-field__preview" :style="heightCss ? { minHeight: heightCss } : undefined" v-html="html" />
+        <UidMarkdown
+          v-if="showPreview"
+          class="admin-markdown admin-markdown-field__preview"
+          :style="heightCss ? { minHeight: heightCss } : undefined"
+          :source="value"
+          :internal-links-in-place="false"
+          :callout-titles="calloutTitles"
+        />
       </div>
     </div>
   </UidFormField>

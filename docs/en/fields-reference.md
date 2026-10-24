@@ -104,6 +104,8 @@ Markdown::make('content')->height('300px'),
 Markdown::make('notes')->preview(false)->toolbar(false),
 ```
 
+The preview draws ```` ```mermaid ```` diagrams too (see the [Markdown layout](layouts-reference.md#markdown)); its links open in a new tab, so the form is not left.
+
 ### Wysiwyg
 
 Default editor: `@dskripchenko/wysiwyg` (no dependencies).

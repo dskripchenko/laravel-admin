@@ -111,6 +111,8 @@ Markdown::make('content')->height('300px'),
 Markdown::make('notes')->preview(false)->toolbar(false),
 ```
 
+Die Vorschau zeichnet auch ```` ```mermaid ````-Diagramme (siehe [Markdown-Layout](layouts-reference.md#markdown)); ihre Links öffnen in einem neuen Tab, damit das Formular nicht verlassen wird.
+
 ### Wysiwyg
 
 Standard-Editor: `@dskripchenko/wysiwyg` (ohne Abhängigkeiten).

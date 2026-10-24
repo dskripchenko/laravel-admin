@@ -1,11 +1,13 @@
 <script setup lang="ts">
 /**
- * MarkdownEntry — the view of a Markdown field: the source rendered by the
- * built-in renderer, which escapes it first (raw HTML shows as text).
+ * MarkdownEntry — the view of a Markdown field: the source drawn by the kit's
+ * UidMarkdown, which escapes it first (raw HTML shows as text); ```mermaid
+ * blocks become diagrams.
  */
 import { computed } from 'vue'
+import { UidMarkdown } from '@dskripchenko/ui'
 import { useEntryValue, isEmpty } from './entryValue'
-import { renderMarkdown } from '../fields/support/markdown'
+import { useCalloutTitles } from '../markdown/calloutTitles'
 
 interface Props {
   name?: string
@@ -20,13 +22,19 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const raw = useEntryValue(props)
-const html = computed<string>(() => (isEmpty(raw.value) ? '' : renderMarkdown(String(raw.value))))
+const source = computed<string>(() => (isEmpty(raw.value) ? '' : String(raw.value)))
+const calloutTitles = useCalloutTitles()
 </script>
 
 <template>
-  <span v-if="html === ''" class="admin-infolist-text">{{ placeholder }}</span>
-  <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes the source before adding markup -->
-  <div v-else class="admin-markdown admin-infolist-markdown" v-html="html" />
+  <span v-if="source.trim() === ''" class="admin-infolist-text">{{ placeholder }}</span>
+  <UidMarkdown
+    v-else
+    class="admin-markdown admin-infolist-markdown"
+    :source="source"
+    :internal-links-in-place="false"
+    :callout-titles="calloutTitles"
+  />
 </template>
 
 <style>
