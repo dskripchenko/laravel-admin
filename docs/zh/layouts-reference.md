@@ -384,12 +384,25 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 |---|---|
 | `# Heading` … `###### Heading` | 带锚点 id 的标题：`## Getting started` → `#getting-started`（保留任何文字系统的字母，重复的标题会追加 `-1`、`-2`） |
 | 围栏代码块（三个反引号加语言名） | 高亮且可复制的代码；语言取自围栏标记（`php`、`js`、`ts`、`json`、`bash`、`sql`、`html`、`vue`、`css`……） |
+| ` ```mermaid ` 代码块 | 图表：Mermaid 语法的 flowchart、sequence、state、pie 和 gantt，由 [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) 绘制为 SVG |
 | `\| a \| b \|` + `\|---\|:---:\|` | 表格，支持列对齐 |
 | `> quote` | 块引用 |
 | `> **Note** …`、`> **Warning** …` | 提示框；也支持 `Tip`、`Important`、`Caution` 以及 GitHub 的 `> [!NOTE]` 形式 |
 | `**bold**`、`*italic*`、`~~struck~~`、反引号代码片段 | 行内标记 |
 | `[text](url)`、`![alt](src)` | 链接和图片 |
 | `-`/`*`/`1.` 列表、`---` | 列表和分隔线 |
+
+**图表。** 语言为 `mermaid` 的围栏代码块会变成图表——`flowchart`（含子图）、
+`sequenceDiagram`、`stateDiagram-v2`、`pie` 和 `gantt`，由
+[@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) 按面板的配色和主题绘制为 SVG。
+该包没有任何依赖，只在页面含有图表时才加载。标签与其余文本一样会被转义，
+因此图表不能携带标记或脚本。无法解析的代码块会显示为代码，并附上原因和行号。
+支持的语法见该包的文档。
+
+宿主以同样方式在 `onAppCreated` 中为其他语言添加渲染器：
+`app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
+（`markdownBlockRenderersKey` 来自 `@dskripchenko/ui`，
+`builtinMarkdownRenderers` 来自 `@dskripchenko/laravel-admin`）。
 
 选项：
 

@@ -598,7 +598,45 @@
   }
 }
 
-/* Rendered markdown (renderMarkdown): the field's preview, MarkdownEntry and
+/* Diagrams from ```mermaid blocks (@dskripchenko/diagrams) take the kit's
+   theme tokens: these are semantic, so both themes follow without a dark
+   block of their own. */
+:root {
+  --dg-font-family: var(--uid-font-family-sans);
+  --dg-text: var(--uid-text-primary);
+  --dg-text-muted: var(--uid-text-secondary);
+  --dg-line: var(--uid-text-tertiary);
+  --dg-node-fill: var(--uid-accent-subtle);
+  --dg-node-stroke: var(--uid-accent);
+  --dg-node-text: var(--uid-text-primary);
+  --dg-cluster-fill: var(--uid-color-bg-subtle);
+  --dg-cluster-stroke: var(--uid-border-default);
+  --dg-cluster-text: var(--uid-text-secondary);
+  --dg-edge-label-fill: var(--uid-surface-raised);
+  --dg-note-fill: var(--uid-warning-subtle);
+  --dg-note-stroke: var(--uid-warning);
+  --dg-note-text: var(--uid-text-primary);
+  --dg-actor-fill: var(--uid-accent-subtle);
+  --dg-actor-stroke: var(--uid-accent);
+  --dg-activation-fill: var(--uid-accent-subtle);
+  --dg-lifeline: var(--uid-border-default);
+  --dg-block-stroke: var(--uid-border-hover);
+  --dg-block-label-fill: var(--uid-color-bg-subtle);
+  --dg-grid: var(--uid-border-subtle);
+  --dg-task-fill: var(--uid-accent);
+  --dg-task-stroke: var(--uid-accent-hover);
+  --dg-task-active-fill: var(--uid-accent-subtle);
+  --dg-task-crit-fill: var(--uid-danger);
+  --dg-task-crit-stroke: var(--uid-danger-hover);
+  --dg-task-text: var(--uid-text-on-accent);
+  --dg-task-text-dark: var(--uid-text-primary);
+  --dg-today: var(--uid-danger);
+  --dg-state-start: var(--uid-text-primary);
+  --dg-pie-stroke: var(--uid-surface-raised);
+}
+.uid-markdown__block[data-language='mermaid'] { overflow-x: auto; }
+
+/* Rendered markdown (UidMarkdown): the field's preview, MarkdownEntry and
    the markdown widget. Theme tokens only, so both themes follow. */
 .admin-markdown {
   font-size: var(--uid-font-size-sm);

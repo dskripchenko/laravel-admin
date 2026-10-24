@@ -153,6 +153,10 @@ export type { MenuItem, MenuGroup } from './stores/menu'
 //   tr('The key is required')   // key = the source string, as on the server
 export { trSafe, useI18nStore, tRaw } from './stores/i18n'
 
+// Fenced-block renderers of the panel's markdown (```mermaid → diagram), for
+// hosts that add their own: app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, … }).
+export { builtinMarkdownRenderers, mermaidRenderer } from './components/markdown/blockRenderers'
+
 // Shell components
 export {
   AdminShell,

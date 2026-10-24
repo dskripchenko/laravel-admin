@@ -1,22 +1,21 @@
 <script setup lang="ts">
 /**
- * The markdown widget: the content rendered by the built-in renderer, which
+ * The markdown widget: the content drawn by the kit's UidMarkdown, which
  * escapes the source first (raw HTML shows as text) and allows only safe
- * links. A host that needs the full CommonMark grammar registers its own
- * through registerWidget('markdown', ...).
+ * links; ```mermaid blocks become diagrams. A host that needs the full
+ * CommonMark grammar registers its own through registerWidget('markdown', ...).
  */
-import { computed } from 'vue'
-import { UidCard } from '@dskripchenko/ui'
-import { renderMarkdown } from '../fields/support/markdown'
+import { UidCard, UidMarkdown } from '@dskripchenko/ui'
+import { useCalloutTitles } from '../markdown/calloutTitles'
 
 interface Props {
   title?: string
   content?: string | null
 }
 
-const props = withDefaults(defineProps<Props>(), { title: '', content: '' })
+withDefaults(defineProps<Props>(), { title: '', content: '' })
 
-const html = computed<string>(() => renderMarkdown(props.content ?? ''))
+const calloutTitles = useCalloutTitles()
 </script>
 
 <template>
@@ -24,8 +23,12 @@ const html = computed<string>(() => renderMarkdown(props.content ?? ''))
     <header v-if="title" class="admin-widget__hd">
       <h3 class="admin-widget__title">{{ title }}</h3>
     </header>
-    <!-- eslint-disable-next-line vue/no-v-html -- renderMarkdown escapes the source before adding markup -->
-    <div class="admin-markdown admin-markdown-widget" v-html="html" />
+    <UidMarkdown
+      class="admin-markdown admin-markdown-widget"
+      :source="content ?? ''"
+      :internal-links-in-place="false"
+      :callout-titles="calloutTitles"
+    />
   </UidCard>
 </template>
 

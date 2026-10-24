@@ -57,7 +57,7 @@ final class ContentDashboardScreen extends DashboardScreen
 | `StatsOverviewWidget` | `stats` | KPI-карточка с числом + trend. |
 | `ChartWidget` | `chart` | Line / bar / area / radar (сколько угодно серий `dataset()`, `stacked()` для bar и area) и doughnut / pie. |
 | `RecentListWidget` | `recent_list` | Последние N записей Eloquent-модели. |
-| `MarkdownWidget` | `markdown` | Статичный rich text. |
+| `MarkdownWidget` | `markdown` | Статичный rich text; блоки ```` ```mermaid ```` становятся диаграммами. |
 | `IframeWidget` | `iframe` | Embed внешнего URL. |
 | `TableWidget` | `table` | Плоские read-only данные. |
 | `HeatmapWidget` | `heatmap` | Матрица `rows × cols × value`. |

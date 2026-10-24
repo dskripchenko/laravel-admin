@@ -58,7 +58,7 @@ Registrierung: `Admin::screen([ContentDashboardScreen::class])`. URL:
 | `StatsOverviewWidget` | `stats` | Einzelner Wert + Trend; KPI-Karten. |
 | `ChartWidget` | `chart` | Line / Bar / Area / Radar (beliebig viele `dataset()`-Reihen, `stacked()` für Bar und Area) sowie Doughnut / Pie. |
 | `RecentListWidget` | `recent_list` | Die letzten N Zeilen eines Eloquent-Modells. |
-| `MarkdownWidget` | `markdown` | Statischer formatierter Text. |
+| `MarkdownWidget` | `markdown` | Statischer formatierter Text; ```` ```mermaid ````-Blöcke werden zu Diagrammen. |
 | `IframeWidget` | `iframe` | Einbetten einer externen URL. |
 | `TableWidget` | `table` | Flache, schreibgeschützte Daten. |
 | `HeatmapWidget` | `heatmap` | Matrix `rows × cols × value` (z. B. Aktivität nach Stunde). |

@@ -1,11 +1,20 @@
 {
+  "node_modules/@dskripchenko/diagrams/dist/index.mjs": {
+    "file": "assets/index-DPX9zGIg.js",
+    "name": "index",
+    "src": "node_modules/@dskripchenko/diagrams/dist/index.mjs",
+    "isDynamicEntry": true
+  },
   "resources/ts/app.ts": {
-    "file": "assets/app-CCP0OT4t.js",
+    "file": "assets/app-qGmdl5eZ.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
+    "dynamicImports": [
+      "node_modules/@dskripchenko/diagrams/dist/index.mjs"
+    ],
     "css": [
-      "assets/app--y818Ix0.css"
+      "assets/app-CYHz_ghU.css"
     ]
   }
 }

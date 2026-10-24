@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
@@ -7,6 +7,8 @@ import MarkdownLayout from './MarkdownLayout.vue'
 import CodeLayout from './CodeLayout.vue'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import { registerBuiltinComponents } from '../render/builtin'
+import { markdownBlockRenderersKey } from '@dskripchenko/ui'
+import { builtinMarkdownRenderers } from '../markdown/blockRenderers'
 
 const DOC = [
   '# Guide',
@@ -42,17 +44,17 @@ describe('MarkdownLayout', () => {
     expect(code.props('code')).toBe('composer require x')
     expect(code.props('language')).toBe('bash')
 
-    const toc = wrapper.find('.admin-markdown-layout__toc')
+    const toc = wrapper.find('.uid-markdown__toc')
     expect(toc.exists()).toBe(true)
     expect(toc.findAll('a').map((a) => a.attributes('href'))).toEqual(['#install', '#details'])
   })
 
   it('limits the table of contents to tocDepth and omits it by default', () => {
     const shallow = mount(MarkdownLayout, { props: { markdown: DOC, toc: true, tocDepth: 2 } })
-    expect(shallow.findAll('.admin-markdown-layout__toc a')).toHaveLength(1)
+    expect(shallow.findAll('.uid-markdown__toc a')).toHaveLength(1)
 
     const none = mount(MarkdownLayout, { props: { markdown: DOC } })
-    expect(none.find('.admin-markdown-layout__toc').exists()).toBe(false)
+    expect(none.find('.uid-markdown__toc').exists()).toBe(false)
   })
 
   it('navigates in-panel links through the router', async () => {
@@ -101,5 +103,20 @@ describe('CodeLayout', () => {
       props: { node: { kind: 'layout', type: 'code', code: 'SELECT 1', language: 'sql', items: [] } },
     })
     expect(wrapper.findComponent({ name: 'UidCode' }).props('code')).toBe('SELECT 1')
+  })
+})
+
+describe('MarkdownLayout diagrams', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('draws ```mermaid blocks and shows a broken one as code with the error', async () => {
+    const markdown = ['```mermaid', 'flowchart LR', '  A --> B', '```', '', '```mermaid', 'flowchart LR', '  A -> ', '```'].join('\n')
+    const wrapper = mount(MarkdownLayout, {
+      props: { markdown },
+      global: { provide: { [markdownBlockRenderersKey as symbol]: builtinMarkdownRenderers } },
+    })
+    await vi.waitFor(() => expect(wrapper.find('svg.dg-flowchart').exists()).toBe(true))
+    await vi.waitFor(() => expect(wrapper.find('[role="alert"]').text()).toMatch(/line 2/))
+    expect(wrapper.findComponent({ name: 'UidCode' }).props('code')).toContain('A -> ')
   })
 })

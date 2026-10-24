@@ -67,7 +67,7 @@ describe('MarkdownField', () => {
 
     await w.find('[data-mode="split"]').trigger('click')
     expect(w.find('textarea').exists()).toBe(true)
-    expect(w.find('.admin-markdown-field__preview').html()).toContain('<h1>Hi</h1>')
+    expect(w.find('.admin-markdown-field__preview h1').text()).toBe('Hi')
 
     await w.find('[data-mode="preview"]').trigger('click')
     expect(w.find('textarea').exists()).toBe(false)

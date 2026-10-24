@@ -54,7 +54,7 @@ final class ContentDashboardScreen extends DashboardScreen
 | `StatsOverviewWidget` | `stats` | 单个数值 + 趋势；KPI 卡片。 |
 | `ChartWidget` | `chart` | 折线 / 柱状 / 面积 / 雷达（任意数量的 `dataset()` 序列，柱状和面积图可用 `stacked()`）以及环形 / 饼图。 |
 | `RecentListWidget` | `recent_list` | Eloquent 模型的最近 N 行。 |
-| `MarkdownWidget` | `markdown` | 静态富文本。 |
+| `MarkdownWidget` | `markdown` | 静态富文本；```` ```mermaid ```` 代码块会变成图表。 |
 | `IframeWidget` | `iframe` | 嵌入外部 URL。 |
 | `TableWidget` | `table` | 扁平的只读数据。 |
 | `HeatmapWidget` | `heatmap` | 矩阵 `rows × cols × value`（例如按小时统计的活跃度）。 |
