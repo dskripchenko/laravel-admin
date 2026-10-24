@@ -5,6 +5,15 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **An optional Number left empty blocked the form** with «must be an
+  integer»: the field arrives as null and `integer`/`numeric` fail on null
+  unless it is nullable. Optional Number and Slider fields are now nullable,
+  as DatePicker already was — an empty limit can mean «no limit» again.
+
 ## 1.52.0
 
 ### Added
