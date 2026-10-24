@@ -139,6 +139,10 @@ auto-gated. `null` (the default) means authentication alone is enough.
 Each `SettingsResource` gets `admin.settings.{slug}.view` /
 `admin.settings.{slug}.update`.
 
+## Viewing the panel as a role
+
+A Super Admin (the permission `admin.auth.role_preview.permission`, `*` by default, in their **own** roles) picks «View as a role…» in the user menu, and the menu, the screens, the actions and the backend checks answer by that role until they press «Come back» in the bar at the top. `hasAccess()` and `getAllPermissions()` follow the preview by themselves — the host's checks need no change; `hasRealAccess()` answers by the user's own roles. Only the session that started it is affected; Bearer requests and other users are not. Switch it off with `admin.auth.role_preview.enabled = false`. Endpoints: `auth/previewRoles`, `auth/startRolePreview`, `auth/stopRolePreview`.
+
 ## 2FA
 
 Independent of RBAC. If enabled per-user, login flow requires the

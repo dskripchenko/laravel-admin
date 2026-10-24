@@ -74,6 +74,9 @@ Base prefix: `/api/admin/`.
 | POST | `auth/resendEmailVerification` | |
 | POST | `auth/startImpersonation` | Admin impersonates another user. |
 | POST | `auth/stopImpersonation` | |
+| GET | `auth/previewRoles` | Roles the panel may be viewed as. |
+| POST | `auth/startRolePreview` | View the panel as a role. |
+| POST | `auth/stopRolePreview` | Back to one's own roles. |
 
 ### profile
 

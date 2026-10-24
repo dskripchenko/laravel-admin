@@ -112,3 +112,21 @@ describe('AdminShell — узкий экран (шторка)', () => {
     expect(desktop.emitted('update:collapsed')?.at(-1)).toEqual([true])
   })
 })
+
+describe('AdminShell — the banner of another view', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+
+  it('names the impersonated user', async () => {
+    const w = await mountShell({ impersonation: { asName: 'Боб' } })
+    expect(w.find('.admin-impersonation-banner').text()).toContain('Боб')
+    expect(w.find('.admin-impersonation-banner__exit').text()).toBe('Выйти из режима')
+  })
+
+  it('names the role the panel is viewed as and offers the way back', async () => {
+    const w = await mountShell({ impersonation: { asName: 'Андеррайтер', kind: 'role' } })
+    expect(w.find('.admin-impersonation-banner').text()).toContain('Вы смотрите панель как «Андеррайтер»')
+    expect(w.find('.admin-impersonation-banner__exit').text()).toBe('Вернуться')
+    await w.find('.admin-impersonation-banner__exit').trigger('click')
+    expect(w.emitted('exit-impersonation')).toHaveLength(1)
+  })
+})

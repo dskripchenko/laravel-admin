@@ -40,6 +40,9 @@ URL: `/api/admin/auth/{action}`. API работает на сессии (`web`-�
         'twoFactorRecovery' => [/* тот же throttle, что у login */],
         'startImpersonation' => ['method' => ['post']],
         'stopImpersonation'  => ['method' => ['post']],
+        'previewRoles'       => ['method' => ['get']],
+        'startRolePreview'   => ['method' => ['post']],
+        'stopRolePreview'    => ['method' => ['post']],
     ],
 ],
 ```
@@ -265,6 +268,24 @@ Id исходного пользователя хранится в сессии;
 Возвращает в сессию исходного пользователя. Ответ `200`: `{"user": {...исходный пользователь}, "impersonator": null, "redirect_url": "/admin"}`.
 
 Ошибки: `400 no_active_impersonation` — impersonation не активна; `400 impersonator_not_found` — исходный пользователь больше не существует (метка impersonation при этом снимается).
+
+---
+
+## `auth.previewRoles`, `auth.startRolePreview`, `auth.stopRolePreview` — смотреть панель как роль
+
+Администратор, у которого **собственные** роли дают право из `admin.auth.role_preview.permission` (по умолчанию `*` — Super Admin), может посмотреть панель глазами другой роли: меню, экраны, действия и все проверки бэкенда (`hasAccess()`, `getAllPermissions()` трейта `HasAdminAccess`, а значит `AdminAccess`, `PermissionCheck` и проверки хоста) отвечают так, будто эта роль у него единственная. В чужой аккаунт при этом никто не входит: сессия и аудит остаются его. `hasRealAccess()` всегда отвечает по собственным ролям.
+
+Состояние — в сессии (`RolePreview::SESSION_KEY`: тип, id пользователя, slug роли). Действует только на того, кто начал, и только в запросах с этой сессией: другие пользователи, проверяемые в том же запросе, и запросы с Bearer-токеном не затрагиваются. Начало impersonation снимает просмотр; удалённая роль тоже его заканчивает.
+
+Настройки — `admin.auth.role_preview`: `enabled` (по умолчанию `true`), `permission` (по умолчанию `*`).
+
+- `GET auth/previewRoles` → `{roles: [{slug, name}], current: {slug, name} | null}`; 403 `forbidden` без права.
+- `POST auth/startRolePreview` `{role: slug}` → `{rolePreview: {slug, name}, redirect_url}`. Ошибки: 403 `forbidden` (нет права в собственных ролях или режим выключен), 403 `impersonating` (идёт impersonation), 404 `not_found` (нет такой роли). Пока просмотр идёт, можно переключиться на другую роль.
+- `POST auth/stopRolePreview` → `{rolePreview: null, redirect_url}`. Права не требует — у просматриваемой роли их может не быть. 400 `no_active_role_preview`, если просмотра нет.
+
+`system.me` и пользователь бутстрапа отдают `rolePreview` (`{slug, name}` или `null`) и `canPreviewRoles`. В панели — пункт «Смотреть как роль…» в меню пользователя и полоса сверху с кнопкой «Вернуться».
+
+В журнал аудита пишутся `role_preview.started` и `role_preview.stopped` (`changes.payload.role`), если включены `admin.audit.enabled` и `admin.audit.log_auth_events`.
 
 ---
 

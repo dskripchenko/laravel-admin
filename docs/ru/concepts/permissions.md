@@ -143,6 +143,10 @@ public function permission(): array|string|null
 Каждый `SettingsResource` получает `admin.settings.{slug}.view` /
 `admin.settings.{slug}.update`.
 
+## Смотреть панель как роль
+
+Super Admin (право из `admin.auth.role_preview.permission`, по умолчанию `*`, в его **собственных** ролях) выбирает в меню пользователя «Смотреть как роль…» — и меню, экраны, действия и проверки бэкенда отвечают по этой роли, пока он не нажмёт «Вернуться» в полосе сверху. `hasAccess()` и `getAllPermissions()` следуют за просмотром сами — проверки хоста менять не нужно; `hasRealAccess()` отвечает по собственным ролям. Действует только на сессию того, кто начал; Bearer-запросы и другие пользователи не затрагиваются. Выключить — `admin.auth.role_preview.enabled = false`. API — [auth.md](../api/auth.md).
+
 ## 2FA
 
 Не зависит от RBAC. Если 2FA включена у пользователя, вход требует

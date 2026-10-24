@@ -533,5 +533,18 @@
     "Отзыв токена": "Revoke the token",
     "Отключение 2FA": "Turn off 2FA",
     "Отключить": "Turn off",
-    "или": "or"
+    "или": "or",
+    "Сначала выйдите из режима имперсонации": "Exit the impersonation first",
+    "Роль не найдена": "Role not found",
+    "Панель не показывается как роль": "The panel is not viewed as a role",
+    "Смотреть как роль": "View as a role",
+    "Смотреть как роль…": "View as a role…",
+    "Меню, экраны и права будут как у выбранной роли. Вернуться — кнопкой в полосе сверху.": "The menu, screens and permissions will be those of the chosen role. Come back with the button in the bar at the top.",
+    "Роль": "Role",
+    "Переключиться": "Switch",
+    "Не удалось загрузить роли.": "Could not load the roles.",
+    "Не удалось переключиться на роль.": "Could not switch to the role.",
+    "Не удалось вернуться к своим ролям.": "Could not return to your own roles.",
+    "Вы смотрите панель как": "You are viewing the panel as",
+    "Вернуться": "Come back"
 }

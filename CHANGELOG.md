@@ -5,6 +5,30 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **View the panel as a role.** A Super Admin (`admin.auth.role_preview.permission`,
+  `*` by default, checked against the user's own roles) picks «Смотреть как
+  роль…» in the user menu: the menu, the screens, the actions and every backend
+  check (`hasAccess()`, `getAllPermissions()`, so `AdminAccess`,
+  `PermissionCheck` and the host's own calls) answer as if that role were
+  their only one. A banner at the top names the role and leads back. Only the
+  session that started it is affected — never other users or Bearer
+  requests; nobody else's account is entered, and the start and the end go
+  into the audit (`role_preview.started` / `role_preview.stopped`). Endpoints
+  `auth/previewRoles`, `auth/startRolePreview`, `auth/stopRolePreview`;
+  `system/me` and the bootstrap user carry `rolePreview` and
+  `canPreviewRoles`. `hasRealAccess()` answers by the user's own roles.
+  Switch off with `admin.auth.role_preview.enabled = false`.
+
+### Fixed
+
+- **The impersonation banner never showed on a full page load**: the
+  bootstrap user did not carry `impersonator`, only `system/me` did. It does
+  now.
+
 ## 1.53.0
 
 ### Added

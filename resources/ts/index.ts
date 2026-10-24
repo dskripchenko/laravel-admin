@@ -67,6 +67,8 @@ export { default as AdminConfirmDialog } from './components/shell/AdminConfirmDi
 export { revealOnce, closeReveal, actionReveal } from './composables/useReveal'
 export type { RevealOptions } from './composables/useReveal'
 export { default as AdminRevealDialog } from './components/shell/AdminRevealDialog.vue'
+export { loadPreviewRoles, startRolePreview, stopRolePreview } from './composables/useRolePreview'
+export type { PreviewRole } from './composables/useRolePreview'
 export { default as AdminActionMenuItems } from './components/actions/AdminActionMenuItems.vue'
 
 export {

@@ -61,6 +61,28 @@ final class ImpersonationManager
     }
 
     /**
+     * The original user as the shell shows them, `{id, name}`; null outside an
+     * impersonation or when the original is gone.
+     *
+     * @return array{id: mixed, name: mixed}|null
+     */
+    public function describeImpersonator(): ?array
+    {
+        if (! $this->isActive()) {
+            return null;
+        }
+
+        $provider = Auth::createUserProvider(
+            \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
+        );
+        $original = $provider?->retrieveById($this->impersonatorId());
+
+        return $original instanceof Model
+            ? ['id' => $original->getKey(), 'name' => $original->getAttribute('name')]
+            : null;
+    }
+
+    /**
      * Starts an impersonation: logs in as `$target` and stores the original's
      * id.
      *
@@ -71,6 +93,8 @@ final class ImpersonationManager
         $guard = $this->guard();
 
         Session::put(self::SESSION_KEY, $impersonator->getKey());
+        // A role preview belongs to the impersonator and ends here.
+        Session::forget(\Dskripchenko\LaravelAdmin\Permission\RolePreview::SESSION_KEY);
         Auth::guard($guard)->login($target);
         // The session changed its user legitimately, so we refresh the hash
         // for AdminAuth — otherwise the session invalidation would consider it

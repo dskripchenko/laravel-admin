@@ -79,6 +79,9 @@ HTTP-коды: 200 / 304 / 401 / 403 / 404 / 422 / 429 / 500.
 | POST | `auth/resendEmailVerification` | |
 | POST | `auth/startImpersonation` | Администратор входит от имени другого пользователя. |
 | POST | `auth/stopImpersonation` | |
+| GET | `auth/previewRoles` | Роли, как которые можно посмотреть панель. |
+| POST | `auth/startRolePreview` | Смотреть панель как роль. |
+| POST | `auth/stopRolePreview` | Вернуться к своим ролям. |
 
 ### profile
 

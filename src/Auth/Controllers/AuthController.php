@@ -9,6 +9,8 @@ use Dskripchenko\LaravelAdmin\Auth\PanelAccess;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\RecoveryCodes;
 use Dskripchenko\LaravelAdmin\Auth\TwoFactor\TotpGenerator;
 use Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager;
+use Dskripchenko\LaravelAdmin\Permission\Models\Role;
+use Dskripchenko\LaravelAdmin\Permission\RolePreview;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\PasswordReset;
@@ -28,6 +30,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * `auth` controller — login, logout, password-reset, email-verification.
+ *
+ * Impersonation and viewing the panel as a role are here too.
  *
  * The 2FA challenge and impersonation actions each live in their own
  * controller, with separate logic for the security boundaries.
@@ -683,5 +687,122 @@ final class AuthController extends ApiController
             'impersonator' => null,
             'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
         ]);
+    }
+
+    /**
+     * The roles the current user may view the panel as.
+     *
+     * Allowed by the user's own roles (`admin.auth.role_preview.permission`,
+     * `*` by default), whatever role they view the panel as now.
+     *
+     * @output object $payload
+     * @output array $payload.roles
+     * @output object ?$payload.current
+     *
+     * @security AdminSession
+     *
+     * @response 200 {RolePreviewOptionsResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     */
+    public function previewRoles(RolePreview $preview): JsonResponse
+    {
+        $user = Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+        if (! $preview->allowedFor($user)) {
+            return $this->rolePreviewForbidden($preview);
+        }
+
+        return $this->success([
+            'roles' => $preview->options(),
+            'current' => $preview->describe($user),
+        ]);
+    }
+
+    /**
+     * Starts viewing the panel as a role: the menu, the screens and every
+     * check answer as if it were the user's only role, until stopRolePreview.
+     *
+     * @input string $role the role's slug
+     *
+     * @output object $payload
+     * @output object $payload.rolePreview
+     * @output string $payload.redirect_url
+     *
+     * @security AdminSession
+     *
+     * @response 200 {RolePreviewResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
+     */
+    public function startRolePreview(Request $request, RolePreview $preview, ImpersonationManager $impersonation): JsonResponse
+    {
+        $data = $request->validate([
+            'role' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+        if (! $user instanceof Model || ! $preview->allowedFor($user)) {
+            return $this->rolePreviewForbidden($preview);
+        }
+
+        // Viewing as a role is the administrator's own; inside someone else's session it would be theirs.
+        if ($impersonation->isActive()) {
+            return $this->error([
+                'errorKey' => 'impersonating',
+                'message' => __('Сначала выйдите из режима имперсонации'),
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $role = Role::query()->where('slug', $data['role'])->first();
+        if (! $role instanceof Role) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => __('Роль не найдена'),
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $preview->start($user, $role);
+
+        return $this->success([
+            'rolePreview' => ['slug' => (string) $role->slug, 'name' => (string) $role->name],
+            'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
+        ]);
+    }
+
+    /**
+     * Ends viewing the panel as a role. Needs no permission: the role being
+     * viewed may have none, and the way back must stay open.
+     *
+     * @output object $payload
+     * @output string $payload.redirect_url
+     *
+     * @security AdminSession
+     *
+     * @response 200 {RolePreviewResponse}
+     * @response 400 {NoActiveRolePreviewResponse}
+     */
+    public function stopRolePreview(RolePreview $preview): JsonResponse
+    {
+        $user = Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+        if (! $user instanceof Model || $preview->roleFor($user) === null) {
+            return $this->error([
+                'errorKey' => 'no_active_role_preview',
+                'message' => __('Панель не показывается как роль'),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $preview->stop($user);
+
+        return $this->success([
+            'rolePreview' => null,
+            'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
+        ]);
+    }
+
+    private function rolePreviewForbidden(RolePreview $preview): JsonResponse
+    {
+        return $this->error([
+            'errorKey' => 'forbidden',
+            'message' => __('Нет права :permission', ['permission' => $preview->requiredPermission()]),
+        ], Response::HTTP_FORBIDDEN);
     }
 }

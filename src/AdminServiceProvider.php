@@ -117,6 +117,7 @@ final class AdminServiceProvider extends ServiceProvider
         // Manifest in its constructor, so a singleton would capture the scoped
         // instance of the first request for good — worse than before.
         $this->app->scoped(Manifest::class);
+        $this->app->scoped(Permission\RolePreview::class);
         $this->app->scoped(Support\BootstrapBuilder::class);
         // The column lists of the users tables, read once per request.
         $this->app->scoped(Support\TableColumns::class);
