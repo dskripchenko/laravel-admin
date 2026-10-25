@@ -157,7 +157,7 @@ export { trSafe, useI18nStore, tRaw } from './stores/i18n'
 
 // Fenced-block renderers of the panel's markdown (```mermaid → diagram), for
 // hosts that add their own: app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, … }).
-export { builtinMarkdownRenderers, mermaidRenderer } from './components/markdown/blockRenderers'
+export { builtinMarkdownRenderers, mermaidRenderer, flowRenderer } from './components/markdown/blockRenderers'
 
 // Shell components
 export {
@@ -267,6 +267,7 @@ export {
   SwitchField,
   DateField,
   UnknownField,
+  FlowField,
   RowsLayout,
   ColumnsLayout,
   SectionLayout,
@@ -282,6 +283,7 @@ export {
   MarkdownLayout,
   CodeLayout,
   ListenerLayout,
+  FlowLayout,
   createScreenContext,
   provideScreenContext,
   useScreenContext,
@@ -296,5 +298,6 @@ export type {
   ScreenContext,
   ScreenContextOptions,
   ScreenActionLike,
+  ScreenMethodCaller,
   ListenerEndpoint,
 } from './components/render'

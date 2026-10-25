@@ -98,6 +98,17 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * A process or state machine with live monitoring, drawn by FlowView of
+     * the flow package (@dskripchenko/flow). See Flow.
+     *
+     * @param  string|array<string, mixed>  $graph  A state key, a JSON model or the model as an array.
+     */
+    public static function flow(string|array $graph): Flow
+    {
+        return Flow::make($graph);
+    }
+
+    /**
      * @param  array<string, Renderable|list<Renderable>>  $sections
      */
     public static function accordion(array $sections = []): Accordion

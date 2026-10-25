@@ -30,6 +30,7 @@ sich beliebig tief verschachteln.
 | `View` | `Layout::view('component-name', $props)` | Eigene Vue-Komponente |
 | `Markdown` | `Layout::markdown($text)` | Gerendertes Markdown: Überschriften mit Ankern, Inhaltsverzeichnis, hervorgehobener Code, Tabellen, Hinweisboxen |
 | `Code` | `Layout::code($code, 'php')` | Hervorgehobener, kopierbarer Codeblock |
+| `Flow` | `Layout::flow('process')` | Prozess oder Zustandsautomat mit Live-Monitoring, Schaltern und Drill-down |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit-Zeitleiste des angezeigten Datensatzes |
 | `Listener` | `Layout::listener([...])->listen([...])` | Teil eines Formulars, den der Server neu rendert, wenn sich beobachtete Felder ändern |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Tabelle der Datensätze einer anderen Resource, die zum bearbeiteten Datensatz gehören |
@@ -209,6 +210,8 @@ Layout::infolist([
 Entry-Typen: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 `ImageEntry`, `RelationEntry`, `RepeatableEntry`, `MapEntry`,
 `ColorEntry`.
+
+`FlowEntry` zeigt ein gespeichertes Prozessmodell schreibgeschützt (die Ansicht eines [`Flow`-Felds](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
 
 In einem Custom Screen lesen die Entries den State des Screens.
 
@@ -459,6 +462,7 @@ Was der Renderer unterstützt:
 | Umzäunte Codeblöcke (drei Backticks und eine Sprache) | Hervorgehobener, kopierbarer Code; die Sprache kommt aus der Umzäunung (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
 | ` ```mermaid `-Blöcke | Diagramme in Mermaid-Syntax: Flowchart, Sequence, State, ER, Klassen, C4, Pie, Gantt, Timeline, XY-Chart und Mindmap, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | ` ```openapi `-Blöcke | API-Widgets: ein in YAML oder JSON beschriebener Request (oder ein ganzes OpenAPI-Dokument) wird zur Operation mit Try-it, Codebeispielen, TypeScript-Typen und PDF, von [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
+| ` ```flow `-Blöcke | Eine schreibgeschützte Prozessansicht: ein Modell in JSON oder Mermaid-Quelltext `stateDiagram-v2` / `flowchart`, gezeichnet von [@dskripchenko/flow](https://github.com/dskripchenko/flow) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tabellen, mit Spaltenausrichtung |
 | `> quote` | Blockzitat |
 | `> **Note** …`, `> **Warning** …` | Hinweisbox; außerdem `Tip`, `Important`, `Caution` und die GitHub-Form `> [!NOTE]` |
@@ -485,6 +489,8 @@ die Operation mit Parametern und Antworten, Try-it, das aus dem Browser des
 Lesers sendet, Codebeispiele, TypeScript-Typen und ein PDF der Operation. Das
 Paket wird nur geladen, wenn eine Seite einen solchen Block hat. Das Format
 beschreibt die Dokumentation des Pakets (API blocks).
+
+**Prozessblöcke.** Ein umzäunter Block mit der Sprache `flow` enthält ein Prozessmodell in JSON (siehe [Flow](#flow-prozess-mit-live-monitoring)) oder Mermaid-Quelltext `stateDiagram-v2` / `flowchart`; er wird zu einer schreibgeschützten Prozessansicht — Verschieben, Zoomen, Unterprozesse, die Details eines Schritts. Das Paket wird nur geladen, wenn eine Seite einen solchen Block enthält.
 
 Ein Host ergänzt Renderer für weitere Sprachen auf dieselbe Weise, in
 `onAppCreated`:
@@ -536,6 +542,137 @@ Layout::code(<<<'PHP'
 | `lineNumbers(bool $on = true)` | Zeilennummern |
 | `maxHeight(int\|string $height)` | Ab dieser Höhe scrollen: `400` (px) oder `'50vh'` |
 | `wrap(bool $wrap = true)` | Lange Zeilen umbrechen statt seitlich zu scrollen |
+
+### Flow (Prozess mit Live-Monitoring)
+
+Ein Prozess oder Zustandsautomat, gezeichnet von
+[@dskripchenko/flow](https://github.com/dskripchenko/flow): Verschieben,
+Zoomen, Minikarte, ein Detailbereich, der Live-Zustand einer laufenden Instanz
+(oder Zähler über alle Instanzen), Schalter, die Schritte ein- und
+ausschalten, und Drill-down in Unterprozesse. Schreibgeschützt — das Modell
+wird mit dem [`Flow`-Feld](fields-reference.md#flow) bearbeitet. Das Paket
+wird nur geladen, wenn eine Seite einen Prozess enthält.
+
+Das Modell ist das JSON des Pakets (`{version: 1, nodes, edges, groups?, meta?}`,
+siehe dessen Modelldokumentation). `Layout::flow()` nimmt einen Schlüssel des
+Screen-States oder das Modell selbst — ein Array oder einen JSON-String, der
+beim Aufbau des Layouts geprüft wird (`InvalidArgumentException` bei einem
+fehlerhaften):
+
+```php
+Layout::flow('process')                 // $state['process']
+Layout::flow($order->workflow)          // das Modell als Array
+Layout::flow(file_get_contents($path))  // oder als JSON
+```
+
+Ein vollständiges Beispiel — der Zustandsautomat einer Bestellung: Polling des
+Snapshots der in einem Select gewählten Bestellung, Ein- und Ausschalten von
+Schritten, ein per Referenz gehaltener Unterprozess und ein Button im
+Detailbereich:
+
+```php
+use Dskripchenko\LaravelAdmin\Action\Button;
+use Dskripchenko\LaravelAdmin\Field\Select;
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
+
+final class OrderProcessScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        return [
+            'order' => request('order'),
+            'process' => OrderProcess::model(),   // Knoten: new, payment (subgraph: 'payment'), paid, shipped…
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::rows([Select::make('order')->options(Order::recentOptions())]),
+            Layout::flow('process')
+                ->poll('orderState', seconds: 5)
+                ->onToggle('toggleStep', permission: 'orders.process.manage')
+                ->subgraphs('loadSubprocess')
+                ->instanceFrom('order')
+                ->actions([
+                    Button::make('Schritt wiederholen')->method('retryStep')->permission('orders.process.manage'),
+                ])
+                ->direction('LR')
+                ->height(560),
+        ];
+    }
+
+    /** Der Snapshot für die angezeigte Ebene: die Wurzel oder ein Unterprozess. */
+    public function orderState(array $context): array
+    {
+        // $context = ['path' => ['payment'], 'ref' => 'payment', 'instance' => '1042']
+        $order = Order::find($context['instance']);
+
+        return [
+            'nodes' => [
+                'new' => ['status' => 'done'],
+                'payment' => ['status' => 'done'],
+                'shipped' => ['status' => 'active', 'updatedAt' => $order->updated_at->toIso8601String()],
+            ],
+            'path' => ['start', 'new', 'payment', 'paid', 'shipped'],
+            'current' => ['shipped'],
+            'updatedAt' => now()->toIso8601String(),
+        ];
+    }
+
+    /** ['kind' => 'node'|'edge', 'id' => 'cancelled', 'enabled' => false, 'path' => []] */
+    public function toggleStep(array $change): void
+    {
+        if ($change['id'] === 'cancelled') {
+            throw new ActionFailedException('Die Stornierung lässt sich nicht ausschalten.');
+        }
+        OrderProcess::setEnabled($change['kind'], $change['id'], $change['enabled'], $change['path']);
+    }
+
+    public function loadSubprocess(string $ref, array $node): array
+    {
+        return OrderProcess::subprocess($ref);   // ein Modell wie das der Wurzel
+    }
+
+    /** ['kind' => 'node', 'id' => 'shipped', 'path' => [], 'instance' => '1042'] */
+    public function retryStep(array $selection): array
+    {
+        RetryStep::dispatch($selection['instance'], $selection['id']);
+
+        return ['message' => 'Zur Wiederholung eingereiht'];
+    }
+}
+```
+
+Die Methoden sind die eigenen öffentlichen Methoden des Screens, aufgerufen
+über seine Aktion `runMethod` mit positionalen `parameters` — dieselbe
+Session, CSRF, Schichten und Prüfungen wie bei einem Button. Jede vom Layout
+genannte Methode ist dem Server bekannt: Ein Benutzer, vor dem das Layout
+verborgen ist (`canSee()`), erhält für alle ein 403, und
+`onToggle(..., permission:)` sowie die Buttons des Detailbereichs verlangen
+zusätzlich ihre Berechtigung — ohne sie werden Schalter und Buttons gar nicht
+angezeigt.
+
+| Methode | Wirkung |
+|---|---|
+| `poll(string $method, int\|float $seconds = 5)` | Ruft alle `$seconds` `$method(array $context)` für den [Monitoring-Snapshot](https://github.com/dskripchenko/flow/blob/main/docs/de/monitoring.md) auf — `nodes`, `edges`, `path`, `current`, `updatedAt`. `$context` enthält `path` (die betretenen Unterprozesse), `ref` und `instance`. Eine Anfrage zur Zeit, pausiert in einem verborgenen Tab, mit Backoff nach Fehlern; die Statuszeile zeigt die letzte Aktualisierung und Veraltung |
+| `onToggle(string $method, ?string $permission = null)` | Schalter an Knoten und Kanten; `$method(array $change)` speichert `{kind, id, enabled, path}`. Zum Ablehnen `ActionFailedException` werfen (oder mit einem Fehler antworten): Der Schalter springt zurück, die Meldung erscheint in einem Toast |
+| `toggleable(bool $on = true)` | Schalter ohne Methode: Die Änderung bleibt im Browser |
+| `subgraphs(string\|array $subgraphs)` | Wie String-Referenzen in `subgraph` aufgelöst werden: eine Methode `(string $ref, array $node): array`, die das Modell liefert, oder die Modelle nach Referenz. Eingebettete Unterprozesse brauchen nichts |
+| `instance(string\|int\|null $id)` / `instanceFrom(string $key)` | Die Instanz im Fokus, übergeben an die Poll-Methode und die Buttons des Detailbereichs; mit `instanceFrom()` wechselt ein Feld des Screens sie, und es wird sofort gepollt |
+| `snapshot(array\|string $snapshot)` | Ein fester Snapshot oder der State-Schlüssel mit einem; `poll()` übernimmt nach seiner ersten Antwort |
+| `actions(array $buttons)` | `Button`s im Detailbereich; die Methode erhält `{kind, id, path, instance}`, eine `message` in der Antwort erscheint als Toast, danach wird erneut gepollt |
+| `direction('LR'\|'TB'\|'auto')` | Die Layoutrichtung; standardmäßig `meta.direction` des Modells, sonst `auto` (folgt der Form des Bereichs) |
+| `edgeStyle('orthogonal'\|'smooth')` | Rechte Winkel (Standard) oder weiche Kurven |
+| `height(int\|string $height)` | Die Höhe des Bereichs: `560` (px) oder `'70vh'`; standardmäßig 480px |
+| `minimap(bool)`, `details(bool)`, `statusBar(bool)` | Minikarte, Detailbereich und Statuszeile; standardmäßig alle an |
+| `title(string $title)` | Eine Beschriftung über dem Graphen |
+
+Die Beschriftungen eines eingebetteten Modells (Knoten- und Kantenlabels,
+Beschreibungen, der Titel) laufen wie alle anderen Beschriftungen durch die
+JSON-Übersetzungen des Panels; ein Modell aus dem State wird so gezeigt, wie
+es gespeichert ist.
 
 ### View (eigene Vue-Komponente)
 

@@ -65,6 +65,8 @@ export default defineConfig({
         /^@dskripchenko\/diagrams($|\/)/,
         // Loaded on demand by the ```openapi renderer, like the diagrams.
         /^@dskripchenko\/openapi($|\/)/,
+        // Loaded on demand by Layout::flow, Field\Flow, the flow entry and ```flow blocks.
+        /^@dskripchenko\/flow($|\/)/,
         /^@tiptap\//,
         'marked',
         // The WYSIWYG peer deps: used by TinymceField/QuillField and supplied by

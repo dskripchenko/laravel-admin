@@ -21,6 +21,7 @@ use Dskripchenko\LaravelAdmin\Field\Rules\ResourceRecordsExist;
  *      - resource_picker → `array`/`max:` for multiple, plus the existence of
  *        the picked records in the target resource
  *      - color → `regex:/^#?[0-9a-f]{3,8}$/i` for hex
+ *      - flow → `array` plus the shape of the process model (FlowModel)
  *
  * The point is that Resource::validationRules() should not have to repeat the
  * limits by hand on both the UI side and the backend side.
@@ -52,6 +53,11 @@ final class ValidationRulesExporter
                     (string) $field->getAttribute('resource'),
                     $field->getAttribute('multiple') === true,
                 );
+            }
+            if ($field instanceof Flow) {
+                // The editor's model: its shape, and its node types when the
+                // field has a palette.
+                $rules[] = $field->modelRule();
             }
             $result[$field->name()] = $rules;
 
@@ -147,7 +153,7 @@ final class ValidationRulesExporter
             'color' => self::colorRules($attrs),
             'wysiwyg', 'markdown', 'textarea', 'code' => ['nullable', 'string'],
             'switch', 'switcher', 'boolean' => ['nullable', 'boolean'],
-            'repeater', 'key-value', 'tags' => ['nullable', 'array'],
+            'repeater', 'key-value', 'tags', 'flow' => ['nullable', 'array'],
             default => ['nullable'],
         };
     }

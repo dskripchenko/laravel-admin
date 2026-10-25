@@ -755,3 +755,12 @@
   font-weight: var(--uid-font-weight-semibold);
   margin-bottom: var(--uid-space-2xs, 4px) !important;
 }
+
+/* A ```flow block in rendered markdown: the process view fills a framed box. */
+.admin-md-flow {
+  position: relative;
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-md);
+  overflow: hidden;
+  margin: var(--uid-space-sm, 8px) 0;
+}

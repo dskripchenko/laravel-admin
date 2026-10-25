@@ -28,6 +28,7 @@ compose to arbitrary depth.
 | `View` | `Layout::view('component-name', $props)` | Custom Vue component |
 | `Markdown` | `Layout::markdown($text)` | Rendered markdown: anchored headings, table of contents, highlighted code, tables, callouts |
 | `Code` | `Layout::code($code, 'php')` | Highlighted, copyable code block |
+| `Flow` | `Layout::flow('process')` | Process or state machine with live monitoring, switches and drill-down |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
 | `Listener` | `Layout::listener([...])->listen([...])` | Part of a form re-rendered by the server when watched fields change |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Table of another resource's records belonging to the edited one |
@@ -205,6 +206,8 @@ Layout::infolist([
 Entry types: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 `ImageEntry`, `RelationEntry`, `RepeatableEntry`, `MapEntry`,
 `ColorEntry`.
+
+`FlowEntry` draws a stored process model read-only (the view of a [`Flow` field](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
 
 On a custom Screen the entries read the screen's state.
 
@@ -446,6 +449,7 @@ What the renderer supports:
 | Fenced code blocks (three backticks and a language) | Highlighted, copyable code; the language comes from the fence (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
 | ` ```mermaid ` blocks | Diagrams in Mermaid syntax: flowchart, sequence, state, ER, class, C4, pie, gantt, timeline, XY chart and mind map, drawn as SVG by [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | ` ```openapi ` blocks | API widgets: a request described in YAML or JSON (or a whole OpenAPI document) becomes the operation with try-it, code samples, TypeScript types and PDF, by [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
+| ` ```flow ` blocks | A read-only process view: a model in JSON, or Mermaid `stateDiagram-v2` / `flowchart` source, drawn by [@dskripchenko/flow](https://github.com/dskripchenko/flow) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tables, with column alignment |
 | `> quote` | Block quote |
 | `> **Note** …`, `> **Warning** …` | Callout; also `Tip`, `Important`, `Caution` and GitHub's `> [!NOTE]` form |
@@ -472,6 +476,8 @@ the operation with its parameters and responses, try-it that sends from the
 reader's browser, code samples, TypeScript types and a PDF of the operation.
 The package is loaded only when a page has such a block. The format is
 described in the package's documentation (API blocks).
+
+**Process blocks.** A fenced block with the language `flow` holds a process model in JSON (see [Flow](#flow-process-with-live-monitoring)) or Mermaid `stateDiagram-v2` / `flowchart` source; it becomes a read-only process view — pan, zoom, sub-processes, the details of a step. The package is loaded only when a page has such a block.
 
 A host adds renderers for other languages the same way, in `onAppCreated`:
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
@@ -521,6 +527,132 @@ Layout::code(<<<'PHP'
 | `lineNumbers(bool $on = true)` | Line numbers |
 | `maxHeight(int\|string $height)` | Scroll after this height: `400` (px) or `'50vh'` |
 | `wrap(bool $wrap = true)` | Wrap long lines instead of scrolling sideways |
+
+### Flow (process with live monitoring)
+
+A process or state machine drawn by
+[@dskripchenko/flow](https://github.com/dskripchenko/flow): pan, zoom,
+minimap, a details drawer, live state of a running instance (or counters for
+all of them), switches that enable and disable steps, and drill-down into
+sub-processes. Read-only — the model is edited with the
+[`Flow` field](fields-reference.md#flow). The package is loaded only when a
+page has a process.
+
+The model is the package's JSON (`{version: 1, nodes, edges, groups?, meta?}`,
+see its model documentation). Give `Layout::flow()` a key of the screen's
+state, or the model itself — an array or a JSON string, checked when the
+layout is built (`InvalidArgumentException` on a broken one):
+
+```php
+Layout::flow('process')                 // $state['process']
+Layout::flow($order->workflow)          // the model as an array
+Layout::flow(file_get_contents($path))  // or as JSON
+```
+
+A full example — an order state machine: polling a snapshot of the order
+picked in a select, switching steps on and off, a sub-process held by
+reference, and a button in the details drawer:
+
+```php
+use Dskripchenko\LaravelAdmin\Action\Button;
+use Dskripchenko\LaravelAdmin\Field\Select;
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
+
+final class OrderProcessScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        return [
+            'order' => request('order'),
+            'process' => OrderProcess::model(),   // nodes: new, payment (subgraph: 'payment'), paid, shipped…
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::rows([Select::make('order')->options(Order::recentOptions())]),
+            Layout::flow('process')
+                ->poll('orderState', seconds: 5)
+                ->onToggle('toggleStep', permission: 'orders.process.manage')
+                ->subgraphs('loadSubprocess')
+                ->instanceFrom('order')
+                ->actions([
+                    Button::make('Retry step')->method('retryStep')->permission('orders.process.manage'),
+                ])
+                ->direction('LR')
+                ->height(560),
+        ];
+    }
+
+    /** The snapshot for the level on screen: the root, or a sub-process. */
+    public function orderState(array $context): array
+    {
+        // $context = ['path' => ['payment'], 'ref' => 'payment', 'instance' => '1042']
+        $order = Order::find($context['instance']);
+
+        return [
+            'nodes' => [
+                'new' => ['status' => 'done'],
+                'payment' => ['status' => 'done'],
+                'shipped' => ['status' => 'active', 'updatedAt' => $order->updated_at->toIso8601String()],
+            ],
+            'path' => ['start', 'new', 'payment', 'paid', 'shipped'],
+            'current' => ['shipped'],
+            'updatedAt' => now()->toIso8601String(),
+        ];
+    }
+
+    /** ['kind' => 'node'|'edge', 'id' => 'cancelled', 'enabled' => false, 'path' => []] */
+    public function toggleStep(array $change): void
+    {
+        if ($change['id'] === 'cancelled') {
+            throw new ActionFailedException('Cancellation cannot be switched off.');
+        }
+        OrderProcess::setEnabled($change['kind'], $change['id'], $change['enabled'], $change['path']);
+    }
+
+    public function loadSubprocess(string $ref, array $node): array
+    {
+        return OrderProcess::subprocess($ref);   // a model, like the root one
+    }
+
+    /** ['kind' => 'node', 'id' => 'shipped', 'path' => [], 'instance' => '1042'] */
+    public function retryStep(array $selection): array
+    {
+        RetryStep::dispatch($selection['instance'], $selection['id']);
+
+        return ['message' => 'Queued for a retry'];
+    }
+}
+```
+
+The methods are the screen's own public methods, called through its
+`runMethod` action with positional `parameters` — the same session, CSRF,
+layers and checks as a button. Each method the layout names is declared to
+the server: a user the layout is hidden from (`canSee()`) gets a 403 for all
+of them, and `onToggle(..., permission:)` and the drawer's buttons need their
+permission too — without it the switches and buttons are not shown at all.
+
+| Method | Effect |
+|---|---|
+| `poll(string $method, int\|float $seconds = 5)` | Calls `$method(array $context)` every `$seconds` for the [monitoring snapshot](https://github.com/dskripchenko/flow/blob/main/docs/en/monitoring.md) — `nodes`, `edges`, `path`, `current`, `updatedAt`. `$context` holds `path` (the sub-processes entered), `ref` and `instance`. One request at a time, paused in a hidden tab, backing off after errors; the status line shows the last update and staleness |
+| `onToggle(string $method, ?string $permission = null)` | Switches on nodes and edges; `$method(array $change)` persists `{kind, id, enabled, path}`. Throw `ActionFailedException` (or answer with an error) to refuse: the switch flips back and the message is shown in a toast |
+| `toggleable(bool $on = true)` | Switches without a method: the change stays in the browser |
+| `subgraphs(string\|array $subgraphs)` | How string `subgraph` references are resolved: a method `(string $ref, array $node): array` returning the model, or the models keyed by reference. Inline sub-processes need nothing |
+| `instance(string\|int\|null $id)` / `instanceFrom(string $key)` | The instance in focus, passed to the poll method and the drawer's actions; with `instanceFrom()` a field of the screen switches it, and the view polls at once |
+| `snapshot(array\|string $snapshot)` | A fixed snapshot, or the state key holding one; `poll()` takes over once it answers |
+| `actions(array $buttons)` | `Button`s in the details drawer; each method receives `{kind, id, path, instance}`, a `message` in its answer is shown as a toast, then the state is polled again |
+| `direction('LR'\|'TB'\|'auto')` | The layout direction; the model's `meta.direction`, else `auto` (follows the box's shape) |
+| `edgeStyle('orthogonal'\|'smooth')` | Right angles (the default) or smooth curves |
+| `height(int\|string $height)` | The box's height: `560` (px) or `'70vh'`; 480px by default |
+| `minimap(bool)`, `details(bool)`, `statusBar(bool)` | The minimap, the details drawer and the status line; all on by default |
+| `title(string $title)` | A caption above the graph |
+
+Captions of an inline model (node and edge labels, descriptions, the title)
+go through the panel's JSON translations like any other caption; a model read
+from the state is shown as stored.
 
 ### View (custom Vue component)
 

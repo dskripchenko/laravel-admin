@@ -25,7 +25,8 @@
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
-import { useScreenStore } from '../stores/screen'
+import { useScreenStore, type ScreenMethodResult } from '../stores/screen'
+import { getAdminClient } from '../stores/registry'
 import { apiErrorMessage } from '../api/errors'
 import { normalizeAction, normalizeActions, toRouterPath, useActionRunner } from '../composables/useActionRunner'
 import AdminActionButton from './actions/AdminActionButton.vue'
@@ -120,6 +121,15 @@ const screenCtx = provideScreenContext({
     }
   },
   confirm: (c) => runner.confirm(c),
+  // A layout's own call to the screen (a process view's polling): the same
+  // runMethod action, so the screen's permission, the declared actions'
+  // checks, CSRF and the layers apply, but the page's state is left alone.
+  call: (method, parameters = [], options = {}) =>
+    getAdminClient().post<ScreenMethodResult>(
+      `/${resolvedSlug.value}/runMethod`,
+      { method, parameters },
+      { signal: options.signal },
+    ),
   run: async (action) => {
     const normalized = normalizeAction(action)
     return normalized ? runner.run(normalized) : false

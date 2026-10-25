@@ -30,6 +30,7 @@ import MorphEntry from './MorphEntry.vue'
 import GroupEntry from './GroupEntry.vue'
 import HiddenEntry from './HiddenEntry.vue'
 import ResourcePickerEntry from './ResourcePickerEntry.vue'
+import FlowEntry from './FlowEntry.vue'
 
 export function registerBuiltinInfolistEntries(): void {
   registerInfolistEntries({
@@ -92,5 +93,7 @@ export function registerBuiltinInfolistEntries(): void {
     'time-picker': TextEntry,
     'color-picker': ColorEntry,
     resource_picker: ResourcePickerEntry,
+    // A process model: Infolist\FlowEntry and the view of a Field\Flow.
+    flow: FlowEntry,
   })
 }

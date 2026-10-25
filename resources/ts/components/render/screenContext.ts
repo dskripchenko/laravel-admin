@@ -20,6 +20,7 @@
 
 import { inject, provide, reactive, type InjectionKey, type Ref } from 'vue'
 import { confirmDialog } from '../../composables/useConfirm'
+import type { ScreenMethodResult } from '../../stores/screen'
 
 /** The shape of an action as the backend serializes it (Action::toArray). */
 export interface ScreenActionLike {
@@ -50,7 +51,21 @@ export interface ScreenContext {
    * when the action went through.
    */
   dispatch: (action: ScreenActionLike) => Promise<boolean>
+  /**
+   * Calls a screen method with positional `parameters` and resolves to its
+   * raw answer, leaving the page alone: no state merge, no busy flag, no
+   * alert. For layouts that talk to the screen on their own — a process
+   * view polling its monitoring, say. Rejects with the ApiError of a failed
+   * call. Absent outside a screen page.
+   */
+  call?: ScreenMethodCaller
 }
+
+export type ScreenMethodCaller = (
+  method: string,
+  parameters?: unknown[],
+  options?: { signal?: AbortSignal },
+) => Promise<ScreenMethodResult>
 
 const ScreenContextKey: InjectionKey<ScreenContext> = Symbol('admin.screen-context')
 
@@ -66,6 +81,8 @@ export interface ScreenContextOptions {
    * `attributes.method` is understood.
    */
   run?: (action: ScreenActionLike) => Promise<boolean>
+  /** See ScreenContext.call. */
+  call?: ScreenMethodCaller
 }
 
 export function createScreenContext(options: ScreenContextOptions): ScreenContext {
@@ -82,6 +99,7 @@ export function createScreenContext(options: ScreenContextOptions): ScreenContex
     },
     running: options.running,
     runMethod: options.runMethod,
+    call: options.call,
     async dispatch(action) {
       const opens = action.attributes?.opens
       if (typeof opens !== 'string' || opens === '') {

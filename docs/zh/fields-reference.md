@@ -446,6 +446,39 @@ Password::make('password')->required()->confirmed()->revealable(),
 Generated::make('api_key')->length(40)->charset('abcdef0123456789'),
 ```
 
+### Flow
+
+流程和状态机的可视化编辑器——[@dskripchenko/flow](https://github.com/dskripchenko/flow)
+的 FlowEditor：节点类型面板、拖动连线、撤销/重做、对齐和自动布局、属性面板、问题列表、
+就地编辑子流程、JSON 导出以及 JSON/Mermaid 导入。值是 JSON 对象形式的模型——请存入
+带 `array` 转换的 JSON 列；它与其他字段一样随表单提交。只有表单中有该字段时才会加载该包。
+
+```php
+Flow::make('workflow')
+    ->palette(['start', 'state', 'task', 'decision', 'end', 'note'])
+    ->locked(['start'])
+    ->height(560)
+    ->required(),
+```
+
+| 方法 | 作用 |
+|---|---|
+| `palette(array $types)` | 元素面板提供的节点类型及顺序；默认全部。此时服务器只接受这些类型（以及锁定的类型） |
+| `locked(array $types)` | 编辑器不允许修改或删除的节点类型 |
+| `readonly()` | 只能浏览 |
+| `height(int\|string)` | 编辑器高度；默认 520px |
+| `direction('LR'\|'TB'\|'auto')`、`edgeStyle('orthogonal'\|'smooth')` | 与 [`Layout::flow()`](layouts-reference.md#flow带实时监控的流程) 相同 |
+| `minimap(bool)`、`snapGrid(int)` | 小地图（默认关闭）和节点吸附的网格（`0` 关闭吸附） |
+| `mermaidImport(bool)` | JSON/Mermaid 菜单中的“导入 Mermaid”；默认开启 |
+| `exportName(string)` | JSON 导出的文件名；默认 `{name}.json` |
+
+`ValidationRulesExporter` 会添加 `array` 和 `FlowModel` 规则：模型的结构（节点、连线和
+分组的 id 唯一，连线连接已存在的节点，内联子流程同样检查），设置了面板时还检查节点类型。
+自定义验证器中：`'workflow' => ['required', Flow::rule()]`。编辑器的警告——不可达的步骤、
+死胡同——不会导致验证失败。锁定类型只由编辑器保证；如有需要，请在服务器上检查。
+
+在查看页上，该字段由 `FlowEntry` 以只读方式显示。
+
 ## 另请参阅
 
 - [Resources](concepts/resources.md)

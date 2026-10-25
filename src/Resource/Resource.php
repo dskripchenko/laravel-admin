@@ -55,7 +55,7 @@ abstract class Resource
      */
     protected const FIELD_VIEW_TYPES = [
         'markdown', 'code', 'rating', 'radio', 'tree_select', 'cascader',
-        'date_range', 'morph_switcher', 'group', 'resource_picker',
+        'date_range', 'morph_switcher', 'group', 'resource_picker', 'flow',
         // Fields whose stored value is a key: the view shows the option's label.
         'select', 'combobox', 'tags', 'relation_select',
     ];

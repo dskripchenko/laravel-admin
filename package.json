@@ -95,7 +95,8 @@
         "axios",
         "@dskripchenko/ui",
         "@dskripchenko/diagrams",
-        "@dskripchenko/openapi"
+        "@dskripchenko/openapi",
+        "@dskripchenko/flow"
       ]
     },
     {
@@ -109,7 +110,8 @@
         "axios",
         "@dskripchenko/ui",
         "@dskripchenko/diagrams",
-        "@dskripchenko/openapi"
+        "@dskripchenko/openapi",
+        "@dskripchenko/flow"
       ]
     },
     {
@@ -187,6 +189,7 @@
   },
   "dependencies": {
     "@dskripchenko/diagrams": "^1.1.0",
+    "@dskripchenko/flow": "^1.0.0",
     "@dskripchenko/openapi": "^1.1.0",
     "lean-qr": "^2.7.1"
   }

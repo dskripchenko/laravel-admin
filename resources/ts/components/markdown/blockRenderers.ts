@@ -14,8 +14,14 @@
  * operation with try-it, code samples, TypeScript types and PDF. In the
  * WYSIWYG editor the same widget is the block's editor, with a source tab and
  * a request constructor. Loaded on first use as well.
+ *
+ * ```flow blocks — a process model in JSON, or a Mermaid `stateDiagram-v2` /
+ * `flowchart` — become a read-only process view of @dskripchenko/flow: pan,
+ * zoom, sub-processes, the details of a step. Loaded on first use too.
  */
-import type { App, AppContext } from 'vue'
+import { h, render, type App, type AppContext } from 'vue'
+import type { Graph } from '@dskripchenko/flow'
+import { flowLocale, loadFlow, loadFlowMermaid } from '../flow/loadFlow'
 import {
   markdownBlockRenderersKey,
   type UidMarkdownBlockRenderer,
@@ -75,10 +81,62 @@ export const openapiRenderer: UidMarkdownBlockRenderer = async (code, ctx) => {
   return openApiBlockRenderer({ appContext: appContext ?? undefined, locale })(code, ctx)
 }
 
+/** A ```flow block's source as a model: JSON, or Mermaid state/flowchart source. */
+async function flowGraph(code: string): Promise<Graph> {
+  const { core } = await loadFlow()
+  const source = code.trim()
+  if (source.startsWith('{')) return core.parseGraph(source)
+  const { fromMermaid } = await loadFlowMermaid()
+  return fromMermaid(source)
+}
+
+function flowError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+export const flowRenderer: UidMarkdownBlockRenderer = async (code) => {
+  let graph: Graph
+  try {
+    graph = await flowGraph(code)
+  } catch (error) {
+    return { error: flowError(error) }
+  }
+  const { vue } = await loadFlow()
+  const draw = (el: HTMLElement, g: Graph): void => {
+    const vnode = h(vue.FlowView, {
+      graph: g,
+      locale: flowLocale(),
+      minimap: false,
+      statusBar: false,
+      toastProvider: false,
+      style: { height: '100%' },
+    })
+    // The panel's provides (the kit's theme and toasts) reach the view.
+    vnode.appContext = appContext
+    render(vnode, el)
+  }
+  return {
+    mount(el) {
+      el.classList.add('admin-md-flow')
+      el.style.height = '420px'
+      draw(el, graph)
+      return {
+        update(next) {
+          flowGraph(next).then((g) => draw(el, g), () => undefined)
+        },
+        destroy() {
+          render(null, el)
+        },
+      }
+    },
+  }
+}
+
 /** The renderers the panel registers app-wide. */
 export const builtinMarkdownRenderers: UidMarkdownBlockRenderers = Object.freeze({
   mermaid: mermaidRenderer,
   openapi: openapiRenderer,
+  flow: flowRenderer,
 })
 
 /**
