@@ -6,7 +6,7 @@
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-w6cmKKMT.js",
+    "file": "assets/app-gmQjPVuB.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -14,7 +14,7 @@
       "node_modules/@dskripchenko/diagrams/dist/index.mjs"
     ],
     "css": [
-      "assets/app-DhikzSiS.css"
+      "assets/app-zh2MEe35.css"
     ]
   }
 }

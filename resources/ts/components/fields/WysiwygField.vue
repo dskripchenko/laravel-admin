@@ -69,7 +69,7 @@ const slashCommands = computed<SlashCommand[]>(() =>
         key: 'diagram',
         label: tr('Диаграмма'),
         hint: tr('Mermaid: схема, последовательность, состояния, круговая, Гант'),
-        aliases: ['diagram', 'mermaid', 'flowchart', 'chart', 'диаграмма', 'схема'],
+        aliases: ['diagram', 'mermaid', 'flowchart', 'chart'],
         apply: (c) => c.chain().focus().insertCodeBlock('mermaid', DIAGRAM_TEMPLATE).run(),
       }]
     : [],
