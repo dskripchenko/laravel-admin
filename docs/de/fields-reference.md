@@ -126,6 +126,14 @@ Wysiwyg::make('page')->preset('full')->uploadImages(),
 Das HTML wird beim Speichern standardmäßig bereinigt; `->sanitize(false)`
 schaltet das für Inhalte ab, denen Sie vertrauen.
 
+Im Editor wird ein Codeblock ` ```mermaid ` als Diagramm angezeigt und ein
+Block ` ```openapi ` als API-Widget, das an Ort und Stelle bearbeitet wird:
+Vorschau, Quelle in YAML oder JSON und ein Request-Konstruktor (Methode, URL,
+Parameter, Authentifizierung, Body, Antworten). Das Slash-Menü fügt sie ein:
+«Diagram» (`/diagram`) und «API request» (`/api`). Das gespeicherte HTML
+behält den Codeblock, daher wird derselbe Inhalt im Markdown-Layout oder
+überall, wo `renderBlocks` von @dskripchenko/openapi läuft, gleich dargestellt.
+
 Adapter für Quill und TinyMCE werden im npm-Paket als Subpath-Exports
 mitgeliefert; der Host installiert den Editor selbst (`quill` +
 `@vueup/vue-quill` oder `tinymce` + `@tinymce/tinymce-vue`) und registriert die

@@ -119,6 +119,14 @@ Wysiwyg::make('page')->preset('full')->uploadImages(),
 The HTML is sanitized on save by default; `->sanitize(false)` turns that off for
 content you trust.
 
+In the editor, an ` ```mermaid ` code block shows as its diagram, and an
+` ```openapi ` block as an API widget edited in place: a preview, the source in
+YAML or JSON, and a request constructor (method, URL, parameters,
+authentication, body, responses). The slash menu inserts them: «Diagram»
+(`/diagram`) and «API request» (`/api`). The stored HTML keeps the code block,
+so the same content renders the same way in a Markdown layout or anywhere
+`renderBlocks` of @dskripchenko/openapi runs.
+
 Quill and TinyMCE adapters ship in the npm package as subpath exports; the host
 installs the editor itself (`quill` + `@vueup/vue-quill`, or `tinymce` +
 `@tinymce/tinymce-vue`) and registers the component under the `wysiwyg` type:

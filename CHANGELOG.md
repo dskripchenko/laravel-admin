@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- **API blocks.** A fenced ` ```openapi ` block — a request described in YAML
+  or JSON (`method`, `url`, `params`, `auth`, `body`, `responses`, or
+  `requests: [...]`), or a whole OpenAPI document — renders as a live widget of
+  @dskripchenko/openapi: the operation with try-it, code samples, TypeScript
+  types and a PDF. It works in every markdown the panel shows (the Markdown
+  layout, the field preview, the widget, the infolist entry) and in the
+  WYSIWYG editor, where the block is edited in place: a preview, the YAML/JSON
+  source and a request constructor. The slash menu gets «API-запрос» (`/api`).
+  `builtinMarkdownRenderers` now has `openapi` next to `mermaid`; the package
+  is loaded only when a page has such a block.
+
+### Changed
+
+- Requires `@dskripchenko/ui` `^1.14` and `@dskripchenko/wysiwyg` `^0.4` (live
+  blocks in markdown and in the editor); `@dskripchenko/openapi` is a new
+  dependency.
+
 ### Fixed
 
 - **One resource no longer takes the API reference down.** The per-resource

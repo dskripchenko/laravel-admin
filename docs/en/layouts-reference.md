@@ -445,6 +445,7 @@ What the renderer supports:
 | `# Heading` … `###### Heading` | Headings with anchor ids: `## Getting started` → `#getting-started` (letters of any script are kept, duplicates get `-1`, `-2`) |
 | Fenced code blocks (three backticks and a language) | Highlighted, copyable code; the language comes from the fence (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
 | ` ```mermaid ` blocks | Diagrams: flowchart, sequence, state, pie and gantt in Mermaid syntax, drawn as SVG by [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| ` ```openapi ` blocks | API widgets: a request described in YAML or JSON (or a whole OpenAPI document) becomes the operation with try-it, code samples, TypeScript types and PDF, by [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tables, with column alignment |
 | `> quote` | Block quote |
 | `> **Note** …`, `> **Warning** …` | Callout; also `Tip`, `Important`, `Caution` and GitHub's `> [!NOTE]` form |
@@ -460,6 +461,15 @@ loaded only when a page has a diagram. Labels are escaped like the rest of the
 text, so a diagram cannot carry markup or scripts. A block it cannot read is
 shown as code with the reason and the line. The supported syntax is listed in
 the package's documentation.
+
+**API blocks.** A fenced block with the language `openapi` holds a request
+described in YAML or JSON — `method`, `url`, `params`, `auth`, `body`,
+`responses`, or `requests: [...]` for several — or a whole OpenAPI document.
+It becomes a live widget of [@dskripchenko/openapi](https://github.com/dskripchenko/openapi):
+the operation with its parameters and responses, try-it that sends from the
+reader's browser, code samples, TypeScript types and a PDF of the operation.
+The package is loaded only when a page has such a block. The format is
+described in the package's documentation (API blocks).
 
 A host adds renderers for other languages the same way, in `onAppCreated`:
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`

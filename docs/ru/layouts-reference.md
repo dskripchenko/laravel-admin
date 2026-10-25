@@ -451,6 +451,7 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 | `# Заголовок` … `###### Заголовок` | Заголовки с якорями: `## Быстрый старт` → `#быстрый-старт` (буквы любого алфавита сохраняются, повторы получают `-1`, `-2`) |
 | Блоки кода в тройных обратных кавычках с языком | Подсвеченный код с кнопкой копирования; язык берётся из ограждения (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
 | Блоки ` ```mermaid ` | Диаграммы: flowchart, sequence, state, pie и gantt в синтаксисе Mermaid, рисуются в SVG пакетом [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| Блоки ` ```openapi ` | API-виджеты: запрос, описанный на YAML или JSON (или целый OpenAPI-документ), становится операцией с try-it, примерами кода, типами TypeScript и PDF — пакетом [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Таблицы с выравниванием колонок |
 | `> цитата` | Цитата |
 | `> **Note** …`, `> **Внимание** …` | Выноска; также `Tip`/`Совет`, `Important`/`Важно`, `Caution`/`Осторожно` и форма GitHub `> [!NOTE]` |
@@ -466,6 +467,15 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 текст, поэтому диаграмма не может нести разметку или скрипты. Блок, который
 не удалось прочитать, показывается как код с причиной и номером строки.
 Поддерживаемый синтаксис перечислен в документации пакета.
+
+**API-блоки.** Блок кода с языком `openapi` содержит запрос, описанный на
+YAML или JSON — `method`, `url`, `params`, `auth`, `body`, `responses` или
+`requests: [...]` для нескольких, — либо целый OpenAPI-документ. Он
+становится живым виджетом [@dskripchenko/openapi](https://github.com/dskripchenko/openapi):
+операция с параметрами и ответами, try-it, который отправляет запрос из
+браузера читателя, примеры кода, типы TypeScript и PDF операции. Пакет
+загружается, только когда на странице есть такой блок. Формат описан в
+документации пакета (раздел «API blocks»).
 
 Хост добавляет рендереры для других языков так же, в `onAppCreated`:
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`

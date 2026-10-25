@@ -458,6 +458,7 @@ Was der Renderer unterstützt:
 | `# Heading` … `###### Heading` | Überschriften mit Anker-IDs: `## Getting started` → `#getting-started` (Buchstaben jeder Schrift bleiben erhalten, Duplikate erhalten `-1`, `-2`) |
 | Umzäunte Codeblöcke (drei Backticks und eine Sprache) | Hervorgehobener, kopierbarer Code; die Sprache kommt aus der Umzäunung (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
 | ` ```mermaid `-Blöcke | Diagramme: Flowchart, Sequence, State, Pie und Gantt in Mermaid-Syntax, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| ` ```openapi `-Blöcke | API-Widgets: ein in YAML oder JSON beschriebener Request (oder ein ganzes OpenAPI-Dokument) wird zur Operation mit Try-it, Codebeispielen, TypeScript-Typen und PDF, von [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tabellen, mit Spaltenausrichtung |
 | `> quote` | Blockzitat |
 | `> **Note** …`, `> **Warning** …` | Hinweisbox; außerdem `Tip`, `Important`, `Caution` und die GitHub-Form `> [!NOTE]` |
@@ -473,6 +474,15 @@ wird nur geladen, wenn eine Seite ein Diagramm enthält. Beschriftungen werden
 wie der übrige Text maskiert, ein Diagramm kann also weder Markup noch Skripte
 tragen. Ein Block, der sich nicht lesen lässt, erscheint als Code mit dem Grund
 und der Zeile. Die unterstützte Syntax steht in der Dokumentation des Pakets.
+
+**API-Blöcke.** Ein umzäunter Block mit der Sprache `openapi` enthält einen
+in YAML oder JSON beschriebenen Request — `method`, `url`, `params`, `auth`,
+`body`, `responses` oder `requests: [...]` für mehrere — oder ein ganzes
+OpenAPI-Dokument. Er wird zu einem Live-Widget von [@dskripchenko/openapi](https://github.com/dskripchenko/openapi):
+die Operation mit Parametern und Antworten, Try-it, das aus dem Browser des
+Lesers sendet, Codebeispiele, TypeScript-Typen und ein PDF der Operation. Das
+Paket wird nur geladen, wenn eine Seite einen solchen Block hat. Das Format
+beschreibt die Dokumentation des Pakets (API blocks).
 
 Ein Host ergänzt Renderer für weitere Sprachen auf dieselbe Weise, in
 `onAppCreated`:
