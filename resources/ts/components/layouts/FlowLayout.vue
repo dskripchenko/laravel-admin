@@ -12,15 +12,15 @@
  *   switch back and FlowView shows the message in a toast.
  * - `subgraphs.method` loads a string `subgraph` reference; `subgraphs.graphs`
  *   holds the ones given inline.
- * - `instance` / `instanceSource` — the instance in focus, sent to the poll
- *   method; a change of the state key polls again at once.
+ * - `instance` / `instanceSource` — the instance in focus, handed to FlowView
+ *   as `pollParams` and sent to the poll method; a change polls at once.
  * - `actions` are buttons in the details drawer, each calling its screen
  *   method with the selection; the monitoring is refreshed after.
  *
  * The package is loaded on first use. Outside a screen page (no `call`) the
  * graph is drawn without monitoring.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { UidAlert, UidButton, UidSkeleton } from '@dskripchenko/ui'
 import type { Graph, FlowNode, MonitorSnapshot } from '@dskripchenko/flow'
 import type { ToggleChange } from '@dskripchenko/flow/vue'
@@ -108,28 +108,24 @@ function asSnapshot(extra: unknown): MonitorSnapshot {
   return s as MonitorSnapshot
 }
 
-/** The first answer of the poll method replaces a fixed snapshot. */
-const polledOnce = ref(false)
-
 const pollOptions = computed(() => {
   const poll = props.poll
   if (!poll || !call) return undefined
   return {
     intervalMs: poll.interval ?? 5000,
-    fetch: async (signal: AbortSignal, context: { path: string[]; ref?: string }) => {
+    fetch: async (signal: AbortSignal, context: { path: string[]; ref?: string; params?: unknown }) => {
       const res = await call(
         poll.method,
-        [{ path: context.path, ref: context.ref ?? null, instance: instanceValue.value }],
+        [{ path: context.path, ref: context.ref ?? null, instance: context.params ?? null }],
         { signal },
       )
-      polledOnce.value = true
       return asSnapshot(res.extra)
     },
   }
 })
 
+// The starting state; with polling, the polled snapshots replace it.
 const fixedSnapshot = computed<MonitorSnapshot | undefined>(() => {
-  if (pollOptions.value && polledOnce.value) return undefined
   const s = props.snapshot ?? (props.snapshotSource ? read(props.snapshotSource) : null)
   return s && typeof s === 'object' ? asSnapshot(s) : undefined
 })
@@ -154,11 +150,6 @@ const loadSubgraph = computed(() => {
 })
 
 const viewRef = ref<{ refresh?: () => void } | null>(null)
-
-// Another instance in focus: ask for its state now, not at the next tick.
-watch(instanceValue, () => {
-  if (pollOptions.value) viewRef.value?.refresh?.()
-})
 
 const runningAction = ref<string | null>(null)
 
@@ -204,6 +195,7 @@ const boxStyle = computed(() => ({ height: cssLength(props.height, '480px') }))
         :graph="model"
         :state="fixedSnapshot"
         :poll="pollOptions"
+        :poll-params="instanceValue"
         :toggleable="toggleable"
         :on-toggle="onToggle"
         :subgraphs="subgraphs?.graphs ?? {}"

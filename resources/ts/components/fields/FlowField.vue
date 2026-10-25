@@ -15,7 +15,7 @@
  */
 import { computed, shallowRef, toRaw } from 'vue'
 import { UidAlert, UidFormField, UidSkeleton } from '@dskripchenko/ui'
-import type { Graph, NodeTypeDef, NodeTypeRegistry } from '@dskripchenko/flow'
+import type { Graph } from '@dskripchenko/flow'
 import { useFormState } from '../render/formState'
 import { blankGraph, cssLength, flowLocale, loadFlowMermaid, toGraph, useFlowModules } from '../flow/loadFlow'
 import { trSafe as tr } from '../../stores/i18n'
@@ -77,17 +77,6 @@ function onUpdate(graph: Graph): void {
   form.setField(props.name, graph)
 }
 
-const registry = computed<NodeTypeRegistry | undefined>(() => {
-  const core = modules.value?.core
-  if (!core || !props.locked || props.locked.length === 0) return undefined
-  const lockedTypes: Record<string, NodeTypeDef> = {}
-  for (const type of props.locked) {
-    const base = core.BUILTIN_TYPES[type as keyof typeof core.BUILTIN_TYPES] ?? core.BUILTIN_TYPES.state
-    lockedTypes[type] = { ...base, locked: true }
-  }
-  return core.createRegistry(lockedTypes)
-})
-
 const fromMermaid = shallowRef<((source: string) => Graph) | undefined>()
 if (props.mermaid) {
   loadFlowMermaid().then(
@@ -119,7 +108,7 @@ const boxStyle = computed(() => ({ height: cssLength(props.height, '520px') }))
         :model-value="model"
         :readonly="readonly || disabled"
         :palette="palette ?? undefined"
-        :registry="registry"
+        :locked="locked ?? undefined"
         :direction="direction ?? undefined"
         :edge-style="edgeStyle ?? 'orthogonal'"
         :minimap="minimap"

@@ -19,7 +19,7 @@
  * `flowchart` — become a read-only process view of @dskripchenko/flow: pan,
  * zoom, sub-processes, the details of a step. Loaded on first use too.
  */
-import { h, render, type App, type AppContext } from 'vue'
+import type { App, AppContext } from 'vue'
 import type { Graph } from '@dskripchenko/flow'
 import { flowLocale, loadFlow, loadFlowMermaid } from '../flow/loadFlow'
 import {
@@ -102,30 +102,26 @@ export const flowRenderer: UidMarkdownBlockRenderer = async (code) => {
     return { error: flowError(error) }
   }
   const { vue } = await loadFlow()
-  const draw = (el: HTMLElement, g: Graph): void => {
-    const vnode = h(vue.FlowView, {
-      graph: g,
-      locale: flowLocale(),
-      minimap: false,
-      statusBar: false,
-      toastProvider: false,
-      style: { height: '100%' },
-    })
-    // The panel's provides (the kit's theme and toasts) reach the view.
-    vnode.appContext = appContext
-    render(vnode, el)
-  }
   return {
     mount(el) {
       el.classList.add('admin-md-flow')
       el.style.height = '420px'
-      draw(el, graph)
+      // In the panel's context: its provides (the kit's theme and toasts) reach the view.
+      const handle = vue.mountFlow(el, {
+        graph,
+        appContext: appContext ?? undefined,
+        locale: flowLocale(),
+        minimap: false,
+        statusBar: false,
+        toastProvider: false,
+        style: { height: '100%' },
+      })
       return {
         update(next) {
-          flowGraph(next).then((g) => draw(el, g), () => undefined)
+          flowGraph(next).then((g) => handle.update({ graph: g }), () => undefined)
         },
         destroy() {
-          render(null, el)
+          handle.unmount()
         },
       }
     },

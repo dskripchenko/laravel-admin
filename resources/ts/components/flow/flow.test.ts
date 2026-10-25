@@ -6,7 +6,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
-import { defineComponent, h, nextTick, type PropType } from 'vue'
+import { createApp, defineComponent, h, nextTick, render, shallowReactive, type AppContext, type PropType } from 'vue'
 import * as core from '@dskripchenko/flow'
 import type { Graph } from '@dskripchenko/flow'
 import { setFlowLoader, setFlowMermaidLoader, toGraph, type FlowModules } from './loadFlow'
@@ -20,7 +20,7 @@ import { clearRegistry, getField, getLayout } from '../render/registry'
 import { registerBuiltinComponents } from '../render/builtin'
 import { registerBuiltinInfolistEntries } from '../infolist/builtin'
 import { getInfolistEntry } from '../infolist/registry'
-import { flowRenderer } from '../markdown/blockRenderers'
+import { flowRenderer, provideBuiltinMarkdownRenderers } from '../markdown/blockRenderers'
 
 const ORDER: Graph = {
   version: 1,
@@ -48,6 +48,7 @@ const FlowViewStub = defineComponent({
     graph: { type: Object, required: true },
     state: { type: Object, default: undefined },
     poll: { type: Object, default: undefined },
+    pollParams: { type: null, default: undefined },
     toggleable: Boolean,
     onToggle: { type: Function, default: undefined },
     subgraphs: { type: Object, default: undefined },
@@ -75,7 +76,7 @@ const FlowEditorStub = defineComponent({
     modelValue: { type: Object, required: true },
     readonly: Boolean,
     palette: { type: Array, default: undefined },
-    registry: { type: Object, default: undefined },
+    locked: { type: Array, default: undefined },
     mermaid: { type: Function, default: undefined },
     direction: { type: String, default: undefined },
     edgeStyle: { type: String, default: undefined },
@@ -94,7 +95,28 @@ const FlowEditorStub = defineComponent({
   },
 })
 
-const modules = { vue: { FlowView: FlowViewStub, FlowEditor: FlowEditorStub }, core } as unknown as FlowModules
+/** mountFlow as the package has it: renders into the element, in the host's context when given one. */
+let mountedContext: AppContext | undefined
+function mountFlow(el: Element, options: Record<string, unknown>) {
+  const { appContext, ...rest } = options as { appContext?: AppContext }
+  mountedContext = appContext
+  const props = shallowReactive({ ...rest })
+  const draw = () => {
+    const vnode = h(FlowViewStub, props as never)
+    vnode.appContext = appContext ?? null
+    render(vnode, el)
+  }
+  draw()
+  return {
+    update: (next: Record<string, unknown>) => {
+      Object.assign(props, next)
+      draw()
+    },
+    unmount: () => render(null, el),
+  }
+}
+
+const modules = { vue: { FlowView: FlowViewStub, FlowEditor: FlowEditorStub, mountFlow }, core } as unknown as FlowModules
 
 let wrapper: VueWrapper | null = null
 let form: FormStateContext
@@ -187,7 +209,7 @@ describe('FlowLayout', () => {
     expect(viewProps.graph).toEqual({ version: 1, nodes: [], edges: [] })
   })
 
-  it('polls a screen method with the level and the instance, and takes over from a fixed snapshot', async () => {
+  it('polls a screen method with the level and the instance, starting from a fixed snapshot', async () => {
     const call = vi.fn<ScreenMethodCaller>(async () => ({ extra: { nodes: { paid: { status: 'done' } }, current: ['paid'] } }))
     host(FlowLayout, {
       graph: ORDER,
@@ -198,20 +220,20 @@ describe('FlowLayout', () => {
     await flushPromises()
     const poll = viewProps.poll as { intervalMs: number; fetch: (s: AbortSignal, c: { path: string[]; ref?: string }) => Promise<unknown> }
     expect(poll.intervalMs).toBe(3000)
+    // The starting state; the view replaces it with the polled snapshots.
     expect(viewProps.state).toEqual({ nodes: { start: { status: 'done' } } })
+    expect(viewProps.pollParams).toBe(42)
 
     const signal = new AbortController().signal
-    const snapshot = await poll.fetch(signal, { path: ['paid'], ref: 'payment' })
+    const snapshot = await (poll.fetch as (s: AbortSignal, c: unknown) => Promise<unknown>)(signal, { path: ['paid'], ref: 'payment', params: 42 })
     expect(call).toHaveBeenCalledWith('orderState', [{ path: ['paid'], ref: 'payment', instance: 42 }], { signal })
     expect(snapshot).toEqual({ nodes: { paid: { status: 'done' } }, current: ['paid'] })
-    await nextTick()
-    expect(viewProps.state).toBeUndefined()
 
-    // Another instance in focus: poll at once.
+    // Another instance in focus: new poll params, which restart the polling.
     form.setField('order_id', 43)
     await nextTick()
-    expect(refresh).toHaveBeenCalled()
-    await poll.fetch(signal, { path: [] })
+    expect(viewProps.pollParams).toBe(43)
+    await (poll.fetch as (s: AbortSignal, c: unknown) => Promise<unknown>)(signal, { path: [], params: 43 })
     expect(call).toHaveBeenLastCalledWith('orderState', [{ path: [], ref: null, instance: 43 }], { signal })
   })
 
@@ -284,14 +306,12 @@ describe('FlowField', () => {
     expect(editorProps.modelValue).toBe(next)
   })
 
-  it('starts from an empty model, reads a JSON string and locks types through a registry', async () => {
+  it('starts from an empty model, reads a JSON string and passes the locked types', async () => {
     host(FlowField, { name: 'process', locked: ['start'], readonly: true }, { state: { process: null } })
     await flushPromises()
     expect(editorProps.modelValue).toEqual({ version: 1, nodes: [], edges: [] })
     expect(editorProps.readonly).toBe(true)
-    const registry = editorProps.registry as core.NodeTypeRegistry
-    expect(registry.get('start')?.locked).toBe(true)
-    expect(registry.get('state')?.locked).toBeFalsy()
+    expect(editorProps.locked).toEqual(['start'])
 
     form.setField('process', JSON.stringify(ORDER))
     await nextTick()
@@ -332,13 +352,20 @@ describe('FlowEntry', () => {
 })
 
 describe('flow block renderer', () => {
-  it('mounts a read-only view of a JSON model', async () => {
+  it('mounts a read-only view of a JSON model, in the panel app context', async () => {
+    const app = createApp({ render: () => null })
+    provideBuiltinMarkdownRenderers(app)
     const result = await flowRenderer(JSON.stringify(ORDER), { language: 'flow', index: 0 })
     expect(result.error).toBeUndefined()
     const el = document.createElement('div')
     const handle = result.mount!(el, { code: '', language: 'flow', editable: false, setCode: () => undefined })
     expect(el.querySelector('.flow-view-stub')).not.toBeNull()
     expect(viewProps.graph).toMatchObject({ nodes: ORDER.nodes })
+    expect(viewProps.toastProvider).toBe(false)
+    expect(mountedContext).toBe(app._context)
+    if (handle && typeof handle === 'object') handle.update?.('{"nodes":[{"id":"z"}]}')
+    await flushPromises()
+    expect(viewProps.graph).toMatchObject({ nodes: [{ id: 'z' }] })
     if (handle && typeof handle === 'object') handle.destroy?.()
     expect(el.querySelector('.flow-view-stub')).toBeNull()
   })
