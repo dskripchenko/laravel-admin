@@ -5,6 +5,17 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Diagrams in the WYSIWYG editor.** A ```` ```mermaid ```` code block in a
+  `Wysiwyg` field shows as its diagram: a click opens the code with a live
+  preview, Escape closes it. The slash menu has «Диаграмма» to insert one. The
+  field takes the same renderers as the panel's markdown (including a host's
+  own, registered with `markdownBlockRenderersKey`); the stored HTML keeps the
+  code block. Needs @dskripchenko/wysiwyg 0.3.
+
 ## 1.54.2
 
 ### Fixed

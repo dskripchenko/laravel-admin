@@ -546,5 +546,7 @@
     "Не удалось переключиться на роль.": "Could not switch to the role.",
     "Не удалось вернуться к своим ролям.": "Could not return to your own roles.",
     "Вы смотрите панель как": "You are viewing the panel as",
-    "Вернуться": "Come back"
+    "Вернуться": "Come back",
+    "Диаграмма": "Diagram",
+    "Mermaid: схема, последовательность, состояния, круговая, Гант": "Mermaid: flowchart, sequence, state, pie, gantt"
 }

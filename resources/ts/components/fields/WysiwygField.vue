@@ -18,9 +18,16 @@
  *   - dragging a corner handle resizes it, aspect-locked unless Shift is held.
  *   - dragstart on a selected img reorders it across the block nodes by drag
  *     and drop, with a drop-line indicator.
+ *
+ * Diagrams: the panel's markdown block renderers (```mermaid and whatever a
+ * host has registered with the kit's markdownBlockRenderersKey) reach the
+ * editor too, so a mermaid code block shows as its diagram there; the slash
+ * menu gets «Диаграмма» to insert one.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { DskWysiwyg, type EditorController } from '@dskripchenko/wysiwyg'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
+import { DskWysiwyg, type EditorController, type SlashCommand } from '@dskripchenko/wysiwyg'
+import { markdownBlockRenderersKey } from '@dskripchenko/ui'
+import { builtinMarkdownRenderers } from '../markdown/blockRenderers'
 import '@dskripchenko/wysiwyg/style.css'
 import { useFormState } from '../render/formState'
 import { getAdminClient } from '../../stores/registry'
@@ -51,6 +58,22 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const form = useFormState()
+
+const blockRenderers = inject(markdownBlockRenderersKey, builtinMarkdownRenderers)
+
+const DIAGRAM_TEMPLATE = 'flowchart LR\n  A[Start] --> B{Check}\n  B -->|yes| C[Done]\n  B -->|no| A'
+
+const slashCommands = computed<SlashCommand[]>(() =>
+  'mermaid' in blockRenderers
+    ? [{
+        key: 'diagram',
+        label: tr('Диаграмма'),
+        hint: tr('Mermaid: схема, последовательность, состояния, круговая, Гант'),
+        aliases: ['diagram', 'mermaid', 'flowchart', 'chart', 'диаграмма', 'схема'],
+        apply: (c) => c.chain().focus().insertCodeBlock('mermaid', DIAGRAM_TEMPLATE).run(),
+      }]
+    : [],
+)
 
 const value = computed<string>(() => (form.getField(props.name) as string | undefined) ?? '')
 const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
@@ -348,6 +371,8 @@ watch(value, () => {
         :readonly="disabled"
         :min-height="minHeight"
         :max-height="maxHeight"
+        :block-renderers="blockRenderers"
+        :slash-commands="slashCommands"
         @ready="onReady"
         @image-request="onImageRequest"
         @link-request="onLinkRequest"
