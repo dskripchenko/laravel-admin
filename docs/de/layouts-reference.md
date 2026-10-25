@@ -457,7 +457,7 @@ Was der Renderer unterstützt:
 |---|---|
 | `# Heading` … `###### Heading` | Überschriften mit Anker-IDs: `## Getting started` → `#getting-started` (Buchstaben jeder Schrift bleiben erhalten, Duplikate erhalten `-1`, `-2`) |
 | Umzäunte Codeblöcke (drei Backticks und eine Sprache) | Hervorgehobener, kopierbarer Code; die Sprache kommt aus der Umzäunung (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
-| ` ```mermaid `-Blöcke | Diagramme: Flowchart, Sequence, State, Pie und Gantt in Mermaid-Syntax, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| ` ```mermaid `-Blöcke | Diagramme in Mermaid-Syntax: Flowchart, Sequence, State, ER, Klassen, C4, Pie, Gantt, Timeline, XY-Chart und Mindmap, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | ` ```openapi `-Blöcke | API-Widgets: ein in YAML oder JSON beschriebener Request (oder ein ganzes OpenAPI-Dokument) wird zur Operation mit Try-it, Codebeispielen, TypeScript-Typen und PDF, von [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tabellen, mit Spaltenausrichtung |
 | `> quote` | Blockzitat |
@@ -468,7 +468,9 @@ Was der Renderer unterstützt:
 
 **Diagramme.** Ein umzäunter Block mit der Sprache `mermaid` wird zum
 Diagramm — `flowchart` (mit Subgraphen), `sequenceDiagram`, `stateDiagram-v2`,
-`pie` und `gantt`, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams)
+`erDiagram`, `classDiagram`, C4 (`C4Context`, `C4Container`, `C4Component`,
+`C4Dynamic`, `C4Deployment`), `pie`, `gantt`, `timeline`, `xychart-beta` und
+`mindmap`, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams)
 in den Farben und dem Theme des Panels. Das Paket hat keine Abhängigkeiten und
 wird nur geladen, wenn eine Seite ein Diagramm enthält. Beschriftungen werden
 wie der übrige Text maskiert, ein Diagramm kann also weder Markup noch Skripte

@@ -134,6 +134,8 @@ Parameter, Authentifizierung, Body, Antworten). Das Slash-Menü fügt sie ein:
 behält den Codeblock, daher wird derselbe Inhalt im Markdown-Layout oder
 überall, wo `renderBlocks` von @dskripchenko/openapi läuft, gleich dargestellt.
 
+Der Vollbild-Button der Toolbar breitet den Editor über das ganze Fenster aus; Escape beendet ihn.
+
 Adapter für Quill und TinyMCE werden im npm-Paket als Subpath-Exports
 mitgeliefert; der Host installiert den Editor selbst (`quill` +
 `@vueup/vue-quill` oder `tinymce` + `@tinymce/tinymce-vue`) und registriert die

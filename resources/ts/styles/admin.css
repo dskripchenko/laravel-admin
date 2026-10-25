@@ -636,6 +636,29 @@
   --dg-today: var(--uid-danger);
   --dg-state-start: var(--uid-text-primary);
   --dg-pie-stroke: var(--uid-surface-raised);
+  /* ER entities and class compartments: rows on the surface, every other one
+     a shade off. */
+  --dg-row-fill: var(--uid-surface-raised);
+  --dg-row-alt-fill: var(--uid-color-bg-subtle);
+  /* C4 frames follow the text tokens; the element colours stay C4's own
+     blues and greys — the notation readers know — with a dark variant below. */
+  --dg-c4-boundary-stroke: var(--uid-text-secondary);
+  --dg-c4-boundary-text: var(--uid-text-primary);
+  --dg-c4-node-stroke: var(--uid-text-secondary);
+  --dg-c4-node-text: var(--uid-text-primary);
+}
+/* C4 elements on a dark page: lighter fills and light outlines, the
+   package's documented dark values. */
+:root[data-theme='dark'] {
+  --dg-c4-person-fill: #1f5c99;
+  --dg-c4-person-stroke: #6aa5e0;
+  --dg-c4-system-fill: #1f6fbf;
+  --dg-c4-system-stroke: #7bb4ee;
+  --dg-c4-container-fill: #3b7fc0;
+  --dg-c4-container-stroke: #93c5fd;
+  --dg-c4-component-stroke: #bfdbfe;
+  --dg-c4-external-fill: #5f6670;
+  --dg-c4-external-stroke: #9ca3af;
 }
 .uid-markdown__block[data-language='mermaid'] { overflow-x: auto; }
 

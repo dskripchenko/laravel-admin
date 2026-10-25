@@ -120,7 +120,7 @@
   ],
   "peerDependencies": {
     "@dskripchenko/ui": "^1.14.0",
-    "@dskripchenko/wysiwyg": "^0.4.0",
+    "@dskripchenko/wysiwyg": "^0.5.0",
     "@tinymce/tinymce-vue": "^5",
     "@tiptap/starter-kit": "^2.4",
     "@tiptap/vue-3": "^2.4",
@@ -158,7 +158,7 @@
   },
   "devDependencies": {
     "@dskripchenko/ui": "^1.14.0",
-    "@dskripchenko/wysiwyg": "^0.4.0",
+    "@dskripchenko/wysiwyg": "^0.5.0",
     "@eslint/js": "^10.0.1",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@storybook/vue3-vite": "^10.5.6",
@@ -186,7 +186,7 @@
     "vue-tsc": "^2"
   },
   "dependencies": {
-    "@dskripchenko/diagrams": "^1.0.2",
+    "@dskripchenko/diagrams": "^1.1.0",
     "@dskripchenko/openapi": "^1.1.0",
     "lean-qr": "^2.7.1"
   }

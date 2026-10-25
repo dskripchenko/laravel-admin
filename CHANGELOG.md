@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Six more diagram types** in every markdown and in the WYSIWYG editor:
+  `erDiagram`, `classDiagram`, C4 (`C4Context`, `C4Container`, `C4Component`,
+  `C4Dynamic`, `C4Deployment`), `timeline`, `xychart-beta` and `mindmap`
+  (@dskripchenko/diagrams 1.1). ER entities and class compartments take the
+  panel's surface tokens; C4 keeps its own blues and greys, with a variant
+  for the dark theme.
+- **Fullscreen in the WYSIWYG editor** — a toolbar button spreads the editor
+  over the window, Escape leaves it (@dskripchenko/wysiwyg 0.5).
+
+### Changed
+
+- Requires `@dskripchenko/diagrams` `^1.1` and `@dskripchenko/wysiwyg` `^0.5`.
+
 ## 1.57.0
 
 ### Added

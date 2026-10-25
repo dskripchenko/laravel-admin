@@ -444,7 +444,7 @@ What the renderer supports:
 |---|---|
 | `# Heading` … `###### Heading` | Headings with anchor ids: `## Getting started` → `#getting-started` (letters of any script are kept, duplicates get `-1`, `-2`) |
 | Fenced code blocks (three backticks and a language) | Highlighted, copyable code; the language comes from the fence (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
-| ` ```mermaid ` blocks | Diagrams: flowchart, sequence, state, pie and gantt in Mermaid syntax, drawn as SVG by [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| ` ```mermaid ` blocks | Diagrams in Mermaid syntax: flowchart, sequence, state, ER, class, C4, pie, gantt, timeline, XY chart and mind map, drawn as SVG by [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | ` ```openapi ` blocks | API widgets: a request described in YAML or JSON (or a whole OpenAPI document) becomes the operation with try-it, code samples, TypeScript types and PDF, by [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tables, with column alignment |
 | `> quote` | Block quote |
@@ -454,8 +454,10 @@ What the renderer supports:
 | `-`/`*`/`1.` lists, `---` | Lists and rules |
 
 **Diagrams.** A fenced block with the language `mermaid` becomes a diagram —
-`flowchart` (with subgraphs), `sequenceDiagram`, `stateDiagram-v2`, `pie` and
-`gantt`, drawn as SVG by [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams)
+`flowchart` (with subgraphs), `sequenceDiagram`, `stateDiagram-v2`,
+`erDiagram`, `classDiagram`, C4 (`C4Context`, `C4Container`, `C4Component`,
+`C4Dynamic`, `C4Deployment`), `pie`, `gantt`, `timeline`, `xychart-beta` and
+`mindmap`, drawn as SVG by [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams)
 in the panel's colours and theme. The package has no dependencies and is
 loaded only when a page has a diagram. Labels are escaped like the rest of the
 text, so a diagram cannot carry markup or scripts. A block it cannot read is
