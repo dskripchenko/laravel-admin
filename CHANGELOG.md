@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **laravel-api 6.** The core requires `dskripchenko/laravel-api` `^6.0`.
+- **The panel's API reference (`{api}/admin/doc`) is @dskripchenko/openapi**,
+  the page laravel-api 6 serves on `/api/doc`, instead of Scalar. It keeps the
+  panel's name, locale and CSP nonce, hands every version over with DocLink's
+  slug (so `DocLink::url()` anchors land) and takes try-it, the proxy, stored
+  credentials and the sample languages from `laravel-api.documentation`.
+- `admin.openapi`: `ui` defaults to `reference` (`scalar` still means the
+  same); `scalar_script` / `scalar_theme` (env `ADMIN_SCALAR_SCRIPT`) are
+  replaced by `script` (env `ADMIN_OPENAPI_SCRIPT`; laravel-api's
+  `documentation.script` when unset), `locale` and `theme`.
+- `ScalarDocController` is now `ApiReferenceController`; the old name stays as a
+  deprecated alias, and the view is `admin::api-reference`.
+
 ## 1.55.1
 
 ### Documentation

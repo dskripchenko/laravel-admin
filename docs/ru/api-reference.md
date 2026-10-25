@@ -42,7 +42,7 @@ SPA админки общается с бэкендом JSON-запросами 
 HTTP-коды: 200 / 304 / 401 / 403 / 404 / 422 / 429 / 500.
 
 Спецификация OpenAPI 3.0 генерируется автоматически и доступна по
-`/api/admin/doc` (в интерфейсе Scalar) — см. [Спецификация OpenAPI](#спецификация-openapi).
+`/api/admin/doc` (страница [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) — та же, что laravel-api отдаёт на `/api/doc`) — см. [Спецификация OpenAPI](#спецификация-openapi).
 
 ## Эндпоинты
 
@@ -224,13 +224,19 @@ Action, которую ресурс не поддерживает, не реги
 ## Спецификация OpenAPI
 
 ```
-GET /api/admin/doc            # Scalar UI (interactive)
+GET /api/admin/doc            # API reference (interactive)
 GET /api/doc/admin            # Raw JSON spec (laravel-api's per-version source)
 ```
 
-Страница Scalar включена по умолчанию; если `config('admin.openapi.ui')`
-(env `ADMIN_OPENAPI_UI`) задан чем-то кроме `scalar`, документацию отдаёт
-штатный `/api/doc` из laravel-api.
+Страница включена по умолчанию; если `config('admin.openapi.ui')`
+(env `ADMIN_OPENAPI_UI`) задан чем-то кроме `reference` (или `scalar` —
+значения до 1.56), маршрут не регистрируется, а штатный `/api/doc` из
+laravel-api остаётся. На странице — имя панели, её локаль и CSP nonce; скрипт
+берётся из `admin.openapi.script` (env `ADMIN_OPENAPI_SCRIPT`), иначе из
+`laravel-api.documentation.script` — локальную копию публикует
+`php artisan api:doc-assets`. Try-it, прокси, хранение учётных данных и языки
+примеров следуют `laravel-api.documentation`. Каждая версия передаётся странице
+со слагом DocLink, поэтому якоря `DocLink::url()` открывают свою операцию.
 
 Операции ресурсов описываются для каждого ресурса отдельно. `create` и
 `update` перечисляют собственные поля ресурса — они строятся из `fields()` и

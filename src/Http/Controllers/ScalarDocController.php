@@ -4,62 +4,10 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Http\Controllers;
 
-use Dskripchenko\LaravelApi\Components\BaseApi;
-use Dskripchenko\LaravelApi\Facades\ApiModule;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-
-/**
- * The replacement for laravel-api's default ApiDocumentationController.
+/*
+ * The controller's name before 1.56, when the page was Scalar. Kept so a host
+ * that routes to it keeps working; autoloading this name loads the alias.
  *
- * The default is Swagger UI; this is Scalar UI — newer, easier to read, with
- * dark mode out of the box. Its script is loaded lazily from a CDN, jsdelivr.
- *
- * The OpenAPI spec is assembled by laravel-api's usual machinery: for each
- * version `BaseApi::getOpenApiConfig` is written into storage and served by
- * URL.
+ * @deprecated use ApiReferenceController
  */
-final class ScalarDocController
-{
-    public function __invoke(Request $request): View
-    {
-        $folder = (string) config('laravel-api.openapi_path', 'public/openapi');
-        if (! Storage::exists($folder)) {
-            Storage::makeDirectory($folder);
-        }
-
-        $sources = [];
-        foreach (ApiModule::getApiVersionList() as $version => $api) {
-            /** @var class-string<BaseApi> $api */
-            $fileName = "{$version}.json";
-            $filePath = "{$folder}/{$fileName}";
-
-            if (! Storage::exists($filePath) || app()->hasDebugModeEnabled()) {
-                $config = $api::getOpenApiConfig($version);
-                Storage::put($filePath, json_encode($config) ?: '{}');
-            } else {
-                $config = json_decode((string) Storage::get($filePath), true) ?: [];
-            }
-
-            $urlPath = Storage::url($filePath);
-            $hash = @filemtime(Storage::path($filePath)) ?: time();
-            $sources[] = [
-                'url' => asset("{$urlPath}?r={$hash}"),
-                'title' => is_array($config) && is_array($config['info'] ?? null)
-                    ? (string) ($config['info']['title'] ?? $version)
-                    : $version,
-                'slug' => (string) $version,
-            ];
-        }
-
-        /** @var view-string $view */
-        $view = 'admin::scalar-doc';
-
-        return view($view, [
-            'sources' => $sources,
-            'theme' => (string) config('admin.openapi.scalar_theme', 'default'),
-            'cspNonce' => $request->attributes->get('admin.csp_nonce'),
-        ]);
-    }
-}
+class_alias(ApiReferenceController::class, 'Dskripchenko\LaravelAdmin\Http\Controllers\ScalarDocController');

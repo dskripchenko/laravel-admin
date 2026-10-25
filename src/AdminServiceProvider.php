@@ -177,7 +177,7 @@ final class AdminServiceProvider extends ServiceProvider
         // ResourceRegistry while compiling the admin API routes.
         $this->bootPlugins();
         $this->registerRoutes();
-        $this->registerScalarDoc();
+        $this->registerApiReference();
 
         // laravel-api caches AdminApi::getPreparedMethods() in a static
         // property. If anything called getPreparedMethods BEFORE bootPlugins()
@@ -189,26 +189,24 @@ final class AdminServiceProvider extends ServiceProvider
     }
 
     /**
-     * Takes over laravel-api's default `api/doc` route and serves Scalar UI
-     * instead.
+     * The panel's API reference on `{api}/admin/doc`, with the panel's name,
+     * locale and shell middleware (and its CSP nonce).
      *
-     * laravel-api registers `api/doc` in its own boot() through
-     * `Route::get('doc', ApiDocumentationController@index)` under the `api`
-     * prefix. Our route has the same URI and registers later, so it wins.
-     *
-     * To switch it off: `config('admin.openapi.ui') = 'swagger'` or null.
+     * `config('admin.openapi.ui')`: 'reference' (default) serves it; 'scalar',
+     * the value before 1.56, means the same; anything else (null, 'none')
+     * leaves the route out — laravel-api's own /api/doc stays either way.
      */
-    private function registerScalarDoc(): void
+    private function registerApiReference(): void
     {
-        $ui = (string) config('admin.openapi.ui', 'scalar');
-        if ($ui !== 'scalar') {
+        $ui = (string) config('admin.openapi.ui', 'reference');
+        if (! in_array($ui, ['reference', 'scalar'], true)) {
             return;
         }
 
         $prefix = Panel\Panel::apiPathFor('admin');
         $routePath = $prefix === '' ? 'doc' : "{$prefix}/doc";
 
-        Route::get($routePath, Http\Controllers\ScalarDocController::class)
+        Route::get($routePath, Http\Controllers\ApiReferenceController::class)
             ->name('admin.api-doc')
             ->middleware(config('admin.middleware.shell', ['web']));
     }

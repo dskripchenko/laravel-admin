@@ -39,7 +39,7 @@ Fehler:
 HTTP-Statuscodes: 200 / 304 / 401 / 403 / 404 / 422 / 429 / 500.
 
 Die OpenAPI-3.0-Spezifikation wird automatisch generiert und unter `/api/admin/doc`
-ausgeliefert (dargestellt mit Scalar UI) — siehe [OpenAPI-Spezifikation](#openapi-spezifikation).
+ausgeliefert (dargestellt von [@dskripchenko/openapi](https://github.com/dskripchenko/openapi), der Seite, die laravel-api unter `/api/doc` ausliefert) — siehe [OpenAPI-Spezifikation](#openapi-spezifikation).
 
 ## Endpoints
 
@@ -220,13 +220,19 @@ Standardmäßig `240/min` auf allen Admin-Endpoints (`config('admin.api.throttle
 ## OpenAPI-Spezifikation
 
 ```
-GET /api/admin/doc            # Scalar UI (interaktiv)
+GET /api/admin/doc            # API-Referenz (interaktiv)
 GET /api/doc/admin            # Rohe JSON-Spezifikation (Quelle pro Version von laravel-api)
 ```
 
-Die Scalar-Seite ist standardmäßig aktiv; wird `config('admin.openapi.ui')` (env
-`ADMIN_OPENAPI_UI`) auf einen anderen Wert als `scalar` gesetzt, bleibt das
-eigene `/api/doc` von laravel-api zuständig.
+Die Seite ist standardmäßig aktiv; wird `config('admin.openapi.ui')` (env
+`ADMIN_OPENAPI_UI`) auf einen anderen Wert als `reference` (oder `scalar`, den
+Wert vor 1.56) gesetzt, entfällt die Route, und das eigene `/api/doc` von
+laravel-api bleibt. Sie trägt Namen, Locale und CSP-Nonce des Panels; das Skript
+kommt aus `admin.openapi.script` (env `ADMIN_OPENAPI_SCRIPT`), sonst aus
+`laravel-api.documentation.script` — eine lokale Kopie veröffentlicht
+`php artisan api:doc-assets`. Try-it, Proxy, gespeicherte Zugangsdaten und die
+Beispielsprachen folgen `laravel-api.documentation`. Jede Version erhält den
+Slug von DocLink, daher öffnen die Anker von `DocLink::url()` ihre Operation.
 
 Die Operationen von Resources werden pro Resource dokumentiert. `create` und `update` listen
 die eigenen Felder der Resource auf — erzeugt aus `fields()` und `validationRules()`, mit
