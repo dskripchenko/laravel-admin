@@ -182,6 +182,26 @@ progress modal. In a `row`/`bulk` position the selected keys are added to
 the params as `ids`. `->callback($url)` sets a webhook that receives the
 progress and the result.
 
+The process behind an async action goes through these statuses (`delayed/status` reports them):
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> new : delayed/run
+    new --> wait : a worker claims it
+    wait --> done : handler returned
+    wait --> new : failed, attempts left
+    wait --> error : no attempts left
+    new --> cancelled : cancelled
+    new --> expired : expires_at passed
+    done --> [*]
+    error --> [*]
+    note right of wait
+        Also cancelled or expired while waiting.
+        Stuck past the timeout, it goes back to new.
+    end note
+```
+
 The params reach the handler by name: each key of `withParams()` (and `ids`)
 binds to the handler parameter of that name, in any order, parameters left
 out take their defaults, and a required class-typed parameter comes from the

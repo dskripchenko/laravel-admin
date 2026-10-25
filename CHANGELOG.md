@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Documentation
+
+- Diagrams in the docs, in all four languages: the request and SPA flows and a
+  screen action's way in Architecture, how a permission check is decided in
+  Permissions, the statuses of an async action's process in Actions. They are
+  ```` ```mermaid ```` blocks, so the panel's built-in docs and GitHub both draw
+  them.
+
 ## 1.55.0
 
 ### Added

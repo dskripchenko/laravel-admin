@@ -112,6 +112,21 @@ const auth = useAuthStore()
 auth.hasAnyPermission(['admin.articles.update'])
 ```
 
+## Wie eine Prüfung entschieden wird
+
+Jede Prüfung — `hasAccess()`, die Middleware `AdminAccess`, `permission()` eines Screens — läuft auf dieselbe Frage hinaus:
+
+```mermaid
+flowchart TD
+    start(["hasAccess('admin.articles.update')"]) --> preview{"Rollenvorschau<br>in dieser Sitzung?"}
+    preview -->|ja| previewRole["Rechte der angesehenen Rolle"]
+    preview -->|nein| own["Rechte der eigenen Rollen"]
+    previewRole --> match{"Passt ein vergebener Schlüssel?<br>exakt oder fnmatch mit *"}
+    own --> match
+    match -->|ja| allow([Erlaubt])
+    match -->|nein| deny([403 Forbidden])
+```
+
 ## Middleware auf Aktionen
 
 Die Middleware `AdminAccess` akzeptiert eine oder mehrere durch `;` getrennte

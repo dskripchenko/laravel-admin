@@ -30,29 +30,38 @@ translated_at: 2026-10-02
 
 ## Высокоуровневый flow
 
+Запрос к API админки проходит через один модуль, который отдаёт его методу, скомпилированному панелью для ресурса, настроек или экрана:
+
+```mermaid
+flowchart TB
+    req([HTTP-запрос]) --> module["AdminApiModule<br>RunVersionMiddleware выбирает стек"]
+    module --> methods["AdminApi::getMethods()"]
+    methods --> system["system · auth · profile<br>dashboard · audit · …"]
+    methods --> resources["resources<br>ResourceCompiler"]
+    methods --> settings["settings<br>SettingsCompiler"]
+    methods --> screens["screens<br>ScreenCompiler"]
+    screens --> controller["ScreenController::state / runMethod"]
+    controller --> compile["Screen::compile()<br>state · layout · command_bar"]
 ```
-HTTP request (Laravel)
-  └── AdminApiModule (laravel-api) — RunVersionMiddleware выбирает стек на каждом запросе:
-      стек панели для `admin` и панелей, собственный стек BaseApi для версий хоста
-       └── AdminApi::getMethods()
-            ├── system / auth / profile / dashboard / audit / ...
-            ├── resources (компилируется per-Resource через ResourceCompiler)
-            ├── settings (per-Resource через SettingsCompiler)
-            └── screens (per-Screen через ScreenCompiler)
-                  └── ScreenController::state / runMethod
-                        └── Screen::compile() → {state, layout, command_bar, ...}
 
-SPA bootstrap
-  └── createAdminApp(bootstrap)
-       ├── createAdminClient (axios)
-       ├── manifestStore.load() ← /api/admin/system/manifest
-       ├── menuStore.load()     ← /api/admin/system/menu
-       └── replaceManifestRoutes ← Vue Router из manifest'а
+SPA стартует с bootstrap, загружает манифест и меню и строит по ним маршруты; дальше каждая страница запрашивает у API свои данные:
 
-Пользователь открывает /admin/r/{slug} (список ресурса)
-  └── ResourceIndexPage
-       └── useResourceIndexStore.load() → POST /{slug}/search
-            └── columns + filters + actions из manifest'а
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Пользователь
+    participant S as SPA
+    participant A as API админки
+    U->>S: Открывает /admin
+    S->>S: createAdminApp(bootstrap)
+    S->>A: system/manifest (If-None-Match)
+    A-->>S: Манифест или 304
+    S->>A: system/menu
+    A-->>S: Дерево меню
+    S->>S: Маршруты из манифеста
+    U->>S: Открывает /admin/r/articles
+    S->>A: POST articles/search
+    A-->>S: Строки по колонкам и фильтрам манифеста
 ```
 
 ## PHP-слои
@@ -132,6 +141,28 @@ Single source of truth для SPA, отдаётся `/api/admin/system/manifest`
 
 ```json
 { "method": "send", "payload": { "form_field": "value" } }
+```
+
+Путь действия экрана — от клика до того, что видит пользователь:
+
+```mermaid
+sequenceDiagram
+    actor U as Пользователь
+    participant S as SPA
+    participant C as ScreenController
+    participant X as Screen
+    U->>S: Клик по Button с ->method('send')
+    S->>+C: runMethod {method, payload}
+    C->>C: AdminAccess проверяет permission()
+    C->>+X: send(state)
+    alt Валидация не прошла
+        X-->>C: ValidationException
+        C-->>S: 422 с ошибками полей
+    else Успех
+        X-->>-C: array
+        C-->>-S: payload: message, state, alerts, refresh, redirect_url
+    end
+    S->>U: Тост, новое состояние или переход
 ```
 
 Действие `Resource` идёт в `ResourceController::action`: оно называет

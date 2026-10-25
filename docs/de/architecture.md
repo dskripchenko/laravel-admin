@@ -34,29 +34,38 @@ Repository unter `docs/internal/architecture.md` (auf Russisch,
 
 ## Ablauf im Überblick
 
+Eine Anfrage an die Admin-API läuft durch ein Modul, das sie an die Methode weitergibt, die das Panel für die Ressource, die Einstellungen oder den Screen kompiliert hat:
+
+```mermaid
+flowchart TB
+    req([HTTP-Anfrage]) --> module["AdminApiModule<br>RunVersionMiddleware wählt den Stack"]
+    module --> methods["AdminApi::getMethods()"]
+    methods --> system["system · auth · profile<br>dashboard · audit · …"]
+    methods --> resources["resources<br>ResourceCompiler"]
+    methods --> settings["settings<br>SettingsCompiler"]
+    methods --> screens["screens<br>ScreenCompiler"]
+    screens --> controller["ScreenController::state / runMethod"]
+    controller --> compile["Screen::compile()<br>state · layout · command_bar"]
 ```
-HTTP request (Laravel)
-  └── AdminApiModule (laravel-api) — RunVersionMiddleware picks the stack per request:
-      the panel stack for `admin` and the panels, the BaseApi's own for a host's versions
-       └── AdminApi::getMethods()
-            ├── system / auth / profile / dashboard / audit / ...
-            ├── resources (compiled per-Resource via ResourceCompiler)
-            ├── settings (compiled per-Resource via SettingsCompiler)
-            └── screens (compiled per-Screen via ScreenCompiler)
-                  └── ScreenController::state / runMethod
-                        └── Screen::compile() → {state, layout, command_bar, ...}
 
-SPA bootstrap
-  └── createAdminApp(bootstrap)
-       ├── createAdminClient (axios)
-       ├── manifestStore.load() ← /api/admin/system/manifest
-       ├── menuStore.load()     ← /api/admin/system/menu
-       └── replaceManifestRoutes ← Vue Router built from manifest
+Die SPA startet aus dem Bootstrap, lädt Manifest und Menü und baut daraus ihre Routen; danach fragt jede Seite die API nach ihren Daten:
 
-User navigates to /admin/r/{slug} (Resource list)
-  └── ResourceIndexPage
-       └── useResourceIndexStore.load() → POST /{slug}/search
-            └── Manifest's columns + filters + actions
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Benutzer
+    participant S as SPA
+    participant A as Admin-API
+    U->>S: Öffnet /admin
+    S->>S: createAdminApp(bootstrap)
+    S->>A: system/manifest (If-None-Match)
+    A-->>S: Manifest oder 304
+    S->>A: system/menu
+    A-->>S: Menübaum
+    S->>S: Routen aus dem Manifest
+    U->>S: Öffnet /admin/r/articles
+    S->>A: POST articles/search
+    A-->>S: Zeilen nach Spalten und Filtern des Manifests
 ```
 
 ## PHP-Schichten
@@ -136,6 +145,28 @@ Actions rufen eine Methode auf der PHP-Seite auf. Eine `Screen`-Action geht an
 
 ```json
 { "method": "send", "payload": { "form_field": "value" } }
+```
+
+Der Weg einer Screen-Action, vom Klick bis zu dem, was der Benutzer sieht:
+
+```mermaid
+sequenceDiagram
+    actor U as Benutzer
+    participant S as SPA
+    participant C as ScreenController
+    participant X as Screen
+    U->>S: Klick auf Button mit ->method('send')
+    S->>+C: runMethod {method, payload}
+    C->>C: AdminAccess prüft permission()
+    C->>+X: send(state)
+    alt Validierung schlägt fehl
+        X-->>C: ValidationException
+        C-->>S: 422 mit Feldfehlern
+    else Erfolg
+        X-->>-C: array
+        C-->>-S: payload: message, state, alerts, refresh, redirect_url
+    end
+    S->>U: Toast, neuer State oder Weiterleitung
 ```
 
 Eine `Resource`-Action geht an `ResourceController::action`, benennt die
