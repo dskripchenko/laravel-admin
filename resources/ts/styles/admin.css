@@ -627,6 +627,8 @@
   --dg-task-fill: var(--uid-accent);
   --dg-task-stroke: var(--uid-accent-hover);
   --dg-task-active-fill: var(--uid-accent-subtle);
+  --dg-task-done-fill: var(--uid-border-default);
+  --dg-task-done-stroke: var(--uid-border-hover);
   --dg-task-crit-fill: var(--uid-danger);
   --dg-task-crit-stroke: var(--uid-danger-hover);
   --dg-task-text: var(--uid-text-on-accent);

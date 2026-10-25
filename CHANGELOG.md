@@ -5,6 +5,13 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- Gantt diagrams in the dark theme: a done task's name was white on a light
+  grey bar. Done bars now take the kit's border tokens and follow the theme.
+
 ## 1.54.1
 
 ### Fixed
