@@ -37,8 +37,8 @@ translated_at: 2026-10-02
 
 HTTP 状态码：200 / 304 / 401 / 403 / 404 / 422 / 429 / 500。
 
-OpenAPI 3.0 规范自动生成，并在 `/api/admin/doc` 提供（使用 Scalar UI
-渲染）——参见 [OpenAPI 规范](#openapi-规范)。
+OpenAPI 3.0 规范自动生成，并在 `/api/admin/doc` 提供（由 [@dskripchenko/openapi](https://github.com/dskripchenko/openapi)
+渲染，即 laravel-api 在 `/api/doc` 提供的页面）——参见 [OpenAPI 规范](#openapi-规范)。
 
 ## 端点
 
@@ -218,13 +218,18 @@ Resource 不支持的 Action 不会被注册，请求时返回 404。
 ## OpenAPI 规范
 
 ```
-GET /api/admin/doc            # Scalar UI（交互式）
+GET /api/admin/doc            # API 参考（交互式）
 GET /api/doc/admin            # 原始 JSON 规范（laravel-api 按版本提供的来源）
 ```
 
-Scalar 页面默认开启；将 `config('admin.openapi.ui')`（env
-`ADMIN_OPENAPI_UI`）设为 `scalar` 以外的任何值，则由 laravel-api 自身的
-`/api/doc` 接管。
+该页面默认开启；将 `config('admin.openapi.ui')`（env
+`ADMIN_OPENAPI_UI`）设为 `reference`（或 1.56 之前的值 `scalar`）以外的任何值，
+则不注册该路由，laravel-api 自身的 `/api/doc` 保持不变。页面带有面板的名称、
+语言和 CSP nonce；脚本取自 `admin.openapi.script`（env `ADMIN_OPENAPI_SCRIPT`），
+否则取自 `laravel-api.documentation.script`——本地副本由
+`php artisan api:doc-assets` 发布。Try-it、代理、凭据存储和示例语言遵循
+`laravel-api.documentation`。每个版本都以 DocLink 的 slug 传给页面，因此
+`DocLink::url()` 的锚点会打开对应的操作。
 
 Resource 的操作按 Resource 分别生成文档。`create` 和 `update` 列出该 Resource
 自己的字段——根据 `fields()` 和 `validationRules()` 构建，包含类型、格式、是否必填、
