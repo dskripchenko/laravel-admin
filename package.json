@@ -1,6 +1,6 @@
 {
   "name": "@dskripchenko/laravel-admin",
-  "version": "1.55.0",
+  "version": "1.55.1",
   "publishConfig": {
     "access": "public"
   },
