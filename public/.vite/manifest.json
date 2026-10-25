@@ -1,6 +1,6 @@
 {
   "node_modules/@dskripchenko/diagrams/dist/index.mjs": {
-    "file": "assets/index-D2KMt-oN.js",
+    "file": "assets/index-CNaqGZFH.js",
     "name": "index",
     "src": "node_modules/@dskripchenko/diagrams/dist/index.mjs",
     "isDynamicEntry": true
@@ -10,7 +10,7 @@
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-xKX1RcCA.js",
+    "file": "assets/vue-CHlqO4VY.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -19,7 +19,7 @@
     ]
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-DNgD27Lm.js",
+    "file": "assets/app-D-RDK4Gd.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -28,7 +28,7 @@
       "node_modules/@dskripchenko/openapi/dist/vue.mjs"
     ],
     "css": [
-      "assets/app-CUOwJPyL.css"
+      "assets/app-C7rNbQVF.css"
     ]
   }
 }

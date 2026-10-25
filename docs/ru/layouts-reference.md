@@ -450,7 +450,7 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 |---|---|
 | `# Заголовок` … `###### Заголовок` | Заголовки с якорями: `## Быстрый старт` → `#быстрый-старт` (буквы любого алфавита сохраняются, повторы получают `-1`, `-2`) |
 | Блоки кода в тройных обратных кавычках с языком | Подсвеченный код с кнопкой копирования; язык берётся из ограждения (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
-| Блоки ` ```mermaid ` | Диаграммы: flowchart, sequence, state, pie и gantt в синтаксисе Mermaid, рисуются в SVG пакетом [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| Блоки ` ```mermaid ` | Диаграммы в синтаксисе Mermaid: flowchart, sequence, state, ER, классы, C4, pie, gantt, timeline, XY-график и интеллект-карта, рисуются в SVG пакетом [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | Блоки ` ```openapi ` | API-виджеты: запрос, описанный на YAML или JSON (или целый OpenAPI-документ), становится операцией с try-it, примерами кода, типами TypeScript и PDF — пакетом [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Таблицы с выравниванием колонок |
 | `> цитата` | Цитата |
@@ -460,8 +460,10 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 | Списки `-`/`*`/`1.`, `---` | Списки и разделители |
 
 **Диаграммы.** Блок кода с языком `mermaid` становится диаграммой —
-`flowchart` (с подграфами), `sequenceDiagram`, `stateDiagram-v2`, `pie` и
-`gantt`; их рисует в SVG пакет [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams)
+`flowchart` (с подграфами), `sequenceDiagram`, `stateDiagram-v2`,
+`erDiagram`, `classDiagram`, C4 (`C4Context`, `C4Container`, `C4Component`,
+`C4Dynamic`, `C4Deployment`), `pie`, `gantt`, `timeline`, `xychart-beta` и
+`mindmap`; их рисует в SVG пакет [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams)
 в цветах и теме панели. У пакета нет зависимостей, и он загружается только на
 страницах, где есть диаграмма. Подписи экранируются так же, как остальной
 текст, поэтому диаграмма не может нести разметку или скрипты. Блок, который
