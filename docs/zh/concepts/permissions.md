@@ -106,6 +106,21 @@ const auth = useAuthStore()
 auth.hasAnyPermission(['admin.articles.update'])
 ```
 
+## 权限检查如何判定
+
+每一次检查——`hasAccess()`、`AdminAccess` 中间件、Screen 的 `permission()`——最终都归结为同一个问题：
+
+```mermaid
+flowchart TD
+    start(["hasAccess('admin.articles.update')"]) --> preview{"本会话中<br>以角色查看？"}
+    preview -->|是| previewRole["所查看角色的权限"]
+    preview -->|否| own["用户自身角色的权限"]
+    previewRole --> match{"是否有授予的键匹配？<br>精确或 fnmatch 匹配 *"}
+    own --> match
+    match -->|是| allow([允许])
+    match -->|否| deny([403 Forbidden])
+```
+
 ## 操作上的中间件
 
 `AdminAccess` 中间件接受一个或多个以 `;` 分隔的权限：

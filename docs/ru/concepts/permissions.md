@@ -112,6 +112,21 @@ const auth = useAuthStore()
 auth.hasAnyPermission(['admin.articles.update'])
 ```
 
+## Как решается проверка
+
+Любая проверка — `hasAccess()`, middleware `AdminAccess`, `permission()` экрана — сводится к одному вопросу:
+
+```mermaid
+flowchart TD
+    start(["hasAccess('admin.articles.update')"]) --> preview{"Просмотр как роль<br>в этой сессии?"}
+    preview -->|да| previewRole["Права просматриваемой роли"]
+    preview -->|нет| own["Права собственных ролей пользователя"]
+    previewRole --> match{"Совпал хоть один ключ?<br>точно или fnmatch с *"}
+    own --> match
+    match -->|да| allow([Разрешено])
+    match -->|нет| deny([403 Forbidden])
+```
+
 ## Middleware на эндпоинтах
 
 Middleware `AdminAccess` принимает одно или несколько прав через `;`:

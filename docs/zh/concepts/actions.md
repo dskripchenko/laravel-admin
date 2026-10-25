@@ -168,6 +168,26 @@ Resource 的 `actions()` 或 Screen 命令栏中声明的 `AsyncAction` 启动�
 `row`/`bulk` 位置中，选中的键会以 `ids` 的形式加入参数。`->callback($url)`
 设置一个接收进度和结果的 webhook。
 
+异步 action 背后的进程会经历以下状态（由 `delayed/status` 返回）：
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> new : delayed/run
+    new --> wait : worker 领取
+    wait --> done : 处理器完成
+    wait --> new : 失败，仍有重试次数
+    wait --> error : 重试次数用尽
+    new --> cancelled : 已取消
+    new --> expired : expires_at 已过
+    done --> [*]
+    error --> [*]
+    note right of wait
+        等待中也可能被取消或过期。
+        超时卡住的进程会回到 new。
+    end note
+```
+
 参数按名称传给 handler：`withParams()` 的每个键（以及 `ids`）以任意顺序绑定到
 handler 的同名参数，未传的参数使用默认值，类型为类的必需参数从容器解析。因此每个键
 都必须是 handler 的参数；只要有一个不是，handler 就会改为以单个参数收到整个数组。

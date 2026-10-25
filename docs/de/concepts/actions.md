@@ -185,6 +185,26 @@ Fortschritts-Modal. In einer `row`/`bulk`-Position werden die ausgewählten
 Schlüssel den Parametern als `ids` hinzugefügt. `->callback($url)` setzt einen
 Webhook, der den Fortschritt und das Ergebnis erhält.
 
+Der Prozess hinter einer Async-Action durchläuft diese Status (`delayed/status` meldet sie):
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> new : delayed/run
+    new --> wait : ein Worker übernimmt
+    wait --> done : Handler fertig
+    wait --> new : Fehler, Versuche übrig
+    wait --> error : keine Versuche übrig
+    new --> cancelled : abgebrochen
+    new --> expired : expires_at abgelaufen
+    done --> [*]
+    error --> [*]
+    note right of wait
+        Auch während des Wartens abbrechbar oder ablaufend.
+        Länger als das Timeout hängend, zurück zu new.
+    end note
+```
+
 Die Parameter erreichen den Handler per Name: Jeder Schlüssel aus `withParams()`
 (und `ids`) wird in beliebiger Reihenfolge an den gleichnamigen Handler-Parameter
 gebunden, ausgelassene Parameter erhalten ihren Standardwert, und ein

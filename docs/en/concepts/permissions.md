@@ -108,6 +108,21 @@ const auth = useAuthStore()
 auth.hasAnyPermission(['admin.articles.update'])
 ```
 
+## How a check is decided
+
+Every check — `hasAccess()`, the `AdminAccess` middleware, a screen's `permission()` — comes down to the same question:
+
+```mermaid
+flowchart TD
+    start(["hasAccess('admin.articles.update')"]) --> preview{"Role preview<br>in this session?"}
+    preview -->|yes| previewRole["Permissions of the previewed role"]
+    preview -->|no| own["Permissions of the user's own roles"]
+    previewRole --> match{"Any granted key matches?<br>exact or fnmatch with *"}
+    own --> match
+    match -->|yes| allow([Allowed])
+    match -->|no| deny([403 Forbidden])
+```
+
 ## Middleware on actions
 
 `AdminAccess` middleware accepts one or more permissions separated by `;`:

@@ -27,29 +27,38 @@ translated_at: 2026-10-02
 
 ## 高层流程
 
+对管理 API 的请求经过同一个模块，再交给面板为该资源、设置或 Screen 编译出的方法：
+
+```mermaid
+flowchart TB
+    req([HTTP 请求]) --> module["AdminApiModule<br>RunVersionMiddleware 选择中间件栈"]
+    module --> methods["AdminApi::getMethods()"]
+    methods --> system["system · auth · profile<br>dashboard · audit · …"]
+    methods --> resources["resources<br>ResourceCompiler"]
+    methods --> settings["settings<br>SettingsCompiler"]
+    methods --> screens["screens<br>ScreenCompiler"]
+    screens --> controller["ScreenController::state / runMethod"]
+    controller --> compile["Screen::compile()<br>state · layout · command_bar"]
 ```
-HTTP request (Laravel)
-  └── AdminApiModule (laravel-api) — RunVersionMiddleware picks the stack per request:
-      the panel stack for `admin` and the panels, the BaseApi's own for a host's versions
-       └── AdminApi::getMethods()
-            ├── system / auth / profile / dashboard / audit / ...
-            ├── resources (compiled per-Resource via ResourceCompiler)
-            ├── settings (compiled per-Resource via SettingsCompiler)
-            └── screens (compiled per-Screen via ScreenCompiler)
-                  └── ScreenController::state / runMethod
-                        └── Screen::compile() → {state, layout, command_bar, ...}
 
-SPA bootstrap
-  └── createAdminApp(bootstrap)
-       ├── createAdminClient (axios)
-       ├── manifestStore.load() ← /api/admin/system/manifest
-       ├── menuStore.load()     ← /api/admin/system/menu
-       └── replaceManifestRoutes ← Vue Router built from manifest
+SPA 从 bootstrap 启动，加载 manifest 和菜单并据此构建路由；之后每个页面向 API 请求自己的数据：
 
-User navigates to /admin/r/{slug} (Resource list)
-  └── ResourceIndexPage
-       └── useResourceIndexStore.load() → POST /{slug}/search
-            └── Manifest's columns + filters + actions
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant S as SPA
+    participant A as 管理 API
+    U->>S: 打开 /admin
+    S->>S: createAdminApp(bootstrap)
+    S->>A: system/manifest (If-None-Match)
+    A-->>S: Manifest 或 304
+    S->>A: system/menu
+    A-->>S: 菜单树
+    S->>S: 根据 manifest 构建路由
+    U->>S: 打开 /admin/r/articles
+    S->>A: POST articles/search
+    A-->>S: 按 manifest 的列和筛选返回的行
 ```
 
 ## PHP 层
@@ -129,6 +138,28 @@ Action 会调用 PHP 侧的某个方法。`Screen` 的 Action 发往
 
 ```json
 { "method": "send", "payload": { "form_field": "value" } }
+```
+
+Screen action 的完整路径——从点击到用户看到的结果：
+
+```mermaid
+sequenceDiagram
+    actor U as 用户
+    participant S as SPA
+    participant C as ScreenController
+    participant X as Screen
+    U->>S: 点击带 ->method('send') 的 Button
+    S->>+C: runMethod {method, payload}
+    C->>C: AdminAccess 检查 permission()
+    C->>+X: send(state)
+    alt 校验失败
+        X-->>C: ValidationException
+        C-->>S: 422 及字段错误
+    else 成功
+        X-->>-C: array
+        C-->>-S: payload: message, state, alerts, refresh, redirect_url
+    end
+    S->>U: 提示、新状态或跳转
 ```
 
 `Resource` 的 Action 发往 `ResourceController::action`，通过键指明 Action，
