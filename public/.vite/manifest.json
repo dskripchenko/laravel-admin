@@ -5,16 +5,30 @@
     "src": "node_modules/@dskripchenko/diagrams/dist/index.mjs",
     "isDynamicEntry": true
   },
+  "node_modules/@dskripchenko/openapi/dist/style.css": {
+    "file": "assets/style--QZffli4.css",
+    "src": "node_modules/@dskripchenko/openapi/dist/style.css"
+  },
+  "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
+    "file": "assets/vue-xKX1RcCA.js",
+    "name": "vue",
+    "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/ts/app.ts"
+    ]
+  },
   "resources/ts/app.ts": {
-    "file": "assets/app-gmQjPVuB.js",
+    "file": "assets/app-DNgD27Lm.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
     "dynamicImports": [
-      "node_modules/@dskripchenko/diagrams/dist/index.mjs"
+      "node_modules/@dskripchenko/diagrams/dist/index.mjs",
+      "node_modules/@dskripchenko/openapi/dist/vue.mjs"
     ],
     "css": [
-      "assets/app-zh2MEe35.css"
+      "assets/app-CUOwJPyL.css"
     ]
   }
 }

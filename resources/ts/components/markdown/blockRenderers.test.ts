@@ -5,11 +5,16 @@ import * as diagrams from '@dskripchenko/diagrams'
 import {
   builtinMarkdownRenderers,
   mermaidRenderer,
+  openapiRenderer,
   provideBuiltinMarkdownRenderers,
   setDiagramsLoader,
+  setOpenApiLoader,
 } from './blockRenderers'
 
-afterEach(() => setDiagramsLoader(null))
+afterEach(() => {
+  setDiagramsLoader(null)
+  setOpenApiLoader(null)
+})
 
 describe('mermaid block renderer', () => {
   it('turns a diagram into SVG markup', async () => {
@@ -67,7 +72,39 @@ describe('mermaid block renderer', () => {
     provideBuiltinMarkdownRenderers(app)
     app.mount(document.createElement('div'))
     expect(seen).toBe(builtinMarkdownRenderers)
-    expect(Object.keys(builtinMarkdownRenderers)).toEqual(['mermaid'])
+    expect(Object.keys(builtinMarkdownRenderers)).toEqual(['mermaid', 'openapi'])
     app.unmount()
   })
 })
+
+describe('openapi block renderer', () => {
+  const BLOCK = 'method: GET\nurl: https://api.example.com/v1/items/{id}\nsummary: Get an item'
+
+  it('answers with a live widget, read-only or editable as the host says', async () => {
+    const result = await openapiRenderer(BLOCK, { language: 'openapi', index: 0 })
+    expect(result.html).toBeUndefined()
+    expect(typeof result.mount).toBe('function')
+
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+    const changes: string[] = []
+    const handle = result.mount!(el, { code: BLOCK, language: 'openapi', editable: true, setCode: (c) => changes.push(c) })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.textContent).toContain('Get an item')
+    expect(el.textContent).toContain('/v1/items/{id}')
+    if (handle && typeof handle === 'object') handle.destroy?.()
+    else if (typeof handle === 'function') handle()
+    expect(el.textContent).toBe('')
+    el.remove()
+  })
+
+  it('loads the openapi package only when a block is rendered', async () => {
+    const real = await import('@dskripchenko/openapi/vue')
+    const loader = vi.fn(async () => real)
+    setOpenApiLoader(loader)
+    await openapiRenderer(BLOCK, { language: 'openapi', index: 0 })
+    await openapiRenderer(BLOCK, { language: 'openapi', index: 1 })
+    expect(loader).toHaveBeenCalledTimes(1)
+  })
+})
+

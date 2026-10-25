@@ -22,7 +22,9 @@
  * Diagrams: the panel's markdown block renderers (```mermaid and whatever a
  * host has registered with the kit's markdownBlockRenderersKey) reach the
  * editor too, so a mermaid code block shows as its diagram there; the slash
- * menu gets «Диаграмма» to insert one.
+ * menu gets «Диаграмма» to insert one. ```openapi blocks are API widgets
+ * edited in place (preview, YAML/JSON source, a request constructor); the
+ * slash menu inserts one with «API-запрос» (/api).
  */
 import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { DskWysiwyg, type EditorController, type SlashCommand } from '@dskripchenko/wysiwyg'
@@ -63,17 +65,40 @@ const blockRenderers = inject(markdownBlockRenderersKey, builtinMarkdownRenderer
 
 const DIAGRAM_TEMPLATE = 'flowchart LR\n  A[Start] --> B{Check}\n  B -->|yes| C[Done]\n  B -->|no| A'
 
-const slashCommands = computed<SlashCommand[]>(() =>
-  'mermaid' in blockRenderers
+const API_TEMPLATE = [
+  'method: GET',
+  'url: https://api.example.com/v1/items/{id}',
+  'summary: Get an item',
+  'params:',
+  '  query:',
+  '    expand: string',
+  'responses:',
+  '  200:',
+  '    description: The item',
+  '    example: { id: 1, name: Item }',
+  '  404: Not found',
+].join('\n')
+
+const slashCommands = computed<SlashCommand[]>(() => [
+  ...('mermaid' in blockRenderers
     ? [{
         key: 'diagram',
         label: tr('Диаграмма'),
         hint: tr('Mermaid: схема, последовательность, состояния, круговая, Гант'),
         aliases: ['diagram', 'mermaid', 'flowchart', 'chart'],
-        apply: (c) => c.chain().focus().insertCodeBlock('mermaid', DIAGRAM_TEMPLATE).run(),
+        apply: (c: EditorController) => c.chain().focus().insertCodeBlock('mermaid', DIAGRAM_TEMPLATE).run(),
       }]
-    : [],
-)
+    : []),
+  ...('openapi' in blockRenderers
+    ? [{
+        key: 'api',
+        label: tr('API-запрос'),
+        hint: tr('Описание запроса: предпросмотр, YAML/JSON, конструктор'),
+        aliases: ['api', 'openapi', 'request', 'endpoint', 'rest'],
+        apply: (c: EditorController) => c.chain().focus().insertCodeBlock('openapi', API_TEMPLATE).run(),
+      }]
+    : []),
+])
 
 const value = computed<string>(() => (form.getField(props.name) as string | undefined) ?? '')
 const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])

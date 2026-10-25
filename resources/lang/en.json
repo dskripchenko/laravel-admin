@@ -548,5 +548,7 @@
     "Вы смотрите панель как": "You are viewing the panel as",
     "Вернуться": "Come back",
     "Диаграмма": "Diagram",
-    "Mermaid: схема, последовательность, состояния, круговая, Гант": "Mermaid: flowchart, sequence, state, pie, gantt"
+    "Mermaid: схема, последовательность, состояния, круговая, Гант": "Mermaid: flowchart, sequence, state, pie, gantt",
+    "API-запрос": "API request",
+    "Описание запроса: предпросмотр, YAML/JSON, конструктор": "Request description: preview, YAML/JSON, constructor"
 }

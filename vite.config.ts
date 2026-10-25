@@ -63,6 +63,8 @@ export default defineConfig({
         /^@dskripchenko\/wysiwyg($|\/)/,
         // Loaded on demand by the ```mermaid renderer; resolved from the host's node_modules.
         /^@dskripchenko\/diagrams($|\/)/,
+        // Loaded on demand by the ```openapi renderer, like the diagrams.
+        /^@dskripchenko\/openapi($|\/)/,
         /^@tiptap\//,
         'marked',
         // The WYSIWYG peer deps: used by TinymceField/QuillField and supplied by

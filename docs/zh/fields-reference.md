@@ -102,6 +102,12 @@ Wysiwyg::make('page')->preset('full')->uploadImages(),
 
 默认情况下，HTML 会在保存时被清理；对于你信任的内容，可以用 `->sanitize(false)` 关闭清理。
 
+在编辑器中，` ```mermaid ` 代码块显示为图表，` ```openapi ` 块显示为可就地
+编辑的 API 组件：预览、YAML 或 JSON 源码，以及请求构建器（方法、URL、参数、
+认证、请求体、响应）。斜杠菜单可插入它们：«Diagram»（`/diagram`）和
+«API request»（`/api`）。保存的 HTML 保留代码块，因此同样的内容在 Markdown 布局
+或任何运行 @dskripchenko/openapi 的 `renderBlocks` 的地方都会同样渲染。
+
 Quill 和 TinyMCE 适配器以子路径导出的形式随 npm 包提供；宿主需要自行安装编辑器（`quill` + `@vueup/vue-quill`，或 `tinymce` + `@tinymce/tinymce-vue`），并将组件注册为 `wysiwyg` 类型：
 
 ```ts
