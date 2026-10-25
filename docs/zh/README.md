@@ -8,6 +8,10 @@
 [![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
 [![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](../../LICENSE)
 
+**在线演示：[laravel-admin.dskripchenko.space](https://laravel-admin.dskripchenko.space)**——包含数千条记录的商店和博客、每个字段、布局和操作都附带
+自身源码的展示区，以及内置于面板中的这份文档。无需注册：在登录页选择管理员、编辑或
+查看者即可；数据每小时重置一次。
+
 ```php
 Admin::resources([UserResource::class, ArticleResource::class]);
 Admin::screen([ContactScreen::class, SystemStatusScreen::class]);

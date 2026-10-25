@@ -8,6 +8,12 @@
 [![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
 [![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](../../LICENSE)
 
+**Живое демо: [laravel-admin.dskripchenko.space](https://laravel-admin.dskripchenko.space)** — магазин и блог с несколькими тысячами
+записей, витрина, где каждое поле, раскладка и действие показывают свой
+исходный код, и эта документация прямо в панели. Без регистрации: на странице
+входа выберите администратора, редактора или наблюдателя; данные сбрасываются
+каждый час.
+
 ```php
 Admin::resources([UserResource::class, ArticleResource::class]);
 Admin::screen([ContactScreen::class, SystemStatusScreen::class]);

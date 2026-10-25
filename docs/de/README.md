@@ -8,6 +8,12 @@ Ein Laravel Admin-Panel-Konstruktor im Stil von Orchid mit einem Vue 3 SPA-Front
 [![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
 [![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](../../LICENSE)
 
+**Live-Demo: [laravel-admin.dskripchenko.space](https://laravel-admin.dskripchenko.space)** — ein Shop und ein Blog mit einigen tausend
+Datensätzen, ein Showcase, in dem jedes Feld, Layout und jede Aktion den eigenen
+Quellcode zeigt, und diese Dokumentation direkt im Panel. Ohne Registrierung:
+Auf der Anmeldeseite Administrator, Editor oder Viewer wählen; die Daten werden
+stündlich zurückgesetzt.
+
 ```php
 Admin::resources([UserResource::class, ArticleResource::class]);
 Admin::screen([ContactScreen::class, SystemStatusScreen::class]);

@@ -38,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Requires `@dskripchenko/flow` `^1.0`.
 
+### Documentation
+
+- The README in all four languages links the live demo,
+  https://laravel-admin.dskripchenko.space: shop, blog, the showcase with
+  sources and these docs inside the panel.
+
 ## 1.58.0
 
 ### Added
