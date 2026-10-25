@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **One resource no longer takes the API reference down.** The per-resource
+  input of the spec is built from `fields()`, which a host may fill from the
+  database — options read from a tenant's table, say. The reference page and
+  `api/doc/{version}` build the spec outside a request's context, so such a
+  query failed there and the whole page answered 500. A failure while
+  describing one operation is now logged as a warning, and that operation keeps
+  the generic description.
+
 ## 1.56.0
 
 ### Changed
