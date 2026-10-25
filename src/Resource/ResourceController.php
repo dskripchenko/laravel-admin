@@ -22,6 +22,7 @@ use Dskripchenko\LaravelApi\Services\OpenApi\OperationContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -1498,7 +1499,23 @@ final class ResourceController extends ApiController
             return [];
         }
 
-        return ResourceOperationSchema::forAction($resource, $operation->actionKey);
+        // The schema is built from fields(), which a host may fill from the
+        // database — a query that only works inside a request's context (a
+        // tenant's schema, a signed-in user). The spec is built outside of
+        // it, so a failure here leaves this operation with the generic input
+        // instead of taking the whole reference page down.
+        try {
+            return ResourceOperationSchema::forAction($resource, $operation->actionKey);
+        } catch (\Throwable $e) {
+            Log::warning('Could not describe a resource operation for the OpenAPI spec', [
+                'panel' => $panel,
+                'resource' => $operation->controllerKey,
+                'action' => $operation->actionKey,
+                'exception' => $e,
+            ]);
+
+            return [];
+        }
     }
 
     /* -----------------------------------------------------------------

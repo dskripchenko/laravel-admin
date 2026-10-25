@@ -201,3 +201,19 @@ it('gives every POST operation that takes input a request body', function (): vo
 
     expect($empty)->toBe([]);
 });
+
+it('keeps building the spec when one resource cannot describe its fields', function (): void {
+    app(ResourceRegistry::class)->add(TestBrokenFieldsResource::class);
+    AdminApi::clearCache();
+    Illuminate\Support\Facades\Log::spy();
+
+    $spec = adminSpec();
+
+    // The broken resource keeps its operations, with the generic input…
+    expect($spec['paths'])->toHaveKey('/admin/'.TestBrokenFieldsResource::slug().'/create');
+    // …and the others are still described in full.
+    expect(bodySchema($spec, '/admin/'.TestSpecResource::slug().'/create')['properties'])->toHaveKey('title');
+    Illuminate\Support\Facades\Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message, array $context): bool => $context['resource'] === TestBrokenFieldsResource::slug())
+        ->atLeast()->once();
+});
