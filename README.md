@@ -8,6 +8,11 @@ A Laravel admin-panel constructor inspired by Orchid, with a Vue 3 SPA frontend.
 [![Packagist](https://img.shields.io/packagist/v/dskripchenko/laravel-admin)](https://packagist.org/packages/dskripchenko/laravel-admin)
 [![License](https://img.shields.io/packagist/l/dskripchenko/laravel-admin)](LICENSE)
 
+**Live demo: [laravel-admin.dskripchenko.space](https://laravel-admin.dskripchenko.space)** — a shop and a blog with a few thousand
+records, a showcase where every field, layout and action shows its own source,
+and this documentation inside the panel. No sign-up: pick Administrator, Editor
+or Viewer on the login page; the data resets every hour.
+
 ```php
 Admin::resources([UserResource::class, ArticleResource::class]);
 Admin::screen([ContactScreen::class, SystemStatusScreen::class]);
