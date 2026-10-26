@@ -1,23 +1,22 @@
 {
+  "_index-CKD5UEiV.js": {
+    "file": "assets/index-CKD5UEiV.js",
+    "name": "index",
+    "isDynamicEntry": true
+  },
   "node_modules/@dskripchenko/diagrams/dist/index.mjs": {
     "file": "assets/index-CNaqGZFH.js",
     "name": "index",
     "src": "node_modules/@dskripchenko/diagrams/dist/index.mjs",
     "isDynamicEntry": true
   },
-  "node_modules/@dskripchenko/flow/dist/index.mjs": {
-    "file": "assets/index-D0fMfAwC.js",
-    "name": "index",
-    "src": "node_modules/@dskripchenko/flow/dist/index.mjs",
-    "isDynamicEntry": true
-  },
   "node_modules/@dskripchenko/flow/dist/mermaid.mjs": {
-    "file": "assets/mermaid-CKEz4Hpj.js",
+    "file": "assets/mermaid-Drgz4VYt.js",
     "name": "mermaid",
     "src": "node_modules/@dskripchenko/flow/dist/mermaid.mjs",
     "isDynamicEntry": true,
     "imports": [
-      "node_modules/@dskripchenko/flow/dist/index.mjs",
+      "_index-CKD5UEiV.js",
       "node_modules/@dskripchenko/diagrams/dist/index.mjs"
     ]
   },
@@ -26,12 +25,12 @@
     "src": "node_modules/@dskripchenko/flow/dist/style.css"
   },
   "node_modules/@dskripchenko/flow/dist/vue.mjs": {
-    "file": "assets/vue-CC3VzleK.js",
+    "file": "assets/vue-BP576yzQ.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
     "isDynamicEntry": true,
     "imports": [
-      "node_modules/@dskripchenko/flow/dist/index.mjs",
+      "_index-CKD5UEiV.js",
       "resources/ts/app.ts"
     ]
   },
@@ -40,7 +39,7 @@
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-CTyysmYO.js",
+    "file": "assets/vue-Cd1CFx36.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -55,7 +54,7 @@
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-Rv3vVqWe.js",
+    "file": "assets/app-BN0Fhq6r.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -63,7 +62,7 @@
       "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
       "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
       "node_modules/@dskripchenko/flow/dist/vue.mjs",
-      "node_modules/@dskripchenko/flow/dist/index.mjs",
+      "_index-CKD5UEiV.js",
       "node_modules/@dskripchenko/flow/dist/mermaid.mjs",
       "node_modules/@dskripchenko/diagrams/dist/index.mjs",
       "node_modules/@dskripchenko/openapi/dist/vue.mjs"

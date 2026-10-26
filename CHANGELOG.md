@@ -5,6 +5,19 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.61.1
+
+### Fixed
+
+- **An operation's PDF on iPhone and iPad** printed the whole reference over
+  dozens of sheets; it prints the operation now, and the print margins hold
+  when a print dialog drops the page's own (`@dskripchenko/openapi` 1.1.2).
+
+### Changed
+
+- Requires `@dskripchenko/openapi` `^1.1.2`, `@dskripchenko/flow` `^1.1.1` and
+  `@dskripchenko/wysiwyg` `^0.5.3`, which bundle their icons.
+
 ## 1.61.0
 
 ### Changed
