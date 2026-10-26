@@ -1,6 +1,6 @@
 {
   "name": "@dskripchenko/laravel-admin",
-  "version": "1.60.2",
+  "version": "1.61.0",
   "publishConfig": {
     "access": "public"
   },
@@ -189,7 +189,7 @@
   },
   "dependencies": {
     "@dskripchenko/diagrams": "^1.1.0",
-    "@dskripchenko/flow": "^1.0.2",
+    "@dskripchenko/flow": "^1.1.0",
     "@dskripchenko/openapi": "^1.1.1",
     "lean-qr": "^2.7.1"
   }
