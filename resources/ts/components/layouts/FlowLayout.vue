@@ -130,7 +130,7 @@ const fixedSnapshot = computed<MonitorSnapshot | undefined>(() => {
   return s && typeof s === 'object' ? asSnapshot(s) : undefined
 })
 
-const onToggle = computed(() => {
+const persistToggle = computed(() => {
   const toggle = props.toggle
   if (!toggle || !call) return undefined
   return async (change: ToggleChange): Promise<void> => {
@@ -197,7 +197,7 @@ const boxStyle = computed(() => ({ height: cssLength(props.height, '480px') }))
         :poll="pollOptions"
         :poll-params="instanceValue"
         :toggleable="toggleable"
-        :on-toggle="onToggle"
+        :persist-toggle="persistToggle"
         :subgraphs="subgraphs?.graphs ?? {}"
         :load-subgraph="loadSubgraph"
         :details="details"

@@ -5,6 +5,23 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **A flow toggle called the screen method twice.** `Layout::flow()->onToggle()`
+  passed its persist function as FlowView's `onToggle` prop, which collides
+  with the view's `toggle` event: Vue called it once for the prop and once for
+  the event — two POSTs per switch. The layout now uses flow 1.0.2's
+  `persistToggle`, called exactly once.
+
+### Changed
+
+- Requires `@dskripchenko/flow` `^1.0.2`, `@dskripchenko/ui` `^1.16`,
+  `@dskripchenko/wysiwyg` `^0.5.1` (the editor's toolbar follows the panel
+  language) and `@dskripchenko/openapi` `^1.1.1` (the reference lays out by its
+  own width).
+
 ## 1.60.0
 
 ### Added
