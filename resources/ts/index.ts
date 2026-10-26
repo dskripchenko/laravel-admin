@@ -157,7 +157,22 @@ export { trSafe, useI18nStore, tRaw } from './stores/i18n'
 
 // Fenced-block renderers of the panel's markdown (```mermaid → diagram), for
 // hosts that add their own: app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, … }).
-export { builtinMarkdownRenderers, mermaidRenderer, flowRenderer } from './components/markdown/blockRenderers'
+export {
+  builtinMarkdownRenderers,
+  mermaidRenderer,
+  flowRenderer,
+  videoRenderer,
+  audioRenderer,
+} from './components/markdown/blockRenderers'
+// Media values (a URL, a storage path through a disk, an uploaded file) as the kit's player props.
+export {
+  resolveMediaUrl,
+  mediaKind,
+  toVideoSources,
+  toVideoConfig,
+  toAudioTracks,
+} from './components/media/mediaSource'
+export type { MediaDisk, MediaKind, VideoConfig } from './components/media/mediaSource'
 
 // Shell components
 export {
@@ -284,6 +299,8 @@ export {
   CodeLayout,
   ListenerLayout,
   FlowLayout,
+  VideoLayout,
+  AudioLayout,
   createScreenContext,
   provideScreenContext,
   useScreenContext,

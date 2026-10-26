@@ -5,6 +5,48 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Media players** of the UI kit (`UidVideo`, `UidAudio`, @dskripchenko/ui 1.15) in the panel:
+  - `Layout::video()` — sources and a quality menu, HLS (`.m3u8` or `hls()`;
+    fMP4/MPEG-TS, AES-128, alternate audio renditions through the kit's
+    lazily loaded adapter, `hlsOptions()`), a poster, WebVTT subtitles,
+    captions and chapters, sprite thumbnails over the scrub bar, autoplay
+    (muted), loop, controls, `resume()` of the position, `aspectRatio()`,
+    `maxWidth()`.
+  - `Layout::audio()` — one track or a playlist (title, artist, duration,
+    peaks), the waveform decoded in the browser or from `peaks()`, `mini()`
+    and `compact()` variants, audio-only HLS.
+  - The source of either is a URL, a storage path resolved through `disk()`
+    (`Storage::url()` for a disk with a public URL, the panel's
+    `uploads/serve` for a local one), or a key of the screen's state or the
+    record (`fromState()`): a URL, a path, an uploaded file or a list.
+    `Support\MediaUrl` does the resolving; `MediaUrl::base()` describes a
+    disk to the browser for the values only known there.
+  - `Infolist\VideoEntry` and `Infolist\AudioEntry` (the mini player by
+    default; `full()`, `waveform()`, `posterFrom()`, `peaksFrom()`).
+  - `TableColumn::asAudio()` — a mini player per row, one playing at a time,
+    a click on it does not open the row; `TableColumn::asVideo()` — the
+    poster or a tile, the player in a modal on click.
+  - The file field shows a player under an uploaded audio or video file (and
+    the picture of an image); the view page shows a file field the same way
+    through the new `file` entry, with the file's link.
+  - ```video and ```audio blocks in every markdown of the panel and in the
+    WYSIWYG editor (a URL, JSON or a little YAML); the slash menu inserts
+    them with `/video` and `/audio`.
+  - The players speak the panel's language, the live blocks included:
+    `provideKitLocale()` gives the kit's locale to widgets mounted outside the
+    shell.
+
+### Changed
+
+- `uploads/serve` answers Range requests for files on a local disk (a
+  `BinaryFileResponse`): video previews seek, and Safari plays them at all.
+- The view page draws a `FileUpload` field with the `file` entry instead of
+  printing its value as text.
+
 ## 1.59.0
 
 ### Added

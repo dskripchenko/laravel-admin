@@ -115,6 +115,13 @@ Formatierer: `asDate()`, `asDateTime()`, `asMoney()`, `asBoolean()`,
 `asBytes()`, `asBadge()`, `asLink()`, `asImage()` oder `format(callable)` für
 alles andere. Zeilen-Actions rendert die Tabelle selbst.
 
+`asAudio(?string $disk = null, bool $waveform = false)` setzt den Mini-Audioplayer des Kits in die Zelle — startet eine Zeile, pausieren die anderen, und ein Klick auf den Player öffnet die Zeile nicht. `asVideo(?string $disk = null, ?string $posterColumn = null, int $width = 64, ?int $height = null)` zeigt das Poster (aus einer anderen Spalte der Zeile) oder eine schlichte Kachel mit Play-Taste und öffnet den Player in einem Modal; vor dem Klick wird nichts geladen. Der Wert ist eine URL, ein Speicherpfad (mit `$disk`) oder eine hochgeladene Datei.
+
+```php
+TableColumn::make('recording')->asAudio('local'),
+TableColumn::make('clip_path')->asVideo('public', posterColumn: 'cover_url'),
+```
+
 `asBadge()` ordnet einem Wert einen Ton zu (`info`, `success`, `warning`,
 `danger`, `default` oder die Farbnamen `green`, `red`, `yellow`, `blue`,
 `gray`) und, wenn der gespeicherte Wert nicht das ist, was Menschen lesen

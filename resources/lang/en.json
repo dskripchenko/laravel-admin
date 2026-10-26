@@ -571,5 +571,12 @@
     "нет группы «:id»": "no group \":id\"",
     "ожидается ссылка или вложенная модель": "a reference or an inline model is expected",
     "нет шага «:id»": "no node \":id\"",
-    "ожидается transition или association": "transition or association is expected"
+    "ожидается transition или association": "transition or association is expected",
+    "Нет видео": "No video",
+    "Нет аудио": "No audio",
+    "Смотреть видео": "Watch the video",
+    "Видео": "Video",
+    "Видеоплеер: файл или HLS, постер, субтитры": "Video player: a file or HLS, a poster, subtitles",
+    "Аудио": "Audio",
+    "Аудиоплеер: дорожка или плейлист, волновая форма": "Audio player: a track or a playlist, a waveform"
 }

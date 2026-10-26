@@ -122,6 +122,13 @@ Formatters: `asDate()`, `asDateTime()`, `asMoney()`, `asBoolean()`,
 `asBytes()`, `asBadge()`, `asLink()`, `asImage()`, or `format(callable)` for
 anything else. Row actions are rendered by the table itself.
 
+`asAudio(?string $disk = null, bool $waveform = false)` puts the kit's mini audio player into the cell — starting one row pauses the others, and a click on the player does not open the row. `asVideo(?string $disk = null, ?string $posterColumn = null, int $width = 64, ?int $height = null)` shows the poster (from another column of the row) or a plain tile with a play button and opens the player in a modal; nothing is downloaded before the click. The value is a URL, a storage path (with `$disk`) or an uploaded file.
+
+```php
+TableColumn::make('recording')->asAudio('local'),
+TableColumn::make('clip_path')->asVideo('public', posterColumn: 'cover_url'),
+```
+
 `asBadge()` maps a value to a tone (`info`, `success`, `warning`, `danger`,
 `default`, or the colour names `green`, `red`, `yellow`, `blue`, `gray`) and,
 when the stored value is not what people should read, to a label:

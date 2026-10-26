@@ -109,6 +109,28 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * A video player: sources and qualities, HLS, subtitles, chapters and
+     * thumbnails. See Video.
+     *
+     * @param  string|array<int|string, mixed>|null  $source  A URL, a storage path, a state key or sources.
+     */
+    public static function video(string|array|null $source = null): Video
+    {
+        return Video::make($source);
+    }
+
+    /**
+     * An audio player: one track or a playlist, a waveform, a mini variant.
+     * See Audio.
+     *
+     * @param  string|array<int|string, mixed>|null  $source  A URL, a storage path, a state key or tracks.
+     */
+    public static function audio(string|array|null $source = null): Audio
+    {
+        return Audio::make($source);
+    }
+
+    /**
      * @param  array<string, Renderable|list<Renderable>>  $sections
      */
     public static function accordion(array $sections = []): Accordion

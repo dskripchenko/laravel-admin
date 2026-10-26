@@ -130,3 +130,17 @@ it('uploads endpoints require auth', function (): void {
     $this->postJson('/api/admin/uploads/upload', [])->assertStatus(401);
     $this->postJson('/api/admin/uploads/image', [])->assertStatus(401);
 });
+
+it('uploads.serve answers range requests for a file on a local disk', function (): void {
+    Storage::disk('local')->put('uploads/clip.mp4', '0123456789');
+    config(['admin.uploads.servable_disks' => ['local']]);
+
+    $response = $this->get('/api/admin/uploads/serve?disk=local&path=uploads/clip.mp4', ['Range' => 'bytes=2-5']);
+    $response->assertStatus(206);
+    expect($response->headers->get('Content-Range'))->toBe('bytes 2-5/10')
+        ->and($response->headers->get('Accept-Ranges'))->toBe('bytes')
+        ->and($response->headers->get('Content-Disposition'))->toStartWith('inline');
+    ob_start();
+    $response->sendContent();
+    expect(ob_get_clean())->toBe('2345');
+});

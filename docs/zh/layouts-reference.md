@@ -30,6 +30,8 @@ translated_at: 2026-10-02
 | `Markdown` | `Layout::markdown($text)` | 渲染后的 markdown：带锚点的标题、目录、高亮代码、表格、提示框 |
 | `Code` | `Layout::code($code, 'php')` | 高亮且可复制的代码块 |
 | `Flow` | `Layout::flow('process')` | 带实时监控、开关和子流程下钻的流程或状态机 |
+| `Video` | `Layout::video('/media/intro.mp4')` | 视频播放器：清晰度、HLS、字幕、章节、缩略图 |
+| `Audio` | `Layout::audio([...])` | 音频播放器：单曲或播放列表、波形、迷你样式 |
 | `AuditTrail` | `AuditTrail::for(User::class)` | 所显示记录的审计时间线 |
 | `Listener` | `Layout::listener([...])->listen([...])` | 表单中的一部分，当被监听的字段变化时由服务器重新渲染 |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | 属于当前编辑记录的另一个 Resource 的记录表格 |
@@ -194,6 +196,8 @@ Layout::infolist([
 条目类型：`TextEntry`、`BadgeEntry`、`IconEntry`、`KeyValueEntry`、`ImageEntry`、`RelationEntry`、`RepeatableEntry`、`MapEntry`、`ColorEntry`。
 
 `FlowEntry` 以只读方式显示已保存的流程模型（即 [`Flow` 字段](fields-reference.md#flow)的查看形式）：`FlowEntry::make('workflow')->height(420)`。
+
+`VideoEntry` 和 `AudioEntry` 播放记录中的文件——URL、存储路径（配合 `disk()`）、已上传的文件或列表：`AudioEntry::make('call_recording')->disk('local')`（单行迷你播放器；`->full()->waveform()` 为完整播放器），`VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`。见 [Video 与 Audio](#video-与-audio媒体播放器)。
 
 在自定义 Screen 上，条目读取该 Screen 的 state。
 
@@ -415,6 +419,19 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 
 **流程块。** 语言为 `flow` 的围栏代码块包含 JSON 形式的流程模型（见 [Flow](#flow带实时监控的流程)）或 Mermaid `stateDiagram-v2` / `flowchart` 源码；它会变成只读的流程视图——平移、缩放、子流程、步骤详情。只有页面上有这样的代码块时才会加载该包。
 
+**媒体块。** 语言为 `video` 或 `audio` 的围栏代码块会变成 UI 套件的播放器。源可以是单独的 URL（播放列表或视频源每行一个）、JSON，或几行带 [Video 与 Audio](#video-与-audio媒体播放器) 选项的 YAML：视频用 `src`、`sources`、`poster`、`tracks`、`thumbnails`、`title`、`aspectRatio`、`maxWidth`、`autoplay`、`loop`；音频用 `src` 或 `tracks`、`title`、`artist`、`waveform`、`peaks`、`mini`。WYSIWYG 编辑器的斜杠菜单可用 `/video` 和 `/audio` 插入。
+
+````markdown
+```video
+src: /media/intro.mp4
+poster: /media/intro.jpg
+tracks:
+  - src: /media/intro.en.vtt
+    srclang: en
+    label: English
+```
+````
+
 宿主以同样方式在 `onAppCreated` 中为其他语言添加渲染器：
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
 （`markdownBlockRenderersKey` 来自 `@dskripchenko/ui`，
@@ -573,6 +590,81 @@ final class OrderProcessScreen extends Screen
 
 内联模型的文字（节点和连线标签、描述、标题）与其他文字一样经过面板的 JSON 翻译；
 从 state 读取的模型按存储原样显示。
+
+### Video 与 Audio（媒体播放器）
+
+UI 套件的播放器 `UidVideo` 和 `UidAudio`：带缓冲区间、章节和缩略图预览的进度条，音量，速度、清晰度和字幕菜单，全屏，画中画，键盘快捷键以及 Media Session API。一个播放器开始播放时，页面上的其他播放器会暂停。控件使用面板的语言。HLS（`.m3u8`、fMP4 或 MPEG-TS、AES-128、备用音轨）通过套件的适配器播放，该适配器仅在出现流时才加载。
+
+```php
+Layout::video([
+    ['src' => '/media/intro-1080.mp4', 'label' => '1080p'],   // 带 label 的源组成清晰度菜单
+    ['src' => '/media/intro-720.mp4', 'label' => '720p'],
+])
+    ->title('简介')
+    ->poster('/media/intro.jpg')
+    ->subtitles('/media/intro.en.vtt', 'en', 'English', default: true)
+    ->subtitles('/media/intro.zh.vtt', 'zh', '中文')
+    ->chapters('/media/intro.chapters.vtt')
+    ->thumbnails('/media/intro.thumbs.vtt')   // cue 指向雪碧图切片：sprite.jpg#xywh=0,0,160,90
+    ->resume()                                // 在浏览器中记住播放位置
+    ->maxWidth(760),
+
+Layout::video('/streams/intro/master.m3u8'),          // 按扩展名识别为 HLS
+Layout::video('videos/intro.mp4')->disk('public'),    // 存储路径
+Layout::video('recording'),                           // 屏幕状态：$state['recording']
+
+Layout::audio('/media/episode-12.mp3')->title('第 12 期')->artist('播客')->waveform(),
+Layout::audio([
+    ['src' => '/media/a.mp3', 'title' => '开场', 'artist' => '乐队', 'duration' => 64],
+    ['src' => '/media/b.ogg', 'title' => '结尾', 'peaks' => $peaks],   // 预先计算的峰值，0..1
+])->waveform(),
+Layout::audio('calls/2026-10-26.ogg')->disk('local')->mini(),
+```
+
+**源。** 字符串可以是 URL、存储路径或状态键：带协议或斜杠、或以媒体扩展名结尾（`intro.mp4`）时视为媒体；否则表示屏幕状态的键，在查看页上则是记录的键（`fromState('media.url')` 可明确指定）。该值可以是 URL、路径、已上传的文件 `{url, mime, name, …}`（即 `FileUpload` 保存的内容）、它们的列表（播放列表或视频源），视频还可以是完整的 `{sources, poster, tracks, thumbnails}` 对象。值变化时（例如同一表单中的下拉框）播放器随之切换。
+
+**存储路径。** 使用 `disk()` 时路径会转换为 URL——海报和 WebVTT 文件也是如此：有公开地址的磁盘（配置中有 `url` 或云驱动）用 `Storage::url()`，没有公开地址的本地磁盘用面板的流式端点 `uploads/serve`。该端点支持 Range 请求，拖动进度需要它（Safari 没有它根本无法播放视频）；该磁盘必须列在 `admin.uploads.servable_disks` 中。来自状态的值在浏览器中以同样方式解析。使用签名临时 URL 的磁盘，请直接把 URL 放入状态。
+
+两种播放器通用：
+
+| 方法 | 作用 |
+|---|---|
+| `disk(string $disk)` | 通过该磁盘解析存储路径 |
+| `fromState(string $key)` | 从状态的键读取媒体 |
+| `resume(?string $key = null)` | 记住播放位置（localStorage）；默认以媒体 URL 为键 |
+| `loop()`、`preload('none'\|'metadata'\|'auto')` | |
+| `exclusive(false)` | 与其他播放器同时播放，而不是暂停它们 |
+| `hotkeys(false)`、`rates([1, 1.5, 2])` | 键盘快捷键、速度菜单 |
+| `crossorigin('anonymous')` | 用于来自其他源的媒体、轨道和波形 |
+| `maxWidth(int\|string $width)` | 最大宽度：`760`（px）或 `'40rem'` |
+| `hlsOptions(array $options)` | HLS 适配器：`preferNative`（`false`——即使浏览器能原生播放 HLS 也使用适配器，带清晰度和音轨菜单）、`startLevel`、`audioLanguage`、`maxBufferAhead`、`maxBufferBehind`、`retries`、`initialBandwidth`、`capToPlayerSize` |
+
+视频：
+
+| 方法 | 作用 |
+|---|---|
+| `source($src, $label = null, $type = null)`、`quality($label, $src)` | 添加源；源按优先顺序排列，带 label 的组成清晰度菜单 |
+| `hls($src, $label = null)`、`mime($type)` | 地址不以 `.m3u8` 结尾的流；未指定类型的源的类型 |
+| `title($title)` | 播放器上方的标题及其无障碍名称 |
+| `poster($url)`、`thumbnails($vtt)` | 播放前的图片；进度条上方雪碧图切片的 WebVTT |
+| `subtitles($src, $lang, $label, $default)`、`captions(...)`、`chapters($src)`、`tracks([...])` | WebVTT 轨道 |
+| `autoplay()` | 立即静音播放（浏览器禁止有声自动播放）；`muted()`、`controls(false)` |
+| `aspectRatio('16 / 9')` | 视频尺寸未知前的宽高比；也可写 `'4:3'` |
+| `autoHide(int $ms)` | 播放时控件隐藏前的空闲时间 |
+
+音频：
+
+| 方法 | 作用 |
+|---|---|
+| `track($src, ['title' => …, 'artist' => …, 'duration' => …, 'peaks' => […]])` | 添加曲目；两首及以上构成带上一首/下一首和曲目列表的播放列表 |
+| `title()`、`artist()`、`mime()` | 用于单曲 |
+| `waveform()` | 用波形代替进度条，在浏览器中解码（同源或 CORS；不适用于流） |
+| `peaks([...])` | 预先计算的 0..1 峰值：无需解码即可绘制波形——适合长录音 |
+| `mini()` | 单行：播放按钮、短进度条、时间 |
+| `compact()` | 完整行，但不含音量和速度 |
+| `playlist(false)`、`autoAdvance(false)` | 隐藏曲目列表；每首播完即停止 |
+
+`VideoEntry` 和 `AudioEntry` 在查看页上显示记录的文件（见 [Infolist](#infolist只读)），`TableColumn::asAudio()` 和 `asVideo()` 用于表格（[列](concepts/resources.md#列表格)），`FileUpload` 字段会在上传的音频或视频文件下方显示播放器。
 
 ### View（自定义 Vue 组件）
 

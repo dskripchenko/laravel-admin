@@ -204,6 +204,8 @@ ImageCropper::make('hero')
 
 SPA 会先通过面板的 `uploads` 端点上传文件，然后把 `{disk, path, url, name, size, mime}` 放入表单 state。磁盘和目录取自 `config('admin.uploads.disk')` 和 `config('admin.uploads.directory')`。每个字段一个文件：`multiple()` 和 `maxFiles()` 会影响校验规则，但 SPA 的上传器只处理单个文件。
 
+音频或视频文件会在其名称下方显示套件的播放器，图片显示其预览；查看页以同样方式显示该字段，并附带文件链接。本地磁盘上的视频以支持 Range 的方式传输，因此可以拖动进度，在 Safari 中也能播放。
+
 ## 关联
 
 ### RelationSelect

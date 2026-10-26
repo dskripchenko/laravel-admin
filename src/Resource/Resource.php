@@ -56,6 +56,8 @@ abstract class Resource
     protected const FIELD_VIEW_TYPES = [
         'markdown', 'code', 'rating', 'radio', 'tree_select', 'cascader',
         'date_range', 'morph_switcher', 'group', 'resource_picker', 'flow',
+        // A file: its link, and a player for audio and video.
+        'file',
         // Fields whose stored value is a key: the view shows the option's label.
         'select', 'combobox', 'tags', 'relation_select',
     ];
@@ -869,7 +871,8 @@ abstract class Resource
      *  - `color` fields render as a ColorEntry, a swatch with the value;
      *  - the fields whose value means little as plain text — markdown, code,
      *    rating, radio, tree_select, cascader, date_range, morph_switcher,
-     *    group, resource_picker — render as a FieldEntry, drawn by the SPA's view of that
+     *    group, resource_picker, file (its link, and a player for audio and
+     *    video) — render as a FieldEntry, drawn by the SPA's view of that
      *    field type;
      *  - `hidden` fields are left out.
      *

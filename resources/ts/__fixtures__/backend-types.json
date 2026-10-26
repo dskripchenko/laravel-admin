@@ -42,6 +42,7 @@
         "accordion",
         "admin.resource-index",
         "admin.resource-table",
+        "audio",
         "audit_trail",
         "block",
         "code",
@@ -56,6 +57,7 @@
         "rows",
         "step",
         "tabs",
+        "video",
         "view",
         "wizard",
         "wrapper"
@@ -71,6 +73,7 @@
         "table"
     ],
     "entries": [
+        "audio",
         "badge",
         "color",
         "field",
@@ -81,7 +84,8 @@
         "map",
         "relation",
         "repeatable",
-        "text"
+        "text",
+        "video"
     ],
     "charts": [
         "area",

@@ -12,6 +12,8 @@
  *   - bytes      → a human-readable size.
  *   - image      → the URL; AdminTableCell draws the picture.
  *   - link       → the caption; AdminTableCell draws the link.
+ *   - audio      → AdminTableCell draws the mini player.
+ *   - video      → AdminTableCell draws the poster and the modal player.
  *   - text       → the fallback.
  *
  * Columns with no explicit preset are formatted automatically: a value that
@@ -22,7 +24,7 @@
 import { currentLocale, formatNumber, trSafe as tr } from '../../stores/i18n'
 import { badgeVariant, type BadgeVariant } from '../tones'
 
-export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes' | 'image' | 'link'
+export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes' | 'image' | 'link' | 'audio' | 'video'
 
 export interface CellMeta {
   format?: string

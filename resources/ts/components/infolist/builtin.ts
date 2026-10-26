@@ -31,6 +31,9 @@ import GroupEntry from './GroupEntry.vue'
 import HiddenEntry from './HiddenEntry.vue'
 import ResourcePickerEntry from './ResourcePickerEntry.vue'
 import FlowEntry from './FlowEntry.vue'
+import VideoEntry from './VideoEntry.vue'
+import AudioEntry from './AudioEntry.vue'
+import FileEntry from './FileEntry.vue'
 
 export function registerBuiltinInfolistEntries(): void {
   registerInfolistEntries({
@@ -95,5 +98,10 @@ export function registerBuiltinInfolistEntries(): void {
     resource_picker: ResourcePickerEntry,
     // A process model: Infolist\FlowEntry and the view of a Field\Flow.
     flow: FlowEntry,
+    // Players of the kit: Infolist\VideoEntry and Infolist\AudioEntry.
+    video: VideoEntry,
+    audio: AudioEntry,
+    // The view of a file field: the link, and a player or the picture.
+    file: FileEntry,
   })
 }
