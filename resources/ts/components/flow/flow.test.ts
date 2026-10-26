@@ -50,7 +50,7 @@ const FlowViewStub = defineComponent({
     poll: { type: Object, default: undefined },
     pollParams: { type: null, default: undefined },
     toggleable: Boolean,
-    onToggle: { type: Function, default: undefined },
+    persistToggle: { type: Function, default: undefined },
     subgraphs: { type: Object, default: undefined },
     loadSubgraph: { type: Function, default: undefined },
     details: { type: Boolean, default: true },
@@ -242,13 +242,13 @@ describe('FlowLayout', () => {
     host(FlowLayout, { graph: ORDER, toggle: { method: 'toggleStep' }, toggleable: true }, { call })
     await flushPromises()
     expect(viewProps.toggleable).toBe(true)
-    const onToggle = viewProps.onToggle as (c: unknown) => Promise<void>
+    const persistToggle = viewProps.persistToggle as (c: unknown) => Promise<void>
     const change = { kind: 'node', id: 'paid', enabled: false, path: [] }
-    await onToggle(change)
+    await persistToggle(change)
     expect(call).toHaveBeenCalledWith('toggleStep', [change])
 
     call.mockRejectedValueOnce(new Error('Locked by policy'))
-    await expect(onToggle(change)).rejects.toThrow('Locked by policy')
+    await expect(persistToggle(change)).rejects.toThrow('Locked by policy')
   })
 
   it('loads a referenced sub-process through the screen', async () => {
@@ -269,7 +269,7 @@ describe('FlowLayout', () => {
     host(FlowLayout, { graph: ORDER, poll: { method: 'state' }, toggle: { method: 't' }, subgraphs: { method: 's' } })
     await flushPromises()
     expect(viewProps.poll).toBeUndefined()
-    expect(viewProps.onToggle).toBeUndefined()
+    expect(viewProps.persistToggle).toBeUndefined()
     expect(viewProps.loadSubgraph).toBeUndefined()
   })
 
