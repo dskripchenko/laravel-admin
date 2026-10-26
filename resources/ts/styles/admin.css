@@ -764,3 +764,113 @@
   overflow: hidden;
   margin: var(--uid-space-sm, 8px) 0;
 }
+
+/*
+ * The kit's players in the panel: Layout::video / Layout::audio, the video
+ * and audio entries, the file preview, table cells and ```video / ```audio
+ * blocks. The players draw themselves; these rules only place them.
+ */
+.admin-media-layout {
+  margin: 0 0 var(--uid-space-md, 12px);
+  min-width: 0;
+}
+/* The last thing in a card or a block: the card's padding is the spacing. */
+.admin-media-layout:last-child {
+  margin-bottom: 0;
+}
+.admin-media-layout__title {
+  font-weight: var(--uid-font-weight-semibold, 600);
+  margin-bottom: var(--uid-space-xs, 6px);
+}
+.admin-media-layout__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--uid-border-default);
+  border-radius: var(--uid-radius-md);
+  color: var(--uid-text-tertiary);
+}
+.admin-media-layout__none {
+  color: var(--uid-text-tertiary);
+}
+.admin-infolist-media {
+  width: 100%;
+  min-width: 0;
+}
+.admin-infolist-media--mini {
+  width: auto;
+}
+.admin-infolist-files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-sm, 8px);
+  min-width: 0;
+}
+.admin-infolist-files__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-xs, 6px);
+  min-width: 0;
+}
+.admin-infolist-files__link {
+  overflow-wrap: anywhere;
+}
+.admin-media-preview {
+  min-width: 0;
+  width: 100%;
+}
+.admin-media-preview__img {
+  display: block;
+  max-width: min(100%, 240px);
+  max-height: 160px;
+  border-radius: var(--uid-radius-md);
+  border: 1px solid var(--uid-border-subtle);
+}
+.admin-cell-video {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.admin-cell-video__thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-sm);
+  background: var(--uid-surface-raised);
+  color: var(--uid-text-secondary);
+  cursor: pointer;
+}
+.admin-cell-video__thumb:focus-visible {
+  outline: 2px solid var(--uid-accent);
+  outline-offset: 2px;
+}
+.admin-cell-video__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.admin-cell-video__play {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  transition: transform 120ms ease, background 120ms ease;
+}
+.admin-cell-video__thumb:hover .admin-cell-video__play {
+  background: var(--uid-accent);
+  transform: scale(1.08);
+}
+.admin-md-media {
+  margin: var(--uid-space-md, 12px) 0;
+  min-width: 0;
+}

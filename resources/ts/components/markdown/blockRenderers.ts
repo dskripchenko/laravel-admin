@@ -18,8 +18,17 @@
  * ```flow blocks — a process model in JSON, or a Mermaid `stateDiagram-v2` /
  * `flowchart` — become a read-only process view of @dskripchenko/flow: pan,
  * zoom, sub-processes, the details of a step. Loaded on first use too.
+ *
+ * ```video and ```audio blocks — a bare URL, JSON or a little YAML (see
+ * ../media/mediaBlock) — become the kit's players, UidVideo and UidAudio. The
+ * players are part of the kit the panel already has; an HLS stream loads the
+ * kit's adapter on first use.
  */
-import type { App, AppContext } from 'vue'
+import { createVNode, defineComponent, h, render, type App, type AppContext, type Component } from 'vue'
+import { UidAudio, UidVideo } from '@dskripchenko/ui'
+import { MediaBlockError, parseMediaBlock } from '../media/mediaBlock'
+import { cssSize, toAudioTracks, toVideoConfig } from '../media/mediaSource'
+import { provideKitLocale } from '../../composables/useKitLocale'
 import type { Graph } from '@dskripchenko/flow'
 import { flowLocale, loadFlow, loadFlowMermaid } from '../flow/loadFlow'
 import {
@@ -128,11 +137,137 @@ export const flowRenderer: UidMarkdownBlockRenderer = async (code) => {
   }
 }
 
+type PlayerProps = Record<string, unknown>
+
+function flag(v: unknown): boolean | undefined {
+  return typeof v === 'boolean' ? v : undefined
+}
+
+function text(v: unknown): string | undefined {
+  return typeof v === 'string' && v !== '' ? v : undefined
+}
+
+/** UidVideo's props from a ```video block. */
+export function videoBlockProps(code: string): PlayerProps {
+  const data = parseMediaBlock(code)
+  const o = Array.isArray(data) ? {} : data
+  const config = toVideoConfig(Array.isArray(data) ? data : ('sources' in o ? o : { ...o, sources: [o] }))
+  if (config.sources.length === 0) throw new MediaBlockError('no video source: give `src` or `sources`')
+  return {
+    sources: config.sources,
+    poster: config.poster,
+    tracks: config.tracks,
+    thumbnails: config.thumbnails,
+    title: text(o.title),
+    aspectRatio: typeof o.aspectRatio === 'number' ? String(o.aspectRatio) : text(o.aspectRatio)?.replace(':', ' / '),
+    autoplay: flag(o.autoplay),
+    muted: flag(o.muted) ?? flag(o.autoplay),
+    loop: flag(o.loop),
+    maxWidth: cssSize(typeof o.maxWidth === 'number' || typeof o.maxWidth === 'string' ? o.maxWidth : null),
+  }
+}
+
+/** UidAudio's props from an ```audio block: one track or a playlist. */
+export function audioBlockProps(code: string): PlayerProps {
+  const data = parseMediaBlock(code)
+  const o = Array.isArray(data) ? {} : data
+  const tracks = toAudioTracks(Array.isArray(data) ? data : (o.tracks ?? o))
+  if (tracks.length === 0) throw new MediaBlockError('no audio source: give `src` or `tracks`')
+  const variant = o.mini === true || o.variant === 'mini' ? 'mini' : 'default'
+  const peaks = Array.isArray(o.peaks) ? o.peaks.filter((p): p is number => typeof p === 'number') : undefined
+  const common = { waveform: flag(o.waveform), loop: flag(o.loop), variant, maxWidth: cssSize(text(o.maxWidth) ?? (typeof o.maxWidth === 'number' ? o.maxWidth : null)) }
+  if (tracks.length === 1) {
+    const [t] = tracks
+    return {
+      ...common,
+      src: t.src,
+      type: t.type,
+      title: text(o.title) ?? t.title,
+      artist: text(o.artist) ?? t.artist,
+      peaks: peaks ?? t.peaks,
+    }
+  }
+  return { ...common, tracks }
+}
+
+/**
+ * The player under the kit's locale. The block is mounted outside the shell's
+ * tree, and the app context carries only the app-level provides: the locale
+ * AdminApp provides would not reach it.
+ */
+const LocalizedPlayer = defineComponent({
+  name: 'AdminMediaBlockPlayer',
+  inheritAttrs: false,
+  props: { is: { type: [Object, Function], required: true } },
+  setup(props, { attrs }) {
+    provideKitLocale()
+    return () => h(props.is as Component, attrs)
+  },
+})
+
+/**
+ * A player mounted into a live block, in the panel's context (its Pinia, its
+ * locale). A changed source re-renders it in place.
+ */
+function mountPlayer(
+  el: HTMLElement,
+  component: Component,
+  kind: 'video' | 'audio',
+  initial: PlayerProps,
+  toProps: (code: string) => PlayerProps,
+) {
+  el.classList.add('admin-md-media', `admin-md-media--${kind}`)
+  const draw = (p: PlayerProps): void => {
+    const { maxWidth, ...rest } = p
+    el.style.maxWidth = typeof maxWidth === 'string' ? maxWidth : ''
+    // The key follows the sources, so a new address is a new player.
+    const key = JSON.stringify(rest.sources ?? rest.tracks ?? rest.src)
+    const vnode = createVNode(LocalizedPlayer, { ...rest, is: component, key })
+    vnode.appContext = appContext
+    render(vnode, el)
+  }
+  draw(initial)
+  return {
+    update(next: string) {
+      try {
+        draw(toProps(next))
+      } catch {
+        // A half-typed source keeps the last good player.
+      }
+    },
+    destroy() {
+      render(null, el)
+    },
+  }
+}
+
+function mediaRenderer(
+  component: Component,
+  kind: 'video' | 'audio',
+  toProps: (code: string) => PlayerProps,
+): UidMarkdownBlockRenderer {
+  return (code) => {
+    let initial: PlayerProps
+    try {
+      initial = toProps(code)
+    } catch (error) {
+      if (error instanceof MediaBlockError) return { error: error.message }
+      throw error
+    }
+    return { mount: (el) => mountPlayer(el, component, kind, initial, toProps) }
+  }
+}
+
+export const videoRenderer: UidMarkdownBlockRenderer = mediaRenderer(UidVideo, 'video', videoBlockProps)
+export const audioRenderer: UidMarkdownBlockRenderer = mediaRenderer(UidAudio, 'audio', audioBlockProps)
+
 /** The renderers the panel registers app-wide. */
 export const builtinMarkdownRenderers: UidMarkdownBlockRenderers = Object.freeze({
   mermaid: mermaidRenderer,
   openapi: openapiRenderer,
   flow: flowRenderer,
+  video: videoRenderer,
+  audio: audioRenderer,
 })
 
 /**

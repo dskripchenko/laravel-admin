@@ -29,6 +29,8 @@ compose to arbitrary depth.
 | `Markdown` | `Layout::markdown($text)` | Rendered markdown: anchored headings, table of contents, highlighted code, tables, callouts |
 | `Code` | `Layout::code($code, 'php')` | Highlighted, copyable code block |
 | `Flow` | `Layout::flow('process')` | Process or state machine with live monitoring, switches and drill-down |
+| `Video` | `Layout::video('/media/intro.mp4')` | Video player: qualities, HLS, subtitles, chapters, thumbnails |
+| `Audio` | `Layout::audio([...])` | Audio player: one track or a playlist, waveform, mini variant |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
 | `Listener` | `Layout::listener([...])->listen([...])` | Part of a form re-rendered by the server when watched fields change |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Table of another resource's records belonging to the edited one |
@@ -208,6 +210,8 @@ Entry types: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 `ColorEntry`.
 
 `FlowEntry` draws a stored process model read-only (the view of a [`Flow` field](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
+
+`VideoEntry` and `AudioEntry` play a file of the record — a URL, a storage path (with `disk()`), an uploaded file or a list: `AudioEntry::make('call_recording')->disk('local')` (the one-line mini player; `->full()->waveform()` for the full one), `VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`. See [Video and Audio](#video-and-audio-media-players).
 
 On a custom Screen the entries read the screen's state.
 
@@ -479,6 +483,19 @@ described in the package's documentation (API blocks).
 
 **Process blocks.** A fenced block with the language `flow` holds a process model in JSON (see [Flow](#flow-process-with-live-monitoring)) or Mermaid `stateDiagram-v2` / `flowchart` source; it becomes a read-only process view — pan, zoom, sub-processes, the details of a step. The package is loaded only when a page has such a block.
 
+**Media blocks.** Fenced blocks with the language `video` or `audio` become the kit's players. The source is a bare URL (one per line for a playlist or for video sources), JSON, or a few lines of YAML with the options of [Video and Audio](#video-and-audio-media-players): `src`, `sources`, `poster`, `tracks`, `thumbnails`, `title`, `aspectRatio`, `maxWidth`, `autoplay`, `loop` for video; `src` or `tracks`, `title`, `artist`, `waveform`, `peaks`, `mini` for audio. The WYSIWYG editor's slash menu inserts them with `/video` and `/audio`.
+
+````markdown
+```video
+src: /media/intro.mp4
+poster: /media/intro.jpg
+tracks:
+  - src: /media/intro.en.vtt
+    srclang: en
+    label: English
+```
+````
+
 A host adds renderers for other languages the same way, in `onAppCreated`:
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
 (`markdownBlockRenderersKey` from `@dskripchenko/ui`,
@@ -653,6 +670,81 @@ permission too — without it the switches and buttons are not shown at all.
 Captions of an inline model (node and edge labels, descriptions, the title)
 go through the panel's JSON translations like any other caption; a model read
 from the state is shown as stored.
+
+### Video and Audio (media players)
+
+The UI kit's players, `UidVideo` and `UidAudio`: a scrub bar with buffered ranges, chapters and thumbnail previews, volume, speed, quality and subtitle menus, full screen, picture-in-picture, keyboard shortcuts and the Media Session API. Starting a player pauses the others on the page. The controls speak the panel's language. HLS (`.m3u8`, fMP4 or MPEG-TS, AES-128, alternate audio renditions) plays through the kit's adapter, loaded only when a stream appears.
+
+```php
+Layout::video([
+    ['src' => '/media/intro-1080.mp4', 'label' => '1080p'],   // labelled sources form the quality menu
+    ['src' => '/media/intro-720.mp4', 'label' => '720p'],
+])
+    ->title('Introduction')
+    ->poster('/media/intro.jpg')
+    ->subtitles('/media/intro.en.vtt', 'en', 'English', default: true)
+    ->subtitles('/media/intro.ru.vtt', 'ru', 'Русский')
+    ->chapters('/media/intro.chapters.vtt')
+    ->thumbnails('/media/intro.thumbs.vtt')   // cues point to sprite tiles: sprite.jpg#xywh=0,0,160,90
+    ->resume()                                // remembers the position in the browser
+    ->maxWidth(760),
+
+Layout::video('/streams/intro/master.m3u8'),          // HLS, by the extension
+Layout::video('videos/intro.mp4')->disk('public'),    // a storage path
+Layout::video('recording'),                           // the screen's state: $state['recording']
+
+Layout::audio('/media/episode-12.mp3')->title('Episode 12')->artist('The Podcast')->waveform(),
+Layout::audio([
+    ['src' => '/media/a.mp3', 'title' => 'Intro', 'artist' => 'Band', 'duration' => 64],
+    ['src' => '/media/b.ogg', 'title' => 'Outro', 'peaks' => $peaks],   // precomputed peaks, 0..1
+])->waveform(),
+Layout::audio('calls/2026-10-26.ogg')->disk('local')->mini(),
+```
+
+**The source.** A string is a URL, a storage path or a state key: it is media when it has a scheme or a slash or ends in a media extension (`intro.mp4`); otherwise it names a key of the screen's state, or of the record on a view page (`fromState('media.url')` says so explicitly). The value found there may be a URL, a path, an uploaded file `{url, mime, name, …}` (what a `FileUpload` stores), a list of them (a playlist, or video sources), or for video a whole `{sources, poster, tracks, thumbnails}` object. A change of the value — a select on the same form, say — switches the player.
+
+**Storage paths.** With `disk()` paths are turned into URLs — the posters and WebVTT files too: `Storage::url()` for a disk with a public URL (`url` in its config, or a cloud driver), the panel's streaming endpoint `uploads/serve` for a local disk without one. That endpoint answers Range requests, which seeking needs (and Safari, to play a video at all); the disk has to be listed in `admin.uploads.servable_disks`. Values from the state are resolved in the browser the same way. A disk with signed, temporary URLs needs the URLs themselves in the state.
+
+Both players:
+
+| Method | Effect |
+|---|---|
+| `disk(string $disk)` | Resolve storage paths through this disk |
+| `fromState(string $key)` | Read the media from a key of the state |
+| `resume(?string $key = null)` | Remember the playback position (localStorage); the media's URL is the key by default |
+| `loop()`, `preload('none'\|'metadata'\|'auto')` | |
+| `exclusive(false)` | Play alongside the other players instead of pausing them |
+| `hotkeys(false)`, `rates([1, 1.5, 2])` | Keyboard shortcuts, the speed menu |
+| `crossorigin('anonymous')` | For media, tracks and waveforms from another origin |
+| `maxWidth(int\|string $width)` | The widest the player gets: `760` (px) or `'40rem'` |
+| `hlsOptions(array $options)` | The HLS adapter: `preferNative` (`false` — the adapter even where the browser plays HLS itself, with its quality and audio-track menus), `startLevel`, `audioLanguage`, `maxBufferAhead`, `maxBufferBehind`, `retries`, `initialBandwidth`, `capToPlayerSize` |
+
+Video:
+
+| Method | Effect |
+|---|---|
+| `source($src, $label = null, $type = null)`, `quality($label, $src)` | Add a source; sources go in order of preference, labelled ones form the quality menu |
+| `hls($src, $label = null)`, `mime($type)` | A stream whose address does not end in `.m3u8`; the type of the sources given without one |
+| `title($title)` | A caption above the player and its accessible name |
+| `poster($url)`, `thumbnails($vtt)` | The image before playback; the WebVTT with sprite tiles over the scrub bar |
+| `subtitles($src, $lang, $label, $default)`, `captions(...)`, `chapters($src)`, `tracks([...])` | WebVTT tracks |
+| `autoplay()` | Start at once, muted (browsers block unmuted autoplay); `muted()`, `controls(false)` |
+| `aspectRatio('16 / 9')` | The box ratio before the video's size is known; `'4:3'` works too |
+| `autoHide(int $ms)` | Idle time before the controls hide while playing |
+
+Audio:
+
+| Method | Effect |
+|---|---|
+| `track($src, ['title' => …, 'artist' => …, 'duration' => …, 'peaks' => […]])` | Add a track; two or more make a playlist with previous/next and a track list |
+| `title()`, `artist()`, `mime()` | For a single track |
+| `waveform()` | The waveform as the scrub bar, decoded in the browser (same origin or CORS; not for streams) |
+| `peaks([...])` | Precomputed peaks 0..1: the waveform without decoding — for long recordings |
+| `mini()` | One line: play, a short bar, time |
+| `compact()` | The full row without volume and speed |
+| `playlist(false)`, `autoAdvance(false)` | Hide the track list; stop after each track |
+
+`VideoEntry` and `AudioEntry` show a record's file on a view page (see [Infolist](#infolist-read-only)), `TableColumn::asAudio()` and `asVideo()` in a table ([Columns](concepts/resources.md#columns-table)), and a `FileUpload` field shows a player under an uploaded audio or video file.
 
 ### View (custom Vue component)
 

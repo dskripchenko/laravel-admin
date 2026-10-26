@@ -6,14 +6,18 @@
  * The value's shape in the form state:
  *   null | { disk, path, url, name, size, mime }
  *
+ * An audio or a video file shows a player under its name (MediaFilePreview),
+ * an image its picture.
+ *
  * The upload is a POST to /uploads/upload — or /uploads/image when image: true
  * — with FormData, through AdminClient: axios with the CSRF token and the
  * cookies from the config.
  */
 import { computed, ref } from 'vue'
 import { Upload, X } from 'lucide-vue-next'
-import { UidButton, UidIcon } from '@dskripchenko/ui'
+import { UidButton, UidIcon, UidLink } from '@dskripchenko/ui'
 import { useFormState } from '../render/formState'
+import MediaFilePreview from '../media/MediaFilePreview.vue'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
 import { trSafe as tr, tRaw } from '../../stores/i18n'
@@ -131,13 +135,16 @@ function clear(): void {
     </div>
 
     <div v-else class="admin-file-field__preview">
-      <div class="admin-file-field__preview-info">
-        <a :href="value.url" target="_blank" rel="noopener">{{ value.name }}</a>
-        <span class="admin-file-field__preview-meta">{{ value.mime }}</span>
+      <div class="admin-file-field__preview-row">
+        <div class="admin-file-field__preview-info">
+          <UidLink :href="value.url" external class="admin-file-field__name">{{ value.name }}</UidLink>
+          <span class="admin-file-field__preview-meta">{{ value.mime }}</span>
+        </div>
+        <UidButton variant="ghost" size="sm" @click="clear">
+          <UidIcon :icon="X" /> {{ tr('Удалить') }}
+        </UidButton>
       </div>
-      <UidButton variant="ghost" size="sm" @click="clear">
-        <UidIcon :icon="X" /> {{ tr('Удалить') }}
-      </UidButton>
+      <MediaFilePreview :key="value.url" :file="value" />
     </div>
 
     <p v-if="help && !errorMsg" class="admin-file-field__help">{{ help }}</p>
@@ -190,18 +197,28 @@ function clear(): void {
 }
 .admin-file-field__preview {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 12px;
   padding: 12px 16px;
   border: 1px solid var(--uid-color-border, #e5e7eb);
   border-radius: 8px;
 }
+.admin-file-field__preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
 .admin-file-field__preview-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   font-size: 13px;
+}
+.admin-file-field__name {
+  overflow-wrap: anywhere;
 }
 .admin-file-field__preview-meta {
   color: var(--uid-color-text-secondary, #62686f);

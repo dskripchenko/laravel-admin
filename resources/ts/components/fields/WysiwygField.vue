@@ -24,7 +24,9 @@
  * editor too, so a mermaid code block shows as its diagram there; the slash
  * menu gets «Диаграмма» to insert one. ```openapi blocks are API widgets
  * edited in place (preview, YAML/JSON source, a request constructor); the
- * slash menu inserts one with «API-запрос» (/api).
+ * slash menu inserts one with «API-запрос» (/api). ```video and ```audio
+ * blocks are the kit's players; «Видео» (/video) and «Аудио» (/audio) insert
+ * one with a template to fill in.
  */
 import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { DskWysiwyg, type EditorController, type SlashCommand } from '@dskripchenko/wysiwyg'
@@ -79,6 +81,21 @@ const API_TEMPLATE = [
   '  404: Not found',
 ].join('\n')
 
+const VIDEO_TEMPLATE = [
+  'src: https://example.com/media/clip.mp4',
+  'poster: https://example.com/media/clip.jpg',
+  'tracks:',
+  '  - src: https://example.com/media/clip.en.vtt',
+  '    srclang: en',
+  '    label: English',
+].join('\n')
+
+const AUDIO_TEMPLATE = [
+  'src: https://example.com/media/episode.mp3',
+  'title: Episode 1',
+  'waveform: true',
+].join('\n')
+
 const slashCommands = computed<SlashCommand[]>(() => [
   ...('mermaid' in blockRenderers
     ? [{
@@ -96,6 +113,24 @@ const slashCommands = computed<SlashCommand[]>(() => [
         hint: tr('Описание запроса: предпросмотр, YAML/JSON, конструктор'),
         aliases: ['api', 'openapi', 'request', 'endpoint', 'rest'],
         apply: (c: EditorController) => c.chain().focus().insertCodeBlock('openapi', API_TEMPLATE).run(),
+      }]
+    : []),
+  ...('video' in blockRenderers
+    ? [{
+        key: 'video',
+        label: tr('Видео'),
+        hint: tr('Видеоплеер: файл или HLS, постер, субтитры'),
+        aliases: ['video', 'movie', 'clip', 'hls'],
+        apply: (c: EditorController) => c.chain().focus().insertCodeBlock('video', VIDEO_TEMPLATE).run(),
+      }]
+    : []),
+  ...('audio' in blockRenderers
+    ? [{
+        key: 'audio',
+        label: tr('Аудио'),
+        hint: tr('Аудиоплеер: дорожка или плейлист, волновая форма'),
+        aliases: ['audio', 'sound', 'podcast', 'music'],
+        apply: (c: EditorController) => c.chain().focus().insertCodeBlock('audio', AUDIO_TEMPLATE).run(),
       }]
     : []),
 ])

@@ -126,6 +126,13 @@ TableColumn::make('cover')->asImage(),
 `asBytes()`, `asBadge()`, `asLink()`, `asImage()`, а для остального —
 `format(callable)`. Действия над строкой таблица рисует сама.
 
+`asAudio(?string $disk = null, bool $waveform = false)` ставит в ячейку мини-плеер UI-кита — запуск одной строки ставит на паузу остальные, а клик по плееру не открывает строку. `asVideo(?string $disk = null, ?string $posterColumn = null, int $width = 64, ?int $height = null)` показывает постер (из другой колонки строки) или плитку с кнопкой и открывает плеер в модальном окне; до клика ничего не скачивается. Значение — URL, путь в хранилище (с `$disk`) или загруженный файл.
+
+```php
+TableColumn::make('recording')->asAudio('local'),
+TableColumn::make('clip_path')->asVideo('public', posterColumn: 'cover_url'),
+```
+
 `asBadge()` сопоставляет значению тон (`info`, `success`, `warning`, `danger`,
 `default` или названия цветов `green`, `red`, `yellow`, `blue`, `gray`) и,
 когда хранимое значение не для чтения людьми, — подпись:

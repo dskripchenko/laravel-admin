@@ -9,6 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\Local\LocalFilesystemAdapter;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -119,7 +122,7 @@ final class UploadController extends ApiController
      * @response 404 {NotFoundErrorResponse}
      * @response 422 {ValidationErrorResponse}
      */
-    public function serve(Request $request): StreamedResponse|JsonResponse
+    public function serve(Request $request): BinaryFileResponse|StreamedResponse|JsonResponse
     {
         $diskName = (string) $request->query('disk', '');
         $path = (string) $request->query('path', '');
@@ -149,7 +152,27 @@ final class UploadController extends ApiController
             ], 404);
         }
 
+        // A file on a local disk goes out as a BinaryFileResponse, which
+        // answers Range requests: a video player seeks through them, and
+        // Safari does not play a video at all from a server without them.
+        if ($disk->getAdapter() instanceof LocalFilesystemAdapter) {
+            $response = new BinaryFileResponse($disk->path($path), 200, [
+                'Content-Type' => $disk->mimeType($path) ?: 'application/octet-stream',
+            ], false);
+            $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, basename($path), self::asciiName(basename($path)));
+
+            return $response;
+        }
+
         return $disk->response($path);
+    }
+
+    /** An ASCII stand-in for a file name, for the old `filename` parameter. */
+    private static function asciiName(string $name): string
+    {
+        $ascii = (string) preg_replace('/[^\x20-\x7E]/', '_', $name);
+
+        return str_replace(['/', '\\', '%'], '_', $ascii);
     }
 
     /**

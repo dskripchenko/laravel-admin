@@ -72,7 +72,7 @@ describe('mermaid block renderer', () => {
     provideBuiltinMarkdownRenderers(app)
     app.mount(document.createElement('div'))
     expect(seen).toBe(builtinMarkdownRenderers)
-    expect(Object.keys(builtinMarkdownRenderers)).toEqual(['mermaid', 'openapi', 'flow'])
+    expect(Object.keys(builtinMarkdownRenderers)).toEqual(['mermaid', 'openapi', 'flow', 'video', 'audio'])
     app.unmount()
   })
 })

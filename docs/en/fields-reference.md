@@ -236,6 +236,8 @@ directory come from `config('admin.uploads.disk')` and
 `maxFiles()` shape the validation rules, but the SPA's uploader handles a single
 file.
 
+An audio or video file shows the kit's player under its name, an image its picture; the view page shows the field the same way, with the file's link. Videos uploaded to a local disk are streamed with Range support, so they seek and play in Safari too.
+
 ## Relations
 
 ### RelationSelect

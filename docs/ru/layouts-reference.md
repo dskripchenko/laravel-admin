@@ -31,6 +31,8 @@ Layout — это контейнер для полей и других layout'о
 | `Markdown` | `Layout::markdown($text)` | Отрисованный markdown: заголовки с якорями, оглавление, подсвеченный код, таблицы, выноски |
 | `Code` | `Layout::code($code, 'php')` | Подсвеченный блок кода с копированием |
 | `Flow` | `Layout::flow('process')` | Процесс или машина состояний с живым мониторингом, переключателями и переходом в подпроцессы |
+| `Video` | `Layout::video('/media/intro.mp4')` | Видеоплеер: качества, HLS, субтитры, главы, превью кадров |
+| `Audio` | `Layout::audio([...])` | Аудиоплеер: дорожка или плейлист, волновая форма, мини-вариант |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Лента аудита показанной записи |
 | `Listener` | `Layout::listener([...])->listen([...])` | Часть формы, которую сервер перерисовывает при изменении отслеживаемых полей |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Таблица записей другого ресурса, принадлежащих редактируемой |
@@ -212,6 +214,8 @@ Layout::infolist([
 `ColorEntry`.
 
 `FlowEntry` показывает сохранённую модель процесса только для чтения (вид [поля `Flow`](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
+
+`VideoEntry` и `AudioEntry` проигрывают файл записи — URL, путь в хранилище (с `disk()`), загруженный файл или список: `AudioEntry::make('call_recording')->disk('local')` (однострочный мини-плеер; `->full()->waveform()` — полный), `VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`. См. [Video и Audio](#video-и-audio-медиаплееры).
 
 На собственном Screen'е записи читают state экрана.
 
@@ -485,6 +489,19 @@ YAML или JSON — `method`, `url`, `params`, `auth`, `body`, `responses` ил
 
 **Блоки процессов.** Блок кода с языком `flow` содержит модель процесса в JSON (см. [Flow](#flow-процесс-с-живым-мониторингом)) или исходник Mermaid `stateDiagram-v2` / `flowchart`; он становится процессом только для чтения — панорама, масштаб, подпроцессы, детали шага. Пакет загружается, только когда на странице есть такой блок.
 
+**Медиаблоки.** Блоки кода с языком `video` или `audio` становятся плеерами UI-кита. Источник — просто адрес (по одному на строку для плейлиста или источников видео), JSON или несколько строк YAML с опциями [Video и Audio](#video-и-audio-медиаплееры): `src`, `sources`, `poster`, `tracks`, `thumbnails`, `title`, `aspectRatio`, `maxWidth`, `autoplay`, `loop` для видео; `src` или `tracks`, `title`, `artist`, `waveform`, `peaks`, `mini` для аудио. В WYSIWYG-редакторе их вставляет меню `/video` и `/audio`.
+
+````markdown
+```video
+src: /media/intro.mp4
+poster: /media/intro.jpg
+tracks:
+  - src: /media/intro.en.vtt
+    srclang: en
+    label: English
+```
+````
+
 Хост добавляет рендереры для других языков так же, в `onAppCreated`:
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
 (`markdownBlockRenderersKey` — из `@dskripchenko/ui`,
@@ -658,6 +675,81 @@ final class OrderProcessScreen extends Screen
 Подписи встроенной модели (метки узлов и переходов, описания, заголовок)
 проходят через JSON-переводы панели, как любые другие подписи; модель из state
 показывается как хранится.
+
+### Video и Audio (медиаплееры)
+
+Плееры UI-кита, `UidVideo` и `UidAudio`: полоса перемотки с буфером, главами и превью кадров, громкость, меню скорости, качества и субтитров, полный экран, «картинка в картинке», горячие клавиши и Media Session API. Запуск плеера ставит на паузу остальные на странице. Подписи элементов управления — на языке панели. HLS (`.m3u8`, fMP4 или MPEG-TS, AES-128, альтернативные звуковые дорожки) играет через адаптер кита, который загружается, только когда на странице есть поток.
+
+```php
+Layout::video([
+    ['src' => '/media/intro-1080.mp4', 'label' => '1080p'],   // источники с label образуют меню качества
+    ['src' => '/media/intro-720.mp4', 'label' => '720p'],
+])
+    ->title('Введение')
+    ->poster('/media/intro.jpg')
+    ->subtitles('/media/intro.en.vtt', 'en', 'English', default: true)
+    ->subtitles('/media/intro.ru.vtt', 'ru', 'Русский')
+    ->chapters('/media/intro.chapters.vtt')
+    ->thumbnails('/media/intro.thumbs.vtt')   // реплики указывают на тайлы спрайта: sprite.jpg#xywh=0,0,160,90
+    ->resume()                                // запоминает позицию в браузере
+    ->maxWidth(760),
+
+Layout::video('/streams/intro/master.m3u8'),          // HLS — по расширению
+Layout::video('videos/intro.mp4')->disk('public'),    // путь в хранилище
+Layout::video('recording'),                           // состояние экрана: $state['recording']
+
+Layout::audio('/media/episode-12.mp3')->title('Выпуск 12')->artist('Подкаст')->waveform(),
+Layout::audio([
+    ['src' => '/media/a.mp3', 'title' => 'Начало', 'artist' => 'Группа', 'duration' => 64],
+    ['src' => '/media/b.ogg', 'title' => 'Финал', 'peaks' => $peaks],   // заранее посчитанные пики, 0..1
+])->waveform(),
+Layout::audio('calls/2026-10-26.ogg')->disk('local')->mini(),
+```
+
+**Источник.** Строка — это URL, путь в хранилище или ключ состояния: медиа, если в ней есть схема или слэш либо она оканчивается медиа-расширением (`intro.mp4`); иначе это ключ состояния экрана или записи на странице просмотра (`fromState('media.url')` говорит это явно). Значение там может быть URL, путём, загруженным файлом `{url, mime, name, …}` (то, что сохраняет `FileUpload`), списком таких (плейлист или источники видео), а для видео — целым объектом `{sources, poster, tracks, thumbnails}`. Изменение значения — скажем, селектом в той же форме — переключает плеер.
+
+**Пути в хранилище.** С `disk()` пути превращаются в URL — постеры и файлы WebVTT тоже: `Storage::url()` для диска с публичным адресом (`url` в конфиге или облачный драйвер), эндпоинт панели `uploads/serve` для локального диска без него. Этот эндпоинт отвечает на Range-запросы, без которых не работает перемотка (а Safari вообще не играет видео); диск должен быть в `admin.uploads.servable_disks`. Значения из состояния разрешаются в браузере так же. Для диска с подписанными временными ссылками кладите в состояние сами ссылки.
+
+Оба плеера:
+
+| Метод | Что делает |
+|---|---|
+| `disk(string $disk)` | Пути разрешаются через этот диск |
+| `fromState(string $key)` | Медиа берётся из ключа состояния |
+| `resume(?string $key = null)` | Запоминает позицию воспроизведения (localStorage); по умолчанию ключ — адрес медиа |
+| `loop()`, `preload('none'\|'metadata'\|'auto')` | |
+| `exclusive(false)` | Играть вместе с другими плеерами, не ставя их на паузу |
+| `hotkeys(false)`, `rates([1, 1.5, 2])` | Горячие клавиши, меню скорости |
+| `crossorigin('anonymous')` | Для медиа, дорожек и волновой формы с другого origin |
+| `maxWidth(int\|string $width)` | Максимальная ширина: `760` (px) или `'40rem'` |
+| `hlsOptions(array $options)` | Адаптер HLS: `preferNative` (`false` — адаптер даже там, где браузер сам играет HLS, с меню качества и звуковых дорожек), `startLevel`, `audioLanguage`, `maxBufferAhead`, `maxBufferBehind`, `retries`, `initialBandwidth`, `capToPlayerSize` |
+
+Видео:
+
+| Метод | Что делает |
+|---|---|
+| `source($src, $label = null, $type = null)`, `quality($label, $src)` | Добавляет источник; источники идут по предпочтению, с label образуют меню качества |
+| `hls($src, $label = null)`, `mime($type)` | Поток, адрес которого не оканчивается на `.m3u8`; тип источников, заданных без него |
+| `title($title)` | Подпись над плеером и его доступное имя |
+| `poster($url)`, `thumbnails($vtt)` | Картинка до воспроизведения; WebVTT с тайлами спрайта над полосой перемотки |
+| `subtitles($src, $lang, $label, $default)`, `captions(...)`, `chapters($src)`, `tracks([...])` | Дорожки WebVTT |
+| `autoplay()` | Запуск сразу, без звука (браузеры блокируют автозапуск со звуком); `muted()`, `controls(false)` |
+| `aspectRatio('16 / 9')` | Пропорции блока, пока размер видео неизвестен; `'4:3'` тоже подходит |
+| `autoHide(int $ms)` | Сколько ждать без активности, прежде чем скрыть управление во время воспроизведения |
+
+Аудио:
+
+| Метод | Что делает |
+|---|---|
+| `track($src, ['title' => …, 'artist' => …, 'duration' => …, 'peaks' => […]])` | Добавляет дорожку; две и больше — плейлист с «назад/вперёд» и списком |
+| `title()`, `artist()`, `mime()` | Для одной дорожки |
+| `waveform()` | Волновая форма вместо полосы, считается в браузере (тот же origin или CORS; не для потоков) |
+| `peaks([...])` | Заранее посчитанные пики 0..1: волновая форма без декодирования — для длинных записей |
+| `mini()` | Одна строка: кнопка, короткая полоса, время |
+| `compact()` | Полная строка без громкости и скорости |
+| `playlist(false)`, `autoAdvance(false)` | Скрыть список; останавливаться после каждой дорожки |
+
+`VideoEntry` и `AudioEntry` показывают файл записи на странице просмотра (см. [Infolist](#infolist-только-чтение)), `TableColumn::asAudio()` и `asVideo()` — в таблице ([Колонки](concepts/resources.md#columns-таблица)), а поле `FileUpload` показывает плеер под загруженным аудио- или видеофайлом.
 
 ### View (собственный Vue-компонент)
 

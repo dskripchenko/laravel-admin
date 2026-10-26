@@ -64,6 +64,8 @@ import MarkdownLayout from '../layouts/MarkdownLayout.vue'
 import CodeLayout from '../layouts/CodeLayout.vue'
 import ListenerLayout from '../layouts/ListenerLayout.vue'
 import FlowLayout from '../layouts/FlowLayout.vue'
+import VideoLayout from '../layouts/VideoLayout.vue'
+import AudioLayout from '../layouts/AudioLayout.vue'
 
 /**
  * A TextField with the input's `type` preset.
@@ -202,6 +204,9 @@ export function registerBuiltinComponents(): void {
       code: CodeLayout,
       // `Layout::flow(...)` — a process with live monitoring.
       flow: FlowLayout,
+      // `Layout::video(...)` and `Layout::audio(...)` — the kit's players.
+      video: VideoLayout,
+      audio: AudioLayout,
       // `Layout::listener([...])->listen([...])` — re-rendered by the server
       // as the watched fields change.
       listener: ListenerLayout,

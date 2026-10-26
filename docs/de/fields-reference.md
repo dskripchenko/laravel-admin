@@ -247,6 +247,8 @@ Verzeichnis stammen aus `config('admin.uploads.disk')` und
 `maxFiles()` formen die Validierungsregeln, aber der Uploader der SPA
 verarbeitet eine einzelne Datei.
 
+Eine Audio- oder Videodatei zeigt den Player des Kits unter ihrem Namen, ein Bild seine Vorschau; die Ansichtsseite zeigt das Feld genauso, mit dem Link zur Datei. Videos auf einer lokalen Disk werden mit Range-Unterstützung gestreamt, sodass sie sich spulen lassen und auch in Safari laufen.
+
 ## Relationen
 
 ### RelationSelect

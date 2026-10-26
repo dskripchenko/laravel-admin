@@ -111,6 +111,13 @@ TableColumn::make('cover')->asImage(),
 `asBytes()`、`asBadge()`、`asLink()`、`asImage()`，其他情况使用
 `format(callable)`。行 Action 由表格自身渲染。
 
+`asAudio(?string $disk = null, bool $waveform = false)` 在单元格中放入套件的迷你音频播放器——一行开始播放时其他行会暂停，点击播放器不会打开该行。`asVideo(?string $disk = null, ?string $posterColumn = null, int $width = 64, ?int $height = null)` 显示海报（来自该行的另一列）或带播放按钮的普通方块，点击后在模态框中打开播放器；点击前不会下载任何内容。值可以是 URL、存储路径（配合 `$disk`）或已上传的文件。
+
+```php
+TableColumn::make('recording')->asAudio('local'),
+TableColumn::make('clip_path')->asVideo('public', posterColumn: 'cover_url'),
+```
+
 `asBadge()` 把值映射到一种色调（`info`、`success`、`warning`、`danger`、
 `default`，或颜色名 `green`、`red`、`yellow`、`blue`、`gray`），并且
 在存储的值不适合直接给人阅读时，再映射到一个标签：

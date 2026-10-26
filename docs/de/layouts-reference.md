@@ -31,6 +31,8 @@ sich beliebig tief verschachteln.
 | `Markdown` | `Layout::markdown($text)` | Gerendertes Markdown: Überschriften mit Ankern, Inhaltsverzeichnis, hervorgehobener Code, Tabellen, Hinweisboxen |
 | `Code` | `Layout::code($code, 'php')` | Hervorgehobener, kopierbarer Codeblock |
 | `Flow` | `Layout::flow('process')` | Prozess oder Zustandsautomat mit Live-Monitoring, Schaltern und Drill-down |
+| `Video` | `Layout::video('/media/intro.mp4')` | Videoplayer: Qualitäten, HLS, Untertitel, Kapitel, Vorschaubilder |
+| `Audio` | `Layout::audio([...])` | Audioplayer: ein Titel oder eine Playlist, Wellenform, Mini-Variante |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit-Zeitleiste des angezeigten Datensatzes |
 | `Listener` | `Layout::listener([...])->listen([...])` | Teil eines Formulars, den der Server neu rendert, wenn sich beobachtete Felder ändern |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Tabelle der Datensätze einer anderen Resource, die zum bearbeiteten Datensatz gehören |
@@ -212,6 +214,8 @@ Entry-Typen: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 `ColorEntry`.
 
 `FlowEntry` zeigt ein gespeichertes Prozessmodell schreibgeschützt (die Ansicht eines [`Flow`-Felds](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
+
+`VideoEntry` und `AudioEntry` spielen eine Datei des Datensatzes ab — eine URL, einen Speicherpfad (mit `disk()`), eine hochgeladene Datei oder eine Liste: `AudioEntry::make('call_recording')->disk('local')` (der einzeilige Mini-Player; `->full()->waveform()` für den vollen), `VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`. Siehe [Video und Audio](#video-und-audio-medienplayer).
 
 In einem Custom Screen lesen die Entries den State des Screens.
 
@@ -492,6 +496,19 @@ beschreibt die Dokumentation des Pakets (API blocks).
 
 **Prozessblöcke.** Ein umzäunter Block mit der Sprache `flow` enthält ein Prozessmodell in JSON (siehe [Flow](#flow-prozess-mit-live-monitoring)) oder Mermaid-Quelltext `stateDiagram-v2` / `flowchart`; er wird zu einer schreibgeschützten Prozessansicht — Verschieben, Zoomen, Unterprozesse, die Details eines Schritts. Das Paket wird nur geladen, wenn eine Seite einen solchen Block enthält.
 
+**Medienblöcke.** Umzäunte Blöcke mit der Sprache `video` oder `audio` werden zu den Playern des UI-Kits. Die Quelle ist eine bloße URL (eine pro Zeile für eine Playlist oder Videoquellen), JSON oder ein paar Zeilen YAML mit den Optionen von [Video und Audio](#video-und-audio-medienplayer): `src`, `sources`, `poster`, `tracks`, `thumbnails`, `title`, `aspectRatio`, `maxWidth`, `autoplay`, `loop` für Video; `src` oder `tracks`, `title`, `artist`, `waveform`, `peaks`, `mini` für Audio. Im WYSIWYG-Editor fügt das Slash-Menü sie mit `/video` und `/audio` ein.
+
+````markdown
+```video
+src: /media/intro.mp4
+poster: /media/intro.jpg
+tracks:
+  - src: /media/intro.en.vtt
+    srclang: en
+    label: English
+```
+````
+
 Ein Host ergänzt Renderer für weitere Sprachen auf dieselbe Weise, in
 `onAppCreated`:
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
@@ -673,6 +690,81 @@ Die Beschriftungen eines eingebetteten Modells (Knoten- und Kantenlabels,
 Beschreibungen, der Titel) laufen wie alle anderen Beschriftungen durch die
 JSON-Übersetzungen des Panels; ein Modell aus dem State wird so gezeigt, wie
 es gespeichert ist.
+
+### Video und Audio (Medienplayer)
+
+Die Player des UI-Kits, `UidVideo` und `UidAudio`: Fortschrittsleiste mit gepufferten Bereichen, Kapiteln und Vorschaubildern, Lautstärke, Menüs für Geschwindigkeit, Qualität und Untertitel, Vollbild, Bild-im-Bild, Tastenkürzel und die Media Session API. Startet ein Player, pausieren die anderen auf der Seite. Die Bedienelemente sprechen die Sprache des Panels. HLS (`.m3u8`, fMP4 oder MPEG-TS, AES-128, alternative Tonspuren) läuft über den Adapter des Kits, der erst geladen wird, wenn ein Stream erscheint.
+
+```php
+Layout::video([
+    ['src' => '/media/intro-1080.mp4', 'label' => '1080p'],   // Quellen mit label bilden das Qualitätsmenü
+    ['src' => '/media/intro-720.mp4', 'label' => '720p'],
+])
+    ->title('Einführung')
+    ->poster('/media/intro.jpg')
+    ->subtitles('/media/intro.en.vtt', 'en', 'English', default: true)
+    ->subtitles('/media/intro.de.vtt', 'de', 'Deutsch')
+    ->chapters('/media/intro.chapters.vtt')
+    ->thumbnails('/media/intro.thumbs.vtt')   // Cues zeigen auf Sprite-Kacheln: sprite.jpg#xywh=0,0,160,90
+    ->resume()                                // merkt sich die Position im Browser
+    ->maxWidth(760),
+
+Layout::video('/streams/intro/master.m3u8'),          // HLS, an der Endung erkannt
+Layout::video('videos/intro.mp4')->disk('public'),    // ein Speicherpfad
+Layout::video('recording'),                           // der Zustand des Screens: $state['recording']
+
+Layout::audio('/media/episode-12.mp3')->title('Folge 12')->artist('Der Podcast')->waveform(),
+Layout::audio([
+    ['src' => '/media/a.mp3', 'title' => 'Intro', 'artist' => 'Band', 'duration' => 64],
+    ['src' => '/media/b.ogg', 'title' => 'Outro', 'peaks' => $peaks],   // vorberechnete Spitzen, 0..1
+])->waveform(),
+Layout::audio('calls/2026-10-26.ogg')->disk('local')->mini(),
+```
+
+**Die Quelle.** Ein String ist eine URL, ein Speicherpfad oder ein Zustandsschlüssel: Medium, wenn er ein Schema oder einen Schrägstrich hat oder auf eine Medienendung endet (`intro.mp4`); sonst nennt er einen Schlüssel des Screen-Zustands oder des Datensatzes auf einer Ansichtsseite (`fromState('media.url')` sagt es ausdrücklich). Der Wert dort kann eine URL, ein Pfad, eine hochgeladene Datei `{url, mime, name, …}` (was ein `FileUpload` speichert), eine Liste davon (eine Playlist oder Videoquellen) oder für Video ein ganzes Objekt `{sources, poster, tracks, thumbnails}` sein. Ändert sich der Wert — etwa durch ein Select im selben Formular —, wechselt der Player.
+
+**Speicherpfade.** Mit `disk()` werden Pfade zu URLs — auch Poster und WebVTT-Dateien: `Storage::url()` für eine Disk mit öffentlicher URL (`url` in ihrer Konfiguration oder ein Cloud-Treiber), der Streaming-Endpunkt des Panels `uploads/serve` für eine lokale Disk ohne. Dieser Endpunkt beantwortet Range-Anfragen, die das Spulen braucht (und Safari, um ein Video überhaupt abzuspielen); die Disk muss in `admin.uploads.servable_disks` stehen. Werte aus dem Zustand werden im Browser genauso aufgelöst. Für eine Disk mit signierten, temporären URLs gehören die URLs selbst in den Zustand.
+
+Beide Player:
+
+| Methode | Wirkung |
+|---|---|
+| `disk(string $disk)` | Speicherpfade über diese Disk auflösen |
+| `fromState(string $key)` | Das Medium aus einem Zustandsschlüssel lesen |
+| `resume(?string $key = null)` | Die Wiedergabeposition merken (localStorage); standardmäßig ist die URL des Mediums der Schlüssel |
+| `loop()`, `preload('none'\|'metadata'\|'auto')` | |
+| `exclusive(false)` | Neben den anderen Playern spielen, statt sie zu pausieren |
+| `hotkeys(false)`, `rates([1, 1.5, 2])` | Tastenkürzel, das Geschwindigkeitsmenü |
+| `crossorigin('anonymous')` | Für Medien, Spuren und Wellenformen von einem anderen Origin |
+| `maxWidth(int\|string $width)` | Die größte Breite: `760` (px) oder `'40rem'` |
+| `hlsOptions(array $options)` | Der HLS-Adapter: `preferNative` (`false` — der Adapter auch dort, wo der Browser HLS selbst abspielt, mit Qualitäts- und Tonspurmenü), `startLevel`, `audioLanguage`, `maxBufferAhead`, `maxBufferBehind`, `retries`, `initialBandwidth`, `capToPlayerSize` |
+
+Video:
+
+| Methode | Wirkung |
+|---|---|
+| `source($src, $label = null, $type = null)`, `quality($label, $src)` | Eine Quelle hinzufügen; Quellen in der Reihenfolge der Präferenz, solche mit label bilden das Qualitätsmenü |
+| `hls($src, $label = null)`, `mime($type)` | Ein Stream, dessen Adresse nicht auf `.m3u8` endet; der Typ der Quellen ohne Typ |
+| `title($title)` | Eine Beschriftung über dem Player und sein zugänglicher Name |
+| `poster($url)`, `thumbnails($vtt)` | Das Bild vor der Wiedergabe; das WebVTT mit Sprite-Kacheln über der Fortschrittsleiste |
+| `subtitles($src, $lang, $label, $default)`, `captions(...)`, `chapters($src)`, `tracks([...])` | WebVTT-Spuren |
+| `autoplay()` | Sofort starten, stumm (Browser blockieren Autoplay mit Ton); `muted()`, `controls(false)` |
+| `aspectRatio('16 / 9')` | Das Seitenverhältnis, bevor die Videogröße bekannt ist; `'4:3'` geht auch |
+| `autoHide(int $ms)` | Leerlaufzeit, bevor die Bedienelemente während der Wiedergabe verschwinden |
+
+Audio:
+
+| Methode | Wirkung |
+|---|---|
+| `track($src, ['title' => …, 'artist' => …, 'duration' => …, 'peaks' => […]])` | Einen Titel hinzufügen; zwei oder mehr ergeben eine Playlist mit Zurück/Weiter und Titelliste |
+| `title()`, `artist()`, `mime()` | Für einen einzelnen Titel |
+| `waveform()` | Die Wellenform als Fortschrittsleiste, im Browser dekodiert (gleicher Origin oder CORS; nicht für Streams) |
+| `peaks([...])` | Vorberechnete Spitzen 0..1: die Wellenform ohne Dekodieren — für lange Aufnahmen |
+| `mini()` | Eine Zeile: Play, eine kurze Leiste, die Zeit |
+| `compact()` | Die volle Zeile ohne Lautstärke und Geschwindigkeit |
+| `playlist(false)`, `autoAdvance(false)` | Die Titelliste ausblenden; nach jedem Titel anhalten |
+
+`VideoEntry` und `AudioEntry` zeigen eine Datei des Datensatzes auf einer Ansichtsseite (siehe [Infolist](#infolist-schreibgeschützt)), `TableColumn::asAudio()` und `asVideo()` in einer Tabelle ([Spalten](concepts/resources.md#spalten-tabelle)), und ein `FileUpload`-Feld zeigt unter einer hochgeladenen Audio- oder Videodatei einen Player.
 
 ### View (eigene Vue-Komponente)
 

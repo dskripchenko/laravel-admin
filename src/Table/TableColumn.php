@@ -289,6 +289,34 @@ final class TableColumn
     }
 
     /**
+     * A one-line audio player in the cell (the kit's mini UidAudio). The value
+     * is a URL, a storage path (with $disk) or an uploaded file
+     * (`{url, mime, …}`); starting one row pauses the others.
+     */
+    public function asAudio(?string $disk = null, bool $waveform = false): self
+    {
+        return $this->as('audio', array_filter([
+            'disk' => $disk !== null ? \Dskripchenko\LaravelAdmin\Support\MediaUrl::base($disk) : null,
+            'waveform' => $waveform ?: null,
+        ], static fn (mixed $v): bool => $v !== null));
+    }
+
+    /**
+     * A video thumbnail with a play button; a click opens the player in a
+     * modal. The thumbnail is the poster from $posterColumn (a column of the
+     * row), else a plain tile — nothing is downloaded until the click.
+     */
+    public function asVideo(?string $disk = null, ?string $posterColumn = null, int $width = 64, ?int $height = null): self
+    {
+        return $this->as('video', array_filter([
+            'disk' => $disk !== null ? \Dskripchenko\LaravelAdmin\Support\MediaUrl::base($disk) : null,
+            'poster' => $posterColumn,
+            'width' => $width,
+            'height' => $height ?? (int) round($width * 9 / 16),
+        ], static fn (mixed $v): bool => $v !== null));
+    }
+
+    /**
      * A custom formatter — a server-side transformation of the value, called
      * as `format($value, $row)` while the rows are serialized: a resource's
      * list and tree, a TableWidget. The cell shows what it returns, and so
