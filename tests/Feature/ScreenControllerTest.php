@@ -232,3 +232,11 @@ it('GET /state hands the query string to Screen::query()', function (): void {
         ->assertJsonPath('payload.state.params', ['billing', '30'])
         ->assertJsonPath('payload.state.tab', 'billing');
 });
+
+it('runMethod answers 403, not 500, to a Laravel authorization refusal', function (): void {
+    $response = $this->postJson('/api/admin/test-contact/runMethod', ['method' => 'forbid', 'payload' => []]);
+
+    $response->assertForbidden();
+    expect($response->json('payload.errorKey'))->toBe('forbidden')
+        ->and($response->json('payload.message'))->toBe('Not yours to send');
+});

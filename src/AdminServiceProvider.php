@@ -290,8 +290,9 @@ final class AdminServiceProvider extends ServiceProvider
     /**
      * Registers exception handlers in laravel-api's ApiErrorHandler.
      *
-     * Without this a ValidationException comes back as a 500, because
-     * laravel-api has no built-in support for Laravel's ValidationException.
+     * Without this a ValidationException — and Laravel's authorization and
+     * authentication exceptions — come back as a 500, because laravel-api
+     * maps only its own and HTTP exceptions.
      */
     private function registerExceptionHandlers(): void
     {
@@ -304,6 +305,23 @@ final class AdminServiceProvider extends ServiceProvider
                     'messages' => $e->errors(),
                 ], 422);
             },
+        );
+
+        // Policies and services refuse with Laravel's own exceptions; without
+        // these they came back as a 500 too.
+        ApiErrorHandler::addErrorHandler(
+            \Illuminate\Auth\Access\AuthorizationException::class,
+            static fn (\Illuminate\Auth\Access\AuthorizationException $e) => ApiResponseHelper::sayError([
+                'errorKey' => 'forbidden',
+                'message' => $e->getMessage() !== '' ? $e->getMessage() : 'This action is unauthorized.',
+            ], 403),
+        );
+        ApiErrorHandler::addErrorHandler(
+            \Illuminate\Auth\AuthenticationException::class,
+            static fn (\Illuminate\Auth\AuthenticationException $e) => ApiResponseHelper::sayError([
+                'errorKey' => 'unauthenticated',
+                'message' => $e->getMessage(),
+            ], 401),
         );
     }
 

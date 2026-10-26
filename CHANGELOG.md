@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   aborted the transaction, so every later query failed too — the panel shell
   answered 500. A section is now described inside a savepoint when a
   transaction is open, so its failure rolls back only itself.
+- **Laravel's `AuthorizationException` and `AuthenticationException` from a
+  screen method or an API action answered 500.** laravel-api maps only its own
+  and HTTP exceptions; the panel now answers 403 (`errorKey: forbidden`) and
+  401 (`unauthenticated`), as it already did for validation errors (422).
 
 ## 1.61.1
 
