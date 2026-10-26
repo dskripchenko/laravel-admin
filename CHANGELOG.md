@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **A section that failed while the manifest was built broke the rest of the
+  request on PostgreSQL** when the host runs each request in a transaction
+  (a multi-tenant host switching the schema with `SET LOCAL`, for instance).
+  The section was logged and left out as designed, but its failed query had
+  aborted the transaction, so every later query failed too — the panel shell
+  answered 500. A section is now described inside a savepoint when a
+  transaction is open, so its failure rolls back only itself.
+
 ## 1.61.1
 
 ### Fixed
