@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.61.0
+
+### Changed
+
+- **Process flows get statechart building blocks** (`@dskripchenko/flow`
+  `^1.1.0`, required now): `Layout::flow()` and `Field\Flow` draw the
+  `parallel` node type (concurrent regions as compartments, region lanes when
+  entered, the `join` rule), the `timer`, `wait` and `any` ("any state") node
+  types, edge triggers (`trigger: 'timer' | 'event'`) and the `unknown` /
+  `compensated` statuses — no `statusTones` needed for them. Graphs from
+  before draw as they did.
+
 ## 1.60.2
 
 ### Fixed
