@@ -5,6 +5,20 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.60.2
+
+### Fixed
+
+- **Typing after a slash item or a block change in the editor.** Choosing a
+  heading, quote or list from the WYSIWYG slash menu with Enter (or from the
+  toolbar) left the caret in the replaced block: the text went to the previous
+  paragraph (Chromium) or outside any block (WebKit). Fixed in
+  `@dskripchenko/wysiwyg` 0.5.2, which the panel now requires.
+
+### Changed
+
+- Requires `@dskripchenko/wysiwyg` `^0.5.2`.
+
 ## 1.60.1
 
 ### Fixed
