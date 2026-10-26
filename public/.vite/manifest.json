@@ -5,12 +5,42 @@
     "src": "node_modules/@dskripchenko/diagrams/dist/index.mjs",
     "isDynamicEntry": true
   },
+  "node_modules/@dskripchenko/flow/dist/index.mjs": {
+    "file": "assets/index-BoL77fR5.js",
+    "name": "index",
+    "src": "node_modules/@dskripchenko/flow/dist/index.mjs",
+    "isDynamicEntry": true
+  },
+  "node_modules/@dskripchenko/flow/dist/mermaid.mjs": {
+    "file": "assets/mermaid-DtZ_5und.js",
+    "name": "mermaid",
+    "src": "node_modules/@dskripchenko/flow/dist/mermaid.mjs",
+    "isDynamicEntry": true,
+    "imports": [
+      "node_modules/@dskripchenko/flow/dist/index.mjs",
+      "node_modules/@dskripchenko/diagrams/dist/index.mjs"
+    ]
+  },
+  "node_modules/@dskripchenko/flow/dist/style.css": {
+    "file": "assets/style-CUWDlZYe.css",
+    "src": "node_modules/@dskripchenko/flow/dist/style.css"
+  },
+  "node_modules/@dskripchenko/flow/dist/vue.mjs": {
+    "file": "assets/vue-DUAfoThu.js",
+    "name": "vue",
+    "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
+    "isDynamicEntry": true,
+    "imports": [
+      "node_modules/@dskripchenko/flow/dist/index.mjs",
+      "resources/ts/app.ts"
+    ]
+  },
   "node_modules/@dskripchenko/openapi/dist/style.css": {
     "file": "assets/style--QZffli4.css",
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-CHlqO4VY.js",
+    "file": "assets/vue-ChDbsNUx.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -18,17 +48,28 @@
       "resources/ts/app.ts"
     ]
   },
+  "node_modules/@dskripchenko/ui/dist/hls/index.mjs": {
+    "file": "assets/index-DJj3gJE5.js",
+    "name": "index",
+    "src": "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
+    "isDynamicEntry": true
+  },
   "resources/ts/app.ts": {
-    "file": "assets/app-D-RDK4Gd.js",
+    "file": "assets/app-DkNf9HeZ.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
     "dynamicImports": [
+      "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
+      "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
+      "node_modules/@dskripchenko/flow/dist/vue.mjs",
+      "node_modules/@dskripchenko/flow/dist/index.mjs",
+      "node_modules/@dskripchenko/flow/dist/mermaid.mjs",
       "node_modules/@dskripchenko/diagrams/dist/index.mjs",
       "node_modules/@dskripchenko/openapi/dist/vue.mjs"
     ],
     "css": [
-      "assets/app-C7rNbQVF.css"
+      "assets/app-X5Us4t_X.css"
     ]
   }
 }

@@ -43,6 +43,7 @@ import MorphSwitcherField from '../fields/MorphSwitcherField.vue'
 import LabelField from '../fields/LabelField.vue'
 import HiddenField from '../fields/HiddenField.vue'
 import GroupField from '../fields/GroupField.vue'
+import FlowField from '../fields/FlowField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -62,6 +63,7 @@ import AuditTrailLayout from '../layouts/AuditTrailLayout.vue'
 import MarkdownLayout from '../layouts/MarkdownLayout.vue'
 import CodeLayout from '../layouts/CodeLayout.vue'
 import ListenerLayout from '../layouts/ListenerLayout.vue'
+import FlowLayout from '../layouts/FlowLayout.vue'
 
 /**
  * A TextField with the input's `type` preset.
@@ -174,6 +176,8 @@ export function registerBuiltinComponents(): void {
       relation_table: RelationTableField,
       // Records of another resource, picked in a dialog: Field\ResourcePicker.
       resource_picker: ResourcePickerField,
+      // A process editor (Field\Flow), @dskripchenko/flow loaded on first use.
+      flow: FlowField,
     },
     layouts: {
       rows: RowsLayout,
@@ -196,6 +200,8 @@ export function registerBuiltinComponents(): void {
       // `Layout::markdown($text)` and `Layout::code($code, 'php')`.
       markdown: MarkdownLayout,
       code: CodeLayout,
+      // `Layout::flow(...)` — a process with live monitoring.
+      flow: FlowLayout,
       // `Layout::listener([...])->listen([...])` — re-rendered by the server
       // as the watched fields change.
       listener: ListenerLayout,

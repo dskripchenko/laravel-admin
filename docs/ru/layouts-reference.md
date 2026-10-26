@@ -30,6 +30,7 @@ Layout — это контейнер для полей и других layout'о
 | `View` | `Layout::view('component-name', $props)` | Собственный Vue-компонент |
 | `Markdown` | `Layout::markdown($text)` | Отрисованный markdown: заголовки с якорями, оглавление, подсвеченный код, таблицы, выноски |
 | `Code` | `Layout::code($code, 'php')` | Подсвеченный блок кода с копированием |
+| `Flow` | `Layout::flow('process')` | Процесс или машина состояний с живым мониторингом, переключателями и переходом в подпроцессы |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Лента аудита показанной записи |
 | `Listener` | `Layout::listener([...])->listen([...])` | Часть формы, которую сервер перерисовывает при изменении отслеживаемых полей |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Таблица записей другого ресурса, принадлежащих редактируемой |
@@ -209,6 +210,8 @@ Layout::infolist([
 Типы записей: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 `ImageEntry`, `RelationEntry`, `RepeatableEntry`, `MapEntry`,
 `ColorEntry`.
+
+`FlowEntry` показывает сохранённую модель процесса только для чтения (вид [поля `Flow`](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
 
 На собственном Screen'е записи читают state экрана.
 
@@ -452,6 +455,7 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 | Блоки кода в тройных обратных кавычках с языком | Подсвеченный код с кнопкой копирования; язык берётся из ограждения (`php`, `js`, `ts`, `json`, `bash`, `sql`, `html`, `vue`, `css`, …) |
 | Блоки ` ```mermaid ` | Диаграммы в синтаксисе Mermaid: flowchart, sequence, state, ER, классы, C4, pie, gantt, timeline, XY-график и интеллект-карта, рисуются в SVG пакетом [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | Блоки ` ```openapi ` | API-виджеты: запрос, описанный на YAML или JSON (или целый OpenAPI-документ), становится операцией с try-it, примерами кода, типами TypeScript и PDF — пакетом [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
+| Блоки ` ```flow ` | Процесс только для чтения: модель в JSON или исходник Mermaid `stateDiagram-v2` / `flowchart` — пакетом [@dskripchenko/flow](https://github.com/dskripchenko/flow) |
 | `\| a \| b \|` + `\|---\|:---:\|` | Таблицы с выравниванием колонок |
 | `> цитата` | Цитата |
 | `> **Note** …`, `> **Внимание** …` | Выноска; также `Tip`/`Совет`, `Important`/`Важно`, `Caution`/`Осторожно` и форма GitHub `> [!NOTE]` |
@@ -478,6 +482,8 @@ YAML или JSON — `method`, `url`, `params`, `auth`, `body`, `responses` ил
 браузера читателя, примеры кода, типы TypeScript и PDF операции. Пакет
 загружается, только когда на странице есть такой блок. Формат описан в
 документации пакета (раздел «API blocks»).
+
+**Блоки процессов.** Блок кода с языком `flow` содержит модель процесса в JSON (см. [Flow](#flow-процесс-с-живым-мониторингом)) или исходник Mermaid `stateDiagram-v2` / `flowchart`; он становится процессом только для чтения — панорама, масштаб, подпроцессы, детали шага. Пакет загружается, только когда на странице есть такой блок.
 
 Хост добавляет рендереры для других языков так же, в `onAppCreated`:
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
@@ -526,6 +532,132 @@ Layout::code(<<<'PHP'
 | `lineNumbers(bool $on = true)` | Номера строк |
 | `maxHeight(int\|string $height)` | Прокрутка после этой высоты: `400` (px) или `'50vh'` |
 | `wrap(bool $wrap = true)` | Переносить длинные строки вместо горизонтальной прокрутки |
+
+### Flow (процесс с живым мониторингом)
+
+Процесс или машина состояний, нарисованная
+[@dskripchenko/flow](https://github.com/dskripchenko/flow): панорама, масштаб,
+миникарта, панель деталей, живое состояние выполняющегося экземпляра (или
+счётчики по всем экземплярам), переключатели, включающие и выключающие шаги, и
+переход внутрь подпроцессов. Только чтение — модель редактируется
+[полем `Flow`](fields-reference.md#flow). Пакет загружается, только когда на
+странице есть процесс.
+
+Модель — JSON пакета (`{version: 1, nodes, edges, groups?, meta?}`, см. его
+документацию по модели). `Layout::flow()` принимает ключ state экрана или саму
+модель — массив или JSON-строку, которая проверяется при построении layout'а
+(`InvalidArgumentException` на сломанной):
+
+```php
+Layout::flow('process')                 // $state['process']
+Layout::flow($order->workflow)          // модель массивом
+Layout::flow(file_get_contents($path))  // или JSON
+```
+
+Полный пример — машина состояний заказа: опрос снимка заказа, выбранного в
+селекте, включение и выключение шагов, подпроцесс по ссылке и кнопка в панели
+деталей:
+
+```php
+use Dskripchenko\LaravelAdmin\Action\Button;
+use Dskripchenko\LaravelAdmin\Field\Select;
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
+
+final class OrderProcessScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        return [
+            'order' => request('order'),
+            'process' => OrderProcess::model(),   // узлы: new, payment (subgraph: 'payment'), paid, shipped…
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::rows([Select::make('order')->options(Order::recentOptions())]),
+            Layout::flow('process')
+                ->poll('orderState', seconds: 5)
+                ->onToggle('toggleStep', permission: 'orders.process.manage')
+                ->subgraphs('loadSubprocess')
+                ->instanceFrom('order')
+                ->actions([
+                    Button::make('Повторить шаг')->method('retryStep')->permission('orders.process.manage'),
+                ])
+                ->direction('LR')
+                ->height(560),
+        ];
+    }
+
+    /** Снимок для уровня на экране: корня или подпроцесса. */
+    public function orderState(array $context): array
+    {
+        // $context = ['path' => ['payment'], 'ref' => 'payment', 'instance' => '1042']
+        $order = Order::find($context['instance']);
+
+        return [
+            'nodes' => [
+                'new' => ['status' => 'done'],
+                'payment' => ['status' => 'done'],
+                'shipped' => ['status' => 'active', 'updatedAt' => $order->updated_at->toIso8601String()],
+            ],
+            'path' => ['start', 'new', 'payment', 'paid', 'shipped'],
+            'current' => ['shipped'],
+            'updatedAt' => now()->toIso8601String(),
+        ];
+    }
+
+    /** ['kind' => 'node'|'edge', 'id' => 'cancelled', 'enabled' => false, 'path' => []] */
+    public function toggleStep(array $change): void
+    {
+        if ($change['id'] === 'cancelled') {
+            throw new ActionFailedException('Отмену нельзя выключить.');
+        }
+        OrderProcess::setEnabled($change['kind'], $change['id'], $change['enabled'], $change['path']);
+    }
+
+    public function loadSubprocess(string $ref, array $node): array
+    {
+        return OrderProcess::subprocess($ref);   // модель, как и корневая
+    }
+
+    /** ['kind' => 'node', 'id' => 'shipped', 'path' => [], 'instance' => '1042'] */
+    public function retryStep(array $selection): array
+    {
+        RetryStep::dispatch($selection['instance'], $selection['id']);
+
+        return ['message' => 'Шаг поставлен на повтор'];
+    }
+}
+```
+
+Методы — собственные публичные методы экрана, их вызывает его действие
+`runMethod` с позиционными `parameters`: та же сессия, CSRF, слои и проверки,
+что и у кнопки. Каждый названный layout'ом метод объявлен серверу:
+пользователь, от которого layout скрыт (`canSee()`), получает 403 на все из
+них, а `onToggle(..., permission:)` и кнопкам панели деталей нужно ещё и их
+право — без него переключатели и кнопки не показываются вовсе.
+
+| Метод | Эффект |
+|---|---|
+| `poll(string $method, int\|float $seconds = 5)` | Каждые `$seconds` вызывает `$method(array $context)` за [снимком мониторинга](https://github.com/dskripchenko/flow/blob/main/docs/ru/monitoring.md) — `nodes`, `edges`, `path`, `current`, `updatedAt`. В `$context` — `path` (подпроцессы, в которые вошли), `ref` и `instance`. Один запрос за раз, пауза в скрытой вкладке, отступ после ошибок; строка статуса показывает время обновления и устаревание |
+| `onToggle(string $method, ?string $permission = null)` | Переключатели на узлах и переходах; `$method(array $change)` сохраняет `{kind, id, enabled, path}`. Чтобы отказать, бросьте `ActionFailedException` (или ответьте ошибкой): переключатель вернётся назад, сообщение покажется во всплывающем уведомлении |
+| `toggleable(bool $on = true)` | Переключатели без метода: изменение остаётся в браузере |
+| `subgraphs(string\|array $subgraphs)` | Как разрешаются строковые ссылки `subgraph`: метод `(string $ref, array $node): array`, возвращающий модель, или модели по ссылкам. Встроенным подпроцессам ничего не нужно |
+| `instance(string\|int\|null $id)` / `instanceFrom(string $key)` | Экземпляр в фокусе, передаётся методу опроса и кнопкам панели деталей; с `instanceFrom()` его переключает поле экрана, и опрос идёт сразу |
+| `snapshot(array\|string $snapshot)` | Фиксированный снимок или ключ state с ним; `poll()` заменяет его после первого ответа |
+| `actions(array $buttons)` | `Button`'ы в панели деталей; метод получает `{kind, id, path, instance}`, `message` из ответа показывается уведомлением, затем состояние опрашивается снова |
+| `direction('LR'\|'TB'\|'auto')` | Направление раскладки; по умолчанию `meta.direction` модели, иначе `auto` (по форме блока) |
+| `edgeStyle('orthogonal'\|'smooth')` | Прямые углы (по умолчанию) или плавные кривые |
+| `height(int\|string $height)` | Высота блока: `560` (px) или `'70vh'`; по умолчанию 480px |
+| `minimap(bool)`, `details(bool)`, `statusBar(bool)` | Миникарта, панель деталей и строка статуса; все включены по умолчанию |
+| `title(string $title)` | Подпись над графом |
+
+Подписи встроенной модели (метки узлов и переходов, описания, заголовок)
+проходят через JSON-переводы панели, как любые другие подписи; модель из state
+показывается как хранится.
 
 ### View (собственный Vue-компонент)
 

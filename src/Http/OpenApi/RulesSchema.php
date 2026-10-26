@@ -287,7 +287,7 @@ final class RulesSchema
             'checkbox' => $multiple ? 'array' : (self::options($field) === [] ? 'boolean' : null),
             'select', 'radio', 'combobox', 'relation_select', 'tree_select', 'cascader' => $multiple ? 'array' : null,
             'tags', 'date_range', 'repeater', 'builder', 'relation_table' => 'array',
-            'key_value', 'translatable', 'group', 'image_cropper', 'morph_switcher' => 'object',
+            'key_value', 'translatable', 'group', 'image_cropper', 'morph_switcher', 'flow' => 'object',
             'file' => $multiple ? 'array' : 'object',
             'input', 'textarea', 'wysiwyg', 'markdown', 'code', 'password', 'slug', 'color', 'date', 'time', 'generated-field' => 'string',
             default => null,
@@ -598,7 +598,7 @@ final class RulesSchema
             'switch' => 'boolean',
             'select', 'radio', 'combobox', 'relation_select', 'checkbox' => $multiple ? 'array' : null,
             'tags', 'date_range', 'repeater' => 'array',
-            'key_value', 'translatable', 'file' => 'object',
+            'key_value', 'translatable', 'file', 'flow' => 'object',
             'input', 'textarea', 'wysiwyg', 'markdown', 'code', 'password', 'slug', 'color', 'date', 'time' => 'string',
             default => null,
         };

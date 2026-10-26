@@ -521,6 +521,46 @@ Button „Generate“:
 Generated::make('api_key')->length(40)->charset('abcdef0123456789'),
 ```
 
+### Flow
+
+Ein visueller Editor für Prozesse und Zustandsautomaten — der FlowEditor von
+[@dskripchenko/flow](https://github.com/dskripchenko/flow): eine Palette von
+Knotentypen, Verbinden per Ziehen, Rückgängig/Wiederholen, Ausrichten und
+automatisches Layout, ein Eigenschaftenbereich, eine Liste der Probleme,
+Unterprozesse an Ort und Stelle bearbeitet, JSON-Export und JSON/Mermaid-Import.
+Der Wert ist das Modell als JSON-Objekt — speichern Sie es in einer JSON-Spalte
+mit `array`-Cast; es wird wie jedes andere Feld mit dem Formular gesendet. Das
+Paket wird nur geladen, wenn ein Formular das Feld enthält.
+
+```php
+Flow::make('workflow')
+    ->palette(['start', 'state', 'task', 'decision', 'end', 'note'])
+    ->locked(['start'])
+    ->height(560)
+    ->required(),
+```
+
+| Methode | Wirkung |
+|---|---|
+| `palette(array $types)` | Die Knotentypen der Elementleiste, in dieser Reihenfolge; standardmäßig alle. Der Server akzeptiert dann nur diese Typen (und die gesperrten) |
+| `locked(array $types)` | Knotentypen, die der Editor weder ändern noch löschen lässt |
+| `readonly()` | Nur ansehen |
+| `height(int\|string)` | Die Höhe des Editors; standardmäßig 520px |
+| `direction('LR'\|'TB'\|'auto')`, `edgeStyle('orthogonal'\|'smooth')` | Wie bei [`Layout::flow()`](layouts-reference.md#flow-prozess-mit-live-monitoring) |
+| `minimap(bool)`, `snapGrid(int)` | Die Minikarte (standardmäßig aus) und das Raster, an dem Knoten einrasten (`0` schaltet das Einrasten aus) |
+| `mermaidImport(bool)` | „Mermaid importieren“ im Menü JSON/Mermaid; standardmäßig an |
+| `exportName(string)` | Der Dateiname des JSON-Exports; standardmäßig `{name}.json` |
+
+`ValidationRulesExporter` ergänzt `array` und die Regel `FlowModel`: die Form
+des Modells (Knoten, Kanten und Gruppen mit eindeutigen IDs, Kanten zwischen
+vorhandenen Knoten, eingebettete Unterprozesse ebenso geprüft) und, mit einer
+Palette, die Knotentypen. Für einen eigenen Validator: `'workflow' =>
+['required', Flow::rule()]`. Die Warnungen des Editors — unerreichbare
+Schritte, Sackgassen — lassen die Validierung nicht scheitern. Gesperrte Typen
+erzwingt nur der Editor; prüfen Sie sie auf dem Server, wenn es darauf ankommt.
+
+Auf der Ansichtsseite zeigt `FlowEntry` das Feld schreibgeschützt.
+
 ## Siehe auch
 
 - [Resources](concepts/resources.md)

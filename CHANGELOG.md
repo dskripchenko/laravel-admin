@@ -5,6 +5,39 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Processes and state machines** through [@dskripchenko/flow](https://github.com/dskripchenko/flow),
+  loaded only on pages that have one:
+  - `Layout::flow()` — a read-only process view with live monitoring. The
+    model comes from a state key or inline (an array or JSON, checked when
+    the layout is built). `poll($method, $seconds)` polls a screen method for
+    the monitoring snapshot (`{path, ref, instance}` in, snapshot out);
+    `onToggle($method, $permission)` persists the switches on steps and
+    transitions, a refusal flips the switch back with its message;
+    `subgraphs($method)` loads referenced sub-processes for the drill-down;
+    `instance()` / `instanceFrom($key)` set the instance in focus;
+    `actions([...])` puts buttons into the details drawer. The methods go
+    through the screen's `runMethod` and are declared to the server: the
+    layout's `canSee()` and the toggle's and buttons' permissions are
+    enforced there, not only by hiding.
+  - `Field\Flow` — the visual editor as a form field: palette, locked types,
+    height, read-only, Mermaid import. The value is the model, submitted with
+    the form and checked by the new `FlowModel` rule (shape, and node types
+    when a palette is set); `Flow::rule()` for validators of your own.
+  - `Infolist\FlowEntry` — a stored model, read-only; the view page shows a
+    `Flow` field this way by itself.
+  - ` ```flow ` blocks in every markdown — a JSON model or Mermaid
+    `stateDiagram-v2` / `flowchart` source becomes a read-only process view.
+- `ScreenContext.call(method, parameters)` — a layout's own call to a screen
+  method that returns the raw answer and leaves the page's state alone.
+
+### Changed
+
+- Requires `@dskripchenko/flow` `^1.0`.
+
 ## 1.58.0
 
 ### Added

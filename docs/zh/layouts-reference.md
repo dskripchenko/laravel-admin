@@ -29,6 +29,7 @@ translated_at: 2026-10-02
 | `View` | `Layout::view('component-name', $props)` | 自定义 Vue 组件 |
 | `Markdown` | `Layout::markdown($text)` | 渲染后的 markdown：带锚点的标题、目录、高亮代码、表格、提示框 |
 | `Code` | `Layout::code($code, 'php')` | 高亮且可复制的代码块 |
+| `Flow` | `Layout::flow('process')` | 带实时监控、开关和子流程下钻的流程或状态机 |
 | `AuditTrail` | `AuditTrail::for(User::class)` | 所显示记录的审计时间线 |
 | `Listener` | `Layout::listener([...])->listen([...])` | 表单中的一部分，当被监听的字段变化时由服务器重新渲染 |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | 属于当前编辑记录的另一个 Resource 的记录表格 |
@@ -191,6 +192,8 @@ Layout::infolist([
 ```
 
 条目类型：`TextEntry`、`BadgeEntry`、`IconEntry`、`KeyValueEntry`、`ImageEntry`、`RelationEntry`、`RepeatableEntry`、`MapEntry`、`ColorEntry`。
+
+`FlowEntry` 以只读方式显示已保存的流程模型（即 [`Flow` 字段](fields-reference.md#flow)的查看形式）：`FlowEntry::make('workflow')->height(420)`。
 
 在自定义 Screen 上，条目读取该 Screen 的 state。
 
@@ -386,6 +389,7 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 | 围栏代码块（三个反引号加语言名） | 高亮且可复制的代码；语言取自围栏标记（`php`、`js`、`ts`、`json`、`bash`、`sql`、`html`、`vue`、`css`……） |
 | ` ```mermaid ` 代码块 | 图表：Mermaid 语法的 flowchart、sequence、state、ER、类图、C4、pie、gantt、timeline、XY 图表和思维导图，由 [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) 绘制为 SVG |
 | ` ```openapi ` 代码块 | API 组件：用 YAML 或 JSON 描述的请求（或完整的 OpenAPI 文档）会变成带 try-it、代码示例、TypeScript 类型和 PDF 的操作，由 [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) 渲染 |
+| ` ```flow ` 代码块 | 只读的流程视图：JSON 模型，或 Mermaid `stateDiagram-v2` / `flowchart` 源码，由 [@dskripchenko/flow](https://github.com/dskripchenko/flow) 绘制 |
 | `\| a \| b \|` + `\|---\|:---:\|` | 表格，支持列对齐 |
 | `> quote` | 块引用 |
 | `> **Note** …`、`> **Warning** …` | 提示框；也支持 `Tip`、`Important`、`Caution` 以及 GitHub 的 `> [!NOTE]` 形式 |
@@ -408,6 +412,8 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) 的实时组件：
 带参数和响应的操作、从读者浏览器发送请求的 try-it、代码示例、TypeScript 类型
 以及操作的 PDF。只有页面中有这种块时才会加载该包。格式见该包文档（API blocks）。
+
+**流程块。** 语言为 `flow` 的围栏代码块包含 JSON 形式的流程模型（见 [Flow](#flow带实时监控的流程)）或 Mermaid `stateDiagram-v2` / `flowchart` 源码；它会变成只读的流程视图——平移、缩放、子流程、步骤详情。只有页面上有这样的代码块时才会加载该包。
 
 宿主以同样方式在 `onAppCreated` 中为其他语言添加渲染器：
 `app.provide(markdownBlockRenderersKey, { ...builtinMarkdownRenderers, chart })`
@@ -448,6 +454,125 @@ Layout::code(<<<'PHP'
 | `lineNumbers(bool $on = true)` | 行号 |
 | `maxHeight(int\|string $height)` | 超过该高度后滚动：`400`（px）或 `'50vh'` |
 | `wrap(bool $wrap = true)` | 长行自动换行，而不是横向滚动 |
+
+### Flow（带实时监控的流程）
+
+由 [@dskripchenko/flow](https://github.com/dskripchenko/flow) 绘制的流程或状态机：
+平移、缩放、小地图、详情面板、运行中实例的实时状态（或所有实例的计数）、
+启用和停用步骤的开关，以及进入子流程的下钻。只读——模型用
+[`Flow` 字段](fields-reference.md#flow)编辑。只有页面上有流程时才会加载该包。
+
+模型是该包的 JSON（`{version: 1, nodes, edges, groups?, meta?}`，见其模型文档）。
+`Layout::flow()` 接受 Screen state 的键，或模型本身——数组或 JSON 字符串，
+在构建布局时检查（模型有误时抛出 `InvalidArgumentException`）：
+
+```php
+Layout::flow('process')                 // $state['process']
+Layout::flow($order->workflow)          // 数组形式的模型
+Layout::flow(file_get_contents($path))  // 或 JSON
+```
+
+完整示例——订单状态机：轮询在下拉框中选择的订单的快照、开关步骤、按引用持有的
+子流程，以及详情面板中的按钮：
+
+```php
+use Dskripchenko\LaravelAdmin\Action\Button;
+use Dskripchenko\LaravelAdmin\Field\Select;
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
+
+final class OrderProcessScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        return [
+            'order' => request('order'),
+            'process' => OrderProcess::model(),   // 节点：new、payment（subgraph: 'payment'）、paid、shipped…
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::rows([Select::make('order')->options(Order::recentOptions())]),
+            Layout::flow('process')
+                ->poll('orderState', seconds: 5)
+                ->onToggle('toggleStep', permission: 'orders.process.manage')
+                ->subgraphs('loadSubprocess')
+                ->instanceFrom('order')
+                ->actions([
+                    Button::make('重试步骤')->method('retryStep')->permission('orders.process.manage'),
+                ])
+                ->direction('LR')
+                ->height(560),
+        ];
+    }
+
+    /** 当前显示层级的快照：根流程或子流程。 */
+    public function orderState(array $context): array
+    {
+        // $context = ['path' => ['payment'], 'ref' => 'payment', 'instance' => '1042']
+        $order = Order::find($context['instance']);
+
+        return [
+            'nodes' => [
+                'new' => ['status' => 'done'],
+                'payment' => ['status' => 'done'],
+                'shipped' => ['status' => 'active', 'updatedAt' => $order->updated_at->toIso8601String()],
+            ],
+            'path' => ['start', 'new', 'payment', 'paid', 'shipped'],
+            'current' => ['shipped'],
+            'updatedAt' => now()->toIso8601String(),
+        ];
+    }
+
+    /** ['kind' => 'node'|'edge', 'id' => 'cancelled', 'enabled' => false, 'path' => []] */
+    public function toggleStep(array $change): void
+    {
+        if ($change['id'] === 'cancelled') {
+            throw new ActionFailedException('取消步骤不能关闭。');
+        }
+        OrderProcess::setEnabled($change['kind'], $change['id'], $change['enabled'], $change['path']);
+    }
+
+    public function loadSubprocess(string $ref, array $node): array
+    {
+        return OrderProcess::subprocess($ref);   // 与根流程相同的模型
+    }
+
+    /** ['kind' => 'node', 'id' => 'shipped', 'path' => [], 'instance' => '1042'] */
+    public function retryStep(array $selection): array
+    {
+        RetryStep::dispatch($selection['instance'], $selection['id']);
+
+        return ['message' => '已加入重试队列'];
+    }
+}
+```
+
+这些方法是 Screen 自己的公共方法，通过其 `runMethod` 动作以位置参数
+`parameters` 调用——与按钮相同的会话、CSRF、层和检查。布局指定的每个方法都会
+向服务器声明：布局对其隐藏（`canSee()`）的用户调用其中任何一个都会得到 403；
+`onToggle(..., permission:)` 和详情面板的按钮还需要各自的权限——没有权限时
+开关和按钮根本不会显示。
+
+| 方法 | 作用 |
+|---|---|
+| `poll(string $method, int\|float $seconds = 5)` | 每 `$seconds` 秒调用 `$method(array $context)` 获取[监控快照](https://github.com/dskripchenko/flow/blob/main/docs/zh/monitoring.md)——`nodes`、`edges`、`path`、`current`、`updatedAt`。`$context` 包含 `path`（已进入的子流程）、`ref` 和 `instance`。同一时间只有一个请求，标签页隐藏时暂停，出错后退避；状态栏显示最后更新时间和过期提示 |
+| `onToggle(string $method, ?string $permission = null)` | 节点和连线上的开关；`$method(array $change)` 保存 `{kind, id, enabled, path}`。要拒绝时抛出 `ActionFailedException`（或返回错误）：开关会复原，消息显示在提示中 |
+| `toggleable(bool $on = true)` | 没有方法的开关：更改只保留在浏览器中 |
+| `subgraphs(string\|array $subgraphs)` | 如何解析字符串形式的 `subgraph` 引用：返回模型的方法 `(string $ref, array $node): array`，或按引用给出的模型。内联子流程无需任何设置 |
+| `instance(string\|int\|null $id)` / `instanceFrom(string $key)` | 当前关注的实例，传给轮询方法和详情面板的按钮；使用 `instanceFrom()` 时由 Screen 上的字段切换，并立即轮询 |
+| `snapshot(array\|string $snapshot)` | 固定快照，或保存快照的 state 键；`poll()` 首次响应后取而代之 |
+| `actions(array $buttons)` | 详情面板中的 `Button`；方法接收 `{kind, id, path, instance}`，响应中的 `message` 以提示显示，随后重新轮询 |
+| `direction('LR'\|'TB'\|'auto')` | 布局方向；默认取模型的 `meta.direction`，否则为 `auto`（随区域形状） |
+| `edgeStyle('orthogonal'\|'smooth')` | 直角（默认）或平滑曲线 |
+| `height(int\|string $height)` | 区域高度：`560`（px）或 `'70vh'`；默认 480px |
+| `minimap(bool)`、`details(bool)`、`statusBar(bool)` | 小地图、详情面板和状态栏；默认全部开启 |
+| `title(string $title)` | 图上方的标题 |
+
+内联模型的文字（节点和连线标签、描述、标题）与其他文字一样经过面板的 JSON 翻译；
+从 state 读取的模型按存储原样显示。
 
 ### View（自定义 Vue 组件）
 

@@ -503,6 +503,45 @@ secret keys — with a "Generate" button:
 Generated::make('api_key')->length(40)->charset('abcdef0123456789'),
 ```
 
+### Flow
+
+A visual editor of processes and state machines,
+[@dskripchenko/flow](https://github.com/dskripchenko/flow)'s FlowEditor: a
+palette of node types, drag-to-connect, undo/redo, align and auto layout, a
+properties panel, a list of issues, sub-processes edited in place, JSON export
+and JSON/Mermaid import. The value is the model as a JSON object — store it in
+a JSON column with an `array` cast; it is submitted with the form like any
+other field. The package is loaded only when a form has the field.
+
+```php
+Flow::make('workflow')
+    ->palette(['start', 'state', 'task', 'decision', 'end', 'note'])
+    ->locked(['start'])
+    ->height(560)
+    ->required(),
+```
+
+| Method | Effect |
+|---|---|
+| `palette(array $types)` | The node types the elements panel offers, in order; all by default. The server then accepts only these types (and the locked ones) |
+| `locked(array $types)` | Node types the editor does not let users change or delete |
+| `readonly()` | Browse only |
+| `height(int\|string)` | The editor's height; 520px by default |
+| `direction('LR'\|'TB'\|'auto')`, `edgeStyle('orthogonal'\|'smooth')` | As in [`Layout::flow()`](layouts-reference.md#flow-process-with-live-monitoring) |
+| `minimap(bool)`, `snapGrid(int)` | The minimap (off by default) and the grid nodes snap to (`0` turns snapping off) |
+| `mermaidImport(bool)` | "Import Mermaid" in the JSON/Mermaid menu; on by default |
+| `exportName(string)` | The file name of the JSON export; `{name}.json` by default |
+
+`ValidationRulesExporter` adds `array` and the `FlowModel` rule: the shape of
+the model (nodes, edges and groups with unique ids, edges between existing
+nodes, inline sub-processes checked the same way) and, with a palette, the
+node types. For a validator of your own: `'workflow' => ['required',
+Flow::rule()]`. The editor's warnings — unreachable steps, dead ends — do not
+fail validation. Locked types are enforced in the editor only; check them on
+the server if it matters.
+
+On the view page the field is shown read-only by `FlowEntry`.
+
 ## See also
 
 - [Resources](concepts/resources.md)
