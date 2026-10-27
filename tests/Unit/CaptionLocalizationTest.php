@@ -216,5 +216,6 @@ it('translates a screen name unless the screen is named by its data', function (
     };
 
     expect($screen(true)->compile()['name'])->toBe('Releases')
-        ->and($screen(false)->compile()['name'])->toBe('Релизы');
+        ->and($screen(false)->compile()['name'])->toBe('Релизы')
+        ->and($screen(false)->isCallableMethod('translatesName'))->toBeFalse();
 });

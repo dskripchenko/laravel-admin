@@ -34,6 +34,7 @@ abstract class Screen
         'layout',
         'name',
         'description',
+        'translatesName',
         'permission',
         'commandBar',
         'compile',
