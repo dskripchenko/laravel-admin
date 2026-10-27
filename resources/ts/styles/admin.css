@@ -160,11 +160,19 @@
  * trail expands again when the bar widens.
  */
 .admin-topbar__breadcrumbs {
+  /* The free room of the bar is the trail's: sized by its content, a trail
+     that folded once measured only its folded self and never unfolded. */
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   --uid-breadcrumb-font-size: 13px;
   --uid-breadcrumb-sep-color: var(--uid-text-tertiary);
   --uid-breadcrumb-item-max-width: 16rem;
+}
+/* The trail itself spans that room: the kit measures what it may use by it. */
+.admin-topbar__breadcrumbs > .uid-breadcrumb {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .admin-topbar__search {
   display: flex;
