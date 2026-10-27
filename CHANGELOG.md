@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- **A resource list keeps its state in the URL**: `?q=…&filter[name]=…&sort=-column&page=2`.
+  A linked list opens filtered in one request, and every change of the search,
+  a filter, the order or the page is written back (`replace`, so the history
+  is not a list of keystrokes). The store gained `toQuery()` / `fromQuery()`.
+- **`Screen::translatesName()`**: a screen named by its data (a page title, a
+  record's name) returns `false` and its name is shown as written, even when
+  it matches a translation key. The method is reserved, not callable through
+  the API.
+
 ### Fixed
 
 - **A section that failed while the manifest was built broke the rest of the
@@ -20,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   screen method or an API action answered 500.** laravel-api maps only its own
   and HTTP exceptions; the panel now answers 403 (`errorKey: forbidden`) and
   401 (`unauthenticated`), as it already did for validation errors (422).
+- **`Columns::ratios()` had no effect in the SPA**: the columns always split
+  evenly. The ratios are honoured now — numbers as shares, strings as CSS
+  track sizes — and the columns stack on narrow screens.
+- **The breadcrumb trail folded into "…" with room to spare**: it was sized by
+  its own content, so a trail that folded once measured its folded self as
+  the room it had and never unfolded. The trail now spans the free room of
+  the top bar.
 
 ## 1.61.1
 
