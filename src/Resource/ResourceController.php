@@ -798,6 +798,7 @@ final class ResourceController extends ApiController
 
         $requested = (array) $request->input('columns', []);
         $columns = [];
+        $exported = [];
         foreach ($resource->columns() as $col) {
             $arr = $col->toArray();
             if ($arr['defaultHidden'] && $requested === []) {
@@ -806,13 +807,16 @@ final class ResourceController extends ApiController
             if ($requested !== [] && ! in_array($col->name(), $requested, true)) {
                 continue;
             }
-            $columns[$col->name()] = (string) ($arr['label'] ?? $col->name());
+            $columns[$col->name()] = (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string((string) ($arr['label'] ?? $col->name()));
+            $exported[] = $col;
         }
 
-        // Generator chunks keep the export memory-friendly.
-        $rowGenerator = (function () use ($query): \Generator {
+        // Generator chunks keep the export memory-friendly. The file shows
+        // what the table shows: the columns' formatters run (a type's name,
+        // a person's name, a status label — not their ids).
+        $rowGenerator = (function () use ($query, $exported): \Generator {
             foreach ($query->cursor() as $model) {
-                yield $model->toArray();
+                yield TableColumn::formatRows($exported, [$model->toArray()])[0];
             }
         })();
 

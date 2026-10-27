@@ -65,3 +65,34 @@ it('formatRows leaves rows alone without formatters and reaches dotted names', f
 
     expect($out)->toBe([['id' => 1, 'author' => ['name' => 'Bob']]]);
 });
+
+it('export applies the column formatters too: the file shows what the table shows', function (): void {
+    TestResourceUserModel::create(['name' => 'alice', 'email' => 'alice@e.com', 'password' => 'x']);
+
+    $csv = $this->get('/api/admin/test-formatteds/export?format=csv')->assertOk()->streamedContent();
+
+    expect($csv)->toContain('ALICE')->toContain('alice <alice@e.com>');
+});
+
+it('writes XLSX without openspout: a valid workbook with escaped text and numbers', function (): void {
+    $path = Dskripchenko\LaravelAdmin\Export\NativeXlsxExporter::write(
+        [['n' => 42, 'name' => 'Tom & "Jerry" <cat>'], ['n' => 1.5, 'name' => "bell\x07 ring"]],
+        ['n' => 'Number', 'name' => 'Name'],
+    );
+    $zip = new ZipArchive;
+    expect($zip->open($path))->toBeTrue();
+    $sheet = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+    $names = [];
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $names[] = $zip->getNameIndex($i);
+    }
+    $zip->close();
+    @unlink($path);
+
+    expect($names)->toContain('[Content_Types].xml', 'xl/workbook.xml', 'xl/styles.xml', 'xl/worksheets/sheet1.xml')
+        ->and(simplexml_load_string($sheet))->not->toBeFalse()
+        ->and($sheet)->toContain('<c><v>42</v></c>')
+        ->and($sheet)->toContain('Tom &amp; &quot;Jerry&quot; &lt;cat&gt;')
+        ->and($sheet)->toContain('bell ring')
+        ->and($sheet)->toContain('<c t="inlineStr" s="1"><is><t xml:space="preserve">Number</t>');
+});

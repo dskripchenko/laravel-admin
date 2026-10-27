@@ -85,6 +85,9 @@ final class AdminServiceProvider extends ServiceProvider
             $registry->add(new Export\JsonExporter);
             if (class_exists(\OpenSpout\Writer\XLSX\Writer::class)) {
                 $registry->add(new Export\XlsxExporter);
+            } elseif (class_exists(\ZipArchive::class)) {
+                // Without openspout, a plain one: the format stays available.
+                $registry->add(new Export\NativeXlsxExporter);
             }
 
             $renderer = $this->resolvePdfRenderer();

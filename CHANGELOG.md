@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A linked list opens filtered in one request, and every change of the search,
   a filter, the order or the page is written back (`replace`, so the history
   is not a list of keystrokes). The store gained `toQuery()` / `fromQuery()`.
+- **XLSX export without openspout**: `Export\NativeXlsxExporter` writes one
+  sheet of inline strings and numbers with PHP's zip extension; it is
+  registered when openspout is not installed, so the format is always there.
 - **`Screen::translatesName()`**: a screen named by its data (a page title, a
   record's name) returns `false` and its name is shown as written, even when
   it matches a translation key. The method is reserved, not callable through
@@ -34,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Columns::ratios()` had no effect in the SPA**: the columns always split
   evenly. The ratios are honoured now — numbers as shares, strings as CSS
   track sizes — and the columns stack on narrow screens.
+- **A list export held raw values** — ids where the table shows names, codes
+  where it shows labels. The export now runs the columns' formatters, as the
+  table does, and translates the headers.
 - **A picker's upload that the server refused said only "Could not upload the
   file"**; the toast now carries the server's reason (an antivirus verdict, a
   MIME type that is not allowed).
