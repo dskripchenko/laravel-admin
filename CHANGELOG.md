@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Columns::ratios()` had no effect in the SPA**: the columns always split
   evenly. The ratios are honoured now — numbers as shares, strings as CSS
   track sizes — and the columns stack on narrow screens.
+- **A picker's upload that the server refused said only "Could not upload the
+  file"**; the toast now carries the server's reason (an antivirus verdict, a
+  MIME type that is not allowed).
 - **The breadcrumb trail folded into "…" with room to spare**: it was sized by
   its own content, so a trail that folded once measured its folded self as
   the room it had and never unfolded. The trail now spans the free room of
