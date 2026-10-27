@@ -200,7 +200,15 @@ final class Manifest
     private function guard(string $kind, string $slug, string $class, callable $describe): ?array
     {
         try {
-            return $describe();
+            // Inside a transaction (a host that runs each request in one) a
+            // failed query aborts the whole transaction on PostgreSQL, and
+            // every later query of the request fails with it. A savepoint
+            // keeps the failure to this section.
+            $connection = \Illuminate\Support\Facades\DB::connection();
+
+            return $connection->transactionLevel() > 0
+                ? $connection->transaction(static fn (): ?array => $describe())
+                : $describe();
         } catch (Throwable $e) {
             Log::error("laravel-admin: the {$kind} [{$slug}] ({$class}) was left out of the manifest: {$e->getMessage()}", [
                 'exception' => $e,

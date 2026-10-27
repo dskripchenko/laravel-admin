@@ -187,3 +187,35 @@ final class TestRecentListAccessorModel extends Illuminate\Database\Eloquent\Mod
         return mb_strtoupper((string) $this->getAttribute('name'));
     }
 }
+
+it('translates a screen name unless the screen is named by its data', function (): void {
+    Lang::addLines(['*.Релизы' => 'Releases'], 'en');
+    $screen = fn (bool $translates) => new class($translates) extends Dskripchenko\LaravelAdmin\Screen\Screen
+    {
+        public function __construct(private readonly bool $translates) {}
+
+        public function name(): string
+        {
+            return 'Релизы';
+        }
+
+        public function translatesName(): bool
+        {
+            return $this->translates;
+        }
+
+        public function query(mixed ...$params): array
+        {
+            return [];
+        }
+
+        public function layout(): array
+        {
+            return [];
+        }
+    };
+
+    expect($screen(true)->compile()['name'])->toBe('Releases')
+        ->and($screen(false)->compile()['name'])->toBe('Релизы')
+        ->and($screen(false)->isCallableMethod('translatesName'))->toBeFalse();
+});

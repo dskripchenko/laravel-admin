@@ -857,8 +857,34 @@ async function loadWithProgress(): Promise<void> {
  * pending until the data arrives. The load here stays as a resilient fallback:
  * a direct mount, a page reload, a test.
  */
+/**
+ * The list's state mirrors into the URL (see the store's toQuery): a filtered
+ * list can be shared or bookmarked, and a reload keeps it. A replace, not a
+ * push — the history is not a list of every keystroke in the search box.
+ */
+function syncQuery(): void {
+  const next = index.toQuery()
+  const current = router.currentRoute.value
+  const same = JSON.stringify(Object.entries(next).sort()) === JSON.stringify(
+    Object.entries(current.query).filter(([k]) => k === 'q' || k === 'sort' || k === 'page' || k.startsWith('filter[')).sort(),
+  )
+  if (same) return
+  const kept = Object.fromEntries(
+    Object.entries(current.query).filter(([k]) => !(k === 'q' || k === 'sort' || k === 'page' || k.startsWith('filter['))),
+  )
+  void router.replace({ query: { ...kept, ...next } }).catch(() => undefined)
+}
+
+watch(
+  () => [index.search, index.sortKey, index.sortDirection, index.meta.page, JSON.stringify(index.filters)],
+  () => {
+    if (index.slug === props.slug) syncQuery()
+  },
+)
+
 onMounted(async () => {
   index.setSlug(props.slug)
+  index.fromQuery(router.currentRoute.value.query as Record<string, unknown>)
   if (manifest.manifest === null) {
     await manifest.load().catch(() => undefined)
   }
@@ -871,6 +897,7 @@ watch(
   async (next, prev) => {
     if (next === prev) return
     index.setSlug(next)
+    index.fromQuery(router.currentRoute.value.query as Record<string, unknown>)
     activeViewId.value = null
     void loadSavedViews()
     await loadWithProgress()

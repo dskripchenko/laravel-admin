@@ -273,6 +273,8 @@ export function createAdminApp(
           const indexStore = useResourceIndexStore()
           if (indexStore.slug !== slug || indexStore.items.length === 0) {
             indexStore.setSlug(slug)
+            // A linked list (?q=…&filter[…]=…) opens filtered, in one request.
+            indexStore.fromQuery(to.query as Record<string, unknown>)
             await indexStore.load().catch(() => undefined)
           }
         } catch {

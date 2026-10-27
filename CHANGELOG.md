@@ -5,6 +5,57 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **`registerIcon()` / `resolveIcon()` / `iconNames()` are exported**: a host
+  project adds its own icons by name next to the built-in Lucide set and uses
+  them in menus, resources and screens like any other.
+- **A resource list keeps its state in the URL**: `?q=…&filter[name]=…&sort=-column&page=2`.
+  A linked list opens filtered in one request, and every change of the search,
+  a filter, the order or the page is written back (`replace`, so the history
+  is not a list of keystrokes). The store gained `toQuery()` / `fromQuery()`.
+- **XLSX export without openspout**: `Export\NativeXlsxExporter` writes one
+  sheet of inline strings and numbers with PHP's zip extension; it is
+  registered when openspout is not installed, so the format is always there.
+- **`Screen::translatesName()`**: a screen named by its data (a page title, a
+  record's name) returns `false` and its name is shown as written, even when
+  it matches a translation key. The method is reserved, not callable through
+  the API.
+
+### Changed
+
+- **A list export shows what the table shows.** It held raw values — ids
+  where the table shows names, codes where it shows labels; it now runs the
+  columns' formatters, as the table does, and translates the headers. A
+  resource whose export is read by a program can return `false` from the new
+  `Resource::exportsFormatted()` to keep the raw values.
+
+### Fixed
+
+- **A section that failed while the manifest was built broke the rest of the
+  request on PostgreSQL** when the host runs each request in a transaction
+  (a multi-tenant host switching the schema with `SET LOCAL`, for instance).
+  The section was logged and left out as designed, but its failed query had
+  aborted the transaction, so every later query failed too — the panel shell
+  answered 500. A section is now described inside a savepoint when a
+  transaction is open, so its failure rolls back only itself.
+- **Laravel's `AuthorizationException` and `AuthenticationException` from a
+  screen method or an API action answered 500.** They answer 403 (`errorKey:
+  forbidden`) and 401 (`unauthenticated`) now: the panel requires
+  `dskripchenko/laravel-api` ^6.2.1, which maps them.
+- **`Columns::ratios()` had no effect in the SPA**: the columns always split
+  evenly. The ratios are honoured now — numbers as shares, strings as CSS
+  track sizes — and the columns stack on narrow screens.
+- **A picker's upload that the server refused said only "Could not upload the
+  file"**; the toast now carries the server's reason (an antivirus verdict, a
+  MIME type that is not allowed).
+- **The breadcrumb trail folded into "…" with room to spare**: it was sized by
+  its own content, so a trail that folded once measured its folded self as
+  the room it had and never unfolded. The trail now spans the free room of
+  the top bar.
+
 ## 1.61.1
 
 ### Fixed

@@ -240,3 +240,38 @@ describe('useResourceIndexStore', () => {
     expect(s.rowId({ id: 42 })).toBe(42)
   })
 })
+
+describe('resourceIndex URL state', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('writes the list state to a query and reads it back', () => {
+    const a = useResourceIndexStore()
+    a.setSlug('issues')
+    a.search = 'export'
+    a.sortKey = 'updated_at'
+    a.sortDirection = 'desc'
+    a.filters = { project_id: 3, type_id: [1, 2], empty: '' }
+    a.meta = { ...a.meta, page: 2 }
+
+    const query = a.toQuery()
+    expect(query).toEqual({ q: 'export', sort: '-updated_at', page: '2', 'filter[project_id]': '3', 'filter[type_id]': '1,2' })
+
+    setActivePinia(createPinia())
+    const b = useResourceIndexStore()
+    b.setSlug('issues')
+    expect(b.fromQuery({ ...query, unrelated: 'x' })).toBe(true)
+    expect(b.search).toBe('export')
+    expect([b.sortKey, b.sortDirection]).toEqual(['updated_at', 'desc'])
+    expect(b.meta.page).toBe(2)
+    expect(b.filters).toEqual({ project_id: '3', type_id: '1,2' })
+  })
+
+  it('leaves the state alone for a query that says nothing about the list', () => {
+    const s = useResourceIndexStore()
+    s.setSlug('issues')
+    expect(s.fromQuery({ tab: 'x', page: '1' })).toBe(false)
+    expect(s.toQuery()).toEqual({})
+  })
+})

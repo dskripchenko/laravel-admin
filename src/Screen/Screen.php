@@ -34,6 +34,7 @@ abstract class Screen
         'layout',
         'name',
         'description',
+        'translatesName',
         'permission',
         'commandBar',
         'compile',
@@ -65,6 +66,16 @@ abstract class Screen
     public function description(): ?string
     {
         return null;
+    }
+
+    /**
+     * Whether name() is a source string to translate. A screen named by its
+     * data — a page title, a record's name — returns false, so a title that
+     * happens to match a translation key is shown as written.
+     */
+    public function translatesName(): bool
+    {
+        return true;
     }
 
     /**
@@ -161,7 +172,7 @@ abstract class Screen
 
         $payload = [
             'state' => $state,
-            'name' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->name()),
+            'name' => $this->translatesName() ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->name()) : $this->name(),
             'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->description()),
             'layout' => array_map(
                 static fn (Layout $l): array => $l->toArray(),

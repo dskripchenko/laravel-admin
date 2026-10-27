@@ -155,6 +155,65 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     return rest
   }
 
+  /**
+   * The list's state as a URL query — `q`, `sort` (`-column` for descending),
+   * `page`, `filter[name]` — so a filtered list can be linked, bookmarked and
+   * kept across a reload. Arrays become comma lists, as the request sends them.
+   */
+  function toQuery(): Record<string, string> {
+    const query: Record<string, string> = {}
+    if (search.value) query.q = search.value
+    if (sortKey.value && sortDirection.value !== null) {
+      query.sort = (sortDirection.value === 'desc' ? '-' : '') + sortKey.value
+    }
+    if (meta.value.page > 1) query.page = String(meta.value.page)
+    for (const [k, v] of Object.entries(filters.value)) {
+      if (v === null || v === undefined || v === '') continue
+      query[`filter[${k}]`] = Array.isArray(v) ? v.join(',') : String(v)
+    }
+    return query
+  }
+
+  /**
+   * Takes the state from a URL query written by toQuery(); what it does not
+   * know is ignored. Returns whether anything was set.
+   */
+  function fromQuery(query: Record<string, unknown>): boolean {
+    const first = (v: unknown): string | null => {
+      const x = Array.isArray(v) ? v[0] : v
+      return typeof x === 'string' && x !== '' ? x : null
+    }
+    let touched = false
+    const q = first(query.q)
+    if (q !== null) {
+      search.value = q
+      touched = true
+    }
+    const sort = first(query.sort)
+    if (sort !== null) {
+      const desc = sort.startsWith('-')
+      sortKey.value = desc ? sort.slice(1) : sort
+      sortDirection.value = desc ? 'desc' : 'asc'
+      touched = true
+    }
+    const page = Number(first(query.page))
+    if (Number.isInteger(page) && page > 1) {
+      meta.value = { ...meta.value, page }
+      touched = true
+    }
+    const next: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(query)) {
+      const m = /^filter\[(.+)\]$/.exec(key)
+      const v = first(value)
+      if (m && v !== null) next[m[1]] = v
+    }
+    if (Object.keys(next).length > 0) {
+      filters.value = next
+      touched = true
+    }
+    return touched
+  }
+
   /** Loads a page. Without arguments it uses the current filters, sort and page. */
   async function load(override: IndexParams = {}): Promise<void> {
     if (!slug.value) {
@@ -294,6 +353,8 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     reset,
     load,
     queryParams,
+    toQuery,
+    fromQuery,
     setSearch,
     setFilter,
     clearFilters,

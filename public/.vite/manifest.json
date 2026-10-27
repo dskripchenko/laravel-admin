@@ -25,7 +25,7 @@
     "src": "node_modules/@dskripchenko/flow/dist/style.css"
   },
   "node_modules/@dskripchenko/flow/dist/vue.mjs": {
-    "file": "assets/vue-BP576yzQ.js",
+    "file": "assets/vue-LhELWnyP.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -39,7 +39,7 @@
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-Cd1CFx36.js",
+    "file": "assets/vue-BX9QpuK0.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -54,7 +54,7 @@
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-BN0Fhq6r.js",
+    "file": "assets/app-Dy5dwNMN.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -68,7 +68,7 @@
       "node_modules/@dskripchenko/openapi/dist/vue.mjs"
     ],
     "css": [
-      "assets/app-CbpxTgsj.css"
+      "assets/app-CScoJc9U.css"
     ]
   }
 }

@@ -85,6 +85,9 @@ final class AdminServiceProvider extends ServiceProvider
             $registry->add(new Export\JsonExporter);
             if (class_exists(\OpenSpout\Writer\XLSX\Writer::class)) {
                 $registry->add(new Export\XlsxExporter);
+            } elseif (class_exists(\ZipArchive::class)) {
+                // Without openspout, a plain one: the format stays available.
+                $registry->add(new Export\NativeXlsxExporter);
             }
 
             $renderer = $this->resolvePdfRenderer();
@@ -292,6 +295,8 @@ final class AdminServiceProvider extends ServiceProvider
      *
      * Without this a ValidationException comes back as a 500, because
      * laravel-api has no built-in support for Laravel's ValidationException.
+     * Its authorization and authentication exceptions laravel-api maps
+     * itself (403 / 401) since 6.2.1.
      */
     private function registerExceptionHandlers(): void
     {

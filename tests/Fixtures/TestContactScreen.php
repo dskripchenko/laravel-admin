@@ -139,6 +139,17 @@ final class TestContactScreen extends Screen
     }
 
     /**
+     * Refuses with Laravel's own authorization exception, as a policy or a
+     * service of the host does.
+     *
+     * @param  array<string, mixed>  $state
+     */
+    public function forbid(array $state): never
+    {
+        throw new Illuminate\Auth\Access\AuthorizationException('Not yours to send');
+    }
+
+    /**
      * Answers with a toast only — no message, so no banner.
      *
      * @param  array<string, mixed>  $state

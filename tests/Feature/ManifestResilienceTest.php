@@ -84,6 +84,24 @@ final class ResilienceBrokenConstructorResource extends Resource
     }
 }
 
+/** Writes, then throws: the write must not outlive the failure. */
+final class ResilienceHalfWayResource extends Resource
+{
+    public static string $model = ResilienceWidget::class;
+
+    public static function slug(): string
+    {
+        return 'resilience-half-way';
+    }
+
+    public function fields(): array
+    {
+        ResilienceWidget::query()->create(['name' => 'half-way']);
+
+        throw new RuntimeException('failed after a write');
+    }
+}
+
 beforeEach(function (): void {
     Schema::create('resilience_widgets', function (Blueprint $t): void {
         $t->id();
@@ -151,4 +169,24 @@ it('keeps the menu, the healthy routes and the global search working around a th
 
     $groups = app(GlobalSearch::class)->search('giz');
     expect(collect($groups)->pluck('slug')->all())->toBe(['resilience-healthy']);
+});
+
+it('keeps a failing section to a savepoint when the request runs in a transaction', function (): void {
+    app(ResourceRegistry::class)->add(ResilienceHalfWayResource::class);
+    AdminApi::clearCache();
+    app(Manifest::class)->flush();
+
+    Illuminate\Support\Facades\DB::beginTransaction();
+    $level = Illuminate\Support\Facades\DB::transactionLevel();
+    try {
+        $this->getJson('/api/admin/system/manifest')->assertOk();
+
+        // The section's own write is rolled back with it; the transaction
+        // the host opened goes on, and so do its queries.
+        expect(ResilienceWidget::query()->where('name', 'half-way')->exists())->toBeFalse()
+            ->and(Illuminate\Support\Facades\DB::transactionLevel())->toBe($level)
+            ->and(ResilienceWidget::query()->where('name', 'Gizmo')->exists())->toBeTrue();
+    } finally {
+        Illuminate\Support\Facades\DB::rollBack();
+    }
 });

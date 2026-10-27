@@ -11,7 +11,7 @@ use Dskripchenko\LaravelAdmin\Table\TableColumn;
  *
  * @internal
  */
-final class TestFormattedResource extends Resource
+class TestFormattedResource extends Resource
 {
     public static string $model = TestResourceUserModel::class;
 

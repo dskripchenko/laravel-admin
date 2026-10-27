@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiErrorMessage } from '../../../api/errors'
 /**
  * The picker dialog: the target resource's records with its search, filters
  * and pagination, chosen by a click.
@@ -212,7 +213,9 @@ async function onFile(e: Event): Promise<void> {
     }
   } catch (err) {
     if (typeof console !== 'undefined') console.error('[admin] picker upload failed:', err)
-    adminToast.error(tr('Не удалось загрузить файл.'))
+    // The server's reason when it gave one: "refused by the antivirus: …",
+    // "MIME type … is not allowed".
+    adminToast.error(apiErrorMessage(err, tr('Не удалось загрузить файл.')))
   } finally {
     uploading.value = false
   }
