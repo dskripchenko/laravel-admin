@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it matches a translation key. The method is reserved, not callable through
   the API.
 
+### Changed
+
+- **A list export shows what the table shows.** It held raw values — ids
+  where the table shows names, codes where it shows labels; it now runs the
+  columns' formatters, as the table does, and translates the headers. A
+  resource whose export is read by a program can return `false` from the new
+  `Resource::exportsFormatted()` to keep the raw values.
+
 ### Fixed
 
 - **A section that failed while the manifest was built broke the rest of the
@@ -40,9 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Columns::ratios()` had no effect in the SPA**: the columns always split
   evenly. The ratios are honoured now — numbers as shares, strings as CSS
   track sizes — and the columns stack on narrow screens.
-- **A list export held raw values** — ids where the table shows names, codes
-  where it shows labels. The export now runs the columns' formatters, as the
-  table does, and translates the headers.
 - **A picker's upload that the server refused said only "Could not upload the
   file"**; the toast now carries the server's reason (an antivirus verdict, a
   MIME type that is not allowed).

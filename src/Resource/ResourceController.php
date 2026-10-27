@@ -813,10 +813,12 @@ final class ResourceController extends ApiController
 
         // Generator chunks keep the export memory-friendly. The file shows
         // what the table shows: the columns' formatters run (a type's name,
-        // a person's name, a status label — not their ids).
-        $rowGenerator = (function () use ($query, $exported): \Generator {
+        // a person's name, a status label — not their ids), unless the
+        // resource exports raw values.
+        $formatted = $resource->exportsFormatted();
+        $rowGenerator = (function () use ($query, $exported, $formatted): \Generator {
             foreach ($query->cursor() as $model) {
-                yield TableColumn::formatRows($exported, [$model->toArray()])[0];
+                yield $formatted ? TableColumn::formatRows($exported, [$model->toArray()])[0] : $model->toArray();
             }
         })();
 

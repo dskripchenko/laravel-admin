@@ -674,6 +674,17 @@ abstract class Resource
     }
 
     /**
+     * Whether the export runs the columns' formatters, so the file shows
+     * what the table shows (names and labels, not ids and codes). A
+     * resource whose export is read by a program rather than a person may
+     * return false to get the raw values of the columns instead.
+     */
+    public function exportsFormatted(): bool
+    {
+        return true;
+    }
+
+    /**
      * Name of the column that holds the order, `position` by default.
      */
     public function reorderColumn(): string

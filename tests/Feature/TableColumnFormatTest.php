@@ -18,6 +18,7 @@ beforeEach(function (): void {
     $rr = app(ResourceRegistry::class);
     $rr->clear();
     $rr->add(TestFormattedResource::class);
+    $rr->add(TestRawExportResource::class);
     AdminApi::clearCache();
 
     Schema::create('users', function (Blueprint $t): void {
@@ -72,6 +73,14 @@ it('export applies the column formatters too: the file shows what the table show
     $csv = $this->get('/api/admin/test-formatteds/export?format=csv')->assertOk()->streamedContent();
 
     expect($csv)->toContain('ALICE')->toContain('alice <alice@e.com>');
+});
+
+it('exports raw values for a resource that asks for them', function (): void {
+    TestResourceUserModel::create(['name' => 'alice', 'email' => 'alice@e.com', 'password' => 'x']);
+
+    $csv = $this->get('/api/admin/test-raw-exports/export?format=csv')->assertOk()->streamedContent();
+
+    expect($csv)->toContain('alice@e.com')->not->toContain('ALICE')->not->toContain('alice <alice@e.com>');
 });
 
 it('writes XLSX without openspout: a valid workbook with escaped text and numbers', function (): void {
