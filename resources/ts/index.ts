@@ -185,6 +185,8 @@ export {
   NotificationBell,
   UserMenu,
 } from './components/shell'
+// Icons by name: a host project adds its own next to the built-in Lucide set.
+export { registerIcon, resolveIcon, iconNames } from './components/shell/iconRegistry'
 
 // Auth pages (login + 2FA)
 export { LoginPage, LoginForm, TwoFactorForm } from './components/auth'

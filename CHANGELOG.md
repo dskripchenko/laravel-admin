@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`registerIcon()` / `resolveIcon()` / `iconNames()` are exported**: a host
+  project adds its own icons by name next to the built-in Lucide set and uses
+  them in menus, resources and screens like any other.
 - **A resource list keeps its state in the URL**: `?q=…&filter[name]=…&sort=-column&page=2`.
   A linked list opens filtered in one request, and every change of the search,
   a filter, the order or the page is written back (`replace`, so the history
