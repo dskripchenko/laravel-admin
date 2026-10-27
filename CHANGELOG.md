@@ -42,9 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   answered 500. A section is now described inside a savepoint when a
   transaction is open, so its failure rolls back only itself.
 - **Laravel's `AuthorizationException` and `AuthenticationException` from a
-  screen method or an API action answered 500.** laravel-api maps only its own
-  and HTTP exceptions; the panel now answers 403 (`errorKey: forbidden`) and
-  401 (`unauthenticated`), as it already did for validation errors (422).
+  screen method or an API action answered 500.** They answer 403 (`errorKey:
+  forbidden`) and 401 (`unauthenticated`) now: the panel requires
+  `dskripchenko/laravel-api` ^6.2.1, which maps them.
 - **`Columns::ratios()` had no effect in the SPA**: the columns always split
   evenly. The ratios are honoured now — numbers as shares, strings as CSS
   track sizes — and the columns stack on narrow screens.
