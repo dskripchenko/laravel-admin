@@ -185,6 +185,22 @@ resource's own endpoints, which check the permissions again. How a host adds
 its own types to the dialog is in
 [Frontend extension](../frontend-extension.md#letting-users-add-it).
 
+## Board
+
+`Widget\BoardWidget` is a collaborative board on a dashboard: the
+[board layout](../layouts-reference.md#board-collaborative) in the widget's
+frame, four rows high by default. Like the layout, it only draws: the
+`dskripchenko/laravel-admin-board` package builds it for a board it stores,
+with the same props.
+
+```php
+BoardWidget::make()->title('Sprint board')->size(12)->rowSpan(4)
+    ->endpoint('/boards/42')->user([...])->realtime([...])
+```
+
+It is not offered in **Add widget**: a board widget needs a board the package
+creates.
+
 ## Sizing
 
 Each widget has `size()` (1..12 cols, default 6) and optional

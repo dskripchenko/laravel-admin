@@ -821,6 +821,12 @@
 .admin-document-layout--dmn .admin-document-layout__box {
   overflow: hidden;
 }
+/* The board draws its own canvas, toolbar and bars: the box only frames it. */
+.admin-document-layout--board .admin-document-layout__box {
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-md);
+  overflow: hidden;
+}
 .admin-document-layout__box--scroll { overflow-x: auto; }
 .admin-document-layout__box--scroll.admin-document-layout__box--fixed { overflow: auto; }
 .admin-document-layout__svg {

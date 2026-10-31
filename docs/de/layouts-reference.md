@@ -37,6 +37,7 @@ sich beliebig tief verschachteln.
 | `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI-Referenz: Server, Kanäle, Operationen, Nachrichten |
 | `Kanban` | `Layout::kanban('board')` | Kanban-Board als Markup, bearbeitbar über eine Screen-Methode |
 | `Calendar` | `Layout::calendar('schedule')` | Ereigniskalender mit Wiederholungen als Markup, bearbeitbar über eine Screen-Methode |
+| `Board` | `Layout::board()->endpoint('/boards/42')` | Gemeinsames Board, das mehrere Personen gleichzeitig bearbeiten; Speicherung durch `laravel-admin-board` |
 | `Video` | `Layout::video('/media/intro.mp4')` | Videoplayer: Qualitäten, HLS, Untertitel, Kapitel, Vorschaubilder |
 | `Audio` | `Layout::audio([...])` | Audioplayer: ein Titel oder eine Playlist, Wellenform, Mini-Variante |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit-Zeitleiste des angezeigten Datensatzes |
@@ -906,6 +907,61 @@ belegt ist. Das Markup selbst beschreibt die Dokumentation des UI-Kits zu
 `UidKanban` und `UidEventCalendar`; dasselbe Markup in einem
 ` ```kanban `- oder ` ```calendar `-Block von [Markdown](#markdown) wird
 schreibgeschützt angezeigt.
+
+### Board (gemeinsam)
+
+`Layout::board()` zeichnet ein gemeinsames Board — BoardEditor aus
+[@dskripchenko/board](https://github.com/dskripchenko/board): Haftnotizen,
+Formen, Verbinder, Text und Rahmen, die mehrere Personen gleichzeitig
+bearbeiten, mit ihren Cursorn und Auswahlen live.
+
+Das Layout ist nur die zeichnende Hälfte. Speicherung des Boards, Reihenfolge
+der Änderungen und die Endpoints kommen aus dem Paket
+[`dskripchenko/laravel-admin-board`](https://github.com/dskripchenko/laravel-admin-board),
+das das Layout für ein Board selbst baut (seine Resource, das Board eines
+Datensatzes); von Hand baut man es selten.
+
+```php
+Layout::board()
+    ->endpoint('/boards/42')                    // die API des Boards, relativ zum Client des Panels
+    ->user(['id' => '7', 'name' => 'Anna', 'color' => '#ec4899'])
+    ->realtime(['ticketUrl' => '/realtime/ticket', 'channel' => 'admin-board.42'])
+    ->readonly(! $canEdit)
+    ->height('70vh')
+```
+
+| Methode | Wirkung |
+|---|---|
+| `endpoint(string $path)` | Der API-Pfad des Boards, relativ zum API-Client des Panels (`/boards/42`); Pflicht |
+| `user(array $user)` | Wer bearbeitet: `id`, `name`, `color`, für die anderen neben dem Cursor sichtbar |
+| `realtime(?array $realtime)` | `['ticketUrl' => …, 'channel' => …]`: der laravel-realtime-Kanal, auf dem der Server Änderungen veröffentlicht; `null` fragt ab |
+| `pollInterval(int $ms)` | Wie oft ohne Realtime die Änderungen der anderen abgefragt werden, mindestens 250 ms; standardmäßig 1500 |
+| `readonly(bool $readonly = true)` | Nur ansehen: nichts wird gesendet (der Server prüft das Recht trotzdem) |
+| `title()`, `height()` | Eine Beschriftung und die Höhe des Kastens (standardmäßig 600px) |
+
+Der Client lädt das Board aus `{endpoint}/snapshot`, sendet jede Änderung an
+`{endpoint}/batches` (der Reihe nach, nach einem Netzwerkfehler erneut; eine
+vom Server abgelehnte Änderung wird mit einer Meldung verworfen), teilt Cursor
+über `{endpoint}/presence` und folgt den Änderungen der anderen:
+
+- **mit Realtime** — über den Kanal. Der Host installiert den Browser-Client
+  und registriert ihn einmal beim Start der App:
+
+  ```ts
+  import { RealtimeClient } from '@dskripchenko/realtime'
+  import { setBoardRealtime } from '@dskripchenko/laravel-admin'
+
+  setBoardRealtime(RealtimeClient)
+  ```
+
+  Nach einem Wiederverbinden wird das Verpasste aus `{endpoint}/poll` geholt.
+- **ohne** — durch Abfragen von `{endpoint}/poll` alle `pollInterval` ms,
+  solange der Tab sichtbar ist. Long Polling wird nicht verwendet: es hielte
+  einen PHP-Worker pro offenem Board.
+
+Ist das Board über das hinaus, was der Server noch im Log hat, lädt der Editor
+es neu. Dasselbe Board auf einem Dashboard ist `Widget\BoardWidget`
+([Widgets](concepts/widgets-and-dashboards.md#board)).
 
 ### Video und Audio (Medienplayer)
 

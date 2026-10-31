@@ -192,6 +192,22 @@ Endpunkte der Ressource, die die Berechtigungen erneut prüfen. Wie ein Host
 eigene Typen in den Dialog bringt, steht unter
 [Frontend-Erweiterung](../frontend-extension.md#vom-benutzer-hinzufügbar).
 
+## Board
+
+`Widget\BoardWidget` ist ein gemeinsames Board auf einem Dashboard: das
+[Board-Layout](../layouts-reference.md#board-gemeinsam) im Rahmen des Widgets,
+standardmäßig vier Zeilen hoch. Wie das Layout zeichnet es nur: das Paket
+`dskripchenko/laravel-admin-board` baut es für ein Board, das es speichert,
+mit denselben Eigenschaften.
+
+```php
+BoardWidget::make()->title('Sprint-Board')->size(12)->rowSpan(4)
+    ->endpoint('/boards/42')->user([...])->realtime([...])
+```
+
+Unter **Widget hinzufügen** wird es nicht angeboten: ein Board-Widget braucht
+ein Board, das das Paket anlegt.
+
 ## Größen
 
 Jedes Widget hat `size()` (1..12 Spalten, Standard 6) und optional

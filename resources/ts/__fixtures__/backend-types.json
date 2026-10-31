@@ -51,6 +51,7 @@
         "audio",
         "audit_trail",
         "block",
+        "board",
         "bpmn",
         "calendar",
         "code",
@@ -75,6 +76,7 @@
         "wrapper"
     ],
     "widgets": [
+        "board",
         "bpmn",
         "calendar",
         "chart",

@@ -36,6 +36,7 @@ translated_at: 2026-10-02
 | `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI 参考：服务器、通道、操作、消息 |
 | `Kanban` | `Layout::kanban('board')` | 用标记写成的看板，可通过 Screen 方法编辑 |
 | `Calendar` | `Layout::calendar('schedule')` | 用标记写成、支持重复的事件日历，可通过 Screen 方法编辑 |
+| `Board` | `Layout::board()->endpoint('/boards/42')` | 多人同时编辑的协作白板；存储由 `laravel-admin-board` 提供 |
 | `Video` | `Layout::video('/media/intro.mp4')` | 视频播放器：清晰度、HLS、字幕、章节、缩略图 |
 | `Audio` | `Layout::audio([...])` | 音频播放器：单曲或播放列表、波形、迷你样式 |
 | `AuditTrail` | `AuditTrail::for(User::class)` | 所显示记录的审计时间线 |
@@ -778,6 +779,54 @@ final class SprintScreen extends Screen
 工厂方法 `Layout::view()` 占用。标记本身的说明见 UI 套件中 `UidKanban` 和
 `UidEventCalendar` 的文档；同样的标记放在 [Markdown](#markdown) 的
 ` ```kanban ` 或 ` ```calendar ` 代码块中时以只读方式显示。
+
+### Board（协作白板）
+
+`Layout::board()` 绘制一个协作白板——
+[@dskripchenko/board](https://github.com/dskripchenko/board) 的 BoardEditor：
+便签、图形、连线、文本和框架，可由多人同时编辑，并实时看到彼此的光标与选区。
+
+该布局只是负责绘制的一半。白板的存储、变更顺序和端点由
+[`dskripchenko/laravel-admin-board`](https://github.com/dskripchenko/laravel-admin-board)
+包提供，它会为白板自行构建这个布局（它的 Resource、某条记录的白板），很少需要手动构建。
+
+```php
+Layout::board()
+    ->endpoint('/boards/42')                    // 白板的 API，相对于面板的客户端
+    ->user(['id' => '7', 'name' => 'Anna', 'color' => '#ec4899'])
+    ->realtime(['ticketUrl' => '/realtime/ticket', 'channel' => 'admin-board.42'])
+    ->readonly(! $canEdit)
+    ->height('70vh')
+```
+
+| 方法 | 作用 |
+|---|---|
+| `endpoint(string $path)` | 白板的 API 路径，相对于面板的 API 客户端（`/boards/42`）；必填 |
+| `user(array $user)` | 谁在编辑：`id`、`name`、`color`，在光标旁显示给其他人 |
+| `realtime(?array $realtime)` | `['ticketUrl' => …, 'channel' => …]`：服务器发布变更所用的 laravel-realtime 频道；`null` 表示轮询 |
+| `pollInterval(int $ms)` | 无 realtime 时轮询他人变更的间隔，至少 250 毫秒；默认 1500 |
+| `readonly(bool $readonly = true)` | 仅查看：不发送任何内容（服务器仍会检查权限） |
+| `title()`、`height()` | 标题和区块高度（默认 600px） |
+
+客户端从 `{endpoint}/snapshot` 加载白板，把每个变更发送到 `{endpoint}/batches`
+（按顺序发送，网络错误后重试；服务器拒绝的变更会被丢弃并提示），通过
+`{endpoint}/presence` 共享光标，并跟随他人的变更：
+
+- **使用 realtime 时**——通过频道。宿主安装浏览器客户端，并在应用启动时注册一次：
+
+  ```ts
+  import { RealtimeClient } from '@dskripchenko/realtime'
+  import { setBoardRealtime } from '@dskripchenko/laravel-admin'
+
+  setBoardRealtime(RealtimeClient)
+  ```
+
+  重新连接后，错过的变更从 `{endpoint}/poll` 补取。
+- **不使用时**——在标签页可见期间每隔 `pollInterval` 轮询 `{endpoint}/poll`。
+  不使用长轮询：它会为每个打开的白板占用一个 PHP worker。
+
+如果白板已超出服务器日志仍保存的范围，编辑器会重新加载它。仪表盘上的同一个白板是
+`Widget\BoardWidget`（[小部件](concepts/widgets-and-dashboards.md#board)）。
 
 ### Video 与 Audio（媒体播放器）
 

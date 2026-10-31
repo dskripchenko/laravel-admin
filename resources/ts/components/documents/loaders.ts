@@ -15,6 +15,32 @@ export type BpmnVueModule = typeof import('@dskripchenko/bpmn/vue')
 export type DrawioModule = typeof import('@dskripchenko/drawio')
 export type OpenApiModule = typeof import('@dskripchenko/openapi/vue')
 export type MarkdownEditorModule = typeof import('@dskripchenko/markdown-editor')
+export type BoardVueModule = typeof import('@dskripchenko/board/vue')
+
+/**
+ * The part of @dskripchenko/realtime (the laravel-realtime browser client) the
+ * board uses. The host installs it when it runs laravel-realtime; the panel
+ * does not depend on it, so its types are described here.
+ */
+export interface RealtimeChannelLike {
+  on(event: string, handler: (data: unknown, meta: { seq?: number }) => void): () => void
+  onSubscribed(handler: () => void): () => void
+  onResync(handler: (seq: number) => void): () => void
+  unsubscribe(): void
+}
+export interface RealtimeClientLike {
+  connect(): Promise<void>
+  close(): void
+  private(name: string): RealtimeChannelLike
+  on(event: 'state', handler: (state: string) => void): () => void
+}
+export interface RealtimeModule {
+  RealtimeClient: new (options: {
+    ticketUrl?: string
+    headers?: Record<string, string> | (() => Record<string, string>)
+    credentials?: RequestCredentials
+  }) => RealtimeClientLike
+}
 
 let diagrams: Promise<DiagramsModule> | null = null
 let bpmn: Promise<BpmnModule> | null = null
@@ -22,6 +48,8 @@ let bpmnVue: Promise<BpmnVueModule> | null = null
 let drawio: Promise<DrawioModule> | null = null
 let openapi: Promise<OpenApiModule> | null = null
 let markdownEditor: Promise<MarkdownEditorModule> | null = null
+let boardVue: Promise<BoardVueModule> | null = null
+let realtime: Promise<RealtimeModule> | null = null
 
 /** A failed download may succeed on the next attempt: the cache forgets it. */
 function remember<T>(promise: Promise<T>, forget: () => void): Promise<T> {
@@ -55,6 +83,11 @@ export function setOpenApiLoader(loader: (() => Promise<OpenApiModule>) | null):
 }
 
 /** @internal Replaces the dynamic import, for tests. */
+export function setBoardLoaders(loaders: { board?: () => Promise<BoardVueModule>; realtime?: () => Promise<RealtimeModule> } | null): void {
+  boardVue = loaders?.board ? loaders.board() : null
+  realtime = loaders?.realtime ? loaders.realtime() : null
+}
+
 export function setMarkdownEditorLoader(loader: (() => Promise<MarkdownEditorModule>) | null): void {
   markdownEditor = loader ? loader() : null
 }
@@ -112,4 +145,35 @@ export function loadMarkdownEditor(): Promise<MarkdownEditorModule> {
     },
   )
   return markdownEditor
+}
+
+/** The collaborative board's editor (Layout::board, the board widget) with its styles. */
+export function loadBoardVue(): Promise<BoardVueModule> {
+  boardVue ??= remember(
+    Promise.all([import('@dskripchenko/board/vue'), import('@dskripchenko/board/style.css')]).then(([m]) => m),
+    () => {
+      boardVue = null
+    },
+  )
+  return boardVue
+}
+
+/**
+ * The laravel-realtime browser client (@dskripchenko/realtime), when the host
+ * registered it with setBoardRealtime(): a board then follows its channel
+ * instead of polling. Not registered — rejected, and the board polls.
+ */
+export function loadRealtime(): Promise<RealtimeModule> {
+  return realtime ?? Promise.reject(new Error('@dskripchenko/realtime is not registered: call setBoardRealtime()'))
+}
+
+/**
+ * Registers the realtime client for boards. The host installs
+ * @dskripchenko/realtime and calls this once when the app starts:
+ *
+ *     import { RealtimeClient } from '@dskripchenko/realtime'
+ *     setBoardRealtime(RealtimeClient)
+ */
+export function setBoardRealtime(client: RealtimeModule['RealtimeClient'] | null): void {
+  realtime = client ? Promise.resolve({ RealtimeClient: client }) : null
 }
