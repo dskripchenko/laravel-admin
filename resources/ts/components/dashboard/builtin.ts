@@ -16,6 +16,7 @@ import TableWidget from './TableWidget.vue'
 import IframeWidget from './IframeWidget.vue'
 import DiagramWidget from './DiagramWidget.vue'
 import BpmnWidget from './BpmnWidget.vue'
+import BoardWidget from './BoardWidget.vue'
 import KanbanWidget from './KanbanWidget.vue'
 import CalendarWidget from './CalendarWidget.vue'
 
@@ -56,6 +57,7 @@ export function registerBuiltinWidgets(): void {
     // board or a calendar — of a resource or written as markup
     diagram: DiagramWidget,
     bpmn: BpmnWidget,
+    board: BoardWidget,
     kanban: KanbanWidget,
     calendar: CalendarWidget,
   })

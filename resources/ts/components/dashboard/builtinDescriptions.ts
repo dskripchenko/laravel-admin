@@ -367,5 +367,7 @@ export function builtinWidgetDescriptions(): Record<string, WidgetTypeDescriptio
     bpmn,
     kanban,
     calendar,
+    // A board the package creates: built on the server, not offered to add.
+    board: { label: () => tr('Доска — совместная работа'), icon: SquareKanban, addable: false },
   }
 }

@@ -35,6 +35,7 @@ compose to arbitrary depth.
 | `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI reference: servers, channels, operations, messages |
 | `Kanban` | `Layout::kanban('board')` | Kanban board written as markup, editable through a screen method |
 | `Calendar` | `Layout::calendar('schedule')` | Event calendar with repeats, written as markup, editable through a screen method |
+| `Board` | `Layout::board()->endpoint('/boards/42')` | Collaborative board edited by several people at once; storage from `laravel-admin-board` |
 | `Video` | `Layout::video('/media/intro.mp4')` | Video player: qualities, HLS, subtitles, chapters, thumbnails |
 | `Audio` | `Layout::audio([...])` | Audio player: one track or a playlist, waveform, mini variant |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
@@ -878,6 +879,55 @@ because that name is taken by the `Layout::view()` factory. The markup itself
 is described in the UI kit's documentation of `UidKanban` and
 `UidEventCalendar`; the same markup in a ` ```kanban ` or ` ```calendar `
 block of [Markdown](#markdown) is shown read-only.
+
+### Board (collaborative)
+
+`Layout::board()` draws a collaborative board — BoardEditor of
+[@dskripchenko/board](https://github.com/dskripchenko/board): stickers, shapes,
+connectors, text and frames, edited by several people at once, with their
+cursors and selections live.
+
+The layout is only the drawing half. The board's storage, the order of
+changes and the endpoints come from the
+[`dskripchenko/laravel-admin-board`](https://github.com/dskripchenko/laravel-admin-board)
+package, which builds the layout for a board (its resource, a board of a
+record); you rarely build it by hand.
+
+```php
+Layout::board()
+    ->endpoint('/boards/42')                    // the board's API, relative to the panel's client
+    ->user(['id' => '7', 'name' => 'Anna', 'color' => '#ec4899'])
+    ->realtime(['ticketUrl' => '/realtime/ticket', 'channel' => 'admin-board.42'])
+    ->readonly(! $canEdit)
+    ->height('70vh')
+```
+
+| Method | Effect |
+|---|---|
+| `endpoint(string $path)` | The board's API path, relative to the panel's API client (`/boards/42`); required |
+| `user(array $user)` | Who is editing: `id`, `name`, `color`, shown to the others next to the cursor |
+| `realtime(?array $realtime)` | `['ticketUrl' => …, 'channel' => …]`: the laravel-realtime channel the server publishes changes on; `null` polls |
+| `pollInterval(int $ms)` | How often the others' changes are polled without realtime, at least 250 ms; 1500 by default |
+| `readonly(bool $readonly = true)` | View only: nothing is sent (the server checks the right all the same) |
+| `title()`, `height()` | A caption, and the box height (600px by default) |
+
+The client loads the board from `{endpoint}/snapshot`, sends each change to
+`{endpoint}/batches` (in order, retried after a network error; a change the
+server refuses is dropped with a message), shares cursors through
+`{endpoint}/presence` and follows the others' changes:
+
+- **with realtime** — on the channel, through the browser client of
+  laravel-realtime (`@dskripchenko/realtime`), which the panel loads when a
+  board has a channel. After a reconnect the missed changes are fetched from
+  `{endpoint}/poll`. A host with its own build of the client hands it over
+  with `setBoardRealtime(RealtimeClient)`.
+- **without it** — by polling `{endpoint}/poll` every `pollInterval` while the
+  tab is visible. Long polling is not used: it would hold a PHP worker per
+  open board.
+
+When the board has moved past what the server still logs, the editor loads it
+afresh. The same board on a dashboard is `Widget\BoardWidget`
+([Widgets](concepts/widgets-and-dashboards.md#board)).
 
 ### Video and Audio (media players)
 

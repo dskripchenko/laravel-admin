@@ -5,6 +5,31 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **`Layout::board()` — a collaborative board**, BoardEditor of
+  @dskripchenko/board, edited by several people at once with live cursors.
+  The layout only draws; the storage, the order of changes and the endpoints
+  come from the `dskripchenko/laravel-admin-board` package, which builds it.
+  Props: `endpoint()` (the board's API, relative to the panel's client),
+  `user()`, `realtime()`, `pollInterval()`, `readonly()`, `title()`,
+  `height()`.
+- **The board's transport**, `createAdminBoardProvider()`: over the panel's
+  API client (its session, CSRF and layers) — `snapshot`, `batches` (in
+  order, retried after a network error; a refused change is dropped with a
+  message), `poll`, `presence` (at most 10 times a second). The others'
+  changes come on a laravel-realtime channel through its browser client
+  (`@dskripchenko/realtime`, loaded when a board has a channel;
+  `setBoardRealtime()` hands over a host's own build), otherwise by polling
+  every `pollInterval` while the tab is visible; when the board moved past
+  the server's log, the editor loads it again.
+- **`Widget\BoardWidget`**: the board on a dashboard (not offered in «Add
+  widget»: it needs a board the package creates).
+- New dependencies `@dskripchenko/board` and `@dskripchenko/realtime` (loaded
+  on first use, outside the size budget).
+
 ## 1.68.0
 
 ### Changed

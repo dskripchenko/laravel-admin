@@ -100,7 +100,9 @@
         "@dskripchenko/wysiwyg",
         "@dskripchenko/bpmn",
         "@dskripchenko/drawio",
-        "@dskripchenko/markdown-editor"
+        "@dskripchenko/markdown-editor",
+        "@dskripchenko/board",
+        "@dskripchenko/realtime"
       ]
     },
     {
@@ -119,7 +121,9 @@
         "@dskripchenko/wysiwyg",
         "@dskripchenko/bpmn",
         "@dskripchenko/drawio",
-        "@dskripchenko/markdown-editor"
+        "@dskripchenko/markdown-editor",
+        "@dskripchenko/board",
+        "@dskripchenko/realtime"
       ]
     },
     {
@@ -196,12 +200,14 @@
     "vue-tsc": "^2"
   },
   "dependencies": {
+    "@dskripchenko/board": "^0.3.0",
     "@dskripchenko/bpmn": "^0.4.1",
     "@dskripchenko/diagrams": "^1.3.3",
     "@dskripchenko/drawio": "^0.1.0",
     "@dskripchenko/flow": "^1.2.0",
     "@dskripchenko/markdown-editor": "^0.1.0",
     "@dskripchenko/openapi": "^1.2.0",
+    "@dskripchenko/realtime": "^0.1.0",
     "lean-qr": "^2.7.1"
   }
 }

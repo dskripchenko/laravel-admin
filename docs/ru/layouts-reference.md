@@ -37,6 +37,7 @@ Layout — это контейнер для полей и других layout'о
 | `AsyncApi` | `Layout::asyncapi('spec')` | Справочник AsyncAPI: серверы, каналы, операции, сообщения |
 | `Kanban` | `Layout::kanban('board')` | Канбан-доска в разметке, редактируемая через метод экрана |
 | `Calendar` | `Layout::calendar('schedule')` | Календарь событий с повторами в разметке, редактируемый через метод экрана |
+| `Board` | `Layout::board()->endpoint('/boards/42')` | Совместная доска, которую правят несколько человек сразу; хранение — пакет `laravel-admin-board` |
 | `Video` | `Layout::video('/media/intro.mp4')` | Видеоплеер: качества, HLS, субтитры, главы, превью кадров |
 | `Audio` | `Layout::audio([...])` | Аудиоплеер: дорожка или плейлист, волновая форма, мини-вариант |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Лента аудита показанной записи |
@@ -883,6 +884,55 @@ final class SprintScreen extends Screen
 документации UI-кита к `UidKanban` и `UidEventCalendar`; та же разметка в блоке
 ` ```kanban ` или ` ```calendar ` [Markdown](#markdown) показывается только для
 чтения.
+
+### Board (совместная доска)
+
+`Layout::board()` рисует совместную доску — BoardEditor из
+[@dskripchenko/board](https://github.com/dskripchenko/board): стикеры, фигуры,
+связи, текст и рамки, которые правят несколько человек сразу, видя курсоры и
+выделения друг друга.
+
+Раскладка — только рисующая половина. Хранение доски, порядок изменений и
+эндпоинты даёт пакет
+[`dskripchenko/laravel-admin-board`](https://github.com/dskripchenko/laravel-admin-board):
+он сам строит раскладку для доски (её ресурс, доска записи), вручную её
+собирать почти не приходится.
+
+```php
+Layout::board()
+    ->endpoint('/boards/42')                    // API доски относительно клиента панели
+    ->user(['id' => '7', 'name' => 'Anna', 'color' => '#ec4899'])
+    ->realtime(['ticketUrl' => '/realtime/ticket', 'channel' => 'admin-board.42'])
+    ->readonly(! $canEdit)
+    ->height('70vh')
+```
+
+| Метод | Действие |
+|---|---|
+| `endpoint(string $path)` | Путь API доски относительно API-клиента панели (`/boards/42`); обязателен |
+| `user(array $user)` | Кто редактирует: `id`, `name`, `color` — видно остальным рядом с курсором |
+| `realtime(?array $realtime)` | `['ticketUrl' => …, 'channel' => …]`: канал laravel-realtime, куда сервер публикует изменения; `null` — опрос |
+| `pollInterval(int $ms)` | Как часто без realtime опрашиваются чужие изменения, не меньше 250 мс; по умолчанию 1500 |
+| `readonly(bool $readonly = true)` | Только просмотр: ничего не отправляется (сервер всё равно проверяет право) |
+| `title()`, `height()` | Подпись и высота блока (по умолчанию 600px) |
+
+Клиент загружает доску из `{endpoint}/snapshot`, отправляет каждое изменение в
+`{endpoint}/batches` (по порядку, с повтором после сетевой ошибки; изменение,
+которое сервер отклонил, отбрасывается с сообщением), делится курсорами через
+`{endpoint}/presence` и следит за чужими изменениями:
+
+- **с realtime** — по каналу, через браузерный клиент laravel-realtime
+  (`@dskripchenko/realtime`), который панель загружает, когда у доски есть
+  канал. После переподключения пропущенное добирается из `{endpoint}/poll`.
+  Хост со своей сборкой клиента передаёт её через
+  `setBoardRealtime(RealtimeClient)`.
+- **без него** — опросом `{endpoint}/poll` раз в `pollInterval`, пока вкладка
+  видна. Long polling не используется: он держал бы воркер PHP на каждую
+  открытую доску.
+
+Если доска ушла дальше, чем сервер ещё хранит в журнале, редактор загружает её
+заново. Та же доска на дашборде — `Widget\BoardWidget`
+([Виджеты](concepts/widgets-and-dashboards.md#доска)).
 
 ### Video и Audio (медиаплееры)
 

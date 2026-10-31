@@ -235,6 +235,7 @@ export {
   builtinWidgetDescriptions,
   DiagramWidget,
   BpmnWidget,
+  BoardWidget,
   KanbanWidget,
   CalendarWidget,
   WidgetFrame,
@@ -334,6 +335,7 @@ export {
   AudioLayout,
   DiagramLayout,
   BpmnLayout,
+  BoardLayout,
   DmnLayout,
   DrawioLayout,
   AsyncApiLayout,
@@ -356,3 +358,9 @@ export type {
   ScreenMethodCaller,
   ListenerEndpoint,
 } from './components/render'
+
+// The collaborative board's transport and the realtime client a host registers.
+export { setBoardRealtime } from './components/documents/loaders'
+export type { RealtimeModule, RealtimeClientLike, RealtimeChannelLike } from './components/documents/loaders'
+export { createAdminBoardProvider } from './components/board/adminBoardProvider'
+export type { AdminBoardProviderOptions } from './components/board/adminBoardProvider'

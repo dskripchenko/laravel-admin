@@ -73,6 +73,7 @@ import VideoLayout from '../layouts/VideoLayout.vue'
 import AudioLayout from '../layouts/AudioLayout.vue'
 import DiagramLayout from '../layouts/DiagramLayout.vue'
 import BpmnLayout from '../layouts/BpmnLayout.vue'
+import BoardLayout from '../layouts/BoardLayout.vue'
 import DmnLayout from '../layouts/DmnLayout.vue'
 import DrawioLayout from '../layouts/DrawioLayout.vue'
 import AsyncApiLayout from '../layouts/AsyncApiLayout.vue'
@@ -231,6 +232,7 @@ export function registerBuiltinComponents(): void {
       // `drawio`, `asyncapi`; the packages load on first use.
       diagram: DiagramLayout,
       bpmn: BpmnLayout,
+      board: BoardLayout,
       dmn: DmnLayout,
       drawio: DrawioLayout,
       asyncapi: AsyncApiLayout,

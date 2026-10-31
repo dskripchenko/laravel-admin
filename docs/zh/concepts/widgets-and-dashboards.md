@@ -160,6 +160,19 @@ CalendarWidget::make()->markup("every mon 10:00-10:30 计划会")->initialView('
 数据通过资源自己的端点获取，并再次检查权限。宿主如何把自己的类型加入对话框，见
 [前端扩展](../frontend-extension.md#允许用户添加)。
 
+## Board
+
+`Widget\BoardWidget` 是仪表盘上的协作白板：位于小部件框架中的
+[白板布局](../layouts-reference.md#board协作白板)，默认高四行。与布局一样，它只负责绘制：
+由 `dskripchenko/laravel-admin-board` 包为其存储的白板构建，属性相同。
+
+```php
+BoardWidget::make()->title('Sprint board')->size(12)->rowSpan(4)
+    ->endpoint('/boards/42')->user([...])->realtime([...])
+```
+
+它不会出现在 **添加小部件** 中：白板小部件需要由该包创建的白板。
+
 ## 尺寸
 
 每个小部件都有 `size()`（1..12 列，默认 6）和可选的

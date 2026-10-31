@@ -658,5 +658,8 @@
     "Ресурсы с видом «канбан», которые вам доступны.": "Resources with a kanban view that you may view.",
     "Таблица": "Table",
     "Встроенная страница — iframe": "Embedded page — iframe",
-    "Адрес страницы": "Page address"
+    "Адрес страницы": "Page address",
+    "Изменение на доске не принято.": "The change to the board was not accepted.",
+    "Не удалось загрузить модуль доски": "Failed to load the board module",
+    "Доска — совместная работа": "Board — work together"
 }

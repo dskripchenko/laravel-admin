@@ -154,6 +154,16 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * A collaborative board, BoardEditor of @dskripchenko/board: the drawing
+     * half. Its storage and endpoints come from a package that builds it
+     * (dskripchenko/laravel-admin-board). See Board.
+     */
+    public static function board(): Board
+    {
+        return Board::make();
+    }
+
+    /**
      * An AsyncAPI document as the reference of the openapi package
      * (@dskripchenko/openapi). See AsyncApi.
      *
