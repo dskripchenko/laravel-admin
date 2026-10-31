@@ -103,3 +103,19 @@ it('Wysiwyg::sanitize(false) disables sanitization', function (): void {
     $f = Dskripchenko\LaravelAdmin\Field\Wysiwyg::make('body')->sanitize(false);
     expect($f->shouldSanitize())->toBeFalse();
 });
+
+it('keeps a code block language, so the editor still draws the block after a save', function (): void {
+    $s = new HtmlSanitizer;
+    expect($s->sanitize('<pre><code class="language-mermaid">graph TD</code></pre>'))
+        ->toBe('<pre><code class="language-mermaid">graph TD</code></pre>');
+    expect($s->sanitize('<pre><code class="language-c++ hljs evil">x</code></pre>'))
+        ->toBe('<pre><code class="language-c++">x</code></pre>');
+    // Any other class on code is dropped.
+    expect($s->sanitize('<p><code class="x" onclick="y">a</code></p>'))->toBe('<p><code>a</code></p>');
+});
+
+it('keeps a table cell alignment and nothing else of its style', function (): void {
+    $s = new HtmlSanitizer;
+    expect($s->sanitize('<table><tr><td style="color: red; text-align: Right">1</td><th style="background: url(x)">2</th></tr></table>'))
+        ->toBe('<table><tr><td style="text-align: right">1</td><th>2</th></tr></table>');
+});

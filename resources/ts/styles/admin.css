@@ -774,6 +774,24 @@
 }
 
 /*
+ * ```dmn: the requirements diagram and the decision tables under it, scrolled
+ * sideways when wider than the text. ```asyncapi, ```kanban, ```calendar: the
+ * widgets draw themselves; these rules only give them room.
+ */
+.admin-md-dmn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-md, 12px);
+  overflow-x: auto;
+}
+.admin-md-asyncapi,
+.admin-md-kanban,
+.admin-md-calendar {
+  margin: var(--uid-space-sm, 8px) 0;
+  min-width: 0;
+}
+
+/*
  * The kit's players in the panel: Layout::video / Layout::audio, the video
  * and audio entries, the file preview, table cells and ```video / ```audio
  * blocks. The players draw themselves; these rules only place them.

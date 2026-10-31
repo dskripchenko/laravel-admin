@@ -578,5 +578,13 @@
     "Видео": "Video",
     "Видеоплеер: файл или HLS, постер, субтитры": "Video player: a file or HLS, a poster, subtitles",
     "Аудио": "Audio",
-    "Аудиоплеер: дорожка или плейлист, волновая форма": "Audio player: a track or a playlist, a waveform"
+    "Аудиоплеер: дорожка или плейлист, волновая форма": "Audio player: a track or a playlist, a waveform",
+    "Процесс": "Process",
+    "Процесс или машина состояний: шаги, переходы, подпроцессы": "A process or a state machine: steps, transitions, sub-processes",
+    "Канбан": "Kanban",
+    "Доска задач: колонки, карточки, теги, исполнители, сроки": "A task board: columns, cards, tags, assignees, due dates",
+    "Календарь": "Calendar",
+    "События и повторы: день, неделя, месяц, год, повестка": "Events and repeats: day, week, month, year, agenda",
+    "AsyncAPI": "AsyncAPI",
+    "Каналы и сообщения событийного API": "Channels and messages of an event-driven API"
 }

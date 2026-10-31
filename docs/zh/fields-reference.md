@@ -108,6 +108,14 @@ Wysiwyg::make('page')->preset('full')->uploadImages(),
 «API request»（`/api`）。保存的 HTML 保留代码块，因此同样的内容在 Markdown 布局
 或任何运行 @dskripchenko/openapi 的 `renderBlocks` 的地方都会同样渲染。
 
+面板能绘制的所有代码块语言（见 [Markdown](layouts-reference.md#markdown)）在编辑器中
+也以同样方式显示。` ```kanban ` 或 ` ```calendar ` 代码块可直接在其中编辑——拖动
+卡片、拖动事件、使用事件构建器——块的标记随之更新。斜杠菜单还提供 «Process»
+（`/flow`）、«Kanban»（`/kanban`）、«Calendar»（`/calendar`）、«AsyncAPI»
+（`/asyncapi`）、«Video»（`/video`）和 «Audio»（`/audio`），每项都附带一个起始示例。
+清理器会保留代码块的 `language-…` 类（以及表格单元格的 `text-align`），因此内容保存
+后代码块仍会被绘制。
+
 工具栏的全屏按钮可让编辑器铺满整个窗口；按 Escape 退出。
 
 Quill 和 TinyMCE 适配器以子路径导出的形式随 npm 包提供；宿主需要自行安装编辑器（`quill` + `@vueup/vue-quill`，或 `tinymce` + `@tinymce/tinymce-vue`），并将组件注册为 `wysiwyg` 类型：

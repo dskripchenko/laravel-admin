@@ -96,6 +96,52 @@ const AUDIO_TEMPLATE = [
   'waveform: true',
 ].join('\n')
 
+const FLOW_TEMPLATE = 'stateDiagram-v2\n  [*] --> Draft\n  Draft --> Review: submit\n  Review --> Done: approve\n  Review --> Draft: reject\n  Done --> [*]'
+
+const KANBAN_TEMPLATE = [
+  '## To do {wip: 3}',
+  '- Write the brief #docs {who: Anna, due: 2026-12-01}',
+  '',
+  '## In progress',
+  '- Prototype #design {priority: high}',
+  '',
+  '## Done {done}',
+  '- Kick-off',
+].join('\n')
+
+const CALENDAR_TEMPLATE = [
+  '2026-12-01 10:00-11:00 Release review #release',
+  'every mon 09:30-09:45 Stand-up',
+  'every month last fri 16:00 Retrospective',
+].join('\n')
+
+const ASYNCAPI_TEMPLATE = [
+  'asyncapi: 3.0.0',
+  'info:',
+  '  title: Orders',
+  '  version: 1.0.0',
+  'channels:',
+  '  orderCreated:',
+  '    address: orders.created',
+  '    messages:',
+  '      created:',
+  '        payload:',
+  '          type: object',
+  '          properties:',
+  '            id: { type: integer }',
+  'operations:',
+  '  onOrderCreated:',
+  '    action: receive',
+  '    channel: { $ref: "#/channels/orderCreated" }',
+].join('\n')
+
+/** A slash command that inserts a block of the language, when a renderer draws it. */
+function blockCommand(language: string, command: Omit<SlashCommand, 'apply'>, template: string): SlashCommand[] {
+  return language in blockRenderers
+    ? [{ ...command, apply: (c: EditorController) => c.chain().focus().insertCodeBlock(language, template).run() }]
+    : []
+}
+
 const slashCommands = computed<SlashCommand[]>(() => [
   ...('mermaid' in blockRenderers
     ? [{
@@ -133,6 +179,30 @@ const slashCommands = computed<SlashCommand[]>(() => [
         apply: (c: EditorController) => c.chain().focus().insertCodeBlock('audio', AUDIO_TEMPLATE).run(),
       }]
     : []),
+  ...blockCommand('flow', {
+    key: 'flow',
+    label: tr('Процесс'),
+    hint: tr('Процесс или машина состояний: шаги, переходы, подпроцессы'),
+    aliases: ['flow', 'process', 'state', 'workflow'],
+  }, FLOW_TEMPLATE),
+  ...blockCommand('kanban', {
+    key: 'kanban',
+    label: tr('Канбан'),
+    hint: tr('Доска задач: колонки, карточки, теги, исполнители, сроки'),
+    aliases: ['kanban', 'board', 'tasks', 'cards'],
+  }, KANBAN_TEMPLATE),
+  ...blockCommand('calendar', {
+    key: 'calendar',
+    label: tr('Календарь'),
+    hint: tr('События и повторы: день, неделя, месяц, год, повестка'),
+    aliases: ['calendar', 'events', 'schedule', 'agenda'],
+  }, CALENDAR_TEMPLATE),
+  ...blockCommand('asyncapi', {
+    key: 'asyncapi',
+    label: tr('AsyncAPI'),
+    hint: tr('Каналы и сообщения событийного API'),
+    aliases: ['asyncapi', 'events api', 'kafka', 'messages'],
+  }, ASYNCAPI_TEMPLATE),
 ])
 
 const value = computed<string>(() => (form.getField(props.name) as string | undefined) ?? '')

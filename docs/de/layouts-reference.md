@@ -467,6 +467,10 @@ Was der Renderer unterstützt:
 | ` ```mermaid `-Blöcke | Diagramme in Mermaid-Syntax: Flowchart, Sequence, State, ER, Klassen, C4, Pie, Gantt, Timeline, XY-Chart und Mindmap, als SVG gezeichnet von [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | ` ```openapi `-Blöcke | API-Widgets: ein in YAML oder JSON beschriebener Request (oder ein ganzes OpenAPI-Dokument) wird zur Operation mit Try-it, Codebeispielen, TypeScript-Typen und PDF, von [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | ` ```flow `-Blöcke | Eine schreibgeschützte Prozessansicht: ein Modell in JSON oder Mermaid-Quelltext `stateDiagram-v2` / `flowchart`, gezeichnet von [@dskripchenko/flow](https://github.com/dskripchenko/flow) |
+| ` ```plantuml `-, ` ```dot `-, ` ```d2 `-, ` ```dbml `-, ` ```structurizr `-, ` ```wardley `-Blöcke | Diagramme in PlantUML-, Graphviz-DOT-, D2-, DBML-, Structurizr-DSL- und Wardley-Map-Syntax (auch ` ```puml `, ` ```graphviz `), vom selben Paket |
+| ` ```bpmn `-, ` ```dmn `-, ` ```drawio `-Blöcke | Prozess- und Entscheidungsmodelle (BPMN 2.0, DMN 1.1–1.5, mit der Tabelle jeder Entscheidung) und draw.io-Dokumente als Bild |
+| ` ```asyncapi `-Blöcke | Die Referenz eines AsyncAPI-2.x/3.0-Dokuments: Kanäle, Operationen, Nachrichten |
+| ` ```kanban `-, ` ```calendar `-Blöcke | Ein Board mit Karten und ein Kalender mit Wiederholungen, als Text geschrieben — hier nur lesbar, im WYSIWYG-Editor direkt bearbeitbar |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tabellen, mit Spaltenausrichtung |
 | `> quote` | Blockzitat |
 | `> **Note** …`, `> **Warning** …` | Hinweisbox; außerdem `Tip`, `Important`, `Caution` und die GitHub-Form `> [!NOTE]` |
@@ -497,6 +501,22 @@ beschreibt die Dokumentation des Pakets (API blocks).
 **Prozessblöcke.** Ein umzäunter Block mit der Sprache `flow` enthält ein Prozessmodell in JSON (siehe [Flow](#flow-prozess-mit-live-monitoring)) oder Mermaid-Quelltext `stateDiagram-v2` / `flowchart`; er wird zu einer schreibgeschützten Prozessansicht — Verschieben, Zoomen, Unterprozesse, die Details eines Schritts. Das Paket wird nur geladen, wenn eine Seite einen solchen Block enthält.
 
 **Medienblöcke.** Umzäunte Blöcke mit der Sprache `video` oder `audio` werden zu den Playern des UI-Kits. Die Quelle ist eine bloße URL (eine pro Zeile für eine Playlist oder Videoquellen), JSON oder ein paar Zeilen YAML mit den Optionen von [Video und Audio](#video-und-audio-medienplayer): `src`, `sources`, `poster`, `tracks`, `thumbnails`, `title`, `aspectRatio`, `maxWidth`, `autoplay`, `loop` für Video; `src` oder `tracks`, `title`, `artist`, `waveform`, `peaks`, `mini` für Audio. Im WYSIWYG-Editor fügt das Slash-Menü sie mit `/video` und `/audio` ein.
+
+**Weitere Notationen und Widgets.** Derselbe umzäunte Block zeichnet ein
+Diagramm in anderer Syntax: `plantuml` (oder `puml`), `dot` (oder
+`graphviz`), `d2`, `dbml`, `structurizr`, `wardley`. `bpmn` und `dmn`
+nehmen das XML, das ein Modeler speichert (Camunda Modeler, bpmn.io und
+andere) — die BPMN-Datei muss ihr Layout enthalten; ein DMN-Block zeigt das
+Anforderungsdiagramm und darunter die Tabelle jeder Entscheidung. `drawio`
+nimmt ein draw.io-Dokument (`.drawio`, komprimiert oder nicht), `asyncapi`
+ein AsyncAPI-Dokument in YAML oder JSON. `kanban` und `calendar` nehmen
+Markup — Spalten und Karten, Termine mit Wiederholungen in Worten („every
+month last fri") — im Format von
+[`UidKanban`](https://github.com/dskripchenko/ui/blob/main/docs/de/kanban.md) und
+[`UidEventCalendar`](https://github.com/dskripchenko/ui/blob/main/docs/de/event-calendar.md)
+aus dem UI-Kit. Im WYSIWYG-Feld werden Board und Kalender direkt im Block
+bearbeitet und schreiben das neue Markup zurück. Jedes Paket wird beim ersten
+Gebrauch geladen.
 
 ````markdown
 ```video

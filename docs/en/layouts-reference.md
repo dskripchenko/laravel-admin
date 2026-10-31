@@ -454,6 +454,10 @@ What the renderer supports:
 | ` ```mermaid ` blocks | Diagrams in Mermaid syntax: flowchart, sequence, state, ER, class, C4, pie, gantt, timeline, XY chart and mind map, drawn as SVG by [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | ` ```openapi ` blocks | API widgets: a request described in YAML or JSON (or a whole OpenAPI document) becomes the operation with try-it, code samples, TypeScript types and PDF, by [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | ` ```flow ` blocks | A read-only process view: a model in JSON, or Mermaid `stateDiagram-v2` / `flowchart` source, drawn by [@dskripchenko/flow](https://github.com/dskripchenko/flow) |
+| ` ```plantuml `, ` ```dot `, ` ```d2 `, ` ```dbml `, ` ```structurizr `, ` ```wardley ` blocks | Diagrams in PlantUML, Graphviz DOT, D2, DBML, Structurizr DSL and Wardley-map syntax (also ` ```puml `, ` ```graphviz `), by the same package |
+| ` ```bpmn `, ` ```dmn `, ` ```drawio ` blocks | Process and decision models (BPMN 2.0, DMN 1.1–1.5, with each decision's table) and draw.io documents, drawn as pictures |
+| ` ```asyncapi ` blocks | The reference of an AsyncAPI 2.x / 3.0 document: channels, operations, messages |
+| ` ```kanban `, ` ```calendar ` blocks | A board of cards and a calendar of events with repeats, written as text — read-only here, editable in place in the WYSIWYG editor |
 | `\| a \| b \|` + `\|---\|:---:\|` | Tables, with column alignment |
 | `> quote` | Block quote |
 | `> **Note** …`, `> **Warning** …` | Callout; also `Tip`, `Important`, `Caution` and GitHub's `> [!NOTE]` form |
@@ -484,6 +488,20 @@ described in the package's documentation (API blocks).
 **Process blocks.** A fenced block with the language `flow` holds a process model in JSON (see [Flow](#flow-process-with-live-monitoring)) or Mermaid `stateDiagram-v2` / `flowchart` source; it becomes a read-only process view — pan, zoom, sub-processes, the details of a step. The package is loaded only when a page has such a block.
 
 **Media blocks.** Fenced blocks with the language `video` or `audio` become the kit's players. The source is a bare URL (one per line for a playlist or for video sources), JSON, or a few lines of YAML with the options of [Video and Audio](#video-and-audio-media-players): `src`, `sources`, `poster`, `tracks`, `thumbnails`, `title`, `aspectRatio`, `maxWidth`, `autoplay`, `loop` for video; `src` or `tracks`, `title`, `artist`, `waveform`, `peaks`, `mini` for audio. The WYSIWYG editor's slash menu inserts them with `/video` and `/audio`.
+
+**Other notations and widgets.** The same fence draws a diagram in another
+syntax: `plantuml` (or `puml`), `dot` (or `graphviz`), `d2`, `dbml`,
+`structurizr`, `wardley`. `bpmn` and `dmn` take the XML a modeler saves
+(Camunda Modeler, bpmn.io and others) — the BPMN file must carry its layout;
+a DMN block shows the requirements diagram and then each decision's table.
+`drawio` takes a draw.io document (`.drawio`, uncompressed or compressed).
+`asyncapi` takes an AsyncAPI document in YAML or JSON. `kanban` and
+`calendar` take markup — columns and cards, events with repeats in words
+("every month last fri") — in the format of the kit's
+[`UidKanban`](https://github.com/dskripchenko/ui/blob/main/docs/en/kanban.md) and
+[`UidEventCalendar`](https://github.com/dskripchenko/ui/blob/main/docs/en/event-calendar.md).
+In the WYSIWYG field the board and the calendar are edited right in the block
+and write the new markup back. Every package is loaded on first use.
 
 ````markdown
 ```video

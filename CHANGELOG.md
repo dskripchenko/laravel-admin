@@ -5,6 +5,38 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **More block languages in Markdown and the WYSIWYG editor**: ` ```plantuml `
+  (`puml`), ` ```dot ` (`graphviz`), ` ```d2 `, ` ```dbml `, ` ```structurizr `
+  and ` ```wardley ` diagrams; ` ```bpmn ` and ` ```dmn ` models (a DMN block
+  with each decision's table) by @dskripchenko/bpmn; ` ```drawio ` documents by
+  @dskripchenko/drawio; ` ```asyncapi ` references by @dskripchenko/openapi;
+  ` ```kanban ` and ` ```calendar ` — the kit's `UidKanban` and
+  `UidEventCalendar`, read-only in rendered markdown and edited in place in
+  the WYSIWYG editor. Every package is loaded on first use.
+- **Slash commands** for «Process» (`/flow`), «Kanban», «Calendar» and
+  «AsyncAPI», each with a starting example.
+- **A bundle size budget in CI** (`size-limit`): the panel's own code, without
+  the packages it loads on demand, at 225 KB per bundle and 15 KB of CSS.
+
+### Fixed
+
+- **The sanitizer dropped a code block's language**: WYSIWYG content is stored
+  as `<pre><code class="language-…">`, and `code` had no allowed attributes, so
+  every diagram, API and media block became plain code once the form was
+  saved. A `language-…` class is kept now (nothing else of `class`), and a
+  table cell keeps its `text-align` (nothing else of `style`).
+
+### Changed
+
+- Requires `@dskripchenko/ui` ^1.20 and `@dskripchenko/wysiwyg` ^0.6;
+  `@dskripchenko/diagrams` ^1.3.3, `@dskripchenko/flow` ^1.2,
+  `@dskripchenko/openapi` ^1.2; new dependencies `@dskripchenko/bpmn` and
+  `@dskripchenko/drawio`.
+
 ## 1.62.0
 
 ### Added

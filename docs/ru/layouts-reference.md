@@ -460,6 +460,10 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 | Блоки ` ```mermaid ` | Диаграммы в синтаксисе Mermaid: flowchart, sequence, state, ER, классы, C4, pie, gantt, timeline, XY-график и интеллект-карта, рисуются в SVG пакетом [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
 | Блоки ` ```openapi ` | API-виджеты: запрос, описанный на YAML или JSON (или целый OpenAPI-документ), становится операцией с try-it, примерами кода, типами TypeScript и PDF — пакетом [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
 | Блоки ` ```flow ` | Процесс только для чтения: модель в JSON или исходник Mermaid `stateDiagram-v2` / `flowchart` — пакетом [@dskripchenko/flow](https://github.com/dskripchenko/flow) |
+| Блоки ` ```plantuml `, ` ```dot `, ` ```d2 `, ` ```dbml `, ` ```structurizr `, ` ```wardley ` | Диаграммы в синтаксисе PlantUML, Graphviz DOT, D2, DBML, Structurizr DSL и карт Уордли (также ` ```puml `, ` ```graphviz `) — тем же пакетом |
+| Блоки ` ```bpmn `, ` ```dmn `, ` ```drawio ` | Модели процессов и решений (BPMN 2.0, DMN 1.1–1.5, с таблицей каждого решения) и документы draw.io — картинкой |
+| Блоки ` ```asyncapi ` | Справочник по документу AsyncAPI 2.x / 3.0: каналы, операции, сообщения |
+| Блоки ` ```kanban `, ` ```calendar ` | Доска карточек и календарь событий с повторами, записанные текстом, — здесь только для чтения, в WYSIWYG-редакторе правятся на месте |
 | `\| a \| b \|` + `\|---\|:---:\|` | Таблицы с выравниванием колонок |
 | `> цитата` | Цитата |
 | `> **Note** …`, `> **Внимание** …` | Выноска; также `Tip`/`Совет`, `Important`/`Важно`, `Caution`/`Осторожно` и форма GitHub `> [!NOTE]` |
@@ -490,6 +494,20 @@ YAML или JSON — `method`, `url`, `params`, `auth`, `body`, `responses` ил
 **Блоки процессов.** Блок кода с языком `flow` содержит модель процесса в JSON (см. [Flow](#flow-процесс-с-живым-мониторингом)) или исходник Mermaid `stateDiagram-v2` / `flowchart`; он становится процессом только для чтения — панорама, масштаб, подпроцессы, детали шага. Пакет загружается, только когда на странице есть такой блок.
 
 **Медиаблоки.** Блоки кода с языком `video` или `audio` становятся плеерами UI-кита. Источник — просто адрес (по одному на строку для плейлиста или источников видео), JSON или несколько строк YAML с опциями [Video и Audio](#video-и-audio-медиаплееры): `src`, `sources`, `poster`, `tracks`, `thumbnails`, `title`, `aspectRatio`, `maxWidth`, `autoplay`, `loop` для видео; `src` или `tracks`, `title`, `artist`, `waveform`, `peaks`, `mini` для аудио. В WYSIWYG-редакторе их вставляет меню `/video` и `/audio`.
+
+**Другие нотации и виджеты.** Тот же блок кода рисует диаграмму в другом
+синтаксисе: `plantuml` (или `puml`), `dot` (или `graphviz`), `d2`, `dbml`,
+`structurizr`, `wardley`. `bpmn` и `dmn` принимают XML, который сохраняет
+моделер (Camunda Modeler, bpmn.io и другие), — в файле BPMN должна быть его
+раскладка; блок DMN показывает диаграмму требований и под ней таблицу каждого
+решения. `drawio` принимает документ draw.io (`.drawio`, сжатый или нет).
+`asyncapi` — документ AsyncAPI в YAML или JSON. `kanban` и `calendar`
+принимают разметку — колонки и карточки, события с повторами словами
+(«every month last fri») — в формате компонентов UI-кита
+[`UidKanban`](https://github.com/dskripchenko/ui/blob/main/docs/ru/kanban.md) и
+[`UidEventCalendar`](https://github.com/dskripchenko/ui/blob/main/docs/ru/event-calendar.md).
+В поле WYSIWYG доска и календарь правятся прямо в блоке и записывают новую
+разметку обратно. Каждый пакет загружается при первом использовании.
 
 ````markdown
 ```video

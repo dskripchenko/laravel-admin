@@ -394,6 +394,10 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 | ` ```mermaid ` 代码块 | 图表：Mermaid 语法的 flowchart、sequence、state、ER、类图、C4、pie、gantt、timeline、XY 图表和思维导图，由 [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) 绘制为 SVG |
 | ` ```openapi ` 代码块 | API 组件：用 YAML 或 JSON 描述的请求（或完整的 OpenAPI 文档）会变成带 try-it、代码示例、TypeScript 类型和 PDF 的操作，由 [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) 渲染 |
 | ` ```flow ` 代码块 | 只读的流程视图：JSON 模型，或 Mermaid `stateDiagram-v2` / `flowchart` 源码，由 [@dskripchenko/flow](https://github.com/dskripchenko/flow) 绘制 |
+| ` ```plantuml `、` ```dot `、` ```d2 `、` ```dbml `、` ```structurizr `、` ```wardley ` 代码块 | PlantUML、Graphviz DOT、D2、DBML、Structurizr DSL 与 Wardley 地图语法的图表（也可写 ` ```puml `、` ```graphviz `），由同一个包绘制 |
+| ` ```bpmn `、` ```dmn `、` ```drawio ` 代码块 | 流程与决策模型（BPMN 2.0、DMN 1.1–1.5，并附每个决策的表格）以及 draw.io 文档，以图片形式绘制 |
+| ` ```asyncapi ` 代码块 | AsyncAPI 2.x / 3.0 文档的参考：通道、操作、消息 |
+| ` ```kanban `、` ```calendar ` 代码块 | 以文本书写的卡片看板与带重复规则的事件日历——此处只读，在 WYSIWYG 编辑器中可就地编辑 |
 | `\| a \| b \|` + `\|---\|:---:\|` | 表格，支持列对齐 |
 | `> quote` | 块引用 |
 | `> **Note** …`、`> **Warning** …` | 提示框；也支持 `Tip`、`Important`、`Caution` 以及 GitHub 的 `> [!NOTE]` 形式 |
@@ -420,6 +424,18 @@ Layout::markdown(fn () => Page::whereSlug($slug)->value('body'))
 **流程块。** 语言为 `flow` 的围栏代码块包含 JSON 形式的流程模型（见 [Flow](#flow带实时监控的流程)）或 Mermaid `stateDiagram-v2` / `flowchart` 源码；它会变成只读的流程视图——平移、缩放、子流程、步骤详情。只有页面上有这样的代码块时才会加载该包。
 
 **媒体块。** 语言为 `video` 或 `audio` 的围栏代码块会变成 UI 套件的播放器。源可以是单独的 URL（播放列表或视频源每行一个）、JSON，或几行带 [Video 与 Audio](#video-与-audio媒体播放器) 选项的 YAML：视频用 `src`、`sources`、`poster`、`tracks`、`thumbnails`、`title`、`aspectRatio`、`maxWidth`、`autoplay`、`loop`；音频用 `src` 或 `tracks`、`title`、`artist`、`waveform`、`peaks`、`mini`。WYSIWYG 编辑器的斜杠菜单可用 `/video` 和 `/audio` 插入。
+
+**其他记法与组件。** 同样的围栏代码块可以绘制其他语法的图表：`plantuml`
+（或 `puml`）、`dot`（或 `graphviz`）、`d2`、`dbml`、`structurizr`、
+`wardley`。`bpmn` 和 `dmn` 接受建模工具（Camunda Modeler、bpmn.io 等）保存
+的 XML——BPMN 文件必须包含其布局；DMN 块先显示需求图，再显示每个决策的表格。
+`drawio` 接受 draw.io 文档（`.drawio`，压缩或未压缩）。`asyncapi` 接受 YAML 或
+JSON 格式的 AsyncAPI 文档。`kanban` 和 `calendar` 接受标记——列与卡片、以文字
+描述重复规则的事件（"every month last fri"）——格式与 UI 套件的
+[`UidKanban`](https://github.com/dskripchenko/ui/blob/main/docs/zh/kanban.md) 和
+[`UidEventCalendar`](https://github.com/dskripchenko/ui/blob/main/docs/zh/event-calendar.md)
+相同。在 WYSIWYG 字段中，看板和日历可直接在块内编辑，并把新的标记写回。每个包都在
+首次使用时加载。
 
 ````markdown
 ```video

@@ -134,6 +134,16 @@ Parameter, Authentifizierung, Body, Antworten). Das Slash-Menü fügt sie ein:
 behält den Codeblock, daher wird derselbe Inhalt im Markdown-Layout oder
 überall, wo `renderBlocks` von @dskripchenko/openapi läuft, gleich dargestellt.
 
+Jede Blocksprache, die das Panel zeichnet (siehe [Markdown](layouts-reference.md#markdown)),
+erscheint im Editor genauso. Ein ` ```kanban `- oder ` ```calendar `-Block wird
+direkt dort bearbeitet — Karten verschieben, Termine ziehen, der
+Termin-Baukasten —, und das Markup des Blocks folgt. Das Slash-Menü bietet
+außerdem «Process» (`/flow`), «Kanban» (`/kanban`), «Calendar» (`/calendar`),
+«AsyncAPI» (`/asyncapi`), «Video» (`/video`) und «Audio» (`/audio`), jeweils mit
+einem Startbeispiel. Der Sanitizer behält die Klasse `language-…` eines
+Codeblocks (und `text-align` einer Tabellenzelle), sodass ein Block auch nach
+dem Speichern gezeichnet wird.
+
 Der Vollbild-Button der Toolbar breitet den Editor über das ganze Fenster aus; Escape beendet ihn.
 
 Adapter für Quill und TinyMCE werden im npm-Paket als Subpath-Exports
