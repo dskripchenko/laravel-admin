@@ -96,11 +96,13 @@ describe('ResourceKanbanView', () => {
     expect(JSON.parse(mock.history.post[0].data)).toEqual({ q: 'abc', filters: { priority: 'high' } })
     expect(wrapper.findAll('.uid-board__column')).toHaveLength(2)
     expect(titles(wrapper, 0)).toEqual(['Card 1', 'Card 2'])
-    const counts = wrapper.findAll('[data-testid="kanban-count"]').map((n) => n.text())
+    // The kit shows the column's real total and marks the one over its WIP limit.
+    const counts = wrapper.findAll('.uid-board__count').map((n) => n.text())
     expect(counts).toEqual(['3', '2/1'])
-    expect(wrapper.findAll('.admin-resource-kanban__count--over')).toHaveLength(1)
-    expect(wrapper.text()).toContain('Ann')
-    expect(wrapper.find('[data-testid="kanban-due"]').classes()).toContain('admin-resource-kanban__due--overdue')
+    expect(wrapper.findAll('.uid-board__column--over')).toHaveLength(1)
+    // The kit draws the assignee as initials, the name in its label; an overdue due date is marked.
+    expect(wrapper.find('.uid-board__assignee').attributes('aria-label')).toContain('Ann')
+    expect(wrapper.findAll('.uid-board__due--overdue').length).toBeGreaterThan(0)
   })
 
   it('fetches the next page of one column with "more"', async () => {
@@ -137,7 +139,7 @@ describe('ResourceKanbanView', () => {
     })
     expect(titles(wrapper, 0)).toEqual(['Card 1'])
     expect(titles(wrapper, 1)).toEqual(['Card 3', 'Saved', 'Card 4'])
-    expect(wrapper.findAll('[data-testid="kanban-count"]').map((n) => n.text())).toEqual(['2', '3/1'])
+    expect(wrapper.findAll('.uid-board__count').map((n) => n.text())).toEqual(['2', '3/1'])
   })
 
   it('rolls the board back and shows the reason when the move is refused', async () => {

@@ -12,7 +12,15 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { UidButton, UidCalendar, UidErrorState, type CalendarEvent } from '@dskripchenko/ui'
+import {
+  UidButton,
+  UidCalendar,
+  UidErrorState,
+  type CalendarEvent,
+  type CalendarEventMove,
+  type CalendarRange,
+  type CalendarSlot,
+} from '@dskripchenko/ui'
 import { getAdminClient } from '../../stores/registry'
 import { useResourceIndexStore } from '../../stores/resourceIndex'
 import { useI18nStore } from '../../stores/i18n'
@@ -21,24 +29,6 @@ import { apiErrorMessage } from '../../api/errors'
 import type { ResourceCalendarConfig } from '../../stores/manifest'
 
 type CalendarViewName = ResourceCalendarConfig['initial_view']
-
-/** The kit's `range` and `event-move` payloads (not exported by the kit's index). */
-interface CalendarRange {
-  view: CalendarViewName
-  start: string
-  end: string
-}
-interface CalendarEventMove {
-  event: CalendarEvent
-  date: string
-  endDate?: string
-  time?: string
-  endTime?: string
-}
-interface CalendarSlot {
-  date: string
-  time?: string
-}
 
 interface Props {
   slug: string
@@ -123,7 +113,8 @@ function onRange(next: CalendarRange): void {
 /** A server event as the kit draws it. */
 function toCalendarEvent(e: ResourceEvent): CalendarEvent {
   const date = e.start.slice(0, 10)
-  const out: CalendarEvent = { id: e.id, title: e.title, date }
+  // A record editableForRow() locks is not dragged or resized.
+  const out: CalendarEvent = { id: e.id, title: e.title, date, editable: e.editable }
   if (e.color) out.color = TONES[e.color] ?? e.color
   if (e.all_day) {
     const last = e.end?.slice(0, 10)
@@ -165,10 +156,8 @@ async function onEventMove(m: CalendarEventMove): Promise<void> {
   if (props.readonly || busy.value) return
   const e = findEvent(m.event.id)
   if (!e) return
-  if (!e.editable) {
-    adminToast.error(tr('Эту запись нельзя переместить'))
-    return
-  }
+  // The kit does not drag a locked event; a move of one is ignored all the same.
+  if (!e.editable) return
   const target = moveTarget(e, m)
   const before = events.value
   // Apply at once; the kit draws the new place before the server answers.
@@ -250,6 +239,7 @@ defineExpose({ load })
       :events="calendarEvents"
       :views="config.views"
       :editable="!readonly"
+      :selectable="createRoute !== null"
       @range="onRange"
       @event-click="onEventClick"
       @event-move="onEventMove"

@@ -621,10 +621,7 @@
     "Не удалось загрузить карточки.": "Failed to load the cards.",
     "Без дорожки": "No lane",
     "Не удалось переместить карточку.": "Failed to move the card.",
-    "Превышен лимит незавершённой работы": "Work-in-progress limit exceeded",
     "Ещё": "More",
-    "Просрочено": "Overdue",
-    "Срок": "Due",
     "Не удалось загрузить календарь.": "Failed to load the calendar.",
     "Не удалось перенести событие.": "Failed to move the event.",
     "Показаны не все события: уточните фильтры.": "Not all events are shown: narrow the filters."

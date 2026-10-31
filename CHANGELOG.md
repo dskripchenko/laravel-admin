@@ -5,6 +5,18 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **The resource kanban and calendar use @dskripchenko/ui 1.21**: the board
+  shows a column's real total and its WIP limit itself, «More» moved to the
+  column's footer, the assignee and the due date (marked when overdue) are the
+  kit's own card fields; the calendar hands a record that `editableForRow()`
+  locks to the kit as not editable, so it is neither dragged nor resized, and
+  a click on an empty slot opens create in a calendar the user may only
+  create in. Requires `@dskripchenko/ui` ^1.21.
+
 ## 1.66.0
 
 ### Added
