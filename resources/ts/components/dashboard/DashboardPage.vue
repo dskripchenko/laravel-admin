@@ -13,7 +13,8 @@
  *      [☰][⚙][×] overlay — see WidgetActionsOverlay.
  *   2. The ☰ handle reorders widgets through HTML5 drag.
  *   3. The ↘ handle in the bottom-right corner changes the span, 1..12.
- *   4. "+ Add widget" opens AddWidgetDialog and calls store.addWidget.
+ *   4. "+ Add widget" opens WidgetConfigDialog in its add mode and calls
+ *      store.addWidget; the types and their forms come from the registry.
  *   5. "Save" POSTs the draft to /dashboard/save; "Cancel" restores it.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -38,6 +39,7 @@ import { useDashboardStore, type WidgetLayoutItem } from '../../stores/dashboard
 import WidgetRenderer, { type WidgetNode } from './WidgetRenderer.vue'
 import WidgetActionsOverlay from './WidgetActionsOverlay.vue'
 import WidgetConfigDialog from './WidgetConfigDialog.vue'
+import { getWidgetDescription } from './registry'
 import { confirmDialog } from '../../composables/useConfirm'
 
 interface DashboardManifest {
@@ -197,7 +199,7 @@ function spanFor(w: WidgetNode): number {
  *   1. draft-item.config.rowSpan — the per-user override
  *   2. node.rowSpan / node.row_span — the manifest default
  *   3. a per-type fallback: chart/heatmap/recent_list/markdown = 2,
- *      stat/gauge = 1
+ *      stat/gauge = 1, else the type description's defaultRowSpan
  *
  * The height in px is grid-auto-rows (140) × rowSpan + gap × (rowSpan − 1).
  */
@@ -215,6 +217,9 @@ function rowSpanFor(layoutSlug: string, w: WidgetNode): number {
   if (type === 'chart' || type === 'bar-chart' || type === 'donut-chart') return 2
   if (type === 'heatmap' || type === 'recent_list' || type === 'recent-list' || type === 'recent-table') return 2
   if (type === 'markdown' || type === 'iframe' || type === 'table') return 2
+  // A registered type's own default — the documents, the kanban, the calendar.
+  const described = getWidgetDescription(type)?.defaultRowSpan
+  if (typeof described === 'number') return Math.max(1, Math.min(6, described))
   return 1
 }
 

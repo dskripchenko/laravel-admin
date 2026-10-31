@@ -5,6 +5,61 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Document widgets on dashboards.** `Widget\DiagramWidget` (a diagram in
+  any notation of @dskripchenko/diagrams: `content()`, `syntax()`),
+  `Widget\BpmnWidget` (a BPMN or DMN model, read-only: `xml()` or `url()`,
+  `dmn()`, `highlight()`, `decision()`, `showDiagram()`),
+  `Widget\KanbanWidget` and `Widget\CalendarWidget` — each either over a
+  resource (`resource()`: its `Resource::kanban()` / `Resource::calendar()`
+  view in the widget, through the resource's own `board` / `calendar`
+  endpoints, with preset `filters()` and `search()`, read-only unless
+  `editable()` and the user may update) or written as markup (`markup()`,
+  the kit's `UidKanban` / `UidEventCalendar`, read-only);
+  `CalendarWidget::initialView()`, `views()`, `date()`. A resource widget is
+  hidden from a user without the resource's view permission, and when the
+  resource is not in the current panel or lacks the view. The content
+  scrolls inside the widget, which keeps its `rowSpan()` (3 by default).
+- **Users add them too**: diagram, BPMN/DMN, kanban (a resource with a kanban
+  view the user may view, or markup) and calendar (likewise, plus the first
+  view) in the dashboard's add dialog. `dashboard/save` and `dashboard/get`
+  drop a user-added kanban or calendar whose resource the user may not view
+  (`Widget\UserWidgets`).
+- **Registrable widget config.** The add / configure dialog takes the types'
+  labels, icons, default sizes, whether they may be added, and their config
+  forms from descriptions: `registerWidget(type, component, description)` or
+  `describeWidget(type, description)`, with field descriptors (`text`,
+  `textarea`, `code`, `number`, `select` with static or manifest-computed
+  options, `switch`, each with `required` and `visible()`) or a form
+  component of the host's, plus `read()` / `build()`. The built-in types are
+  ported to it with the config shapes they saved before, so saved dashboards
+  keep working. Also exported: `getWidgetDescription`, `listAddableWidgets`,
+  `builtinWidgetDescriptions`, `WidgetConfigDialog`, `WidgetConfigForm`,
+  `WidgetFrame` and the new widget components.
+
+### Changed
+
+- `ResourceKanbanView` and `ResourceCalendarView` take an optional `query`
+  (the list parameters) in place of the index page's store, to run outside
+  the list page.
+- `AddWidgetDialog` is now `WidgetConfigDialog` in its add mode.
+- The add dialog offers an aliased type once (`recent_list` / `recent-list`
+  still read a saved config), no longer offers `table` (its rows come only
+  from a server `TableWidget`), and gives `iframe` a name and an address field
+  instead of an empty form. Type names are no longer set in a monospace font.
+
+### Fixed
+
+- The add / configure widget dialog shipped without its frame styles (the
+  backdrop, the panel, the type grid): they lived in `AddWidgetDialog`, which
+  nothing imported. They are in `WidgetConfigDialog` now.
+- A BPMN / DMN viewer kept the package's 360px minimum inside a box set lower
+  (`->height()`, a widget's row) and lost its bottom, the zoom controls
+  included; the box's height wins now.
+
 ## 1.67.0
 
 ### Changed

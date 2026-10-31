@@ -60,6 +60,11 @@ class DashboardController extends ApiController
             // older layout — saved before a permission was revoked — has it.
             $items = $screen->filterLayoutItems($items);
         }
+        if ($items !== null) {
+            // A user-added kanban or calendar over a resource the user may no
+            // longer view is not handed back either.
+            $items = UserWidgets::filter($items);
+        }
 
         return $this->success([
             'layout' => $items,
@@ -186,8 +191,9 @@ class DashboardController extends ApiController
                 'owner_type' => $user->getMorphClass(),
                 'owner_id' => $user->getKey(),
             ],
-            // A layout cannot smuggle in a widget the user may not see.
-            ['widgets' => $screen?->filterLayoutItems($data['widgets']) ?? $data['widgets']],
+            // A layout cannot smuggle in a widget the user may not see — a
+            // declared one, or a user-added one over a resource they may not view.
+            ['widgets' => UserWidgets::filter($screen?->filterLayoutItems($data['widgets']) ?? $data['widgets'])],
         );
 
         return $this->success([

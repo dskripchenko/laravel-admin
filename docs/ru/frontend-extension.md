@@ -136,6 +136,65 @@ defineProps<Props>()
 </script>
 ```
 
+### Добавление пользователем
+
+Тип, который пользователь может добавить на дашборд (**Редактировать →
+Добавить виджет**), описывается для диалога добавления и настройки: подпись,
+иконка, размер по умолчанию и форма настроек. Описание передаётся третьим
+аргументом `registerWidget()`, а тип, зарегистрированный в другом месте,
+описывается через `describeWidget()`:
+
+```ts
+import { registerWidget, describeWidget } from '@dskripchenko/laravel-admin'
+import { CloudSun } from 'lucide-vue-next'
+
+registerWidget('weather', WeatherWidget, {
+  label: 'Погода',               // строка переводится; () => string показывается как есть
+  icon: CloudSun,
+  defaultSize: 3,                // колонок из 12; без него — 6
+  defaultRowSpan: 1,             // строк; когда ни виджет, ни пользователь не задали высоту
+  fields: [
+    { kind: 'text', key: 'city', label: 'Город', required: true },
+    { kind: 'select', key: 'units', label: 'Единицы', default: 'metric',
+      options: [{ value: 'metric', label: '°C' }, { value: 'imperial', label: '°F' }] },
+    { kind: 'number', key: 'days', label: 'Дней', default: 3 },
+    { kind: 'switch', key: 'alerts', label: 'Показывать предупреждения' },
+  ],
+})
+
+describeWidget('heatmap', { addable: false })   // убрать тип из диалога добавления
+```
+
+Диалог сохраняет форму как `config` виджета в раскладке пользователя (здесь
+`{ title, city, units, days, alerts }`), а компонент виджета получает его как
+свои данные, развёрнутые в props, — так же, как `data()` серверного виджета.
+
+Виды полей: `text`, `textarea`, `code` (моноширинное поле; `rows`), `number`
+(`default`, `min`, `max`; сохраняется числом), `select` (`options` — список
+или `(context) => options`, вычисленный по панели) и `switch` (сохраняется
+булевым). У каждого поля есть `label`, `help`, `placeholder`, `required`
+(диалог ждёт значения) и `visible(values)` — поле показывается и сохраняется,
+только пока функция возвращает true. `context.resources` — ресурсы манифеста,
+которые пользователь может смотреть, `context.hasPermission(key)` проверяет
+право:
+
+```ts
+{ kind: 'select', key: 'resource', label: 'Ресурс', required: true,
+  options: (ctx) => ctx.resources.map((r) => ({ value: r.slug, label: () => r.label })) }
+```
+
+Если сохраняемая форма отличается от формы полей, `read(config)` превращает
+сохранённый config в значения формы, а `build(values, { type, title })` —
+обратно (заголовок — поле самого диалога, он всегда сохраняется как
+`config.title`). Форму, которую поля не описывают, задают своим компонентом в
+`form`: он получает `modelValue` (значения), `type` и `context` и эмитит
+`update:modelValue`.
+
+Компонент без описания по-прежнему предлагается под именем типа — с одними
+заголовком и размером. Встроенные типы описаны так же
+(`builtinWidgetDescriptions()`); описание, заданное до запуска приложения,
+заменяет встроенное.
+
 ## Свой элемент infolist
 
 ```ts

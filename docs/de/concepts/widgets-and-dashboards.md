@@ -63,6 +63,10 @@ Registrierung: `Admin::screen([ContentDashboardScreen::class])`. URL:
 | `TableWidget` | `table` | Flache, schreibgeschützte Daten. |
 | `HeatmapWidget` | `heatmap` | Matrix `rows × cols × value` (z. B. Aktivität nach Stunde). |
 | `GaugeWidget` | `gauge` | Einzelner Wert 0..max mit Schwellenwerten. |
+| `DiagramWidget` | `diagram` | Ein Diagramm aus Text: Mermaid, PlantUML, DOT, D2, DBML, Structurizr, Wardley. |
+| `BpmnWidget` | `bpmn` | Ein BPMN-Prozess oder ein DMN-Entscheidungsmodell, nur lesend. |
+| `KanbanWidget` | `kanban` | Die Kanban-Ansicht einer Ressource oder ein als Markup geschriebenes Board. |
+| `CalendarWidget` | `calendar` | Die Kalenderansicht einer Ressource oder ein als Markup geschriebener Kalender. |
 
 ## Werte formatieren
 
@@ -107,6 +111,86 @@ HeatmapWidget::make()->title('Orders by weekday and month')
   Max der Matrix.
 - `money('EUR')` und `precision(2)` formatieren Tooltip und Legende in der
   Sprache des Panels, wie bei einem Diagramm.
+
+## Diagramme, BPMN, Kanban und Kalender
+
+Vier Widgets zeigen Dokumente und die Ressourcenansichten der Listenseite. Jedes
+scrollt seinen Inhalt in sich, sodass das Widget die Höhe behält, die
+`rowSpan()` ihm gibt (standardmäßig 3 Zeilen; das Kanban standardmäßig in
+voller Breite).
+
+```php
+use Dskripchenko\LaravelAdmin\Widget\{BpmnWidget, CalendarWidget, DiagramWidget, KanbanWidget};
+
+DiagramWidget::make()->title('Bestellablauf')
+    ->content("flowchart LR\n  new --> paid --> shipped")   // oder ein Callable
+    ->syntax('mermaid');                                       // ohne Angabe am Textanfang erkannt
+
+BpmnWidget::make()->title('Bestellprozess')
+    ->xml(fn () => Storage::get('processes/order.bpmn'))
+    ->highlight(['Task_approve']);
+BpmnWidget::make()->title('Rabatte')->dmn()->url('/files/discount.dmn')->decision('Decision_1');
+
+KanbanWidget::make()->title('Offene Aufgaben')
+    ->resource(TaskResource::class)          // ihre Ansicht Resource::kanban()
+    ->filters(['assignee' => 'me'])          // die Filter der Liste, nach Name
+    ->search('dringend')
+    ->editable();                            // Karten ziehen — nur mit Änderungsrecht
+
+CalendarWidget::make()->title('Diese Woche')
+    ->resource(MeetingResource::class)       // ihre Ansicht Resource::calendar()
+    ->initialView('agenda');                 // day, week, month, year oder agenda
+
+KanbanWidget::make()->title('Roadmap')->markup("## Jetzt\n- Abrechnung #api\n\n## Danach\n- Berichte");
+CalendarWidget::make()->markup("every mon 10:00-10:30 Planung")->initialView('week');
+```
+
+- `DiagramWidget` zeichnet wie [`Layout::diagram()`](../layouts-reference.md);
+  `syntax()` nimmt `mermaid`, `plantuml`, `dot`, `d2`, `dbml`, `structurizr`
+  oder `wardley`.
+- `BpmnWidget` zeigt das Modell nur lesend, mit Verschieben und Zoom: `xml()`
+  (ein String oder ein Callable) oder `url()` — ein Pfad der Panel-Site oder
+  eine URL desselben Origins, mit der Sitzung des Benutzers geladen; `dmn()`,
+  `highlight()`, `decision()` und `showDiagram()` wie bei den
+  BPMN/DMN-Layouts.
+- `KanbanWidget` und `CalendarWidget` nehmen **eine Ressource** oder
+  **Markup**. Mit `resource()` ist das Widget die eigene Ansicht der Ressource
+  wie auf ihrer Listenseite — Karten und Termine kommen aus ihren Endpunkten
+  `board` und `calendar`, mit ihrem Scope, ihren Filtern und Berechtigungen;
+  ein Klick öffnet den Datensatz. Es ist nur lesend, solange `editable()` nicht
+  gesetzt ist, und auch dann nur für einen Benutzer mit dem Änderungsrecht der
+  Ressource (und nie bei einer mit `readonly()` deklarierten Ansicht). Das
+  Widget ist für einen Benutzer ohne das Ansichtsrecht der Ressource
+  ausgeblendet, ebenso wenn die Ressource nicht im aktuellen Panel registriert
+  ist oder die Ansicht nicht deklariert. Mit `markup()` ist es `UidKanban` /
+  `UidEventCalendar` des Kits, nur lesend, im
+  [selben Markup](../layouts-reference.md#kanban-und-calendar) wie
+  `Layout::kanban()` / `Layout::calendar()`.
+- `CalendarWidget::initialView()` ersetzt die erste Ansicht des
+  Ressourcenkalenders (und wird zu ihren Ansichten hinzugefügt, wenn sie
+  fehlt); `views()` legt die angebotenen Ansichten fest, `date()` das erste
+  Datum eines Markup-Kalenders.
+
+### Vom Benutzer hinzugefügt
+
+Dieselben vier Typen lassen sich unter **Bearbeiten → Widget hinzufügen**
+hinzufügen; der Dialog fragt:
+
+| Typ | Einstellungen |
+|---|---|
+| Diagramm | Die Notation (oder aus dem Text erkannt) und der Quelltext |
+| BPMN / DMN | Die Notation und eine Dateiadresse auf der Panel-Site oder das ganze XML |
+| Kanban | Die Quelle: eine Ressource — nur solche mit Kanban-Ansicht, die der Benutzer sehen darf — mit optionaler Suche und „Ziehen erlauben“, oder Markup |
+| Kalender | Dasselbe für Ressourcen mit Kalenderansicht, plus die erste Ansicht (standardmäßig die Agenda) |
+
+Die Einstellungen werden als `config` des Widgets im Layout des Benutzers
+gespeichert. Ein vom Benutzer hinzugefügtes Kanban oder ein Kalender über
+einer Ressource folgt denselben Regeln wie die Klasse: `dashboard/save` und
+`dashboard/get` verwerfen eines, dessen Ressource der Benutzer nicht sehen darf
+(oder die die Ansicht verloren hat), und die Daten laufen über die eigenen
+Endpunkte der Ressource, die die Berechtigungen erneut prüfen. Wie ein Host
+eigene Typen in den Dialog bringt, steht unter
+[Frontend-Erweiterung](../frontend-extension.md#vom-benutzer-hinzufügbar).
 
 ## Größen
 

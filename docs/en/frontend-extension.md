@@ -120,6 +120,62 @@ defineProps<Props>()
 </script>
 ```
 
+### Letting users add it
+
+A type a user may add on the dashboard (**Edit → Add widget**) is described for
+the add and configure dialog — its label, icon, default size and config form.
+Pass the description as `registerWidget()`'s third argument, or describe a type
+registered elsewhere with `describeWidget()`:
+
+```ts
+import { registerWidget, describeWidget } from '@dskripchenko/laravel-admin'
+import { CloudSun } from 'lucide-vue-next'
+
+registerWidget('weather', WeatherWidget, {
+  label: 'Weather',              // a string is translated; () => string is shown as is
+  icon: CloudSun,
+  defaultSize: 3,                // columns of 12; 6 when unset
+  defaultRowSpan: 1,             // rows; used when neither the widget nor the user set one
+  fields: [
+    { kind: 'text', key: 'city', label: 'City', required: true },
+    { kind: 'select', key: 'units', label: 'Units', default: 'metric',
+      options: [{ value: 'metric', label: '°C' }, { value: 'imperial', label: '°F' }] },
+    { kind: 'number', key: 'days', label: 'Days', default: 3 },
+    { kind: 'switch', key: 'alerts', label: 'Show alerts' },
+  ],
+})
+
+describeWidget('heatmap', { addable: false })   // keep a type out of the add dialog
+```
+
+The dialog saves the form as the widget's `config` in the user's layout
+(`{ title, city, units, days, alerts }` here), and the widget component gets it
+as its data, flattened into props — the same as a backend widget's `data()`.
+
+Field kinds: `text`, `textarea`, `code` (a monospace textarea; `rows`),
+`number` (`default`, `min`, `max`; saved as a number), `select` (`options` — a
+list, or `(context) => options` computed from the panel) and `switch` (saved as
+a boolean). Every field takes `label`, `help`, `placeholder`, `required` (the
+dialog waits for a value) and `visible(values)` — a field shown, and saved, only
+while it returns true. `context.resources` holds the manifest's resources the
+user may view, and `context.hasPermission(key)` checks a permission:
+
+```ts
+{ kind: 'select', key: 'resource', label: 'Resource', required: true,
+  options: (ctx) => ctx.resources.map((r) => ({ value: r.slug, label: () => r.label })) }
+```
+
+When the saved shape differs from the form, `read(config)` turns a saved config
+into the form's values and `build(values, { type, title })` turns them back
+(the title is the dialog's own and always saved as `config.title`). A form the
+fields cannot express is a component of your own in `form`: it gets
+`modelValue` (the values), `type` and `context` and emits `update:modelValue`.
+
+A component registered without a description is still offered under its type
+name, with only the title and the size to set. The built-in types are described
+the same way (`builtinWidgetDescriptions()`); a description given before the
+app starts replaces the built-in one.
+
 ## Custom infolist entry
 
 ```ts

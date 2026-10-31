@@ -75,10 +75,14 @@
         "wrapper"
     ],
     "widgets": [
+        "bpmn",
+        "calendar",
         "chart",
+        "diagram",
         "gauge",
         "heatmap",
         "iframe",
+        "kanban",
         "markdown",
         "recent_list",
         "stats",

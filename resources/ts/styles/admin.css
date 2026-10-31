@@ -830,6 +830,8 @@
 }
 .admin-document-layout__svg > svg { display: block; max-width: none; height: auto; }
 .admin-document-layout__viewer { width: 100%; height: 100%; }
+/* The box sets the height (->height(), a widget's row): not the viewer's own minimum. */
+.admin-document-layout__viewer.bpmn-ed { min-height: 0; }
 .admin-document-layout__error,
 .admin-document-layout__empty { margin: var(--uid-space-sm, 8px); }
 

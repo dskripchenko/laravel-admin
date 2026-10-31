@@ -122,6 +122,66 @@ defineProps<Props>()
 </script>
 ```
 
+### Vom Benutzer hinzufügbar
+
+Ein Typ, den ein Benutzer auf dem Dashboard hinzufügen darf (**Bearbeiten →
+Widget hinzufügen**), wird für den Dialog zum Hinzufügen und Konfigurieren
+beschrieben: Bezeichnung, Icon, Standardgröße und Konfigurationsformular. Die
+Beschreibung ist das dritte Argument von `registerWidget()`; einen anderswo
+registrierten Typ beschreibt `describeWidget()`:
+
+```ts
+import { registerWidget, describeWidget } from '@dskripchenko/laravel-admin'
+import { CloudSun } from 'lucide-vue-next'
+
+registerWidget('weather', WeatherWidget, {
+  label: 'Wetter',               // ein String wird übersetzt; () => string wird so angezeigt
+  icon: CloudSun,
+  defaultSize: 3,                // Spalten von 12; ohne Angabe 6
+  defaultRowSpan: 1,             // Zeilen; wenn weder Widget noch Benutzer eine Höhe setzen
+  fields: [
+    { kind: 'text', key: 'city', label: 'Stadt', required: true },
+    { kind: 'select', key: 'units', label: 'Einheiten', default: 'metric',
+      options: [{ value: 'metric', label: '°C' }, { value: 'imperial', label: '°F' }] },
+    { kind: 'number', key: 'days', label: 'Tage', default: 3 },
+    { kind: 'switch', key: 'alerts', label: 'Warnungen zeigen' },
+  ],
+})
+
+describeWidget('heatmap', { addable: false })   // einen Typ aus dem Dialog heraushalten
+```
+
+Der Dialog speichert das Formular als `config` des Widgets im Layout des
+Benutzers (hier `{ title, city, units, days, alerts }`), und die
+Widget-Komponente erhält es als ihre Daten, in die Props ausgebreitet — wie das
+`data()` eines Backend-Widgets.
+
+Feldarten: `text`, `textarea`, `code` (ein Textfeld in Monospace; `rows`),
+`number` (`default`, `min`, `max`; als Zahl gespeichert), `select` (`options` —
+eine Liste oder `(context) => options`, aus dem Panel berechnet) und `switch`
+(als Boolean gespeichert). Jedes Feld kennt `label`, `help`, `placeholder`,
+`required` (der Dialog wartet auf einen Wert) und `visible(values)` — das Feld
+wird nur gezeigt und gespeichert, solange es true liefert. `context.resources`
+enthält die Ressourcen des Manifests, die der Benutzer sehen darf, und
+`context.hasPermission(key)` prüft eine Berechtigung:
+
+```ts
+{ kind: 'select', key: 'resource', label: 'Ressource', required: true,
+  options: (ctx) => ctx.resources.map((r) => ({ value: r.slug, label: () => r.label })) }
+```
+
+Weicht die gespeicherte Form vom Formular ab, macht `read(config)` aus einer
+gespeicherten Config die Werte des Formulars und `build(values, { type, title })`
+wieder eine Config (der Titel gehört dem Dialog und wird immer als
+`config.title` gespeichert). Ein Formular, das die Felder nicht ausdrücken,
+ist eine eigene Komponente in `form`: Sie erhält `modelValue` (die Werte),
+`type` und `context` und sendet `update:modelValue`.
+
+Eine Komponente ohne Beschreibung wird weiterhin unter ihrem Typnamen
+angeboten, nur mit Titel und Größe. Die eingebauten Typen sind genauso
+beschrieben (`builtinWidgetDescriptions()`); eine Beschreibung, die vor dem
+Start der App gegeben wird, ersetzt die eingebaute.
+
 ## Eigener Infolist-Eintrag
 
 ```ts

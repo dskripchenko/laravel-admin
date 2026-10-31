@@ -63,7 +63,8 @@ abstract class Widget implements Renderable
     private bool $contextRead = false;
 
     /**
-     * The widget's UI type: stats, chart, recent_list, table, markdown, iframe, heatmap or gauge.
+     * The widget's UI type: stats, chart, recent_list, table, markdown, iframe,
+     * heatmap, gauge, diagram, bpmn, kanban or calendar.
      */
     abstract public function widgetType(): string;
 

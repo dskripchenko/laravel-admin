@@ -5,6 +5,8 @@ import WidgetConfigDialog from './WidgetConfigDialog.vue'
 // When there is nothing left to add: the empty state and a disabled "Add".
 vi.mock('./registry', () => ({
   listWidgets: () => [],
+  listAddableWidgets: () => [],
+  getWidgetDescription: () => null,
 }))
 
 const mountOpen = () =>

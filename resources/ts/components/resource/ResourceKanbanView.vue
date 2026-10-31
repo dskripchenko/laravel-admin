@@ -36,9 +36,15 @@ interface Props {
   readonly?: boolean
   /** The user may reorder: a drop inside a column sends its position. */
   canReorder?: boolean
+  /**
+   * The list parameters — `q`, `filters` — in place of the index page's:
+   * set when the board is shown outside its page (a dashboard widget), so it
+   * neither reads nor follows the index store's search and filters.
+   */
+  query?: Record<string, unknown> | null
 }
 
-const props = withDefaults(defineProps<Props>(), { readonly: false, canReorder: false })
+const props = withDefaults(defineProps<Props>(), { readonly: false, canReorder: false, query: null })
 
 /** A card as the board endpoint sends it. */
 interface KanbanCard {
@@ -85,6 +91,7 @@ const busy = ref(false)
 const loadingMore = ref<string | null>(null)
 
 function params(): Record<string, unknown> {
+  if (props.query !== null) return { ...props.query }
   // The board keeps its own order inside a column; the list's sort does not apply.
   const { order: _order, ...rest } = index.queryParams()
   return rest
@@ -236,7 +243,9 @@ function onOpen(card: BoardCard): void {
 
 
 watch(
-  () => [props.slug, index.search, JSON.stringify(index.filters)],
+  () => (props.query !== null
+    ? [props.slug, JSON.stringify(props.query)]
+    : [props.slug, index.search, JSON.stringify(index.filters)]),
   () => void load(),
 )
 onMounted(() => void load())

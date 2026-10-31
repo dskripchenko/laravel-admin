@@ -59,6 +59,10 @@ final class ContentDashboardScreen extends DashboardScreen
 | `TableWidget` | `table` | 扁平的只读数据。 |
 | `HeatmapWidget` | `heatmap` | 矩阵 `rows × cols × value`（例如按小时统计的活跃度）。 |
 | `GaugeWidget` | `gauge` | 带阈值的 0..max 单个数值。 |
+| `DiagramWidget` | `diagram` | 由文本绘制的图：Mermaid、PlantUML、DOT、D2、DBML、Structurizr、Wardley。 |
+| `BpmnWidget` | `bpmn` | BPMN 流程或 DMN 决策模型，只读。 |
+| `KanbanWidget` | `kanban` | 资源的看板视图，或以标记书写的看板。 |
+| `CalendarWidget` | `calendar` | 资源的日历视图，或以标记书写的日历。 |
 
 ## 值的格式化
 
@@ -93,6 +97,68 @@ HeatmapWidget::make()->title('Orders by weekday and month')
 - `colorScale()` 接受 `default`（面板强调色，默认值）、`viridis`、`magma`、`plasma`、`inferno`、`blues`、`greens`、`reds`、单个 CSS 颜色，或 CSS 颜色数组作为从低到高的自定义色标。
 - `range($min, $max)` 固定颜色映射范围；默认取矩阵自身的最小值和最大值。
 - `money('USD')` 和 `precision(2)` 按面板语言环境格式化 tooltip 和图例，与图表一致。
+
+## 图、BPMN、看板与日历
+
+四个小部件用于展示文档以及列表页的资源视图。每个小部件都在自身内部滚动内容，因此小部件保持
+`rowSpan()` 给定的高度（默认 3 行；看板默认占满整行）。
+
+```php
+use Dskripchenko\LaravelAdmin\Widget\{BpmnWidget, CalendarWidget, DiagramWidget, KanbanWidget};
+
+DiagramWidget::make()->title('订单流程')
+    ->content("flowchart LR\n  new --> paid --> shipped")   // 或 callable
+    ->syntax('mermaid');                                       // 未设置时根据文本开头识别
+
+BpmnWidget::make()->title('订单流程模型')
+    ->xml(fn () => Storage::get('processes/order.bpmn'))
+    ->highlight(['Task_approve']);
+BpmnWidget::make()->title('折扣')->dmn()->url('/files/discount.dmn')->decision('Decision_1');
+
+KanbanWidget::make()->title('未完成任务')
+    ->resource(TaskResource::class)          // 其 Resource::kanban() 视图
+    ->filters(['assignee' => 'me'])          // 列表的筛选器，按名称
+    ->search('紧急')
+    ->editable();                            // 拖动卡片——仅限有更新权限的用户
+
+CalendarWidget::make()->title('本周')
+    ->resource(MeetingResource::class)       // 其 Resource::calendar() 视图
+    ->initialView('agenda');                 // day、week、month、year 或 agenda
+
+KanbanWidget::make()->title('路线图')->markup("## 现在\n- 计费 #api\n\n## 之后\n- 报表");
+CalendarWidget::make()->markup("every mon 10:00-10:30 计划会")->initialView('week');
+```
+
+- `DiagramWidget` 的绘制方式与 [`Layout::diagram()`](../layouts-reference.md) 相同；
+  `syntax()` 接受 `mermaid`、`plantuml`、`dot`、`d2`、`dbml`、`structurizr` 或 `wardley`。
+- `BpmnWidget` 以只读方式显示模型，可平移和缩放：`xml()`（字符串或 callable）或 `url()`——
+  面板站点的路径或同源 URL，使用用户会话加载；`dmn()`、`highlight()`、`decision()` 和
+  `showDiagram()` 与 BPMN/DMN 布局相同。
+- `KanbanWidget` 和 `CalendarWidget` 接受**资源**或**标记**。使用 `resource()` 时，小部件就是
+  该资源自己的视图，与其列表页相同——卡片和事件来自其 `board` 与 `calendar` 端点，带有其
+  scope、筛选器和权限；点击打开记录。除非调用 `editable()`，否则为只读；即使调用了，也仅对
+  拥有该资源更新权限的用户开放（声明为 `readonly()` 的视图永远只读）。对没有该资源查看权限的
+  用户隐藏该小部件；资源未在当前面板注册或未声明该视图时同样隐藏。使用 `markup()` 时是组件库的
+  `UidKanban` / `UidEventCalendar`，只读，标记格式与 `Layout::kanban()` / `Layout::calendar()`
+  [相同](../layouts-reference.md#kanban-与-calendar)。
+- `CalendarWidget::initialView()` 替换资源日历的初始视图（若不在其视图列表中则加入）；
+  `views()` 设置提供的视图，`date()` 设置标记日历的初始日期。
+
+### 用户添加的小部件
+
+同样四种类型可以通过**编辑 → 添加小部件**添加；对话框会询问：
+
+| 类型 | 设置 |
+|---|---|
+| 图 | 记法（或根据文本识别）和源文本 |
+| BPMN / DMN | 记法，以及面板站点上的文件地址或完整 XML |
+| 看板 | 来源：资源——仅限具有看板视图且用户可查看的资源——可选搜索和“允许拖动”；或标记 |
+| 日历 | 同上，适用于具有日历视图的资源，另加初始视图（默认为议程） |
+
+设置保存为用户布局中该小部件的 `config`。用户添加的基于资源的看板或日历遵循与类相同的规则：
+`dashboard/save` 和 `dashboard/get` 会丢弃用户无权查看其资源（或资源已失去该视图）的小部件，
+数据通过资源自己的端点获取，并再次检查权限。宿主如何把自己的类型加入对话框，见
+[前端扩展](../frontend-extension.md#允许用户添加)。
 
 ## 尺寸
 

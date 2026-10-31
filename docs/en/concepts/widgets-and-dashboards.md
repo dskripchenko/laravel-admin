@@ -60,6 +60,10 @@ Register: `Admin::screen([ContentDashboardScreen::class])`. URL:
 | `TableWidget` | `table` | Flat read-only data. |
 | `HeatmapWidget` | `heatmap` | Matrix `rows × cols × value` (e.g. activity by hour). |
 | `GaugeWidget` | `gauge` | Single value 0..max with thresholds. |
+| `DiagramWidget` | `diagram` | A diagram from text: Mermaid, PlantUML, DOT, D2, DBML, Structurizr, Wardley. |
+| `BpmnWidget` | `bpmn` | A BPMN process or a DMN decision model, read-only. |
+| `KanbanWidget` | `kanban` | A resource's kanban view, or a board written as markup. |
+| `CalendarWidget` | `calendar` | A resource's calendar view, or a calendar written as markup. |
 
 ## Formatting values
 
@@ -106,6 +110,80 @@ HeatmapWidget::make()->title('Orders by weekday and month')
   own min and max.
 - `money('USD')` and `precision(2)` format the tooltip and the legend, in the
   panel's locale, like a chart.
+
+## Diagrams, BPMN, kanban and calendar
+
+Four widgets show documents and the resource views of the list page. Each
+scrolls its content inside the widget, so the widget keeps the height its
+`rowSpan()` gives it (3 rows by default; the kanban is full width by default).
+
+```php
+use Dskripchenko\LaravelAdmin\Widget\{BpmnWidget, CalendarWidget, DiagramWidget, KanbanWidget};
+
+DiagramWidget::make()->title('Order flow')
+    ->content("flowchart LR\n  new --> paid --> shipped")   // or a callable
+    ->syntax('mermaid');                                       // detected from the text when unset
+
+BpmnWidget::make()->title('Order process')
+    ->xml(fn () => Storage::get('processes/order.bpmn'))
+    ->highlight(['Task_approve']);
+BpmnWidget::make()->title('Discounts')->dmn()->url('/files/discount.dmn')->decision('Decision_1');
+
+KanbanWidget::make()->title('Open tasks')
+    ->resource(TaskResource::class)          // its Resource::kanban() view
+    ->filters(['assignee' => 'me'])          // the list's filters, by name
+    ->search('urgent')
+    ->editable();                            // drag cards — only for a user who may update
+
+CalendarWidget::make()->title('This week')
+    ->resource(MeetingResource::class)       // its Resource::calendar() view
+    ->initialView('agenda');                 // day, week, month, year or agenda
+
+KanbanWidget::make()->title('Roadmap')->markup("## Now\n- Billing #api\n\n## Next\n- Reports");
+CalendarWidget::make()->markup("every mon 10:00-10:30 Planning")->initialView('week');
+```
+
+- `DiagramWidget` draws like [`Layout::diagram()`](../layouts-reference.md);
+  `syntax()` takes `mermaid`, `plantuml`, `dot`, `d2`, `dbml`, `structurizr`
+  or `wardley`.
+- `BpmnWidget` shows the model read-only with pan and zoom: `xml()` (a string
+  or a callable) or `url()` — a path of the panel's site or a URL of the same
+  origin, loaded with the user's session; `dmn()`, `highlight()`,
+  `decision()` and `showDiagram()` as on the BPMN/DMN layouts.
+- `KanbanWidget` and `CalendarWidget` take **a resource** or **markup**. With
+  `resource()` the widget is the resource's own view, as on its list page —
+  the cards and events come from its `board` and `calendar` endpoints, with
+  its scope, filters and permissions; a click opens the record. It is
+  read-only unless `editable()`, and even then only for a user who holds the
+  resource's update permission (and never on a view declared `readonly()`).
+  The widget is hidden from a user without the resource's view permission and
+  when the resource is not registered in the current panel or does not
+  declare that view. With `markup()` it is the kit's `UidKanban` /
+  `UidEventCalendar`, read-only, in the
+  [same markup](../layouts-reference.md#kanban-and-calendar) as
+  `Layout::kanban()` / `Layout::calendar()`.
+- `CalendarWidget::initialView()` replaces the resource view's first view (and
+  is added to its views when missing); `views()` sets the views offered, and
+  `date()` the first date of a markup calendar.
+
+### Added by the user
+
+The same four types can be added in **Edit → Add widget**; the dialog asks:
+
+| Type | Settings |
+|---|---|
+| Diagram | The notation (or detected from the text) and the source |
+| BPMN / DMN | The notation, and an address of a file on the panel's site or the whole XML |
+| Kanban | The source: a resource — only those with a kanban view the user may view — with an optional search and "allow dragging", or markup |
+| Calendar | The same, for resources with a calendar view, plus the first view (the agenda by default) |
+
+The settings are saved as the widget's `config` in the user's layout. A
+user-added kanban or calendar over a resource obeys the same rules as the
+class: `dashboard/save` and `dashboard/get` drop one whose resource the user
+may not view (or that lost the view), and the data goes through the
+resource's own endpoints, which check the permissions again. How a host adds
+its own types to the dialog is in
+[Frontend extension](../frontend-extension.md#letting-users-add-it).
 
 ## Sizing
 

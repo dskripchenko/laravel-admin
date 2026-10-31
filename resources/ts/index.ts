@@ -225,8 +225,32 @@ export {
   listWidgets,
   clearWidgetRegistry,
   registerBuiltinWidgets,
+  describeWidget,
+  getWidgetDescription,
+  hasWidgetDescription,
+  listAddableWidgets,
+  buildWidgetConfig,
+  initialValues as widgetConfigInitialValues,
+  resourcesWithView,
+  builtinWidgetDescriptions,
+  DiagramWidget,
+  BpmnWidget,
+  KanbanWidget,
+  CalendarWidget,
+  WidgetFrame,
+  WidgetConfigDialog,
+  WidgetConfigForm,
 } from './components/dashboard'
-export type { WidgetNode } from './components/dashboard'
+export type {
+  WidgetNode,
+  WidgetTypeDescription,
+  WidgetConfigField,
+  WidgetConfigOption,
+  WidgetConfigValues,
+  WidgetConfigContext,
+  WidgetBuildContext,
+  WidgetText,
+} from './components/dashboard'
 
 // Resource stores
 export { useResourceIndexStore } from './stores/resourceIndex'
