@@ -4,19 +4,18 @@
  * (Resource::kanban() on the backend), drawn with the kit's UidBoard.
  *
  * The cards come from POST /{slug}/board with the list's search and filters,
- * a page per column; the column header's "more" fetches the next page of that
- * column. A drop is applied at once and saved through POST /{slug}/boardMove;
+ * a page per column; the column footer's "more" fetches the next page of that
+ * column. The kit's board shows the column's real total, the WIP limit, the
+ * assignee, the due date and an overdue mark. A drop is applied at once and saved through POST /{slug}/boardMove;
  * when the server refuses it, the board goes back to where it was and the
  * reason is shown. A card click opens the record, as a row click does.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { CalendarClock, UserRound } from 'lucide-vue-next'
 import {
   UidBoard,
   UidButton,
   UidErrorState,
-  UidIcon,
   UidSkeleton,
   type BoardCard,
   type BoardColumn,
@@ -25,7 +24,7 @@ import {
 } from '@dskripchenko/ui'
 import { getAdminClient } from '../../stores/registry'
 import { useResourceIndexStore } from '../../stores/resourceIndex'
-import { formatLocale, useI18nStore } from '../../stores/i18n'
+import { useI18nStore } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
 import { apiErrorMessage } from '../../api/errors'
 import type { ResourceKanbanConfig, ResourceKanbanOption } from '../../stores/manifest'
@@ -149,11 +148,15 @@ const boardColumns = computed<BoardColumn[]>(() => columns.value.map((column) =>
   key: column.value,
   title: column.label,
   wip: column.wip,
+  total: column.total,
   cards: column.cards.map((card) => ({
     key: card.id,
     title: card.title,
     subtitle: card.description ?? undefined,
     tags: card.tags.map((label) => ({ label })),
+    assignee: card.assignee ?? undefined,
+    // The kit takes a date; a time of day, if any, is not shown on the card.
+    due: card.due ? card.due.slice(0, 10) : undefined,
     lane: laneOf(card),
     // A card Resource::editableForRow() locks stays in its column.
     targets: card.locked ? [column.value] : undefined,
@@ -172,9 +175,6 @@ function dataCard(key: string | number): KanbanCard | undefined {
   return undefined
 }
 
-function isOver(column: KanbanColumnData): boolean {
-  return column.wip !== null && column.wip > 0 && column.total > column.wip
-}
 
 function snapshot(): KanbanColumnData[] {
   return columns.value.map((c) => ({ ...c, cards: c.cards.map((card) => ({ ...card, tags: [...card.tags] })) }))
@@ -234,19 +234,6 @@ function onOpen(card: BoardCard): void {
   }
 }
 
-function formatDue(due: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?$/.exec(due)
-  if (!m) return due
-  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 0), Number(m[5] ?? 0))
-  const options: Intl.DateTimeFormatOptions = m[4] !== undefined
-    ? { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }
-    : { day: 'numeric', month: 'short' }
-  try {
-    return date.toLocaleString(formatLocale(), options)
-  } catch {
-    return due
-  }
-}
 
 watch(
   () => [props.slug, index.search, JSON.stringify(index.filters)],
@@ -280,57 +267,18 @@ defineExpose({ load })
       @move="onMove"
       @open="onOpen"
     >
-      <template #column-header="{ column }">
-        <template v-if="dataColumn(column.key)">
-          <span class="uid-board__title">{{ column.title }}</span>
-          <span
-            class="admin-resource-kanban__count"
-            :class="{ 'admin-resource-kanban__count--over': isOver(dataColumn(column.key)!) }"
-            :title="isOver(dataColumn(column.key)!) ? tr('Превышен лимит незавершённой работы') : undefined"
-            data-testid="kanban-count"
-          >{{ dataColumn(column.key)!.total }}<template v-if="column.wip">/{{ column.wip }}</template></span>
-          <UidButton
-            v-if="dataColumn(column.key)!.cards.length < dataColumn(column.key)!.total"
-            size="sm"
-            variant="ghost"
-            class="admin-resource-kanban__more"
-            data-testid="kanban-more"
-            :loading="loadingMore === String(column.key)"
-            @click="loadMore(dataColumn(column.key)!)"
-          >
-            {{ tr('Ещё') }}
-          </UidButton>
-        </template>
-      </template>
-      <template #card="{ card }">
-        <div class="uid-board__card-title">{{ card.title }}</div>
-        <div v-if="card.subtitle" class="uid-board__card-subtitle">{{ card.subtitle }}</div>
-        <div v-if="card.tags?.length" class="uid-board__card-tags">
-          <span
-            v-for="tag in card.tags"
-            :key="tag.label"
-            class="uid-board__tag uid-board__tag--default"
-          >{{ tag.label }}</span>
-        </div>
-        <div
-          v-if="dataCard(card.key)?.assignee || dataCard(card.key)?.due"
-          class="admin-resource-kanban__meta"
+      <template #column-footer="{ column }">
+        <UidButton
+          v-if="dataColumn(column.key) && dataColumn(column.key)!.cards.length < dataColumn(column.key)!.total"
+          size="sm"
+          variant="ghost"
+          class="admin-resource-kanban__more"
+          data-testid="kanban-more"
+          :loading="loadingMore === String(column.key)"
+          @click="loadMore(dataColumn(column.key)!)"
         >
-          <span v-if="dataCard(card.key)?.assignee" class="admin-resource-kanban__assignee">
-            <UidIcon :icon="UserRound" :size="12" />
-            {{ dataCard(card.key)?.assignee }}
-          </span>
-          <span
-            v-if="dataCard(card.key)?.due"
-            class="admin-resource-kanban__due"
-            :class="{ 'admin-resource-kanban__due--overdue': dataCard(card.key)?.overdue }"
-            :title="dataCard(card.key)?.overdue ? tr('Просрочено') : tr('Срок')"
-            data-testid="kanban-due"
-          >
-            <UidIcon :icon="CalendarClock" :size="12" />
-            {{ formatDue(dataCard(card.key)!.due!) }}
-          </span>
-        </div>
+          {{ tr('Ещё') }}
+        </UidButton>
       </template>
     </UidBoard>
   </div>
@@ -347,35 +295,7 @@ defineExpose({ load })
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--uid-space-sm);
 }
-.admin-resource-kanban__count {
-  margin-left: auto;
-  color: var(--uid-color-text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.admin-resource-kanban__count--over {
-  color: var(--uid-color-danger);
-  font-weight: 600;
-}
 .admin-resource-kanban__more {
-  margin-left: var(--uid-space-xs);
-}
-.admin-resource-kanban__meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--uid-space-xs);
-  margin-top: var(--uid-space-xs);
-  font-size: var(--uid-font-size-xs, 12px);
-  color: var(--uid-color-text-secondary);
-}
-.admin-resource-kanban__assignee,
-.admin-resource-kanban__due {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.admin-resource-kanban__due--overdue {
-  color: var(--uid-color-danger);
-  font-weight: 600;
+  width: 100%;
 }
 </style>

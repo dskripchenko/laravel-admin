@@ -88,9 +88,9 @@ describe('ResourceCalendarView', () => {
     expect(body.to > body.from).toBe(true)
 
     expect(shown(wrapper)).toEqual([
-      { id: 1, title: 'Standup', date: '2026-10-10', time: '09:00', endTime: '09:30', color: 'var(--uid-color-danger)' },
-      { id: 2, title: 'Offsite', date: '2026-10-12', endDate: '2026-10-14' },
-      { id: 3, title: 'Frozen', date: '2026-10-15', time: '10:00' },
+      { id: 1, title: 'Standup', date: '2026-10-10', editable: true, time: '09:00', endTime: '09:30', color: 'var(--uid-color-danger)' },
+      { id: 2, title: 'Offsite', date: '2026-10-12', editable: true, endDate: '2026-10-14' },
+      { id: 3, title: 'Frozen', date: '2026-10-15', editable: false, time: '10:00' },
     ])
   })
 
@@ -154,15 +154,20 @@ describe('ResourceCalendarView', () => {
     expect(toast).toHaveBeenCalledWith('The end must be after the start.')
   })
 
-  it('does not send a move of an event the server marks not editable', async () => {
-    const toast = vi.spyOn(adminToast, 'error')
+  it('hands the kit a locked event as not editable, and ignores a move of one', async () => {
     const { wrapper } = await mountView()
+    // The kit does not drag or resize it; a move reported anyway is not sent.
+    expect(shown(wrapper)[2]).toMatchObject({ editable: false })
 
     wrapper.findComponent(UidCalendar).vm.$emit('event-move', { event: shown(wrapper)[2], date: '2026-10-16', time: '10:00' })
     await flushPromises()
 
     expect(mock.history.post.filter((r) => r.url === '/tasks/calendarMove')).toHaveLength(0)
-    expect(toast).toHaveBeenCalled()
+  })
+
+  it('offers create on an empty slot only when the user may create', async () => {
+    const { wrapper } = await mountView()
+    expect(wrapper.findComponent(UidCalendar).props('selectable')).toBe(true)
   })
 
   it('is read-only: the calendar is not editable and a move sends nothing', async () => {

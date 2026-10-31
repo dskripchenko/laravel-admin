@@ -14,7 +14,7 @@
     "src": "node_modules/@dskripchenko/bpmn/dist/style.css"
   },
   "node_modules/@dskripchenko/bpmn/dist/vue.mjs": {
-    "file": "assets/vue-rKE8iiXB.js",
+    "file": "assets/vue-B7Nk8ElV.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -50,7 +50,7 @@
     "src": "node_modules/@dskripchenko/flow/dist/style.css"
   },
   "node_modules/@dskripchenko/flow/dist/vue.mjs": {
-    "file": "assets/vue-Cc54N_RB.js",
+    "file": "assets/vue-BQ-OfruA.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -60,7 +60,7 @@
     ]
   },
   "node_modules/@dskripchenko/markdown-editor/dist/index.mjs": {
-    "file": "assets/index-Bl_YGitc.js",
+    "file": "assets/index-CI5n5t5h.js",
     "name": "index",
     "src": "node_modules/@dskripchenko/markdown-editor/dist/index.mjs",
     "isDynamicEntry": true,
@@ -77,7 +77,7 @@
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-Dt4UmJ6K.js",
+    "file": "assets/vue-4a1geq5u.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -92,7 +92,7 @@
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-w5xQdZFE.js",
+    "file": "assets/app-CG7j0Vlo.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -110,7 +110,7 @@
       "node_modules/@dskripchenko/markdown-editor/dist/index.mjs"
     ],
     "css": [
-      "assets/app-4IcRwVKy.css"
+      "assets/app-CVfKBadW.css"
     ]
   }
 }
