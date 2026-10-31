@@ -5,7 +5,15 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.68.0
+
+### Changed
+
+- **The bundle size budget is raised** to 260 KB per bundle (from 225) and
+  18 KB of CSS (from 15): stages 2–5 of the widgets plan (layouts, fields,
+  resource views, dashboard widgets) used up the room left in 1.63. The budget
+  counts the panel's own code with its lazy chunks; the packages loaded on
+  demand stay outside it.
 
 ### Added
 
