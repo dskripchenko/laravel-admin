@@ -19,13 +19,29 @@
  * `flowchart` — become a read-only process view of @dskripchenko/flow: pan,
  * zoom, sub-processes, the details of a step. Loaded on first use too.
  *
+ * ```plantuml / ```puml, ```dot / ```graphviz, ```d2, ```dbml, ```structurizr
+ * and ```wardley blocks are drawn by @dskripchenko/diagrams too, each in its
+ * own syntax.
+ *
+ * ```bpmn and ```dmn blocks — process and decision models from Camunda
+ * Modeler, bpmn.io and other modelers — become pictures through
+ * @dskripchenko/bpmn (a DMN block adds each decision's table); ```drawio
+ * blocks (an .drawio / mxfile document) through @dskripchenko/drawio;
+ * ```asyncapi blocks become the AsyncAPI reference of @dskripchenko/openapi.
+ * Each is loaded on first use.
+ *
+ * ```kanban and ```calendar blocks — a board of cards and events with
+ * repeats written as markup — are the kit's UidKanban and UidEventCalendar.
+ * Read-only where markdown is shown; in the WYSIWYG editor they are edited in
+ * place and write the new markup back into the block.
+ *
  * ```video and ```audio blocks — a bare URL, JSON or a little YAML (see
  * ../media/mediaBlock) — become the kit's players, UidVideo and UidAudio. The
  * players are part of the kit the panel already has; an HLS stream loads the
  * kit's adapter on first use.
  */
 import { createVNode, defineComponent, h, render, type App, type AppContext, type Component } from 'vue'
-import { UidAudio, UidVideo } from '@dskripchenko/ui'
+import { UidAudio, UidEventCalendar, UidKanban, UidVideo, parseEventCalendar, parseKanban } from '@dskripchenko/ui'
 import { MediaBlockError, parseMediaBlock } from '../media/mediaBlock'
 import { cssSize, toAudioTracks, toVideoConfig } from '../media/mediaSource'
 import { provideKitLocale } from '../../composables/useKitLocale'
@@ -38,6 +54,9 @@ import {
 } from '@dskripchenko/ui'
 
 type DiagramsModule = typeof import('@dskripchenko/diagrams')
+type DiagramSyntax = NonNullable<Parameters<DiagramsModule['render']>[1]>['syntax']
+type BpmnModule = typeof import('@dskripchenko/bpmn')
+type DrawioModule = typeof import('@dskripchenko/drawio')
 type OpenApiModule = typeof import('@dskripchenko/openapi/vue')
 
 let diagrams: Promise<DiagramsModule> | null = null
@@ -54,15 +73,94 @@ function loadDiagrams(): Promise<DiagramsModule> {
   return diagrams
 }
 
-export const mermaidRenderer: UidMarkdownBlockRenderer = async (code) => {
-  const { render, DiagramError } = await loadDiagrams()
-  try {
-    return { html: render(code, { idPrefix: `admin-dg-${++sequence}` }).svg }
-  } catch (error) {
-    if (error instanceof DiagramError) {
-      return { error: error.hint ? `${error.message}. ${error.hint}` : error.message }
+/** A diagram block in one syntax; the error of a source it cannot read is shown with the code. */
+function diagramRenderer(syntax: DiagramSyntax): UidMarkdownBlockRenderer {
+  return async (code) => {
+    const { render, DiagramError } = await loadDiagrams()
+    try {
+      return { html: render(code, { syntax, idPrefix: `admin-dg-${++sequence}` }).svg }
+    } catch (error) {
+      if (error instanceof DiagramError) {
+        return { error: error.hint ? `${error.message}. ${error.hint}` : error.message }
+      }
+      throw error
     }
+  }
+}
+
+export const mermaidRenderer: UidMarkdownBlockRenderer = diagramRenderer('mermaid')
+
+/** The block languages drawn by @dskripchenko/diagrams, and the syntax each is written in. */
+export const DIAGRAM_LANGUAGES: Readonly<Record<string, DiagramSyntax>> = Object.freeze({
+  mermaid: 'mermaid',
+  plantuml: 'plantuml',
+  puml: 'plantuml',
+  dot: 'dot',
+  graphviz: 'dot',
+  d2: 'd2',
+  dbml: 'dbml',
+  structurizr: 'structurizr',
+  wardley: 'wardley',
+})
+
+let bpmn: Promise<BpmnModule> | null = null
+let drawio: Promise<DrawioModule> | null = null
+
+/** @internal Replaces the dynamic imports, for tests. */
+export function setNotationLoaders(loaders: { bpmn?: () => Promise<BpmnModule>; drawio?: () => Promise<DrawioModule> } | null): void {
+  bpmn = loaders?.bpmn ? loaders.bpmn() : null
+  drawio = loaders?.drawio ? loaders.drawio() : null
+}
+
+function loadBpmn(): Promise<BpmnModule> {
+  bpmn ??= import('@dskripchenko/bpmn').catch((error: unknown) => {
+    bpmn = null
     throw error
+  })
+  return bpmn
+}
+
+function loadDrawio(): Promise<DrawioModule> {
+  drawio ??= import('@dskripchenko/drawio').catch((error: unknown) => {
+    drawio = null
+    throw error
+  })
+  return drawio
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+export const bpmnRenderer: UidMarkdownBlockRenderer = async (code) => {
+  const { render } = await loadBpmn()
+  try {
+    return { html: render(code, { idPrefix: `admin-bp-${++sequence}` }).svg }
+  } catch (error) {
+    return { error: messageOf(error) }
+  }
+}
+
+/** The decision requirements diagram, then each decision's table or expression. */
+export const dmnRenderer: UidMarkdownBlockRenderer = async (code) => {
+  const { parseDmn, renderDmn, renderDecision } = await loadBpmn()
+  try {
+    const model = parseDmn(code)
+    const id = `admin-dm-${++sequence}`
+    const parts = [renderDmn(model, { idPrefix: id }).svg]
+    for (const d of model.decisions) if (d.logic && d.logic.kind !== 'other') parts.push(renderDecision(model, d.id, { idPrefix: id }).html)
+    return { html: `<div class="admin-md-dmn">${parts.join('')}</div>` }
+  } catch (error) {
+    return { error: messageOf(error) }
+  }
+}
+
+export const drawioRenderer: UidMarkdownBlockRenderer = async (code) => {
+  const { render } = await loadDrawio()
+  try {
+    return { html: render(code, { idPrefix: `admin-dw-${++sequence}` }).svg }
+  } catch (error) {
+    return { error: messageOf(error) }
   }
 }
 
@@ -88,6 +186,28 @@ export const openapiRenderer: UidMarkdownBlockRenderer = async (code, ctx) => {
   // The widget speaks the panel's language where it knows it (en, ru).
   const locale = document.documentElement.lang || undefined
   return openApiBlockRenderer({ appContext: appContext ?? undefined, locale })(code, ctx)
+}
+
+export const asyncapiRenderer: UidMarkdownBlockRenderer = async (code) => {
+  const { AsyncApiReference } = await loadOpenApi()
+  const locale = document.documentElement.lang || undefined
+  return {
+    mount(el) {
+      el.classList.add('admin-md-asyncapi')
+      const draw = (spec: string): void => {
+        const vnode = createVNode(AsyncApiReference, { spec, locale })
+        vnode.appContext = appContext
+        render(vnode, el)
+      }
+      draw(code)
+      return {
+        update: draw,
+        destroy() {
+          render(null, el)
+        },
+      }
+    },
+  }
 }
 
 /** A ```flow block's source as a model: JSON, or Mermaid state/flowchart source. */
@@ -196,7 +316,7 @@ export function audioBlockProps(code: string): PlayerProps {
  * AdminApp provides would not reach it.
  */
 const LocalizedPlayer = defineComponent({
-  name: 'AdminMediaBlockPlayer',
+  name: 'AdminBlockComponent',
   inheritAttrs: false,
   props: { is: { type: [Object, Function], required: true } },
   setup(props, { attrs }) {
@@ -258,14 +378,74 @@ function mediaRenderer(
   }
 }
 
+/**
+ * A kit component that edits markup (UidKanban, UidEventCalendar) in a block:
+ * read-only where markdown is shown; in the WYSIWYG editor it is edited in
+ * place and its changes are written back into the block's code.
+ */
+function markupRenderer(component: Component, kind: string, problem: (code: string) => string | null): UidMarkdownBlockRenderer {
+  return (code) => {
+    const error = problem(code)
+    if (error) return { error }
+    return {
+      mount(el, ctx) {
+        el.classList.add(`admin-md-${kind}`)
+        let source = code
+        const draw = (): void => {
+          const vnode = createVNode(LocalizedPlayer, {
+            is: component,
+            source,
+            editable: ctx?.editable === true,
+            onChange: (next: string) => {
+              source = next
+              ctx?.setCode(next)
+              draw()
+            },
+          })
+          vnode.appContext = appContext
+          render(vnode, el)
+        }
+        draw()
+        return {
+          update(next: string) {
+            if (next === source) return
+            source = next
+            draw()
+          },
+          destroy() {
+            render(null, el)
+          },
+        }
+      },
+    }
+  }
+}
+
+export const kanbanRenderer: UidMarkdownBlockRenderer = markupRenderer(UidKanban, 'kanban', (code) =>
+  parseKanban(code).columns.length === 0 ? 'No columns: a column starts with "## "' : null,
+)
+
+export const calendarRenderer: UidMarkdownBlockRenderer = markupRenderer(UidEventCalendar, 'calendar', (code) => {
+  const doc = parseEventCalendar(code)
+  const first = doc.problems[0]
+  return doc.items.length === 0 && first ? `Line ${first.line}: ${first.message}` : null
+})
+
 export const videoRenderer: UidMarkdownBlockRenderer = mediaRenderer(UidVideo, 'video', videoBlockProps)
 export const audioRenderer: UidMarkdownBlockRenderer = mediaRenderer(UidAudio, 'audio', audioBlockProps)
 
 /** The renderers the panel registers app-wide. */
 export const builtinMarkdownRenderers: UidMarkdownBlockRenderers = Object.freeze({
+  ...Object.fromEntries(Object.entries(DIAGRAM_LANGUAGES).map(([language, syntax]) => [language, diagramRenderer(syntax)])),
   mermaid: mermaidRenderer,
+  bpmn: bpmnRenderer,
+  dmn: dmnRenderer,
+  drawio: drawioRenderer,
   openapi: openapiRenderer,
+  asyncapi: asyncapiRenderer,
   flow: flowRenderer,
+  kanban: kanbanRenderer,
+  calendar: calendarRenderer,
   video: videoRenderer,
   audio: audioRenderer,
 })

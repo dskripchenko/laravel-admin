@@ -67,6 +67,9 @@ export default defineConfig({
         /^@dskripchenko\/openapi($|\/)/,
         // Loaded on demand by Layout::flow, Field\Flow, the flow entry and ```flow blocks.
         /^@dskripchenko\/flow($|\/)/,
+        // Loaded on demand by the ```bpmn / ```dmn and ```drawio renderers.
+        /^@dskripchenko\/bpmn($|\/)/,
+        /^@dskripchenko\/drawio($|\/)/,
         /^@tiptap\//,
         'marked',
         // The WYSIWYG peer deps: used by TinymceField/QuillField and supplied by

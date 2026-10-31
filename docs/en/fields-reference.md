@@ -127,6 +127,15 @@ authentication, body, responses). The slash menu inserts them: «Diagram»
 so the same content renders the same way in a Markdown layout or anywhere
 `renderBlocks` of @dskripchenko/openapi runs.
 
+Every block language the panel draws (see [Markdown](layouts-reference.md#markdown))
+shows the same way in the editor. A ` ```kanban ` or ` ```calendar ` block is
+edited right there — cards moved, events dragged, the event builder — and the
+block's markup follows. The slash menu also offers «Process» (`/flow`),
+«Kanban» (`/kanban`), «Calendar» (`/calendar`), «AsyncAPI» (`/asyncapi`),
+«Video» (`/video`) and «Audio» (`/audio`), each with a starting example. The
+sanitizer keeps a code block's `language-…` class (and a table cell's
+`text-align`), so a block is still drawn after the content is saved.
+
 The toolbar's fullscreen button spreads the editor over the window; Escape leaves it.
 
 Quill and TinyMCE adapters ship in the npm package as subpath exports; the host

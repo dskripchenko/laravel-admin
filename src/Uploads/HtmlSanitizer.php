@@ -52,7 +52,9 @@ final class HtmlSanitizer
             'strong' => [], 'b' => [],
             'em' => [], 'i' => [],
             'u' => [], 's' => [], 'strike' => [],
-            'code' => [], 'pre' => ['class'],
+            // A code block's language (`language-mermaid`): the editor draws the
+            // block by it. Only that class is kept (see constrain()).
+            'code' => ['class'], 'pre' => ['class'],
             'blockquote' => [],
             'h1' => ['id'], 'h2' => ['id'], 'h3' => ['id'],
             'h4' => ['id'], 'h5' => ['id'], 'h6' => ['id'],
@@ -62,7 +64,8 @@ final class HtmlSanitizer
             'img' => $img,
             'table' => ['class'],
             'thead' => [], 'tbody' => [], 'tfoot' => [],
-            'tr' => [], 'th' => ['colspan', 'rowspan'], 'td' => ['colspan', 'rowspan'],
+            // A column's alignment, `text-align` only (see constrain()).
+            'tr' => [], 'th' => ['colspan', 'rowspan', 'style'], 'td' => ['colspan', 'rowspan', 'style'],
             'span' => ['class', 'style'],
             'mark' => [], 'sub' => [], 'sup' => [],
         ];
@@ -150,6 +153,14 @@ final class HtmlSanitizer
                         if (self::isDangerousUrl($value)) {
                             $child->removeAttribute($name);
                         }
+
+                        continue;
+                    }
+                    $constrained = self::constrain($tag, $lower, (string) $child->getAttribute($name));
+                    if ($constrained === null) {
+                        $child->removeAttribute($name);
+                    } elseif ($constrained !== (string) $child->getAttribute($name)) {
+                        $child->setAttribute($name, $constrained);
                     }
                 }
 
@@ -159,6 +170,30 @@ final class HtmlSanitizer
                 $child->parentNode?->removeChild($child);
             }
         }
+    }
+
+    /**
+     * The value an attribute may keep on a tag, or null to drop it: a code
+     * block's class keeps only its `language-…` token, a table cell's style
+     * only its `text-align`. Other attributes pass unchanged.
+     */
+    private static function constrain(string $tag, string $attribute, string $value): ?string
+    {
+        if ($tag === 'code' && $attribute === 'class') {
+            $languages = array_filter(
+                preg_split('/\s+/', trim($value)) ?: [],
+                static fn (string $token): bool => (bool) preg_match('/^language-[\w+#.-]+$/', $token),
+            );
+
+            return $languages === [] ? null : implode(' ', $languages);
+        }
+        if (($tag === 'td' || $tag === 'th') && $attribute === 'style') {
+            return preg_match('/(?:^|;)\s*text-align\s*:\s*(left|right|center)\s*(?:;|$)/i', $value, $m)
+                ? 'text-align: '.strtolower($m[1])
+                : null;
+        }
+
+        return $value;
     }
 
     private static function isDangerousUrl(string $url): bool
