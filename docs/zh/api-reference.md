@@ -123,6 +123,10 @@ OpenAPI 3.0 规范自动生成，并在 `/api/admin/doc` 提供（由 [@dskripch
 | POST | `{slug}/forceDelete` | 仅用于带 `SoftDeletes` 的 Resource。 |
 | POST | `{slug}/replicate` | 仅当 `replicable()` 时。 |
 | POST | `{slug}/reorder` | 仅当 `reorderable()` 时。 |
+| POST | `{slug}/board` | 仅当声明了 `kanban()`。看板各列及每列的一页卡片。请求体：列表的 `{filters, q}`，另有用于加载某一列下一页的 `column` 和 `offset`，以及 `limit`。 |
+| POST | `{slug}/boardMove` | 仅当看板不是 `readonly()`。请求体：`{id, value, lane?, position?}` 加上列表的 `{filters, q}`（用于 `position`，即卡片在目标列中的索引）。需要 `update` 权限。 |
+| POST | `{slug}/calendar` | 仅当声明了 `calendar()`。区间与 `{from, to}`（`Y-m-d`，含首尾）相交的事件，应用列表的 `{filters, q}`。 |
+| POST | `{slug}/calendarMove` | 仅当日历不是 `readonly()`。请求体：`{id, start, end?}`（`Y-m-d` 或 `Y-m-d H:i`）。需要 `update` 权限。 |
 | GET/POST | `{slug}/export?format=csv` | `format`：`csv`（默认）、`xlsx`、`pdf`——取决于已安装的导出器；`columns[]` 用于缩小导出的列。 |
 | POST | `{slug}/action` | 通用 Action 分发器。请求体：`{key, ids[], payload}`。 |
 | GET | `{slug}/listScreen` | 编译后的 `GeneratedListScreen` 快照。 |

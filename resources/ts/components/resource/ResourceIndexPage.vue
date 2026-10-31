@@ -53,6 +53,9 @@ import { createTooltip, deleteConfirmText, deletedToast, emptyDescription, nounC
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
+import ResourceViewSwitcher from './ResourceViewSwitcher.vue'
+import ResourceKanbanView from './ResourceKanbanView.vue'
+import ResourceCalendarView from './ResourceCalendarView.vue'
 import { applyPositions, buildReorderPayload, canDragReorder, type ReorderResponse } from './reorder'
 import { adminToast } from '../../stores/toast'
 import { actionReveal, revealOnce } from '../../composables/useReveal'
@@ -104,6 +107,12 @@ interface Props {
   createLabel?: string
   /** Router route name behind the “Create” action. */
   createRouteName?: string | null
+  /**
+   * The view to open with when the URL names none: 'list', 'kanban' or
+   * 'calendar' (Layout::resourceIndex()->initialView()). Ignored for a view the
+   * resource does not offer.
+   */
+  initialView?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -111,6 +120,7 @@ const props = withDefaults(defineProps<Props>(), {
   subtitle: null,
   createLabel: undefined,
   createRouteName: null,
+  initialView: null,
 })
 
 const emit = defineEmits<{
@@ -454,6 +464,43 @@ const hasSavedViews = computed<boolean>(() => {
   return features.savedViews === true
 })
 
+/**
+ * The views the page offers (the manifest's `views`), the base one first —
+ * the list, or the tree of a hierarchical resource. The chosen one lives in
+ * the store (`?view=` in the URL, and in saved views); null there means the
+ * base view.
+ */
+const availableViews = computed<string[]>(() => {
+  const views = resourceMeta.value?.views
+  if (Array.isArray(views) && views.length > 0) return views
+  return [resourceMeta.value?.view_mode === 'tree' ? 'tree' : 'list']
+})
+const baseView = computed<string>(() => availableViews.value[0] ?? 'list')
+const currentView = computed<string>(() => {
+  const v = index.view
+  return v !== null && availableViews.value.includes(v) ? v : baseView.value
+})
+/** The table is on screen: the list (not the tree, the kanban or the calendar). */
+const isListView = computed<boolean>(() => currentView.value === 'list')
+
+/** The user may change records: the kanban and calendar allow dragging. */
+const canUpdate = computed<boolean>(() => {
+  const permission = resourceMeta.value?.permissions?.update
+  return isEditable.value && (typeof permission !== 'string' || auth.hasPermission(permission))
+})
+const canReorder = computed<boolean>(() => {
+  const permission = resourceMeta.value?.permissions?.reorder
+  return typeof permission !== 'string' || auth.hasPermission(permission)
+})
+
+async function setView(next: string): Promise<void> {
+  if (!availableViews.value.includes(next)) return
+  index.view = next === baseView.value ? null : next
+  index.clearSelection()
+  // The list was not kept up to date while another view was on screen.
+  if (next === 'list') await loadWithProgress()
+}
+
 /** Import is available only when features.importable is on; off by default. */
 const isImportable = computed<boolean>(() => {
   const features = (resourceMeta.value?.features ?? {}) as Record<string, unknown>
@@ -598,7 +645,9 @@ const hasActiveFilters = computed<boolean>(
   () => index.search !== '' || Object.keys(index.filters).length > 0,
 )
 const showFilterBar = computed<boolean>(
-  () => !index.isEmpty || hasActiveFilters.value,
+  // The kanban and the calendar always offer search and filters: their
+  // emptiness is not the list's.
+  () => !isListView.value || !index.isEmpty || hasActiveFilters.value,
 )
 
 // Filter, column and view state — the toolbar delegates all of it here.
@@ -678,6 +727,7 @@ async function onApplyView(view: SavedViewItem): Promise<void> {
     sort?: { key?: string | null; direction?: 'asc' | 'desc' | null }
     group_by?: string | null
     columns?: Record<string, boolean>
+    view?: string | null
   }
   index.search = s.search ?? ''
   index.filters = { ...(s.filters ?? {}) }
@@ -685,8 +735,9 @@ async function onApplyView(view: SavedViewItem): Promise<void> {
   index.sortDirection = s.sort?.direction ?? null
   groupByCol.value = s.group_by ?? null
   columnVisibility.value = { ...(s.columns ?? {}) }
+  index.view = typeof s.view === 'string' && s.view !== baseView.value && availableViews.value.includes(s.view) ? s.view : null
   index.meta.page = 1
-  await loadWithProgress()
+  if (index.listActive) await loadWithProgress()
 }
 
 async function onResetView(): Promise<void> {
@@ -697,6 +748,7 @@ async function onResetView(): Promise<void> {
   index.sortDirection = null
   groupByCol.value = null
   columnVisibility.value = {}
+  index.view = null
   index.meta.page = 1
   await loadWithProgress()
 }
@@ -737,6 +789,7 @@ async function onSaveView(label: string): Promise<void> {
           sort: { key: index.sortKey, direction: index.sortDirection },
           group_by: groupByCol.value,
           columns: columnVisibility.value,
+          view: index.view,
         },
       },
     )
@@ -757,6 +810,7 @@ async function onSaveView(label: string): Promise<void> {
 }
 
 const totalLabel = computed(() => {
+  if (!isListView.value) return ''
   const t = index.meta.total
   if (t === 0) return ''
   return tRaw(':shown из :total :word', { shown: index.items.length, total: t, word: pluralRecords(t) })
@@ -862,21 +916,25 @@ async function loadWithProgress(): Promise<void> {
  * list can be shared or bookmarked, and a reload keeps it. A replace, not a
  * push — the history is not a list of every keystroke in the search box.
  */
+function isListKey(k: string): boolean {
+  return k === 'q' || k === 'sort' || k === 'page' || k === 'view' || k.startsWith('filter[')
+}
+
 function syncQuery(): void {
   const next = index.toQuery()
   const current = router.currentRoute.value
   const same = JSON.stringify(Object.entries(next).sort()) === JSON.stringify(
-    Object.entries(current.query).filter(([k]) => k === 'q' || k === 'sort' || k === 'page' || k.startsWith('filter[')).sort(),
+    Object.entries(current.query).filter(([k]) => isListKey(k)).sort(),
   )
   if (same) return
   const kept = Object.fromEntries(
-    Object.entries(current.query).filter(([k]) => !(k === 'q' || k === 'sort' || k === 'page' || k.startsWith('filter['))),
+    Object.entries(current.query).filter(([k]) => !isListKey(k)),
   )
   void router.replace({ query: { ...kept, ...next } }).catch(() => undefined)
 }
 
 watch(
-  () => [index.search, index.sortKey, index.sortDirection, index.meta.page, JSON.stringify(index.filters)],
+  () => [index.search, index.sortKey, index.sortDirection, index.meta.page, index.view, JSON.stringify(index.filters)],
   () => {
     if (index.slug === props.slug) syncQuery()
   },
@@ -888,9 +946,27 @@ onMounted(async () => {
   if (manifest.manifest === null) {
     await manifest.load().catch(() => undefined)
   }
+  applyInitialView()
   void loadSavedViews()
-  await loadWithProgress()
+  if (index.listActive) await loadWithProgress()
 })
+
+/**
+ * The initial view a screen's Layout::resourceIndex()->initialView() asks for, when
+ * the URL names none.
+ */
+function applyInitialView(): void {
+  // A view the resource does not offer (an old link, a view since removed)
+  // falls back to the base one, which is then loaded.
+  if (index.view !== null && (index.view === baseView.value || !availableViews.value.includes(index.view))) {
+    index.view = null
+  }
+  const query = router.currentRoute.value.query
+  if (query.view !== undefined || props.initialView === null) return
+  if (props.initialView !== baseView.value && availableViews.value.includes(props.initialView)) {
+    index.view = props.initialView
+  }
+}
 
 watch(
   () => props.slug,
@@ -898,9 +974,10 @@ watch(
     if (next === prev) return
     index.setSlug(next)
     index.fromQuery(router.currentRoute.value.query as Record<string, unknown>)
+    applyInitialView()
     activeViewId.value = null
     void loadSavedViews()
-    await loadWithProgress()
+    if (index.listActive) await loadWithProgress()
   },
 )
 
@@ -1167,11 +1244,15 @@ async function retryLoad(): Promise<void> {
 
 <template>
   <ResourceTreePage
-    v-if="resourceMeta?.view_mode === 'tree'"
+    v-if="currentView === 'tree'"
     :slug="slug"
     :title="title"
     :subtitle="subtitle"
-  />
+  >
+    <template v-if="availableViews.length > 1" #actions>
+      <ResourceViewSwitcher :views="availableViews" :model-value="currentView" @update:model-value="setView" />
+    </template>
+  </ResourceTreePage>
   <section v-else class="admin-page admin-resource-index">
     <!-- Header — следует docs/design_handoff_laravel_admin/screens-resource.jsx
          (Resource Index): title-row с live-status, под ним counter,
@@ -1192,6 +1273,12 @@ async function retryLoad(): Promise<void> {
         </div>
       </div>
       <div class="admin-page__actions">
+        <ResourceViewSwitcher
+          v-if="availableViews.length > 1"
+          :views="availableViews"
+          :model-value="currentView"
+          @update:model-value="setView"
+        />
         <slot name="actions" />
         <UidMenu v-if="hasSavedViews">
           <template #trigger>
@@ -1271,7 +1358,7 @@ async function retryLoad(): Promise<void> {
     <!-- Bulk toolbar (selection > 0) ИЛИ filter bar. Действия ресурса
          (provision/suspend/drop …) доступны ТОЛЬКО здесь — без выбора
          строк запустить массовое действие нельзя (BL-26). -->
-    <div v-if="index.hasSelection" class="admin-bulk-toolbar" data-testid="bulk-bar" role="toolbar">
+    <div v-if="index.hasSelection && isListView" class="admin-bulk-toolbar" data-testid="bulk-bar" role="toolbar">
       <span class="admin-bulk-toolbar__count">
         {{ tr('Выбрано') }} <b>{{ index.selectedCount }}</b>
       </span>
@@ -1307,7 +1394,7 @@ async function retryLoad(): Promise<void> {
       :search-placeholder="searchPlaceholder"
       :filters="(manifestFilters as never)"
       :values="index.filters"
-      :columns="(manifestColumns as never)"
+      :columns="(isListView ? manifestColumns : []) as never"
       :group-by="groupByCol"
       :column-visibility="columnVisibility"
       :enable-saved-views="hasSavedViews"
@@ -1331,8 +1418,24 @@ async function retryLoad(): Promise<void> {
     <!-- Loading, error and empty states sit in the same card as the table
          would: closed with its border and radius, joined to the toolbar
          above when there is one. -->
+    <!-- The kanban and calendar views: their own data, the same search and filters. -->
+    <ResourceKanbanView
+      v-if="currentView === 'kanban' && resourceMeta?.kanban"
+      :slug="slug"
+      :config="resourceMeta.kanban"
+      :readonly="resourceMeta.kanban.readonly || !canUpdate"
+      :can-reorder="canReorder"
+    />
+    <ResourceCalendarView
+      v-else-if="currentView === 'calendar' && resourceMeta?.calendar"
+      :slug="slug"
+      :config="resourceMeta.calendar"
+      :readonly="resourceMeta.calendar.readonly || !canUpdate"
+      :create-route="resolvedCreateRouteName && isCreatable ? resolvedCreateRouteName : null"
+    />
+
     <div
-      v-if="(index.loading && index.items.length === 0) || index.hasError || index.isEmpty"
+      v-else-if="(index.loading && index.items.length === 0) || index.hasError || index.isEmpty"
       class="admin-resource-index__panel"
       :class="{ 'admin-resource-index__panel--joined': showFilterBar || index.hasSelection }"
       data-testid="resource-state"
@@ -1585,7 +1688,7 @@ async function retryLoad(): Promise<void> {
 
     <!-- Pagination -->
     <footer
-      v-if="!index.loading && !index.hasError && !index.isEmpty"
+      v-if="isListView && !index.loading && !index.hasError && !index.isEmpty"
       class="admin-resource-index__footer"
     >
       <UidPagination

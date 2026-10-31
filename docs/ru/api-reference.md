@@ -127,6 +127,10 @@ HTTP-коды: 200 / 304 / 401 / 403 / 404 / 422 / 429 / 500.
 | POST | `{slug}/forceDelete` | Только для ресурсов с `SoftDeletes`. |
 | POST | `{slug}/replicate` | Только если `replicable()`. |
 | POST | `{slug}/reorder` | Только если `reorderable()`. |
+| POST | `{slug}/board` | Только при `kanban()`. Колонки канбана с порцией карточек в каждой. Тело: `{filters, q}` списка, а также `column` и `offset` для следующей порции одной колонки, `limit`. |
+| POST | `{slug}/boardMove` | Только при канбане без `readonly()`. Тело: `{id, value, lane?, position?}` плюс `{filters, q}` списка (для `position` — индекса карточки в целевой колонке). Требует `update`. |
+| POST | `{slug}/calendar` | Только при `calendar()`. События, чей интервал пересекается с `{from, to}` (`Y-m-d`, включительно), с `{filters, q}` списка. |
+| POST | `{slug}/calendarMove` | Только при календаре без `readonly()`. Тело: `{id, start, end?}` (`Y-m-d` или `Y-m-d H:i`). Требует `update`. |
 | GET/POST | `{slug}/export?format=csv` | `format`: `csv` (по умолчанию), `xlsx`, `pdf` — какие экспортёры установлены; `columns[]` сужает набор колонок. |
 | POST | `{slug}/action` | Общий диспетчер actions. Тело: `{key, ids[], payload}`. |
 | GET | `{slug}/listScreen` | Скомпилированный снимок `GeneratedListScreen`. |

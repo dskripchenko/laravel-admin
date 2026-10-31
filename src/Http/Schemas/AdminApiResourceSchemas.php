@@ -101,6 +101,43 @@ trait AdminApiResourceSchemas
                 'value' => 'mixed! Its value as stored, which may differ from what was typed',
             ],
 
+            'ResourceBoardResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceBoardPayload',
+            ],
+            'ResourceBoardPayload' => [
+                'columns' => 'array! The columns: {value, label, wip, total, offset, cards[]}',
+                'lanes' => 'array The lanes, {value, label}; null without lanes',
+                'limit' => 'integer! Cards per column in this answer',
+            ],
+            'ResourceBoardMovedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceBoardMovedPayload',
+            ],
+            'ResourceBoardMovedPayload' => [
+                'card' => 'object! The card as the board draws it',
+                'record' => 'object! The whole record, transformed as the resource renders records',
+                'positions' => 'object! The new positions in the column, by primary key; empty when the order was not saved',
+            ],
+            'ResourceCalendarResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceCalendarPayload',
+            ],
+            'ResourceCalendarPayload' => [
+                'events' => 'array! The events: {id, title, start, end, all_day, color, editable}',
+                'from' => 'string! The first day asked for',
+                'to' => 'string! The last day asked for',
+                'truncated' => 'boolean! More events matched than one answer carries',
+            ],
+            'ResourceCalendarMovedResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@ResourceCalendarMovedPayload',
+            ],
+            'ResourceCalendarMovedPayload' => [
+                'event' => 'object! The event as the calendar draws it',
+                'record' => 'object! The whole record, transformed as the resource renders records',
+            ],
+
             'ResourceSummaryResponse' => [
                 'success' => 'boolean!',
                 'payload' => '@ResourceSummaryPayload',

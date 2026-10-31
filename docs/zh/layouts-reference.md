@@ -41,7 +41,7 @@ translated_at: 2026-10-02
 | `AuditTrail` | `AuditTrail::for(User::class)` | 所显示记录的审计时间线 |
 | `Listener` | `Layout::listener([...])->listen([...])` | 表单中的一部分，当被监听的字段变化时由服务器重新渲染 |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | 属于当前编辑记录的另一个 Resource 的记录表格 |
-| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | 在 Screen 上嵌入资源的实时列表页（表格或树） |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | 在 Screen 上嵌入资源的实时列表页（表格、树、看板或日历） |
 
 ## 示例
 
@@ -373,6 +373,12 @@ public function layout(): array
 ```
 
 把资源的列表页本身——搜索、筛选、排序、行操作和批量操作、单元格内编辑、拖拽排序、回收站，或层级资源的树——嵌入到 Screen 中。点击行会像列表页一样打开记录。没有该资源 `view` 权限的用户看不到它。每个 Screen 只能放一个：列表状态是共享的。
+
+`initialView('kanban')`（或 `'calendar'`、`'list'`）让它以资源的该视图打开——参见[看板视图与日历视图](concepts/resources.md#看板视图与日历视图)；视图切换器仍提供其他视图，URL 中的 `?view=` 优先。（自然的名字本应是 `view()`，但 `Layout::view()` 已是 Blade 视图布局的工厂方法。）
+
+```php
+Layout::resourceIndex(TaskResource::class)->initialView('kanban'),
+```
 
 ### Markdown
 

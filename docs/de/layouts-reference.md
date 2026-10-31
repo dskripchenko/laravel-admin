@@ -42,7 +42,7 @@ sich beliebig tief verschachteln.
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit-Zeitleiste des angezeigten Datensatzes |
 | `Listener` | `Layout::listener([...])->listen([...])` | Teil eines Formulars, den der Server neu rendert, wenn sich beobachtete Felder ändern |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Tabelle der Datensätze einer anderen Resource, die zum bearbeiteten Datensatz gehören |
-| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Live-Listenseite einer Resource (Tabelle oder Baum) auf einem Screen |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Live-Listenseite einer Resource (Tabelle, Baum, Kanban oder Kalender) auf einem Screen |
 
 ## Beispiele
 
@@ -440,6 +440,16 @@ oder der Baum einer hierarchischen Resource — eingebettet in einen Screen. Ein
 Klick auf eine Zeile öffnet den Datensatz wie auf der Listenseite. Für
 Benutzer ohne `view`-Berechtigung der Resource ausgeblendet. Eine pro Screen:
 der Zustand der Liste ist geteilt.
+
+`initialView('kanban')` (oder `'calendar'`, `'list'`) öffnet es in dieser
+Ansicht der Resource — siehe [Kanban- und Kalenderansicht](concepts/resources.md#kanban--und-kalenderansicht);
+der Ansichtsumschalter bietet die anderen weiterhin an, und ein `?view=` in der
+URL hat Vorrang. (`view()` wäre der natürliche Name, aber `Layout::view()` ist
+bereits die Factory eines Blade-View-Layouts.)
+
+```php
+Layout::resourceIndex(TaskResource::class)->initialView('kanban'),
+```
 
 ### Markdown
 

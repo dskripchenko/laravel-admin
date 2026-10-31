@@ -219,6 +219,64 @@ public function reorderColumn(): string { return 'position'; }   // 默认值
 
 列表 Screen 会多出一个拖拽手柄列。
 
+## 看板视图与日历视图
+
+除了列表（或树）之外，索引页还可以把资源的记录显示为看板或日历。声明需要的视图后，页面上方会出现切换器（列表 | 看板 | 日历），所选视图会写入 URL（`?view=kanban`）和已保存视图，搜索和过滤器对每个视图都生效。
+
+### 看板
+
+```php
+use Dskripchenko\LaravelAdmin\Resource\Views\KanbanView;
+
+public function kanban(): ?KanbanView
+{
+    return KanbanView::make('status')                  // 每个取值一列
+        ->columns(['todo' => '待办', 'doing' => '进行中', 'done' => '已完成'])
+        ->title('name')
+        ->description('summary')
+        ->tags('labels')                               // 数组或 "a, b, c"
+        ->assignee('owner.name')                       // 经由关联的点路径
+        ->due('due_at')                                // 逾期卡片会被标出
+        ->lanes('priority')                            // 可选的泳道
+        ->wip(['doing' => 5])                          // 在制品（WIP）上限
+        ->limit(50);                                   // 每列每次加载的卡片数
+}
+```
+
+- `columns()` 接受“值 ⇒ 标签”映射、`{value, label}` 列表或枚举类（backed 值；标签为 case 名，与 `Select::fromEnum()` 一致）。不指定时，列取自同名表单字段的选项，否则取记录中出现的不同值。`lanes()` 以第二个参数用同样的方式接受标签。
+- 点路径（`owner.name`）会被预加载（eager loading）。除非 `title()` 另行指定，标题为 `recordTitle()`。
+- 每列加载 `limit()` 张卡片；列头显示总数、WIP 上限以及加载下一页的“更多”按钮。
+- 把卡片拖到另一列会把该列的值写入状态列（泳道的值写入泳道列）。对于可排序的资源，卡片按 `reorderColumn()`（或 `orderBy()`）排序，在列内放下的位置按列表拖动排序的方式保存：该列的记录互换各自持有的位置。没有 `reorder` 权限的用户仍可在列之间移动卡片，此时顺序保持不变。
+- `readonly()` 关闭拖动；没有 `update` 权限的用户同样不能拖动。`editableForRow($record, 'status')` 返回 false 的卡片只能留在原列。
+
+### 日历
+
+```php
+use Dskripchenko\LaravelAdmin\Resource\Views\CalendarView;
+
+public function calendar(): ?CalendarView
+{
+    return CalendarView::make('starts_at', 'ends_at')  // date 或 datetime 列
+        ->allDay('all_day')                            // 可选的布尔列
+        ->title('name')
+        ->color('type', ['meeting' => 'primary', 'deadline' => 'danger'])
+        ->views(['month', 'week', 'day', 'agenda'])    // 以及 'year'
+        ->initialView('month');
+}
+```
+
+- 未调用 `allDay()` 时，若开始列存储的是日期（`date` 类型转换或存储为 `Y-m-d`），事件即为全天事件。全天事件的结束是其最后一天（含当天）。没有结束列时，事件是一个时间点。
+- `color()` 把列的取值映射为色调（`primary`、`success`、`warning`、`danger`、`info`、`neutral`）或 CSS 颜色。
+- 日历加载区间与可见日期相交的记录，每次请求最多 1000 条。
+- 拖动可移动事件；在日视图和周视图的网格中拉伸其下边缘可修改结束时间。单击打开记录。对于有创建权限的用户，单击月视图中的空白日期（或在日历非只读时单击日/周网格中的时段）会打开创建表单，并通过查询参数预填开始列。
+- `readonly()` 关闭拖动；没有 `update` 权限的用户同样不能拖动。
+
+### 移动时的检查
+
+移动与单元格内联编辑走同一条路径：路由要求 `update` 权限；`editableForRow()` 必须允许写入的每一列；看板的值必须是它的某一列（泳道必须是它的某一泳道），若该列定义了内联编辑规则也会一并校验；日期必须有效且结束不早于开始。记录通过模型保存，因此模型事件会触发，审计日志（`Loggable` trait）会记录变更。拒绝时以 API 的错误格式返回 403 或 422，面板会把卡片或事件放回原处。
+
+端点：`POST {slug}/board`、`{slug}/boardMove`、`{slug}/calendar`、`{slug}/calendarMove`——参见 [API 参考](../api-reference.md)。
+
 ## 权限
 
 默认基础权限：`admin.{slug}`。自动派生的子权限：

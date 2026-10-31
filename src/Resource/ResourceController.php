@@ -10,6 +10,7 @@ use Dskripchenko\LaravelAdmin\Action\ModalAction;
 use Dskripchenko\LaravelAdmin\Filter\Filter;
 use Dskripchenko\LaravelAdmin\Filter\HttpFilterParser;
 use Dskripchenko\LaravelAdmin\Http\OpenApi\ResourceOperationSchema;
+use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedCreateScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedEditScreen;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedListScreen;
@@ -24,6 +25,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -439,29 +441,7 @@ final class ResourceController extends ApiController
     public function search(Request $request): JsonResponse
     {
         $resource = $this->currentResource();
-        $query = $resource->indexQuery();
-
-        // Filters arrive either as { filters: [{column, operator, value}] }
-        // or as { filters: { col: value } }.
-        $filterInputs = HttpFilterParser::parse($request);
-        foreach ($resource->resolvedFilters() as $filter) {
-            /** @var Filter $filter */
-            $value = $filterInputs[$filter->field()] ?? null;
-            if ($value !== null) {
-                $query = $filter->apply($query, $value);
-            }
-        }
-
-        // Free-text search by ?q=...
-        $q = HttpFilterParser::searchTerm($request);
-        $searchable = $resource->searchableFields();
-        if ($q !== '' && $searchable !== []) {
-            $query = $query->where(function ($builder) use ($q, $searchable): void {
-                foreach ($searchable as $col) {
-                    $builder->orWhere($col, 'like', '%'.$q.'%');
-                }
-            });
-        }
+        $query = $this->listQuery($resource, $request);
 
         // Only the given keys: a ResourcePicker resolves the records it
         // holds this way, through the same scope and permission as the list.
@@ -527,6 +507,43 @@ final class ResourceController extends ApiController
                 'groups' => $groups,
             ],
         ]);
+    }
+
+    /**
+     * The list's query: the resource's scope (indexQuery), its filters and
+     * the free-text search, as the request carries them. Search, the kanban
+     * board and the calendar all start from it, so every view of the list
+     * shows the same records.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>
+     */
+    private function listQuery(Resource $resource, Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = $resource->indexQuery();
+
+        // Filters arrive either as { filters: [{column, operator, value}] }
+        // or as { filters: { col: value } }.
+        $filterInputs = HttpFilterParser::parse($request);
+        foreach ($resource->resolvedFilters() as $filter) {
+            /** @var Filter $filter */
+            $value = $filterInputs[$filter->field()] ?? null;
+            if ($value !== null) {
+                $query = $filter->apply($query, $value);
+            }
+        }
+
+        // Free-text search by ?q=...
+        $q = HttpFilterParser::searchTerm($request);
+        $searchable = $resource->searchableFields();
+        if ($q !== '' && $searchable !== []) {
+            $query = $query->where(function ($builder) use ($q, $searchable): void {
+                foreach ($searchable as $col) {
+                    $builder->orWhere($col, 'like', '%'.$q.'%');
+                }
+            });
+        }
+
+        return $query;
     }
 
     /**
@@ -1147,6 +1164,338 @@ final class ResourceController extends ApiController
         }
 
         return $positions;
+    }
+
+    /* -----------------------------------------------------------------
+     * Kanban and calendar views
+     * ----------------------------------------------------------------- */
+
+    /**
+     * The kanban board: the columns of Resource::kanban() with a page of
+     * cards each, over the list's scope, filters and search.
+     *
+     * Without `column` every column comes with its first `limit` cards; with
+     * `column` only that one, from `offset` — the column's "more".
+     *
+     * @input [operationSchema]
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     * @security AdminBearer
+     *
+     * @response 200 {ResourceBoardResponse}
+     * @response 404 {NotFoundErrorResponse} The resource has no kanban view
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function board(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+        $view = $resource->kanban();
+        if ($view === null) {
+            return $this->noView();
+        }
+        $board = new Views\KanbanBoard($resource, $view);
+        $base = $this->listQuery($resource, $request);
+        $columns = $board->columns($resource->indexQuery());
+
+        $data = $request->validate([
+            'column' => ['sometimes', 'nullable', Rule::in(array_column($columns, 'value'))],
+            'offset' => ['sometimes', 'integer', 'min:0'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:200'],
+        ]);
+        $limit = (int) ($data['limit'] ?? $view->perColumn());
+        $offset = (int) ($data['offset'] ?? 0);
+
+        $out = [];
+        foreach ($columns as $column) {
+            if (isset($data['column']) && (string) $data['column'] !== (string) $column['value']) {
+                continue;
+            }
+            $out[] = $board->column($base, $column, isset($data['column']) ? $offset : 0, $limit);
+        }
+
+        return $this->success([
+            'columns' => $out,
+            'lanes' => $board->lanes($resource->indexQuery()),
+            'limit' => $limit,
+        ]);
+    }
+
+    /**
+     * Moves a kanban card: writes the column's value to the status attribute
+     * (and the lane's to the lane attribute), and on a reorderable resource
+     * its place in the column.
+     *
+     * The same checks as an inline edit: the update permission (the route),
+     * Resource::editableForRow() for each attribute written, the value one of
+     * the board's columns and the column's own inline-edit rules when it has
+     * them. The record is saved through the model, so its events (and the
+     * audit log) fire.
+     *
+     * `position` is the card's index in the target column as the board shows
+     * it — with the same filters and search, which the request carries. It is
+     * saved only when the cards are ordered by the resource's reorder column
+     * and the user may reorder: the column's records then trade the positions
+     * they hold, as the list's drag-reorder does.
+     *
+     * @input integer $id
+     * @input string $value The target column's value
+     * @input string ?$lane The target lane's value, on a board with lanes
+     * @input integer ?$position The card's index in the target column
+     * @input [operationSchema]
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceBoardMovedResponse}
+     * @response 403 {ForbiddenErrorResponse} Resource::editableForRow() is false for this record
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function boardMove(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+        $view = $resource->kanban();
+        if ($view === null || $view->isReadonly()) {
+            return $this->noView();
+        }
+        $board = new Views\KanbanBoard($resource, $view);
+        $status = $view->column();
+        $columns = array_column($board->columns($resource->indexQuery()), 'value');
+
+        $valueRules = ['required', Rule::in($columns)];
+        $columnConfig = $this->findEditableColumn($resource, $status);
+        if (is_array($columnConfig['validation'] ?? null)) {
+            $valueRules = [...$valueRules, ...$columnConfig['validation']];
+        }
+        $rules = [
+            'id' => ['required'],
+            'value' => $valueRules,
+            'position' => ['sometimes', 'nullable', 'integer', 'min:0'],
+        ];
+        $laneColumn = $view->laneColumn();
+        $lanes = $laneColumn !== null ? array_column($board->lanes($resource->indexQuery()) ?? [], 'value') : [];
+        if ($laneColumn !== null) {
+            $rules['lane'] = ['sometimes', 'nullable', Rule::in($lanes)];
+        }
+        /** @var array<string, list<mixed>> $rules */
+        $data = $request->validate($rules);
+
+        $record = $resource->modelQuery()->find($data['id']);
+        if ($record === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+
+        // The stored values of the column and the lane keep their types.
+        $value = self::matching($columns, $data['value']);
+        $changes = [$status => $value];
+        if ($laneColumn !== null && array_key_exists('lane', $data) && $data['lane'] !== null) {
+            $changes[$laneColumn] = self::matching($lanes, $data['lane']);
+        }
+
+        foreach ($changes as $attribute => $next) {
+            $current = Views\KanbanView::scalar($record->getAttribute($attribute));
+            if ((string) $current === (string) $next && $attribute !== $status) {
+                unset($changes[$attribute]);
+
+                continue;
+            }
+            if (! $resource->editableForRow($record, $attribute)) {
+                return $this->error([
+                    'errorKey' => 'forbidden',
+                    'message' => __('Эту запись нельзя переместить'),
+                ], 403);
+            }
+        }
+
+        $positions = [];
+        if (
+            isset($data['position'])
+            && $view->savesPosition($resource)
+            && PermissionCheck::allows($resource::permission().'.reorder')
+        ) {
+            $key = (string) $record->getKey();
+            $ids = array_values(array_filter(
+                $board->orderedIds($this->listQuery($resource, $request), $value),
+                static fn ($id): bool => (string) $id !== $key,
+            ));
+            array_splice($ids, min((int) $data['position'], count($ids)), 0, [$record->getKey()]);
+            $positions = $this->positionsFromOrder($resource, $ids, $resource->reorderColumn(), 0);
+            $changes[$resource->reorderColumn()] = $positions[$record->getKey()] ?? $record->getAttribute($resource->reorderColumn());
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($resource, $record, $changes, $positions): void {
+            $column = $resource->reorderColumn();
+            foreach ($positions as $id => $position) {
+                if ((string) $id === (string) $record->getKey()) {
+                    continue;
+                }
+                $resource->modelQuery()->whereKey($id)->update([$column => $position]);
+            }
+            $record->forceFill($changes)->save();
+        });
+
+        $record->load($view->relations());
+
+        return $this->success([
+            'card' => $board->card($record),
+            'record' => $resource->transformRecord($record),
+            'positions' => (object) $positions,
+        ]);
+    }
+
+    /**
+     * The calendar's events: the records of the list's scope, filters and
+     * search whose interval meets the days from `from` to `to` (inclusive) —
+     * the ones that start, end or span across them.
+     *
+     * @input string $from The first day, Y-m-d
+     * @input string $to The last day, Y-m-d
+     * @input [operationSchema]
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     * @security AdminBearer
+     *
+     * @response 200 {ResourceCalendarResponse}
+     * @response 404 {NotFoundErrorResponse} The resource has no calendar view
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function calendar(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+        $view = $resource->calendar();
+        if ($view === null) {
+            return $this->noView();
+        }
+        $data = $request->validate([
+            'from' => ['required', 'date_format:Y-m-d'],
+            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
+        $from = (string) $data['from'];
+        $to = (string) $data['to'];
+        if (\Illuminate\Support\Carbon::parse($from)->diffInDays(\Illuminate\Support\Carbon::parse($to)) > 400) {
+            throw ValidationException::withMessages(['to' => [__('Слишком большой диапазон дат')]]);
+        }
+
+        $events = (new Views\CalendarFeed($resource, $view))->events($this->listQuery($resource, $request), $from, $to);
+
+        return $this->success([
+            'events' => $events,
+            'from' => $from,
+            'to' => $to,
+            'truncated' => count($events) >= Views\CalendarFeed::MAX_EVENTS,
+        ]);
+    }
+
+    /**
+     * Moves a calendar event: writes its new start (and end) to the
+     * calendar's columns.
+     *
+     * The same checks as an inline edit: the update permission (the route),
+     * Resource::editableForRow() for each column written, valid dates with
+     * the end not before the start. The record is saved through the model,
+     * so its events (and the audit log) fire.
+     *
+     * @input integer $id
+     * @input string $start Y-m-d for an all-day event, Y-m-d H:i otherwise
+     * @input string ?$end The same; for an all-day event, its last day
+     *
+     * @output object $payload
+     *
+     * @security AdminSession
+     *
+     * @response 200 {ResourceCalendarMovedResponse}
+     * @response 403 {ForbiddenErrorResponse} Resource::editableForRow() is false for this record
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function calendarMove(Request $request): JsonResponse
+    {
+        $resource = $this->currentResource();
+        $view = $resource->calendar();
+        if ($view === null || $view->isReadonly()) {
+            return $this->noView();
+        }
+        $rules = [
+            'id' => ['required'],
+            'start' => ['required', 'date'],
+        ];
+        if ($view->endColumn() !== null) {
+            $rules['end'] = ['sometimes', 'nullable', 'date', 'after_or_equal:start'];
+        }
+        $data = $request->validate($rules);
+
+        $record = $resource->modelQuery()->find($data['id']);
+        if ($record === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+
+        $feed = new Views\CalendarFeed($resource, $view);
+        $values = $feed->values(
+            $record,
+            (string) $data['start'],
+            isset($data['end']) ? (string) $data['end'] : null,
+        );
+        // An end the request leaves out stays as it is.
+        if ($view->endColumn() !== null && ! array_key_exists('end', $data)) {
+            unset($values[$view->endColumn()]);
+        }
+
+        foreach (array_keys($values) as $column) {
+            if (! $resource->editableForRow($record, $column)) {
+                return $this->error([
+                    'errorKey' => 'forbidden',
+                    'message' => __('Эту запись нельзя переместить'),
+                ], 403);
+            }
+        }
+
+        $record->forceFill($values)->save();
+        $record->load($view->relations());
+
+        return $this->success([
+            'event' => $feed->event($record),
+            'record' => $resource->transformRecord($record),
+        ]);
+    }
+
+    /**
+     * The view is not declared (or is read-only): the same answer as a route
+     * that is not there.
+     */
+    private function noView(): JsonResponse
+    {
+        return $this->error([
+            'errorKey' => 'not_found',
+            'message' => 'This view is not available for the resource',
+        ], 404);
+    }
+
+    /**
+     * The entry of `$known` equal to `$value` when both are read as strings —
+     * the value with the type the column stores.
+     *
+     * @param  list<int|string>  $known
+     */
+    private static function matching(array $known, mixed $value): int|string
+    {
+        foreach ($known as $candidate) {
+            if ((string) $candidate === (string) $value) {
+                return $candidate;
+            }
+        }
+
+        return is_int($value) ? $value : (string) $value;
     }
 
     /**

@@ -40,7 +40,7 @@ compose to arbitrary depth.
 | `AuditTrail` | `AuditTrail::for(User::class)` | Audit timeline of the shown record |
 | `Listener` | `Layout::listener([...])->listen([...])` | Part of a form re-rendered by the server when watched fields change |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Table of another resource's records belonging to the edited one |
-| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Live list page of a resource (table or tree) on a screen |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Live list page of a resource (table, tree, kanban or calendar) on a screen |
 
 ## Examples
 
@@ -428,6 +428,16 @@ actions, inline edits, reordering, trash, or the tree of a hierarchical
 resource — embedded into a screen. A row click opens the record, as on the
 list page. Hidden from a user without the resource's `view` permission. One
 per screen: the list's state is shared.
+
+`initialView('kanban')` (or `'calendar'`, `'list'`) opens it on that view of
+the resource — see [Kanban and calendar views](concepts/resources.md#kanban-and-calendar-views);
+the view switcher still offers the others, and a `?view=` in the URL wins.
+(`view()` would be the natural name, but `Layout::view()` is already the
+factory of a Blade view layout.)
+
+```php
+Layout::resourceIndex(TaskResource::class)->initialView('kanban'),
+```
 
 ### Markdown
 

@@ -120,6 +120,13 @@ final class ResourceCompiler
             'listScreen' => ['method' => ['get'], 'middleware' => [$view]],
             'treeScreen' => ['method' => ['get'], 'middleware' => [$view]],
             'tree' => ['method' => ['post'], 'middleware' => [$view]],
+            // The kanban and calendar views of the list page: their data
+            // with the list's filters, and the moves, which change a record
+            // and so take the update permission.
+            'board' => ['method' => ['post'], 'middleware' => [$view]],
+            'boardMove' => ['method' => ['post'], 'middleware' => [$update]],
+            'calendar' => ['method' => ['post'], 'middleware' => [$view]],
+            'calendarMove' => ['method' => ['post'], 'middleware' => [$update]],
             'createScreen' => ['method' => ['get'], 'middleware' => [$create]],
             'editScreen' => ['method' => ['get'], 'middleware' => [$update]],
             'viewScreen' => ['method' => ['get'], 'middleware' => [$view]],
@@ -130,6 +137,20 @@ final class ResourceCompiler
 
         if ($resource->hierarchyParentKey() === null) {
             unset($actions['tree'], $actions['treeScreen']);
+        }
+
+        $kanban = $resource->kanban();
+        if ($kanban === null) {
+            unset($actions['board'], $actions['boardMove']);
+        } elseif ($kanban->isReadonly()) {
+            unset($actions['boardMove']);
+        }
+
+        $calendar = $resource->calendar();
+        if ($calendar === null) {
+            unset($actions['calendar'], $actions['calendarMove']);
+        } elseif ($calendar->isReadonly()) {
+            unset($actions['calendarMove']);
         }
 
         if (! $resource::supportsSoftDeletes()) {

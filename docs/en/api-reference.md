@@ -122,6 +122,10 @@ For each registered Resource, prefix is `{slug}/`:
 | POST | `{slug}/forceDelete` | Only for resources with `SoftDeletes`. |
 | POST | `{slug}/replicate` | Only when `replicable()`. |
 | POST | `{slug}/reorder` | Only when `reorderable()`. |
+| POST | `{slug}/board` | Only with `kanban()`. The kanban columns with a page of cards each. Body: the list's `{filters, q}`, plus `column` and `offset` for the next page of one column, `limit`. |
+| POST | `{slug}/boardMove` | Only with a kanban that is not `readonly()`. Body: `{id, value, lane?, position?}` plus the list's `{filters, q}` (for `position`, the card's index in the target column). Requires `update`. |
+| POST | `{slug}/calendar` | Only with `calendar()`. The events whose interval meets `{from, to}` (`Y-m-d`, inclusive), with the list's `{filters, q}`. |
+| POST | `{slug}/calendarMove` | Only with a calendar that is not `readonly()`. Body: `{id, start, end?}` (`Y-m-d` or `Y-m-d H:i`). Requires `update`. |
 | GET/POST | `{slug}/export?format=csv` | `format`: `csv` (default), `xlsx`, `pdf` — whichever exporters are installed; `columns[]` narrows the columns. |
 | POST | `{slug}/action` | Generic action dispatcher. Body: `{key, ids[], payload}`. |
 | GET | `{slug}/listScreen` | Compiled `GeneratedListScreen` snapshot. |

@@ -277,6 +277,7 @@ onMounted(load)
         </p>
       </div>
       <div class="admin-resource-tree-page__actions">
+        <slot name="actions" />
         <UidButton v-if="canCreate" variant="primary" :title="createTooltip(resourceMeta, slug)" @click="gotoCreate">
           <UidIcon :icon="Plus" /> {{ tr('Создать') }}
         </UidButton>

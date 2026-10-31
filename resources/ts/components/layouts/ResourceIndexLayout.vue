@@ -6,7 +6,8 @@
  *
  * It is the list page itself, ResourceIndexPage — the table with its search,
  * filters, sorting, row and bulk actions, inline edits, reordering and trash,
- * or ResourceTreePage for a hierarchical resource — so a screen that explains
+ * or ResourceTreePage for a hierarchical resource, or its kanban or calendar
+ * view (`view`, the initial one) — so a screen that explains
  * a table shows the table, not a link to it. The resource's own label heads
  * it as a section title rather than a page title.
  */
@@ -17,9 +18,11 @@ import { useManifestStore } from '../../stores/manifest'
 interface Props {
   resource: string
   title?: string | null
+  /** The view to open with: 'list', 'kanban' or 'calendar' (Layout::resourceIndex()->initialView()). */
+  view?: string | null
 }
 
-const props = withDefaults(defineProps<Props>(), { title: null })
+const props = withDefaults(defineProps<Props>(), { title: null, view: null })
 
 const manifest = useManifestStore()
 const known = computed(() => manifest.manifest === null || manifest.getResource(props.resource) !== null)
@@ -27,7 +30,7 @@ const known = computed(() => manifest.manifest === null || manifest.getResource(
 
 <template>
   <div v-if="known" class="admin-resource-index-layout" data-testid="resource-index-layout">
-    <ResourceIndexPage :slug="resource" :title="title" />
+    <ResourceIndexPage :slug="resource" :title="title" :initial-view="view" />
   </div>
 </template>
 
