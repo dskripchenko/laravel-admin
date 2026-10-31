@@ -72,6 +72,8 @@ export default defineConfig({
         /^@dskripchenko\/drawio($|\/)/,
         // Loaded on demand by Layout::board and the board widget.
         /^@dskripchenko\/board($|\/)/,
+        // Loaded by the board when it has a realtime channel.
+        /^@dskripchenko\/realtime($|\/)/,
         // Loaded on demand by Field\MarkdownEditor.
         /^@dskripchenko\/markdown-editor($|\/)/,
         /^@tiptap\//,

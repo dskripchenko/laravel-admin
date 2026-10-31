@@ -20,14 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   API client (its session, CSRF and layers) — `snapshot`, `batches` (in
   order, retried after a network error; a refused change is dropped with a
   message), `poll`, `presence` (at most 10 times a second). The others'
-  changes come on a laravel-realtime channel when the host registered the
-  browser client with `setBoardRealtime(RealtimeClient)`, otherwise by
-  polling every `pollInterval` while the tab is visible; when the board moved
-  past the server's log, the editor loads it again.
+  changes come on a laravel-realtime channel through its browser client
+  (`@dskripchenko/realtime`, loaded when a board has a channel;
+  `setBoardRealtime()` hands over a host's own build), otherwise by polling
+  every `pollInterval` while the tab is visible; when the board moved past
+  the server's log, the editor loads it again.
 - **`Widget\BoardWidget`**: the board on a dashboard (not offered in «Add
   widget»: it needs a board the package creates).
-- New dependency `@dskripchenko/board` (loaded on first use, outside the size
-  budget).
+- New dependencies `@dskripchenko/board` and `@dskripchenko/realtime` (loaded
+  on first use, outside the size budget).
 
 ## 1.68.0
 

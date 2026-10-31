@@ -19,8 +19,7 @@ export type BoardVueModule = typeof import('@dskripchenko/board/vue')
 
 /**
  * The part of @dskripchenko/realtime (the laravel-realtime browser client) the
- * board uses. The host installs it when it runs laravel-realtime; the panel
- * does not depend on it, so its types are described here.
+ * board uses: what a client handed to setBoardRealtime() must provide.
  */
 export interface RealtimeChannelLike {
   on(event: string, handler: (data: unknown, meta: { seq?: number }) => void): () => void
@@ -159,20 +158,21 @@ export function loadBoardVue(): Promise<BoardVueModule> {
 }
 
 /**
- * The laravel-realtime browser client (@dskripchenko/realtime), when the host
- * registered it with setBoardRealtime(): a board then follows its channel
- * instead of polling. Not registered — rejected, and the board polls.
+ * The laravel-realtime browser client (@dskripchenko/realtime): the one the
+ * host registered with setBoardRealtime(), else the package itself, loaded
+ * on first use. A board with a realtime channel follows it instead of polling.
  */
 export function loadRealtime(): Promise<RealtimeModule> {
-  return realtime ?? Promise.reject(new Error('@dskripchenko/realtime is not registered: call setBoardRealtime()'))
+  realtime ??= remember(import('@dskripchenko/realtime') as unknown as Promise<RealtimeModule>, () => {
+    realtime = null
+  })
+  return realtime
 }
 
 /**
- * Registers the realtime client for boards. The host installs
- * @dskripchenko/realtime and calls this once when the app starts:
- *
- *     import { RealtimeClient } from '@dskripchenko/realtime'
- *     setBoardRealtime(RealtimeClient)
+ * Replaces the realtime client boards use — a host's own build of
+ * @dskripchenko/realtime, or a stand-in in tests. Not needed otherwise: the
+ * panel loads the package itself.
  */
 export function setBoardRealtime(client: RealtimeModule['RealtimeClient'] | null): void {
   realtime = client ? Promise.resolve({ RealtimeClient: client }) : null

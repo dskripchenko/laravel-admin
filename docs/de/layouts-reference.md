@@ -944,17 +944,11 @@ Der Client lädt das Board aus `{endpoint}/snapshot`, sendet jede Änderung an
 vom Server abgelehnte Änderung wird mit einer Meldung verworfen), teilt Cursor
 über `{endpoint}/presence` und folgt den Änderungen der anderen:
 
-- **mit Realtime** — über den Kanal. Der Host installiert den Browser-Client
-  und registriert ihn einmal beim Start der App:
-
-  ```ts
-  import { RealtimeClient } from '@dskripchenko/realtime'
-  import { setBoardRealtime } from '@dskripchenko/laravel-admin'
-
-  setBoardRealtime(RealtimeClient)
-  ```
-
-  Nach einem Wiederverbinden wird das Verpasste aus `{endpoint}/poll` geholt.
+- **mit Realtime** — über den Kanal, mit dem Browser-Client von
+  laravel-realtime (`@dskripchenko/realtime`), den das Panel lädt, sobald ein
+  Board einen Kanal hat. Nach einem Wiederverbinden wird das Verpasste aus
+  `{endpoint}/poll` geholt. Ein Host mit eigenem Build des Clients übergibt
+  ihn mit `setBoardRealtime(RealtimeClient)`.
 - **ohne** — durch Abfragen von `{endpoint}/poll` alle `pollInterval` ms,
   solange der Tab sichtbar ist. Long Polling wird nicht verwendet: es hielte
   einen PHP-Worker pro offenem Board.

@@ -812,16 +812,10 @@ Layout::board()
 （按顺序发送，网络错误后重试；服务器拒绝的变更会被丢弃并提示），通过
 `{endpoint}/presence` 共享光标，并跟随他人的变更：
 
-- **使用 realtime 时**——通过频道。宿主安装浏览器客户端，并在应用启动时注册一次：
-
-  ```ts
-  import { RealtimeClient } from '@dskripchenko/realtime'
-  import { setBoardRealtime } from '@dskripchenko/laravel-admin'
-
-  setBoardRealtime(RealtimeClient)
-  ```
-
-  重新连接后，错过的变更从 `{endpoint}/poll` 补取。
+- **使用 realtime 时**——通过频道，借助 laravel-realtime 的浏览器客户端
+  （`@dskripchenko/realtime`），当白板有频道时由面板自动加载。重新连接后，错过的变更从
+  `{endpoint}/poll` 补取。使用自有客户端构建的宿主可通过
+  `setBoardRealtime(RealtimeClient)` 传入。
 - **不使用时**——在标签页可见期间每隔 `pollInterval` 轮询 `{endpoint}/poll`。
   不使用长轮询：它会为每个打开的白板占用一个 PHP worker。
 

@@ -182,9 +182,10 @@ describe('adminBoardProvider', () => {
     expect(channel.unsubscribe).toHaveBeenCalled()
   })
 
-  it('polls, warning once, when realtime is configured but no client is registered', async () => {
+  it('polls, warning once, when the realtime client cannot be loaded', async () => {
     mock.onPost('/boards/1/poll').reply(...ok({ batches: [] }))
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    setBoardLoaders({ realtime: () => Promise.reject(new Error('offline')) })
     const p = createAdminBoardProvider({ endpoint: '/boards/1', pollInterval: 1000, realtime: { ticketUrl: '/t', channel: 'admin-board.1' } })
     await p.load()
     await vi.advanceTimersByTimeAsync(1000)

@@ -14,7 +14,7 @@
     "src": "node_modules/@dskripchenko/board/dist/style.css"
   },
   "node_modules/@dskripchenko/board/dist/vue.mjs": {
-    "file": "assets/vue-CcjEUA92.js",
+    "file": "assets/vue-CzOrd64R.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/board/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -27,7 +27,7 @@
     "src": "node_modules/@dskripchenko/bpmn/dist/style.css"
   },
   "node_modules/@dskripchenko/bpmn/dist/vue.mjs": {
-    "file": "assets/vue-BVSBOUlE.js",
+    "file": "assets/vue-DSJ4kBAJ.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -63,7 +63,7 @@
     "src": "node_modules/@dskripchenko/flow/dist/style.css"
   },
   "node_modules/@dskripchenko/flow/dist/vue.mjs": {
-    "file": "assets/vue-ClZ8c8uA.js",
+    "file": "assets/vue-syFVRfLu.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -73,7 +73,7 @@
     ]
   },
   "node_modules/@dskripchenko/markdown-editor/dist/index.mjs": {
-    "file": "assets/index-CEr1YxDK.js",
+    "file": "assets/index-Cf33FTa6.js",
     "name": "index",
     "src": "node_modules/@dskripchenko/markdown-editor/dist/index.mjs",
     "isDynamicEntry": true,
@@ -90,13 +90,19 @@
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-WesAS3HS.js",
+    "file": "assets/vue-OaAuwNeU.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
     "imports": [
       "resources/ts/app.ts"
     ]
+  },
+  "node_modules/@dskripchenko/realtime/dist/index.js": {
+    "file": "assets/index-BmdhCDbF.js",
+    "name": "index",
+    "src": "node_modules/@dskripchenko/realtime/dist/index.js",
+    "isDynamicEntry": true
   },
   "node_modules/@dskripchenko/ui/dist/hls/index.mjs": {
     "file": "assets/index-DJj3gJE5.js",
@@ -105,7 +111,7 @@
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-DYmIGFDT.js",
+    "file": "assets/app-DzixccBb.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -119,6 +125,7 @@
       "node_modules/@dskripchenko/openapi/dist/vue.mjs",
       "node_modules/@dskripchenko/markdown-editor/dist/index.mjs",
       "node_modules/@dskripchenko/board/dist/vue.mjs",
+      "node_modules/@dskripchenko/realtime/dist/index.js",
       "node_modules/@dskripchenko/flow/dist/vue.mjs",
       "_index-fALsZtvQ.js",
       "node_modules/@dskripchenko/flow/dist/mermaid.mjs"

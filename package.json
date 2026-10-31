@@ -101,7 +101,8 @@
         "@dskripchenko/bpmn",
         "@dskripchenko/drawio",
         "@dskripchenko/markdown-editor",
-        "@dskripchenko/board"
+        "@dskripchenko/board",
+        "@dskripchenko/realtime"
       ]
     },
     {
@@ -121,7 +122,8 @@
         "@dskripchenko/bpmn",
         "@dskripchenko/drawio",
         "@dskripchenko/markdown-editor",
-        "@dskripchenko/board"
+        "@dskripchenko/board",
+        "@dskripchenko/realtime"
       ]
     },
     {
@@ -205,6 +207,7 @@
     "@dskripchenko/flow": "^1.2.0",
     "@dskripchenko/markdown-editor": "^0.1.0",
     "@dskripchenko/openapi": "^1.2.0",
+    "@dskripchenko/realtime": "^0.1.0",
     "lean-qr": "^2.7.1"
   }
 }

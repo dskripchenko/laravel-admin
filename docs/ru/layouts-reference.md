@@ -921,17 +921,11 @@ Layout::board()
 которое сервер отклонил, отбрасывается с сообщением), делится курсорами через
 `{endpoint}/presence` и следит за чужими изменениями:
 
-- **с realtime** — по каналу. Хост ставит браузерный клиент и один раз при
-  старте приложения регистрирует его:
-
-  ```ts
-  import { RealtimeClient } from '@dskripchenko/realtime'
-  import { setBoardRealtime } from '@dskripchenko/laravel-admin'
-
-  setBoardRealtime(RealtimeClient)
-  ```
-
-  После переподключения пропущенное добирается из `{endpoint}/poll`.
+- **с realtime** — по каналу, через браузерный клиент laravel-realtime
+  (`@dskripchenko/realtime`), который панель загружает, когда у доски есть
+  канал. После переподключения пропущенное добирается из `{endpoint}/poll`.
+  Хост со своей сборкой клиента передаёт её через
+  `setBoardRealtime(RealtimeClient)`.
 - **без него** — опросом `{endpoint}/poll` раз в `pollInterval`, пока вкладка
   видна. Long polling не используется: он держал бы воркер PHP на каждую
   открытую доску.
