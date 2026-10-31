@@ -62,6 +62,10 @@ final class ContentDashboardScreen extends DashboardScreen
 | `TableWidget` | `table` | Плоские read-only данные. |
 | `HeatmapWidget` | `heatmap` | Матрица `rows × cols × value`. |
 | `GaugeWidget` | `gauge` | Одно значение 0..max с зонами. |
+| `DiagramWidget` | `diagram` | Диаграмма из текста: Mermaid, PlantUML, DOT, D2, DBML, Structurizr, Wardley. |
+| `BpmnWidget` | `bpmn` | Модель процесса BPMN или решений DMN, только просмотр. |
+| `KanbanWidget` | `kanban` | Канбан-вид ресурса или доска, записанная разметкой. |
+| `CalendarWidget` | `calendar` | Вид «календарь» ресурса или календарь, записанный разметкой. |
 
 ## Форматирование значений
 
@@ -110,6 +114,80 @@ HeatmapWidget::make()->title('Orders by weekday and month')
   матрицы.
 - `money('RUB')` и `precision(2)` форматируют тултип и легенду в локали панели,
   как у графика.
+
+## Диаграммы, BPMN, канбан и календарь
+
+Четыре виджета показывают документы и ресурсные виды страницы списка. Каждый
+прокручивает содержимое внутри себя, поэтому виджет сохраняет высоту, заданную
+`rowSpan()` (по умолчанию 3 строки; канбан по умолчанию на всю ширину).
+
+```php
+use Dskripchenko\LaravelAdmin\Widget\{BpmnWidget, CalendarWidget, DiagramWidget, KanbanWidget};
+
+DiagramWidget::make()->title('Путь заказа')
+    ->content("flowchart LR\n  new --> paid --> shipped")   // или callable
+    ->syntax('mermaid');                                       // без него — по началу текста
+
+BpmnWidget::make()->title('Процесс заказа')
+    ->xml(fn () => Storage::get('processes/order.bpmn'))
+    ->highlight(['Task_approve']);
+BpmnWidget::make()->title('Скидки')->dmn()->url('/files/discount.dmn')->decision('Decision_1');
+
+KanbanWidget::make()->title('Открытые задачи')
+    ->resource(TaskResource::class)          // его вид Resource::kanban()
+    ->filters(['assignee' => 'me'])          // фильтры списка, по имени
+    ->search('срочно')
+    ->editable();                            // перетаскивание — только с правом на изменение
+
+CalendarWidget::make()->title('Эта неделя')
+    ->resource(MeetingResource::class)       // его вид Resource::calendar()
+    ->initialView('agenda');                 // day, week, month, year или agenda
+
+KanbanWidget::make()->title('Роадмап')->markup("## Сейчас\n- Биллинг #api\n\n## Дальше\n- Отчёты");
+CalendarWidget::make()->markup("every mon 10:00-10:30 Планирование")->initialView('week');
+```
+
+- `DiagramWidget` рисует как [`Layout::diagram()`](../layouts-reference.md);
+  `syntax()` принимает `mermaid`, `plantuml`, `dot`, `d2`, `dbml`,
+  `structurizr` или `wardley`.
+- `BpmnWidget` показывает модель только для просмотра, с панорамой и
+  масштабом: `xml()` (строка или callable) или `url()` — путь сайта панели или
+  URL того же origin, загружается с сессией пользователя; `dmn()`,
+  `highlight()`, `decision()` и `showDiagram()` — как у раскладок BPMN/DMN.
+- `KanbanWidget` и `CalendarWidget` берут **ресурс** или **разметку**. С
+  `resource()` виджет — собственный вид ресурса, как на его странице списка:
+  карточки и события приходят из его эндпоинтов `board` и `calendar`, с его
+  scope, фильтрами и правами; щелчок открывает запись. Виджет только для
+  чтения, если не вызван `editable()`, и даже тогда — только для
+  пользователя с правом на изменение ресурса (и никогда для вида,
+  объявленного `readonly()`). Виджет скрыт от пользователя без права на
+  просмотр ресурса, а также когда ресурс не зарегистрирован в текущей панели
+  или не объявляет этот вид. С `markup()` это `UidKanban` / `UidEventCalendar`
+  кита только для чтения, в [той же разметке](../layouts-reference.md#kanban-и-calendar),
+  что у `Layout::kanban()` / `Layout::calendar()`.
+- `CalendarWidget::initialView()` заменяет первый вид ресурсного календаря (и
+  добавляется к его видам, если его там нет); `views()` задаёт предлагаемые
+  виды, `date()` — первую дату календаря по разметке.
+
+### Добавленные пользователем
+
+Те же четыре типа добавляются через **Редактировать → Добавить виджет**;
+диалог спрашивает:
+
+| Тип | Настройки |
+|---|---|
+| Диаграмма | Нотация (или определить по тексту) и исходный текст |
+| BPMN / DMN | Нотация и адрес файла на сайте панели или XML целиком |
+| Канбан | Источник: ресурс — только с видом «канбан» и доступный пользователю — с необязательным поиском и «разрешить перетаскивание», или разметка |
+| Календарь | То же для ресурсов с видом «календарь», плюс первый вид (по умолчанию повестка) |
+
+Настройки сохраняются как `config` виджета в раскладке пользователя.
+Добавленный пользователем канбан или календарь над ресурсом подчиняется тем же
+правилам, что и класс: `dashboard/save` и `dashboard/get` отбрасывают виджет,
+ресурс которого пользователь не может смотреть (или который потерял вид), а
+данные идут через собственные эндпоинты ресурса, которые проверяют права ещё
+раз. Как хосту добавить в диалог свои типы — в
+[Расширении фронтенда](../frontend-extension.md#добавление-пользователем).
 
 ## Размеры
 

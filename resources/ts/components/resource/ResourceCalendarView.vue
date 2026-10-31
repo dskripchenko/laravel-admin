@@ -37,9 +37,15 @@ interface Props {
   readonly?: boolean
   /** The create route, when the user may create; a click on an empty day opens it. */
   createRoute?: string | null
+  /**
+   * The list parameters — `q`, `filters` — in place of the index page's:
+   * set when the calendar is shown outside its page (a dashboard widget), so
+   * it neither reads nor follows the index store's search and filters.
+   */
+  query?: Record<string, unknown> | null
 }
 
-const props = withDefaults(defineProps<Props>(), { readonly: false, createRoute: null })
+const props = withDefaults(defineProps<Props>(), { readonly: false, createRoute: null, query: null })
 
 /** An event as the calendar endpoint sends it. */
 interface ResourceEvent {
@@ -77,6 +83,7 @@ const truncated = ref(false)
 const busy = ref(false)
 
 function params(): Record<string, unknown> {
+  if (props.query !== null) return { ...props.query }
   const { order: _order, ...rest } = index.queryParams()
   return rest
 }
@@ -212,7 +219,9 @@ function onDateClick(iso: string): void {
 }
 
 watch(
-  () => [props.slug, index.search, JSON.stringify(index.filters)],
+  () => (props.query !== null
+    ? [props.slug, JSON.stringify(props.query)]
+    : [props.slug, index.search, JSON.stringify(index.filters)]),
   () => void load(),
 )
 

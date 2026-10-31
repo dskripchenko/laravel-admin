@@ -1,356 +1,39 @@
 <script setup lang="ts">
 /**
- * AddWidgetDialog — the modal for picking a widget type and setting it up.
+ * AddWidgetDialog — the modal for picking a widget type and setting it up:
+ * WidgetConfigDialog in its add mode, kept under this name for the hosts that
+ * import it.
  *
- * The list of types comes from the dashboard registry, through the frontend's
- * `listWidgets()`. Each type gets a minimal form:
- *   - a title (a string)
- *   - a size (1..12)
- *   - plus the per-type configuration: content for markdown, the value and
- *     label for a stat, and so on.
- *
+ * The types and their config forms come from the dashboard registry — the
+ * registered components and their descriptions (describeWidget(), see
+ * widgetConfig.ts) — so a host's own type appears here with its own form.
  * Saving emits `add` with a finished WidgetLayoutItem, which the parent puts
- * into the dashboard store. A backend data source is wired in by the host,
- * through a permanent backend Widget class or a configuration schema.
+ * into the dashboard store.
  */
-import { computed, ref, watch } from 'vue'
-import { X } from 'lucide-vue-next'
-import {
-  UidButton,
-  UidIcon,
-  UidInput,
-} from '@dskripchenko/ui'
-import { listWidgets } from './registry'
+import WidgetConfigDialog from './WidgetConfigDialog.vue'
 import type { WidgetLayoutItem } from '../../stores/dashboard'
-import { trSafe as tr } from '../../stores/i18n'
 
 interface Props {
   open: boolean
+  /** The dashboard's hidden widgets, offered for restoring. */
+  restorable?: Array<{ slug: string; title: string }>
 }
-const props = defineProps<Props>()
+withDefaults(defineProps<Props>(), { restorable: () => [] })
 
 const emit = defineEmits<{
   close: []
   add: [item: WidgetLayoutItem]
+  restore: [slug: string]
 }>()
-
-const types = computed<string[]>(() => listWidgets())
-const selectedType = ref<string>('')
-const title = ref<string>('')
-// size and gaugeValue are kept as strings so that UidInput, whose
-// defineModel<string> expects one, needs no casts. They are parsed into
-// numbers on save.
-const size = ref<string>('6')
-
-// The type-specific configuration fields.
-const markdownContent = ref<string>(`# ${tr('Новая заметка')}\n\n${tr('Текст…')}`)
-const statLabel = ref<string>('LABEL')
-const statValue = ref<string>('0')
-const gaugeValue = ref<string>('50')
-
-watch(
-  () => props.open,
-  (open) => {
-    if (open) {
-      selectedType.value = ''
-      title.value = ''
-      size.value = '6'
-    }
-  },
-)
-
-const canAdd = computed<boolean>(() => selectedType.value !== '' && title.value.trim() !== '')
-
-function buildConfig(): Record<string, unknown> {
-  switch (selectedType.value) {
-    case 'markdown':
-      return { content: markdownContent.value }
-    case 'stat':
-    case 'stats':
-      return {
-        stats: [{ label: statLabel.value, value: statValue.value }],
-      }
-    case 'gauge':
-      return { value: Number(gaugeValue.value) || 0, min: 0, max: 100 }
-    default:
-      return {}
-  }
-}
-
-function onAdd(): void {
-  if (!canAdd.value) return
-  const slug = `custom.${selectedType.value}.${Date.now()}`
-  const sizeNum = Number(size.value) || 6
-  emit('add', {
-    slug,
-    type: selectedType.value,
-    size: Math.max(1, Math.min(12, sizeNum)),
-    config: { title: title.value, ...buildConfig() },
-  })
-  emit('close')
-}
-
-function close(): void {
-  emit('close')
-}
-
-const labelOf: Record<string, string> = {
-  stat: tr('Stat — карточка с числом'),
-  stats: tr('Stats overview — несколько метрик'),
-  chart: tr('Chart — линия / столбцы / донат'),
-  'bar-chart': tr('Bar chart — гистограмма'),
-  'donut-chart': tr('Donut — кольцевая диаграмма'),
-  'recent-table': tr('Recent list — последние записи'),
-  recent_list: tr('Recent list — последние записи'),
-  'recent-list': tr('Recent list — последние записи'),
-  heatmap: tr('Heatmap — тепловая карта'),
-  gauge: tr('Gauge — шкала со значением'),
-  markdown: tr('Markdown — заметка / текст'),
-}
-
-function showsConfig(t: string): 'markdown' | 'stat' | 'gauge' | null {
-  if (t === 'markdown') return 'markdown'
-  if (t === 'stat' || t === 'stats') return 'stat'
-  if (t === 'gauge') return 'gauge'
-  return null
-}
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="admin-dialog">
-      <div
-        v-if="open"
-        class="admin-dialog-root"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-widget-title"
-      >
-        <div class="admin-dialog-root__backdrop" @click="close" />
-        <div class="admin-dialog">
-          <header class="admin-dialog__hd">
-            <h2 id="add-widget-title" class="admin-dialog__title">{{ tr('Добавить виджет') }}</h2>
-            <button
-              type="button"
-              class="admin-dialog__close"
-              :aria-label="tr('Закрыть')"
-              @click="close"
-            >
-              <UidIcon :icon="X" :size="16" />
-            </button>
-          </header>
-
-          <div class="admin-dialog__body">
-            <div class="admin-dialog__field">
-              <label class="admin-dialog__label">{{ tr('Тип виджета') }}</label>
-              <div class="admin-dialog__type-grid">
-                <button
-                  v-for="t in types"
-                  :key="t"
-                  type="button"
-                  :class="[
-                    'admin-dialog__type-card',
-                    { 'admin-dialog__type-card--active': selectedType === t },
-                  ]"
-                  @click="selectedType = t"
-                >
-                  <span class="admin-dialog__type-name">{{ t }}</span>
-                  <span class="admin-dialog__type-help">{{ labelOf[t] ?? '' }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="admin-dialog__field">
-              <label class="admin-dialog__label">{{ tr('Заголовок') }}</label>
-              <UidInput v-model="title" :placeholder="tr('Название виджета')" />
-            </div>
-
-            <div class="admin-dialog__field">
-              <label class="admin-dialog__label">{{ tr('Ширина (1..12)') }}</label>
-              <UidInput v-model="size" type="number" />
-            </div>
-
-            <!-- Type-specific config -->
-            <template v-if="selectedType && showsConfig(selectedType) === 'markdown'">
-              <div class="admin-dialog__field">
-                <label class="admin-dialog__label">{{ tr('Markdown содержимое') }}</label>
-                <textarea
-                  v-model="markdownContent"
-                  class="admin-dialog__textarea"
-                  rows="6"
-                />
-              </div>
-            </template>
-            <template v-else-if="selectedType && showsConfig(selectedType) === 'stat'">
-              <div class="admin-dialog__field">
-                <label class="admin-dialog__label">{{ tr('Метка (LABEL)') }}</label>
-                <UidInput v-model="statLabel" />
-              </div>
-              <div class="admin-dialog__field">
-                <label class="admin-dialog__label">{{ tr('Значение') }}</label>
-                <UidInput v-model="statValue" />
-              </div>
-            </template>
-            <template v-else-if="selectedType && showsConfig(selectedType) === 'gauge'">
-              <div class="admin-dialog__field">
-                <label class="admin-dialog__label">{{ tr('Значение (0..100)') }}</label>
-                <UidInput v-model="gaugeValue" type="number" />
-              </div>
-            </template>
-          </div>
-
-          <footer class="admin-dialog__ft">
-            <UidButton variant="ghost" @click="close">{{ tr('Отмена') }}</UidButton>
-            <UidButton variant="primary" :disabled="!canAdd" @click="onAdd">
-              {{ tr('Добавить') }}
-            </UidButton>
-          </footer>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+  <WidgetConfigDialog
+    :open="open"
+    mode="add"
+    :restorable="restorable"
+    @close="emit('close')"
+    @add="(item) => emit('add', item)"
+    @restore="(slug) => emit('restore', slug)"
+  />
 </template>
-
-<style>
-.admin-dialog-root {
-  position: fixed;
-  inset: 0;
-  z-index: var(--uid-z-modal, 500);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--uid-space-md);
-}
-.admin-dialog-root__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-}
-.admin-dialog {
-  position: relative;
-  width: min(560px, 100%);
-  max-height: calc(100vh - 32px);
-  display: flex;
-  flex-direction: column;
-  background: var(--uid-surface-raised);
-  border: 1px solid var(--uid-border-subtle);
-  border-radius: var(--uid-radius-lg);
-  box-shadow: var(--uid-shadow-lg);
-  overflow: hidden;
-}
-.admin-dialog__hd {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--uid-space-md);
-  border-bottom: 1px solid var(--uid-border-subtle);
-}
-.admin-dialog__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: var(--uid-font-weight-semibold);
-}
-.admin-dialog__close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  background: transparent;
-  border-radius: var(--uid-radius-sm);
-  cursor: pointer;
-  color: var(--uid-text-secondary);
-}
-.admin-dialog__close:hover {
-  background: var(--uid-color-surface-hover, var(--uid-border-subtle));
-  color: var(--uid-text-primary);
-}
-.admin-dialog__body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: var(--uid-space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--uid-space-md);
-}
-.admin-dialog__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.admin-dialog__label {
-  font-size: 12px;
-  font-weight: var(--uid-font-weight-medium);
-  color: var(--uid-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.admin-dialog__type-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--uid-space-xs);
-}
-.admin-dialog__type-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--uid-space-sm);
-  border: 1px solid var(--uid-border-subtle);
-  background: var(--uid-surface-base);
-  border-radius: var(--uid-radius-md);
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-}
-.admin-dialog__type-card:hover {
-  border-color: var(--uid-accent);
-}
-.admin-dialog__type-card--active {
-  border-color: var(--uid-accent);
-  background: color-mix(in srgb, var(--uid-accent) 8%, transparent);
-}
-.admin-dialog__type-name {
-  font-size: 13px;
-  font-weight: var(--uid-font-weight-semibold);
-  font-family: var(--uid-font-family-mono, ui-monospace, monospace);
-  color: var(--uid-text-primary);
-}
-.admin-dialog__type-help {
-  font-size: 11px;
-  color: var(--uid-text-tertiary);
-}
-.admin-dialog__textarea {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--uid-border-subtle);
-  background: var(--uid-surface-base);
-  border-radius: var(--uid-radius-md);
-  color: var(--uid-text-primary);
-  font: inherit;
-  font-size: 13px;
-  resize: vertical;
-}
-.admin-dialog__textarea:focus {
-  outline: 2px solid color-mix(in srgb, var(--uid-accent) 18%, transparent);
-  border-color: var(--uid-accent);
-}
-.admin-dialog__ft {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--uid-space-xs);
-  padding: var(--uid-space-md);
-  border-top: 1px solid var(--uid-border-subtle);
-}
-.admin-dialog-enter-active,
-.admin-dialog-leave-active { transition: opacity 200ms ease-out; }
-.admin-dialog-enter-active .admin-dialog,
-.admin-dialog-leave-active .admin-dialog {
-  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.admin-dialog-enter-from,
-.admin-dialog-leave-to { opacity: 0; }
-.admin-dialog-enter-from .admin-dialog,
-.admin-dialog-leave-to .admin-dialog { transform: translateY(8px); }
-</style>
