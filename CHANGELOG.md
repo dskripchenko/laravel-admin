@@ -5,6 +5,17 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- **A `multiple()` options filter now matches several values.** The panel
+  sends a list of values as a comma list — in the list's search, its links
+  and the kanban and calendar widgets' preset filters — and
+  `OptionsFilter` / `SelectFromModelFilter` compared that whole string with
+  the column, so nothing matched. A multiple filter now splits it and
+  queries `IN (...)`; a single-value filter keeps a comma in its value.
+
 ## 1.69.0
 
 ### Added

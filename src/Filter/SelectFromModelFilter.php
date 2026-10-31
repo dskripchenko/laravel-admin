@@ -53,8 +53,9 @@ final class SelectFromModelFilter extends Filter
             return $query;
         }
 
-        if ($this->multiple && is_array($value)) {
-            return $query->whereIn($this->field, array_values($value));
+        $values = $this->multipleValues($value);
+        if ($values !== null) {
+            return $query->whereIn($this->field, $values);
         }
 
         return $query->where($this->field, '=', $value);

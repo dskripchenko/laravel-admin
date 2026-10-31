@@ -65,6 +65,31 @@ abstract class Filter
         return $this;
     }
 
+    /**
+     * The values of a multiple() filter: a list as sent, or a comma list —
+     * the form the panel puts in its requests and links. Null when the filter
+     * takes one value or the value is not a list.
+     *
+     * @return list<mixed>|null
+     */
+    protected function multipleValues(mixed $value): ?array
+    {
+        if (! $this->multiple) {
+            return null;
+        }
+        if (is_array($value)) {
+            return array_values($value);
+        }
+        if (is_string($value) && str_contains($value, ',')) {
+            return array_values(array_filter(
+                array_map('trim', explode(',', $value)),
+                static fn (string $v): bool => $v !== '',
+            ));
+        }
+
+        return null;
+    }
+
     public function field(): string
     {
         return $this->field;

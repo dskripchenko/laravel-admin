@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Dskripchenko\LaravelAdmin\Filter\InputFilter;
+use Dskripchenko\LaravelAdmin\Filter\OptionsFilter;
 use Dskripchenko\LaravelAdmin\Filter\SwitcherFilter;
 use Illuminate\Database\Eloquent\Model;
 
@@ -90,4 +91,24 @@ it('Filter::for returns new instance for static factory', function (): void {
     $a = InputFilter::for('email');
     $b = InputFilter::for('email');
     expect($a)->not->toBe($b);
+});
+
+it('a multiple OptionsFilter takes the comma list the panel sends', function (): void {
+    $filter = OptionsFilter::for('status')->options(['new' => 'New', 'paid' => 'Paid'])->multiple();
+
+    $applied = $filter->apply(TestFilterUserModel::query(), 'new, paid');
+    expect($applied->toSql())->toContain('"status" in (?, ?)');
+    expect($applied->getBindings())->toBe(['new', 'paid']);
+
+    $applied = $filter->apply(TestFilterUserModel::query(), ['new', 'paid']);
+    expect($applied->getBindings())->toBe(['new', 'paid']);
+
+    $applied = $filter->apply(TestFilterUserModel::query(), 'new');
+    expect($applied->toSql())->toContain('"status" = ?');
+});
+
+it('a single OptionsFilter keeps a comma in its value', function (): void {
+    $applied = OptionsFilter::for('status')->options(['a,b' => 'AB'])->apply(TestFilterUserModel::query(), 'a,b');
+
+    expect($applied->getBindings())->toBe(['a,b']);
 });
