@@ -655,5 +655,8 @@
     "Разрешить перетаскивание, если есть право на изменение": "Allow dragging when the user may update",
     "Ресурс": "Resource",
     "Ресурсы с видом «календарь», которые вам доступны.": "Resources with a calendar view that you may view.",
-    "Ресурсы с видом «канбан», которые вам доступны.": "Resources with a kanban view that you may view."
+    "Ресурсы с видом «канбан», которые вам доступны.": "Resources with a kanban view that you may view.",
+    "Таблица": "Table",
+    "Встроенная страница — iframe": "Embedded page — iframe",
+    "Адрес страницы": "Page address"
 }

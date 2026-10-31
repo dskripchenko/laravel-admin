@@ -407,7 +407,6 @@ function close(): void {
 .admin-dialog__type-name {
   font-size: 13px;
   font-weight: var(--uid-font-weight-semibold);
-  font-family: var(--uid-font-family-mono, ui-monospace, monospace);
   color: var(--uid-text-primary);
 }
 .admin-dialog__type-help {

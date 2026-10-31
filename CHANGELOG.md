@@ -46,12 +46,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (the list parameters) in place of the index page's store, to run outside
   the list page.
 - `AddWidgetDialog` is now `WidgetConfigDialog` in its add mode.
+- The add dialog offers an aliased type once (`recent_list` / `recent-list`
+  still read a saved config), no longer offers `table` (its rows come only
+  from a server `TableWidget`), and gives `iframe` a name and an address field
+  instead of an empty form. Type names are no longer set in a monospace font.
 
 ### Fixed
 
 - The add / configure widget dialog shipped without its frame styles (the
   backdrop, the panel, the type grid): they lived in `AddWidgetDialog`, which
   nothing imported. They are in `WidgetConfigDialog` now.
+- A BPMN / DMN viewer kept the package's 360px minimum inside a box set lower
+  (`->height()`, a widget's row) and lost its bottom, the zoom controls
+  included; the box's height wins now.
 
 ## 1.67.0
 

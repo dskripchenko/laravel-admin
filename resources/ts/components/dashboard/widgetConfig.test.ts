@@ -32,7 +32,8 @@ const LEGACY_DEFAULTS: Record<string, Record<string, unknown>> = {
   'recent-list': { title: 'T', resource: '', limit: 5 },
   heatmap: { title: 'T' },
   table: { title: 'T' },
-  iframe: { title: 'T' },
+  // iframe gained its address field.
+  iframe: { title: 'T', src: '' },
 }
 
 /** Saved configs of user-added widgets, as layouts written before hold them. */
@@ -91,6 +92,17 @@ describe('widget descriptions — the built-in types keep their config shapes', 
     expect(listAddableWidgets()).toContain('kanban')
     describeWidget('heatmap', { addable: false })
     expect(listAddableWidgets()).not.toContain('heatmap')
+  })
+
+  it('offers an aliased type once, and not a widget whose data only the server gives', () => {
+    const addable = listAddableWidgets()
+    expect(addable).toContain('recent-table')
+    expect(addable).not.toContain('recent_list')
+    expect(addable).not.toContain('recent-list')
+    expect(addable).not.toContain('table')
+    expect(addable).toContain('iframe')
+    // The aliases still read a saved config.
+    expect(getWidgetDescription('recent_list')?.fields?.map((f) => f.key)).toEqual(['resource', 'limit'])
   })
 
   it('keeps a description the host gave before the built-ins registered', () => {

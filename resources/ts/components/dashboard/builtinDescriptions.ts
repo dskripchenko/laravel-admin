@@ -5,6 +5,7 @@
  * saved then keep rendering and keep opening in the configure dialog.
  */
 import {
+  AppWindow,
   CalendarDays,
   ChartColumn,
   ChartPie,
@@ -16,6 +17,7 @@ import {
   List,
   Network,
   SquareKanban,
+  Table2,
   Workflow,
 } from 'lucide-vue-next'
 import { trSafe as tr } from '../../stores/i18n'
@@ -344,8 +346,20 @@ export function builtinWidgetDescriptions(): Record<string, WidgetTypeDescriptio
     'bar-chart': chart(() => tr('Bar chart — гистограмма')),
     'donut-chart': chart(() => tr('Donut — кольцевая диаграмма'), ChartPie),
     'recent-table': recent,
-    recent_list: recent,
-    'recent-list': recent,
+    // Aliases of the same widget: their saved config still works; the dialog offers it once.
+    recent_list: { ...recent, addable: false },
+    'recent-list': { ...recent, addable: false },
+    // Its rows come from the server's TableWidget only: nothing for a user to set.
+    table: { label: () => tr('Таблица'), icon: Table2, addable: false },
+    iframe: {
+      label: () => tr('Встроенная страница — iframe'),
+      icon: AppWindow,
+      fields: [
+        { kind: 'text', key: 'src', label: () => tr('Адрес страницы'), placeholder: 'https://', required: true, default: '' },
+      ],
+      read: (cfg) => ({ src: (cfg.src as string | undefined) ?? '' }),
+      build: (v) => ({ src: str(v.src) }),
+    },
     heatmap: { label: () => tr('Heatmap — тепловая карта'), icon: Grid3x3 },
     gauge,
     markdown,
