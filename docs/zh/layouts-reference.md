@@ -203,6 +203,8 @@ Layout::infolist([
 
 `FlowEntry` 以只读方式显示已保存的流程模型（即 [`Flow` 字段](fields-reference.md#flow)的查看形式）：`FlowEntry::make('workflow')->height(420)`。
 
+`BpmnEntry` 和 `DmnEntry` 使用 [BPMN 与 DMN 布局](#文档图表bpmndmndrawioasyncapi)的查看器以只读方式显示已保存的 BPMN 或 DMN 文件（即 [`Bpmn` 与 `Dmn` 字段](fields-reference.md#bpmn-与-dmn)的查看形式）：`BpmnEntry::make('process_xml')->height(420)->highlight(['Task_approve'])`、`->diagram()`；`DmnEntry::make('rules_xml')->decision('Decision_discount')`。`KanbanEntry` 和 `CalendarEntry` 以只读方式显示已保存的标记，不可编辑也没有锁（即 [`Kanban` 与 `Calendar` 字段](fields-reference.md#kanban-与-calendar)的查看形式）：`KanbanEntry::make('board')->height(420)`、`CalendarEntry::make('schedule')->initialView('agenda')`（还有 `date()` 和 `views()`，检查方式与 [`Layout::calendar()`](#kanban-与-calendar) 相同）。`MarkdownEntry` 将已保存的 Markdown 渲染显示，包括代码块语言（即 `Markdown` 与 [`MarkdownEditor`](fields-reference.md#markdowneditor) 字段的查看形式）：`MarkdownEntry::make('body')`。空值显示为短横线。
+
 `VideoEntry` 和 `AudioEntry` 播放记录中的文件——URL、存储路径（配合 `disk()`）、已上传的文件或列表：`AudioEntry::make('call_recording')->disk('local')`（单行迷你播放器；`->full()->waveform()` 为完整播放器），`VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`。见 [Video 与 Audio](#video-与-audio媒体播放器)。
 
 在自定义 Screen 上，条目读取该 Screen 的 state。

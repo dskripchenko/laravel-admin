@@ -603,5 +603,14 @@
     "Не удалось загрузить модуль AsyncAPI": "Failed to load the AsyncAPI module",
     "Документ пуст": "The document is empty",
     "Не удалось сохранить изменения": "Failed to save the changes",
-    "Не удалось изменить блокировку": "Failed to change the lock"
+    "Не удалось изменить блокировку": "Failed to change the lock",
+    "Модель :notation должна быть строкой XML.": "The :notation model must be an XML string.",
+    "Модель :notation слишком большая: не более :max КБ.": "The :notation model is too large: :max KB at most.",
+    "Модель :notation не может содержать DOCTYPE.": "The :notation model must not contain a DOCTYPE.",
+    "Модель :notation не читается как XML: :error": "The :notation model is not readable XML: :error",
+    "строка": "line",
+    "пустой документ": "an empty document",
+    "Корневой элемент модели :notation должен быть definitions, а не :root.": "The root element of the :notation model must be definitions, not :root.",
+    "Неверное пространство имён модели :notation: :namespace": "Wrong namespace of the :notation model: :namespace",
+    "Не удалось загрузить редактор Markdown": "Failed to load the Markdown editor"
 }

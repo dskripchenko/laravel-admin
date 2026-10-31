@@ -22,6 +22,10 @@ use Dskripchenko\LaravelAdmin\Field\Rules\ResourceRecordsExist;
  *        the picked records in the target resource
  *      - color → `regex:/^#?[0-9a-f]{3,8}$/i` for hex
  *      - flow → `array` plus the shape of the process model (FlowModel)
+ *      - bpmn/dmn → `string` plus the model file's XML: safe parsing, the
+ *        root and its namespace, the size cap (BpmnModel / DmnModel)
+ *      - kanban/calendar → `string`, `max:` (the markup's length cap)
+ *      - markdown_editor → `string`
  *
  * The point is that Resource::validationRules() should not have to repeat the
  * limits by hand on both the UI side and the backend side.
@@ -57,6 +61,11 @@ final class ValidationRulesExporter
             if ($field instanceof Flow) {
                 // The editor's model: its shape, and its node types when the
                 // field has a palette.
+                $rules[] = $field->modelRule();
+            }
+            if ($field instanceof XmlModelField) {
+                // A BPMN or DMN file: well-formed and safe XML, the root and
+                // its namespace, the size cap.
                 $rules[] = $field->modelRule();
             }
             $result[$field->name()] = $rules;
@@ -151,7 +160,8 @@ final class ValidationRulesExporter
             'select', 'combobox', 'checkbox', 'radio' => self::choiceRules($attrs),
             'resource_picker' => self::pickerRules($attrs),
             'color' => self::colorRules($attrs),
-            'wysiwyg', 'markdown', 'textarea', 'code' => ['nullable', 'string'],
+            'wysiwyg', 'markdown', 'markdown_editor', 'textarea', 'code', 'bpmn', 'dmn' => ['nullable', 'string'],
+            'kanban', 'calendar' => ['nullable', 'string', 'max:'.($field instanceof MarkupField ? $field->maxLengthRule() : MarkupField::DEFAULT_MAX_LENGTH)],
             'switch', 'switcher', 'boolean' => ['nullable', 'boolean'],
             'repeater', 'key-value', 'tags', 'flow' => ['nullable', 'array'],
             default => ['nullable'],

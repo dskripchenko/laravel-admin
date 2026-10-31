@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="Definitions_Discount" name="Discount" namespace="http://example.com/dmn">
+  <decision id="Decision_Discount" name="Discount">
+    <informationRequirement id="Req_1">
+      <requiredInput href="#Input_Customer" />
+    </informationRequirement>
+    <informationRequirement id="Req_2">
+      <requiredDecision href="#Decision_Segment" />
+    </informationRequirement>
+    <decisionTable id="Table_Discount" hitPolicy="UNIQUE">
+      <input id="In_1" label="Segment">
+        <inputExpression id="Expr_1" typeRef="string"><text>segment</text></inputExpression>
+      </input>
+      <output id="Out_1" name="discount" typeRef="number" />
+      <rule id="R_1">
+        <inputEntry id="E_1"><text>"gold"</text></inputEntry>
+        <outputEntry id="O_1"><text>0.1</text></outputEntry>
+      </rule>
+      <rule id="R_2">
+        <inputEntry id="E_2"><text>not("gold")</text></inputEntry>
+        <outputEntry id="O_2"><text>0</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="Decision_Segment" name="Customer segment">
+    <informationRequirement id="Req_3">
+      <requiredInput href="#Input_Customer" />
+    </informationRequirement>
+    <literalExpression id="Lit_1"><text>if customer.orders &gt; 10 then "gold" else "standard"</text></literalExpression>
+  </decision>
+  <inputData id="Input_Customer" name="Customer" />
+</definitions>

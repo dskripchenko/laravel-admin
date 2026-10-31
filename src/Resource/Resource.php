@@ -56,6 +56,9 @@ abstract class Resource
     protected const FIELD_VIEW_TYPES = [
         'markdown', 'code', 'rating', 'radio', 'tree_select', 'cascader',
         'date_range', 'morph_switcher', 'group', 'resource_picker', 'flow',
+        // Editors drawn read-only: the BPMN/DMN viewers, the kit's kanban and
+        // calendar, the rendered Markdown.
+        'bpmn', 'dmn', 'kanban', 'calendar', 'markdown_editor',
         // A file: its link, and a player for audio and video.
         'file',
         // Fields whose stored value is a key: the view shows the option's label.
@@ -882,7 +885,8 @@ abstract class Resource
      *  - `color` fields render as a ColorEntry, a swatch with the value;
      *  - the fields whose value means little as plain text — markdown, code,
      *    rating, radio, tree_select, cascader, date_range, morph_switcher,
-     *    group, resource_picker, file (its link, and a player for audio and
+     *    group, resource_picker, flow, the bpmn/dmn/kanban/calendar/
+     *    markdown_editor editors, file (its link, and a player for audio and
      *    video) — render as a FieldEntry, drawn by the SPA's view of that
      *    field type;
      *  - `hidden` fields are left out.

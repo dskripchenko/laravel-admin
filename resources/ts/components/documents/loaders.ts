@@ -1,6 +1,6 @@
 /**
  * The document packages, loaded on first use: the diagrams, BPMN/DMN,
- * draw.io and the AsyncAPI reference. The fenced blocks of markdown
+ * draw.io, the AsyncAPI reference and the Markdown editor. The fenced blocks of markdown
  * (../markdown/blockRenderers) and the screen layouts (Layout::diagram,
  * bpmn, dmn, drawio, asyncapi) share them, so a page that shows both
  * downloads each package once — and a page with neither never does. Like
@@ -14,12 +14,14 @@ export type BpmnModule = typeof import('@dskripchenko/bpmn')
 export type BpmnVueModule = typeof import('@dskripchenko/bpmn/vue')
 export type DrawioModule = typeof import('@dskripchenko/drawio')
 export type OpenApiModule = typeof import('@dskripchenko/openapi/vue')
+export type MarkdownEditorModule = typeof import('@dskripchenko/markdown-editor')
 
 let diagrams: Promise<DiagramsModule> | null = null
 let bpmn: Promise<BpmnModule> | null = null
 let bpmnVue: Promise<BpmnVueModule> | null = null
 let drawio: Promise<DrawioModule> | null = null
 let openapi: Promise<OpenApiModule> | null = null
+let markdownEditor: Promise<MarkdownEditorModule> | null = null
 
 /** A failed download may succeed on the next attempt: the cache forgets it. */
 function remember<T>(promise: Promise<T>, forget: () => void): Promise<T> {
@@ -52,6 +54,11 @@ export function setOpenApiLoader(loader: (() => Promise<OpenApiModule>) | null):
   openapi = loader ? loader() : null
 }
 
+/** @internal Replaces the dynamic import, for tests. */
+export function setMarkdownEditorLoader(loader: (() => Promise<MarkdownEditorModule>) | null): void {
+  markdownEditor = loader ? loader() : null
+}
+
 export function loadDiagrams(): Promise<DiagramsModule> {
   diagrams ??= remember(import('@dskripchenko/diagrams'), () => {
     diagrams = null
@@ -67,7 +74,7 @@ export function loadBpmn(): Promise<BpmnModule> {
   return bpmn
 }
 
-/** The BPMN/DMN viewers (BpmnView, DmnView) with their styles. */
+/** The BPMN/DMN viewers and editors (BpmnView, DmnView, BpmnEditor, DmnEditor) with their styles. */
 export function loadBpmnVue(): Promise<BpmnVueModule> {
   bpmnVue ??= remember(
     Promise.all([import('@dskripchenko/bpmn/vue'), import('@dskripchenko/bpmn/style.css')]).then(([m]) => m),
@@ -94,4 +101,15 @@ export function loadOpenApi(): Promise<OpenApiModule> {
     },
   )
   return openapi
+}
+
+/** The Markdown editor (Field\MarkdownEditor) with its styles. */
+export function loadMarkdownEditor(): Promise<MarkdownEditorModule> {
+  markdownEditor ??= remember(
+    Promise.all([import('@dskripchenko/markdown-editor'), import('@dskripchenko/markdown-editor/style.css')]).then(([m]) => m),
+    () => {
+      markdownEditor = null
+    },
+  )
+  return markdownEditor
 }

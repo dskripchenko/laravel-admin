@@ -553,6 +553,144 @@ the server if it matters.
 
 On the view page the field is shown read-only by `FlowEntry`.
 
+### Bpmn and Dmn
+
+Editors of BPMN 2.0 processes and DMN decision models,
+[@dskripchenko/bpmn](https://github.com/dskripchenko/bpmn)'s `BpmnEditor` and
+`DmnEditor`: a palette, selection, moving and resizing, connecting, a context
+pad, names typed in place, a properties panel (BPMN), decision tables and
+literal expressions one click away (DMN), undo, pan and zoom. The value is the
+file's XML — the same file Camunda Modeler, bpmn.io and other modelers read
+and write, their extensions kept. Store it in a text column (`MEDIUMTEXT` or
+larger for big models); it is submitted with the form like any other field.
+The package is loaded only when a form has the field, and the editor speaks
+the panel's language (English or Russian).
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Bpmn;
+use Dskripchenko\LaravelAdmin\Field\Dmn;
+
+Bpmn::make('process_xml')
+    ->title('Process')
+    ->height(640)
+    ->properties()
+    ->required(),
+
+Dmn::make('rules_xml')
+    ->title('Discount rules')
+    ->decision('Decision_discount')
+    ->maxSize(512 * 1024),
+```
+
+| Method | Fields | Effect |
+|---|---|---|
+| `height(int\|string)` | `Bpmn`, `Dmn` | The editor's height; 560px by default |
+| `maxSize(int $bytes)` | `Bpmn`, `Dmn` | The largest file the server accepts; 2 MB by default. Keep it within the column |
+| `readonly()`, `disabled()` | `Bpmn`, `Dmn` | The editor becomes a viewer |
+| `properties(bool)` | `Bpmn` | The properties panel open from the start |
+| `diagram(string\|int)` | `Bpmn` | Which diagram of a file that has several: its id or index; the first by default |
+| `decision(string $id)` | `Dmn` | Opens this decision's logic instead of the diagram |
+
+`ValidationRulesExporter` adds `string` and the `BpmnModel` / `DmnModel` rule.
+An empty value passes (whether it is required is up to `required()`);
+anything else must be:
+
+- no larger than the cap, checked before the XML is parsed;
+- XML without a DOCTYPE, parsed with the network off and no entity
+  substitution — so neither external entities nor entity expansion can be
+  used; a parser error becomes the validation message;
+- a document whose root is `definitions` in the BPMN model namespace
+  (`http://www.omg.org/spec/BPMN/20100524/MODEL`) or in a DMN model namespace
+  (DMN 1.1 to 1.5 — the namespaces `@dskripchenko/bpmn` reads).
+
+The rule checks the file is one the editor can open, not the process itself:
+gateways without outgoing flows, decisions without rules and the like pass.
+For a validator of your own: `'process_xml' => ['required', Bpmn::rule()]`,
+`Dmn::rule(maxBytes: 1024 * 1024)`.
+
+On the view page the fields are shown read-only by `BpmnEntry` and `DmnEntry`
+(the viewers of the [BPMN and DMN layouts](layouts-reference.md#documents-diagrams-bpmn-dmn-drawio-asyncapi)).
+
+### Kanban and Calendar
+
+A kanban board and an event calendar written as markup — the same markup as
+in [`Layout::kanban()` / `Layout::calendar()`](layouts-reference.md#kanban-and-calendar)
+and in ` ```kanban ` / ` ```calendar ` blocks — edited in the form with the UI
+kit's `UidKanban` and `UidEventCalendar`. Cards are moved between columns,
+added and changed; events are dragged, resized, added and changed; the markup
+can be edited on the source tab. Each change is written into the form's value
+and saved with the form. The value is the markup, a string in a text column.
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Calendar;
+use Dskripchenko\LaravelAdmin\Field\Kanban;
+
+Kanban::make('board')
+    ->title('Board')
+    ->height(480),
+
+Calendar::make('schedule')
+    ->initialView('week')
+    ->date('2026-11-02')
+    ->views(['week', 'month', 'agenda']),
+```
+
+| Method | Fields | Effect |
+|---|---|---|
+| `height(int\|string)` | `Kanban`, `Calendar` | The height of the box, which then scrolls; without it the box grows with the content |
+| `maxLength(int $characters)` | `Kanban`, `Calendar` | The longest markup the server accepts; 65 535 (what a `TEXT` column holds) by default |
+| `readonly()`, `disabled()` | `Kanban`, `Calendar` | Read-only |
+| `initialView(string $view)` | `Calendar` | The view shown first: `day`, `week`, `month`, `year` or `agenda`; the markup's `view:`, else the month |
+| `date(string $date)` | `Calendar` | The date shown first, `YYYY-MM-DD`; the markup's `date:`, else today |
+| `views(array $views)` | `Calendar` | The views offered, in this order |
+
+There is no lock button in a field: the form's own `readonly()` or
+`disabled()` makes the board or the calendar read-only. The calendar options
+are checked as the layout's are: an unknown view, a date that is not
+`YYYY-MM-DD` or an empty list of views throws `InvalidArgumentException`.
+
+`ValidationRulesExporter` adds `string` and `max:` with the length cap. On
+the view page the fields are shown read-only by `KanbanEntry` and
+`CalendarEntry`.
+
+### MarkdownEditor
+
+A Markdown editor that edits like a word processor,
+[@dskripchenko/markdown-editor](https://github.com/dskripchenko/markdown-editor):
+a visual mode — the panel's WYSIWYG engine with its toolbar, slash menu and
+shortcuts — the Markdown source, and both side by side. The value is a
+Markdown string, kept as written when nothing was changed. Unlike
+[`Markdown`](#markdown) (a text area with a preview), the user need not know
+the syntax.
+
+The panel's block languages draw inside the editor — ` ```mermaid ` and the
+other diagram notations, ` ```bpmn `, ` ```openapi `, ` ```kanban `,
+` ```calendar ` and whatever a host has registered (see
+[Markdown](layouts-reference.md#markdown)). The editor speaks the panel's
+language (English or Russian); the package is loaded only when a form has the
+field.
+
+```php
+use Dskripchenko\LaravelAdmin\Field\MarkdownEditor;
+
+MarkdownEditor::make('body')
+    ->modes(['visual', 'source'])
+    ->placeholder('Write…')
+    ->minHeight(320)
+    ->maxHeight('70vh'),
+```
+
+| Method | Effect |
+|---|---|
+| `modes(array $modes)` | The modes offered, in this order — `visual`, `source`, `split`; the first is shown first. All three by default |
+| `placeholder(string)` | The text shown in an empty editor |
+| `minHeight(int\|string)`, `maxHeight(int\|string)` | The editing area's height: at least 240px by default; past the maximum it scrolls |
+| `readonly()`, `disabled()` | Browse only |
+
+An unknown mode or an empty list throws `InvalidArgumentException`.
+`ValidationRulesExporter` adds `string`. On the view page the value is
+rendered as Markdown (`MarkdownEntry`), the block languages included.
+
 ## See also
 
 - [Resources](concepts/resources.md)

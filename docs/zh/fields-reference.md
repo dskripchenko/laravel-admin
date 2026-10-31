@@ -489,6 +489,104 @@ Flow::make('workflow')
 
 在查看页上，该字段由 `FlowEntry` 以只读方式显示。
 
+### Bpmn 与 Dmn
+
+BPMN 2.0 流程与 DMN 决策模型的编辑器——
+[@dskripchenko/bpmn](https://github.com/dskripchenko/bpmn) 的 `BpmnEditor` 和
+`DmnEditor`：调色板、选择、移动与缩放大小、连线、上下文面板、就地输入名称、属性面板（BPMN）、一键打开的决策表与字面表达式（DMN）、撤销、平移与缩放。值是文件的 XML——与 Camunda Modeler、bpmn.io 等建模工具读写的是同一个文件，它们的扩展会被保留。请将其存放在文本列中（大型模型使用 `MEDIUMTEXT` 或更大）；它像其他字段一样随表单提交。只有表单中包含该字段时才会加载此包，编辑器使用面板的语言（英语或俄语）。
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Bpmn;
+use Dskripchenko\LaravelAdmin\Field\Dmn;
+
+Bpmn::make('process_xml')
+    ->title('流程')
+    ->height(640)
+    ->properties()
+    ->required(),
+
+Dmn::make('rules_xml')
+    ->title('折扣规则')
+    ->decision('Decision_discount')
+    ->maxSize(512 * 1024),
+```
+
+| 方法 | 字段 | 作用 |
+|---|---|---|
+| `height(int\|string)` | `Bpmn`、`Dmn` | 编辑器高度；默认 560px |
+| `maxSize(int $bytes)` | `Bpmn`、`Dmn` | 服务器接受的最大文件；默认 2 MB。请不要超过列的容量 |
+| `readonly()`、`disabled()` | `Bpmn`、`Dmn` | 编辑器变为查看器 |
+| `properties(bool)` | `Bpmn` | 一开始就打开属性面板 |
+| `diagram(string\|int)` | `Bpmn` | 文件含多张图时显示哪一张：其 id 或序号；默认第一张 |
+| `decision(string $id)` | `Dmn` | 打开该决策的逻辑而不是图 |
+
+`ValidationRulesExporter` 会添加 `string` 以及 `BpmnModel` / `DmnModel` 规则。空值可以通过（是否必填由 `required()` 决定）；其他值必须满足：
+
+- 不超过上限——在解析 XML 之前检查；
+- 不含 DOCTYPE 的 XML，解析时关闭网络且不替换实体——因此既不能利用外部实体，也不能利用实体膨胀；解析器错误会成为验证消息；
+- 根元素是 BPMN 模型命名空间（`http://www.omg.org/spec/BPMN/20100524/MODEL`）或某个 DMN 模型命名空间（DMN 1.1 至 1.5——即 `@dskripchenko/bpmn` 能读取的命名空间）中的 `definitions`。
+
+该规则检查的是编辑器能否打开该文件，而不是流程本身：没有出口流的网关、没有规则的决策等都可以通过。自定义验证器可以这样写：`'process_xml' => ['required', Bpmn::rule()]`、`Dmn::rule(maxBytes: 1024 * 1024)`。
+
+在查看页上，这些字段由 `BpmnEntry` 和 `DmnEntry` 以只读方式显示（即 [BPMN 与 DMN 布局](layouts-reference.md#文档图表bpmndmndrawioasyncapi)的查看器）。
+
+### Kanban 与 Calendar
+
+以标记书写的看板和事件日历——与 [`Layout::kanban()` / `Layout::calendar()`](layouts-reference.md#kanban-与-calendar) 以及 ` ```kanban ` / ` ```calendar ` 代码块中的标记相同——在表单中用 UI 套件的 `UidKanban` 和 `UidEventCalendar` 编辑。卡片可以在列之间移动、添加和修改；事件可以拖动、拉伸、添加和修改；标记可以在源码标签页中编辑。每次修改都会写入表单的值，并随表单一起保存。值是标记，即文本列中的字符串。
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Calendar;
+use Dskripchenko\LaravelAdmin\Field\Kanban;
+
+Kanban::make('board')
+    ->title('看板')
+    ->height(480),
+
+Calendar::make('schedule')
+    ->initialView('week')
+    ->date('2026-11-02')
+    ->views(['week', 'month', 'agenda']),
+```
+
+| 方法 | 字段 | 作用 |
+|---|---|---|
+| `height(int\|string)` | `Kanban`、`Calendar` | 外框高度，内容在其中滚动；不设置时外框随内容增长 |
+| `maxLength(int $characters)` | `Kanban`、`Calendar` | 服务器接受的最长标记；默认 65 535（`TEXT` 列的容量） |
+| `readonly()`、`disabled()` | `Kanban`、`Calendar` | 只读 |
+| `initialView(string $view)` | `Calendar` | 首先显示的视图：`day`、`week`、`month`、`year` 或 `agenda`；否则取标记中的 `view:`，再否则为月视图 |
+| `date(string $date)` | `Calendar` | 首先显示的日期，`YYYY-MM-DD`；否则取标记中的 `date:`，再否则为今天 |
+| `views(array $views)` | `Calendar` | 提供的视图，按此顺序 |
+
+字段中没有锁定按钮：字段自身的 `readonly()` 或 `disabled()` 会让看板或日历变为只读。日历选项的检查方式与布局相同：未知视图、不是 `YYYY-MM-DD` 格式的日期或空的视图列表都会抛出 `InvalidArgumentException`。
+
+`ValidationRulesExporter` 会添加 `string` 和带长度上限的 `max:`。在查看页上，这些字段由 `KanbanEntry` 和 `CalendarEntry` 以只读方式显示。
+
+### MarkdownEditor
+
+像文字处理器一样编辑的 Markdown 编辑器——
+[@dskripchenko/markdown-editor](https://github.com/dskripchenko/markdown-editor)：可视模式（面板的 WYSIWYG 引擎，带工具栏、斜杠菜单和快捷键）、Markdown 源码，以及两者并排。值是 Markdown 字符串；未作修改时保持原样。与 [`Markdown`](#markdown)（带预览的文本框）不同，用户无需了解语法。
+
+面板的代码块语言会直接在编辑器中绘制——` ```mermaid ` 及其他图表记法、` ```bpmn `、` ```openapi `、` ```kanban `、` ```calendar `，以及应用注册的其他语言（参见 [Markdown](layouts-reference.md#markdown)）。编辑器使用面板的语言（英语或俄语）；只有表单中包含该字段时才会加载此包。
+
+```php
+use Dskripchenko\LaravelAdmin\Field\MarkdownEditor;
+
+MarkdownEditor::make('body')
+    ->modes(['visual', 'source'])
+    ->placeholder('开始书写…')
+    ->minHeight(320)
+    ->maxHeight('70vh'),
+```
+
+| 方法 | 作用 |
+|---|---|
+| `modes(array $modes)` | 提供的模式，按此顺序——`visual`、`source`、`split`；第一个最先显示。默认三个都有 |
+| `placeholder(string)` | 空编辑器中显示的文字 |
+| `minHeight(int\|string)`、`maxHeight(int\|string)` | 编辑区域的高度：默认至少 240px；超过最大值后滚动 |
+| `readonly()`、`disabled()` | 仅浏览 |
+
+未知模式或空列表会抛出 `InvalidArgumentException`。`ValidationRulesExporter` 会添加 `string`。在查看页上，值以渲染后的 Markdown 显示（`MarkdownEntry`），代码块语言也一并绘制。
+
 ## 另请参阅
 
 - [Resources](concepts/resources.md)

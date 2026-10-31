@@ -221,6 +221,8 @@ Layout::infolist([
 
 `FlowEntry` показывает сохранённую модель процесса только для чтения (вид [поля `Flow`](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
 
+`BpmnEntry` и `DmnEntry` показывают сохранённый файл BPMN или DMN только для чтения просмотрщиками [раскладок BPMN и DMN](#документы-диаграммы-bpmn-dmn-drawio-asyncapi) (вид [полей `Bpmn` и `Dmn`](fields-reference.md#bpmn-и-dmn)): `BpmnEntry::make('process_xml')->height(420)->highlight(['Task_approve'])`, `->diagram()`; `DmnEntry::make('rules_xml')->decision('Decision_discount')`. `KanbanEntry` и `CalendarEntry` показывают сохранённую разметку только для чтения, без правки и замка (вид [полей `Kanban` и `Calendar`](fields-reference.md#kanban-и-calendar)): `KanbanEntry::make('board')->height(420)`, `CalendarEntry::make('schedule')->initialView('agenda')` (а также `date()` и `views()`, проверяемые как в [`Layout::calendar()`](#kanban-и-calendar)). `MarkdownEntry` показывает сохранённый Markdown отрисованным, вместе с языками блоков (вид полей `Markdown` и [`MarkdownEditor`](fields-reference.md#markdowneditor)): `MarkdownEntry::make('body')`. Пустое значение показывается прочерком.
+
 `VideoEntry` и `AudioEntry` проигрывают файл записи — URL, путь в хранилище (с `disk()`), загруженный файл или список: `AudioEntry::make('call_recording')->disk('local')` (однострочный мини-плеер; `->full()->waveform()` — полный), `VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`. См. [Video и Audio](#video-и-audio-медиаплееры).
 
 На собственном Screen'е записи читают state экрана.

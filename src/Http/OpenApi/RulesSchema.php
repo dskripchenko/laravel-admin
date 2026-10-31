@@ -289,7 +289,8 @@ final class RulesSchema
             'tags', 'date_range', 'repeater', 'builder', 'relation_table' => 'array',
             'key_value', 'translatable', 'group', 'image_cropper', 'morph_switcher', 'flow' => 'object',
             'file' => $multiple ? 'array' : 'object',
-            'input', 'textarea', 'wysiwyg', 'markdown', 'code', 'password', 'slug', 'color', 'date', 'time', 'generated-field' => 'string',
+            'input', 'textarea', 'wysiwyg', 'markdown', 'code', 'password', 'slug', 'color', 'date', 'time', 'generated-field',
+            'bpmn', 'dmn', 'kanban', 'calendar', 'markdown_editor' => 'string',
             default => null,
         };
     }
@@ -599,7 +600,8 @@ final class RulesSchema
             'select', 'radio', 'combobox', 'relation_select', 'checkbox' => $multiple ? 'array' : null,
             'tags', 'date_range', 'repeater' => 'array',
             'key_value', 'translatable', 'file', 'flow' => 'object',
-            'input', 'textarea', 'wysiwyg', 'markdown', 'code', 'password', 'slug', 'color', 'date', 'time' => 'string',
+            'input', 'textarea', 'wysiwyg', 'markdown', 'code', 'password', 'slug', 'color', 'date', 'time',
+            'bpmn', 'dmn', 'kanban', 'calendar', 'markdown_editor' => 'string',
             default => null,
         };
     }

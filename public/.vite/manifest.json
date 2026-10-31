@@ -14,7 +14,7 @@
     "src": "node_modules/@dskripchenko/bpmn/dist/style.css"
   },
   "node_modules/@dskripchenko/bpmn/dist/vue.mjs": {
-    "file": "assets/vue-BG5LAuC1.js",
+    "file": "assets/vue-CoSO2vqT.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -50,7 +50,7 @@
     "src": "node_modules/@dskripchenko/flow/dist/style.css"
   },
   "node_modules/@dskripchenko/flow/dist/vue.mjs": {
-    "file": "assets/vue-BXKcmpt6.js",
+    "file": "assets/vue-G_4XzL7d.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -59,12 +59,25 @@
       "resources/ts/app.ts"
     ]
   },
+  "node_modules/@dskripchenko/markdown-editor/dist/index.mjs": {
+    "file": "assets/index-C7wyp9cb.js",
+    "name": "index",
+    "src": "node_modules/@dskripchenko/markdown-editor/dist/index.mjs",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/ts/app.ts"
+    ]
+  },
+  "node_modules/@dskripchenko/markdown-editor/dist/style.css": {
+    "file": "assets/style-CZlA0nlo.css",
+    "src": "node_modules/@dskripchenko/markdown-editor/dist/style.css"
+  },
   "node_modules/@dskripchenko/openapi/dist/style.css": {
     "file": "assets/style-CwI8sXEM.css",
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-JM-HNQVL.js",
+    "file": "assets/vue-Xe5tzf18.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -79,7 +92,7 @@
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-DWWGjsuR.js",
+    "file": "assets/app-nJSuuUn8.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -93,10 +106,11 @@
       "_index-C9LqKgoY.js",
       "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
       "node_modules/@dskripchenko/drawio/dist/index.mjs",
-      "node_modules/@dskripchenko/openapi/dist/vue.mjs"
+      "node_modules/@dskripchenko/openapi/dist/vue.mjs",
+      "node_modules/@dskripchenko/markdown-editor/dist/index.mjs"
     ],
     "css": [
-      "assets/app-DcYiX6_G.css"
+      "assets/app-BwaLybgB.css"
     ]
   }
 }
