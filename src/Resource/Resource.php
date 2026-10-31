@@ -530,6 +530,12 @@ abstract class Resource
             'searchable' => $this->searchableFields(),
             'with' => $this->with(),
             'view_mode' => $this->viewMode(),
+            // The views the index page offers: the list (or the tree of a
+            // hierarchical resource) first, then the kanban and the calendar
+            // when the resource declares them, each with its description.
+            'views' => $this->availableViews(),
+            'kanban' => $this->kanban()?->toArray($this),
+            'calendar' => $this->calendar()?->toArray($this),
             'hierarchy_parent_key' => $this->hierarchyParentKey(),
             'parent_slug' => $this->parentSlug(),
             'features' => [
@@ -715,6 +721,55 @@ abstract class Resource
     public function viewMode(): string
     {
         return $this->hierarchyParentKey() !== null ? 'tree' : 'list';
+    }
+
+    /**
+     * The kanban view of the list page: the records as cards in columns by a
+     * status attribute, moved between them by dragging. Null (the default)
+     * offers no kanban.
+     *
+     *     public function kanban(): ?KanbanView
+     *     {
+     *         return KanbanView::make('status')->title('name')->assignee('owner.name');
+     *     }
+     */
+    public function kanban(): ?Views\KanbanView
+    {
+        return null;
+    }
+
+    /**
+     * The calendar view of the list page: the records as events by date
+     * columns, moved and stretched by dragging. Null (the default) offers no
+     * calendar.
+     *
+     *     public function calendar(): ?CalendarView
+     *     {
+     *         return CalendarView::make('starts_at', 'ends_at')->title('name');
+     *     }
+     */
+    public function calendar(): ?Views\CalendarView
+    {
+        return null;
+    }
+
+    /**
+     * The views the index page offers, the base one first: `list` or `tree`
+     * (see viewMode()), then `kanban` and `calendar` when declared.
+     *
+     * @return list<string>
+     */
+    public function availableViews(): array
+    {
+        $views = [$this->viewMode()];
+        if ($this->kanban() !== null) {
+            $views[] = 'kanban';
+        }
+        if ($this->calendar() !== null) {
+            $views[] = 'calendar';
+        }
+
+        return $views;
     }
 
     /**

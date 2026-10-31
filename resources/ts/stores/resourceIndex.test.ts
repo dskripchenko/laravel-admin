@@ -274,4 +274,21 @@ describe('resourceIndex URL state', () => {
     expect(s.fromQuery({ tab: 'x', page: '1' })).toBe(false)
     expect(s.toQuery()).toEqual({})
   })
+
+  it('keeps the view in the query, and a search there skips the list request', async () => {
+    const s = useResourceIndexStore()
+    s.setSlug('issues')
+    expect(s.fromQuery({ view: 'kanban' })).toBe(true)
+    expect(s.view).toBe('kanban')
+    expect(s.listActive).toBe(false)
+    expect(s.toQuery()).toEqual({ view: 'kanban' })
+
+    // No client is registered: a list request would throw.
+    await s.setSearch('abc')
+    expect(s.search).toBe('abc')
+
+    s.view = null
+    expect(s.listActive).toBe(true)
+    expect(s.toQuery()).toEqual({ q: 'abc' })
+  })
 })

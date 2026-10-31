@@ -275,7 +275,8 @@ export function createAdminApp(
             indexStore.setSlug(slug)
             // A linked list (?q=…&filter[…]=…) opens filtered, in one request.
             indexStore.fromQuery(to.query as Record<string, unknown>)
-            await indexStore.load().catch(() => undefined)
+            // A kanban or calendar link (?view=…) loads its own data.
+            if (indexStore.listActive) await indexStore.load().catch(() => undefined)
           }
         } catch {
           // Silent: the page mount will fall into its own error state.

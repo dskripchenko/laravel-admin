@@ -24,6 +24,42 @@ export interface ManifestNode extends Record<string, unknown> {
   type: string
 }
 
+/** A column or a lane of a kanban view: a value of its attribute and its label. */
+export interface ResourceKanbanOption {
+  value: string | number
+  label: string
+  wip?: number | null
+}
+
+/** The kanban view of a resource, see Resource\Views\KanbanView::toArray(). */
+export interface ResourceKanbanConfig {
+  column: string
+  /** The declared columns; null when they come from the records (the board answer carries them). */
+  columns: ResourceKanbanOption[] | null
+  lanes: string | null
+  lane_labels: ResourceKanbanOption[] | null
+  limit: number
+  order_by: string | null
+  /** Whether a drop position inside a column is saved (a reorderable resource). */
+  saves_position: boolean
+  readonly: boolean
+  card: Record<string, string | null>
+}
+
+/** The calendar view of a resource, see Resource\Views\CalendarView::toArray(). */
+export interface ResourceCalendarConfig {
+  start: string
+  end: string | null
+  /** Whether the start column holds dates without a time. */
+  date_only: boolean
+  all_day: string | null
+  title: string | null
+  color: string | null
+  views: Array<'day' | 'week' | 'month' | 'year' | 'agenda'>
+  initial_view: 'day' | 'week' | 'month' | 'year' | 'agenda'
+  readonly: boolean
+}
+
 export interface ManifestResourceMeta {
   slug: string
   label: string
@@ -57,6 +93,16 @@ export interface ManifestResourceMeta {
   searchable: string[]
   with: string[]
   view_mode?: 'list' | 'tree'
+  /**
+   * The views the index page offers, the base one (list or tree) first, then
+   * 'kanban' and 'calendar' when the resource declares them. Older backends
+   * do not send it. See Resource::availableViews().
+   */
+  views?: string[]
+  /** Resource::kanban() described; null or absent without a kanban view. */
+  kanban?: ResourceKanbanConfig | null
+  /** Resource::calendar() described; null or absent without a calendar view. */
+  calendar?: ResourceCalendarConfig | null
   hierarchy_parent_key?: string | null
   /**
    * The slug of the resource whose index serves as the "back" context of the

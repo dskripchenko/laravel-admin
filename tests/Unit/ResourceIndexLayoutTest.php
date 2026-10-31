@@ -42,3 +42,14 @@ it('ResourceIndex is shown only to a user who may view the resource', function (
     resourceIndexActingAs(['admin.something-else.view']);
     expect(Layout::resourceIndex(TestTreeNodeResource::class)->isVisible())->toBeFalse();
 });
+
+it('ResourceIndex::initialView() picks the initial view of the index', function (): void {
+    $arr = Layout::resourceIndex(TestTaskResource::class)->initialView('kanban')->toArray();
+
+    expect($arr['view'])->toBe('kanban')
+        ->and(Layout::resourceIndex(TestTaskResource::class)->toArray())->not->toHaveKey('view');
+});
+
+it('ResourceIndex::initialView() rejects an unknown view', function (): void {
+    Layout::resourceIndex(TestTaskResource::class)->initialView('gantt');
+})->throws(InvalidArgumentException::class);

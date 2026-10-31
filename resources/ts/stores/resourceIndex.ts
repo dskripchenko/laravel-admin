@@ -68,6 +68,20 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
   const sortKey = ref<string | null>(null)
   const sortDirection = ref<SortDirection>(null)
 
+  /**
+   * The view the index page shows: null for the resource's base view (the
+   * list, or the tree of a hierarchical resource), or 'kanban' / 'calendar'.
+   * It travels in the URL as `?view=` and in saved views.
+   */
+  const view = ref<string | null>(null)
+
+  /**
+   * Whether the table is the view on screen. The kanban and the calendar load
+   * their own data, so a search or filter change does not fetch a list page
+   * nobody sees.
+   */
+  const listActive = computed(() => view.value === null || view.value === 'list' || view.value === 'tree')
+
   /** The set of selected row ids, for the bulk actions. */
   const selection = ref<Set<string | number>>(new Set())
 
@@ -112,6 +126,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     filters.value = {}
     sortKey.value = null
     sortDirection.value = null
+    view.value = null
     selection.value = new Set()
   }
 
@@ -157,7 +172,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
 
   /**
    * The list's state as a URL query — `q`, `sort` (`-column` for descending),
-   * `page`, `filter[name]` — so a filtered list can be linked, bookmarked and
+   * `page`, `filter[name]`, `view` — so a filtered list can be linked, bookmarked and
    * kept across a reload. Arrays become comma lists, as the request sends them.
    */
   function toQuery(): Record<string, string> {
@@ -167,6 +182,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
       query.sort = (sortDirection.value === 'desc' ? '-' : '') + sortKey.value
     }
     if (meta.value.page > 1) query.page = String(meta.value.page)
+    if (view.value !== null) query.view = view.value
     for (const [k, v] of Object.entries(filters.value)) {
       if (v === null || v === undefined || v === '') continue
       query[`filter[${k}]`] = Array.isArray(v) ? v.join(',') : String(v)
@@ -194,6 +210,11 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
       const desc = sort.startsWith('-')
       sortKey.value = desc ? sort.slice(1) : sort
       sortDirection.value = desc ? 'desc' : 'asc'
+      touched = true
+    }
+    const v = first(query.view)
+    if (v !== null) {
+      view.value = v
       touched = true
     }
     const page = Number(first(query.page))
@@ -251,7 +272,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
   async function setSearch(value: string): Promise<void> {
     search.value = value
     meta.value.page = 1
-    await load()
+    if (listActive.value) await load()
   }
 
   async function setFilter(key: string, value: unknown): Promise<void> {
@@ -261,13 +282,13 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
       filters.value[key] = value
     }
     meta.value.page = 1
-    await load()
+    if (listActive.value) await load()
   }
 
   async function clearFilters(): Promise<void> {
     filters.value = {}
     meta.value.page = 1
-    await load()
+    if (listActive.value) await load()
   }
 
   async function setSort(key: string | null, direction: SortDirection = 'asc'): Promise<void> {
@@ -342,7 +363,9 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     sortKey,
     sortDirection,
     selection,
+    view,
     // getters
+    listActive,
     isEmpty,
     hasError,
     hasSelection,

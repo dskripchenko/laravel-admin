@@ -229,6 +229,105 @@ public function reorderColumn(): string { return 'position'; }   // der Standard
 
 Der Listen-Screen erhält eine Spalte mit Ziehgriff.
 
+## Kanban- und Kalenderansicht
+
+Neben der Liste (oder dem Baum) kann die Indexseite die Datensätze einer
+Resource als Kanban-Board oder als Kalender zeigen. Deklarieren Sie die
+gewünschten Ansichten; über der Seite erscheint ein Umschalter
+(Liste | Kanban | Kalender), die gewählte Ansicht steht in der URL
+(`?view=kanban`) und in gespeicherten Ansichten, und Suche und Filter gelten
+in jeder Ansicht.
+
+### Kanban
+
+```php
+use Dskripchenko\LaravelAdmin\Resource\Views\KanbanView;
+
+public function kanban(): ?KanbanView
+{
+    return KanbanView::make('status')                  // eine Spalte pro Wert
+        ->columns(['todo' => 'Offen', 'doing' => 'In Arbeit', 'done' => 'Erledigt'])
+        ->title('name')
+        ->description('summary')
+        ->tags('labels')                               // ein Array oder „a, b, c“
+        ->assignee('owner.name')                       // ein Punktpfad über eine Relation
+        ->due('due_at')                                // überfällige Karten werden markiert
+        ->lanes('priority')                            // optionale Swimlanes
+        ->wip(['doing' => 5])                          // WIP-Limits
+        ->limit(50);                                   // Karten pro Spalte und Ladevorgang
+}
+```
+
+- `columns()` nimmt eine Map Wert ⇒ Beschriftung, eine Liste von
+  `{value, label}` oder eine Enum-Klasse (Backed-Werte; die Beschriftung ist
+  der Case-Name, wie bei `Select::fromEnum()`). Ohne sie sind die Spalten die
+  Optionen des gleichnamigen Formularfelds, sonst die verschiedenen Werte der
+  Datensätze. `lanes()` nimmt seine Beschriftungen ebenso, als zweites
+  Argument.
+- Die Punktpfade (`owner.name`) werden per Eager Loading geladen. Der Titel
+  ist `recordTitle()`, sofern `title()` nichts anderes angibt.
+- Jede Spalte lädt `limit()` Karten; ihr Kopf zeigt die Gesamtzahl, das
+  WIP-Limit und eine Schaltfläche „Mehr“ für die nächste Seite.
+- Eine Karte in eine andere Spalte zu ziehen schreibt deren Wert in die
+  Statusspalte (und den Wert der Lane in die Lane-Spalte). Bei einer
+  sortierbaren Resource sind die Karten nach `reorderColumn()` (oder
+  `orderBy()`) geordnet, und ein Ablegen innerhalb einer Spalte wird so
+  gespeichert wie das Umsortieren der Liste: Die Datensätze der Spalte tauschen
+  die Positionen, die sie halten. Ein Benutzer ohne die Berechtigung `reorder`
+  verschiebt Karten weiterhin zwischen Spalten; die Reihenfolge bleibt dann
+  erhalten.
+- `readonly()` schaltet das Ziehen ab, ebenso ein Benutzer ohne die
+  Berechtigung `update`. Eine Karte, für die `editableForRow($record, 'status')`
+  false ist, bleibt in ihrer Spalte.
+
+### Kalender
+
+```php
+use Dskripchenko\LaravelAdmin\Resource\Views\CalendarView;
+
+public function calendar(): ?CalendarView
+{
+    return CalendarView::make('starts_at', 'ends_at')  // Date- oder Datetime-Spalten
+        ->allDay('all_day')                            // optionale boolesche Spalte
+        ->title('name')
+        ->color('type', ['meeting' => 'primary', 'deadline' => 'danger'])
+        ->views(['month', 'week', 'day', 'agenda'])    // und 'year'
+        ->initialView('month');
+}
+```
+
+- Ohne `allDay()` ist ein Ereignis ganztägig, wenn die Startspalte Daten hält
+  (ein `date`-Cast oder ein gespeichertes `Y-m-d`). Das Ende eines ganztägigen
+  Ereignisses ist sein letzter Tag, einschließlich. Ohne Endspalte ist ein
+  Ereignis ein Zeitpunkt.
+- `color()` ordnet den Werten einer Spalte einen Ton (`primary`, `success`,
+  `warning`, `danger`, `info`, `neutral`) oder eine CSS-Farbe zu.
+- Der Kalender lädt die Datensätze, deren Intervall die sichtbaren Tage
+  berührt, höchstens 1000 pro Anfrage.
+- Ziehen verschiebt ein Ereignis; in den Tages- und Wochenrastern ändert das
+  Aufziehen der Unterkante sein Ende. Ein Klick öffnet den Datensatz. Für einen
+  Benutzer, der anlegen darf, öffnet ein Klick auf einen leeren Tag im
+  Monatsraster (oder auf einen Slot der Tages- und Wochenraster, wenn der
+  Kalender nicht schreibgeschützt ist) das Anlegeformular mit über die Query
+  vorbelegter Startspalte.
+- `readonly()` schaltet das Ziehen ab, ebenso ein Benutzer ohne die
+  Berechtigung `update`.
+
+### Die Prüfungen einer Verschiebung
+
+Eine Verschiebung nimmt den Weg einer Inline-Bearbeitung: Die Route verlangt
+die Berechtigung `update`; `editableForRow()` muss jede geschriebene Spalte
+erlauben; der Wert des Boards muss eine seiner Spalten sein (und die Lane eine
+seiner Lanes), mit den Inline-Edit-Regeln der Spalte, falls vorhanden; die
+Daten müssen gültig sein und das Ende darf nicht vor dem Start liegen. Der
+Datensatz wird über das Modell gespeichert, sodass seine Events feuern und das
+Audit-Log (Trait `Loggable`) die Änderung aufzeichnet. Eine Ablehnung antwortet
+mit 403 oder 422 im Fehlerformat der API, und das Panel setzt die Karte oder
+das Ereignis zurück.
+
+Die Endpoints: `POST {slug}/board`, `{slug}/boardMove`, `{slug}/calendar`,
+`{slug}/calendarMove` — siehe die [API-Referenz](../api-reference.md).
+
 ## Berechtigungen
 
 Standard-Basisberechtigung: `admin.{slug}`. Automatisch abgeleitete

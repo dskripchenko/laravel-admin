@@ -612,5 +612,20 @@
     "пустой документ": "an empty document",
     "Корневой элемент модели :notation должен быть definitions, а не :root.": "The root element of the :notation model must be definitions, not :root.",
     "Неверное пространство имён модели :notation: :namespace": "Wrong namespace of the :notation model: :namespace",
-    "Не удалось загрузить редактор Markdown": "Failed to load the Markdown editor"
+    "Не удалось загрузить редактор Markdown": "Failed to load the Markdown editor",
+    "Эту запись нельзя переместить": "This record cannot be moved",
+    "Слишком большой диапазон дат": "The date range is too large",
+    "Дерево": "Tree",
+    "Вид": "View",
+    "Не удалось загрузить доску.": "Failed to load the board.",
+    "Не удалось загрузить карточки.": "Failed to load the cards.",
+    "Без дорожки": "No lane",
+    "Не удалось переместить карточку.": "Failed to move the card.",
+    "Превышен лимит незавершённой работы": "Work-in-progress limit exceeded",
+    "Ещё": "More",
+    "Просрочено": "Overdue",
+    "Срок": "Due",
+    "Не удалось загрузить календарь.": "Failed to load the calendar.",
+    "Не удалось перенести событие.": "Failed to move the event.",
+    "Показаны не все события: уточните фильтры.": "Not all events are shown: narrow the filters."
 }

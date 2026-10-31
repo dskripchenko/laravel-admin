@@ -32,7 +32,9 @@ final class ResourceOperationSchema
             'create' => self::form($resource, 'create'),
             'update' => self::form($resource, 'update'),
             'search' => self::listing($resource, withOrder: true, withGroupBy: true, withPicker: true),
-            'summary', 'tree' => self::listing($resource),
+            'summary', 'tree', 'calendar' => self::listing($resource),
+            'board' => self::board($resource),
+            'boardMove' => self::listing($resource),
             'export' => self::export($resource),
             'action' => self::bulkAction($resource),
             'inlineUpdate' => self::inlineUpdate($resource),
@@ -84,6 +86,24 @@ final class ResourceOperationSchema
                 ['required' => ['items']],
             ],
         ];
+    }
+
+    /**
+     * The board's listing input plus the "more" of one column.
+     *
+     * @return array<string, mixed>
+     */
+    private static function board(Resource $resource): array
+    {
+        $schema = self::listing($resource);
+        $schema['properties']['column'] = [
+            'description' => 'Only this column (a value of `'.($resource->kanban()?->column() ?? 'status').'`), from `offset`',
+            'oneOf' => [['type' => 'string'], ['type' => 'integer']],
+        ];
+        $schema['properties']['offset'] = ['type' => 'integer', 'minimum' => 0, 'description' => 'The first card of the column, with `column`'];
+        $schema['properties']['limit'] = ['type' => 'integer', 'minimum' => 1, 'maximum' => 200, 'description' => 'Cards per column; the view\'s limit() by default'];
+
+        return $schema;
     }
 
     /**

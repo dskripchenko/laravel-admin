@@ -124,6 +124,10 @@ Für jede registrierte Resource lautet das Präfix `{slug}/`:
 | POST | `{slug}/forceDelete` | Nur für Resources mit `SoftDeletes`. |
 | POST | `{slug}/replicate` | Nur bei `replicable()`. |
 | POST | `{slug}/reorder` | Nur bei `reorderable()`. |
+| POST | `{slug}/board` | Nur mit `kanban()`. Die Kanban-Spalten mit je einer Seite Karten. Body: `{filters, q}` der Liste, dazu `column` und `offset` für die nächste Seite einer Spalte, `limit`. |
+| POST | `{slug}/boardMove` | Nur mit einem Kanban ohne `readonly()`. Body: `{id, value, lane?, position?}` plus `{filters, q}` der Liste (für `position`, den Index der Karte in der Zielspalte). Erfordert `update`. |
+| POST | `{slug}/calendar` | Nur mit `calendar()`. Die Ereignisse, deren Intervall `{from, to}` (`Y-m-d`, einschließlich) berührt, mit `{filters, q}` der Liste. |
+| POST | `{slug}/calendarMove` | Nur mit einem Kalender ohne `readonly()`. Body: `{id, start, end?}` (`Y-m-d` oder `Y-m-d H:i`). Erfordert `update`. |
 | GET/POST | `{slug}/export?format=csv` | `format`: `csv` (Standard), `xlsx`, `pdf` — je nachdem, welche Exporter installiert sind; `columns[]` schränkt die Spalten ein. |
 | POST | `{slug}/action` | Generischer Action-Dispatcher. Body: `{key, ids[], payload}`. |
 | GET | `{slug}/listScreen` | Kompilierter Snapshot von `GeneratedListScreen`. |

@@ -42,7 +42,7 @@ Layout — это контейнер для полей и других layout'о
 | `AuditTrail` | `AuditTrail::for(User::class)` | Лента аудита показанной записи |
 | `Listener` | `Layout::listener([...])->listen([...])` | Часть формы, которую сервер перерисовывает при изменении отслеживаемых полей |
 | `ResourceTable` | `ResourceTable::for(ItemResource::class)` | Таблица записей другого ресурса, принадлежащих редактируемой |
-| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Живая страница списка ресурса (таблица или дерево) на экране |
+| `ResourceIndex` | `Layout::resourceIndex(OrderResource::class)` | Живая страница списка ресурса (таблица, дерево, канбан или календарь) на экране |
 
 ## Примеры
 
@@ -434,6 +434,16 @@ public function layout(): array
 иерархического ресурса — встроенная в экран. Щелчок по строке открывает
 запись, как на странице списка. Пользователю без права `view` на ресурс не
 показывается. Одна на экран: состояние списка общее.
+
+`initialView('kanban')` (или `'calendar'`, `'list'`) открывает его в этом виде
+ресурса — см. [Виды «канбан» и «календарь»](concepts/resources.md#виды-канбан-и-календарь);
+переключатель видов по-прежнему предлагает остальные, а `?view=` в адресе
+важнее. (Естественным именем было бы `view()`, но `Layout::view()` уже занят
+фабрикой раскладки Blade-представления.)
+
+```php
+Layout::resourceIndex(TaskResource::class)->initialView('kanban'),
+```
 
 ### Markdown
 

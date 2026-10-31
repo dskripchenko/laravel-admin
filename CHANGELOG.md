@@ -5,6 +5,51 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Kanban and calendar views of a resource.** `Resource::kanban()` returns a
+  `Resource\Views\KanbanView`: the records as cards in a column per value of
+  a status attribute (`columns()` — a map, a list or an enum; by default the
+  options of the field of that name, else the distinct values), with
+  `title()`, `description()`, `tags()`, `assignee()` and `due()` (dot paths
+  over eager-loaded relations; overdue cards are marked), `lanes()`, `wip()`,
+  `limit()` cards per column with a "More" per column, `orderBy()` and
+  `readonly()`. `Resource::calendar()` returns a `Resource\Views\CalendarView`:
+  events by a start (and end) date or datetime column, `allDay()` (else
+  detected from date columns), `title()`, `color()` by a column's value,
+  `views()`, `initialView()`, `readonly()`.
+- **The endpoints** `POST {slug}/board` (the columns with a page of cards,
+  one column from an offset), `{slug}/calendar` (the events whose interval
+  meets `{from, to}`), `{slug}/boardMove` `{id, value, lane?, position?}` and
+  `{slug}/calendarMove` `{id, start, end?}`, registered only for the views a
+  resource declares (the moves not for a read-only view). They take the
+  list's filters and search. A move requires the `update` permission and
+  `editableForRow()` for every column it writes, checks the value against the
+  board's columns and lanes (and the column's inline-edit rules) or the dates
+  (end not before start), saves through the model so its events and the audit
+  log fire, and answers with the updated card or event. On a reorderable
+  resource a drop position inside a column is saved as the list's
+  drag-reorder saves it, for a user with the `reorder` permission.
+- **A view switcher on the index page** (list | kanban | calendar, or tree |
+  … for a hierarchical resource) for the views the resource offers; the view
+  is kept in the URL (`?view=`) and in saved views, and search and filters
+  apply to every view. `ResourceKanbanView` (UidBoard) and
+  `ResourceCalendarView` (UidCalendar) apply a move at once and roll it back
+  with the server's reason on a refusal; a click opens the record; a click on
+  an empty day opens the create form with the start prefilled. Both are
+  read-only for a user without `update`.
+- **`Layout::resourceIndex()->initialView('kanban'|'calendar'|'list')`** opens
+  the embedded index on that view.
+- The resource meta carries `views` and the `kanban` / `calendar`
+  descriptions.
+
+### Changed
+
+- `ResourceController::search()` builds its query through the same helper as
+  the new views (scope, filters, `q`); the behaviour is unchanged.
+
 ## 1.65.0
 
 ### Added

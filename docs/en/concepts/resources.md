@@ -232,6 +232,98 @@ public function reorderColumn(): string { return 'position'; }   // the default
 
 The list-screen gets a drag-handle column.
 
+## Kanban and calendar views
+
+Next to the list (or the tree) the index page can show a resource's records
+as a kanban board or a calendar. Declare the views you want; a switcher
+(list | kanban | calendar) appears above the page, the chosen view goes into
+the URL (`?view=kanban`) and into saved views, and the search and filters
+apply to every view.
+
+### Kanban
+
+```php
+use Dskripchenko\LaravelAdmin\Resource\Views\KanbanView;
+
+public function kanban(): ?KanbanView
+{
+    return KanbanView::make('status')                  // the column per value
+        ->columns(['todo' => 'To do', 'doing' => 'Doing', 'done' => 'Done'])
+        ->title('name')
+        ->description('summary')
+        ->tags('labels')                               // an array or "a, b, c"
+        ->assignee('owner.name')                       // a dot path over a relation
+        ->due('due_at')                                // overdue cards are marked
+        ->lanes('priority')                            // optional swimlanes
+        ->wip(['doing' => 5])                          // work-in-progress limits
+        ->limit(50);                                   // cards per column per load
+}
+```
+
+- `columns()` takes a map of value ⇒ label, a list of `{value, label}` or an
+  enum class (backed values; the label is the case name, as
+  `Select::fromEnum()` names it). Without it the columns are the options of
+  the form field of the same name, else the distinct values the records hold.
+  `lanes()` takes its labels the same way, as a second argument.
+- The dot paths (`owner.name`) are eager-loaded. The title is
+  `recordTitle()` unless `title()` says otherwise.
+- Each column loads `limit()` cards; its header shows the total, the WIP limit
+  and a "More" button for the next page.
+- Dragging a card to another column writes its value to the status column (and
+  the lane's value to the lane column). On a reorderable resource the cards
+  are ordered by `reorderColumn()` (or `orderBy()`), and a drop inside a
+  column is saved the way the list's drag-reorder saves it: the column's
+  records trade the positions they hold. A user without the `reorder`
+  permission still moves cards between columns; the order is then kept.
+- `readonly()` turns the dragging off; so does a user without the `update`
+  permission. A card whose `editableForRow($record, 'status')` is false stays
+  in its column.
+
+### Calendar
+
+```php
+use Dskripchenko\LaravelAdmin\Resource\Views\CalendarView;
+
+public function calendar(): ?CalendarView
+{
+    return CalendarView::make('starts_at', 'ends_at')  // date or datetime columns
+        ->allDay('all_day')                            // optional boolean column
+        ->title('name')
+        ->color('type', ['meeting' => 'primary', 'deadline' => 'danger'])
+        ->views(['month', 'week', 'day', 'agenda'])    // and 'year'
+        ->initialView('month');
+}
+```
+
+- Without `allDay()` an event is all-day when the start column holds dates
+  (a `date` cast, or a stored `Y-m-d`). The end of an all-day event is its
+  last day, inclusive. Without an end column an event is a point in time.
+- `color()` maps a column's values to a tone (`primary`, `success`,
+  `warning`, `danger`, `info`, `neutral`) or a CSS colour.
+- The calendar loads the records whose interval meets the visible days, at
+  most 1000 per request.
+- Dragging an event moves it; in the day and week grids stretching its bottom
+  edge changes its end. A click opens the record. For a user who may create,
+  a click on an empty day of the month grid (or on a slot of the day and week
+  grids, when the calendar is not read-only) opens the create form with the
+  start column prefilled through its query.
+- `readonly()` turns the dragging off; so does a user without the `update`
+  permission.
+
+### The checks of a move
+
+A move takes the path of an inline edit: the route requires the `update`
+permission; `editableForRow()` must allow every column it writes; the board's
+value must be one of its columns (and the lane one of its lanes), with the
+column's inline-edit rules when it has them; the dates must be valid with the
+end not before the start. The record is saved through the model, so its
+events fire and the audit log (the `Loggable` trait) records the change. A
+refusal answers 403 or 422 in the API's error shape, and the panel puts the
+card or event back.
+
+The endpoints: `POST {slug}/board`, `{slug}/boardMove`, `{slug}/calendar`,
+`{slug}/calendarMove` — see the [API reference](../api-reference.md).
+
 ## Permissions
 
 Default base permission: `admin.{slug}`. Auto-derived sub-permissions:
