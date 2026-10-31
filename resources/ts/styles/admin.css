@@ -792,6 +792,48 @@
 }
 
 /*
+ * The document layouts — Layout::diagram, bpmn, dmn, drawio, asyncapi,
+ * kanban and calendar: a caption and a framed box. A given height fixes the
+ * box; the diagrams and draw.io scroll inside it, the BPMN/DMN viewers fill
+ * it (they pan and zoom themselves).
+ */
+.admin-document-layout {
+  margin: 0 0 var(--uid-space-md, 12px);
+  min-width: 0;
+}
+.admin-document-layout__title {
+  font-weight: var(--uid-font-weight-semibold, 600);
+  margin-bottom: var(--uid-space-xs, 6px);
+}
+.admin-document-layout__box {
+  position: relative;
+  min-width: 0;
+}
+.admin-document-layout--diagram .admin-document-layout__box,
+.admin-document-layout--drawio .admin-document-layout__box,
+.admin-document-layout--bpmn .admin-document-layout__box,
+.admin-document-layout--dmn .admin-document-layout__box {
+  border: 1px solid var(--uid-border-subtle);
+  border-radius: var(--uid-radius-md);
+  background: var(--uid-surface-base);
+}
+.admin-document-layout--bpmn .admin-document-layout__box,
+.admin-document-layout--dmn .admin-document-layout__box {
+  overflow: hidden;
+}
+.admin-document-layout__box--scroll { overflow-x: auto; }
+.admin-document-layout__box--scroll.admin-document-layout__box--fixed { overflow: auto; }
+.admin-document-layout__svg {
+  padding: var(--uid-space-md, 12px);
+  width: max-content;
+  max-width: none;
+}
+.admin-document-layout__svg > svg { display: block; max-width: none; height: auto; }
+.admin-document-layout__viewer { width: 100%; height: 100%; }
+.admin-document-layout__error,
+.admin-document-layout__empty { margin: var(--uid-space-sm, 8px); }
+
+/*
  * The kit's players in the panel: Layout::video / Layout::audio, the video
  * and audio entries, the file preview, table cells and ```video / ```audio
  * blocks. The players draw themselves; these rules only place them.

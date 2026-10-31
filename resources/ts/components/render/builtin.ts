@@ -66,6 +66,13 @@ import ListenerLayout from '../layouts/ListenerLayout.vue'
 import FlowLayout from '../layouts/FlowLayout.vue'
 import VideoLayout from '../layouts/VideoLayout.vue'
 import AudioLayout from '../layouts/AudioLayout.vue'
+import DiagramLayout from '../layouts/DiagramLayout.vue'
+import BpmnLayout from '../layouts/BpmnLayout.vue'
+import DmnLayout from '../layouts/DmnLayout.vue'
+import DrawioLayout from '../layouts/DrawioLayout.vue'
+import AsyncApiLayout from '../layouts/AsyncApiLayout.vue'
+import KanbanLayout from '../layouts/KanbanLayout.vue'
+import CalendarLayout from '../layouts/CalendarLayout.vue'
 
 /**
  * A TextField with the input's `type` preset.
@@ -207,6 +214,16 @@ export function registerBuiltinComponents(): void {
       // `Layout::video(...)` and `Layout::audio(...)` — the kit's players.
       video: VideoLayout,
       audio: AudioLayout,
+      // Documents drawn from text — `Layout::diagram(...)`, `bpmn`, `dmn`,
+      // `drawio`, `asyncapi`; the packages load on first use.
+      diagram: DiagramLayout,
+      bpmn: BpmnLayout,
+      dmn: DmnLayout,
+      drawio: DrawioLayout,
+      asyncapi: AsyncApiLayout,
+      // Markup the kit draws and edits — `Layout::kanban(...)`, `calendar`.
+      kanban: KanbanLayout,
+      calendar: CalendarLayout,
       // `Layout::listener([...])->listen([...])` — re-rendered by the server
       // as the watched fields change.
       listener: ListenerLayout,

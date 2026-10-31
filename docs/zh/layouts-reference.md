@@ -30,6 +30,12 @@ translated_at: 2026-10-02
 | `Markdown` | `Layout::markdown($text)` | 渲染后的 markdown：带锚点的标题、目录、高亮代码、表格、提示框 |
 | `Code` | `Layout::code($code, 'php')` | 高亮且可复制的代码块 |
 | `Flow` | `Layout::flow('process')` | 带实时监控、开关和子流程下钻的流程或状态机 |
+| `Diagram` | `Layout::diagram('schema')` | 由文本绘制的图表：Mermaid、PlantUML、DOT、D2、DBML、Structurizr、Wardley 地图 |
+| `Bpmn` / `Dmn` | `Layout::bpmn('process_xml')` | BPMN 流程模型或 DMN 决策模型，只读，支持平移、缩放和元素高亮 |
+| `Drawio` | `Layout::drawio('network')` | 以 SVG 绘制的 draw.io（diagrams.net）文件 |
+| `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI 参考：服务器、通道、操作、消息 |
+| `Kanban` | `Layout::kanban('board')` | 用标记写成的看板，可通过 Screen 方法编辑 |
+| `Calendar` | `Layout::calendar('schedule')` | 用标记写成、支持重复的事件日历，可通过 Screen 方法编辑 |
 | `Video` | `Layout::video('/media/intro.mp4')` | 视频播放器：清晰度、HLS、字幕、章节、缩略图 |
 | `Audio` | `Layout::audio([...])` | 音频播放器：单曲或播放列表、波形、迷你样式 |
 | `AuditTrail` | `AuditTrail::for(User::class)` | 所显示记录的审计时间线 |
@@ -606,6 +612,164 @@ final class OrderProcessScreen extends Screen
 
 内联模型的文字（节点和连线标签、描述、标题）与其他文字一样经过面板的 JSON 翻译；
 从 state 读取的模型按存储原样显示。
+
+### 文档（图表、BPMN、DMN、draw.io、AsyncAPI）
+
+五个布局以只读方式显示由源文本绘制的文档：
+
+| 工厂方法 | 绘制内容 | 包 |
+|---|---|---|
+| `Layout::diagram()` | Mermaid、PlantUML、Graphviz DOT、D2、DBML、Structurizr、Wardley 地图 | [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| `Layout::bpmn()` | BPMN 2.0 流程模型（Camunda Modeler、bpmn.io 及其他建模工具），支持平移和缩放 | [@dskripchenko/bpmn](https://github.com/dskripchenko/bpmn) |
+| `Layout::dmn()` | DMN 决策模型；双击决策打开其决策表 | [@dskripchenko/bpmn](https://github.com/dskripchenko/bpmn) |
+| `Layout::drawio()` | draw.io（diagrams.net）文件，以 SVG 显示在可滚动区域中 | [@dskripchenko/drawio](https://github.com/dskripchenko/drawio) |
+| `Layout::asyncapi()` | AsyncAPI 文档（YAML 或 JSON）：服务器、通道、操作、消息及其载荷 | [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
+
+只有页面显示此类文档时才会加载对应的包；加载期间以骨架屏占位。包无法读取的源会以
+带原因的提示代替图片显示（图表还会给出行号和提示）。
+
+所有这些布局的源都相同——[Kanban 与 Calendar](#kanban-与-calendar) 也一样：
+
+```php
+Layout::diagram('schema')                      // 标识符：$state['schema']
+Layout::diagram("flowchart LR\n  A --> B")     // 其他任何内容：源本身
+Layout::bpmn('process')->url('/files/order.bpmn')   // 由浏览器获取
+```
+
+是标识符的字符串（`/^[A-Za-z_][\w.-]*$/`）是 Screen state 的键：它从表单
+（或 infolist 记录）中读取，并随其变化而更新——同一 Screen 上的字段可以切换文档。
+其他任何内容都是文档内容本身。`url()` 则改为在浏览器中加载内容：从面板自身站点的路径
+或 URL，携带用户的会话；其他站点的地址会被拒绝。每个地址在页面上只请求一次。
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+
+final class ArchitectureScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        return [
+            'erd' => file_get_contents(database_path('schema.dbml')),
+            'process' => Storage::get('bpmn/order.bpmn'),
+            'rules' => Storage::get('dmn/discounts.dmn'),
+            'step' => Order::find(request('order'))?->current_step,
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::diagram('erd')->syntax('dbml')->title('数据模型')->height(480),
+            Layout::bpmn('process')->highlight(['Task_ship']),
+            Layout::dmn('rules')->decision('Decision_discount'),
+            Layout::drawio('network')->url('/docs/network.drawio')->page('Rack B'),
+            Layout::asyncapi('spec')->url('/docs/asyncapi.yaml'),
+        ];
+    }
+}
+```
+
+| 方法 | 布局 | 作用 |
+|---|---|---|
+| `url(string $url)` | 全部 | 在浏览器中从同一站点的路径（`/files/a.bpmn`）或 `http(s)` URL 加载内容，携带用户的会话；取代 state 键或内联内容 |
+| `title(string $title)` | 全部 | 文档上方的标题 |
+| `height(int\|string $height)` | 全部 | 区域高度：`560`（px）或 `'70vh'`。不设置时，图表、draw.io 和 AsyncAPI 随内容增高；设置后在区域内滚动；BPMN 和 DMN 默认 480px。非正数或不是 CSS 长度的字符串会抛出 `InvalidArgumentException` |
+| `syntax(string $syntax)` | `diagram` | `mermaid`、`plantuml`、`dot`、`d2`、`dbml`、`structurizr` 或 `wardley`；不设置时根据源的开头识别记法（`@startuml`——PlantUML，`digraph`——DOT，`Table`——DBML……）。其他值会抛出 `InvalidArgumentException` |
+| `highlight(array $ids)` | `bpmn`、`dmn` | 要描边高亮的元素 id——例如流程的当前步骤 |
+| `showDiagram(string\|int $diagram)` | `bpmn` | 文件含多个图时显示哪一个：其 id 或索引；默认第一个 |
+| `decision(string $id)` | `dmn` | 打开该决策的决策表，而不是图 |
+| `page(int\|string $page)` | `drawio` | 显示哪一页：其索引、id 或名称；默认第一页 |
+
+`showDiagram()` 没有命名为 `diagram()`，因为该名称已被工厂方法 `Layout::diagram()` 占用。
+
+### Kanban 与 Calendar
+
+用标记写成的看板和事件日历，由 UI 套件的 `UidKanban` 和 `UidEventCalendar` 绘制：
+列中带标签、负责人和截止日期的卡片；全天和定时的事件，支持重复，提供日、周、月、年
+和议程视图。源的用法与[文档](#文档图表bpmndmndrawioasyncapi)相同：state 键、
+标记本身或 `url()`。
+
+默认只读。使用 `editable()` 后，用户可以移动、添加和修改卡片与事件（并在源码标签页中
+编辑标记）；每次更改后，布局都会以完整的新标记调用 Screen 方法：
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
+
+final class SprintScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        $sprint = Sprint::current();
+
+        return [
+            'board' => $sprint->board,          // "## To do\n- Write docs #docs @anna\n## Done\n"
+            'board_locked' => $sprint->closed,
+            'schedule' => $sprint->calendar,
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::kanban('board')
+                ->title('迭代看板')
+                ->editable('saveBoard', permission: 'sprints.edit')
+                ->lockable('lockBoard', permission: 'sprints.close')
+                ->locked('board_locked'),
+            Layout::calendar('schedule')
+                ->initialView('week')
+                ->views(['week', 'month', 'agenda'])
+                ->editable('saveSchedule', permission: 'sprints.edit'),
+        ];
+    }
+
+    public function saveBoard(string $markup): void
+    {
+        $sprint = Sprint::current();
+        if ($sprint->closed) {
+            throw new ActionFailedException('迭代已关闭。');
+        }
+        $sprint->update(['board' => $markup]);
+    }
+
+    public function lockBoard(bool $locked): void
+    {
+        Sprint::current()->update(['closed' => $locked]);
+    }
+
+    public function saveSchedule(string $markup): void
+    {
+        Sprint::current()->update(['calendar' => $markup]);
+    }
+}
+```
+
+更改会立即显示。要拒绝更改，抛出 `ActionFailedException`（或返回错误）：看板会回到
+更改前的标记，消息显示在提示中。方法响应中的 `message` 也会以提示显示。标记与请求中的
+其他字符串一样经过应用的中间件，因此 `TrimStrings` 会去掉其首尾的空白。
+
+这些方法是 Screen 自己的公共方法，通过其 `runMethod` 动作以位置参数 `parameters`
+调用——与按钮相同的会话、CSRF、层和检查。布局指定的每个方法都会向服务器声明：
+布局对其隐藏（`canSee()`）的用户调用其中任何一个都会得到 403；带权限的方法还需要
+该权限。没有权限的用户看到的是只读看板（且没有锁定按钮）：布局将 `editable` /
+`lockable` 序列化为 false。
+
+| 方法 | 布局 | 作用 |
+|---|---|---|
+| `editable(string $method, ?string $permission = null)` | `kanban`、`calendar` | 开启编辑；每次更改后 `$method(string $markup)` 接收完整的标记。抛出 `ActionFailedException` 拒绝即可回滚更改 |
+| `lockable(string $method, ?string $permission = null)` | `kanban`、`calendar` | 锁定按钮；`$method(bool $locked)` 接收新状态。拒绝时按钮复原并显示提示 |
+| `locked(bool\|string $locked = true)` | `kanban`、`calendar` | 无论 `editable()` 如何都只读：一个标志，或保存该标志的 state 键 |
+| `initialView(string $view)` | `calendar` | 首先显示的视图：`day`、`week`、`month`、`year` 或 `agenda`；默认取标记中的 `view:`，否则为月视图 |
+| `date(string $date)` | `calendar` | 首先显示的日期，`YYYY-MM-DD`；默认取标记中的 `date:`，否则为今天 |
+| `views(array $views)` | `calendar` | 提供的视图，按此顺序 |
+| `url()`、`title()`、`height()` | `kanban`、`calendar` | 与[文档](#文档图表bpmndmndrawioasyncapi)相同 |
+
+未知的视图、不是 `YYYY-MM-DD` 格式的日期或空的视图列表会抛出
+`InvalidArgumentException`。`initialView()` 没有命名为 `view()`，因为该名称已被
+工厂方法 `Layout::view()` 占用。标记本身的说明见 UI 套件中 `UidKanban` 和
+`UidEventCalendar` 的文档；同样的标记放在 [Markdown](#markdown) 的
+` ```kanban ` 或 ` ```calendar ` 代码块中时以只读方式显示。
 
 ### Video 与 Audio（媒体播放器）
 

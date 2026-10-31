@@ -109,6 +109,84 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * A diagram drawn from text — Mermaid, PlantUML, DOT, D2, DBML,
+     * Structurizr or a Wardley map — by the diagrams package
+     * (@dskripchenko/diagrams). See Diagram.
+     *
+     * @param  string  $source  A state key or the source itself.
+     */
+    public static function diagram(string $source): Diagram
+    {
+        return Diagram::make($source);
+    }
+
+    /**
+     * A BPMN process model, read-only with pan and zoom, drawn by BpmnView of
+     * the bpmn package (@dskripchenko/bpmn). See Bpmn.
+     *
+     * @param  string  $source  A state key or the file's XML.
+     */
+    public static function bpmn(string $source): Bpmn
+    {
+        return Bpmn::make($source);
+    }
+
+    /**
+     * A DMN decision model, read-only, with each decision's table on a double
+     * click, drawn by DmnView of the bpmn package (@dskripchenko/bpmn). See Dmn.
+     *
+     * @param  string  $source  A state key or the file's XML.
+     */
+    public static function dmn(string $source): Dmn
+    {
+        return Dmn::make($source);
+    }
+
+    /**
+     * A draw.io file drawn as SVG by the drawio package (@dskripchenko/drawio).
+     * See Drawio.
+     *
+     * @param  string  $source  A state key or the file itself.
+     */
+    public static function drawio(string $source): Drawio
+    {
+        return Drawio::make($source);
+    }
+
+    /**
+     * An AsyncAPI document as the reference of the openapi package
+     * (@dskripchenko/openapi). See AsyncApi.
+     *
+     * @param  string  $source  A state key or the document, YAML or JSON.
+     */
+    public static function asyncapi(string $source): AsyncApi
+    {
+        return AsyncApi::make($source);
+    }
+
+    /**
+     * A kanban board written as markup, drawn by the kit's UidKanban;
+     * editable through a screen method. See Kanban.
+     *
+     * @param  string  $source  A state key or the markup.
+     */
+    public static function kanban(string $source): Kanban
+    {
+        return Kanban::make($source);
+    }
+
+    /**
+     * An event calendar written as markup, drawn by the kit's
+     * UidEventCalendar; editable through a screen method. See Calendar.
+     *
+     * @param  string  $source  A state key or the markup.
+     */
+    public static function calendar(string $source): Calendar
+    {
+        return Calendar::make($source);
+    }
+
+    /**
      * A video player: sources and qualities, HLS, subtitles, chapters and
      * thumbnails. See Video.
      *

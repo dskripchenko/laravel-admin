@@ -31,6 +31,12 @@ Layout — это контейнер для полей и других layout'о
 | `Markdown` | `Layout::markdown($text)` | Отрисованный markdown: заголовки с якорями, оглавление, подсвеченный код, таблицы, выноски |
 | `Code` | `Layout::code($code, 'php')` | Подсвеченный блок кода с копированием |
 | `Flow` | `Layout::flow('process')` | Процесс или машина состояний с живым мониторингом, переключателями и переходом в подпроцессы |
+| `Diagram` | `Layout::diagram('schema')` | Диаграмма из текста: Mermaid, PlantUML, DOT, D2, DBML, Structurizr, карта Уордли |
+| `Bpmn` / `Dmn` | `Layout::bpmn('process_xml')` | Модель процесса BPMN или решений DMN, только чтение, с панорамой, масштабом и подсветкой элементов |
+| `Drawio` | `Layout::drawio('network')` | Файл draw.io (diagrams.net), нарисованный как SVG |
+| `AsyncApi` | `Layout::asyncapi('spec')` | Справочник AsyncAPI: серверы, каналы, операции, сообщения |
+| `Kanban` | `Layout::kanban('board')` | Канбан-доска в разметке, редактируемая через метод экрана |
+| `Calendar` | `Layout::calendar('schedule')` | Календарь событий с повторами в разметке, редактируемый через метод экрана |
 | `Video` | `Layout::video('/media/intro.mp4')` | Видеоплеер: качества, HLS, субтитры, главы, превью кадров |
 | `Audio` | `Layout::audio([...])` | Аудиоплеер: дорожка или плейлист, волновая форма, мини-вариант |
 | `AuditTrail` | `AuditTrail::for(User::class)` | Лента аудита показанной записи |
@@ -693,6 +699,178 @@ final class OrderProcessScreen extends Screen
 Подписи встроенной модели (метки узлов и переходов, описания, заголовок)
 проходят через JSON-переводы панели, как любые другие подписи; модель из state
 показывается как хранится.
+
+### Документы (диаграммы, BPMN, DMN, draw.io, AsyncAPI)
+
+Пять layout'ов показывают документ, нарисованный по его исходному тексту, только для чтения:
+
+| Фабрика | Рисует | Пакет |
+|---|---|---|
+| `Layout::diagram()` | Mermaid, PlantUML, Graphviz DOT, D2, DBML, Structurizr, карты Уордли | [@dskripchenko/diagrams](https://github.com/dskripchenko/diagrams) |
+| `Layout::bpmn()` | Модели процессов BPMN 2.0 (Camunda Modeler, bpmn.io и другие редакторы) с панорамой и масштабом | [@dskripchenko/bpmn](https://github.com/dskripchenko/bpmn) |
+| `Layout::dmn()` | Модели решений DMN; двойной щелчок по решению открывает его таблицу | [@dskripchenko/bpmn](https://github.com/dskripchenko/bpmn) |
+| `Layout::drawio()` | Файлы draw.io (diagrams.net) как SVG в прокручиваемом блоке | [@dskripchenko/drawio](https://github.com/dskripchenko/drawio) |
+| `Layout::asyncapi()` | Документы AsyncAPI (YAML или JSON): серверы, каналы, операции, сообщения и их содержимое | [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) |
+
+Каждый пакет загружается, только когда на странице есть такой документ; пока
+он грузится, на его месте скелетон. Источник, который пакет не может прочитать,
+показывается вместо картинки предупреждением с причиной (для диаграммы — со
+строкой и подсказкой).
+
+Источник у всех один и тот же — и у [Kanban и Calendar](#kanban-и-calendar):
+
+```php
+Layout::diagram('schema')                      // идентификатор: $state['schema']
+Layout::diagram("flowchart LR\n  A --> B")     // всё остальное: сам исходник
+Layout::bpmn('process')->url('/files/order.bpmn')   // загружает браузер
+```
+
+Строка-идентификатор (`/^[A-Za-z_][\w.-]*$/`) — это ключ state экрана: он
+читается из формы (или записи infolist) и отслеживается при изменении — поле на
+том же экране может переключать документ. Всё остальное — содержимое. `url()`
+вместо этого загружает содержимое в браузере — по пути или URL собственного
+сайта панели, с сессией пользователя; адрес другого сайта отклоняется. Каждый
+адрес запрашивается на странице один раз.
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+
+final class ArchitectureScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        return [
+            'erd' => file_get_contents(database_path('schema.dbml')),
+            'process' => Storage::get('bpmn/order.bpmn'),
+            'rules' => Storage::get('dmn/discounts.dmn'),
+            'step' => Order::find(request('order'))?->current_step,
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::diagram('erd')->syntax('dbml')->title('Модель данных')->height(480),
+            Layout::bpmn('process')->highlight(['Task_ship']),
+            Layout::dmn('rules')->decision('Decision_discount'),
+            Layout::drawio('network')->url('/docs/network.drawio')->page('Rack B'),
+            Layout::asyncapi('spec')->url('/docs/asyncapi.yaml'),
+        ];
+    }
+}
+```
+
+| Метод | Layout'ы | Эффект |
+|---|---|---|
+| `url(string $url)` | все | Загружает содержимое в браузере по пути (`/files/a.bpmn`) или `http(s)`-URL того же сайта, с сессией пользователя; заменяет ключ state или встроенное содержимое |
+| `title(string $title)` | все | Подпись над документом |
+| `height(int\|string $height)` | все | Высота блока: `560` (px) или `'70vh'`. Без неё диаграммы, draw.io и AsyncAPI растут по содержимому, с ней прокручиваются внутри блока; BPMN и DMN по умолчанию 480px. Неположительное число или строка, не являющаяся CSS-длиной, бросают `InvalidArgumentException` |
+| `syntax(string $syntax)` | `diagram` | `mermaid`, `plantuml`, `dot`, `d2`, `dbml`, `structurizr` или `wardley`; без него нотация определяется по началу исходника (`@startuml` — PlantUML, `digraph` — DOT, `Table` — DBML…). Всё остальное бросает `InvalidArgumentException` |
+| `highlight(array $ids)` | `bpmn`, `dmn` | Id элементов, которые нужно обвести, — например, текущий шаг процесса |
+| `showDiagram(string\|int $diagram)` | `bpmn` | Какую диаграмму файла показать, если их несколько: её id или индекс; по умолчанию первую |
+| `decision(string $id)` | `dmn` | Открывает таблицу этого решения вместо диаграммы |
+| `page(int\|string $page)` | `drawio` | Какую страницу показать: её индекс, id или имя; по умолчанию первую |
+
+`showDiagram()` не называется `diagram()`, потому что это имя занято фабрикой
+`Layout::diagram()`.
+
+### Kanban и Calendar
+
+Канбан-доска и календарь событий, записанные разметкой и нарисованные
+`UidKanban` и `UidEventCalendar` UI-кита: карточки с тегами, исполнителями и
+сроками в колонках; события на весь день и по времени, с повторами, в видах
+день, неделя, месяц, год и повестка. Источник работает так же, как у
+[документов](#документы-диаграммы-bpmn-dmn-drawio-asyncapi): ключ state, сама
+разметка или `url()`.
+
+По умолчанию только чтение. С `editable()` пользователь перемещает, добавляет и
+меняет карточки и события (и правит разметку на вкладке исходника); после
+каждого изменения layout вызывает метод экрана со всей новой разметкой:
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Resource\ActionFailedException;
+
+final class SprintScreen extends Screen
+{
+    public function query(mixed ...$params): array
+    {
+        $sprint = Sprint::current();
+
+        return [
+            'board' => $sprint->board,          // "## To do\n- Write docs #docs @anna\n## Done\n"
+            'board_locked' => $sprint->closed,
+            'schedule' => $sprint->calendar,
+        ];
+    }
+
+    public function layout(): array
+    {
+        return [
+            Layout::kanban('board')
+                ->title('Доска спринта')
+                ->editable('saveBoard', permission: 'sprints.edit')
+                ->lockable('lockBoard', permission: 'sprints.close')
+                ->locked('board_locked'),
+            Layout::calendar('schedule')
+                ->initialView('week')
+                ->views(['week', 'month', 'agenda'])
+                ->editable('saveSchedule', permission: 'sprints.edit'),
+        ];
+    }
+
+    public function saveBoard(string $markup): void
+    {
+        $sprint = Sprint::current();
+        if ($sprint->closed) {
+            throw new ActionFailedException('Спринт закрыт.');
+        }
+        $sprint->update(['board' => $markup]);
+    }
+
+    public function lockBoard(bool $locked): void
+    {
+        Sprint::current()->update(['closed' => $locked]);
+    }
+
+    public function saveSchedule(string $markup): void
+    {
+        Sprint::current()->update(['calendar' => $markup]);
+    }
+}
+```
+
+Изменение показывается сразу. Чтобы отказать, бросьте `ActionFailedException`
+(или ответьте ошибкой): доска вернётся к разметке до изменения, а сообщение
+покажется во всплывающем уведомлении. `message` из ответа метода тоже
+показывается уведомлением. Разметка приходит, как и другие строки запроса, —
+через middleware приложения, так что `TrimStrings` убирает пробелы и переводы
+строк в её начале и конце.
+
+Методы — собственные публичные методы экрана, их вызывает его действие
+`runMethod` с позиционными `parameters`: та же сессия, CSRF, слои и проверки,
+что и у кнопки. Каждый названный layout'ом метод объявлен серверу:
+пользователь, от которого layout скрыт (`canSee()`), получает 403 на все из
+них, а методу с правом нужно ещё и это право. Пользователь без права получает
+доску только для чтения (и без кнопки замка): layout сериализует `editable` /
+`lockable` как false.
+
+| Метод | Layout'ы | Эффект |
+|---|---|---|
+| `editable(string $method, ?string $permission = null)` | `kanban`, `calendar` | Включает правку; `$method(string $markup)` получает всю разметку после каждого изменения. Откажите `ActionFailedException`, чтобы откатить изменение |
+| `lockable(string $method, ?string $permission = null)` | `kanban`, `calendar` | Кнопка замка; `$method(bool $locked)` получает новое состояние. Отказ возвращает его назад с уведомлением |
+| `locked(bool\|string $locked = true)` | `kanban`, `calendar` | Только чтение, что бы ни говорил `editable()`: флаг или ключ state с ним |
+| `initialView(string $view)` | `calendar` | Вид, показываемый первым: `day`, `week`, `month`, `year` или `agenda`; по умолчанию `view:` из разметки, иначе месяц |
+| `date(string $date)` | `calendar` | Дата, показываемая первой, `YYYY-MM-DD`; по умолчанию `date:` из разметки, иначе сегодня |
+| `views(array $views)` | `calendar` | Предлагаемые виды, в этом порядке |
+| `url()`, `title()`, `height()` | `kanban`, `calendar` | Как у [документов](#документы-диаграммы-bpmn-dmn-drawio-asyncapi) |
+
+Неизвестный вид, дата не в формате `YYYY-MM-DD` или пустой список видов
+бросают `InvalidArgumentException`. `initialView()` не называется `view()`,
+потому что это имя занято фабрикой `Layout::view()`. Сама разметка описана в
+документации UI-кита к `UidKanban` и `UidEventCalendar`; та же разметка в блоке
+` ```kanban ` или ` ```calendar ` [Markdown](#markdown) показывается только для
+чтения.
 
 ### Video и Audio (медиаплееры)
 
