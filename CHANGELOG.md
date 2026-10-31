@@ -5,6 +5,28 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Document layouts**: `Layout::diagram()` (Mermaid, PlantUML, DOT, D2, DBML,
+  Structurizr, Wardley; `syntax()` or detected from the source),
+  `Layout::bpmn()` and `Layout::dmn()` (read-only BpmnView / DmnView of
+  @dskripchenko/bpmn with pan and zoom, `highlight()`, `showDiagram()`,
+  `decision()`), `Layout::drawio()` (SVG of @dskripchenko/drawio, `page()`) and
+  `Layout::asyncapi()` (the AsyncAPI reference of @dskripchenko/openapi). The
+  source is a key of the screen's state, the content itself, or `url()` — an
+  address of the same site fetched by the browser with the user's session;
+  `title()` and `height()` for all. Each package is loaded on first use, the
+  markdown blocks and the layouts share the loaders.
+- **`Layout::kanban()` and `Layout::calendar()`**: the kit's `UidKanban` and
+  `UidEventCalendar` over markup, with the same sources. `editable($method,
+  $permission)` sends the new markup to a screen method after each change (a
+  refusal rolls it back with a toast), `lockable($method, $permission)` the
+  lock button's state, `locked()` a flag or a state key; the calendar takes
+  `initialView()`, `date()` and `views()`. The methods are declared for
+  runMethod's check, and a user without the permission gets a read-only board.
+
 ## 1.63.0
 
 ### Added

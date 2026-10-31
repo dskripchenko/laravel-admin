@@ -52,26 +52,20 @@ import {
   type UidMarkdownBlockRenderer,
   type UidMarkdownBlockRenderers,
 } from '@dskripchenko/ui'
+import {
+  loadBpmn,
+  loadDiagrams,
+  loadDrawio,
+  loadOpenApi,
+  type DiagramSyntax,
+} from '../documents/loaders'
 
-type DiagramsModule = typeof import('@dskripchenko/diagrams')
-type DiagramSyntax = NonNullable<Parameters<DiagramsModule['render']>[1]>['syntax']
-type BpmnModule = typeof import('@dskripchenko/bpmn')
-type DrawioModule = typeof import('@dskripchenko/drawio')
-type OpenApiModule = typeof import('@dskripchenko/openapi/vue')
+// The loaders live in ../documents/loaders, shared with the screen layouts;
+// the test hooks stay importable from here.
+export { setDiagramsLoader, setNotationLoaders, setOpenApiLoader } from '../documents/loaders'
 
-let diagrams: Promise<DiagramsModule> | null = null
 /** Ids inside each SVG must not collide between diagrams on one page. */
 let sequence = 0
-
-/** @internal Replaces the dynamic import, for tests. */
-export function setDiagramsLoader(loader: (() => Promise<DiagramsModule>) | null): void {
-  diagrams = loader ? loader() : null
-}
-
-function loadDiagrams(): Promise<DiagramsModule> {
-  diagrams ??= import('@dskripchenko/diagrams')
-  return diagrams
-}
 
 /** A diagram block in one syntax; the error of a source it cannot read is shown with the code. */
 function diagramRenderer(syntax: DiagramSyntax): UidMarkdownBlockRenderer {
@@ -102,31 +96,6 @@ export const DIAGRAM_LANGUAGES: Readonly<Record<string, DiagramSyntax>> = Object
   structurizr: 'structurizr',
   wardley: 'wardley',
 })
-
-let bpmn: Promise<BpmnModule> | null = null
-let drawio: Promise<DrawioModule> | null = null
-
-/** @internal Replaces the dynamic imports, for tests. */
-export function setNotationLoaders(loaders: { bpmn?: () => Promise<BpmnModule>; drawio?: () => Promise<DrawioModule> } | null): void {
-  bpmn = loaders?.bpmn ? loaders.bpmn() : null
-  drawio = loaders?.drawio ? loaders.drawio() : null
-}
-
-function loadBpmn(): Promise<BpmnModule> {
-  bpmn ??= import('@dskripchenko/bpmn').catch((error: unknown) => {
-    bpmn = null
-    throw error
-  })
-  return bpmn
-}
-
-function loadDrawio(): Promise<DrawioModule> {
-  drawio ??= import('@dskripchenko/drawio').catch((error: unknown) => {
-    drawio = null
-    throw error
-  })
-  return drawio
-}
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -164,22 +133,8 @@ export const drawioRenderer: UidMarkdownBlockRenderer = async (code) => {
   }
 }
 
-let openapi: Promise<OpenApiModule> | null = null
 /** The panel app: its provides (the kit's theme, i18n) reach the widgets. */
 let appContext: AppContext | null = null
-
-/** @internal Replaces the dynamic import, for tests. */
-export function setOpenApiLoader(loader: (() => Promise<OpenApiModule>) | null): void {
-  openapi = loader ? loader() : null
-}
-
-function loadOpenApi(): Promise<OpenApiModule> {
-  openapi ??= Promise.all([
-    import('@dskripchenko/openapi/vue'),
-    import('@dskripchenko/openapi/style.css'),
-  ]).then(([module]) => module)
-  return openapi
-}
 
 export const openapiRenderer: UidMarkdownBlockRenderer = async (code, ctx) => {
   const { openApiBlockRenderer } = await loadOpenApi()

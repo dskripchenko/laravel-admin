@@ -1,14 +1,27 @@
 {
+  "_index-C9LqKgoY.js": {
+    "file": "assets/index-C9LqKgoY.js",
+    "name": "index",
+    "isDynamicEntry": true
+  },
   "_index-fALsZtvQ.js": {
     "file": "assets/index-fALsZtvQ.js",
     "name": "index",
     "isDynamicEntry": true
   },
-  "node_modules/@dskripchenko/bpmn/dist/index.mjs": {
-    "file": "assets/index-DnmLaG93.js",
-    "name": "index",
-    "src": "node_modules/@dskripchenko/bpmn/dist/index.mjs",
-    "isDynamicEntry": true
+  "node_modules/@dskripchenko/bpmn/dist/style.css": {
+    "file": "assets/style-qkTHKkJs.css",
+    "src": "node_modules/@dskripchenko/bpmn/dist/style.css"
+  },
+  "node_modules/@dskripchenko/bpmn/dist/vue.mjs": {
+    "file": "assets/vue-BG5LAuC1.js",
+    "name": "vue",
+    "src": "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
+    "isDynamicEntry": true,
+    "imports": [
+      "_index-C9LqKgoY.js",
+      "resources/ts/app.ts"
+    ]
   },
   "node_modules/@dskripchenko/diagrams/dist/index.mjs": {
     "file": "assets/index-3YBew_0M.js",
@@ -37,7 +50,7 @@
     "src": "node_modules/@dskripchenko/flow/dist/style.css"
   },
   "node_modules/@dskripchenko/flow/dist/vue.mjs": {
-    "file": "assets/vue-YGm_7AMp.js",
+    "file": "assets/vue-BXKcmpt6.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -51,7 +64,7 @@
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-BGvs6TEv.js",
+    "file": "assets/vue-JM-HNQVL.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -66,7 +79,7 @@
     "isDynamicEntry": true
   },
   "resources/ts/app.ts": {
-    "file": "assets/app-ayjjhgm0.js",
+    "file": "assets/app-DWWGjsuR.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
@@ -77,12 +90,13 @@
       "_index-fALsZtvQ.js",
       "node_modules/@dskripchenko/flow/dist/mermaid.mjs",
       "node_modules/@dskripchenko/diagrams/dist/index.mjs",
-      "node_modules/@dskripchenko/bpmn/dist/index.mjs",
+      "_index-C9LqKgoY.js",
+      "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
       "node_modules/@dskripchenko/drawio/dist/index.mjs",
       "node_modules/@dskripchenko/openapi/dist/vue.mjs"
     ],
     "css": [
-      "assets/app-CgFkEb_s.css"
+      "assets/app-DcYiX6_G.css"
     ]
   }
 }

@@ -586,5 +586,22 @@
     "Календарь": "Calendar",
     "События и повторы: день, неделя, месяц, год, повестка": "Events and repeats: day, week, month, year, agenda",
     "AsyncAPI": "AsyncAPI",
-    "Каналы и сообщения событийного API": "Channels and messages of an event-driven API"
+    "Каналы и сообщения событийного API": "Channels and messages of an event-driven API",
+    "Неверный адрес документа": "Invalid document address",
+    "Документ можно загрузить только с этого же сайта": "A document can only be loaded from this same site",
+    "Не удалось загрузить документ": "Failed to load the document",
+    "Строка": "Line",
+    "Не удалось загрузить модуль диаграмм": "Failed to load the diagram module",
+    "Ошибка в диаграмме": "Error in the diagram",
+    "Диаграмма пуста": "The diagram is empty",
+    "Не удалось загрузить модуль BPMN": "Failed to load the BPMN module",
+    "Не удалось прочитать модель DMN": "Could not read the DMN model",
+    "Не удалось прочитать модель BPMN": "Could not read the BPMN model",
+    "Модель пуста": "The model is empty",
+    "Не удалось загрузить модуль draw.io": "Failed to load the draw.io module",
+    "Не удалось прочитать файл draw.io": "Could not read the draw.io file",
+    "Не удалось загрузить модуль AsyncAPI": "Failed to load the AsyncAPI module",
+    "Документ пуст": "The document is empty",
+    "Не удалось сохранить изменения": "Failed to save the changes",
+    "Не удалось изменить блокировку": "Failed to change the lock"
 }
