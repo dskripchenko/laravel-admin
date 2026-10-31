@@ -834,6 +834,29 @@
 .admin-document-layout__empty { margin: var(--uid-space-sm, 8px); }
 
 /*
+ * The editor fields: Field\Bpmn / Dmn (a box of the field's height the
+ * editor fills), Field\Kanban / Calendar (the kit's component in a box that
+ * grows with it, or scrolls at a set height) and Field\MarkdownEditor.
+ */
+.admin-editor-field {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.admin-editor-field--bpmn,
+.admin-editor-field--dmn {
+  border: 1px solid var(--uid-border-default, var(--uid-border-subtle));
+  border-radius: var(--uid-radius-md);
+  overflow: hidden;
+  background: var(--uid-surface-base);
+}
+.admin-editor-field--markup { overflow-x: auto; }
+.admin-editor-field--markup.admin-editor-field--fixed { overflow: auto; }
+.admin-editor-field--invalid.admin-editor-field--bpmn,
+.admin-editor-field--invalid.admin-editor-field--dmn { border-color: var(--uid-danger); }
+.admin-editor-field__editor { width: 100%; height: 100%; }
+
+/*
  * The kit's players in the panel: Layout::video / Layout::audio, the video
  * and audio entries, the file preview, table cells and ```video / ```audio
  * blocks. The players draw themselves; these rules only place them.

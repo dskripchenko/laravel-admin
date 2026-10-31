@@ -70,6 +70,8 @@ export default defineConfig({
         // Loaded on demand by the ```bpmn / ```dmn and ```drawio renderers.
         /^@dskripchenko\/bpmn($|\/)/,
         /^@dskripchenko\/drawio($|\/)/,
+        // Loaded on demand by Field\MarkdownEditor.
+        /^@dskripchenko\/markdown-editor($|\/)/,
         /^@tiptap\//,
         'marked',
         // The WYSIWYG peer deps: used by TinymceField/QuillField and supplied by

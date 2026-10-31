@@ -34,6 +34,10 @@ import FlowEntry from './FlowEntry.vue'
 import VideoEntry from './VideoEntry.vue'
 import AudioEntry from './AudioEntry.vue'
 import FileEntry from './FileEntry.vue'
+import BpmnEntry from './BpmnEntry.vue'
+import DmnEntry from './DmnEntry.vue'
+import KanbanEntry from './KanbanEntry.vue'
+import CalendarEntry from './CalendarEntry.vue'
 
 export function registerBuiltinInfolistEntries(): void {
   registerInfolistEntries({
@@ -103,5 +107,13 @@ export function registerBuiltinInfolistEntries(): void {
     audio: AudioEntry,
     // The view of a file field: the link, and a player or the picture.
     file: FileEntry,
+    // Models and markup, read-only: Infolist\BpmnEntry / DmnEntry /
+    // KanbanEntry / CalendarEntry and the view of the editor fields.
+    bpmn: BpmnEntry,
+    dmn: DmnEntry,
+    kanban: KanbanEntry,
+    calendar: CalendarEntry,
+    // Field\MarkdownEditor stores Markdown: rendered like Field\Markdown.
+    markdown_editor: MarkdownEntry,
   })
 }

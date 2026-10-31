@@ -217,6 +217,8 @@ Entry types: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 
 `FlowEntry` draws a stored process model read-only (the view of a [`Flow` field](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
 
+`BpmnEntry` and `DmnEntry` draw a stored BPMN or DMN file read-only with the viewers of the [BPMN and DMN layouts](#documents-diagrams-bpmn-dmn-drawio-asyncapi) (the view of the [`Bpmn` and `Dmn` fields](fields-reference.md#bpmn-and-dmn)): `BpmnEntry::make('process_xml')->height(420)->highlight(['Task_approve'])`, `->diagram()`; `DmnEntry::make('rules_xml')->decision('Decision_discount')`. `KanbanEntry` and `CalendarEntry` draw stored markup read-only, without editing or a lock (the view of the [`Kanban` and `Calendar` fields](fields-reference.md#kanban-and-calendar)): `KanbanEntry::make('board')->height(420)`, `CalendarEntry::make('schedule')->initialView('agenda')` (also `date()` and `views()`, checked as in [`Layout::calendar()`](#kanban-and-calendar)). `MarkdownEntry` renders stored Markdown, the block languages included (the view of the `Markdown` and [`MarkdownEditor`](fields-reference.md#markdowneditor) fields): `MarkdownEntry::make('body')`. An empty value shows a dash.
+
 `VideoEntry` and `AudioEntry` play a file of the record — a URL, a storage path (with `disk()`), an uploaded file or a list: `AudioEntry::make('call_recording')->disk('local')` (the one-line mini player; `->full()->waveform()` for the full one), `VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`. See [Video and Audio](#video-and-audio-media-players).
 
 On a custom Screen the entries read the screen's state.

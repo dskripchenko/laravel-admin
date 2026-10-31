@@ -221,6 +221,8 @@ Entry-Typen: `TextEntry`, `BadgeEntry`, `IconEntry`, `KeyValueEntry`,
 
 `FlowEntry` zeigt ein gespeichertes Prozessmodell schreibgeschützt (die Ansicht eines [`Flow`-Felds](fields-reference.md#flow)): `FlowEntry::make('workflow')->height(420)`.
 
+`BpmnEntry` und `DmnEntry` zeigen eine gespeicherte BPMN- oder DMN-Datei schreibgeschützt mit den Betrachtern der [BPMN- und DMN-Layouts](#dokumente-diagramme-bpmn-dmn-drawio-asyncapi) (die Ansicht der [Felder `Bpmn` und `Dmn`](fields-reference.md#bpmn-und-dmn)): `BpmnEntry::make('process_xml')->height(420)->highlight(['Task_approve'])`, `->diagram()`; `DmnEntry::make('rules_xml')->decision('Decision_discount')`. `KanbanEntry` und `CalendarEntry` zeigen gespeichertes Markup schreibgeschützt, ohne Bearbeitung und ohne Sperre (die Ansicht der [Felder `Kanban` und `Calendar`](fields-reference.md#kanban-und-calendar)): `KanbanEntry::make('board')->height(420)`, `CalendarEntry::make('schedule')->initialView('agenda')` (dazu `date()` und `views()`, geprüft wie bei [`Layout::calendar()`](#kanban-und-calendar)). `MarkdownEntry` zeichnet gespeichertes Markdown samt der Blocksprachen (die Ansicht der Felder `Markdown` und [`MarkdownEditor`](fields-reference.md#markdowneditor)): `MarkdownEntry::make('body')`. Ein leerer Wert zeigt einen Strich.
+
 `VideoEntry` und `AudioEntry` spielen eine Datei des Datensatzes ab — eine URL, einen Speicherpfad (mit `disk()`), eine hochgeladene Datei oder eine Liste: `AudioEntry::make('call_recording')->disk('local')` (der einzeilige Mini-Player; `->full()->waveform()` für den vollen), `VideoEntry::make('clip_path')->disk('public')->posterFrom('cover_path')`. Siehe [Video und Audio](#video-und-audio-medienplayer).
 
 In einem Custom Screen lesen die Entries den State des Screens.

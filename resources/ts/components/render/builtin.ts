@@ -44,6 +44,11 @@ import LabelField from '../fields/LabelField.vue'
 import HiddenField from '../fields/HiddenField.vue'
 import GroupField from '../fields/GroupField.vue'
 import FlowField from '../fields/FlowField.vue'
+import BpmnField from '../fields/BpmnField.vue'
+import DmnField from '../fields/DmnField.vue'
+import KanbanField from '../fields/KanbanField.vue'
+import CalendarField from '../fields/CalendarField.vue'
+import MarkdownEditorField from '../fields/MarkdownEditorField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -187,6 +192,14 @@ export function registerBuiltinComponents(): void {
       resource_picker: ResourcePickerField,
       // A process editor (Field\Flow), @dskripchenko/flow loaded on first use.
       flow: FlowField,
+      // BPMN / DMN editors (Field\Bpmn, Field\Dmn), @dskripchenko/bpmn loaded on first use.
+      bpmn: BpmnField,
+      dmn: DmnField,
+      // Markup edited by the kit's UidKanban / UidEventCalendar (Field\Kanban, Field\Calendar).
+      kanban: KanbanField,
+      calendar: CalendarField,
+      // Field\MarkdownEditor, @dskripchenko/markdown-editor loaded on first use.
+      markdown_editor: MarkdownEditorField,
     },
     layouts: {
       rows: RowsLayout,

@@ -42,11 +42,7 @@ final class Calendar extends MarkupLayout
     /** The date shown first, `YYYY-MM-DD`; the markup's `date:` when not set, else today. */
     public function date(string $date): self
     {
-        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
-        if ($parsed === false || $parsed->format('Y-m-d') !== $date) {
-            throw new InvalidArgumentException("Layout::calendar()->date() takes YYYY-MM-DD, `{$date}` given");
-        }
-        $this->props['date'] = $date;
+        $this->props['date'] = self::checkDate($date, 'Layout::calendar()->date()');
 
         return $this;
     }
@@ -58,20 +54,51 @@ final class Calendar extends MarkupLayout
      */
     public function views(array $views): self
     {
-        if ($views === []) {
-            throw new InvalidArgumentException('Layout::calendar()->views() needs at least one view');
-        }
-        $this->props['views'] = array_values(array_map(self::checkView(...), $views));
+        $this->props['views'] = self::checkViews($views, 'Layout::calendar()->views()');
 
         return $this;
     }
 
-    private static function checkView(string $view): string
+    /**
+     * One of VIEWS, or an InvalidArgumentException. Shared with
+     * Field\Calendar.
+     */
+    public static function checkView(string $view): string
     {
         if (! in_array($view, self::VIEWS, true)) {
             throw new InvalidArgumentException("Unknown calendar view `{$view}`: ".implode(', ', self::VIEWS));
         }
 
         return $view;
+    }
+
+    /**
+     * A non-empty list of VIEWS, or an InvalidArgumentException naming
+     * $where. Shared with Field\Calendar.
+     *
+     * @param  array<array-key, string>  $views
+     * @return list<string>
+     */
+    public static function checkViews(array $views, string $where): array
+    {
+        if ($views === []) {
+            throw new InvalidArgumentException("{$where} needs at least one view");
+        }
+
+        return array_values(array_map(self::checkView(...), $views));
+    }
+
+    /**
+     * A real date written `YYYY-MM-DD`, or an InvalidArgumentException naming
+     * $where. Shared with Field\Calendar.
+     */
+    public static function checkDate(string $date, string $where): string
+    {
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        if ($parsed === false || $parsed->format('Y-m-d') !== $date) {
+            throw new InvalidArgumentException("{$where} takes YYYY-MM-DD, `{$date}` given");
+        }
+
+        return $date;
     }
 }

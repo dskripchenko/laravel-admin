@@ -573,6 +573,151 @@ erzwingt nur der Editor; prüfen Sie sie auf dem Server, wenn es darauf ankommt.
 
 Auf der Ansichtsseite zeigt `FlowEntry` das Feld schreibgeschützt.
 
+### Bpmn und Dmn
+
+Editoren für BPMN-2.0-Prozesse und DMN-Entscheidungsmodelle — `BpmnEditor`
+und `DmnEditor` aus [@dskripchenko/bpmn](https://github.com/dskripchenko/bpmn):
+eine Palette, Auswahl, Verschieben und Größenänderung, Verbinden, ein
+Kontextmenü, Namen direkt an Ort und Stelle, ein Eigenschaftenfeld (BPMN),
+Entscheidungstabellen und literale Ausdrücke einen Klick entfernt (DMN),
+Rückgängig, Verschieben und Zoom. Der Wert ist das XML der Datei — dieselbe
+Datei, die Camunda Modeler, bpmn.io und andere Modellierer lesen und
+schreiben, ihre Erweiterungen bleiben erhalten. Speichern Sie es in einer
+Textspalte (`MEDIUMTEXT` oder größer für große Modelle); es wird wie jedes
+andere Feld mit dem Formular gesendet. Das Paket wird nur geladen, wenn ein
+Formular das Feld enthält, und der Editor spricht die Sprache des Panels
+(Englisch oder Russisch).
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Bpmn;
+use Dskripchenko\LaravelAdmin\Field\Dmn;
+
+Bpmn::make('process_xml')
+    ->title('Prozess')
+    ->height(640)
+    ->properties()
+    ->required(),
+
+Dmn::make('rules_xml')
+    ->title('Rabattregeln')
+    ->decision('Decision_discount')
+    ->maxSize(512 * 1024),
+```
+
+| Methode | Felder | Wirkung |
+|---|---|---|
+| `height(int\|string)` | `Bpmn`, `Dmn` | Die Höhe des Editors; standardmäßig 560px |
+| `maxSize(int $bytes)` | `Bpmn`, `Dmn` | Die größte Datei, die der Server annimmt; standardmäßig 2 MB. Halten Sie sie innerhalb der Spalte |
+| `readonly()`, `disabled()` | `Bpmn`, `Dmn` | Der Editor wird zum Betrachter |
+| `properties(bool)` | `Bpmn` | Das Eigenschaftenfeld ist von Anfang an offen |
+| `diagram(string\|int)` | `Bpmn` | Welches Diagramm einer Datei mit mehreren: seine id oder sein Index; standardmäßig das erste |
+| `decision(string $id)` | `Dmn` | Öffnet die Logik dieser Entscheidung statt des Diagramms |
+
+`ValidationRulesExporter` fügt `string` und die Regel `BpmnModel` /
+`DmnModel` hinzu. Ein leerer Wert besteht (ob er Pflicht ist, bestimmt
+`required()`); alles andere muss sein:
+
+- nicht größer als die Grenze, die vor dem Parsen des XML geprüft wird;
+- XML ohne DOCTYPE, geparst ohne Netzwerk und ohne Ersetzung von Entitäten —
+  so lassen sich weder externe Entitäten noch Entitätsexpansion nutzen; ein
+  Parserfehler wird zur Validierungsmeldung;
+- ein Dokument, dessen Wurzel `definitions` im Namensraum des BPMN-Modells
+  (`http://www.omg.org/spec/BPMN/20100524/MODEL`) oder in einem Namensraum
+  des DMN-Modells ist (DMN 1.1 bis 1.5 — die Namensräume, die
+  `@dskripchenko/bpmn` liest).
+
+Die Regel prüft, dass der Editor die Datei öffnen kann, nicht den Prozess
+selbst: Gateways ohne ausgehende Flüsse, Entscheidungen ohne Regeln und
+Ähnliches bestehen. Für einen eigenen Validator:
+`'process_xml' => ['required', Bpmn::rule()]`,
+`Dmn::rule(maxBytes: 1024 * 1024)`.
+
+Auf der Ansichtsseite zeigen `BpmnEntry` und `DmnEntry` die Felder
+schreibgeschützt (die Betrachter der [BPMN- und DMN-Layouts](layouts-reference.md#dokumente-diagramme-bpmn-dmn-drawio-asyncapi)).
+
+### Kanban und Calendar
+
+Ein Kanban-Board und ein Ereigniskalender als Markup — dasselbe Markup wie in
+[`Layout::kanban()` / `Layout::calendar()`](layouts-reference.md#kanban-und-calendar)
+und in ` ```kanban `- / ` ```calendar `-Blöcken —, im Formular bearbeitet mit
+`UidKanban` und `UidEventCalendar` des UI-Kits. Karten werden zwischen
+Spalten verschoben, hinzugefügt und geändert; Ereignisse werden gezogen, in
+der Länge verändert, hinzugefügt und geändert; das Markup lässt sich im
+Quelltext-Tab bearbeiten. Jede Änderung wird in den Wert des Formulars
+geschrieben und mit dem Formular gespeichert. Der Wert ist das Markup, ein
+String in einer Textspalte.
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Calendar;
+use Dskripchenko\LaravelAdmin\Field\Kanban;
+
+Kanban::make('board')
+    ->title('Board')
+    ->height(480),
+
+Calendar::make('schedule')
+    ->initialView('week')
+    ->date('2026-11-02')
+    ->views(['week', 'month', 'agenda']),
+```
+
+| Methode | Felder | Wirkung |
+|---|---|---|
+| `height(int\|string)` | `Kanban`, `Calendar` | Die Höhe des Rahmens, der dann scrollt; ohne sie wächst der Rahmen mit dem Inhalt |
+| `maxLength(int $characters)` | `Kanban`, `Calendar` | Das längste Markup, das der Server annimmt; standardmäßig 65 535 (was eine `TEXT`-Spalte fasst) |
+| `readonly()`, `disabled()` | `Kanban`, `Calendar` | Schreibgeschützt |
+| `initialView(string $view)` | `Calendar` | Die zuerst gezeigte Ansicht: `day`, `week`, `month`, `year` oder `agenda`; sonst `view:` des Markups, sonst der Monat |
+| `date(string $date)` | `Calendar` | Das zuerst gezeigte Datum, `YYYY-MM-DD`; sonst `date:` des Markups, sonst heute |
+| `views(array $views)` | `Calendar` | Die angebotenen Ansichten, in dieser Reihenfolge |
+
+Ein Feld hat keinen Sperrknopf: Das eigene `readonly()` oder `disabled()` des
+Felds macht Board oder Kalender schreibgeschützt. Die Kalenderoptionen werden
+wie beim Layout geprüft: eine unbekannte Ansicht, ein Datum, das nicht
+`YYYY-MM-DD` ist, oder eine leere Liste von Ansichten werfen
+`InvalidArgumentException`.
+
+`ValidationRulesExporter` fügt `string` und `max:` mit der Längengrenze
+hinzu. Auf der Ansichtsseite zeigen `KanbanEntry` und `CalendarEntry` die
+Felder schreibgeschützt.
+
+### MarkdownEditor
+
+Ein Markdown-Editor, der wie eine Textverarbeitung bearbeitet —
+[@dskripchenko/markdown-editor](https://github.com/dskripchenko/markdown-editor):
+ein visueller Modus (die WYSIWYG-Engine des Panels mit Werkzeugleiste,
+Slash-Menü und Tastenkürzeln), der Markdown-Quelltext und beides
+nebeneinander. Der Wert ist ein Markdown-String, der unverändert bleibt, wenn
+nichts geändert wurde. Anders als bei [`Markdown`](#markdown) (ein Textfeld
+mit Vorschau) muss der Benutzer die Syntax nicht kennen.
+
+Die Blocksprachen des Panels werden im Editor gezeichnet — ` ```mermaid ` und
+die anderen Diagrammnotationen, ` ```bpmn `, ` ```openapi `, ` ```kanban `,
+` ```calendar ` und was eine Anwendung registriert hat (siehe
+[Markdown](layouts-reference.md#markdown)). Der Editor spricht die Sprache des
+Panels (Englisch oder Russisch); das Paket wird nur geladen, wenn ein
+Formular das Feld enthält.
+
+```php
+use Dskripchenko\LaravelAdmin\Field\MarkdownEditor;
+
+MarkdownEditor::make('body')
+    ->modes(['visual', 'source'])
+    ->placeholder('Schreiben…')
+    ->minHeight(320)
+    ->maxHeight('70vh'),
+```
+
+| Methode | Wirkung |
+|---|---|
+| `modes(array $modes)` | Die angebotenen Modi, in dieser Reihenfolge — `visual`, `source`, `split`; der erste wird zuerst gezeigt. Standardmäßig alle drei |
+| `placeholder(string)` | Der Text in einem leeren Editor |
+| `minHeight(int\|string)`, `maxHeight(int\|string)` | Die Höhe des Bearbeitungsbereichs: standardmäßig mindestens 240px; über dem Maximum scrollt er |
+| `readonly()`, `disabled()` | Nur ansehen |
+
+Ein unbekannter Modus oder eine leere Liste werfen `InvalidArgumentException`.
+`ValidationRulesExporter` fügt `string` hinzu. Auf der Ansichtsseite wird der
+Wert als Markdown gezeichnet (`MarkdownEntry`), samt der Blocksprachen.
+
 ## Siehe auch
 
 - [Resources](concepts/resources.md)

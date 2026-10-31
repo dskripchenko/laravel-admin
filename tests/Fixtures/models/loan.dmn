@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Definitions_Loan" name="Loan approval" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.20.0">
+  <decision id="Decision_Approval" name="Loan approval">
+    <variable id="InformationItem_Approval" name="approval" typeRef="string" />
+    <informationRequirement id="InformationRequirement_1">
+      <requiredDecision href="#Decision_Risk" />
+    </informationRequirement>
+    <informationRequirement id="InformationRequirement_2">
+      <requiredDecision href="#Decision_Eligibility" />
+    </informationRequirement>
+    <literalExpression id="LiteralExpression_1">
+      <text>if eligible and risk != "high" then "approve" else "refer"</text>
+    </literalExpression>
+  </decision>
+  <decision id="Decision_Risk" name="Risk category">
+    <informationRequirement id="InformationRequirement_3">
+      <requiredInput href="#Input_Score" />
+    </informationRequirement>
+    <informationRequirement id="InformationRequirement_4">
+      <requiredInput href="#Input_Amount" />
+    </informationRequirement>
+    <knowledgeRequirement id="KnowledgeRequirement_1">
+      <requiredKnowledge href="#Bkm_Rules" />
+    </knowledgeRequirement>
+    <authorityRequirement id="AuthorityRequirement_1">
+      <requiredAuthority href="#Source_Policy" />
+    </authorityRequirement>
+    <decisionTable id="DecisionTable_Risk" hitPolicy="FIRST">
+      <input id="Input_1" label="Credit score" camunda:inputVariable="score">
+        <inputExpression id="InputExpression_1" typeRef="number">
+          <text>creditScore</text>
+        </inputExpression>
+      </input>
+      <input id="Input_2" label="Amount">
+        <inputExpression id="InputExpression_2" typeRef="number">
+          <text>amount</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Risk" name="risk" typeRef="string">
+        <outputValues id="UnaryTests_1">
+          <text>"low","medium","high"</text>
+        </outputValues>
+      </output>
+      <annotation name="Why" />
+      <rule id="Rule_1">
+        <inputEntry id="UnaryTests_2">
+          <text>&lt; 500</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_3">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_2">
+          <text>"high"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Poor history</text>
+        </annotationEntry>
+      </rule>
+      <rule id="Rule_2">
+        <inputEntry id="UnaryTests_4">
+          <text>[500..700)</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_5">
+          <text>&gt; 10000</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_3">
+          <text>"medium"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Large amount</text>
+        </annotationEntry>
+      </rule>
+      <rule id="Rule_3">
+        <inputEntry id="UnaryTests_6">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_7">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_4">
+          <text>"low"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text></text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="Decision_Eligibility" name="Eligibility">
+    <informationRequirement id="InformationRequirement_5">
+      <requiredInput href="#Input_Age" />
+    </informationRequirement>
+    <decisionTable id="DecisionTable_Eligibility" hitPolicy="COLLECT" aggregation="COUNT">
+      <input id="Input_3" label="Age">
+        <inputExpression id="InputExpression_3" typeRef="number">
+          <text>age</text>
+        </inputExpression>
+      </input>
+      <output id="Output_2" name="eligible" typeRef="boolean" />
+      <rule id="Rule_4">
+        <description>Adults only</description>
+        <inputEntry id="UnaryTests_8">
+          <text>&gt;= 18</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_5">
+          <text>true</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="Input_Score" name="Credit score">
+    <variable id="InformationItem_Score" name="creditScore" typeRef="number" />
+  </inputData>
+  <inputData id="Input_Amount" name="Loan amount" />
+  <inputData id="Input_Age" name="Applicant age" />
+  <businessKnowledgeModel id="Bkm_Rules" name="Risk rules" />
+  <knowledgeSource id="Source_Policy" name="Credit policy" />
+  <textAnnotation id="TextAnnotation_1">
+    <text>Reviewed every quarter</text>
+  </textAnnotation>
+  <association id="Association_1">
+    <sourceRef href="#Source_Policy" />
+    <targetRef href="#TextAnnotation_1" />
+  </association>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_Approval" dmnElementRef="Decision_Approval">
+        <dc:Bounds height="80" width="180" x="300" y="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Risk" dmnElementRef="Decision_Risk" bioc:fill="#bbdefb" bioc:stroke="#0d4372" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0">
+        <dc:Bounds height="80" width="180" x="160" y="240" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Eligibility" dmnElementRef="Decision_Eligibility">
+        <dc:Bounds height="80" width="180" x="440" y="240" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Score" dmnElementRef="Input_Score">
+        <dc:Bounds height="45" width="125" x="100" y="420" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Amount" dmnElementRef="Input_Amount">
+        <dc:Bounds height="45" width="125" x="260" y="420" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Age" dmnElementRef="Input_Age">
+        <dc:Bounds height="45" width="125" x="468" y="420" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Bkm" dmnElementRef="Bkm_Rules">
+        <dc:Bounds height="46" width="135" x="-60" y="257" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Source" dmnElementRef="Source_Policy">
+        <dc:Bounds height="63" width="100" x="-40" y="90" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_Note" dmnElementRef="TextAnnotation_1">
+        <dc:Bounds height="45" width="140" x="-200" y="20" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_1" dmnElementRef="InformationRequirement_1">
+        <di:waypoint x="250" y="240" />
+        <di:waypoint x="250" y="200" />
+        <di:waypoint x="360" y="200" />
+        <di:waypoint x="360" y="160" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_2" dmnElementRef="InformationRequirement_2">
+        <di:waypoint x="530" y="240" />
+        <di:waypoint x="530" y="200" />
+        <di:waypoint x="420" y="200" />
+        <di:waypoint x="420" y="160" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_3" dmnElementRef="InformationRequirement_3">
+        <di:waypoint x="163" y="420" />
+        <di:waypoint x="220" y="320" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_4" dmnElementRef="InformationRequirement_4">
+        <di:waypoint x="323" y="420" />
+        <di:waypoint x="280" y="320" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_5" dmnElementRef="InformationRequirement_5">
+        <di:waypoint x="531" y="420" />
+        <di:waypoint x="530" y="320" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_6" dmnElementRef="KnowledgeRequirement_1">
+        <di:waypoint x="75" y="280" />
+        <di:waypoint x="160" y="280" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_7" dmnElementRef="AuthorityRequirement_1">
+        <di:waypoint x="40" y="153" />
+        <di:waypoint x="180" y="240" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_8" dmnElementRef="Association_1">
+        <di:waypoint x="-40" y="100" />
+        <di:waypoint x="-130" y="65" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

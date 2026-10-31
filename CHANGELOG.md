@@ -5,6 +5,39 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **`Field\Bpmn` and `Field\Dmn`**: the BPMN and DMN editors of
+  @dskripchenko/bpmn (`BpmnEditor`, `DmnEditor`) as form fields; the value is
+  the file's XML in a text column. `height()`, `maxSize()` (2 MB by default),
+  `properties()` and `diagram()` for BPMN, `decision()` for DMN; readonly or
+  disabled makes the editor a viewer. The rules exporter adds `string` and the
+  new `Rules\BpmnModel` / `Rules\DmnModel`: safe XML (no DOCTYPE, so no
+  external entities or entity expansion; no network), the root `definitions`
+  in the BPMN model namespace or a DMN 1.1–1.5 model namespace, and the size
+  cap; parser errors become the validation message. `Bpmn::rule()` /
+  `Dmn::rule()` for validators of your own.
+- **`Field\Kanban` and `Field\Calendar`**: markup edited in the form by the
+  kit's `UidKanban` / `UidEventCalendar`; each change goes into the form's
+  value. No lock — the field's readonly or disabled makes it read-only. The
+  calendar takes `initialView()`, `date()` and `views()`, checked as in
+  `Layout::calendar()`; both take `height()` and `maxLength()` (65 535 by
+  default), exported as `string` and `max:`.
+- **`Field\MarkdownEditor`**: @dskripchenko/markdown-editor — visual, source
+  and side-by-side modes over a Markdown value, with the panel's block
+  renderers inside and the panel's language. `modes()`, `placeholder()`,
+  `minHeight()`, `maxHeight()`; exported as `string`. The package is a new
+  dependency, external to the library bundle and loaded on first use.
+- **Infolist entries** `BpmnEntry`, `DmnEntry`, `KanbanEntry`, `CalendarEntry`
+  and `MarkdownEntry` (the last is new on the PHP side; the SPA already drew
+  `markdown`). The five new field types are in `Resource::FIELD_VIEW_TYPES`,
+  so the default view page draws them read-only: the BPMN/DMN viewers, the
+  kit's kanban and calendar without editing, rendered Markdown.
+- `Layout\Calendar::checkView()`, `checkViews()` and `checkDate()` are public,
+  shared by the calendar layout, field and entry.
+
 ## 1.64.0
 
 ### Added

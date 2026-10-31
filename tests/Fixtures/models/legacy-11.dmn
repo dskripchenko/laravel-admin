@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/DMN/20151101/dmn.xsd" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/1.0" id="definitions_shipping" name="Shipping" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="shippingMethod" name="Shipping method">
+    <extensionElements>
+      <biodi:bounds x="200" y="80" width="180" height="80" />
+      <biodi:edge source="weight">
+        <biodi:waypoints x="150" y="250" />
+        <biodi:waypoints x="250" y="160" />
+      </biodi:edge>
+      <biodi:edge source="express">
+        <biodi:waypoints x="380" y="250" />
+        <biodi:waypoints x="330" y="160" />
+      </biodi:edge>
+    </extensionElements>
+    <informationRequirement>
+      <requiredInput href="#weight" />
+    </informationRequirement>
+    <informationRequirement>
+      <requiredInput href="#express" />
+    </informationRequirement>
+    <decisionTable id="decisionTable" hitPolicy="UNIQUE">
+      <input id="input1" label="Weight">
+        <inputExpression id="inputExpression1" typeRef="double">
+          <text>weight</text>
+        </inputExpression>
+      </input>
+      <input id="input2" label="Express">
+        <inputExpression id="inputExpression2" typeRef="boolean">
+          <text>express</text>
+        </inputExpression>
+      </input>
+      <output id="output1" label="Method" name="method" typeRef="string" />
+      <rule id="row-1">
+        <inputEntry id="UnaryTests_a"><text>&lt;= 2</text></inputEntry>
+        <inputEntry id="UnaryTests_b"><text>false</text></inputEntry>
+        <outputEntry id="LiteralExpression_a"><text>"letter"</text></outputEntry>
+      </rule>
+      <rule id="row-2">
+        <inputEntry id="UnaryTests_c"><text>&lt;= 2</text></inputEntry>
+        <inputEntry id="UnaryTests_d"><text>true</text></inputEntry>
+        <outputEntry id="LiteralExpression_b"><text>"courier"</text></outputEntry>
+      </rule>
+      <rule id="row-3">
+        <inputEntry id="UnaryTests_e"><text>&gt; 2</text></inputEntry>
+        <inputEntry id="UnaryTests_f"><text></text></inputEntry>
+        <outputEntry id="LiteralExpression_c"><text>"freight"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData id="weight" name="Parcel weight">
+    <extensionElements>
+      <biodi:bounds x="90" y="250" width="125" height="45" />
+    </extensionElements>
+  </inputData>
+  <inputData id="express" name="Express delivery">
+    <extensionElements>
+      <biodi:bounds x="320" y="250" width="125" height="45" />
+    </extensionElements>
+  </inputData>
+</definitions>
