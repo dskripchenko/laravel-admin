@@ -5,6 +5,16 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- **@dskripchenko/ui 1.22.0**: markdown task lists (`- [ ]` / `- [x]`) render
+  as checkboxes in markdown fields, layouts, blocks and the docs.
+- **@dskripchenko/diagrams 1.3.4**: edge labels and lines no longer cover a
+  frame's title (subgraphs, packages, boundaries) in diagram layouts, fields,
+  blocks and widgets.
+
 ## 1.69.1
 
 ### Fixed
