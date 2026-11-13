@@ -1150,6 +1150,7 @@ host already describes them:
 | Method | Effect |
 |---|---|
 | `types([...])`, `rootTypes([...])` | The types, and the top-level ones instead of those marked `root()` |
+| `presets([...])`, `preset($key, $label, $type, $data, $meta, ?$group, ?$icon)` | The palette's presets (since 1.72): ready blocks of ordinary types with their own data and meta — see below |
 | `preview(string $url, array $params = [])` | The preview's address: a path of the panel's site or a URL of the same origin |
 | `markerAttribute('data-builder-ref')` | The attribute that marks a block in the preview's HTML |
 | `draft($method, ?$permission)` | Autosave through this screen method |
@@ -1167,11 +1168,19 @@ the layout names is declared for the server: the layout's visibility and the
 method's permission guard it; without the draft and publish methods (or
 their permissions) the editor is read-only. A method answers with:
 
-- `BlockTree::draftSaved(array $refs, string $fingerprint, ?string $savedAt = null)`
+- `BlockTree::draftSaved(array $refs, string $fingerprint, ?string $savedAt = null, array $nodes = [])`
   — the draft is saved (since 1.71): the editor keeps its tree as it is now,
   with whatever was typed while the request was out, renames the new blocks'
   temporary refs by `$refs` (`['new-1a2b' => 51]`; the selection, the folded
-  nodes and the undo follow) and takes the new fingerprint into the value;
+  nodes and the undo follow) and takes the new fingerprint into the value.
+  `$nodes` (since 1.72) — the data and meta of the nodes the server
+  normalized: `[ref => ['data' => [...], 'meta' => [...]]]` by the renamed ref
+  (a temporary one is found too), either key optional. `data` replaces the
+  node's data (a field the answer leaves out goes away), `meta` its meta. A
+  field the person changed after the draft was sent keeps the input (and its
+  `meta.fields` entry) and goes with the next draft — the node stays with
+  unsaved changes. An open properties form is updated in place: the input
+  keeps its focus;
 - `BlockTree::saved(?array $value = null, ?string $message = null)` — saved;
   with `$value` the editor goes on from it (after publish or discard; for a
   draft it replaces the whole tree, as before 1.71);
@@ -1220,6 +1229,46 @@ override some), the server puts into a node's `meta`:
     'accepts' => ['button'],
 ]]
 ```
+
+**Palette presets** (since 1.72) — a palette item that inserts not an empty
+block of a type but a ready node: of an ordinary type, with its own data,
+meta and, maybe, children. An instance of a library's shared block, say —
+without a type of its own for every shared block:
+
+```php
+use Dskripchenko\LaravelAdmin\Layout\BlockTree\BlockPreset;
+
+Layout::blockTree('content')
+    ->types([...])
+    ->presets(SharedBlock::all()->map(fn (SharedBlock $block) => BlockPreset::make("library-{$block->id}", $block->name, $block->type)
+        ->group('Shared blocks')
+        ->icon('library')
+        ->description('Edited in the library')
+        ->data($block->data)
+        ->meta([
+            'library' => $block->id,
+            'fields' => collect($block->data)->map(fn ($value) => ['inherited' => true, 'base' => $value])->all(),
+        ])))
+    // the short form of one preset
+    ->preset('hero-sale', 'Sale banner', 'hero', ['title' => 'Sale'], ['accepts' => []], 'Ready');
+```
+
+| `BlockPreset` method | What it does |
+|---|---|
+| `make($key, $label, $type)` | The key (unique in the editor; the item's `data-testid` is made of it), the label, the node's type |
+| `data([...])` | The new node's data as it is (the type's `defaults()` are not mixed in) |
+| `meta([...])` | The new node's meta: `library`, `fields`, `accepts`, `locked`, `title`… — the server reads it back in the draft |
+| `children([['type' => …, 'data' => […], 'meta' => […], 'children' => […]]])` | The nodes inside, without refs |
+| `group()`, `icon()`, `description()`, `thumbnail($url)` | The palette's section and the item's look (without an icon of its own — the type's) |
+
+`BlockPreset::fromArray([...])` and an array in `presets([...])` take the same
+keys. A pick inserts a node of the preset's type with a copy of its data,
+meta and children under a new temporary ref (each node its own) — from then
+on an ordinary block: *new* in the marks, edit, duplicate, delete, undo. The
+palette offers a preset only where its type may stand by the type's rules
+and the parent's `meta.accepts` (and all the way down for its children); a
+preset widens nothing. A preset of a type the editor does not have is not
+sent to the panel. `TreeValidator` checks such a node as any other.
 
 **The preview protocol**:
 

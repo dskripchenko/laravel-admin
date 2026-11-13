@@ -97,7 +97,8 @@ const title = computed<string>(() => props.label ?? props.name)
   flex-wrap: wrap;
   align-items: flex-start;
 }
-.admin-group-field--inline .admin-group-field__body > * {
+.admin-group-field--inline .admin-group-field__body > *,
+.admin-group-field--inline .admin-group-field__body > .admin-field-slot > * {
   flex: 1 1 160px;
   min-width: 0;
 }

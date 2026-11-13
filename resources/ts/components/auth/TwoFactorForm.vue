@@ -119,12 +119,13 @@ function switchMode(): void {
 </script>
 
 <template>
-  <form class="admin-auth-card__bd" novalidate @submit.prevent="submit">
+  <form class="admin-auth-card__bd" novalidate data-testid="two-factor-form" @submit.prevent="submit">
     <UidAlert
       v-if="generalError"
       variant="danger"
       class="admin-auth-card__alert"
       role="alert"
+      data-testid="two-factor-error"
     >
       {{ generalError }}
     </UidAlert>
@@ -137,7 +138,7 @@ function switchMode(): void {
       {{ tRaw('Использован код восстановления. Осталось: :count', { count: remaining }) }}
     </UidAlert>
 
-    <div v-if="mode === 'totp'" class="admin-code-input" @paste="onPaste">
+    <div v-if="mode === 'totp'" class="admin-code-input" data-testid="two-factor-code" @paste="onPaste">
       <input
         v-for="(_, idx) in cells"
         :key="idx"
@@ -162,6 +163,7 @@ function switchMode(): void {
       autocomplete="one-time-code"
       :disabled="submitting"
       name="recovery-code"
+      data-testid="two-factor-recovery-code"
     />
 
     <UidButton
@@ -170,12 +172,13 @@ function switchMode(): void {
       size="lg"
       :loading="submitting"
       :disabled="submitting || !isValid"
+      data-testid="two-factor-submit"
     >
       {{ submitting ? tr('Проверка…') : tr('Подтвердить') }}
     </UidButton>
 
     <div class="admin-auth-card__row">
-      <button type="button" class="admin-auth-card__link" @click="switchMode">
+      <button type="button" class="admin-auth-card__link" data-testid="two-factor-switch" @click="switchMode">
         <template v-if="mode === 'totp'">{{ tr('Использовать recovery-код') }}</template>
         <template v-else>{{ tr('Вернуться к коду из приложения') }}</template>
       </button>

@@ -16,6 +16,7 @@
  * useFormState on their own.
  */
 import { computed, onMounted, watch } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import { useRoute, useRouter } from 'vue-router'
 import {
   UidAlert,
@@ -313,10 +314,10 @@ async function onCancel(): Promise<void> {
 </script>
 
 <template>
-  <section class="admin-page admin-resource-form">
+  <section class="admin-page admin-resource-form" :data-testid="testIdOf('resource-form', slug)">
     <header class="admin-page__hd">
       <div class="admin-page__title-wrap">
-        <a class="admin-resource-form__back" @click="onCancel">{{ tr('← Назад') }}</a>
+        <a class="admin-resource-form__back" data-testid="form-back" @click="onCancel">{{ tr('← Назад') }}</a>
         <h1 class="admin-page__title">{{ titleLabel }}</h1>
         <UidBadge v-if="statusLabel" :variant="statusBadgeVariant">
           {{ statusLabel }}
@@ -336,6 +337,7 @@ async function onCancel(): Promise<void> {
         <UidButton
           variant="ghost"
           :disabled="form.saving || form.deleting"
+          data-testid="form-cancel"
           @click="onCancel"
         >
           {{ tr('Отмена') }}
@@ -364,7 +366,7 @@ async function onCancel(): Promise<void> {
     </header>
 
     <!-- Not-found: запись удалена/не существует — без формы и кнопки сохранить -->
-    <UidCard v-if="recordNotFound" padding="lg" class="admin-resource-form__notfound">
+    <UidCard v-if="recordNotFound" padding="lg" class="admin-resource-form__notfound" data-testid="form-not-found">
       <p class="admin-resource-form__notfound-title">{{ tr('Запись не найдена') }}</p>
       <p class="admin-resource-form__notfound-hint">
         {{ tr('Возможно, она была удалена. Вернитесь к списку.') }}
@@ -378,6 +380,7 @@ async function onCancel(): Promise<void> {
         variant="danger"
         class="admin-resource-form__alert"
         role="alert"
+        data-testid="form-error"
       >
         {{ form.error?.message ?? tr('Не удалось сохранить запись') }}
       </UidAlert>
@@ -395,16 +398,17 @@ async function onCancel(): Promise<void> {
     </template>
 
     <!-- Sticky save-bar — показывается при unsaved-changes -->
-    <div v-if="form.isDirty && !form.loading && !recordNotFound" class="admin-resource-form__savebar">
+    <div v-if="form.isDirty && !form.loading && !recordNotFound" class="admin-resource-form__savebar" data-testid="form-savebar">
       <span class="admin-resource-form__savebar-hint">
         {{ tr('Есть несохранённые изменения') }}
       </span>
-      <UidButton variant="ghost" size="sm" @click="onCancel">{{ tr('Отмена') }}</UidButton>
+      <UidButton variant="ghost" size="sm" data-testid="form-savebar-cancel" @click="onCancel">{{ tr('Отмена') }}</UidButton>
       <UidButton
         variant="primary"
         size="sm"
         :loading="form.saving"
         :disabled="form.saving"
+        data-testid="form-savebar-save"
         @click="onSave"
       >
         {{ tr('Сохранить') }}

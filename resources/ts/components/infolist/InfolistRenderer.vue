@@ -16,6 +16,7 @@
  * itself.
  */
 import { computed } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import { getInfolistEntry } from './registry'
 import { UidIcon } from '@dskripchenko/ui'
 import UnknownEntry from './UnknownEntry.vue'
@@ -108,15 +109,18 @@ const tabsList = computed<InfolistTab[]>(() => {
   <div
     v-if="resolved.kind === 'entry' && (node.label as string | undefined)"
     class="admin-infolist-entry"
+    :data-testid="testIdOf('entry', node.name)"
   >
     <span class="admin-infolist-entry__label">{{ node.label }}</span>
     <component :is="resolved.component" v-bind="entryProps" />
   </div>
-  <component
-    :is="resolved.component"
+  <div
     v-else-if="resolved.kind === 'entry'"
-    v-bind="entryProps"
-  />
+    class="admin-field-slot"
+    :data-testid="testIdOf('entry', node.name)"
+  >
+    <component :is="resolved.component" v-bind="entryProps" />
+  </div>
 
   <!-- Layout: rows -->
   <div

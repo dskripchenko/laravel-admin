@@ -12,7 +12,7 @@ import BlockTreeLayout from './BlockTreeLayout.vue'
 import BlockPreview from './BlockPreview.vue'
 import { useBlockTreeEditor, locateErrorKey, type BlockTreeEditor } from './useBlockTreeEditor'
 import { fetchPreview, refFromMessage, withBase } from './preview'
-import { findNode as findNodeIn, makeRules, type BlockNode, type BlockTypeDef } from './tree'
+import { applyNodeUpdate, findNode as findNodeIn, makeRules, type BlockNode, type BlockPresetDef, type BlockTypeDef } from './tree'
 import { provideFormState, type FormStateContext } from '../render/formState'
 import { ScreenContextKey, type ScreenContext, type ScreenMethodCaller } from '../render/screenContext'
 import { clearRegistry } from '../render/registry'
@@ -624,5 +624,187 @@ describe('the draft answers', () => {
     await flushPromises()
     expect(call).toHaveBeenCalledTimes(2)
     expect(wrapper!.find('[data-action="save-over"]').exists()).toBe(false)
+  })
+})
+
+describe('the palette presets', () => {
+  const presets: BlockPresetDef[] = [
+    {
+      key: 'library-42',
+      label: 'Footer (shared)',
+      type: 'text',
+      group: 'Shared blocks',
+      data: { body: '<p>©</p>' },
+      meta: { library: 42, fields: { body: { inherited: true, base: '<p>©</p>' } } },
+    },
+    { key: 'hero-plain', label: 'Plain hero', type: 'hero', data: { title: 'Hello' }, meta: { accepts: [] } },
+    // Its child is not allowed inside columns: never offered.
+    { key: 'bad-columns', label: 'Bad columns', type: 'columns', children: [{ type: 'hero' }] },
+    { key: 'cta', label: 'Call to action', type: 'columns', data: {}, children: [{ type: 'text', data: { body: 'Buy' } }] },
+  ]
+
+  it('inserts a node of the preset type with its data and meta, under a new ref', async () => {
+    mountLayout(value(), { presets, autosaveDelay: 0 })
+    await wrapper!.find('[data-testid="block-tree-node-2"] [data-testid="block-tree-node-add-inside"]').trigger('click')
+    const palette = wrapper!.find('[data-testid="block-tree-palette"]')
+    // Inside the columns: the type and the presets of type text; not the hero ones.
+    expect(palette.find('[data-testid="block-tree-palette-type-text"]').exists()).toBe(true)
+    expect(palette.find('[data-testid="block-tree-palette-preset-library-42"]').exists()).toBe(true)
+    expect(palette.find('[data-testid="block-tree-palette-preset-hero-plain"]').exists()).toBe(false)
+    expect(palette.text()).toContain('Shared blocks')
+
+    await palette.find('[data-testid="block-tree-palette-preset-library-42"]').trigger('click')
+    const node = nodesOf()[1].children[1]
+    expect(String(node.ref)).toMatch(/^new-/)
+    expect(node.type).toBe('text')
+    expect(node.data).toEqual({ body: '<p>©</p>' })
+    expect(node.meta).toEqual({ library: 42, fields: { body: { inherited: true, base: '<p>©</p>' } } })
+    expect(findEditor().selectedRef.value).toBe(node.ref)
+    expect(findEditor().diff.value.status.get(String(node.ref))).toBe('new')
+
+    // A second pick is a copy of its own, not the same object.
+    await wrapper!.find('[data-testid="block-tree-node-2"] [data-testid="block-tree-node-add-inside"]').trigger('click')
+    await wrapper!.find('[data-testid="block-tree-palette-preset-library-42"]').trigger('click')
+    const second = nodesOf()[1].children[2]
+    expect(second.ref).not.toBe(node.ref)
+    second.data!.body = 'Changed'
+    expect(node.data!.body).toBe('<p>©</p>')
+    expect(presets[0].data!.body).toBe('<p>©</p>')
+  })
+
+  it('follows the type rules and meta.accepts, children included', async () => {
+    const v = value()
+    v.nodes = [...(v.nodes as BlockNode[]), { ref: 4, type: 'columns', data: {}, children: [], meta: { accepts: [] } }]
+    mountLayout(v, { presets })
+    // At the top level: the root presets whose children fit.
+    await wrapper!.find('[data-testid="block-tree-add"]').trigger('click')
+    const keys = wrapper!.findAll('.admin-block-tree-palette__item.is-preset').map((b) => b.attributes('data-preset'))
+    expect(keys).toEqual(['hero-plain', 'cta'])
+    await wrapper!.find('[data-testid="block-tree-palette-close"]').trigger('click')
+    // meta.accepts = [] on the node: nothing goes in, presets neither.
+    expect(wrapper!.find('[data-testid="block-tree-node-4"] [data-testid="block-tree-node-add-inside"]').exists()).toBe(false)
+
+    const editor = findEditor()
+    expect(editor.addPreset(presets[0], 4)).toBeNull()
+    expect(editor.addPreset(presets[0], null)).toBeNull()
+    expect(editor.addPreset(presets[2], null)).toBeNull()
+    const cta = editor.addPreset(presets[3], null)!
+    expect(cta.children.map((c) => [c.type, c.data])).toEqual([['text', { body: 'Buy' }]])
+    expect(String(cta.children[0].ref)).toMatch(/^new-/)
+    // A preset's meta.accepts rules its own inside: the plain hero takes nothing.
+    const hero = editor.addPreset(presets[1], null)!
+    expect(editor.add(types[2], hero.ref)).toBeNull()
+    // Undo takes the inserted preset away.
+    expect(editor.undo()).toBe(true)
+    expect(nodesOf().map((n) => n.type)).toEqual(['hero', 'columns', 'columns', 'columns'])
+  })
+})
+
+describe('the draft answer with the nodes', () => {
+  it('applies the server data and meta, keeps the fields typed meanwhile, and the form keeps its focus', async () => {
+    let answer!: (r: Record<string, unknown>) => void
+    call.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)))
+    const v = value()
+    ;(v.nodes as BlockNode[])[0].data = { title: 'Welcome', image: 'tmp/upload-1.png', tone: 'light' }
+    mountLayout(v, { autosaveDelay: 0 })
+    await wrapper!.find('[data-testid="block-tree-node-1"]').trigger('click')
+    const props = wrapper!.findComponent({ name: 'BlockProperties' })
+    const input = (): HTMLInputElement => wrapper!.find('[data-field="title"] input').element as HTMLInputElement
+
+    // A change goes in the draft…
+    nodesOf()[0].data!.tone = 'dark'
+    await nextTick()
+    const save = findEditor().saveDraft()
+    // …and the title is typed while the request is out.
+    input().focus()
+    await wrapper!.find('[data-field="title"] input').setValue('Typed meanwhile')
+    expect(document.activeElement).toBe(input())
+
+    answer({
+      extra: {
+        blockTree: {
+          refs: {},
+          fingerprint: 'fp-n',
+          nodes: {
+            1: {
+              data: { title: 'Server title', image: '/storage/blocks/1.png', tone: 'dark' },
+              meta: { library: 42, title: 'From library' },
+            },
+          },
+        },
+      },
+    })
+    await save
+    await flushPromises()
+
+    const node = nodesOf()[0]
+    // The server's fields; the typed one stays; a field the server left out would go.
+    expect(node.data).toEqual({ title: 'Typed meanwhile', image: '/storage/blocks/1.png', tone: 'dark' })
+    expect(node.meta).toEqual({ library: 42, title: 'From library' })
+    // The form is the same, the input still focused and showing the input.
+    expect(wrapper!.findComponent({ name: 'BlockProperties' }).vm.$.uid).toBe(props.vm.$.uid)
+    expect(document.activeElement).toBe(input())
+    expect(input().value).toBe('Typed meanwhile')
+    // The typed title is not saved yet.
+    expect(findEditor().status.value).toBe('dirty')
+    expect(wrapper!.find('[data-testid="block-tree-node-1"]').text()).toContain('изменён')
+
+    // The next draft sends it; the answer without nodes leaves the data alone.
+    call.mockResolvedValueOnce({ extra: { blockTree: { refs: {}, fingerprint: 'fp-n2' } } })
+    await findEditor().saveDraft()
+    await flushPromises()
+    const sent = (call.mock.calls[1][1] as Record<string, { nodes: BlockNode[] }>[])[0].content
+    expect(sent.nodes[0].data).toEqual({ title: 'Typed meanwhile', image: '/storage/blocks/1.png', tone: 'dark' })
+    expect(sent.nodes[0].meta).toEqual({ library: 42, title: 'From library' })
+    expect(findEditor().status.value).toBe('saved')
+  })
+
+  it('finds a renamed node by its new ref or its temporary one, and drops the fields the server left out', async () => {
+    vi.useFakeTimers()
+    mountEditor()
+    const added = editor.addPreset({ key: 'p', label: 'P', type: 'text', data: { body: 'x', upload: 'tmp/1' }, meta: { preset: 'p' } }, 2)!
+    const other = editor.add(types[2], 2)!
+    const temp = String(added.ref)
+    const temp2 = String(other.ref)
+    call.mockResolvedValueOnce({
+      extra: {
+        blockTree: {
+          refs: { [temp]: 51, [temp2]: 52 },
+          fingerprint: 'fp-r',
+          nodes: {
+            51: { data: { body: 'x', image: '/storage/1.png' }, meta: { library: 7 } },
+            [temp2]: { meta: { title: 'Second' } },
+          },
+        },
+      },
+    })
+    await editor.saveDraft()
+    await flushPromises()
+    const children = nodesOf()[1].children
+    expect(children.map((n) => n.ref)).toEqual([3, 51, 52])
+    expect(children[1].data).toEqual({ body: 'x', image: '/storage/1.png' })
+    expect(children[1].meta).toEqual({ library: 7 })
+    expect(children[2].data).toEqual({ body: 'New text' })
+    expect(children[2].meta).toEqual({ title: 'Second' })
+    expect(editor.status.value).toBe('saved')
+  })
+
+  it('keeps the meta.fields entry of a field reverted while the request was out', () => {
+    const current: BlockNode = {
+      ref: 1,
+      type: 'hero',
+      data: { title: 'Base' },
+      children: [],
+      meta: { fields: { title: { inherited: true, base: 'Base' } } },
+    }
+    const sent: BlockNode = { ...JSON.parse(JSON.stringify(current)), data: { title: 'Mine' } }
+    const kept = applyNodeUpdate(current, sent, {
+      data: { title: 'Mine' },
+      meta: { fields: { title: { inherited: false, base: 'Base' } }, library: 1 },
+    })
+    expect(kept).toEqual(['title'])
+    expect(current.data).toEqual({ title: 'Base' })
+    expect(current.meta).toEqual({ fields: { title: { inherited: true, base: 'Base' } }, library: 1 })
+    expect(sent.meta).toEqual({ fields: { title: { inherited: false, base: 'Base' } }, library: 1 })
   })
 })

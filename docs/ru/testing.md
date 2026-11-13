@@ -225,6 +225,161 @@ describe('useResourceIndexStore', () => {
 })
 ```
 
+## Автотесты: data-testid
+
+С 1.72 ключевые элементы оболочки и страниц панели размечены атрибутом
+`data-testid`, чтобы e2e-тест (Playwright, Selenium) находил их одним
+атрибутом, без CSS-селекторов и текста интерфейса: в Playwright это
+`page.get_by_test_id('login-email')`.
+
+**Правило имени.** Имя собирается из имён и ключей — поля, ресурса, действия,
+вкладки, записи, ref блока — и никогда из подписи: смена перевода тесты не
+ломает. Каждая часть приводится к kebab-case (`firstName`, `first_name`,
+`user.email` → `first-name`, `first-name`, `user-email`; буквы и цифры
+остаются, прочее становится `-`), части соединяются через `-`. Хелпер
+`testIdOf(...parts)` экспортируется пакетом для своих компонентов;
+в Python то же правило:
+
+```python
+import re
+
+
+def tid(*parts) -> str:
+    def part(value) -> str:
+        s = str(value)
+        s = re.sub(r'([a-zа-яё0-9])([A-ZА-ЯЁ])', r'\1-\2', s)
+        s = re.sub(r'([A-ZА-ЯЁ]+)([A-ZА-ЯЁ][a-zа-яё])', r'\1-\2', s)
+        return re.sub(r'[\W_]+', '-', s.lower()).strip('-')
+    return '-'.join(p for p in map(part, parts) if p)
+
+page.get_by_test_id(tid('field', 'first_name'))   # field-first-name
+```
+
+Имена с ключами внутри (`row-edit`, `block-tree-node-remove`) одинаковы во
+всех строках и узлах — ищите их внутри строки или узла:
+`page.get_by_test_id('resource-row-15').get_by_test_id('row-edit')`.
+
+Атрибуты, которые были до 1.72 (`form-save`, `action-confirm-ok`,
+`menu-{key}`, `record-drawer-*` и другие), не переименованы. В `menu-{key}`,
+`action-{name}`, `form-link-{name}`, `widget-config-{key}` ключ стоит как
+есть, без kebab-case: `action-send_invoice`.
+
+**Вход и оболочка**
+
+| `data-testid` | Элемент |
+|---|---|
+| `login-form` | Форма входа |
+| `login-email`, `login-password` | Поля e-mail и пароля (атрибут на самом `input`) |
+| `login-remember` | «Запомнить меня» (на `input` чекбокса) |
+| `login-submit` | Кнопка «Войти» |
+| `login-error`, `login-notice` | Ошибка входа, уведомление над формой |
+| `login-external`, `login-demo` | Блоки внешнего входа и демо-аккаунтов (кнопки — `login-external-{url}`, `login-demo-{email}`) |
+| `two-factor-form`, `two-factor-code`, `two-factor-recovery-code`, `two-factor-submit`, `two-factor-switch`, `two-factor-error` | Второй фактор: форма, ячейки кода (контейнер), recovery-код, «Подтвердить», переключение на recovery-код, ошибка |
+| `menu-{key}` | Пункт меню по ключу (`MenuNode::make($key)`; у ресурса — его slug); и лист, и группа |
+| `topbar-search`, `search-input`, `search-item` | Глобальный поиск |
+| `user-menu`, `user-menu-profile`, `logout` | Меню пользователя, «Профиль», «Выйти» |
+| `toast-success`, `toast-error`, `toast-warning`, `toast-info` | Всплывающее сообщение по уровню |
+| `confirm-ok`, `confirm-cancel`, `confirm-message` | Общий диалог подтверждения (удаление, отмена изменений) |
+
+**Список ресурса**
+
+| `data-testid` | Элемент |
+|---|---|
+| `resource-index-{slug}` | Страница списка |
+| `resource-create`, `resource-import`, `resource-views` | «Создать», «Импорт», сохранённые представления |
+| `resource-more`, `resource-refresh`, `resource-export-{format}` | Меню «Действия», «Обновить», экспорт (`csv`, `xlsx`…) |
+| `resource-toolbar`, `resource-search` | Панель фильтров, поле поиска |
+| `filter-{name}` | Фильтр по имени (чип; у активного ещё `data-active="true"`) |
+| `filter-popover-{name}`, `filter-apply-{name}`, `filter-clear-{name}`, `filter-reset-{name}` | Окно фильтра, «Применить», «Очистить», крестик на активном чипе |
+| `filter-add`, `filter-add-{name}` | «+ Фильтр» и скрытый фильтр в его списке |
+| `toolbar-reset`, `toolbar-group-by`, `toolbar-columns`, `toolbar-save-view` | Сбросить, группировка, колонки, сохранить представление |
+| `resource-table` | Таблица |
+| `resource-row-{key}` | Строка по ключу записи (`id`, иначе `key`); ключ ещё в `data-row-key` |
+| `cell-{column}` | Ячейка строки по ключу колонки |
+| `row-view`, `row-edit`, `row-delete`, `row-replicate`, `row-restore`, `row-force-delete` | Действия строки (внутри `resource-row-{key}`) |
+| `row-actions-menu`, затем `action-{name}` | Меню действий ресурса в строке и его пункт |
+| `row-actions`, `row-drag` | Ячейка действий, ручка перетаскивания |
+| `bulk-bar`, `bulk-export`, `bulk-delete`, `bulk-clear`, `action-{name}` | Панель выбранных строк и её кнопки; выбор строки — чекбокс внутри строки |
+| `resource-pagination` | Пагинация |
+| `resource-state`, `resource-empty`, `resource-no-results`, `resource-reset-filters`, `resource-empty-create` | Загрузка/ошибка, пустой список, «ничего не найдено» |
+
+**Запись: форма, карточка, боковая панель**
+
+| `data-testid` | Элемент |
+|---|---|
+| `resource-form-{slug}` | Страница формы |
+| `field-{name}` | Поле по имени (обёртка без своего блока, `display: contents`); ввод — `get_by_test_id('field-title').locator('input')` или `get_by_label` |
+| `form-save`, `form-delete`, `form-cancel`, `form-back` | «Создать/Сохранить», «Удалить», «Отмена», «← Назад» |
+| `form-savebar`, `form-savebar-save`, `form-savebar-cancel` | Плашка несохранённых изменений |
+| `form-error`, `form-not-found`, `form-link-{name}` | Ошибка, «Запись не найдена», кнопки-ссылки записи |
+| `resource-view-{slug}` | Карточка записи |
+| `view-back`, `view-edit`, `view-more`, `view-delete` | Назад, «Редактировать», меню «Действия», «Удалить» |
+| `view-entries`, `entry-{name}` | Данные карточки, значение по имени |
+| `record-drawer`, `record-drawer-view`, `record-drawer-form` | Боковая панель записи и её режимы |
+| `record-drawer-edit`, `record-drawer-save`, `record-drawer-save-next`, `record-drawer-delete`, `record-drawer-prev`, `record-drawer-next`, `record-drawer-page` | Её кнопки |
+
+**Экраны, действия, окна, вкладки**
+
+| `data-testid` | Элемент |
+|---|---|
+| `screen-{slug}` | Страница экрана |
+| `screen-commands` | Панель команд; кнопка — `action-{name}` по имени действия |
+| `screen-message`, `screen-error` | Сообщение и ошибка экрана |
+| `action-{name}` | Кнопка действия где угодно: панель команд, панель выбранных строк, пункт меню, кнопка подвала окна |
+| `action-confirm-ok`, `action-confirm-cancel`, `action-confirm-message` | Подтверждение действия |
+| `action-modal`, `action-form`, `action-modal-submit`, `action-modal-cancel` | Окно действия с формой |
+| `modal-{id}`, `drawer-{id}` | Содержимое `Layout::modal()` / `Layout::drawer()` по id |
+| `tab-{key}`, `tab-panel-{key}` | Вкладка `Layout::tabs()` по ключу (`->keys([...])`, без них — индекс) и её панель |
+| `reveal-value`, `reveal-copy`, `reveal-close` | Окно однократного показа секрета |
+
+Имя действия `{name}` без `withName()` выводится из подписи латиницей
+(`Button::make('Send invoice')` → `send_invoice`); у кириллической подписи оно
+вырождается в `action`. Кнопкам, на которые опираются тесты, задавайте имя
+явно: `Button::make('Отправить счёт')->withName('send-invoice')->method('sendInvoice')`.
+
+**Редактор дерева блоков** (`Layout::blockTree()`)
+
+| `data-testid` | Элемент |
+|---|---|
+| `block-tree-{source}` | Редактор по ключу состояния |
+| `block-tree-structure`, `block-tree-preview`, `block-tree-properties` | Области: структура, предпросмотр, свойства |
+| `block-tree-node-{ref}` | Строка узла по ref (`15`, `new-1a2b`; после сохранения черновика — новый ref) |
+| `block-tree-node-toggle`, `block-tree-node-add-inside`, `block-tree-node-duplicate`, `block-tree-node-remove` | Кнопки узла (внутри строки) |
+| `block-tree-add`, `block-tree-undo` | «Добавить блок», «Вернуть» |
+| `block-tree-palette`, `block-tree-palette-search`, `block-tree-palette-close` | Палитра, её поиск, закрытие |
+| `block-tree-palette-type-{type}`, `block-tree-palette-preset-{key}` | Пункт палитры: тип, заготовка |
+| `block-tree-properties-{ref}`, `field-{name}`, `block-tree-revert-{name}` | Форма свойств узла, поле, «Вернуть значение основы» |
+| `block-tree-crumb-root`, `block-tree-crumb-{ref}` | Путь до узла |
+| `block-tree-status` | Состояние черновика (`data-status`: `clean`, `dirty`, `saving`, `saved`, `error`, `publishing`) |
+| `block-tree-save-over`, `block-tree-discard`, `block-tree-publish` | «Сохранить поверх», «Отменить», «Опубликовать» |
+| `block-tree-conflict` | Сообщение о конфликте |
+
+```python
+page.get_by_test_id('login-email').fill('admin@example.com')
+page.get_by_test_id('login-password').fill('secret')
+page.get_by_test_id('login-submit').click()
+
+page.get_by_test_id('menu-articles').click()
+page.get_by_test_id('resource-search').fill('Весна')
+page.get_by_test_id('resource-search').press('Enter')
+row = page.get_by_test_id('resource-row-15')
+expect(row.get_by_test_id('cell-title')).to_have_text('Весенняя распродажа')
+row.get_by_test_id('row-edit').click()
+
+page.get_by_test_id('field-title').locator('input').fill('Летняя распродажа')
+page.get_by_test_id('form-save').click()
+expect(page.get_by_test_id('toast-success')).to_be_visible()
+
+tree = page.get_by_test_id('block-tree-content')
+tree.get_by_test_id('block-tree-node-2').get_by_test_id('block-tree-node-add-inside').click()
+page.get_by_test_id('block-tree-palette-preset-library-42').click()
+expect(tree.get_by_test_id('block-tree-status')).to_have_attribute('data-status', 'saved')
+page.get_by_test_id('block-tree-publish').click()
+```
+
+Свои компоненты (поля, виджеты, страницы) размечайте так же:
+`:data-testid="testIdOf('my-widget', key)"`, `import { testIdOf } from '@dskripchenko/laravel-admin'`.
+
 ## E2E (Playwright)
 
 В демо-приложении

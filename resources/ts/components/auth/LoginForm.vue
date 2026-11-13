@@ -101,12 +101,13 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <form class="admin-auth-card__bd" novalidate @submit.prevent="submit">
+  <form class="admin-auth-card__bd" novalidate data-testid="login-form" @submit.prevent="submit">
     <UidAlert
       v-if="generalError"
       variant="danger"
       class="admin-auth-card__alert"
       role="alert"
+      data-testid="login-error"
     >
       {{ generalError }}
     </UidAlert>
@@ -146,7 +147,7 @@ async function submit(): Promise<void> {
     />
 
     <div class="admin-auth-card__row">
-      <UidCheckbox v-model="remember" :disabled="submitting" :label="tr('Запомнить меня')" />
+      <UidCheckbox v-model="remember" :disabled="submitting" :label="tr('Запомнить меня')" data-testid="login-remember" />
       <a v-if="forgotUrl" :href="forgotUrl" class="admin-auth-card__link">
         {{ tr('Забыли пароль?') }}
       </a>

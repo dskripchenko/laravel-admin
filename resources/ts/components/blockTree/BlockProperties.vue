@@ -16,6 +16,7 @@ import { Lock } from 'lucide-vue-next'
 import { provideFormState } from '../render/formState'
 import FieldRenderer, { type FieldNode } from '../render/FieldRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
+import { testIdOf } from '../../composables/testId'
 import { fieldInheritance, type BlockNode, type BlockTypeDef } from './tree'
 import type { NodeErrors } from './useBlockTreeEditor'
 
@@ -58,7 +59,7 @@ function revert(field: Record<string, unknown>): void {
 </script>
 
 <template>
-  <div class="admin-block-tree-properties">
+  <div class="admin-block-tree-properties" :data-testid="testIdOf('block-tree-properties', node.ref)">
     <p v-if="locked" class="admin-block-tree-properties__locked">
       <UidIcon :icon="Lock" :size="14" />
       {{ tr('Блок закреплён: только просмотр') }}
@@ -95,6 +96,7 @@ function revert(field: Record<string, unknown>): void {
               type="button"
               class="admin-block-tree-properties__revert"
               data-action="revert-field"
+              :data-testid="testIdOf('block-tree-revert', fieldName(field))"
               @click="revert(field)"
             >
               {{ tr('Вернуть значение основы') }}

@@ -12,6 +12,10 @@
  *   - `refs`, `fingerprint` — the draft is saved (BlockTree::draftSaved): the
  *     new blocks' temporary refs → their ids, and the new fingerprint; the
  *     tree is kept as it is, with what was typed while the request was out;
+ *   - `nodes`    — with draftSaved: `{ref: {data?, meta?}}`, what the server
+ *     made of some nodes (a file's temporary path made permanent, a preset
+ *     turned into a full block): applied to those nodes, but a field typed in
+ *     while the request was out keeps the input (see applyNodeUpdate);
  *   - `savedAt`  — when the draft was saved;
  *   - `conflict` — `{message, differences, fingerprint}`: nothing was saved;
  *   - `errors`   — `[{ref, path, field, message}]`: the nodes to fix.
@@ -32,7 +36,10 @@ import { trSafe as tr } from '../../stores/i18n'
 import { ValidationError } from '../../api/errors'
 import type { ScreenMethodResult } from '../../stores/screen'
 import {
+  applyNodeUpdate,
+  childrenFit,
   cloneNodes,
+  createFromPreset,
   createNode,
   diffTrees,
   duplicateNode,
@@ -52,7 +59,9 @@ import {
   type BlockNode,
   type BlockRef,
   type BlockTreeValue,
+  type BlockPresetDef,
   type BlockTypeDef,
+  type NodeUpdate,
   type TreeDiff,
   type TreeRules,
 } from './tree'
@@ -98,6 +107,8 @@ interface BlockTreeAnswer {
   /** BlockTree::draftSaved: temporary ref → the block's id. */
   refs?: Record<string, BlockRef> | BlockRef[] | null
   fingerprint?: string | null
+  /** BlockTree::draftSaved(nodes: ...): the server's data and meta of some nodes, by ref. */
+  nodes?: Record<string, NodeUpdate> | null
 }
 
 /** Why the autosave waits: a conflict (until saveOver) or errors (until the next change). */
@@ -128,6 +139,8 @@ export interface BlockTreeEditor {
   paused: Ref<DraftPause>
   select: (ref: BlockRef | null) => boolean
   add: (def: BlockTypeDef, parentRef: BlockRef | null, index?: number) => BlockNode | null
+  /** Inserts a block made from a palette preset: its type, data, meta and children, with fresh refs. */
+  addPreset: (preset: BlockPresetDef, parentRef: BlockRef | null, index?: number) => BlockNode | null
   move: (ref: BlockRef, parentRef: BlockRef | null, index: number) => boolean
   duplicate: (ref: BlockRef) => BlockNode | null
   remove: (ref: BlockRef) => boolean
@@ -363,8 +376,25 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
       }
       for (const listener of renameListeners) listener(map)
     }
+    applyNodeUpdates(sent, answer.nodes, map)
     savedJson.value = stableJson(sent)
     if (typeof answer.fingerprint === 'string' && answer.fingerprint !== '') value.value.fingerprint = answer.fingerprint
+  }
+
+  /**
+   * The server's data and meta of some nodes (`nodes` of draftSaved), keyed
+   * by the ref — the new one, or the temporary one it was renamed from.
+   */
+  function applyNodeUpdates(sent: BlockNode[], updates: BlockTreeAnswer['nodes'], map: Map<string, BlockRef>): void {
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) return
+    for (const [key, update] of Object.entries(updates)) {
+      if (!update || typeof update !== 'object' || Array.isArray(update)) continue
+      const ref = map.get(key) ?? key
+      const sentNode = findNode(sent, ref)
+      const current = findNode(nodes.value, ref)
+      if (current) applyNodeUpdate(current, sentNode, update)
+      else if (sentNode) applyNodeUpdate(sentNode, null, update)
+    }
   }
 
   function stopDraft(why: Exclude<DraftPause, null>): void {
@@ -563,6 +593,21 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     return findNode(nodes.value, node.ref)
   }
 
+  function addPreset(preset: BlockPresetDef, parentRef: BlockRef | null, index?: number): BlockNode | null {
+    if (!canEdit.value) return null
+    const node = createFromPreset(preset)
+    const target = parentRef === null ? null : locate(nodes.value, parentRef)
+    if (parentRef !== null && !target) return null
+    // The children of a preset follow the rules too: none is let in by it.
+    if (!childrenFit(options.rules(), node, target ? target.depth + 1 : 1)) return null
+    const siblings = target ? target.node.children ?? [] : nodes.value
+    const snapshot = JSON.stringify(nodes.value)
+    if (!insertNode(nodes.value, options.rules(), parentRef, index ?? siblings.length, node)) return null
+    undoStack.value.push({ nodes: snapshot, selected: selectedRef.value, label: tr('Добавление блока') })
+    selectedRef.value = node.ref
+    return findNode(nodes.value, node.ref)
+  }
+
   function move(ref: BlockRef, parentRef: BlockRef | null, index: number): boolean {
     if (!canEdit.value) return false
     const snapshot = JSON.stringify(nodes.value)
@@ -643,6 +688,7 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     paused,
     select,
     add,
+    addPreset,
     move,
     duplicate,
     remove,

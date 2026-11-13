@@ -18,6 +18,7 @@
  * resource with no custom UI still has a working toolbar.
  */
 import { computed, ref, watch } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import {
   Bookmark,
   Check,
@@ -225,7 +226,7 @@ function iconFor(name: string | null | undefined) {
 </script>
 
 <template>
-  <div class="admin-toolbar">
+  <div class="admin-toolbar" data-testid="resource-toolbar">
     <!-- Row 1: search + filters -->
     <div class="admin-toolbar__row admin-toolbar__row--filters">
       <label class="admin-toolbar__search">
@@ -233,6 +234,7 @@ function iconFor(name: string | null | undefined) {
         <input
           v-model="localSearch"
           type="search"
+          data-testid="resource-search"
           :placeholder="tr(searchPlaceholder)"
           class="admin-toolbar__search-input"
           @keydown.enter="commitSearch"
@@ -251,6 +253,8 @@ function iconFor(name: string | null | undefined) {
           <button
             type="button"
             class="admin-toolbar__chip admin-toolbar__chip--active"
+            :data-testid="testIdOf('filter', f.name)"
+            data-active="true"
           >
             <UidIcon
               v-if="iconFor(f.icon) !== null"
@@ -263,6 +267,7 @@ function iconFor(name: string | null | undefined) {
               tabindex="0"
               :aria-label="tr('Сбросить фильтр')"
               class="admin-toolbar__chip-x"
+              :data-testid="testIdOf('filter-reset', f.name)"
               @click.stop="clearFilter(f.name)"
               @keydown.enter.stop="clearFilter(f.name)"
             >
@@ -272,6 +277,7 @@ function iconFor(name: string | null | undefined) {
         </template>
         <div
           class="admin-toolbar__popover"
+          :data-testid="testIdOf('filter-popover', f.name)"
           @keydown.stop
         >
           <FilterEditor
@@ -282,12 +288,13 @@ function iconFor(name: string | null | undefined) {
             @set-draft="(v) => setDraft(f.name, v)"
           />
           <div class="admin-toolbar__popover-actions">
-            <UidButton size="sm" variant="ghost" @click="setDraft(f.name, null)">
+            <UidButton size="sm" variant="ghost" :data-testid="testIdOf('filter-clear', f.name)" @click="setDraft(f.name, null)">
               {{ tr('Очистить') }}
             </UidButton>
             <UidButton
               size="sm"
               variant="primary"
+              :data-testid="testIdOf('filter-apply', f.name)"
               @click="applyDraft(f.name, () => undefined)"
             >
               {{ tr('Применить') }}
@@ -305,6 +312,7 @@ function iconFor(name: string | null | undefined) {
           <button
             type="button"
             class="admin-toolbar__chip"
+            :data-testid="testIdOf('filter', f.name)"
           >
             <UidIcon
               v-if="iconFor(f.icon) !== null"
@@ -316,6 +324,7 @@ function iconFor(name: string | null | undefined) {
         </template>
         <div
           class="admin-toolbar__popover"
+          :data-testid="testIdOf('filter-popover', f.name)"
           @keydown.stop
         >
           <FilterEditor
@@ -326,12 +335,13 @@ function iconFor(name: string | null | undefined) {
             @set-draft="(v) => setDraft(f.name, v)"
           />
           <div class="admin-toolbar__popover-actions">
-            <UidButton size="sm" variant="ghost" @click="setDraft(f.name, null)">
+            <UidButton size="sm" variant="ghost" :data-testid="testIdOf('filter-clear', f.name)" @click="setDraft(f.name, null)">
               {{ tr('Очистить') }}
             </UidButton>
             <UidButton
               size="sm"
               variant="primary"
+              :data-testid="testIdOf('filter-apply', f.name)"
               @click="applyDraft(f.name, () => undefined)"
             >
               {{ tr('Применить') }}
@@ -343,7 +353,7 @@ function iconFor(name: string | null | undefined) {
       <!-- + Filter dropdown с скрытыми filter'ами -->
       <UidMenu v-if="inactiveHidden.length > 0">
         <template #trigger>
-          <button type="button" class="admin-toolbar__chip">
+          <button type="button" class="admin-toolbar__chip" data-testid="filter-add">
             <UidIcon :icon="Plus" :size="14" />
             <span class="admin-toolbar__chip-text">{{ tr('Фильтр') }}</span>
           </button>
@@ -355,6 +365,7 @@ function iconFor(name: string | null | undefined) {
             type="button"
             role="menuitem"
             class="admin-toolbar__list-item"
+            :data-testid="testIdOf('filter-add', f.name)"
             @click="reveal(f.name)"
           >
             <UidIcon
@@ -393,7 +404,7 @@ function iconFor(name: string | null | undefined) {
       <!-- Группировать -->
       <UidMenu v-if="groupableColumns.length > 0">
         <template #trigger>
-          <button type="button" class="admin-toolbar__chip">
+          <button type="button" class="admin-toolbar__chip" data-testid="toolbar-group-by">
             <UidIcon :icon="LayoutGrid" :size="14" />
             <span class="admin-toolbar__chip-text">
               {{ groupBy
@@ -429,7 +440,7 @@ function iconFor(name: string | null | undefined) {
       <!-- Колонки -->
       <UidMenu v-if="columns.length > 0">
         <template #trigger>
-          <button type="button" class="admin-toolbar__chip">
+          <button type="button" class="admin-toolbar__chip" data-testid="toolbar-columns">
             <UidIcon :icon="Columns" :size="14" />
             <span class="admin-toolbar__chip-text">{{ tr('Колонки') }}</span>
           </button>
@@ -453,7 +464,7 @@ function iconFor(name: string | null | undefined) {
       <!-- Сохранить (saved views) -->
       <UidMenu v-if="enableSavedViews">
         <template #trigger>
-          <button type="button" class="admin-toolbar__chip">
+          <button type="button" class="admin-toolbar__chip" data-testid="toolbar-save-view">
             <UidIcon :icon="Bookmark" :size="14" />
             <span class="admin-toolbar__chip-text">{{ tr('Сохранить') }}</span>
           </button>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Layout;
 
 use Dskripchenko\LaravelAdmin\Action\Button;
+use Dskripchenko\LaravelAdmin\Layout\BlockTree\BlockPreset;
 use Dskripchenko\LaravelAdmin\Layout\BlockTree\BlockType;
 use Dskripchenko\LaravelAdmin\Layout\BlockTree\TreeValidator;
 use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
@@ -30,6 +31,20 @@ use InvalidArgumentException;
  *         ->publish('publish', permission: 'pages.publish')
  *         ->discard('discardDraft')
  *         ->maxDepth(4)
+ *
+ * Next to the types the palette may offer presets — ready blocks of those
+ * types with their own data and meta (a shared block of a library, say):
+ *
+ *     ->presets([
+ *         BlockPreset::make('library-42', 'Footer', 'text')
+ *             ->group('Shared blocks')
+ *             ->data(['body' => '<p>©</p>'])
+ *             ->meta(['library' => 42]),
+ *     ])
+ *
+ * A preset's pick inserts a node of its type with a copy of its data, meta
+ * and children, under a new temporary ref; its place follows the rules of
+ * the type and of `meta.accepts`, as any block's.
  *
  * The value — one JSON structure in the screen's state, so the screen
  * methods get it with the rest of the state:
@@ -91,6 +106,9 @@ final class BlockTree extends Layout
     /** @var array<string, BlockType> */
     private array $types = [];
 
+    /** @var array<string, BlockPreset> */
+    private array $presets = [];
+
     /** @var list<string>|null */
     private ?array $rootTypes = null;
 
@@ -132,6 +150,49 @@ final class BlockTree extends Layout
         }
 
         return $this;
+    }
+
+    /**
+     * The palette's presets: BlockPreset instances or their arrays
+     * (BlockPreset::fromArray). A preset of a type this editor does not have
+     * is not offered.
+     *
+     * @param  iterable<BlockPreset|array<string, mixed>>  $presets
+     */
+    public function presets(iterable $presets): self
+    {
+        foreach ($presets as $preset) {
+            $preset = $preset instanceof BlockPreset ? $preset : BlockPreset::fromArray($preset);
+            $this->presets[$preset->key()] = $preset;
+        }
+
+        return $this;
+    }
+
+    /**
+     * One preset of the palette — the short form of presets([BlockPreset::make(...)]).
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $meta
+     */
+    public function preset(
+        string $key,
+        string $label,
+        string $type,
+        array $data = [],
+        array $meta = [],
+        ?string $group = null,
+        ?string $icon = null,
+    ): self {
+        return $this->presets([
+            BlockPreset::make($key, $label, $type)->data($data)->meta($meta)->group($group)->icon($icon),
+        ]);
+    }
+
+    /** @return array<string, BlockPreset> */
+    public function blockPresets(): array
+    {
+        return $this->presets;
     }
 
     /**
@@ -310,21 +371,52 @@ final class BlockTree extends Layout
      * selection and the folded nodes follow, and the fingerprint is the new
      * one. Unlike saved($value), nothing else of the tree is replaced.
      *
+     * `$nodes` — what the server made of some nodes, when it changed them
+     * (a file's temporary path made permanent, a preset turned into a full
+     * block): `[ref => ['data' => [...], 'meta' => [...]]]`, by the block's ref
+     * (the new one; a temporary one is renamed by `$refs` first). Either key
+     * may be left out. The editor applies them to those nodes, except the
+     * fields typed in while the request was out — those keep the input and go
+     * with the next draft; `data` replaces the node's data (a key left out goes
+     * away), `meta` its meta. The open form keeps its inputs and their focus.
+     *
      * @param  array<array-key, int|string>  $refs  temporary ref => the block's ref (id)
+     * @param  array<array-key, mixed>  $nodes  ref => ['data' => array|null, 'meta' => array|null], either key optional
      * @return array<string, mixed>
      */
-    public static function draftSaved(array $refs, string $fingerprint, ?string $savedAt = null): array
+    public static function draftSaved(array $refs, string $fingerprint, ?string $savedAt = null, array $nodes = []): array
     {
         $map = [];
         foreach ($refs as $from => $to) {
             $map[(string) $from] = $to;
         }
 
-        return ['blockTree' => [
+        $answer = [
             'refs' => (object) $map,
             'fingerprint' => $fingerprint,
             'savedAt' => $savedAt ?? now()->toIso8601String(),
-        ]];
+        ];
+
+        $updates = [];
+        foreach ($nodes as $ref => $node) {
+            if (! is_array($node)) {
+                throw new InvalidArgumentException("BlockTree::draftSaved(): the node `{$ref}` needs ['data' => [...], 'meta' => [...]]");
+            }
+            $update = [];
+            foreach (['data', 'meta'] as $key) {
+                if (array_key_exists($key, $node)) {
+                    $update[$key] = (object) (array) ($node[$key] ?? []);
+                }
+            }
+            if ($update !== []) {
+                $updates[(string) $ref] = (object) $update;
+            }
+        }
+        if ($updates !== []) {
+            $answer['nodes'] = (object) $updates;
+        }
+
+        return ['blockTree' => $answer];
     }
 
     /**
@@ -403,6 +495,13 @@ final class BlockTree extends Layout
         }
 
         $types = array_values(array_map(static fn (BlockType $type): array => $type->toArray(), $this->types));
+        $presets = array_values(array_map(
+            static fn (BlockPreset $preset): array => $preset->toArray(),
+            array_filter(
+                $this->presets,
+                fn (BlockPreset $preset): bool => array_diff($preset->usedTypes(), array_keys($this->types)) === [],
+            ),
+        ));
         $rootTypes = $this->rootTypes ?? array_values(array_map(
             static fn (BlockType $type): string => $type->type(),
             array_filter($this->types, static fn (BlockType $type): bool => $type->isRoot()),
@@ -412,6 +511,7 @@ final class BlockTree extends Layout
             ...$array,
             'source' => $this->source,
             'types' => $types,
+            'presets' => $presets,
             'rootTypes' => $rootTypes,
             'maxDepth' => $this->maxDepth,
             'previewUrl' => $this->props['previewUrl'] ?? null,

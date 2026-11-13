@@ -15,6 +15,7 @@
  * one of the values in a list. The comparison is `===`.
  */
 import { computed } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import { getField } from './registry'
 import { tryUseFormState } from './formState'
 import UnknownField from '../fields/UnknownField.vue'
@@ -75,8 +76,15 @@ const fieldProps = computed(() => {
 </script>
 
 <template>
-  <template v-if="isContextVisible && isReactiveVisible">
+  <!-- The wrapper names the field for the tests (`field-{name}`); it draws no
+       box of its own (display: contents), so the layouts lay out the field. -->
+  <div
+    v-if="isContextVisible && isReactiveVisible"
+    class="admin-field-slot"
+    :data-testid="testIdOf('field', node.name)"
+    :data-field-name="node.name"
+  >
     <component :is="component" v-if="component" v-bind="fieldProps" />
     <UnknownField v-else :type="node.type" :name="node.name" />
-  </template>
+  </div>
 </template>

@@ -973,3 +973,7 @@
   margin: var(--uid-space-md, 12px) 0;
   min-width: 0;
 }
+
+/* The wrapper of a field or an entry that names it for the tests
+   (data-testid="field-…"): no box of its own, the layouts lay out the field. */
+.admin-field-slot { display: contents; }

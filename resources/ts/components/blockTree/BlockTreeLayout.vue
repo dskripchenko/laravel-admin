@@ -17,7 +17,19 @@ import BlockPreview from './BlockPreview.vue'
 import BlockProperties from './BlockProperties.vue'
 import { provideBlockTree, type PaletteTarget } from './context'
 import { useBlockTreeEditor } from './useBlockTreeEditor'
-import { allowedTypes, findNode, isLocked, locate, makeRules, nodeTitle, type BlockRef, type BlockTypeDef } from './tree'
+import { testIdOf } from '../../composables/testId'
+import {
+  allowedPresets,
+  allowedTypes,
+  findNode,
+  isLocked,
+  locate,
+  makeRules,
+  nodeTitle,
+  type BlockPresetDef,
+  type BlockRef,
+  type BlockTypeDef,
+} from './tree'
 
 defineOptions({ inheritAttrs: false })
 
@@ -25,6 +37,8 @@ const props = withDefaults(defineProps<{
   source: string
   title?: string | null
   types?: BlockTypeDef[]
+  /** The palette's presets: ready blocks of the types, with their data and meta. */
+  presets?: BlockPresetDef[]
   rootTypes?: string[] | null
   maxDepth?: number | null
   previewUrl?: string | null
@@ -40,6 +54,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   title: null,
   types: () => [],
+  presets: () => [],
   rootTypes: null,
   maxDepth: null,
   previewUrl: null,
@@ -101,6 +116,12 @@ const paletteTypes = computed<BlockTypeDef[]>(() => {
   const parent = paletteParent.value
   return allowedTypes(rules.value, parent?.node ?? null, parent ? parent.depth + 1 : 1)
 })
+const palettePresets = computed<BlockPresetDef[]>(() => {
+  if (!palette.value) return []
+  const parent = paletteParent.value
+  return allowedPresets(rules.value, props.presets, parent?.node ?? null, parent ? parent.depth + 1 : 1)
+})
+
 const palettePlace = computed(() => {
   const parent = paletteParent.value?.node
   return parent ? labelOf(parent.type) : null
@@ -112,6 +133,14 @@ function pick(def: BlockTypeDef): void {
   if (!target) return
   if (target.parentRef !== null) collapsed.delete(String(target.parentRef))
   editor.add(def, target.parentRef, target.index)
+}
+
+function pickPreset(preset: BlockPresetDef): void {
+  const target = palette.value
+  palette.value = null
+  if (!target) return
+  if (target.parentRef !== null) collapsed.delete(String(target.parentRef))
+  editor.addPreset(preset, target.parentRef, target.index)
 }
 
 /**
@@ -212,11 +241,12 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
 </script>
 
 <template>
-  <section class="admin-block-tree" :data-source="source" @keydown="onKeydown">
+  <section class="admin-block-tree" :data-source="source" :data-testid="testIdOf('block-tree', source)" @keydown="onKeydown">
     <h3 v-if="title" class="admin-block-tree__title">{{ title }}</h3>
     <UidAlert
       v-if="editor.conflict.value"
       class="admin-block-tree__conflict"
+      data-testid="block-tree-conflict"
       variant="warning"
       :title="editor.conflict.value.kind === 'draft' ? tr('Черновик не сохранён') : tr('Публикация остановлена')"
       dismissible
@@ -228,7 +258,7 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
       </ul>
     </UidAlert>
     <div class="admin-block-tree__panes" :style="boxStyle">
-      <div class="admin-block-tree__pane admin-block-tree__tree">
+      <div class="admin-block-tree__pane admin-block-tree__tree" data-testid="block-tree-structure">
         <div class="admin-block-tree__pane-head">
           <strong>{{ tr('Структура') }}</strong>
           <UidButton
@@ -237,6 +267,7 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
             variant="ghost"
             :title="`${tr('Вернуть')}: ${editor.undoLabel.value}`"
             data-action="undo"
+            data-testid="block-tree-undo"
             @click="editor.undo()"
           >
             <template #prepend><UidIcon :icon="Undo2" :size="14" /></template>
@@ -256,7 +287,7 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
         </ul>
         <p v-if="editor.nodes.value.length === 0" class="admin-block-tree__empty">{{ tr('Блоков пока нет') }}</p>
         <div v-if="editor.canEdit.value" class="admin-block-tree__add">
-          <UidButton size="sm" variant="secondary" data-action="add" @click="addAfterSelected">
+          <UidButton size="sm" variant="secondary" data-action="add" data-testid="block-tree-add" @click="addAfterSelected">
             <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
             {{ tr('Добавить блок') }}
           </UidButton>
@@ -265,12 +296,14 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
           v-if="palette"
           class="admin-block-tree__palette"
           :types="paletteTypes"
+          :presets="palettePresets"
           :place="palettePlace"
           @pick="pick"
+          @pick-preset="pickPreset"
           @close="palette = null"
         />
       </div>
-      <div class="admin-block-tree__pane admin-block-tree__preview">
+      <div class="admin-block-tree__pane admin-block-tree__preview" data-testid="block-tree-preview">
         <BlockPreview
           :url="previewUrl"
           :params="previewParams"
@@ -281,15 +314,16 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
           @select="selectFromPreview"
         />
       </div>
-      <div class="admin-block-tree__pane admin-block-tree__props">
+      <div class="admin-block-tree__pane admin-block-tree__props" data-testid="block-tree-properties">
         <template v-if="editor.selected.value">
           <nav class="admin-block-tree__path" :aria-label="tr('Путь до блока')">
-            <button type="button" class="admin-block-tree__crumb" @click="editor.select(null)">{{ title || tr('Страница') }}</button>
+            <button type="button" class="admin-block-tree__crumb" data-testid="block-tree-crumb-root" @click="editor.select(null)">{{ title || tr('Страница') }}</button>
             <template v-for="n in editor.path.value" :key="String(n.ref)">
               <UidIcon :icon="ChevronRight" :size="12" />
               <button
                 type="button"
                 class="admin-block-tree__crumb"
+                :data-testid="testIdOf('block-tree-crumb', n.ref)"
                 :aria-current="n === editor.selected.value ? 'true' : undefined"
                 @click="editor.select(n.ref)"
               >
@@ -311,13 +345,14 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
       </div>
     </div>
     <footer class="admin-block-tree__bar">
-      <span class="admin-block-tree__status" :data-status="editor.status.value" role="status">{{ statusText }}</span>
+      <span class="admin-block-tree__status" :data-status="editor.status.value" role="status" data-testid="block-tree-status">{{ statusText }}</span>
       <span class="admin-block-tree__bar-actions">
         <UidButton
           v-if="editor.canEdit.value && editor.paused.value === 'conflict'"
           size="sm"
           variant="secondary"
           data-action="save-over"
+          data-testid="block-tree-save-over"
           :title="tr('Сохранить черновик поверх изменившейся версии')"
           @click="editor.saveOver()"
         >
@@ -328,6 +363,7 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
           size="sm"
           variant="secondary"
           data-action="discard"
+          data-testid="block-tree-discard"
           :disabled="editor.diff.value.changes === 0 && editor.status.value !== 'saved'"
           @click="editor.discard()"
         >
@@ -338,6 +374,7 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
           size="sm"
           variant="primary"
           data-action="publish"
+          data-testid="block-tree-publish"
           :loading="editor.status.value === 'publishing'"
           :disabled="editor.status.value === 'publishing'"
           @click="editor.publish()"

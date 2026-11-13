@@ -8,6 +8,7 @@
  * and stays open on the overlay click and Escape.
  */
 import { computed } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import { UidButton, UidModal, UidStack } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import { resolveIcon } from '../shell/iconRegistry'
@@ -58,7 +59,7 @@ const uidSize = computed<ModalSize>(() =>
     :close-on-esc="dismissable"
     :hide-close="!dismissable"
   >
-    <UidStack direction="column" gap="var(--uid-space-md)" align="stretch">
+    <UidStack direction="column" gap="var(--uid-space-md)" align="stretch" :data-testid="testIdOf('modal', id)">
       <LayoutRenderer v-for="(child, idx) in items" :key="idx" :node="child" />
     </UidStack>
     <template v-if="footer.length > 0" #footer>
@@ -69,6 +70,7 @@ const uidSize = computed<ModalSize>(() =>
         :icon="resolveIcon(action.icon) ?? undefined"
         :loading="overlay.running.value"
         :disabled="overlay.running.value"
+        :data-testid="`action-${action.name}`"
         @click="overlay.onFooterClick(action)"
       >
         {{ action.label }}

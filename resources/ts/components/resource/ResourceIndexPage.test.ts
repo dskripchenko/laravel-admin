@@ -222,6 +222,27 @@ describe('ResourceIndexPage', () => {
     expect(badges[1].classes().join(' ')).toContain('success')
   })
 
+  it('names the list, its rows by the record key, the cells and the row actions for the tests', async () => {
+    mock.onPost('/articles/search').reply(200, {
+      success: true,
+      payload: {
+        data: [{ id: 1, title: 'First' }, { id: 22, title: 'Second' }],
+        meta: { page: 1, per_page: 20, total: 2, last_page: 1 },
+      },
+    })
+    const wrapper = await mountPage()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="resource-index-articles"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="resource-table"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="resource-search"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="resource-pagination"]').exists()).toBe(true)
+    const row = wrapper.find('[data-testid="resource-row-22"]')
+    expect(row.exists()).toBe(true)
+    expect(row.find('[data-testid="cell-title"]').text()).toBe('Second')
+    expect(row.find('[data-testid="row-view"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="resource-row-1"] [data-testid="cell-title"]').text()).toBe('First')
+  })
+
   it('shows pagination footer when items present', async () => {
     mock.onPost('/articles/search').reply(200, {
       success: true,

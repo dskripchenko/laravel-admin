@@ -12,6 +12,7 @@
  * the left: a list of dictionaries beside the open one.
  */
 import { inject, ref, watch } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import { routeLocationKey, routerKey } from 'vue-router'
 import { patchRouteQuery } from '../../composables/useQueryPatch'
 import { UidTabs, UidTab, UidTabPanel, UidStack } from '@dskripchenko/ui'
@@ -120,6 +121,7 @@ watch(
         v-for="(tab, idx) in items"
         :key="tabKey(tab, idx)"
         :value="tabKey(tab, idx)"
+        :data-testid="testIdOf('tab', tabKey(tab, idx))"
       >
         {{ tab.label }}
       </UidTab>
@@ -130,7 +132,7 @@ watch(
       :key="`panel-${tabKey(tab, idx)}`"
       :value="tabKey(tab, idx)"
     >
-      <UidStack direction="column" :gap="gap" align="stretch">
+      <UidStack direction="column" :gap="gap" align="stretch" :data-testid="testIdOf('tab-panel', tabKey(tab, idx))">
         <LayoutRenderer
           v-for="(child, cidx) in tab.items"
           :key="cidx"
