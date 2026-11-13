@@ -272,6 +272,10 @@ final class TableColumn
      * When the resolution comes out empty — the field is null — no link is
      * rendered and the text stays.
      *
+     * `$target`: `_blank` — a new tab; `drawer` (1.74) — a panel address
+     * opened in the side panel over the page (a list filtered by the link's
+     * query, or a screen), see Link::inDrawer().
+     *
      * A callable is deliberately NOT supported: the column's configuration is
      * serialized into the manifest as JSON, and a closure cannot go there. Put
      * the link you need into an appended attribute of the model and point at

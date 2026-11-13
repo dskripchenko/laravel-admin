@@ -18,6 +18,7 @@
  * The dialogs themselves are drawn by AdminActionDialogs, which takes the
  * runner as a prop.
  */
+import { useLinkDrawerStore, type LinkDrawerOptions } from '../stores/linkDrawer'
 import { getCurrentScope, onScopeDispose, reactive, ref } from 'vue'
 import { useRouter, type Router } from 'vue-router'
 import { getAdminClient } from '../stores/registry'
@@ -197,6 +198,14 @@ export function toRouterPath(router: Router | undefined, href: string): string |
   const matched = resolved.matched.length > 0
     && !resolved.matched.some((r) => r.path.includes('pathMatch'))
   return matched ? href : null
+}
+
+/**
+ * Opens a panel address in the side panel over the page (stores/linkDrawer):
+ * a resource's filtered list or a screen.
+ */
+export function openInDrawer(href: string, options: LinkDrawerOptions = {}): void {
+  useLinkDrawerStore().open(href, options)
 }
 
 function sleep(ms: number): Promise<void> {
@@ -466,6 +475,11 @@ export function useActionRunner(executor: ActionExecutor) {
       document.body.appendChild(a)
       a.click()
       a.remove()
+      return true
+    }
+    // A list or a screen in the side panel over the page (Link::inDrawer()).
+    if (target === 'drawer') {
+      openInDrawer(href, { title: action.label, size: typeof action.attributes.drawerSize === 'string' ? action.attributes.drawerSize : null })
       return true
     }
     if (target !== '_self') {

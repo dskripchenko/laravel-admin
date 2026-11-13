@@ -17,6 +17,7 @@
  *
  * `value` is the raw value; `row` is the raw row the link template reads.
  */
+import { openInDrawer } from '../../composables/useActionRunner'
 import { computed } from 'vue'
 import { UidAudio, UidBadge, UidImage, UidLink } from '@dskripchenko/ui'
 import { badgeTone, formatCell, resolveLinkHref, type CellMeta } from './cellFormat'
@@ -72,6 +73,13 @@ const href = computed<string>(() =>
     : '',
 )
 const target = computed<string | undefined>(() => (meta.value.target as string | undefined) || undefined)
+
+/** `asLink($template, 'drawer')`: the list or the screen opens in the side panel over the page. */
+function onLinkClick(event: MouseEvent): void {
+  if (target.value !== 'drawer' || event.ctrlKey || event.metaKey || event.shiftKey) return
+  event.preventDefault()
+  openInDrawer(href.value, { title: text.value })
+}
 </script>
 
 <template>
@@ -115,7 +123,8 @@ const target = computed<string | undefined>(() => (meta.value.target as string |
     :href="href"
     :external="target === '_blank'"
     :title="text"
-    @click.stop
+    data-testid="cell-link"
+    @click.stop="onLinkClick"
   >{{ text }}</UidLink>
   <span
     v-else-if="text === ''"

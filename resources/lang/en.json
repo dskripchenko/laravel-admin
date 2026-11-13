@@ -786,5 +786,6 @@
     "Раздел": "Section",
     "Доступ": "Access",
     ":n из :m": ":n of :m",
-    "Прав нет": "No permissions"
+    "Прав нет": "No permissions",
+    "Открыть страницей": "Open as a page"
 }

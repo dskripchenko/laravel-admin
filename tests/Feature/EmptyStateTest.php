@@ -123,3 +123,9 @@ final class EmptyStateCitiesResource extends Dskripchenko\LaravelAdmin\Resource\
         return EmptyState::make('Городов пока нет', 'Города используются в карточках офисов.', 'Добавить город');
     }
 }
+
+it('Link::inDrawer() opens the address in the side panel', function (): void {
+    $arr = Link::make('Обращения · 2')->href('/admin/r/claims?scope=open')->inDrawer('lg')->toArray();
+
+    expect($arr['attributes'])->toMatchArray(['target' => 'drawer', 'drawerSize' => 'lg']);
+});
