@@ -294,6 +294,17 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * An editor of a tree of blocks with a live preview — the base of a page
+     * builder. See BlockTree.
+     *
+     * @param  string  $source  The state key holding the tree.
+     */
+    public static function blockTree(string $source): BlockTree
+    {
+        return BlockTree::make($source);
+    }
+
+    /**
      * A reactive part of the form: re-rendered by the server when the
      * watched fields change. See Listener.
      *
