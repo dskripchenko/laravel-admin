@@ -33,4 +33,18 @@ describe('useConfirm', () => {
     await expect(answer).resolves.toBe(true)
     wrapper.unmount()
   })
+
+  it('marks its overlay so it opens above a drawer mounted after it', async () => {
+    // The kit gives modals and drawers one layer; the stylesheet raises the
+    // overlay holding [data-admin-confirm] above them.
+    const wrapper = mount(AdminConfirmDialog, { attachTo: document.body })
+    const answer = confirmDialog({ message: 'Leave without saving?' })
+    await nextTick()
+    const marker = document.querySelector('[data-admin-confirm]')
+    expect(marker).not.toBeNull()
+    expect(marker!.closest('.uid-modal-overlay')).not.toBeNull()
+    resolveConfirmDialog(false)
+    await answer
+    wrapper.unmount()
+  })
 })
