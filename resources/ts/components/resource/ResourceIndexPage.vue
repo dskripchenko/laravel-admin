@@ -15,7 +15,7 @@
  * The host renders the page through the router; the resource slug arrives in
  * props or from route.params.
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, onUpdated, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Bookmark,
@@ -51,6 +51,8 @@ import { useNavigationStore } from '../../stores/navigation'
 import { useAuthStore } from '../../stores/auth'
 import type { CellMeta } from './cellFormat'
 import AdminTableCell from './AdminTableCell.vue'
+import { markTableRows } from './tableTestIds'
+import { testIdOf } from '../../composables/testId'
 import { createTooltip, deleteConfirmText, deletedToast, emptyDescription, nounCase, nounParams } from './resourceNoun'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
 import InlineEditCell from './InlineEditCell.vue'
@@ -1070,6 +1072,19 @@ const INTERACTIVE_IN_ROW = [
 
 let lastClickTarget: EventTarget | null = null
 
+/** The rows and cells of the table get their test ids after each render (see tableTestIds). */
+const tableBox = ref<HTMLElement | null>(null)
+function markRows(): void {
+  markTableRows(tableBox.value, {
+    rows: index.items,
+    keyOf: (row) => index.rowId(row),
+    columns: columns.value.map((c) => c.key),
+    names: { [ACTIONS_KEY]: 'row-actions', [REORDER_KEY]: 'row-drag' },
+  })
+}
+watch(() => [index.items, index.items.length, columns.value, tableBox.value], markRows, { flush: 'post' })
+onUpdated(markRows)
+
 function onTableClickCapture(e: MouseEvent): void {
   lastClickTarget = e.target
 }
@@ -1431,7 +1446,7 @@ async function retryLoad(): Promise<void> {
       <ResourceViewSwitcher :views="availableViews" :model-value="currentView" @update:model-value="setView" />
     </template>
   </ResourceTreePage>
-  <section v-else class="admin-page admin-resource-index">
+  <section v-else class="admin-page admin-resource-index" :data-testid="testIdOf('resource-index', slug)">
     <!-- Header — следует docs/design_handoff_laravel_admin/screens-resource.jsx
          (Resource Index): title-row с live-status, под ним counter,
          справа — scope dropdown / more-menu / Import / Создать. -->
@@ -1460,7 +1475,7 @@ async function retryLoad(): Promise<void> {
         <slot name="actions" />
         <UidMenu v-if="hasSavedViews">
           <template #trigger>
-            <UidButton variant="ghost" size="md" class="admin-page__scope">
+            <UidButton variant="ghost" size="md" class="admin-page__scope" data-testid="resource-views">
               <template #prepend><UidIcon :icon="Bookmark" :size="14" /></template>
               {{ scopeLabel }}
               <template #append><UidIcon :icon="ChevronDown" :size="14" /></template>
@@ -1493,14 +1508,15 @@ async function retryLoad(): Promise<void> {
         </UidMenu>
         <UidMenu>
           <template #trigger>
-            <UidButton variant="ghost" size="md" :aria-label="tr('Действия')" class="admin-page__more">
+            <UidButton variant="ghost" size="md" :aria-label="tr('Действия')" class="admin-page__more" data-testid="resource-more">
               <UidIcon :icon="MoreHorizontal" :size="16" />
             </UidButton>
           </template>
-          <UidMenuItem @click="retryLoad">{{ tr('Обновить') }}</UidMenuItem>
+          <UidMenuItem data-testid="resource-refresh" @click="retryLoad">{{ tr('Обновить') }}</UidMenuItem>
           <UidMenuItem
             v-for="fmt in exportFormats"
             :key="fmt"
+            :data-testid="testIdOf('resource-export', fmt)"
             @click="onExport(fmt)"
           >
             {{ tr('Экспорт') }} {{ EXPORT_LABELS[fmt] ?? fmt.toUpperCase() }}
@@ -1509,7 +1525,7 @@ async function retryLoad(): Promise<void> {
           <AdminActionMenuItems :actions="headerActions" @run="onCustomAction" />
           <slot name="header-menu" />
         </UidMenu>
-        <UidButton v-if="isImportable" variant="secondary" size="md" @click="onImportClick">
+        <UidButton v-if="isImportable" variant="secondary" size="md" data-testid="resource-import" @click="onImportClick">
           <template #prepend><UidIcon :icon="Upload" :size="14" /></template>
           {{ tr('Импорт') }}
         </UidButton>
@@ -1520,8 +1536,9 @@ async function retryLoad(): Promise<void> {
           accept=".csv,.json,.xlsx,.xls,application/json,text/csv"
           @change="onImportFileChange"
         />
-        <UidButton data-testid="resource-create"
+        <UidButton
           v-if="resolvedCreateRouteName && isCreatable"
+          data-testid="resource-create"
           variant="primary"
           size="md"
           :title="createTooltip(resourceMeta, slug)"
@@ -1550,18 +1567,19 @@ async function retryLoad(): Promise<void> {
         :is-disabled="isActionDisabled"
         @run="onCustomAction"
       />
-      <UidButton size="sm" variant="ghost" @click="onExport('csv')">{{ tr('Экспорт') }}</UidButton>
+      <UidButton size="sm" variant="ghost" data-testid="bulk-export" @click="onExport('csv')">{{ tr('Экспорт') }}</UidButton>
       <UidButton
         v-if="isEditable"
         size="sm"
         variant="danger"
+        data-testid="bulk-delete"
         :loading="bulkDeleting"
         @click="onBulkDelete"
       >
         {{ tr('Удалить') }}
       </UidButton>
       <span class="admin-bulk-toolbar__spacer" />
-      <UidButton size="sm" variant="ghost" @click="index.clearSelection">
+      <UidButton size="sm" variant="ghost" data-testid="bulk-clear" @click="index.clearSelection">
         {{ tr('Снять выделение') }}
       </UidButton>
     </div>
@@ -1666,6 +1684,7 @@ async function retryLoad(): Promise<void> {
           <UidButton
             v-if="resolvedCreateRouteName && isCreatable"
             variant="primary"
+            data-testid="resource-empty-create"
             @click="$router.push({ name: resolvedCreateRouteName })"
           >
             <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
@@ -1676,7 +1695,7 @@ async function retryLoad(): Promise<void> {
     </div>
 
     <!-- Таблица — UidTable native selection (UidTable.selectable + selection prop). -->
-    <div v-else class="admin-resource-index__table" @click.capture="onTableClickCapture">
+    <div v-else ref="tableBox" class="admin-resource-index__table" data-testid="resource-table" @click.capture="onTableClickCapture">
       <UidTable
         :columns="columns"
         :data="index.items"
@@ -1745,6 +1764,7 @@ async function retryLoad(): Promise<void> {
               type="button"
               class="admin-resource-index__row-action"
               :title="tr('Просмотр')"
+              data-testid="row-view"
               @click.stop="onView(rowFromSlot(slotProps) ?? {}, $event)"
             >
               <UidIcon :icon="Eye" :size="16" />
@@ -1755,6 +1775,7 @@ async function retryLoad(): Promise<void> {
                 type="button"
                 class="admin-resource-index__row-action"
                 :title="tr('Редактировать')"
+                data-testid="row-edit"
                 @click.stop="onEdit(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="Pencil" :size="16" />
@@ -1774,6 +1795,7 @@ async function retryLoad(): Promise<void> {
                 type="button"
                 class="admin-resource-index__row-action admin-resource-index__row-action--danger"
                 :title="tr('Удалить')"
+                data-testid="row-delete"
                 @click.stop="onDelete(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="Trash2" :size="16" />
@@ -1784,6 +1806,7 @@ async function retryLoad(): Promise<void> {
                 type="button"
                 class="admin-resource-index__row-action"
                 :title="tr('Восстановить')"
+                data-testid="row-restore"
                 @click.stop="onRestore(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="RotateCcw" :size="16" />
@@ -1792,6 +1815,7 @@ async function retryLoad(): Promise<void> {
                 type="button"
                 class="admin-resource-index__row-action admin-resource-index__row-action--danger"
                 :title="tr('Удалить навсегда')"
+                data-testid="row-force-delete"
                 @click.stop="onForceDelete(rowFromSlot(slotProps) ?? {}, $event)"
               >
                 <UidIcon :icon="Trash2" :size="16" />
@@ -1868,6 +1892,7 @@ async function retryLoad(): Promise<void> {
     <footer
       v-if="isListView && !index.loading && !index.hasError && !index.isEmpty"
       class="admin-resource-index__footer"
+      data-testid="resource-pagination"
     >
       <UidPagination
         :model-value="index.meta.page"

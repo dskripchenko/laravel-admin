@@ -23,6 +23,7 @@
  *     calling a method; the layouts dispatch their own actions through it
  */
 import { computed, onMounted, watch } from 'vue'
+import { testIdOf } from '../composables/testId'
 import { useRoute, useRouter } from 'vue-router'
 import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
 import { useScreenStore, type ScreenMethodResult } from '../stores/screen'
@@ -205,7 +206,7 @@ watch(
 </script>
 
 <template>
-  <section class="admin-page admin-screen-page">
+  <section class="admin-page admin-screen-page" :data-testid="testIdOf('screen', resolvedSlug)">
     <header class="admin-page__hd">
       <div class="admin-page__title-wrap">
         <h1 class="admin-page__title">{{ screen.name || resolvedSlug }}</h1>
@@ -213,7 +214,7 @@ watch(
           {{ screen.description }}
         </p>
       </div>
-      <div v-if="commandBar.length > 0" class="admin-page__actions">
+      <div v-if="commandBar.length > 0" class="admin-page__actions" data-testid="screen-commands">
         <AdminActionButton
           v-for="action in commandBar"
           :key="action.name"
@@ -230,6 +231,7 @@ watch(
       variant="danger"
       class="admin-screen-page__alert"
       role="alert"
+      data-testid="screen-error"
     >
       {{ apiErrorMessage(screen.error, tr('Не удалось выполнить действие')) }}
     </UidAlert>
@@ -239,6 +241,7 @@ watch(
       variant="success"
       class="admin-screen-page__alert"
       role="status"
+      data-testid="screen-message"
     >
       {{ screen.lastMessage }}
       <!-- A screen that starts background work has somewhere to send the

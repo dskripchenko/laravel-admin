@@ -17,8 +17,13 @@ interface Options {
   duration?: number
 }
 
-function shorthand(message: string, opts?: Options) {
-  return { message, ...(opts ?? {}) }
+/**
+ * The toast's options. `data-testid` (`toast-success`, `toast-error`,
+ * `toast-warning`, `toast-info`) is not an option of the kit's toast: the kit
+ * passes what it does not know to the toast's element, so the tests find it.
+ */
+function shorthand(message: string, opts: Options | undefined, level: 'success' | 'error' | 'warning' | 'info') {
+  return { message, ...(opts ?? {}), 'data-testid': `toast-${level}` } as { message: string } & Options
 }
 
 /** Until when error toasts are held back; see suppressErrorToasts(). */
@@ -36,17 +41,17 @@ export function suppressErrorToasts(ms = 1500): void {
 
 export const adminToast = {
   success(message: string, opts?: Options): void {
-    useToast().success(shorthand(message, opts))
+    useToast().success(shorthand(message, opts, 'success'))
   },
   error(message: string, opts?: Options): void {
     if (Date.now() < errorsSuppressedUntil) return
-    useToast().error(shorthand(message, { duration: 6000, ...(opts ?? {}) }))
+    useToast().error(shorthand(message, { duration: 6000, ...(opts ?? {}) }, 'error'))
   },
   warning(message: string, opts?: Options): void {
-    useToast().warning(shorthand(message, opts))
+    useToast().warning(shorthand(message, opts, 'warning'))
   },
   info(message: string, opts?: Options): void {
-    useToast().info(shorthand(message, opts))
+    useToast().info(shorthand(message, opts, 'info'))
   },
 }
 

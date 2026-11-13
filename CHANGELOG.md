@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.72.0
+
+### Added
+
+- **`Layout::blockTree()`: palette presets.** `->presets([BlockPreset::make($key, $label, $type)->data([...])->meta([...])])`
+  (or `->preset($key, $label, $type, $data, $meta, $group, $icon)`, or arrays
+  through `BlockPreset::fromArray`) — a palette item that inserts a ready
+  node: of an ordinary type, with its own data, meta and, maybe, children
+  (`->children([...])`), in a group of the palette, with an icon, a
+  description and a thumbnail. A shared block of a library, say, no longer
+  needs a type of its own. The pick inserts a node of that type with a copy
+  of the data and meta under a new temporary ref (each child its own); the
+  preset is offered only where its type — and its children — may stand by
+  the type's rules and `meta.accepts`, and `TreeValidator` checks the node as
+  any other. A preset of a type the editor does not have is not sent.
+- **`BlockTree::draftSaved(..., nodes: [ref => ['data' => [...], 'meta' => [...]]])`**
+  — the draft's answer may give the data and meta of the nodes the server
+  normalized (a file's temporary path made permanent, a preset turned into a
+  full block), by the renamed ref (or the temporary one). The editor applies
+  them, except the fields typed in while the request was out: those keep the
+  input (and their `meta.fields` entry) and go with the next draft. The open
+  properties form is updated in place — the input keeps its focus.
+- **`data-testid` for end-to-end tests.** The shell and the pages are marked
+  by names and keys, never by captions: the login and two-factor forms, the
+  menu (`menu-{key}` on groups too), the user menu, the toasts
+  (`toast-{level}`), a resource's list (`resource-index-{slug}`, the search,
+  `filter-{name}` with its popover and buttons, `resource-row-{key}`,
+  `cell-{column}`, the row and bulk actions, the pagination), the form
+  (`field-{name}`, `form-cancel`), the card (`entry-{name}`, `view-*`), the
+  screen (`screen-{slug}`, `screen-commands`), `Layout::modal()` /
+  `Layout::drawer()`, the tabs (`tab-{key}`) and the block tree
+  (`block-tree-node-{ref}`, the palette's types and presets, the bar). The
+  names that were there stay. `testIdOf(...parts)` is exported for the
+  host's own components. The list is in `docs/*/testing.md`.
+
 ## 1.71.0
 
 ### Added

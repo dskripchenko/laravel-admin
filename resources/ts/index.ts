@@ -48,6 +48,7 @@ export type { AdminClient, ClientOptions } from './api/client'
 
 export { loadBootstrap, readInlineBootstrap, readCsrfFromMeta } from './api/bootstrap'
 export { useBrand, BRAND_KEY } from './composables/useBrand'
+export { testIdOf, testIdPart } from './composables/testId'
 export {
   useActionRunner,
   actionErrorMessage,

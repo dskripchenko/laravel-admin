@@ -127,6 +127,7 @@ function toggle(): void {
       }"
       :aria-expanded="open"
       :title="collapsed ? item.label : undefined"
+      :data-testid="`menu-${item.key}`"
       @click="toggle"
     >
       <span class="uid-sidebar-item__icon">

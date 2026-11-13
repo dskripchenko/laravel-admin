@@ -44,6 +44,7 @@ const rolePreviewOpen = ref<boolean>(false)
       <button
         type="button"
         class="admin-topbar__icon-btn admin-user-menu__trigger"
+        data-testid="user-menu"
         :aria-label="tr('Меню пользователя')"
         aria-haspopup="menu"
         style="width: auto; padding: 0 4px; gap: 8px;"
@@ -57,7 +58,7 @@ const rolePreviewOpen = ref<boolean>(false)
       </button>
     </template>
 
-    <UidMenuItem @click="goProfile">{{ tr('Профиль') }}</UidMenuItem>
+    <UidMenuItem data-testid="user-menu-profile" @click="goProfile">{{ tr('Профиль') }}</UidMenuItem>
     <UidMenuItem
       v-if="auth.user?.canPreviewRoles"
       data-testid="role-preview-open"
@@ -66,7 +67,7 @@ const rolePreviewOpen = ref<boolean>(false)
       {{ tr('Смотреть как роль…') }}
     </UidMenuItem>
     <UidMenuSeparator />
-    <UidMenuItem variant="danger" @click="logout">{{ tr('Выйти') }}</UidMenuItem>
+    <UidMenuItem variant="danger" data-testid="logout" @click="logout">{{ tr('Выйти') }}</UidMenuItem>
   </UidMenu>
   <RolePreviewDialog v-if="auth.user?.canPreviewRoles" v-model="rolePreviewOpen" />
 </template>

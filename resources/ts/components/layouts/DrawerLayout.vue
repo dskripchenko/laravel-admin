@@ -8,6 +8,7 @@
  * lg, xl) or any CSS length.
  */
 import { computed } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import { UidButton, UidDrawer, UidStack } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import { resolveIcon } from '../shell/iconRegistry'
@@ -74,7 +75,7 @@ const dimensions = computed<{ width?: string; height?: string }>(() => {
     :close-on-esc="dismissable"
     :hide-close="!dismissable"
   >
-    <UidStack direction="column" gap="var(--uid-space-md)" align="stretch">
+    <UidStack direction="column" gap="var(--uid-space-md)" align="stretch" :data-testid="testIdOf('drawer', id)">
       <LayoutRenderer v-for="(child, idx) in items" :key="idx" :node="child" />
     </UidStack>
     <template v-if="footer.length > 0" #footer>
@@ -85,6 +86,7 @@ const dimensions = computed<{ width?: string; height?: string }>(() => {
         :icon="resolveIcon(action.icon) ?? undefined"
         :loading="overlay.running.value"
         :disabled="overlay.running.value"
+        :data-testid="`action-${action.name}`"
         @click="overlay.onFooterClick(action)"
       >
         {{ action.label }}

@@ -11,6 +11,7 @@ import { Box, ChevronDown, ChevronRight, Copy, GripVertical, Lock, Plus, Trash2 
 import { resolveIcon } from '../shell/iconRegistry'
 import { trSafe as tr } from '../../stores/i18n'
 import { useBlockTree } from './context'
+import { testIdOf } from '../../composables/testId'
 import { allowedTypes, canMove, canPlace, isLocked, locate, nodeTitle, sameRef, type BlockNode, type BlockRef } from './tree'
 
 defineOptions({ name: 'BlockTreeNode' })
@@ -136,6 +137,7 @@ function onKey(event: KeyboardEvent): void {
       :aria-expanded="hasChildren ? !isCollapsed : undefined"
       :aria-level="depth"
       :data-ref="key"
+      :data-testid="testIdOf('block-tree-node', node.ref)"
       :style="{ paddingLeft: `${(depth - 1) * 16 + 4}px` }"
       tabindex="0"
       :draggable="canDrag"
@@ -154,6 +156,7 @@ function onKey(event: KeyboardEvent): void {
         v-if="hasChildren"
         type="button"
         class="admin-block-tree-node__toggle"
+        data-testid="block-tree-node-toggle"
         :aria-label="isCollapsed ? tr('Развернуть') : tr('Свернуть')"
         @click.stop="toggle(node.ref)"
       >
@@ -184,6 +187,7 @@ function onKey(event: KeyboardEvent): void {
           :title="tr('Добавить внутрь')"
           :aria-label="tr('Добавить внутрь')"
           data-action="add-inside"
+          data-testid="block-tree-node-add-inside"
           @click.stop="openPalette({ parentRef: node.ref, index: node.children.length })"
         >
           <UidIcon :icon="Plus" :size="14" />
@@ -194,6 +198,7 @@ function onKey(event: KeyboardEvent): void {
           :title="tr('Дублировать')"
           :aria-label="tr('Дублировать')"
           data-action="duplicate"
+          data-testid="block-tree-node-duplicate"
           @click.stop="editor.duplicate(node.ref)"
         >
           <UidIcon :icon="Copy" :size="14" />
@@ -204,6 +209,7 @@ function onKey(event: KeyboardEvent): void {
           :title="tr('Удалить')"
           :aria-label="tr('Удалить')"
           data-action="remove"
+          data-testid="block-tree-node-remove"
           @click.stop="editor.remove(node.ref)"
         >
           <UidIcon :icon="Trash2" :size="14" />

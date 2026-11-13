@@ -212,6 +212,161 @@ describe('useResourceIndexStore', () => {
 })
 ```
 
+## data-testid for end-to-end tests
+
+Since 1.72 the key elements of the panel's shell and pages carry a
+`data-testid`, so an end-to-end test (Playwright, Selenium) finds each by one
+attribute, without CSS selectors or the interface's text — in Playwright,
+`page.get_by_test_id('login-email')`.
+
+**The rule of a name.** A name is made of names and keys — of a field, a
+resource, an action, a tab, a record, a block's ref — never of a caption, so
+a change of the translation breaks no test. Each part is put into kebab-case
+(`firstName`, `first_name`, `user.email` → `first-name`, `first-name`,
+`user-email`; letters and digits stay, the rest becomes `-`), the parts are
+joined with `-`. The package exports the helper `testIdOf(...parts)` for your
+own components; the same rule in Python:
+
+```python
+import re
+
+
+def tid(*parts) -> str:
+    def part(value) -> str:
+        s = str(value)
+        s = re.sub(r'([a-zа-яё0-9])([A-ZА-ЯЁ])', r'\1-\2', s)
+        s = re.sub(r'([A-ZА-ЯЁ]+)([A-ZА-ЯЁ][a-zа-яё])', r'\1-\2', s)
+        return re.sub(r'[\W_]+', '-', s.lower()).strip('-')
+    return '-'.join(p for p in map(part, parts) if p)
+
+page.get_by_test_id(tid('field', 'first_name'))   # field-first-name
+```
+
+The names without a key (`row-edit`, `block-tree-node-remove`) are the same
+in every row and node — look for them inside the row or the node:
+`page.get_by_test_id('resource-row-15').get_by_test_id('row-edit')`.
+
+The attributes that were there before 1.72 (`form-save`, `action-confirm-ok`,
+`menu-{key}`, `record-drawer-*` and others) are not renamed. In `menu-{key}`,
+`action-{name}`, `form-link-{name}`, `widget-config-{key}` the key stands as
+it is, not in kebab-case: `action-send_invoice`.
+
+**Login and the shell**
+
+| `data-testid` | Element |
+|---|---|
+| `login-form` | The login form |
+| `login-email`, `login-password` | The e-mail and password fields (on the `input` itself) |
+| `login-remember` | "Remember me" (on the checkbox's `input`) |
+| `login-submit` | The "Log in" button |
+| `login-error`, `login-notice` | The login error, the notice above the form |
+| `login-external`, `login-demo` | External logins and demo accounts (buttons — `login-external-{url}`, `login-demo-{email}`) |
+| `two-factor-form`, `two-factor-code`, `two-factor-recovery-code`, `two-factor-submit`, `two-factor-switch`, `two-factor-error` | The second factor: the form, the code's cells (their box), the recovery code, "Confirm", the switch to a recovery code, the error |
+| `menu-{key}` | A menu item by its key (`MenuNode::make($key)`; a resource's — its slug); a leaf or a group |
+| `topbar-search`, `search-input`, `search-item` | The global search |
+| `user-menu`, `user-menu-profile`, `logout` | The user menu, "Profile", "Log out" |
+| `toast-success`, `toast-error`, `toast-warning`, `toast-info` | A toast by its level |
+| `confirm-ok`, `confirm-cancel`, `confirm-message` | The shared confirmation dialog (a delete, a discard) |
+
+**A resource's list**
+
+| `data-testid` | Element |
+|---|---|
+| `resource-index-{slug}` | The list page |
+| `resource-create`, `resource-import`, `resource-views` | "Create", "Import", the saved views |
+| `resource-more`, `resource-refresh`, `resource-export-{format}` | The "Actions" menu, "Refresh", an export (`csv`, `xlsx`…) |
+| `resource-toolbar`, `resource-search` | The filter bar, the search input |
+| `filter-{name}` | A filter by its name (a chip; an active one also has `data-active="true"`) |
+| `filter-popover-{name}`, `filter-apply-{name}`, `filter-clear-{name}`, `filter-reset-{name}` | The filter's popover, "Apply", "Clear", the cross on an active chip |
+| `filter-add`, `filter-add-{name}` | "+ Filter" and a hidden filter in its list |
+| `toolbar-reset`, `toolbar-group-by`, `toolbar-columns`, `toolbar-save-view` | Reset, group by, columns, save a view |
+| `resource-table` | The table |
+| `resource-row-{key}` | A row by the record's key (`id`, else `key`); the key is in `data-row-key` too |
+| `cell-{column}` | A cell of the row by the column's key |
+| `row-view`, `row-edit`, `row-delete`, `row-replicate`, `row-restore`, `row-force-delete` | The row's actions (inside `resource-row-{key}`) |
+| `row-actions-menu`, then `action-{name}` | The menu of the resource's row actions and its item |
+| `row-actions`, `row-drag` | The actions cell, the drag handle |
+| `bulk-bar`, `bulk-export`, `bulk-delete`, `bulk-clear`, `action-{name}` | The bar of the selected rows and its buttons; a row is selected by the checkbox inside it |
+| `resource-pagination` | The pagination |
+| `resource-state`, `resource-empty`, `resource-no-results`, `resource-reset-filters`, `resource-empty-create` | Loading/error, an empty list, "nothing found" |
+
+**A record: the form, the card, the drawer**
+
+| `data-testid` | Element |
+|---|---|
+| `resource-form-{slug}` | The form page |
+| `field-{name}` | A field by its name (a wrapper without a box of its own, `display: contents`); type into `get_by_test_id('field-title').locator('input')` or by `get_by_label` |
+| `form-save`, `form-delete`, `form-cancel`, `form-back` | "Create/Save", "Delete", "Cancel", "← Back" |
+| `form-savebar`, `form-savebar-save`, `form-savebar-cancel` | The bar of unsaved changes |
+| `form-error`, `form-not-found`, `form-link-{name}` | The error, "Record not found", the record's link buttons |
+| `resource-view-{slug}` | The record's card |
+| `view-back`, `view-edit`, `view-more`, `view-delete` | Back, "Edit", the "Actions" menu, "Delete" |
+| `view-entries`, `entry-{name}` | The card's data, a value by its name |
+| `record-drawer`, `record-drawer-view`, `record-drawer-form` | The record's drawer and its modes |
+| `record-drawer-edit`, `record-drawer-save`, `record-drawer-save-next`, `record-drawer-delete`, `record-drawer-prev`, `record-drawer-next`, `record-drawer-page` | Its buttons |
+
+**Screens, actions, overlays, tabs**
+
+| `data-testid` | Element |
+|---|---|
+| `screen-{slug}` | The screen page |
+| `screen-commands` | The command bar; a button — `action-{name}` by the action's name |
+| `screen-message`, `screen-error` | The screen's message and error |
+| `action-{name}` | An action's button anywhere: the command bar, the selection bar, a menu item, an overlay's footer button |
+| `action-confirm-ok`, `action-confirm-cancel`, `action-confirm-message` | An action's confirmation |
+| `action-modal`, `action-form`, `action-modal-submit`, `action-modal-cancel` | An action's form dialog |
+| `modal-{id}`, `drawer-{id}` | The content of `Layout::modal()` / `Layout::drawer()` by its id |
+| `tab-{key}`, `tab-panel-{key}` | A `Layout::tabs()` tab by its key (`->keys([...])`, else its index) and its panel |
+| `reveal-value`, `reveal-copy`, `reveal-close` | The show-once secret dialog |
+
+An action's `{name}` without `withName()` is derived from a Latin label
+(`Button::make('Send invoice')` → `send_invoice`); a Cyrillic label leaves
+just `action`. Name the buttons the tests rely on:
+`Button::make('Отправить счёт')->withName('send-invoice')->method('sendInvoice')`.
+
+**The block tree editor** (`Layout::blockTree()`)
+
+| `data-testid` | Element |
+|---|---|
+| `block-tree-{source}` | The editor by its state key |
+| `block-tree-structure`, `block-tree-preview`, `block-tree-properties` | The panes: structure, preview, properties |
+| `block-tree-node-{ref}` | A node's row by its ref (`15`, `new-1a2b`; after a saved draft — the new ref) |
+| `block-tree-node-toggle`, `block-tree-node-add-inside`, `block-tree-node-duplicate`, `block-tree-node-remove` | The node's buttons (inside its row) |
+| `block-tree-add`, `block-tree-undo` | "Add a block", "Undo" |
+| `block-tree-palette`, `block-tree-palette-search`, `block-tree-palette-close` | The palette, its search, its close |
+| `block-tree-palette-type-{type}`, `block-tree-palette-preset-{key}` | A palette item: a type, a preset |
+| `block-tree-properties-{ref}`, `field-{name}`, `block-tree-revert-{name}` | A node's properties form, a field, "Return the base value" |
+| `block-tree-crumb-root`, `block-tree-crumb-{ref}` | The path to the node |
+| `block-tree-status` | The draft's state (`data-status`: `clean`, `dirty`, `saving`, `saved`, `error`, `publishing`) |
+| `block-tree-save-over`, `block-tree-discard`, `block-tree-publish` | "Save over", "Discard", "Publish" |
+| `block-tree-conflict` | The conflict's message |
+
+```python
+page.get_by_test_id('login-email').fill('admin@example.com')
+page.get_by_test_id('login-password').fill('secret')
+page.get_by_test_id('login-submit').click()
+
+page.get_by_test_id('menu-articles').click()
+page.get_by_test_id('resource-search').fill('Spring')
+page.get_by_test_id('resource-search').press('Enter')
+row = page.get_by_test_id('resource-row-15')
+expect(row.get_by_test_id('cell-title')).to_have_text('Spring sale')
+row.get_by_test_id('row-edit').click()
+
+page.get_by_test_id('field-title').locator('input').fill('Summer sale')
+page.get_by_test_id('form-save').click()
+expect(page.get_by_test_id('toast-success')).to_be_visible()
+
+tree = page.get_by_test_id('block-tree-content')
+tree.get_by_test_id('block-tree-node-2').get_by_test_id('block-tree-node-add-inside').click()
+page.get_by_test_id('block-tree-palette-preset-library-42').click()
+expect(tree.get_by_test_id('block-tree-status')).to_have_attribute('data-status', 'saved')
+page.get_by_test_id('block-tree-publish').click()
+```
+
+Mark your own components (fields, widgets, pages) the same way:
+`:data-testid="testIdOf('my-widget', key)"`, `import { testIdOf } from '@dskripchenko/laravel-admin'`.
+
 ## E2E (Playwright)
 
 The demo application ([dskripchenko/laravel-admin-demo](https://github.com/dskripchenko/laravel-admin-demo))

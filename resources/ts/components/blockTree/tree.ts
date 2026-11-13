@@ -40,6 +40,29 @@ export interface BlockTypeDef {
   fields: Record<string, unknown>[]
 }
 
+/** A child of a preset: a node without a ref (the panel gives it one). */
+export interface PresetNode {
+  type: string
+  data?: Record<string, unknown> | null
+  meta?: Record<string, unknown> | null
+  children?: PresetNode[]
+}
+
+/**
+ * A preset of the palette (`BlockPreset` on the server): a ready block — a
+ * node of an ordinary type with its own data, meta and, maybe, children —
+ * offered next to the types. The rules are those of its type and of
+ * `meta.accepts`; a preset widens nothing.
+ */
+export interface BlockPresetDef extends PresetNode {
+  key: string
+  label: string
+  icon?: string | null
+  description?: string | null
+  group?: string | null
+  thumbnail?: string | null
+}
+
 export interface TreeRules {
   types: Record<string, BlockTypeDef>
   rootTypes: string[]
@@ -193,6 +216,25 @@ export function allowedTypes(rules: TreeRules, parent: PlaceParent, depth: numbe
   return Object.values(rules.types).filter((t) => canInsert(rules, parent, t.type, depth))
 }
 
+/**
+ * Whether the children of `node` (standing at `depth`) stand by the rules all
+ * the way down — the node's own `meta.accepts` counts.
+ */
+export function childrenFit(rules: TreeRules, node: BlockNode, depth: number): boolean {
+  return (node.children ?? []).every((child) => canPlace(rules, node, child.type, depth + 1) && childrenFit(rules, child, depth + 1))
+}
+
+/** May the preset go under `parent` at `depth`: its type within the rules, its children too. */
+export function canInsertPreset(rules: TreeRules, parent: PlaceParent, preset: BlockPresetDef, depth: number): boolean {
+  const node = createFromPreset(preset, () => 'preset')
+  return canInsert(rules, parent, node.type, depth, height(node)) && childrenFit(rules, node, depth)
+}
+
+/** The presets a new block may come from under `parent` at `depth`, in the declared order. */
+export function allowedPresets(rules: TreeRules, presets: BlockPresetDef[], parent: PlaceParent, depth: number): BlockPresetDef[] {
+  return presets.filter((p) => canInsertPreset(rules, parent, p, depth))
+}
+
 /** Whether the node stands where the rules allow (data from elsewhere may break them). */
 export function isPlacedByRules(rules: TreeRules, nodes: BlockNode[], ref: BlockRef): boolean {
   const at = locate(nodes, ref)
@@ -312,6 +354,26 @@ export function createNode(def: BlockTypeDef, makeRef: () => BlockRef = newRef):
     data: JSON.parse(JSON.stringify(def.defaults ?? {})) as Record<string, unknown>,
     children: [],
   }
+}
+
+function copy<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+/**
+ * A new block from a preset: the preset's type, a copy of its data and meta,
+ * its children — each with a fresh ref. The data is the preset's as it is
+ * (the type's defaults are not mixed in).
+ */
+export function createFromPreset(preset: PresetNode, makeRef: () => BlockRef = newRef): BlockNode {
+  const node: BlockNode = {
+    ref: makeRef(),
+    type: preset.type,
+    data: preset.data && typeof preset.data === 'object' && !Array.isArray(preset.data) ? copy(preset.data) : {},
+    children: (preset.children ?? []).map((c) => createFromPreset(c, makeRef)),
+  }
+  if (preset.meta && typeof preset.meta === 'object' && !Array.isArray(preset.meta)) node.meta = copy(preset.meta)
+  return node
 }
 
 /** Text for a caption: no tags, no runs of spaces, at most `limit` characters. */
@@ -439,6 +501,65 @@ export function renameRefs(nodes: BlockNode[], map: Map<string, BlockRef>): numb
     n += renameRefs(node.children ?? [], map)
   }
   return n
+}
+
+/** What the server says of one node after a draft (BlockTree::draftSaved's `nodes`). */
+export interface NodeUpdate {
+  data?: Record<string, unknown> | null
+  meta?: Record<string, unknown> | null
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return !!v && typeof v === 'object' && !Array.isArray(v)
+}
+
+/**
+ * Applies the server's data and meta to a node after a draft, in place:
+ *
+ *   - `sent` — the node as it went in the draft: it takes the update whole
+ *     (it becomes the saved state);
+ *   - `current` — the node as it is now: a field typed in since the draft was
+ *     sent (its value differs from `sent`'s) keeps what was typed — and its
+ *     `meta.fields` entry; every other field is the server's, a field the
+ *     server left out goes away. The data object stays the same object, so an
+ *     open form keeps its inputs and their focus.
+ *
+ * Returns the names of the fields that kept the person's input.
+ */
+export function applyNodeUpdate(current: BlockNode, sent: BlockNode | null, update: NodeUpdate): string[] {
+  const kept: string[] = []
+  const before = isRecord(sent?.data) ? sent.data : {}
+  if (isRecord(update.data)) {
+    const next = update.data
+    if (!isRecord(current.data)) current.data = {}
+    const data = current.data
+    const typed = new Set(
+      [...new Set([...Object.keys(before), ...Object.keys(data)])].filter(
+        (k) => stableJson(data[k] ?? null) !== stableJson(before[k] ?? null),
+      ),
+    )
+    for (const k of Object.keys(data)) {
+      if (!typed.has(k) && !(k in next)) delete data[k]
+    }
+    for (const [k, v] of Object.entries(next)) {
+      if (typed.has(k)) continue
+      if (stableJson(data[k] ?? null) !== stableJson(v ?? null) || !(k in data)) data[k] = copy(v)
+    }
+    kept.push(...typed)
+    if (sent) sent.data = copy(next)
+  }
+  if (update.meta !== undefined) {
+    const next: Record<string, unknown> = isRecord(update.meta) ? copy(update.meta) : {}
+    const ownFields = isRecord(current.meta?.fields) ? current.meta.fields : null
+    if (ownFields && kept.length > 0) {
+      const fields: Record<string, unknown> = isRecord(next.fields) ? next.fields : {}
+      for (const k of kept) if (k in ownFields) fields[k] = copy(ownFields[k])
+      next.fields = fields
+    }
+    current.meta = next
+    if (sent) sent.meta = isRecord(update.meta) ? copy(update.meta) : {}
+  }
+  return kept
 }
 
 export function cloneNodes(nodes: BlockNode[]): BlockNode[] {

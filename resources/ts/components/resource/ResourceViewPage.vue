@@ -16,6 +16,7 @@
  *   └──────────────────────────────┴─────────────────┘
  */
 import { computed, onMounted, watch } from 'vue'
+import { testIdOf } from '../../composables/testId'
 import { tRaw } from '../../stores/i18n'
 import { formatCell, parseDateValue } from './cellFormat'
 import { useRouter } from 'vue-router'
@@ -283,10 +284,10 @@ async function onDelete(): Promise<void> {
 </script>
 
 <template>
-  <section class="admin-page admin-resource-view">
+  <section class="admin-page admin-resource-view" :data-testid="testIdOf('resource-view', slug)">
     <header class="admin-resource-view__hd">
       <div class="admin-resource-view__hd-left">
-        <button type="button" class="admin-resource-view__back" @click="onBack">
+        <button type="button" class="admin-resource-view__back" data-testid="view-back" @click="onBack">
           <UidIcon :icon="ArrowLeft" :size="14" />
           {{ indexLabel }}
         </button>
@@ -305,18 +306,18 @@ async function onDelete(): Promise<void> {
         </div>
       </div>
       <div class="admin-resource-view__hd-right">
-        <UidButton v-if="isEditable" variant="secondary" size="md" @click="onEdit">
+        <UidButton v-if="isEditable" variant="secondary" size="md" data-testid="view-edit" @click="onEdit">
           <template #prepend><UidIcon :icon="Pencil" :size="14" /></template>
           {{ tr('Редактировать') }}
         </UidButton>
         <UidMenu>
           <template #trigger>
-            <UidButton variant="ghost" size="md" :aria-label="tr('Действия')" class="admin-page__more">
+            <UidButton variant="ghost" size="md" :aria-label="tr('Действия')" class="admin-page__more" data-testid="view-more">
               <UidIcon :icon="MoreHorizontal" :size="16" />
             </UidButton>
           </template>
           <AdminActionMenuItems :actions="headerActions" @run="runner.run" />
-          <UidMenuItem variant="danger" :icon="Trash2" @click="onDelete">
+          <UidMenuItem variant="danger" :icon="Trash2" data-testid="view-delete" @click="onDelete">
             {{ tr('Удалить') }}
           </UidMenuItem>
         </UidMenu>
@@ -340,11 +341,13 @@ async function onDelete(): Promise<void> {
       <div class="admin-resource-view__main">
         <UidCard padding="md" class="admin-resource-view__card">
           <h2 class="admin-resource-view__card-title">{{ tr('Основные данные') }}</h2>
-          <InfolistRenderer
-            v-for="(node, idx) in layoutNodes"
-            :key="idx"
-            :node="node"
-          />
+          <div data-testid="view-entries" class="admin-field-slot">
+            <InfolistRenderer
+              v-for="(node, idx) in layoutNodes"
+              :key="idx"
+              :node="node"
+            />
+          </div>
         </UidCard>
 
         <UidCard
