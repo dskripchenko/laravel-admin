@@ -9,6 +9,7 @@ import { UidCard, UidIcon } from '@dskripchenko/ui'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { resolveIcon } from '../shell/iconRegistry'
+import { countMatches, useFieldSearch } from '../render/fieldSearch'
 
 interface Props {
   items: LayoutNode[]
@@ -24,10 +25,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const iconComponent = computed(() => resolveIcon(props.icon))
+
+// A block the field search left without fields hides.
+const search = useFieldSearch()
+const hidden = computed<boolean>(() => {
+  const q = search?.query.value ?? ''
+  return q !== '' && countMatches(props.items, q) === 0
+})
 </script>
 
 <template>
-  <UidCard padding="md" class="admin-section">
+  <UidCard v-if="!hidden" padding="md" class="admin-section">
     <header v-if="title || description" class="admin-section__header">
       <h3 v-if="title" class="admin-section__title">
         <UidIcon v-if="iconComponent" :icon="iconComponent" :size="16" class="admin-section__icon" />

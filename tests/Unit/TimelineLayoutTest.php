@@ -40,3 +40,10 @@ it('resolves a closure of events only when serialized', function (): void {
 it('refuses a limit below one', function (): void {
     Layout::timeline([])->limit(0);
 })->throws(InvalidArgumentException::class);
+
+it('Tabs::searchable() turns the field search on', function (): void {
+    $arr = Layout::tabs(['A' => []])->searchable('Найти настройку')->toArray();
+
+    expect($arr['searchable'])->toBeTrue()
+        ->and($arr['searchPlaceholder'])->toBe('Найти настройку');
+});

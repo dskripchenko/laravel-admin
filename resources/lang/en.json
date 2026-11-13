@@ -794,5 +794,9 @@
     "Под условия не подходит ни одно событие": "No event matches",
     "Показать ещё :n": "Show :n more",
     "… :n слов без изменений": "… :n words unchanged",
-    "… :n строк без изменений": "… :n lines unchanged"
+    "… :n строк без изменений": "… :n lines unchanged",
+    "Найти настройку: название, подсказка или ключ": "Find a setting: its name, hint or key",
+    ":n совпадение": ":n match",
+    ":n совпадения": ":n matches",
+    ":n совпадений": ":n matches"
 }

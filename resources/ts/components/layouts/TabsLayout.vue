@@ -10,6 +10,9 @@
  * `?tab=quotes` — so a link leads to a tab, and back and forward follow it.
  * `orientation: 'vertical'` (Tabs::vertical()) puts the tabs in a column on
  * the left: a list of dictionaries beside the open one.
+ * `searchable` (Tabs::searchable()) puts a search over the fields above the
+ * tabs: each tab shows how many fields it finds, a tab without any is dimmed,
+ * the open one hides the fields it does not find (render/fieldSearch).
  */
 import { computed, inject, onBeforeUnmount, provide, ref, watch, type InjectionKey } from 'vue'
 import { formatBadge } from '../../stores/menu'
@@ -17,7 +20,10 @@ import { useUserNavStore } from '../../stores/userNav'
 import { testIdOf } from '../../composables/testId'
 import { routeLocationKey, routerKey } from 'vue-router'
 import { patchRouteQuery } from '../../composables/useQueryPatch'
-import { UidTabs, UidTab, UidTabPanel, UidStack } from '@dskripchenko/ui'
+import { UidTabs, UidTab, UidTabPanel, UidStack, UidInput, UidIcon } from '@dskripchenko/ui'
+import { Search } from 'lucide-vue-next'
+import { countMatches, provideFieldSearch, useFieldSearch } from '../render/fieldSearch'
+import { trSafe as tr, tRaw } from '../../stores/i18n'
 import LayoutRenderer from '../render/LayoutRenderer.vue'
 import type { LayoutNode } from '../render/LayoutRenderer.vue'
 
@@ -58,6 +64,10 @@ interface Props {
   queryKey?: string | null
   /** 'horizontal' (a row above) or 'vertical' (a column on the left). */
   orientation?: 'horizontal' | 'vertical'
+  /** A search over the fields of every tab (Tabs::searchable()). */
+  searchable?: boolean
+  /** Its placeholder. */
+  searchPlaceholder?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,6 +76,8 @@ const props = withDefaults(defineProps<Props>(), {
   default: null,
   queryKey: null,
   orientation: 'horizontal',
+  searchable: false,
+  searchPlaceholder: null,
 })
 const emit = defineEmits<{ 'update:active': [value: string | number] }>()
 
@@ -145,6 +157,30 @@ onBeforeUnmount(() => {
   if (props.queryKey) userNav?.unregisterTab(props.queryKey)
 })
 
+// The field search: this set's own, or the one of a set it sits in.
+const searchQuery = ref('')
+const search = props.searchable ? provideFieldSearch(searchQuery) : useFieldSearch()
+const q = computed<string>(() => search?.query.value ?? '')
+const matchCounts = computed<number[]>(() => props.items.map((tab) => (q.value === '' ? 0 : countMatches(tab.items, q.value))))
+const totalMatches = computed<number>(() => matchCounts.value.reduce((a, b) => a + b, 0))
+
+function matchesText(n: number): string {
+  const form = new Intl.PluralRules('ru').select(n)
+  if (form === 'one') return tRaw(':n совпадение', { n })
+  if (form === 'few') return tRaw(':n совпадения', { n })
+  return tRaw(':n совпадений', { n })
+}
+
+// The open tab finds nothing while another does: move there.
+watch(q, (query) => {
+  if (query === '') return
+  const counts = matchCounts.value
+  const current = props.items.findIndex((tab, idx) => tabKey(tab, idx) === localActive.value)
+  if (current >= 0 && counts[current] > 0) return
+  const first = counts.findIndex((n) => n > 0)
+  if (first >= 0) localActive.value = tabKey(props.items[first], first)
+})
+
 // A link to another tab of the same screen, back and forward.
 watch(
   () => (props.queryKey && route ? route.query[props.queryKey] : undefined),
@@ -156,6 +192,19 @@ watch(
 </script>
 
 <template>
+  <div class="admin-tabs-layout">
+  <div v-if="searchable" class="admin-tabs-search">
+    <UidInput
+      v-model="searchQuery"
+      size="sm"
+      :placeholder="searchPlaceholder ?? tr('Найти настройку: название, подсказка или ключ')"
+      class="admin-tabs-search__input"
+      data-testid="tabs-search"
+    >
+      <template #prepend><UidIcon :icon="Search" :size="14" /></template>
+    </UidInput>
+    <span v-if="q !== ''" class="admin-tabs-search__count" data-testid="tabs-search-count">{{ matchesText(totalMatches) }}</span>
+  </div>
   <UidTabs :model-value="localActive" :orientation="orientation" @update:model-value="onUpdate">
     <template #list>
       <UidTab
@@ -163,8 +212,14 @@ watch(
         :key="tabKey(tab, idx)"
         :value="tabKey(tab, idx)"
         :data-testid="testIdOf('tab', tabKey(tab, idx))"
+        :class="{ 'admin-tab--dim': q !== '' && matchCounts[idx] === 0 }"
       >
         {{ tab.label }}
+        <span
+          v-if="q !== '' && matchCounts[idx] > 0"
+          class="admin-tab-badge admin-tab-badge--match"
+          :data-testid="testIdOf('tab-matches', tabKey(tab, idx))"
+        >{{ matchCounts[idx] }}</span>
         <span
           v-if="formatBadge(tab.badge) !== null"
           class="admin-tab-badge"
@@ -188,9 +243,36 @@ watch(
       </UidStack>
     </UidTabPanel>
   </UidTabs>
+  </div>
 </template>
 
 <style>
+.admin-tabs-layout {
+  min-width: 0;
+}
+/* The field search above the tabs. */
+.admin-tabs-search {
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-md, 12px);
+  margin-bottom: var(--uid-space-md, 12px);
+}
+.admin-tabs-search__input {
+  width: 360px;
+  max-width: 100%;
+}
+.admin-tabs-search__count {
+  font-size: var(--uid-font-size-sm, 13px);
+  color: var(--uid-text-secondary);
+}
+.admin-tab--dim {
+  opacity: 0.45;
+}
+.admin-tab-badge--match {
+  background: var(--uid-color-primary-subtle, rgba(37, 99, 235, 0.14));
+  color: var(--uid-color-primary, #2563eb);
+}
+
 /* A tab's counter: a queue's size beside its name. */
 .admin-tab-badge {
   display: inline-flex;
