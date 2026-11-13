@@ -12,7 +12,7 @@ import BlockTreeLayout from './BlockTreeLayout.vue'
 import BlockPreview from './BlockPreview.vue'
 import { useBlockTreeEditor, locateErrorKey, type BlockTreeEditor } from './useBlockTreeEditor'
 import { fetchPreview, refFromMessage, withBase } from './preview'
-import { makeRules, type BlockNode, type BlockTypeDef } from './tree'
+import { findNode as findNodeIn, makeRules, type BlockNode, type BlockTypeDef } from './tree'
 import { provideFormState, type FormStateContext } from '../render/formState'
 import { ScreenContextKey, type ScreenContext, type ScreenMethodCaller } from '../render/screenContext'
 import { clearRegistry } from '../render/registry'
@@ -186,7 +186,7 @@ describe('the screen methods', () => {
     await nextTick()
     expect(await editor.publish()).toBe(false)
     expect(call).toHaveBeenCalledWith('publish', [expect.objectContaining({ content: expect.anything() })])
-    expect(editor.conflict.value).toEqual({ message: 'Changed elsewhere', differences: [{ ref: 1, change: 'title' }], fingerprint: 'fp-2' })
+    expect(editor.conflict.value).toEqual({ kind: 'publish', message: 'Changed elsewhere', differences: [{ ref: 1, change: 'title' }], fingerprint: 'fp-2' })
     expect(editor.diff.value.changes).toBe(1)
   })
 
@@ -352,5 +352,277 @@ describe('the preview', () => {
     expect(call).toHaveBeenCalledWith('publish', [expect.any(Object)])
     expect(wrapper.text()).toContain('Someone published')
     expect(wrapper.text()).toContain('Hero: title')
+  })
+})
+
+/* ---------------- 1.71: inherited fields, node rules, the draft's answers ---------------- */
+
+/** The editor of the mounted layout (exposed for the tests). */
+function findEditor(): BlockTreeEditor {
+  return (wrapper!.findComponent(BlockTreeLayout).vm as unknown as { editor: BlockTreeEditor }).editor
+}
+
+function mountLayout(content: Record<string, unknown>, props: Record<string, unknown> = {}): void {
+  clearRegistry()
+  registerBuiltinComponents()
+  const Host = defineComponent({
+    setup() {
+      form = provideFormState({ content })
+      return () => h(BlockTreeLayout, { source: 'content', types, draftMethod: 'saveDraft', publishMethod: 'publish', ...props })
+    },
+  })
+  wrapper = mount(Host, {
+    attachTo: document.body,
+    global: { provide: { [ScreenContextKey as symbol]: { call } as Partial<ScreenContext> } },
+  })
+}
+
+describe('the inherited fields', () => {
+  function inheriting(): Record<string, unknown> {
+    const v = value()
+    ;(v.nodes as BlockNode[])[0].meta = { fields: { title: { inherited: true, base: 'Welcome' } } }
+    return v
+  }
+
+  it('marks a field inherited, overridden after an edit, and puts the base value back', async () => {
+    mountLayout(inheriting(), { autosaveDelay: 0 })
+    await wrapper!.find('.admin-block-tree-node__row[data-ref="1"]').trigger('click')
+    const field = (): ReturnType<VueWrapper['find']> => wrapper!.find('.admin-block-tree-properties__field[data-field="title"]')
+    expect(field().attributes('data-inheritance')).toBe('inherited')
+    expect(field().text()).toContain('Унаследовано')
+    expect(field().find('[data-action="revert-field"]').exists()).toBe(false)
+
+    await field().find('input').setValue('Mine')
+    expect(nodesOf()[0].data!.title).toBe('Mine')
+    expect(field().attributes('data-inheritance')).toBe('overridden')
+    expect(field().text()).toContain('Переопределено')
+    const changed = wrapper!.find('.admin-block-tree-node__row[data-ref="1"]')
+    expect(changed.text()).toContain('изменён')
+
+    await field().find('[data-action="revert-field"]').trigger('click')
+    expect(nodesOf()[0].data!.title).toBe('Welcome')
+    expect((field().find('input').element as HTMLInputElement).value).toBe('Welcome')
+    expect(field().attributes('data-inheritance')).toBe('inherited')
+  })
+
+  it('returns an override the server sent, and the node counts as changed', async () => {
+    const v = value()
+    ;(v.nodes as BlockNode[])[0].meta = { fields: { title: { inherited: false, base: 'Base title' } } }
+    mountLayout(v, { autosaveDelay: 0 })
+    await wrapper!.find('.admin-block-tree-node__row[data-ref="1"]').trigger('click')
+    const field = wrapper!.find('.admin-block-tree-properties__field[data-field="title"]')
+    expect(field.attributes('data-inheritance')).toBe('overridden')
+    await field.find('[data-action="revert-field"]').trigger('click')
+    expect(nodesOf()[0].data!.title).toBe('Base title')
+    // The server sees the wish to inherit again.
+    expect((nodesOf()[0].meta!.fields as Record<string, { inherited: boolean }>).title.inherited).toBe(true)
+    expect(wrapper!.find('.admin-block-tree-node__row[data-ref="1"]').text()).toContain('изменён')
+    expect(wrapper!.find('[data-action="undo"]').exists()).toBe(true)
+  })
+})
+
+describe('the rules of a node', () => {
+  it('offers in the palette only the types of meta.accepts, and nothing in a locked node', async () => {
+    const v = value()
+    v.nodes = [
+      ...(v.nodes as BlockNode[]),
+      { ref: 4, type: 'columns', data: {}, children: [], meta: { accepts: [] } },
+      { ref: 5, type: 'columns', data: {}, children: [], meta: { locked: true } },
+    ]
+    mountLayout(v)
+    const row = (ref: number): ReturnType<VueWrapper['find']> => wrapper!.find(`.admin-block-tree-node__row[data-ref="${ref}"]`)
+    expect(row(2).find('[data-action="add-inside"]').exists()).toBe(true)
+    expect(row(4).find('[data-action="add-inside"]').exists()).toBe(false)
+    expect(row(5).find('[data-action="add-inside"]').exists()).toBe(false)
+    // A locked node: no drag, no removal, a mark; its form is read-only.
+    expect(row(5).attributes('draggable')).toBe('false')
+    expect(row(5).find('[data-action="remove"]').exists()).toBe(false)
+    expect(row(5).find('.admin-block-tree-mark.is-locked').exists()).toBe(true)
+    await row(5).trigger('click')
+    expect(wrapper!.find('.admin-block-tree-properties').text()).toContain('Блок закреплён: только просмотр')
+    await row(5).trigger('keydown', { key: 'Delete' })
+    expect(nodesOf().map((n) => n.ref)).toEqual([1, 2, 4, 5])
+  })
+
+  it('offers no drop zone the node rules forbid', async () => {
+    const v = value()
+    v.nodes = [
+      ...(v.nodes as BlockNode[]),
+      { ref: 4, type: 'columns', data: {}, children: [], meta: { accepts: [] } },
+      { ref: 5, type: 'columns', data: {}, children: [], meta: { locked: true } },
+    ]
+    mountLayout(v)
+    const row = (ref: number): ReturnType<VueWrapper['find']> => wrapper!.find(`.admin-block-tree-node__row[data-ref="${ref}"]`)
+    const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' }
+    await row(3).trigger('dragstart', { dataTransfer })
+    // Into the middle of a node: "inside" when allowed.
+    const over = async (ref: number): Promise<void> => {
+      const el = row(ref).element as HTMLElement
+      el.getBoundingClientRect = () => ({ top: 0, height: 20, bottom: 20, left: 0, right: 100, width: 100, x: 0, y: 0, toJSON: () => ({}) })
+      await row(ref).trigger('dragover', { clientY: 10, dataTransfer })
+    }
+    await over(2)
+    expect(row(2).classes()).toContain('is-drop-inside')
+    await over(4)
+    expect(row(4).classes().some((c) => c.startsWith('is-drop-'))).toBe(false)
+    await over(5)
+    expect(row(5).classes().some((c) => c.startsWith('is-drop-'))).toBe(false)
+    await row(5).trigger('drop', { dataTransfer })
+    expect(nodesOf()[3].children).toEqual([])
+    await row(3).trigger('dragend')
+    // A locked node does not start a drag.
+    const locked = new Event('dragstart', { cancelable: true })
+    row(5).element.dispatchEvent(locked)
+    expect(locked.defaultPrevented).toBe(true)
+  })
+})
+
+describe('the draft answers', () => {
+  it('keeps what was typed while the draft was saving, and renames the new refs (draftSaved)', async () => {
+    vi.useFakeTimers()
+    let answer!: (r: Record<string, unknown>) => void
+    call.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)))
+    mountEditor()
+    const added = editor.add(types[2], 2, 1)!
+    const temp = String(added.ref)
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(call).toHaveBeenCalledTimes(1)
+    expect(editor.status.value).toBe('saving')
+
+    // Typed while the request is out.
+    findNodeIn(nodesOf(), temp)!.data!.body = 'Typed meanwhile'
+    nodesOf()[0].data!.title = 'Also meanwhile'
+    await nextTick()
+
+    answer({ extra: { blockTree: { refs: { [temp]: 51 }, fingerprint: 'fp-draft-2', savedAt: '2026-11-13T12:00:00+03:00' } } })
+    await flushPromises()
+
+    expect(nodesOf()[1].children.map((n) => n.ref)).toEqual([3, 51])
+    expect(nodesOf()[1].children[1].data).toEqual({ body: 'Typed meanwhile' })
+    expect(nodesOf()[0].data!.title).toBe('Also meanwhile')
+    expect(editor.selectedRef.value).toBe(51)
+    expect((form.getField('content') as { fingerprint: string }).fingerprint).toBe('fp-draft-2')
+    expect(editor.savedAt.value).toBe('2026-11-13T12:00:00+03:00')
+    // What was typed meanwhile is not saved yet: it goes in the next draft, under the new ref.
+    expect(editor.status.value).toBe('dirty')
+    call.mockResolvedValueOnce({ extra: { blockTree: { refs: {}, fingerprint: 'fp-draft-3' } } })
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(call).toHaveBeenCalledTimes(2)
+    const sent = (call.mock.calls[1][1] as Record<string, { nodes: BlockNode[]; fingerprint: string }>[])[0].content
+    expect(sent.fingerprint).toBe('fp-draft-2')
+    expect(sent.nodes[1].children[1]).toMatchObject({ ref: 51, data: { body: 'Typed meanwhile' } })
+    expect(editor.status.value).toBe('saved')
+    // An undo does not bring the temporary ref back.
+    editor.undo()
+    expect(JSON.stringify(nodesOf())).not.toContain(temp)
+  })
+
+  it('keeps the selected node, its form and the folded nodes when the refs are renamed', async () => {
+    let answer!: (r: Record<string, unknown>) => void
+    call.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)))
+    mountLayout(value(), { autosaveDelay: 0 })
+    await wrapper!.find('.admin-block-tree-node__row[data-ref="2"] [data-action="add-inside"]').trigger('click')
+    await wrapper!.find('.admin-block-tree-palette__item[data-type="text"]').trigger('click')
+    const temp = String(nodesOf()[1].children[1].ref)
+    const props = wrapper!.findComponent({ name: 'BlockProperties' })
+    // Fold the columns, then save.
+    await wrapper!.find('.admin-block-tree-node__row[data-ref="2"] .admin-block-tree-node__toggle').trigger('click')
+    const save = findEditor().saveDraft()
+    answer({ extra: { blockTree: { refs: { [temp]: 77 }, fingerprint: 'fp-x' } } })
+    await save
+    await flushPromises()
+    expect(findEditor().selectedRef.value).toBe(77)
+    expect(wrapper!.findComponent({ name: 'BlockProperties' }).vm.$.uid).toBe(props.vm.$.uid)
+    expect(wrapper!.find('.admin-block-tree-node__row[data-ref="2"]').attributes('aria-expanded')).toBe('false')
+  })
+
+  it('shows a conflict of the draft and pauses the autosave until saved over', async () => {
+    vi.useFakeTimers()
+    call.mockResolvedValueOnce({
+      extra: { blockTree: { conflict: { message: 'Edited in another tab', differences: ['Hero: title'], fingerprint: 'fp-9' } } },
+    })
+    mountEditor()
+    nodesOf()[0].data!.title = 'Hi'
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(call).toHaveBeenCalledTimes(1)
+    expect(editor.conflict.value).toMatchObject({ kind: 'draft', message: 'Edited in another tab', fingerprint: 'fp-9' })
+    expect(editor.paused.value).toBe('conflict')
+    expect(editor.status.value).toBe('error')
+    // Nothing of the tree is lost, and more edits do not send it again.
+    expect(nodesOf()[0].data!.title).toBe('Hi')
+    nodesOf()[0].data!.title = 'Hi again'
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(call).toHaveBeenCalledTimes(1)
+    editor.dismissConflict()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(call).toHaveBeenCalledTimes(1)
+
+    call.mockResolvedValueOnce({ extra: { blockTree: { refs: {}, fingerprint: 'fp-10' } } })
+    await editor.saveOver()
+    expect(call).toHaveBeenCalledTimes(2)
+    const sent = (call.mock.calls[1][1] as Record<string, { fingerprint: string }>[])[0].content
+    expect(sent.fingerprint).toBe('fp-9')
+    expect(editor.paused.value).toBeNull()
+    expect(editor.status.value).toBe('saved')
+    expect((form.getField('content') as { fingerprint: string }).fingerprint).toBe('fp-10')
+  })
+
+  it('marks the errors of the draft and waits for the next change', async () => {
+    vi.useFakeTimers()
+    call.mockResolvedValueOnce({
+      extra: { blockTree: { errors: [{ ref: 1, path: '0', field: 'title', message: 'Too long' }], message: 'Fix it' } },
+    })
+    mountEditor()
+    nodesOf()[0].data!.title = 'x'.repeat(50)
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(editor.errors.value.get('1')).toEqual({ messages: [], fields: { title: ['Too long'] } })
+    expect(editor.paused.value).toBe('invalid')
+    expect(adminToast.error).toHaveBeenCalledWith('Fix it')
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(call).toHaveBeenCalledTimes(1)
+
+    // The next change resumes it; a saved draft clears the draft's errors.
+    call.mockResolvedValueOnce({ extra: { blockTree: { refs: {}, fingerprint: 'fp-2' } } })
+    nodesOf()[0].data!.title = 'Short'
+    await nextTick()
+    expect(editor.paused.value).toBeNull()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(call).toHaveBeenCalledTimes(2)
+    expect(editor.errors.value.size).toBe(0)
+    expect(editor.status.value).toBe('saved')
+  })
+
+  it('maps a ValidationError of the draft onto the nodes, and pauses', async () => {
+    vi.useFakeTimers()
+    call.mockRejectedValueOnce(
+      new ValidationError({ errorKey: 'validation', message: 'Invalid', messages: { 'content.nodes.1.children.0': ['Not here'] } }),
+    )
+    mountEditor()
+    nodesOf()[0].data!.title = 'Hi'
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(editor.errors.value.get('3')).toEqual({ messages: ['Not here'], fields: {} })
+    expect(editor.paused.value).toBe('invalid')
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('shows the draft conflict in the layout with "Save over"', async () => {
+    call.mockResolvedValueOnce({ extra: { blockTree: { conflict: { message: 'Draft changed elsewhere', differences: [], fingerprint: 'fp-5' } } } })
+    mountLayout(value(), { autosaveDelay: 0 })
+    nodesOf()[0].data!.title = 'Hi'
+    await nextTick()
+    await findEditor().saveDraft()
+    await flushPromises()
+    expect(wrapper!.text()).toContain('Draft changed elsewhere')
+    expect(wrapper!.find('.admin-block-tree__status').text()).toContain('автосохранение приостановлено')
+    call.mockResolvedValueOnce({ extra: { blockTree: { refs: {}, fingerprint: 'fp-6' } } })
+    await wrapper!.find('[data-action="save-over"]').trigger('click')
+    await flushPromises()
+    expect(call).toHaveBeenCalledTimes(2)
+    expect(wrapper!.find('[data-action="save-over"]').exists()).toBe(false)
   })
 })

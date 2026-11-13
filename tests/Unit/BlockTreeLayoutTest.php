@@ -160,6 +160,27 @@ it('shapes the answers of the screen methods', function (): void {
         ->and($invalid['blockTree']['message'])->toBeString();
 });
 
+it('answers a saved draft with the renamed refs and the fingerprint, not the tree', function (): void {
+    $answer = BlockTree::draftSaved(['new-1a2b' => 51, 'new-3c4d' => 'block-52'], 'fp-7', '2026-11-13T12:00:00+00:00');
+
+    expect(array_keys($answer['blockTree']))->toBe(['refs', 'fingerprint', 'savedAt'])
+        ->and((array) $answer['blockTree']['refs'])->toBe(['new-1a2b' => 51, 'new-3c4d' => 'block-52'])
+        ->and($answer['blockTree']['fingerprint'])->toBe('fp-7')
+        ->and($answer['blockTree']['savedAt'])->toBe('2026-11-13T12:00:00+00:00')
+        ->and($answer)->not->toHaveKey('message');
+
+    // No new blocks: still an object in the JSON, and the time is now.
+    $empty = BlockTree::draftSaved([], 'fp-8');
+    expect(json_encode($empty['blockTree']['refs']))->toBe('{}')
+        ->and($empty['blockTree']['savedAt'])->toBeString();
+});
+
+it('serializes the editor the same way when the nodes carry node rules and field meta', function (): void {
+    // The node meta lives in the state's value: the layout's own props do not change.
+    expect(array_keys(blockTreeEditor()->toArray()))->not->toContain('meta')
+        ->and(blockTreeEditor()->toArray()['types'][1]['accepts'])->toBe(['text']);
+});
+
 /* ---------------- the validator ---------------- */
 
 function validTree(): array
@@ -244,4 +265,62 @@ it('throws a ValidationException keyed by the path', function (): void {
     } catch (ValidationException $e) {
         expect(array_keys($e->errors()))->toBe(['nodes.0.data.title']);
     }
+});
+
+/* ---------------- the node rules: meta.accepts, meta.locked ---------------- */
+
+it('takes the types allowed inside a node from its meta.accepts', function (): void {
+    $tree = validTree();
+    $tree[1]['meta'] = ['accepts' => []];
+    $errors = blockTreeEditor()->validator()->errors($tree, data: false);
+    expect(array_column($errors, 'path'))->toBe(['1.children.0']);
+
+    // Wider than the type: a button straight in the columns.
+    $tree = validTree();
+    $tree[1]['meta'] = ['accepts' => ['text', 'button']];
+    $tree[1]['children'][] = ['ref' => 11, 'type' => 'button', 'data' => [], 'children' => []];
+    expect(blockTreeEditor()->validator()->errors($tree, data: false))->toBe([]);
+});
+
+it('reads the node rules from the original tree when it is given', function (): void {
+    $original = validTree();
+    $original[1]['meta'] = ['accepts' => []];
+    $original[1]['children'] = [];
+
+    // The request widens the rule back: the stored one counts.
+    $tree = validTree();
+    $tree[1]['meta'] = ['accepts' => ['text']];
+    $errors = blockTreeEditor()->validator()->errors($tree, data: false, original: $original);
+    expect(array_column($errors, 'path'))->toBe(['1.children.0']);
+});
+
+it('keeps a locked node of the original tree as it was', function (): void {
+    $original = validTree();
+    $original[1]['children'][0]['meta'] = ['locked' => true]; // the text, with the button inside
+    $validator = blockTreeEditor()->validator();
+
+    $same = validTree();
+    expect($validator->errors($same, data: false, original: $original))->toBe([]);
+
+    $changed = validTree();
+    $changed[1]['children'][0]['data']['body'] = 'Mine';
+    $changed[1]['children'][0]['children'] = [];
+    $errors = $validator->errors($changed, data: false, original: $original);
+    expect(array_column($errors, 'ref'))->toBe(['new-a1', 'new-a1'])
+        ->and($errors[0]['message'])->toContain('Text');
+
+    $moved = validTree();
+    $text = array_pop($moved[1]['children']);
+    $moved[] = ['ref' => 20, 'type' => 'columns', 'data' => [], 'children' => [$text]];
+    expect(array_column($validator->errors($moved, data: false, original: $original), 'path'))->toBe(['2.children.0']);
+
+    $removed = validTree();
+    $removed[1]['children'] = [];
+    expect($validator->errors($removed, data: false, original: $original))->toHaveCount(1);
+
+    // Gone with its unlocked parent removed as a whole: no error of its own.
+    $wholeParent = validTree();
+    array_pop($wholeParent);
+    expect($validator->errors($wholeParent, data: false, original: $original))->toBe([])
+        ->and($validator->passes($same, data: false, original: $original))->toBeTrue();
 });

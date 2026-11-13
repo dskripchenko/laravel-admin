@@ -62,10 +62,30 @@ final class TestBlockTreeScreen extends Screen
     {
         self::$calls[] = 'saveDraft';
         $nodes = $state['content']['nodes'] ?? [];
-        $this->editor()->validator()->validate($nodes, 'content.nodes', data: false);
+        $this->editor()->validator()->validate($nodes, 'content.nodes', data: false, original: self::$draft ?? self::$published);
+        // The new blocks get their ids: 100, 101, …
+        $refs = [];
+        $nodes = self::assignIds($nodes, $refs);
         self::$draft = $nodes;
 
-        return BlockTree::saved();
+        return BlockTree::draftSaved($refs, self::fingerprint($nodes));
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $nodes
+     * @param  array<string, int>  $refs
+     * @return list<array<string, mixed>>
+     */
+    private static function assignIds(array $nodes, array &$refs): array
+    {
+        foreach ($nodes as $i => $node) {
+            if (is_string($node['ref'] ?? null) && str_starts_with($node['ref'], 'new-')) {
+                $refs[$node['ref']] = $nodes[$i]['ref'] = 100 + count($refs);
+            }
+            $nodes[$i]['children'] = self::assignIds($node['children'] ?? [], $refs);
+        }
+
+        return $nodes;
     }
 
     public function publish(array $state): array

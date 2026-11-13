@@ -729,5 +729,21 @@
     "TinyMCE не подключён: укажите адрес tinymce.min.js в driverConfig.script или admin.wysiwyg.tinymce.script. Пока HTML правится как текст.": "TinyMCE is not connected: set the tinymce.min.js URL in driverConfig.script or admin.wysiwyg.tinymce.script. Meanwhile the HTML is edited as text.",
     "Код цвета, например #c0ffee или rgba 255, 0, 0, 0.5": "Colour code, e.g. #c0ffee or rgba 255, 0, 0, 0.5",
     "Не удалось загрузить редактор.": "Could not load the editor.",
-    "Загрузка редактора…": "Loading the editor…"
+    "Загрузка редактора…": "Loading the editor…",
+    "Закреплённый блок «:type» нельзя удалять": "The locked block “:type” cannot be removed",
+    "Закреплённый блок «:type» нельзя перемещать": "The locked block “:type” cannot be moved",
+    "Закреплённый блок «:type» нельзя изменять": "The locked block “:type” cannot be changed",
+    "В закреплённом блоке «:type» нельзя менять вложенные блоки": "The blocks inside the locked block “:type” cannot be changed",
+    "Черновик изменился после начала правки": "The draft changed after the editing began",
+    "Черновик не сохранён: исправьте ошибки в блоках": "The draft is not saved: fix the errors in the blocks",
+    "Черновик не сохранён: версия изменилась, автосохранение приостановлено": "The draft is not saved: the version changed, autosave is paused",
+    "Возврат значения основы": "Return of the base value",
+    "Сохранить черновик поверх изменившейся версии": "Save the draft over the changed version",
+    "Сохранить поверх": "Save over",
+    "Блок закреплён: только просмотр": "The block is locked: view only",
+    "Значение берётся из основы": "The value comes from the base block",
+    "Унаследовано": "Inherited",
+    "Значение задано в этом блоке": "The value is set in this block",
+    "Переопределено": "Overridden",
+    "Вернуть значение основы": "Return the base value"
 }

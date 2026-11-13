@@ -1066,10 +1066,12 @@ final class PageContentScreen extends Screen
     public function saveDraft(array $state): array
     {
         $content = $state['content'];
-        $this->editor()->validator()->validate($content['nodes'], 'content.nodes', data: false);
-        PageDraft::store($content['page'], $content['nodes'], $content['fingerprint']);
+        $stored = PageDraft::for($content['page'])?->nodes ?? PageTree::load(Page::findOrFail($content['page']));
+        $this->editor()->validator()->validate($content['nodes'], 'content.nodes', data: false, original: $stored);
+        $draft = PageDraft::store($content['page'], $content['nodes'], $content['fingerprint']);
 
-        return BlockTree::saved();
+        // id новых блоков: ['new-1a2b' => 51, ...]; дерево в панели остаётся как есть
+        return BlockTree::draftSaved($draft->refs, $draft->fingerprint);
     }
 
     public function publish(array $state): array
@@ -1174,16 +1176,26 @@ final class PageContentScreen extends Screen
 право метода; без методов черновика и публикации (или прав на них) редактор
 только для чтения. Ответы метода:
 
+- `BlockTree::draftSaved(array $refs, string $fingerprint, ?string $savedAt = null)`
+  — черновик сохранён (с 1.71): редактор оставляет дерево как есть, вместе с
+  вводом, сделанным во время запроса, переименовывает временные ref новых
+  блоков по `$refs` (`['new-1a2b' => 51]`; выделение, свёрнутые узлы и
+  «Вернуть» следуют за ними) и берёт новый отпечаток в значение;
 - `BlockTree::saved(?array $value = null, ?string $message = null)` —
-  сохранено; с `$value` редактор продолжает с него (после публикации или отмены);
+  сохранено; с `$value` редактор продолжает с него (после публикации или
+  отмены; для черновика заменяет всё дерево, как до 1.71);
 - `BlockTree::conflict($message, $differences, ?$fingerprint)` — опубликованное
   состояние изменилось после начала правки: ничего не опубликовано, редактор
   показывает сообщение и расхождения (строки или
-  `['ref' => …, 'label' => …, 'change' => …]`);
+  `['ref' => …, 'label' => …, 'change' => …]`). В ответе черновика
+  автосохранение приостанавливается: ничего не теряется, а кнопка
+  **Сохранить поверх** на нижней панели берёт `$fingerprint` в значение и
+  сохраняет черновик снова;
 - `BlockTree::invalid($errors)` — ошибки валидатора: узлы получают отметку,
   поля — свои сообщения. `ValidationException` с ключами по пути в дереве
   (`content.nodes.1.children.0.data.title`, как его бросает
-  `TreeValidator::validate($nodes, 'content.nodes')`) показывается так же;
+  `TreeValidator::validate($nodes, 'content.nodes')`) показывается так же.
+  В ответе черновика автосохранение ждёт следующей правки;
 - `ActionFailedException` — отказ, текст во всплывающем сообщении.
 
 **Валидатор** — `TreeValidator::errors($nodes, bool $data = true)` проверяет
@@ -1193,6 +1205,32 @@ final class PageContentScreen extends Screen
 правилам полей. Каждая ошибка —
 `['ref' => …, 'path' => '1.children.0', 'field' => 'title' | null, 'message' => …]`;
 `passes()` и `validate($nodes, $key)` (бросает `ValidationException`) — обёртки.
+Учитываются и правила узлов: `meta.accepts` узла вместо `accepts` его типа,
+а если передано сохранённое дерево (`original:`) — закреплённый в нём узел
+(`meta.locked`) должен сохранить тип, данные, родителя и детей (исчезнуть он
+может только вместе с незакреплённым предком, удалённым целиком). С
+`original:` мета берётся из сохранённого дерева, так что запрос не может
+расширить правила.
+
+**Наследуемые блоки и правила узлов** (с 1.71) — для дерева, где блоки
+наследуют поля общих «основ» (экземпляр берёт поля основы и может
+переопределить отдельные), сервер кладёт в `meta` узла:
+
+| Ключ | Что делает |
+|---|---|
+| `fields` | `{имя: {inherited: bool, base: mixed}}`. Поле помечается **Унаследовано** (значение — как у основы) или **Переопределено** с действием **Вернуть значение основы**: оно ставит `base` в данные узла и возвращает `inherited` в true (узел становится изменённым, как после обычной правки). Правка унаследованного поля сразу меняет пометку на «Переопределено» (значение сверяется с `base`). Что сохранять — решает сервер |
+| `accepts` | `list<string>`: какие типы можно класть в этот узел вместо правила его типа; `[]` — ничего. Палитра, перетаскивание и валидатор следуют ему |
+| `locked` | `true`: узел только для чтения — форма, дети (нельзя добавить, убрать, переставить), место, удаление; выделить и посмотреть можно. Отмечен замком |
+
+```php
+['ref' => 51, 'type' => 'banner', 'data' => ['title' => 'Весенняя распродажа', 'image' => 12], 'children' => [], 'meta' => [
+    'fields' => [
+        'title' => ['inherited' => false, 'base' => 'Распродажа'],   // переопределено здесь
+        'image' => ['inherited' => true, 'base' => 12],
+    ],
+    'accepts' => ['button'],
+]]
+```
 
 **Протокол предпросмотра**:
 

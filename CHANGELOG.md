@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.71.0
+
+### Added
+
+- **`Layout::blockTree()`: inherited fields.** A node may carry
+  `meta.fields` — `{name: {inherited, base}}` — for a tree whose blocks
+  inherit from shared base blocks. The properties form marks such a field
+  *Inherited* (the value is the base's) or *Overridden*, with *Return the
+  base value*: it puts `base` into the node's data (the node is changed, as
+  after an edit, and the step can be undone) and sets `inherited` back to
+  true for the server. An edit of an inherited field turns the mark to
+  *Overridden* at once — the value is compared with `base`; what is saved is
+  still the server's decision.
+- **`Layout::blockTree()`: node rules.** `meta.accepts` — the types allowed
+  inside this node instead of its type's (`[]` — none); `meta.locked` — the
+  node is read-only: its form, its children (none added, removed or
+  reordered), its place and its removal; it can still be selected and
+  viewed, and is marked with a lock. The palette, the drag's drop zones, the
+  insert, duplicate and delete all follow them. `TreeValidator` checks
+  `meta.accepts`, and with the stored tree given —
+  `errors($nodes, original: $stored)`, also on `passes()` and `validate()` —
+  reads the meta from there (the request cannot widen the rules) and keeps a
+  locked node's type, data, parent and children; it may go away only with an
+  unlocked ancestor removed as a whole.
+- **`BlockTree::draftSaved($refs, $fingerprint, ?$savedAt)`** — the draft's
+  answer that does not replace the tree: the new blocks' temporary refs are
+  renamed to their ids (`['new-1a2b' => 51]`) — with the selection, the
+  folded nodes, the open form and the undo steps — and the value takes the
+  new fingerprint. Whatever was typed while the request was out stays and
+  goes with the next draft. `BlockTree::saved($value)` works as before.
+
+### Fixed
+
+- **`Layout::blockTree()`: a conflict and errors in the draft's answer.**
+  `BlockTree::conflict()` and `BlockTree::invalid()` from the draft method —
+  and a `ValidationException` keyed by the tree's path — were ignored or only
+  toasted. They are now shown as for the publish: the differences in a
+  message (*Draft not saved*), the nodes' errors on the nodes. The autosave
+  pauses meanwhile: after errors until the next change, after a conflict
+  until *Save over* in the bar (it takes the conflict's fingerprint and saves
+  again) or a publish, discard or reload.
+
 ## 1.70.1
 
 ### Fixed
