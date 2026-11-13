@@ -94,6 +94,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Panel routes only where they are needed.** A big panel registers about
+  fifteen named API routes per resource — on a host application they can be
+  the larger half of all its routes, built on every request of the site. An
+  HTTP request outside a panel's API prefix now skips them (the generic
+  `{version}/{controller}/{action}` route still answers); the console —
+  `route:cache`, `route:list`, tests — and requests to the panel build them
+  all as before.
+
 - **`hideAuto()` for screens.** `Admin::menu()->hideAuto()` took only
   resources out of the auto-filled menu; it now takes a screen too, by its
   slug or as `screen.{slug}`.

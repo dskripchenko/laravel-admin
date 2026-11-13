@@ -124,6 +124,46 @@ class AdminApiModule extends BaseModule
      */
     public function getRouteDefinitions(): array
     {
+        $panels = app(\Dskripchenko\LaravelAdmin\Panel\PanelRegistry::class);
+        $skipPanels = ! $this->needsPanelRoutes($panels);
+
+        $cached = \Dskripchenko\LaravelApi\Services\ApiCache::routeDefinitions(static::class);
+        if ($cached !== null) {
+            $definitions = $skipPanels
+                ? array_values(array_filter($cached, fn (array $d): bool => ! $this->isPanelVersion($panels, (string) ($d['version'] ?? ''))))
+                : $cached;
+        } else {
+            $definitions = [];
+            $uriPattern = $this->getApiUriPattern();
+            foreach ($this->getApiVersionList() as $version => $apiClass) {
+                if (! is_subclass_of($apiClass, BaseApi::class)) {
+                    continue;
+                }
+                // A site request needs none of the panel's ~15 routes per resource:
+                // on a big panel they are the larger half of the application's routes.
+                if ($skipPanels && $this->isPanelVersion($panels, (string) $version)) {
+                    continue;
+                }
+                foreach ($apiClass::operations((string) $version)->operations() as $operation) {
+                    $nameSuffix = $operation->name ?: "{$operation->controllerKey}.{$operation->actionKey}";
+                    $definitions[] = [
+                        'version' => $version,
+                        'controller' => $operation->controllerKey,
+                        'action' => $operation->actionKey,
+                        'methods' => $operation->httpMethods,
+                        'name' => "api.{$version}.{$nameSuffix}",
+                        'uri' => str_replace(
+                            ['{version}', '{controller}', '{action}'],
+                            [$version, $operation->controllerKey, $operation->actionKey],
+                            $uriPattern,
+                        ),
+                        'middleware' => $operation->middleware(),
+                        'exclude-middleware' => $operation->excludedMiddleware(),
+                    ];
+                }
+            }
+        }
+
         return array_map(static function (array $definition): array {
             $middleware = (array) ($definition['middleware'] ?? []);
             if (! in_array('api-middleware-group', $middleware, true)) {
@@ -132,7 +172,49 @@ class AdminApiModule extends BaseModule
             $definition['middleware'] = $middleware;
 
             return $definition;
-        }, parent::getRouteDefinitions());
+        }, $definitions);
+    }
+
+    /**
+     * Whether this request needs the named routes of the panels.
+     *
+     * The console always does — `route:cache`, `route:list`, the test suite —
+     * and so does a request under a panel's API prefix. Any other HTTP request
+     * (the host's site, its own API) skips them: the generic
+     * `{version}/{controller}/{action}` route still answers a panel call that
+     * somehow arrives, so nothing breaks, it only saves the memory and time of
+     * building every panel route on every page of the site.
+     */
+    protected function needsPanelRoutes(\Dskripchenko\LaravelAdmin\Panel\PanelRegistry $panels): bool
+    {
+        if ($this->runningInConsole() || ! app()->bound('request')) {
+            return true;
+        }
+
+        $path = trim((string) app('request')->path(), '/');
+        $prefix = trim($this->getApiPrefix(), '/');
+        foreach ($panels->all() as $panel) {
+            foreach ([ltrim(($prefix === '' ? '' : $prefix.'/').$panel->id, '/'), trim($panel->apiPath, '/')] as $base) {
+                if ($base !== '' && ($path === $base || str_starts_with($path, $base.'/'))) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    protected function isPanelVersion(\Dskripchenko\LaravelAdmin\Panel\PanelRegistry $panels, string $version): bool
+    {
+        return $version === 'admin' || $panels->has($version);
+    }
+
+    /**
+     * Separate so that a test can play an HTTP request.
+     */
+    protected function runningInConsole(): bool
+    {
+        return app()->runningInConsole();
     }
 
     public function getApiMiddleware(): array
