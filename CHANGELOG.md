@@ -5,6 +5,30 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`Layout::blockTree()`: a page builder in one window.** An editor of a
+  tree of blocks with a live preview: the structure (drag and drop within
+  the nesting rules, a palette of the types allowed at the place, duplicate,
+  delete with undo, folded nodes, marks *new* / *changed* / *not shown* /
+  *outside the rules*), the preview (the page's HTML POSTed for the current
+  tree into an iframe, reloaded after each change with the scroll kept;
+  desktop, tablet and phone widths; a click on a block selects its node, a
+  selected node is outlined and scrolled to) and the properties (the
+  block's form, drawn by the panel's own fields, with the path to it). The
+  tree is one value of the screen's state; the draft (autosave), publish
+  and discard are screen methods called through `runMethod` with the whole
+  state and guarded by their permissions. The types are
+  `BlockTree\BlockType` (root, accepted children, fields, caption source,
+  defaults, icon, thumbnail); `BlockTree::saved()`, `::conflict()` (a
+  changed fingerprint, with the differences) and `::invalid()` shape the
+  answers; `BlockTree\TreeValidator` checks a tree against the types (shape,
+  known types, nesting, depth, the fields' rules). The editor is a chunk of
+  its own in the prebuilt bundle. See
+  [Layouts Reference](docs/en/layouts-reference.md#blocktree-page-builder).
+
 ## 1.69.2
 
 ### Changed

@@ -36,6 +36,7 @@ translated_at: 2026-10-02
 | `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI 参考：服务器、通道、操作、消息 |
 | `Kanban` | `Layout::kanban('board')` | 用标记写成的看板，可通过 Screen 方法编辑 |
 | `Calendar` | `Layout::calendar('schedule')` | 用标记写成、支持重复的事件日历，可通过 Screen 方法编辑 |
+| `BlockTree` | `Layout::blockTree('content')` | 页面构建器：带实时预览的块树，草稿与发布通过屏幕方法完成 |
 | `Board` | `Layout::board()->endpoint('/boards/42')` | 多人同时编辑的协作白板；存储由 `laravel-admin-board` 提供 |
 | `Video` | `Layout::video('/media/intro.mp4')` | 视频播放器：清晰度、HLS、字幕、章节、缩略图 |
 | `Audio` | `Layout::audio([...])` | 音频播放器：单曲或播放列表、波形、迷你样式 |
@@ -821,6 +822,17 @@ Layout::board()
 
 如果白板已超出服务器日志仍保存的范围，编辑器会重新加载它。仪表盘上的同一个白板是
 `Widget\BoardWidget`（[小部件](concepts/widgets-and-dashboards.md#board)）。
+
+### BlockTree（页面构建器）
+
+`Layout::blockTree('content')` 是带实时预览的块树编辑器，是页面构建器的基础：
+结构（在嵌套规则内拖放、按插入位置过滤的类型面板、连同子块复制、可撤销的删除、
+“新增 / 已修改 / 不显示”标记）、预览（为当前树以 POST 获取的页面 HTML 显示在
+iframe 中，点击块即选中其节点）和属性（用面板自带字段绘制的块表单）。草稿、
+发布和放弃通过屏幕方法（`draft()`、`publish()`、`discard()`）以整个 state 为参数
+调用；`BlockTree::saved()`、`::conflict()`、`::invalid()` 构造返回值，
+`TreeValidator` 按类型校验树。完整说明、屏幕示例和预览协议见
+[英文参考](../en/layouts-reference.md#blocktree-page-builder)。
 
 ### Video 与 Audio（媒体播放器）
 
