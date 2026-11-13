@@ -167,12 +167,15 @@ final class Tabs extends Layout
                 'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string(
                     (string) ($labels[$position] ?? ('Tab '.($position + 1))),
                 ),
-                // The child has been serialized by Layout::toArray() already and holds its items.
-                // A listener keeps its own node: flattening it would drop
-                // the reactivity along with the wrapper.
-                'items' => ($child['type'] ?? null) === 'listener'
-                    ? [$child]
-                    : ($child['items'] ?? ($child['children'] ?? [$child])),
+                // The child has been serialized by Layout::toArray() already.
+                // Only a Rows wrapper — what make() builds from a list — is
+                // unwrapped into its items; any other node is the tab's one
+                // item. A resourceIndex, nested tabs or a block used to be
+                // replaced by their (empty) list of children, which left the
+                // tab blank; a listener would lose its reactivity.
+                'items' => ($child['type'] ?? null) === 'rows'
+                    ? ($child['items'] ?? ($child['children'] ?? []))
+                    : [$child],
             ];
         }
 

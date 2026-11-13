@@ -75,6 +75,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A tab given one node was blank.** `Layout::tabs(['Orders' =>
+  Layout::resourceIndex(...)])` — a live list, nested tabs or a block as the
+  tab's content — showed an empty tab: the node was replaced by its (empty)
+  list of children. Only the Rows wrapper built from a list is unwrapped now.
 - **The API under laravel-api 6.2.2.** 6.2.2 stopped putting the module
   group on the named action routes. `AdminApiModule` puts its group —
   request-independent, `CaptureApiRequest` + `RunVersionMiddleware` — back on
