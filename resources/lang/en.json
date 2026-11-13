@@ -792,5 +792,7 @@
     "Только ошибки": "Only errors",
     "Событий нет": "No events",
     "Под условия не подходит ни одно событие": "No event matches",
-    "Показать ещё :n": "Show :n more"
+    "Показать ещё :n": "Show :n more",
+    "… :n слов без изменений": "… :n words unchanged",
+    "… :n строк без изменений": "… :n lines unchanged"
 }

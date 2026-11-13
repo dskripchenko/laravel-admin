@@ -22,6 +22,9 @@ import {
 } from 'lucide-vue-next'
 import { UidAvatar, UidIcon, UidSkeleton } from '@dskripchenko/ui'
 import { formatLocale, trSafe as tr, tRaw } from '../../stores/i18n'
+import AuditValueDiff from './AuditValueDiff.vue'
+import { testIdOf } from '../../composables/testId'
+import { valueDiff } from './valueDiff'
 
 interface AuditActor {
   id: number | string
@@ -117,6 +120,12 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale())
 }
 
+/** A long text or a JSON value is shown as its changed lines, not as two whole values. */
+function isLongChange(entry: AuditEntry, d: { before: unknown; after: unknown }): boolean {
+  if (entry.event === 'created' || entry.event === 'restored' || entry.event === 'deleted' || entry.event === 'destroyed') return false
+  return valueDiff(d.before, d.after).mode !== 'inline'
+}
+
 function hasDiff(entry: AuditEntry): boolean {
   return !!entry.diff && entry.diff.length > 0
 }
@@ -209,7 +218,7 @@ function formatVal(v: unknown): string {
               class="admin-audit-timeline__diff-row"
               :class="`admin-audit-timeline__diff-row--${entry.event}`"
             >
-              <span class="admin-audit-timeline__diff-field">{{ d.field }}</span>
+              <span class="admin-audit-timeline__diff-field" :data-testid="testIdOf('audit-diff', d.field)">{{ d.field }}</span>
               <span class="admin-audit-timeline__diff-values">
                 <template v-if="entry.event === 'created' || entry.event === 'restored'">
                   <span class="admin-audit-timeline__diff-arrow" aria-hidden="true">→</span>
@@ -218,6 +227,7 @@ function formatVal(v: unknown): string {
                 <template v-else-if="entry.event === 'deleted' || entry.event === 'destroyed'">
                   <span class="admin-audit-timeline__diff-before">{{ formatVal(d.before) }}</span>
                 </template>
+                <AuditValueDiff v-else-if="isLongChange(entry, d)" :before="d.before" :after="d.after" />
                 <template v-else>
                   <span class="admin-audit-timeline__diff-before">{{ formatVal(d.before) }}</span>
                   <span class="admin-audit-timeline__diff-arrow" aria-hidden="true">→</span>
@@ -347,6 +357,9 @@ function formatVal(v: unknown): string {
   gap: var(--uid-space-xs);
   min-width: 0;
   align-self: baseline;
+}
+.admin-audit-timeline__diff-values > .admin-value-diff {
+  flex-basis: 100%;
 }
 .admin-audit-timeline__diff-before {
   color: var(--uid-text-tertiary);
