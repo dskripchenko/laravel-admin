@@ -14,6 +14,7 @@
  */
 
 import { defineStore } from 'pinia'
+import { useUserNavStore } from './userNav'
 import { computed, ref } from 'vue'
 import { getAdminClient } from './registry'
 import { useLocaleStore } from './locale'
@@ -60,6 +61,7 @@ export const useAuthStore = defineStore('admin-auth', () => {
     externalLogins.value = bootstrap.externalLogins ?? []
     loginNotice.value = bootstrap.loginNotice ?? null
     twoFactorAvailable.value = bootstrap.config?.twoFactor?.enabled !== false
+    useUserNavStore().configure(bootstrap.config?.navigation)
   }
 
   /**

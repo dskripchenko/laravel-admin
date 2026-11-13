@@ -54,6 +54,12 @@ interface DashboardManifest {
   periods?: string[]
   /** The period a user starts with. */
   period?: string
+  /** The server's captions of the periods (DashboardContext::labelFor()). */
+  periodLabels?: Record<string, string>
+  /** Whether a range of dates may be picked besides the periods. */
+  customRange?: boolean
+  /** Whether «Compare with the previous period» is offered (DashboardScreen::comparable()). */
+  comparable?: boolean
 }
 
 interface Props {
@@ -225,7 +231,15 @@ function rowSpanFor(layoutSlug: string, w: WidgetNode): number {
 
 // === Toolbar period ===
 const DEFAULT_PERIODS = ['7d', '30d', '90d', 'all']
+const RANGE = /^(\d{4})-(\d{2})-(\d{2})\.\.(\d{4})-(\d{2})-(\d{2})$/
 function periodLabelFor(key: string): string {
+  const own = dashboard.value?.periodLabels?.[key]
+  if (typeof own === 'string' && own !== '') return own
+  const range = RANGE.exec(key)
+  if (range) return `${range[3]}.${range[2]}.${range[1]} – ${range[6]}.${range[5]}.${range[4]}`
+  if (key === 'today') return tr('Сегодня')
+  if (key === 'month') return tr('Этот месяц')
+  if (key === 'quarter') return tr('Этот квартал')
   if (key === '7d') return t('admin.dashboard.period.7d', 'За 7 дней')
   if (key === '30d') return t('admin.dashboard.period.30d', 'За 30 дней')
   if (key === '90d') return t('admin.dashboard.period.90d', 'За 90 дней')
@@ -255,7 +269,7 @@ const refreshedWidgets = ref<WidgetNode[] | null>(null)
  */
 async function restorePeriod(): Promise<void> {
   const saved = dashboardStore.period
-  if (saved && periods.value.some((p) => p.key === saved)) {
+  if (saved && (periods.value.some((p) => p.key === saved) || (customRange.value && RANGE.test(saved)))) {
     selectedPeriod.value = saved
     await refetchPeriod()
   }
@@ -278,7 +292,8 @@ async function refetchPeriod(): Promise<void> {
     const { getAdminClient } = await import('../../stores/registry')
     const client = getAdminClient()
     const result = await client.get<{ widgets: WidgetNode[]; period: string }>(
-      `/dashboard/widgets?key=${encodeURIComponent(slug)}&period=${encodeURIComponent(selectedPeriod.value)}`,
+      `/dashboard/widgets?key=${encodeURIComponent(slug)}&period=${encodeURIComponent(selectedPeriod.value)}`
+        + (compare.value ? '&compare=1' : ''),
     )
     refreshedWidgets.value = result.widgets
   } catch {
@@ -361,8 +376,42 @@ watch(
 )
 
 const periodLabel = computed(
-  () => periods.value.find((p) => p.key === selectedPeriod.value)?.label ?? t('admin.dashboard.period.label', 'Период'),
+  () => periods.value.find((p) => p.key === selectedPeriod.value)?.label
+    ?? (RANGE.test(selectedPeriod.value) ? periodLabelFor(selectedPeriod.value) : t('admin.dashboard.period.label', 'Период')),
 )
+
+/*
+ * A range of dates of the user's own (DashboardScreen::customRange()) and the
+ * comparison with the period before (DashboardScreen::comparable()).
+ */
+const customRange = computed<boolean>(() => dashboard.value?.customRange === true)
+const comparable = computed<boolean>(() => dashboard.value?.comparable === true)
+const compare = ref<boolean>(false)
+const rangeOpen = ref<boolean>(false)
+const rangeFrom = ref<string>('')
+const rangeTo = ref<string>('')
+const rangeValid = computed<boolean>(() => /^\d{4}-\d{2}-\d{2}$/.test(rangeFrom.value)
+  && /^\d{4}-\d{2}-\d{2}$/.test(rangeTo.value) && rangeFrom.value <= rangeTo.value)
+
+function openRange(): void {
+  const current = RANGE.exec(selectedPeriod.value)
+  if (current) {
+    rangeFrom.value = `${current[1]}-${current[2]}-${current[3]}`
+    rangeTo.value = `${current[4]}-${current[5]}-${current[6]}`
+  }
+  rangeOpen.value = true
+}
+
+async function applyRange(): Promise<void> {
+  if (!rangeValid.value) return
+  rangeOpen.value = false
+  await setPeriod(`${rangeFrom.value}..${rangeTo.value}`, () => undefined)
+}
+
+async function toggleCompare(): Promise<void> {
+  compare.value = !compare.value
+  await refetchPeriod()
+}
 const showPeriodSwitcher = computed<boolean>(() => periods.value.length > 0)
 
 // === Edit-mode actions ===
@@ -700,11 +749,38 @@ function onExport(): void {
           <UidMenuItem
             v-for="p in periods"
             :key="p.key"
+            :data-testid="`dash-period-${p.key}`"
             @click="setPeriod(p.key, () => undefined)"
           >
             {{ p.label }}
           </UidMenuItem>
+          <UidMenuItem v-if="customRange" data-testid="dash-period-range" @click="openRange">
+            {{ tr('Свой период…') }}
+          </UidMenuItem>
         </UidMenu>
+
+        <div v-if="rangeOpen" class="admin-dash-range" data-testid="dash-range">
+          <input v-model="rangeFrom" type="date" class="admin-dash-range__input" data-testid="dash-range-from" :aria-label="tr('С')" />
+          <span aria-hidden="true">–</span>
+          <input v-model="rangeTo" type="date" class="admin-dash-range__input" data-testid="dash-range-to" :aria-label="tr('По')" />
+          <UidButton variant="primary" size="sm" :disabled="!rangeValid" data-testid="dash-range-apply" @click="applyRange">
+            {{ tr('Применить') }}
+          </UidButton>
+          <UidButton variant="ghost" size="sm" data-testid="dash-range-cancel" @click="rangeOpen = false">
+            {{ tr('Отмена') }}
+          </UidButton>
+        </div>
+
+        <UidButton
+          v-if="showPeriodSwitcher && comparable"
+          :variant="compare ? 'primary' : 'ghost'"
+          size="md"
+          :aria-pressed="compare"
+          data-testid="dash-compare"
+          @click="toggleCompare"
+        >
+          {{ tr('Сравнить с прошлым периодом') }}
+        </UidButton>
 
         <UidButton variant="secondary" size="md" data-testid="dash-export" @click="onExport">
           <template #prepend><UidIcon :icon="Download" :size="14" /></template>
@@ -799,6 +875,22 @@ function onExport(): void {
 </template>
 
 <style>
+/* The dashboard's own range of dates, beside the period switcher. */
+.admin-dash-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-dash-range__input {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--uid-border-default, var(--uid-border-subtle));
+  border-radius: var(--uid-radius-md);
+  background: var(--uid-surface-base);
+  color: var(--uid-text-primary);
+  font: inherit;
+  font-size: 13px;
+}
 .admin-dashboard__grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));

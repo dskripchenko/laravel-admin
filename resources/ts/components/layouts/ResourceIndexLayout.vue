@@ -35,6 +35,10 @@ interface Props {
   drawerSize?: string | null
   /** Move on to the next record after a save or an action in the drawer. */
   nextAfterAction?: boolean
+  /** The resource's named condition the list is narrowed by (ResourceIndex::scope()). */
+  scope?: string | null
+  /** The filters it opens with (ResourceIndex::defaultFilters()); the user may clear them. */
+  defaultFilters?: Record<string, unknown> | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,10 +48,12 @@ const props = withDefaults(defineProps<Props>(), {
   rowOpen: null,
   drawerSize: null,
   nextAfterAction: false,
+  scope: null,
+  defaultFilters: null,
 })
 
 /** The list's own state: by its URL namespace, else by its resource. */
-const stateKey = computed(() => `screen:${props.queryKey ?? `@${props.resource}`}`)
+const stateKey = computed(() => `screen:${props.queryKey ?? `@${props.resource}${props.scope ? `:${props.scope}` : ''}`}`)
 
 const manifest = useManifestStore()
 const known = computed(() => manifest.manifest === null || manifest.getResource(props.resource) !== null)
@@ -64,6 +70,8 @@ const known = computed(() => manifest.manifest === null || manifest.getResource(
       :row-open="rowOpen"
       :drawer-size="drawerSize"
       :next-after-action="nextAfterAction"
+      :scope="scope"
+      :default-filters="defaultFilters"
     />
   </div>
 </template>

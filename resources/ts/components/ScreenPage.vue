@@ -26,7 +26,7 @@ import { computed, onMounted, watch } from 'vue'
 import { testIdOf } from '../composables/testId'
 import { useRoute, useRouter } from 'vue-router'
 import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
-import { useScreenStore, type ScreenMethodResult } from '../stores/screen'
+import { useEmbeddedScreenStore, useScreenStore, type ScreenMethodResult } from '../stores/screen'
 import { getAdminClient } from '../stores/registry'
 import { apiErrorMessage } from '../api/errors'
 import { normalizeAction, normalizeActions, toRouterPath, useActionRunner } from '../composables/useActionRunner'
@@ -43,13 +43,24 @@ import { trSafe as tr } from '../stores/i18n'
 interface Props {
   /** The screen's slug; when null it comes from route.params.slug. */
   slug?: string | null
+  /**
+   * Shown inside another screen (Layout::screen()): a store of its own, the
+   * query from `params` rather than the address, a section's heading.
+   */
+  embedded?: boolean
+  /** The embedded screen's query, as its address would carry it. */
+  params?: Record<string, string> | null
+  /** Whether the embedded screen shows its name. */
+  showTitle?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), { slug: null })
+const props = withDefaults(defineProps<Props>(), { slug: null, embedded: false, params: null, showTitle: true })
 
 const route = useRoute()
 const router = useRouter()
-const screen = useScreenStore()
+const screen = props.embedded && props.slug
+  ? useEmbeddedScreenStore(props.slug)
+  : useScreenStore()
 
 const resolvedSlug = computed<string>(() => {
   if (props.slug) return props.slug
@@ -60,6 +71,7 @@ const resolvedSlug = computed<string>(() => {
 // it to Screen::query(): a screen can open on a tab, a period or a filter
 // named in the address (`/screens/reports?period=30`).
 const queryParams = computed<Record<string, string | string[]>>(() => {
+  if (props.embedded) return { ...(props.params ?? {}) }
   const out: Record<string, string | string[]> = {}
   for (const [key, value] of Object.entries(route.query ?? {})) {
     if (Array.isArray(value)) {
@@ -206,10 +218,15 @@ watch(
 </script>
 
 <template>
-  <section class="admin-page admin-screen-page" :data-testid="testIdOf('screen', resolvedSlug)">
-    <header class="admin-page__hd">
+  <section
+    class="admin-page admin-screen-page"
+    :class="{ 'admin-screen-page--embedded': embedded }"
+    :data-testid="testIdOf('screen', resolvedSlug)"
+  >
+    <header v-if="!embedded || showTitle || commandBar.length > 0 || screen.description" class="admin-page__hd">
       <div class="admin-page__title-wrap">
-        <h1 class="admin-page__title">{{ screen.name || resolvedSlug }}</h1>
+        <h2 v-if="embedded && showTitle" class="admin-page__title admin-screen-page__subtitle">{{ screen.name || resolvedSlug }}</h2>
+        <h1 v-else-if="!embedded" class="admin-page__title">{{ screen.name || resolvedSlug }}</h1>
         <p v-if="screen.description" class="admin-screen-page__description">
           {{ screen.description }}
         </p>
@@ -269,6 +286,14 @@ watch(
       <UidSkeleton v-for="i in 4" :key="i" height="40px" />
     </div>
 
+    <div v-else-if="isReady && embedded" class="admin-screen-page__body admin-screen-page__body--embedded">
+      <LayoutRenderer
+        v-for="(node, idx) in layoutNodes"
+        :key="idx"
+        :node="node"
+      />
+    </div>
+
     <UidCard v-else-if="isReady" padding="md" class="admin-screen-page__body">
       <LayoutRenderer
         v-for="(node, idx) in layoutNodes"
@@ -304,6 +329,20 @@ watch(
 .admin-screen-page__body {
   margin-bottom: var(--uid-space-2xl);
 }
+/* A screen inside another (Layout::screen()): a section, not a page. */
+.admin-screen-page--embedded {
+  padding: 0;
+}
+.admin-screen-page__subtitle {
+  font-size: var(--uid-font-size-md, 15px);
+}
+.admin-screen-page__body--embedded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-lg);
+  min-width: 0;
+}
+
 /*
  * The screen's layouts stack with one rhythm, whatever they are: a dashboard
  * grid or a rows layout followed by a block used to touch it, since only the

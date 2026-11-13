@@ -4,7 +4,10 @@
  * props.
  */
 import { computed } from 'vue'
+import { ArrowUpRight } from 'lucide-vue-next'
+import { UidIcon } from '@dskripchenko/ui'
 import { getWidget } from './registry'
+import { trSafe as tr } from '../../stores/i18n'
 import UnknownWidget from './UnknownWidget.vue'
 
 export interface WidgetNode extends Record<string, unknown> {
@@ -19,6 +22,9 @@ interface Props {
 const props = defineProps<Props>()
 
 const component = computed(() => getWidget(props.node.type))
+/** Where the widget leads (Widget::link()): a panel path, or an external address. */
+const link = computed<string | null>(() => (typeof props.node.link === 'string' && props.node.link !== '' ? props.node.link : null))
+const external = computed<boolean>(() => link.value !== null && /^[a-z]+:\/\//i.test(link.value))
 const widgetProps = computed(() => {
   // The dashboard's meta fields are dropped. `size` especially: here it is a
   // grid-column span of 1..12, while in the widget components `size` often
@@ -34,6 +40,7 @@ const widgetProps = computed(() => {
     refresh: _r,
     permission: _p,
     slug: _slug,
+    link: _link,
     data,
     ...rest
   } = props.node as Record<string, unknown> & { data?: Record<string, unknown> }
@@ -51,6 +58,57 @@ const widgetProps = computed(() => {
 </script>
 
 <template>
-  <component :is="component" v-if="component" v-bind="widgetProps" />
+  <div v-if="component && link" class="admin-widget-linked">
+    <component :is="component" v-bind="widgetProps" />
+    <router-link
+      v-if="!external"
+      :to="link"
+      class="admin-widget-linked__go"
+      data-testid="widget-link"
+      :aria-label="tr('Открыть')"
+      :title="tr('Открыть')"
+    >
+      <UidIcon :icon="ArrowUpRight" :size="14" />
+    </router-link>
+    <a
+      v-else
+      :href="link"
+      target="_blank"
+      rel="noopener"
+      class="admin-widget-linked__go"
+      data-testid="widget-link"
+      :aria-label="tr('Открыть')"
+      :title="tr('Открыть')"
+    >
+      <UidIcon :icon="ArrowUpRight" :size="14" />
+    </a>
+  </div>
+  <component :is="component" v-else-if="component" v-bind="widgetProps" />
   <UnknownWidget v-else :type="node.type" />
 </template>
+
+<style>
+/* A widget with a link (Widget::link()): an arrow in its top corner. */
+.admin-widget-linked {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+}
+.admin-widget-linked__go {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--uid-radius-sm, 4px);
+  color: var(--uid-text-tertiary);
+  z-index: 1;
+}
+.admin-widget-linked__go:hover {
+  color: var(--uid-text-primary);
+  background: var(--uid-color-surface-hover, rgba(0, 0, 0, 0.04));
+}
+</style>

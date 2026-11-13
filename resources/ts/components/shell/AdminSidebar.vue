@@ -11,9 +11,13 @@
  * and the docs link, following
  * docs/design_handoff_laravel_admin/screens-shell.jsx (Sidebar).
  */
-import { computed, provide } from 'vue'
-import { UidSidebar, UidSidebarGroup, UidSkeleton } from '@dskripchenko/ui'
+import { computed, h, provide, ref, type Component } from 'vue'
+import { useRoute } from 'vue-router'
+import { Star, X } from 'lucide-vue-next'
+import { UidIcon, UidSidebar, UidSidebarGroup, UidSidebarItem, UidSkeleton } from '@dskripchenko/ui'
 import { useMenuStore } from '../../stores/menu'
+import { useUserNavStore } from '../../stores/userNav'
+import { resolveIcon } from './iconRegistry'
 import { useAppReady } from '../../composables/useAppReady'
 import AdminSidebarNode from './AdminSidebarNode.vue'
 import { ACTIVE_MENU_TRAIL, useActiveMenuTrail } from './menuTrail'
@@ -59,6 +63,37 @@ provide(ACTIVE_MENU_TRAIL, useActiveMenuTrail())
 
 const groups = computed(() => menu.groupedItems)
 
+/*
+ * The favourites — the star in the top bar — above the menu, in the user's
+ * order: dragged, or moved with Alt+↑ / Alt+↓.
+ */
+const userNav = useUserNavStore()
+const route = useRoute()
+const favorites = computed(() => userNav.favorites)
+const dragFrom = ref<number | null>(null)
+
+function favIcon(name?: string | null): Component {
+  const resolved = resolveIcon(name) ?? Star
+  return () => h(UidIcon, { icon: resolved, size: 16 })
+}
+
+function onDrop(to: number): void {
+  const from = dragFrom.value
+  dragFrom.value = null
+  if (from !== null && from !== to) void userNav.moveFavorite(from, to).catch(() => undefined)
+}
+
+function onFavKey(event: KeyboardEvent, index: number): void {
+  if (!event.altKey) return
+  if (event.key === 'ArrowUp' && index > 0) {
+    event.preventDefault()
+    void userNav.moveFavorite(index, index - 1).catch(() => undefined)
+  } else if (event.key === 'ArrowDown' && index < favorites.value.length - 1) {
+    event.preventDefault()
+    void userNav.moveFavorite(index, index + 1).catch(() => undefined)
+  }
+}
+
 /**
  * Until the shell is ready the items are replaced by their silhouette: an
  * empty column next to a drawn topbar reads as "the menu broke", not as "it is
@@ -98,6 +133,49 @@ const ready = computed(() => appReady.value || menu.isLoaded)
       </div>
       <template v-else>
         <UidSidebarGroup
+          v-if="favorites.length > 0"
+          :title="tr('Избранное')"
+          class="admin-sidebar-favorites"
+          data-testid="menu-favorites"
+        >
+          <div
+            v-for="(fav, idx) in favorites"
+            :key="fav.url"
+            class="admin-sidebar-fav"
+            :class="{ 'admin-sidebar-fav--dragging': dragFrom === idx }"
+            draggable="true"
+            data-testid="favorite-item"
+            :data-url="fav.url"
+            @dragstart="dragFrom = idx"
+            @dragend="dragFrom = null"
+            @dragover.prevent
+            @drop.prevent="onDrop(idx)"
+            @keydown="onFavKey($event, idx)"
+          >
+            <UidSidebarItem
+              :to="fav.url"
+              :active="route.fullPath === fav.url"
+              :title="collapsed ? fav.label : undefined"
+            >
+              <template #icon>
+                <component :is="favIcon(fav.icon)" />
+              </template>
+              {{ fav.label }}
+            </UidSidebarItem>
+            <button
+              v-if="!collapsed"
+              type="button"
+              class="admin-sidebar-fav__remove"
+              data-testid="favorite-remove"
+              :aria-label="tr('Убрать из избранного')"
+              :title="tr('Убрать из избранного')"
+              @click.stop.prevent="userNav.removeFavorite(fav.url).catch(() => undefined)"
+            >
+              <UidIcon :icon="X" :size="12" />
+            </button>
+          </div>
+        </UidSidebarGroup>
+        <UidSidebarGroup
           v-for="(grp, idx) in groups"
           :key="`grp-${idx}`"
           :title="grp.group ?? undefined"
@@ -131,6 +209,38 @@ const ready = computed(() => appReady.value || menu.isLoaded)
 </template>
 
 <style>
+/* The favourites above the menu: a row with a remove cross on hover. */
+.admin-sidebar-fav {
+  position: relative;
+}
+.admin-sidebar-fav--dragging {
+  opacity: 0.5;
+}
+.admin-sidebar-fav__remove {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--uid-radius-sm, 4px);
+  background: transparent;
+  color: var(--uid-text-tertiary);
+  cursor: pointer;
+}
+.admin-sidebar-fav:hover .admin-sidebar-fav__remove,
+.admin-sidebar-fav__remove:focus-visible {
+  display: inline-flex;
+}
+.admin-sidebar-fav__remove:hover {
+  color: var(--uid-text-primary);
+  background: var(--uid-color-surface-hover, rgba(0, 0, 0, 0.04));
+}
+
 /* The menu's silhouette while the shell loads, following the items' geometry. */
 .admin-sidebar-boot {
   display: flex;

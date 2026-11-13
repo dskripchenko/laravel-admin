@@ -3,7 +3,8 @@ import { computed, h, inject, provide, ref, watch, type Component } from 'vue'
 import { useRoute } from 'vue-router'
 import { Box, ChevronRight } from 'lucide-vue-next'
 import { UidIcon, UidSidebarItem } from '@dskripchenko/ui'
-import type { MenuItem } from '../../stores/menu'
+import { formatBadge, sumOfBadges, type MenuItem } from '../../stores/menu'
+import { useUserNavStore } from '../../stores/userNav'
 import { resolveIcon } from './iconRegistry'
 import {
   ACTIVE_MENU_TRAIL,
@@ -37,7 +38,32 @@ const hasChildren = computed(
   () => Array.isArray(props.item.children) && props.item.children!.length > 0,
 )
 
-const open = ref(false)
+const userNav = useUserNavStore()
+
+/**
+ * Unfolded or not, before the page's own trail has its say: the user's own
+ * choice (remembered on the server), else the node's (MenuNode::collapsed()),
+ * else the panel's default (admin.navigation.groups_expanded).
+ */
+function initialOpen(): boolean {
+  const own = userNav.groupOpen(props.item.key)
+  if (own !== null) return own
+  if (props.item.collapsed === true) return false
+  if (props.item.collapsed === false) return true
+  return userNav.config.groupsExpanded
+}
+
+const open = ref(hasChildren.value ? initialOpen() : false)
+
+// The saved state arrives with the menu; a group the user has not touched yet
+// in this session follows it.
+let touched = false
+watch(
+  () => userNav.groupOpen(props.item.key),
+  (own) => {
+    if (!touched && own !== null && !groupActive.value) open.value = own
+  },
+)
 
 /*
  * The active item is the one findMenuTrail() picks — the same the breadcrumbs
@@ -100,7 +126,26 @@ function iconNode(name?: string | null): Component {
 
 function toggle(): void {
   open.value = !open.value
+  touched = true
+  userNav.setGroupOpen(props.item.key, open.value)
 }
+
+/** The leaf's badge as shown: 99+ for a big number. */
+const leafBadge = computed(() => formatBadge(props.item.badge))
+
+/**
+ * The group's badge: its own, or — folded, with summing on
+ * (MenuNode::sumBadges(), admin.navigation.sum_badges) — the sum of its
+ * descendants' numbers, red when one of them is.
+ */
+const groupBadge = computed<{ text: string; tone: string | null } | null>(() => {
+  const own = formatBadge(props.item.badge)
+  if (own !== null) return { text: own, tone: props.item.badgeTone ?? null }
+  const sum = props.item.sumBadges ?? userNav.config.sumBadges
+  if (!sum || open.value) return null
+  const total = sumOfBadges(props.item)
+  return total === null ? null : { text: formatBadge(total.total)!, tone: total.tone }
+})
 </script>
 
 <template>
@@ -135,6 +180,12 @@ function toggle(): void {
       </span>
       <span v-if="!collapsed" class="uid-sidebar-item__label">{{ item.label }}</span>
       <span
+        v-if="!collapsed && groupBadge"
+        class="uid-sidebar-item__badge admin-sidebar-node__badge"
+        :class="{ 'admin-sidebar-node__badge--danger': groupBadge.tone === 'danger' }"
+        :data-testid="`menu-badge-${item.key}`"
+      >{{ groupBadge.text }}</span>
+      <span
         v-if="!collapsed"
         class="admin-sidebar-node__chev"
         :class="{ 'admin-sidebar-node__chev--open': open }"
@@ -147,10 +198,11 @@ function toggle(): void {
     <UidSidebarItem
       v-else
       class="admin-sidebar-node__leaf"
+      :class="{ 'admin-sidebar-node__leaf--danger': item.badgeTone === 'danger' }"
       :data-testid="`menu-${item.key}`"
       :to="itemTarget"
       :active="isActive"
-      :badge="item.badge ?? undefined"
+      :badge="leafBadge ?? undefined"
       :title="collapsed ? item.label : undefined"
     >
       <template #icon>
@@ -241,6 +293,19 @@ function toggle(): void {
 .admin-sidebar-node__children {
   display: flex;
   flex-direction: column;
+}
+
+/* A red counter — a queue that waits (MenuNode::badge(…, 'danger')). */
+.admin-sidebar-node__leaf--danger .uid-sidebar-item__badge,
+.admin-sidebar-node__badge--danger {
+  background: var(--uid-color-danger-solid, #dc2626);
+  color: var(--uid-color-text-on-primary, #fff);
+}
+.admin-sidebar-node__badge {
+  margin-inline-start: auto;
+}
+.admin-sidebar-node__badge + .admin-sidebar-node__chev {
+  margin-inline-start: 4px;
 }
 
 /* While collapsed the nested levels are hidden — the sidebar is compact as it is. */

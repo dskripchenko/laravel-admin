@@ -22,6 +22,7 @@ import AdminTopBar from './AdminTopBar.vue'
 import AdminSidebar from './AdminSidebar.vue'
 import GlobalSearch from './GlobalSearch.vue'
 import { useBreadcrumbs } from './breadcrumbs'
+import { useUserNavStore, type NavLink } from '../../stores/userNav'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface ImpersonationData {
@@ -114,6 +115,70 @@ watch(
     if (isDrawerMode.value) onCollapseChange(true)
   },
 )
+/*
+ * The user's own navigation: every page's last query is remembered (a crumb
+ * leads back to a list with its filters), and the screens and records opened
+ * go to the recent list — once the page has settled on its title.
+ */
+const userNav = useUserNavStore()
+watch(
+  () => route.fullPath,
+  () => userNav.rememberQuery(route.path, route.query as Record<string, unknown>),
+  { immediate: true },
+)
+
+/** What the page is, for the recent list; null for a page that is not worth one. */
+function recentEntry(): NavLink | null {
+  const kind = route.meta?.kind
+  const name = typeof route.name === 'string' ? route.name : ''
+  const crumbs = breadcrumbs.value
+  const last = crumbs[crumbs.length - 1]
+  if (!last || last.label === '') return null
+  if (kind === 'resource') {
+    const id = typeof route.params.id === 'string' ? route.params.id : ''
+    if (id !== '' && (name.endsWith('.view') || name.endsWith('.edit'))) {
+      const record = name.endsWith('.edit') ? crumbs[crumbs.length - 2] : last
+      const owner = crumbs[crumbs.length - (name.endsWith('.edit') ? 3 : 2)]
+      if (!record) return null
+      return { url: route.path, label: record.label, subtitle: owner?.label ?? null, kind: 'record' }
+    }
+    if (!name.endsWith('.index')) return null
+  } else if (kind !== 'screen' && kind !== 'dashboard' && kind !== 'settings') {
+    return null
+  }
+  const tabs: string[] = []
+  let i = crumbs.length - 1
+  while (i >= 0 && crumbs[i]!.kind === 'tab') tabs.unshift(crumbs[i--]!.label)
+  const owner = i >= 0 ? crumbs[i]!.label : last.label
+  return {
+    url: route.fullPath,
+    label: [owner, ...tabs].join(' · '),
+    subtitle: i > 0 ? crumbs[i - 1]!.label : null,
+    kind: 'screen',
+  }
+}
+
+let recentTimer: ReturnType<typeof setTimeout> | null = null
+let lastRecent = ''
+watch(
+  () => [route.fullPath, JSON.stringify(breadcrumbs.value)] as const,
+  () => {
+    if (recentTimer !== null) clearTimeout(recentTimer)
+    recentTimer = setTimeout(() => {
+      recentTimer = null
+      const entry = recentEntry()
+      if (entry === null) return
+      const key = `${entry.url}|${entry.label}`
+      if (key === lastRecent) return
+      lastRecent = key
+      void userNav.visit(entry)
+    }, 1200)
+  },
+)
+onBeforeUnmount(() => {
+  if (recentTimer !== null) clearTimeout(recentTimer)
+})
+
 const isExternallyControlled = computed<boolean>(() => props.collapsed !== undefined)
 const collapsed = computed<boolean>(
   () => (isExternallyControlled.value ? (props.collapsed as boolean) : internalCollapsed.value),

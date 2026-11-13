@@ -78,6 +78,22 @@ export interface AdminBootstrapConfig {
   bootstrap: { strategy: 'inline' | 'xhr' }
   /** admin.auth.two_factor.enabled; older backends do not send it. */
   twoFactor?: { enabled: boolean }
+  /** admin.navigation; older backends do not send it. */
+  navigation?: AdminNavigationConfig
+}
+
+/** The sidebar's, the favourites' and the breadcrumbs' settings (config admin.navigation). */
+export interface AdminNavigationConfig {
+  /** Seconds between the polls of the menu's counters; 0 — off. */
+  pollInterval: number
+  /** The menu groups start unfolded. */
+  groupsExpanded: boolean
+  /** A folded group shows its children's counters summed. */
+  sumBadges: boolean
+  /** The most favourites a user may keep. */
+  favoritesLimit: number
+  /** 'compact' — the area, the screen, the tab and the record, without the menu groups. */
+  breadcrumbs: 'full' | 'compact'
 }
 
 export interface AdminBootstrap {
