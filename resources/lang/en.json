@@ -787,5 +787,10 @@
     "Доступ": "Access",
     ":n из :m": ":n of :m",
     "Прав нет": "No permissions",
-    "Открыть страницей": "Open as a page"
+    "Открыть страницей": "Open as a page",
+    "Все :n": "All :n",
+    "Только ошибки": "Only errors",
+    "Событий нет": "No events",
+    "Под условия не подходит ни одно событие": "No event matches",
+    "Показать ещё :n": "Show :n more"
 }

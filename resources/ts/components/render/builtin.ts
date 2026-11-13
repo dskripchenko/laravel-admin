@@ -81,6 +81,7 @@ import DrawioLayout from '../layouts/DrawioLayout.vue'
 import AsyncApiLayout from '../layouts/AsyncApiLayout.vue'
 import KanbanLayout from '../layouts/KanbanLayout.vue'
 import CalendarLayout from '../layouts/CalendarLayout.vue'
+import TimelineLayout from '../layouts/TimelineLayout.vue'
 
 /**
  * A TextField with the input's `type` preset.
@@ -224,6 +225,8 @@ export function registerBuiltinComponents(): void {
       wrapper: WrapperLayout,
       infolist: InfolistLayout,
       audit_trail: AuditTrailLayout,
+      // `Layout::timeline(...)` — events of different kinds with chips by kind.
+      timeline: TimelineLayout,
       // `Layout::markdown($text)` and `Layout::code($code, 'php')`.
       markdown: MarkdownLayout,
       code: CodeLayout,
