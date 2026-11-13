@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.70.0
+
 ### Added
 
 - **Several live lists on one screen.** Every `Layout::resourceIndex()` keeps
