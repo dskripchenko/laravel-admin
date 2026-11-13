@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.74.0
+
+### Added
+
+- **One look for empty, nothing found, failed and no access.**
+  `Resource::emptyState()` and `Layout::resourceIndex()->emptyState($title, $description, $action)`
+  (`Support\EmptyState`; the action: null — "Create", a string — its caption,
+  an `Action`, false — none; `->noResults()`). "Nothing found" lists the
+  applied filters and offers "Reset the filters". A failed load shows the
+  reason, "Retry" and the request code with "Copy the code": the client puts
+  `X-Request-Id` on every request, the server echoes it and logs it as
+  `admin_request_id`. "No access" names the section and the missing key with
+  "Copy the key": the router passes them to the 403 page, `AdminAccess` sends
+  `payload.permission`. A screen that fails to load and the embedded table of
+  related records show the same states. `AdminState` is exported.
+- **`Field\PermissionMatrix`** — a role's permissions as a matrix: folding
+  groups with a three-state checkbox and "N of M", a search over labels,
+  hints and keys, "Only selected", "Select all", "Selected N of M", an
+  optional second column (`extraColumn()`). The value is a list of keys;
+  groups from an array, a closure or `fromRegistry()`.
+- **A list or a screen in a side panel by a link.** `Link::inDrawer()` /
+  `target('drawer')`, `TableColumn::asLink($template, 'drawer')`,
+  `openInDrawer($url)`: a resource's list filtered, sorted and scoped by the
+  link's query (kept out of the page's address), or a screen with its query,
+  over the current page; "Open as a page".
+- **`Layout::timeline()`** — events of different kinds with icon, tone,
+  time, title, folded details and a link; chips by kind with counts and
+  "Only errors"; from a state key, a list or a closure; `limit()`.
+- **Before / after in the audit history**: long texts line by line (one long
+  line word by word), JSON as `path: value` lines, changes marked, unchanged
+  runs folded. `AuditValueDiff` is exported.
+- **`Tabs::searchable()`** — a search over the fields of every tab: finds per
+  tab, dimmed tabs without any, the fields and blocks it does not find
+  hidden, the ones it does marked.
+- **Unsaved changes.** `Screen::saveMethod()` — a sticky bar naming the
+  changed fields by tab and block, Discard and Save, a mark on each changed
+  field, a question before leaving. A resource form asks before leaving with
+  changes too.
+- `Field::counter(?max)` — "27 of 120 characters" under a text field;
+  `StatsOverviewWidget::stat(..., hint:)` — a line under the number.
+
+### Changed
+
+- An empty list reads "No records" (was "Nothing here yet"). See the
+  migration guide for the other visible changes.
+
+### Not in this release
+
+- Rolling a value back from the audit log: the package has no restore from
+  the log; a project action does it.
+- A cross-resource trash, the top bar and widget odds and ends (a search
+  field in the top bar, the role under the user's name, title badges,
+  "1 of N" in the record drawer) and the page builder's additions.
+
 ## 1.73.0
 
 ### Added

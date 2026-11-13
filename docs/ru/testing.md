@@ -339,6 +339,10 @@ page.get_by_test_id(tid('field', 'first_name'))   # field-first-name
 | `dash-period-{key}`, `dash-period-range`, `dash-range`, `dash-range-from`, `dash-range-to`, `dash-range-apply`, `dash-range-cancel`, `dash-compare` | Период рабочего стола, свой диапазон, сравнение (1.73) |
 | `widget-link`, `stat-link`, `stat-previous` | Ссылка виджета, ссылка цифры, значение прошлого периода (1.73) |
 | `reveal-value`, `reveal-copy`, `reveal-close` | Окно однократного показа секрета |
+| `state-empty`, `state-no-results`, `state-error`, `state-forbidden` | Единые состояния (1.74); у списка — `resource-empty`, `resource-no-results`, `resource-error`, `resource-forbidden` |
+| `state-retry`, `state-copy-code`, `state-code`, `state-permission`, `state-copy-key`, `state-home` | «Повторить», «Скопировать код», код запроса, ключ права, «Скопировать ключ», «На рабочий стол» (1.74) |
+| `link-drawer`, `link-drawer-page`, `cell-link` | Боковая панель по ссылке (`data-kind`: `resource`, `screen`), «Открыть страницей», ячейка-ссылка (1.74) |
+| `screen-savebar`, `screen-savebar-save`, `screen-savebar-discard`, `tabs-search`, `tab-matches-{key}` | Несохранённые изменения экрана, поиск по полям вкладок (1.74); остальные — [Состояния и формы](concepts/states-and-forms.md#data-testid) |
 
 Имя действия `{name}` без `withName()` выводится из подписи латиницей
 (`Button::make('Send invoice')` → `send_invoice`); у кириллической подписи оно

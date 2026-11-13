@@ -326,6 +326,10 @@ it is, not in kebab-case: `action-send_invoice`.
 | `dash-period-{key}`, `dash-period-range`, `dash-range`, `dash-range-from`, `dash-range-to`, `dash-range-apply`, `dash-range-cancel`, `dash-compare` | The dashboard's period, a custom range, the comparison (1.73) |
 | `widget-link`, `stat-link`, `stat-previous` | A widget's link, a number's link, the previous period's value (1.73) |
 | `reveal-value`, `reveal-copy`, `reveal-close` | The show-once secret dialog |
+| `state-empty`, `state-no-results`, `state-error`, `state-forbidden` | The states (1.74); in a list — `resource-empty`, `resource-no-results`, `resource-error`, `resource-forbidden` |
+| `state-retry`, `state-copy-code`, `state-code`, `state-permission`, `state-copy-key`, `state-home` | Retry, Copy the code, the request code, the permission key, Copy the key, To the desktop (1.74) |
+| `link-drawer`, `link-drawer-page`, `cell-link` | The side panel of a link (`data-kind`: `resource`, `screen`), Open as a page, a link cell (1.74) |
+| `screen-savebar`, `screen-savebar-save`, `screen-savebar-discard`, `tabs-search`, `tab-matches-{key}` | A screen's unsaved changes, the field search of tabs (1.74); the rest — [States and forms](concepts/states-and-forms.md#data-testid) |
 
 An action's `{name}` without `withName()` is derived from a Latin label
 (`Button::make('Send invoice')` → `send_invoice`); a Cyrillic label leaves
