@@ -1457,6 +1457,7 @@ async function retryLoad(): Promise<void> {
     :slug="slug"
     :title="title"
     :subtitle="subtitle"
+    :scope="scope"
   >
     <template v-if="availableViews.length > 1" #actions>
       <ResourceViewSwitcher :views="availableViews" :model-value="currentView" @update:model-value="setView" />
