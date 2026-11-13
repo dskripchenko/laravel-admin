@@ -72,6 +72,17 @@ function resourceIndexSetup() {
 
   const search = ref<string>('')
   const filters = ref<Record<string, unknown>>({})
+  /**
+   * The named condition of the list (Layout::resourceIndex()->scope(), one of
+   * Resource::scopes()): sent with every request, never shown, never lifted.
+   */
+  const scope = ref<string | null>(null)
+  /**
+   * The filters the list opens with when the address names none
+   * (Layout::resourceIndex()->defaultFilters()). The user may clear them; a
+   * cleared list keeps `filter=none` in the address so a reload stays cleared.
+   */
+  const defaultFilters = ref<Record<string, unknown>>({})
   const sortKey = ref<string | null>(null)
   const sortDirection = ref<SortDirection>(null)
 
@@ -131,10 +142,22 @@ function resourceIndexSetup() {
     error.value = null
     search.value = ''
     filters.value = {}
+    scope.value = null
+    defaultFilters.value = {}
     sortKey.value = null
     sortDirection.value = null
     view.value = null
     selection.value = new Set()
+  }
+
+  /**
+   * The list's fixed setup on a screen: its named condition and its default
+   * filters (see `scope` and `defaultFilters`). Called after setSlug(), before
+   * the address is read.
+   */
+  function configureList(options: { scope?: string | null; defaultFilters?: Record<string, unknown> | null }): void {
+    scope.value = options.scope ?? null
+    defaultFilters.value = options.defaultFilters ? { ...options.defaultFilters } : {}
   }
 
   /**
@@ -177,6 +200,7 @@ function resourceIndexSetup() {
       filtersMap[k] = Array.isArray(v) ? v.join(',') : v
     }
     if (Object.keys(filtersMap).length > 0) params.filters = filtersMap
+    if (scope.value) params.scope = scope.value
 
     return params
   }
@@ -207,10 +231,23 @@ function resourceIndexSetup() {
     }
     if (meta.value.page > 1) query[`${prefix}page`] = String(meta.value.page)
     if (view.value !== null) query[`${prefix}view`] = view.value
+    let any = false
     for (const [k, v] of Object.entries(filters.value)) {
       if (v === null || v === undefined || v === '') continue
+      if (typeof v === 'object' && !Array.isArray(v)) {
+        // A range — {from, to} — travels as filter[k][from] and filter[k][to].
+        for (const [sub, sv] of Object.entries(v as Record<string, unknown>)) {
+          if (sv === null || sv === undefined || sv === '') continue
+          query[`${prefix}filter[${k}][${sub}]`] = String(sv)
+          any = true
+        }
+        continue
+      }
       query[`${prefix}filter[${k}]`] = Array.isArray(v) ? v.join(',') : String(v)
+      any = true
     }
+    // The defaults were cleared by the user: say so, or a reload brings them back.
+    if (!any && Object.keys(defaultFilters.value).length > 0) query[`${prefix}filter`] = 'none'
     return query
   }
 
@@ -249,13 +286,27 @@ function resourceIndexSetup() {
     const next: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(query)) {
       if (!key.startsWith(`${prefix}filter[`)) continue
-      const m = /^filter\[(.+)\]$/.exec(key.slice(prefix.length))
       const v = first(value)
-      if (m && v !== null) next[m[1]] = v
+      if (v === null) continue
+      // filter[created_at][from]=… — a range, as a dashboard's link carries it.
+      const range = /^filter\[([^\]]+)\]\[([^\]]+)\]$/.exec(key.slice(prefix.length))
+      if (range) {
+        const prev = next[range[1]!]
+        const obj = prev && typeof prev === 'object' && !Array.isArray(prev) ? prev as Record<string, unknown> : {}
+        next[range[1]!] = { ...obj, [range[2]!]: v }
+        continue
+      }
+      const m = /^filter\[(.+)\]$/.exec(key.slice(prefix.length))
+      if (m) next[m[1]!] = v
     }
     if (Object.keys(next).length > 0) {
       filters.value = next
       touched = true
+    } else if (first(query[`${prefix}filter`]) === 'none') {
+      filters.value = {}
+      touched = true
+    } else if (Object.keys(defaultFilters.value).length > 0) {
+      filters.value = JSON.parse(JSON.stringify(defaultFilters.value)) as Record<string, unknown>
     }
     return touched
   }
@@ -385,6 +436,8 @@ function resourceIndexSetup() {
     error,
     search,
     filters,
+    scope,
+    defaultFilters,
     sortKey,
     sortDirection,
     selection,
@@ -400,6 +453,7 @@ function resourceIndexSetup() {
     setSlug,
     reset,
     resetQueryState,
+    configureList,
     load,
     queryParams,
     toQuery,

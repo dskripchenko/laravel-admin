@@ -133,6 +133,9 @@ final class ResourceCompiler
             // The form's reactive parts. The create/update permission is
             // checked by the action itself, which knows the form's context.
             'listener' => ['method' => ['post'], 'middleware' => [$view]],
+            // «Show» of a masked column; the column's reveal permission is
+            // checked by the action itself.
+            'reveal' => ['method' => ['post'], 'middleware' => [$view]],
         ];
 
         if ($resource->hierarchyParentKey() === null) {
@@ -164,6 +167,11 @@ final class ResourceCompiler
         if (! $resource->reorderable()) {
             unset($actions['reorder']);
         }
+
+        // `reveal` stays registered for every resource: the controller refuses a
+        // column that is not masked (422 not_masked). Deciding it here would call
+        // columns() while the routes are being built — before the host's own
+        // routes exist, so a column that builds a URL with route() would fail.
 
         if (\Dskripchenko\LaravelAdmin\Layout\Listener::all([
             ...$resource->formLayout('create'),

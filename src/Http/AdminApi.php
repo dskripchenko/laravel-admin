@@ -86,6 +86,8 @@ class AdminApi extends BaseApi
                     'manifest' => ['method' => ['get']],
                     'me' => ['method' => ['get']],
                     'menu' => ['method' => ['get']],
+                    'menuCounters' => ['method' => ['get']],
+                    'menuTabs' => ['method' => ['get']],
                     'search' => ['method' => ['get']],
                     'locales' => ['method' => ['get'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
                     'setLocale' => ['method' => ['post'], 'exclude-middleware' => [Middleware\AdminAuth::class]],
@@ -159,6 +161,17 @@ class AdminApi extends BaseApi
                     'tokensList' => ['method' => ['get']],
                     'tokenCreate' => ['method' => ['post']],
                     'tokenRevoke' => ['method' => ['post']],
+                ],
+            ],
+            'navigation' => [
+                'controller' => \Dskripchenko\LaravelAdmin\Navigation\NavigationController::class,
+                'actions' => [
+                    'state' => ['method' => ['get']],
+                    'favorite' => ['method' => ['post']],
+                    'unfavorite' => ['method' => ['post']],
+                    'reorderFavorites' => ['method' => ['post']],
+                    'visit' => ['method' => ['post']],
+                    'group' => ['method' => ['post']],
                 ],
             ],
             'dashboard' => [

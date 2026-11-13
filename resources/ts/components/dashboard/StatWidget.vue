@@ -17,6 +17,7 @@ import { resolveIcon } from '../shell/iconRegistry'
 import { resolveTone, type PanelTone } from '../tones'
 import { currentLocale, formatNumber, intlLocale } from '../../stores/i18n'
 import { useLocaleStore } from '../../stores/locale'
+import { trSafe as tr } from '../../stores/i18n'
 
 interface StatChange {
   delta?: number
@@ -39,6 +40,10 @@ interface StatItem {
   change?: StatChange | null
   color?: string | null
   icon?: string | null
+  /** Where the card leads (StatsOverviewWidget::url()): a panel path or an external address. */
+  url?: string | null
+  /** The value of the previous period, when the dashboard compares. */
+  previous?: number | string | null
 }
 
 interface Props {
@@ -106,6 +111,24 @@ interface ResolvedStat {
   icon: Component | undefined
   precision: number
   formatter: ((value: number | string) => string) | undefined
+  url: string | null
+  previous: string | null
+}
+
+/** A link's kind: inside the panel (the router) or outside it (a new tab). */
+function isExternal(url: string): boolean {
+  return /^[a-z]+:\/\//i.test(url)
+}
+
+/**
+ * The trend from the previous period's value when the card has none of its
+ * own: the change in per cent.
+ */
+function trendFrom(value: unknown, previous: unknown): number | undefined {
+  const a = typeof value === 'number' ? value : Number(value)
+  const b = typeof previous === 'number' ? previous : Number(previous)
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return undefined
+  return Math.round(((a - b) / Math.abs(b)) * 1000) / 10
 }
 
 /**
@@ -144,6 +167,8 @@ const items = computed<ResolvedStat[]>(() => {
       icon: undefined,
       precision: props.precision,
       formatter: undefined,
+      url: null,
+      previous: null,
     }]
   }
   // A lone stat whose label is the widget's title (or that has none) is one
@@ -155,12 +180,16 @@ const items = computed<ResolvedStat[]>(() => {
     value: s.value ?? '',
     prefix: s.prefix ?? '',
     suffix: s.suffix ?? '',
-    trend: trendOf(s.change),
+    trend: trendOf(s.change) ?? (s.previous !== undefined && s.previous !== null ? trendFrom(s.value, s.previous) : undefined),
     tone: toneOf(s.color),
     toneClass: toneClass(s.color),
     icon: resolveIcon(s.icon) ?? undefined,
     precision: typeof s.precision === 'number' ? s.precision : props.precision,
     formatter: moneyFormatter(s.format),
+    url: typeof s.url === 'string' && s.url !== '' ? s.url : null,
+    previous: s.previous === undefined || s.previous === null
+      ? null
+      : (moneyFormatter(s.format)?.(s.previous) ?? (typeof s.previous === 'number' ? formatNumber(s.previous) : String(s.previous))),
   }))
 })
 
@@ -186,8 +215,34 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
 </script>
 
 <template>
+  <component
+    :is="items[0]!.url ? (isExternal(items[0]!.url) ? 'a' : 'router-link') : 'div'"
+    v-if="!sectioned && items[0]!.url"
+    class="admin-stats-widget__link admin-stats-widget__link--single"
+    data-testid="stat-link"
+    v-bind="isExternal(items[0]!.url) ? { href: items[0]!.url, target: '_blank', rel: 'noopener' } : { to: items[0]!.url }"
+  >
+    <UidStat
+      :title="items[0]!.title"
+      :value="items[0]!.value"
+      :prefix="items[0]!.prefix"
+      :suffix="items[0]!.suffix"
+      :trend="items[0]!.trend"
+      :precision="items[0]!.precision"
+      :formatter="items[0]!.formatter"
+      :locale="locale"
+      :tone="items[0]!.tone"
+      :icon="items[0]!.icon"
+      :loading="loading"
+      trend-placement="below"
+      :class="['admin-stats-widget__single', items[0]!.toneClass]"
+    />
+    <span v-if="items[0]!.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
+      {{ tr('Прошлый период') }}: {{ items[0]!.previous }}
+    </span>
+  </component>
   <UidStat
-    v-if="!sectioned"
+    v-else-if="!sectioned"
     :title="items[0]!.title"
     :value="items[0]!.value"
     :prefix="items[0]!.prefix"
@@ -207,9 +262,15 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       <h3 class="admin-stats-widget__title">{{ title }}</h3>
     </header>
     <div class="admin-stats-widget__grid">
-      <UidStat
+      <component
+        :is="stat.url ? (isExternal(stat.url) ? 'a' : 'router-link') : 'div'"
         v-for="(stat, idx) in items"
         :key="idx"
+        class="admin-stats-widget__link"
+        :data-testid="stat.url ? 'stat-link' : undefined"
+        v-bind="stat.url ? (isExternal(stat.url) ? { href: stat.url, target: '_blank', rel: 'noopener' } : { to: stat.url }) : {}"
+      >
+      <UidStat
         :title="stat.title"
         :value="stat.value"
         :prefix="stat.prefix"
@@ -224,11 +285,41 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
         :class="stat.toneClass"
         trend-placement="below"
       />
+      <span v-if="stat.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
+        {{ tr('Прошлый период') }}: {{ stat.previous }}
+      </span>
+      </component>
     </div>
   </section>
 </template>
 
 <style>
+/* A card that leads to its list (StatsOverviewWidget::url()). */
+.admin-stats-widget__link {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.admin-stats-widget__link--single {
+  height: 100%;
+}
+.admin-stats-widget__link > .uid-stat {
+  flex: 1 1 auto;
+}
+a.admin-stats-widget__link > .uid-stat,
+a.admin-stats-widget__link--single > .uid-stat {
+  transition: box-shadow var(--uid-duration-fast, 120ms) var(--uid-ease-out, ease);
+}
+a.admin-stats-widget__link:hover > .uid-stat {
+  box-shadow: 0 0 0 1px var(--uid-color-primary, #14b8a6);
+}
+.admin-stats-widget__previous {
+  margin-top: 4px;
+  font-size: var(--uid-font-size-xs, 12px);
+  color: var(--uid-text-tertiary);
+}
 .admin-stats-widget {
   display: flex;
   flex-direction: column;

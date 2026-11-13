@@ -11,7 +11,9 @@
  * `orientation: 'vertical'` (Tabs::vertical()) puts the tabs in a column on
  * the left: a list of dictionaries beside the open one.
  */
-import { inject, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, provide, ref, watch, type InjectionKey } from 'vue'
+import { formatBadge } from '../../stores/menu'
+import { useUserNavStore } from '../../stores/userNav'
 import { testIdOf } from '../../composables/testId'
 import { routeLocationKey, routerKey } from 'vue-router'
 import { patchRouteQuery } from '../../composables/useQueryPatch'
@@ -26,6 +28,10 @@ export interface TabNode {
   label: string
   icon?: string | null
   items: LayoutNode[]
+  /** A counter or a short text beside the label (Tabs::badges()). */
+  badge?: string | number | null
+  /** 'danger' paints the badge red. */
+  badgeTone?: string | null
 }
 
 interface Props {
@@ -104,6 +110,41 @@ function onUpdate(value: string | number): void {
   }
 }
 
+/*
+ * The open tab of a tab set kept in the address is the page's own: the
+ * breadcrumbs name it («Заявки › CRM») and the favourites' star keeps it. A
+ * nested set comes after its parent.
+ */
+const TABS_DEPTH: InjectionKey<number> = Symbol.for('admin-tabs-depth')
+const depth = inject(TABS_DEPTH, 0)
+provide(TABS_DEPTH, depth + 1)
+// Outside an app with Pinia (a bare mount) the tabs simply are not reported.
+const userNav = (() => {
+  try {
+    return useUserNavStore()
+  } catch {
+    return null
+  }
+})()
+const activeLabel = computed(() => {
+  for (const [idx, tab] of props.items.entries()) {
+    if (tabKey(tab, idx) === localActive.value) return tab.label
+  }
+  return null
+})
+watch(
+  activeLabel,
+  (label) => {
+    if (!props.queryKey || !userNav) return
+    if (label === null) userNav.unregisterTab(props.queryKey)
+    else userNav.registerTab({ queryKey: props.queryKey, label, depth })
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => {
+  if (props.queryKey) userNav?.unregisterTab(props.queryKey)
+})
+
 // A link to another tab of the same screen, back and forward.
 watch(
   () => (props.queryKey && route ? route.query[props.queryKey] : undefined),
@@ -124,6 +165,12 @@ watch(
         :data-testid="testIdOf('tab', tabKey(tab, idx))"
       >
         {{ tab.label }}
+        <span
+          v-if="formatBadge(tab.badge) !== null"
+          class="admin-tab-badge"
+          :class="{ 'admin-tab-badge--danger': tab.badgeTone === 'danger' }"
+          :data-testid="testIdOf('tab-badge', tabKey(tab, idx))"
+        >{{ formatBadge(tab.badge) }}</span>
       </UidTab>
     </template>
 
@@ -144,6 +191,27 @@ watch(
 </template>
 
 <style>
+/* A tab's counter: a queue's size beside its name. */
+.admin-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--uid-border-subtle);
+  color: var(--uid-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+.admin-tab-badge--danger {
+  background: var(--uid-color-danger-solid, #dc2626);
+  color: var(--uid-color-text-on-primary, #fff);
+}
+
 /* Vertical tabs: a column of names on the left, the open tab beside it. A
    table in the panel must be able to shrink, and the names keep to a width. */
 .uid-tabs--vertical > .uid-tabs__panels {

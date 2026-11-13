@@ -294,6 +294,19 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * Another screen shown in place — in a tab of this one, say: it loads its
+     * own state, runs its own methods and «Save», and is shown only to the
+     * users its own permissions let in. See EmbeddedScreen.
+     *
+     * @param  class-string<\Dskripchenko\LaravelAdmin\Screen\Screen>  $screenClass
+     * @param  array<string, scalar>  $params  The query its query() receives, as its address would carry it
+     */
+    public static function screen(string $screenClass, array $params = []): EmbeddedScreen
+    {
+        return EmbeddedScreen::for($screenClass, $params);
+    }
+
+    /**
      * An editor of a tree of blocks with a live preview — the base of a page
      * builder. See BlockTree.
      *

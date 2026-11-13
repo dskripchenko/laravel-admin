@@ -38,7 +38,19 @@ final class MenuNode
 
     private ?string $routeName = null;
 
-    private string|int|null $badge = null;
+    /** @var string|int|\Closure|null A value, or a closure computed per request — see badge(). */
+    private string|int|\Closure|null $badge = null;
+
+    private ?string $badgeTone = null;
+
+    /** The group's initial state: true — folded, false — unfolded, null — the panel's default. */
+    private ?bool $collapsed = null;
+
+    /** Whether a folded group shows the sum of its children's counters; null — the panel's default. */
+    private ?bool $sumBadges = null;
+
+    /** 'section' for a titled block of the sidebar (section()); null for an ordinary node. */
+    private ?string $kind = null;
 
     private ?string $group = null;
 
@@ -65,6 +77,29 @@ final class MenuNode
     {
         $instance = new self($key);
         $instance->label = $label !== '' ? $label : $key;
+
+        return $instance;
+    }
+
+    /**
+     * A titled section of the sidebar's root: its children are listed under
+     * the title, flat and always visible — the pinned items above the areas,
+     * say. The section itself is neither a link nor a foldable group, and the
+     * breadcrumbs leave it out.
+     *
+     *   MenuNode::section('Закреплено', [
+     *       MenuNode::dashboard('desktop'),
+     *       MenuNode::screen('contracts'),
+     *   ]);
+     *
+     * @param  list<MenuNode>  $children
+     */
+    public static function section(string $title, array $children = [], ?string $key = null): self
+    {
+        $instance = new self($key ?? 'section.'.(\Illuminate\Support\Str::slug($title) ?: substr(md5($title), 0, 8)));
+        $instance->label = $title;
+        $instance->kind = 'section';
+        $instance->children = $children;
 
         return $instance;
     }
@@ -140,9 +175,55 @@ final class MenuNode
         return $this;
     }
 
-    public function badge(string|int|null $badge): self
+    /**
+     * The badge on the right: a text ("new"), a number — or a closure,
+     * computed on every request of the menu for the signed-in user, and again
+     * by the counters' polling (`system/menuCounters`):
+     *
+     *   MenuNode::resource('claims')->badge(
+     *       fn (?Model $user): int => Claim::whereNull('sent_at')->count(),
+     *       'danger',
+     *   );
+     *
+     * The closure runs only for a user who may see the node (its permissions);
+     * it may return a number, a text, null (no badge) or
+     * `['value' => 12, 'tone' => 'danger']`. A number above 99 is shown as 99+.
+     * `$tone` — 'danger' paints the badge red; null — the ordinary colour.
+     */
+    public function badge(string|int|\Closure|null $badge, ?string $tone = null): self
     {
         $this->badge = $badge;
+        $this->badgeTone = $tone;
+
+        return $this;
+    }
+
+    /**
+     * The group's initial state: folded (true) or unfolded (false); the
+     * group of the open page unfolds anyway. The user's own choice, once
+     * made, is remembered on the server and wins. Not set, the panel's
+     * default `admin.navigation.groups_expanded` applies (folded).
+     */
+    public function collapsed(bool $collapsed = true): self
+    {
+        $this->collapsed = $collapsed;
+
+        return $this;
+    }
+
+    /** Unfolded until the user folds it — see collapsed(). */
+    public function expanded(bool $expanded = true): self
+    {
+        return $this->collapsed(! $expanded);
+    }
+
+    /**
+     * A folded group shows the sum of its descendants' numeric badges (red
+     * when one of them is). Not set, `admin.navigation.sum_badges` applies.
+     */
+    public function sumBadges(bool $sum = true): self
+    {
+        $this->sumBadges = $sum;
 
         return $this;
     }
@@ -226,6 +307,7 @@ final class MenuNode
             fn (MenuNode $c): array => $c->toArray($resources, $screens),
             $this->children,
         );
+        [$badge, $tone] = $this->resolveBadge();
 
         return [
             'key' => $this->key,
@@ -241,12 +323,76 @@ final class MenuNode
             'url' => $this->url,
             'routeName' => $this->routeName,
             // A text badge ("new", "beta") is a caption too; a count is not.
-            'badge' => is_string($this->badge) ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->badge) : $this->badge,
+            'badge' => is_string($badge) ? \Dskripchenko\LaravelAdmin\I18n\Localize::string($badge) : $badge,
+            'badgeTone' => $tone,
+            'collapsed' => $this->collapsed,
+            'sumBadges' => $this->sumBadges,
+            'kind' => $this->kind,
             'group' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->group),
             'order' => $this->order,
             'permissions' => $this->permissions,
             'children' => $children,
         ];
+    }
+
+    /**
+     * The computed badges of this node and its descendants — only those set
+     * through a closure, the ones that change on their own — keyed by the
+     * node's key: what the counters' polling refreshes.
+     *
+     * @return array<string, array{badge: string|int|null, tone: string|null}>
+     */
+    public function lazyBadges(ResourceRegistry $resources, ScreenRegistry $screens): array
+    {
+        $this->resolveAuto($resources, $screens);
+        $out = [];
+        if ($this->badge instanceof \Closure && \Dskripchenko\LaravelAdmin\Permission\PermissionCheck::allowsAny($this->permissions)) {
+            [$badge, $tone] = $this->resolveBadge();
+            $out[$this->key] = ['badge' => $badge, 'tone' => $tone];
+        }
+        foreach ($this->children as $child) {
+            $out += $child->lazyBadges($resources, $screens);
+        }
+
+        return $out;
+    }
+
+    /**
+     * The badge's value and tone; a closure is called with the signed-in user,
+     * and only for a user who may see the node. One that throws is reported
+     * and shows nothing.
+     *
+     * @return array{0: string|int|null, 1: string|null}
+     */
+    private function resolveBadge(): array
+    {
+        if (! $this->badge instanceof \Closure) {
+            return [$this->badge, $this->badgeTone];
+        }
+        if (! \Dskripchenko\LaravelAdmin\Permission\PermissionCheck::allowsAny($this->permissions)) {
+            return [null, null];
+        }
+        try {
+            $user = \Illuminate\Support\Facades\Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+            $value = ($this->badge)($user);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return [null, null];
+        }
+        $tone = $this->badgeTone;
+        if (is_array($value)) {
+            $tone = isset($value['tone']) && is_string($value['tone']) ? $value['tone'] : $tone;
+            $value = $value['value'] ?? null;
+        }
+        if (is_float($value)) {
+            $value = (int) $value;
+        }
+        if (! is_int($value) && ! is_string($value)) {
+            return [null, null];
+        }
+
+        return [$value, $tone];
     }
 
     /**

@@ -45,11 +45,14 @@ interface Props {
   slug: string
   title?: string | null
   subtitle?: string | null
+  /** The list's named condition (Layout::resourceIndex()->scope()). */
+  scope?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: null,
   subtitle: null,
+  scope: null,
 })
 
 interface TreeNodeAction {
@@ -117,6 +120,7 @@ async function load(): Promise<void> {
     const client = getAdminClient()
     const body: Record<string, unknown> = {}
     if (search.value.trim() !== '') body.q = search.value.trim()
+    if (props.scope) body.scope = props.scope
     const res = await client.post<TreeResponse>(`/${props.slug}/tree`, body)
     nodes.value = res.data
     total.value = res.meta.total

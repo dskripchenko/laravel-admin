@@ -80,7 +80,7 @@ export interface ScreenMethodResult {
   extra?: Record<string, unknown>
 }
 
-export const useScreenStore = defineStore('admin-screen', () => {
+function screenStoreSetup() {
   const slug = ref<string | null>(null)
   const name = ref<string>('')
   const description = ref<string | null>(null)
@@ -333,4 +333,21 @@ export const useScreenStore = defineStore('admin-screen', () => {
     setErrors,
     clearErrors,
   }
-})
+}
+
+export const useScreenStore = defineStore('admin-screen', screenStoreSetup)
+
+const embeddedStores = new Map<string, typeof useScreenStore>()
+
+/**
+ * A screen store of its own, for a screen shown inside another one
+ * (Layout::screen()): its state, errors and messages apart from the page's.
+ */
+export function useEmbeddedScreenStore(id: string): ReturnType<typeof useScreenStore> {
+  let definition = embeddedStores.get(id)
+  if (!definition) {
+    definition = defineStore(`admin-screen:${id}`, screenStoreSetup) as unknown as typeof useScreenStore
+    embeddedStores.set(id, definition)
+  }
+  return definition()
+}

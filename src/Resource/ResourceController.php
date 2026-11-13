@@ -126,7 +126,7 @@ final class ResourceController extends ApiController
 
         $labelColumn = $this->resolveLabelColumn($resource);
 
-        $query = $resource->indexQuery();
+        $query = $this->scopedIndexQuery($resource, $request);
 
         $filterInputs = HttpFilterParser::parse($request);
         foreach ($resource->resolvedFilters() as $filter) {
@@ -468,7 +468,7 @@ final class ResourceController extends ApiController
         $groups = null;
         $groupBy = (string) $request->input('group_by', '');
         if ($groupBy !== '') {
-            $groupQuery = $resource->indexQuery();
+            $groupQuery = $this->scopedIndexQuery($resource, $request);
             $filterInputs = HttpFilterParser::parse($request);
             foreach ($resource->resolvedFilters() as $filter) {
                 $value = $filterInputs[$filter->field()] ?? null;
@@ -505,8 +505,124 @@ final class ResourceController extends ApiController
                 'to' => $paginator->lastItem(),
                 'summary' => null,
                 'groups' => $groups,
+                // The masked columns whose «Show» this user may press.
+                'revealable' => $this->revealableColumns($resource),
             ],
         ]);
+    }
+
+    /**
+     * The open value of a masked column (TableColumn::masked()) of one
+     * record — «Show» in the cell. It takes the column's reveal permission
+     * (the resource's `{base}.reveal` by default) and is written to the audit
+     * log: who, which record, which field.
+     *
+     * @input string $id
+     * @input string $column
+     *
+     * @output object $payload
+     * @output string $payload.value
+     *
+     * @security AdminSession
+     *
+     * @response 200 {RevealResponse}
+     * @response 403 {ForbiddenErrorResponse}
+     * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse}
+     */
+    public function reveal(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'id' => ['required'],
+            'column' => ['required', 'string', 'max:255'],
+        ]);
+        $resource = $this->currentResource();
+        $column = null;
+        foreach ($resource->columns() as $candidate) {
+            if ($candidate->name() === $data['column'] && $candidate->isMasked()) {
+                $column = $candidate;
+            }
+        }
+        if ($column === null) {
+            return $this->error([
+                'errorKey' => 'not_masked',
+                'message' => "Column `{$data['column']}` is not a masked column of this resource",
+            ], 422);
+        }
+        if (! PermissionCheck::allows($this->revealPermissionOf($resource, $column))) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => __('Нет права смотреть эти данные'),
+            ], 403);
+        }
+
+        // The list's own scope: a record the user cannot list is not revealed.
+        $record = $resource->indexQuery()->whereKey($data['id'])->first();
+        if ($record === null) {
+            return $this->error([
+                'errorKey' => 'not_found',
+                'message' => 'Record not found',
+            ], 404);
+        }
+        $value = \Illuminate\Support\Arr::get($record->toArray(), $column->name());
+
+        if ((bool) config('admin.audit.enabled', true)) {
+            $user = \Illuminate\Support\Facades\Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+            \Dskripchenko\LaravelAdmin\Audit\AuditLog::query()->create([
+                'actor_type' => $user instanceof \Illuminate\Database\Eloquent\Model ? $user->getMorphClass() : null,
+                'actor_id' => $user instanceof \Illuminate\Database\Eloquent\Model ? $user->getKey() : null,
+                'subject_type' => $record->getMorphClass(),
+                'subject_id' => $record->getKey(),
+                'event' => 'pii.revealed',
+                'changes' => ['resource' => $resource::slug(), 'field' => $column->name()],
+                ...\Dskripchenko\LaravelAdmin\Audit\AuditLog::requestContext(),
+            ]);
+        }
+
+        return $this->success(['value' => is_scalar($value) || $value === null ? $value : json_encode($value, JSON_UNESCAPED_UNICODE)]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function revealableColumns(Resource $resource): array
+    {
+        $out = [];
+        foreach ($resource->columns() as $column) {
+            if ($column->isMasked() && PermissionCheck::allows($this->revealPermissionOf($resource, $column))) {
+                $out[] = $column->name();
+            }
+        }
+
+        return $out;
+    }
+
+    private function revealPermissionOf(Resource $resource, TableColumn $column): string
+    {
+        return $column->revealPermission() ?? $resource::permission().'.reveal';
+    }
+
+    /**
+     * The resource's index query narrowed by the named scope the request
+     * asks for (`scope`, from Layout::resourceIndex()->scope()), one of
+     * Resource::scopes(). An unknown name is refused rather than ignored:
+     * a queue tab must never quietly show every record.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>
+     */
+    private function scopedIndexQuery(Resource $resource, Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $name = $request->input('scope');
+        if ($name === null || $name === '') {
+            return $resource->indexQuery();
+        }
+        if (! is_string($name) || ! $resource->hasScope($name)) {
+            throw ValidationException::withMessages([
+                'scope' => __('Неизвестное условие списка: :scope', ['scope' => is_string($name) ? $name : '?']),
+            ]);
+        }
+
+        return $resource->scopedQuery($name);
     }
 
     /**
@@ -519,7 +635,7 @@ final class ResourceController extends ApiController
      */
     private function listQuery(Resource $resource, Request $request): \Illuminate\Database\Eloquent\Builder
     {
-        $query = $resource->indexQuery();
+        $query = $this->scopedIndexQuery($resource, $request);
 
         // Filters arrive either as { filters: [{column, operator, value}] }
         // or as { filters: { col: value } }.
@@ -791,7 +907,7 @@ final class ResourceController extends ApiController
             ], 422);
         }
 
-        $query = $resource->indexQuery();
+        $query = $this->scopedIndexQuery($resource, $request);
 
         $filterInputs = HttpFilterParser::parse($request);
         foreach ($resource->resolvedFilters() as $filter) {
@@ -835,7 +951,10 @@ final class ResourceController extends ApiController
         $formatted = $resource->exportsFormatted();
         $rowGenerator = (function () use ($query, $exported, $formatted): \Generator {
             foreach ($query->cursor() as $model) {
-                yield $formatted ? TableColumn::formatRows($exported, [$model->toArray()])[0] : $model->toArray();
+                // Masked columns stay masked in the file either way.
+                yield $formatted
+                    ? TableColumn::formatRows($exported, [$model->toArray()])[0]
+                    : TableColumn::maskRows($exported, [$model->toArray()])[0];
             }
         })();
 
@@ -962,7 +1081,7 @@ final class ResourceController extends ApiController
         // a toast that is gone before it is copied.
         $affected = count($ids);
         $message = null;
-        $reveal = is_array($result) ? self::reveal($result['reveal'] ?? null) : null;
+        $reveal = is_array($result) ? self::normalizeReveal($result['reveal'] ?? null) : null;
         if (is_int($result)) {
             $affected = $result;
         } elseif (is_string($result) && $result !== '') {
@@ -990,7 +1109,7 @@ final class ResourceController extends ApiController
      *
      * @return array{value: string, label: string|null}|null
      */
-    private static function reveal(mixed $reveal): ?array
+    private static function normalizeReveal(mixed $reveal): ?array
     {
         if (is_string($reveal) && $reveal !== '') {
             return ['value' => $reveal, 'label' => null];
@@ -1764,7 +1883,7 @@ final class ResourceController extends ApiController
     public function summary(Request $request): JsonResponse
     {
         $resource = $this->currentResource();
-        $query = $resource->indexQuery();
+        $query = $this->scopedIndexQuery($resource, $request);
 
         // The same filters as in search are applied.
         $filterInputs = HttpFilterParser::parse($request);

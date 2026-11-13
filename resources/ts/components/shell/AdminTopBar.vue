@@ -20,12 +20,16 @@ import LocaleSwitcher from './widgets/LocaleSwitcher.vue'
 import NotificationBell from './widgets/NotificationBell.vue'
 import StatusIndicators from './widgets/StatusIndicators.vue'
 import UserMenu from './widgets/UserMenu.vue'
+import FavoriteStar from './widgets/FavoriteStar.vue'
+import QuickCreateMenu from './widgets/QuickCreateMenu.vue'
 import { trSafe as tr } from '../../stores/i18n'
 
 interface Crumb {
   label: string
   /** A router location, or a path within the panel. */
   to?: RouteLocationRaw | null
+  /** 'tab' — an open tab of the screen (named with it in the favourites). */
+  kind?: string | null
 }
 
 interface Props {
@@ -33,11 +37,32 @@ interface Props {
   breadcrumbs?: Crumb[]
   /** Whether to show the sidebar's collapse button; only inside the shell layout. */
   showCollapseToggle?: boolean
+  /** Whether to show the favourites' star beside the breadcrumbs. */
+  showFavorite?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   breadcrumbs: () => [],
   showCollapseToggle: true,
+  showFavorite: true,
+})
+
+/**
+ * The page's name in the favourites: its last crumb, and with an open tab
+ * the crumb before it too — «Заявки · CRM».
+ */
+const favoriteLabel = computed<string>(() => {
+  const crumbs = props.breadcrumbs
+  const last = crumbs[crumbs.length - 1]
+  if (!last) return ''
+  if (last.kind === 'tab') {
+    const tabs: string[] = []
+    let i = crumbs.length - 1
+    while (i >= 0 && crumbs[i]!.kind === 'tab') tabs.unshift(crumbs[i--]!.label)
+    const owner = i >= 0 ? crumbs[i]!.label : null
+    return [owner, ...tabs].filter((x): x is string => !!x).join(' · ')
+  }
+  return last.label
 })
 
 const emit = defineEmits<{
@@ -98,6 +123,7 @@ function targetOf(crumb: Crumb): string | Record<string, unknown> | undefined {
           >{{ crumb.label }}</UidBreadcrumbItem>
         </UidBreadcrumb>
       </slot>
+      <FavoriteStar v-if="showFavorite" :label="favoriteLabel" />
     </div>
 
     <div class="admin-topbar__spacer" />
@@ -119,6 +145,7 @@ function targetOf(crumb: Crumb): string | Record<string, unknown> | undefined {
       </div>
     </slot>
 
+    <QuickCreateMenu />
     <slot name="actions" />
     <StatusIndicators />
     <NotificationBell />

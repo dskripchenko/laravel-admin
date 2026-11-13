@@ -47,6 +47,7 @@
         "accordion",
         "admin.resource-index",
         "admin.resource-table",
+        "admin.screen",
         "asyncapi",
         "audio",
         "audit_trail",

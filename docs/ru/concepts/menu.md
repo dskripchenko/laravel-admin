@@ -162,6 +162,7 @@ Frontend рендерит узлы рекурсивно (`AdminSidebarNode.vue`)
 
 ## См. также
 
+- [Навигация](navigation.md) — счётчики на запросе, свёрнутые группы, секции, избранное, Ctrl+K, «+ Создать»
 - [Resources](resources.md)
 - [Screens](screens.md)
 - [Permissions](permissions.md)

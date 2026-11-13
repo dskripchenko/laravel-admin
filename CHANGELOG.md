@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.73.0
+
+### Added
+
+- **Menu counters computed per request.** `MenuNode::badge(fn (?Model $user) => …, 'danger')`
+  — the closure runs on every menu request for the signed-in user, only
+  when the node is visible to them, and may return a number, a text, null or
+  `['value' => …, 'tone' => …]`; one that throws shows nothing. A red tone
+  (`danger`), `99+` above 99. `GET system/menuCounters` returns the computed
+  badges alone, and the panel polls it every
+  `admin.navigation.poll_interval` seconds (60; 0 — off) and when the browser
+  tab becomes visible. `MenuNode::sumBadges()` (or
+  `admin.navigation.sum_badges`) — a folded group or area shows the sum of
+  its descendants' counters, red when one of them is.
+- **Folded groups, remembered; titled sections.** `MenuNode::collapsed()` /
+  `->expanded()` set a group's initial state, `admin.navigation.groups_expanded`
+  the panel's default (folded, as before); the user's own folding is saved on
+  the server per user and comes with the menu (`groups`).
+  `MenuNode::section('Pinned', [...])` — a titled block of the root whose
+  items are listed flat; the breadcrumbs leave it out.
+- **Favourites and recent pages.** A star in the top bar keeps any page with
+  its query (a tab, a list's filters) in the user's favourites — a block above
+  the menu, reordered by dragging or Alt+↑/↓, at most
+  `admin.navigation.favorites_limit` (7). The last `recent_limit` (10) screens
+  and records opened are kept as well. Both live on the server — the new
+  package migration `admin_navigation_states` — behind `navigation/state`,
+  `favorite`, `unfavorite`, `reorderFavorites`, `visit` and `group`, and are
+  shown only where the user's permissions let them in right now
+  (`Navigation\UrlAccess`).
+- **The Ctrl+K palette.** An empty query shows the favourites and the recent
+  pages; the sections include the tabs of the menu's screens kept in the
+  address (`GET system/menuTabs`), found by the label, the menu path and the
+  tab's key; the "+ Create" items are its actions.
+  `$admin->searchProviders([SearchProvider::make($key, $label)->recognizes($regexOrClosure)->priority(…)->using(fn ($q, $user) => [...])])`
+  — the host's own searches, with `recognizesPhone()`, `recognizesEmail()`,
+  `onlyWhenRecognized()`, `permission()` and `limit()`: a group whose
+  recognizer recognized the input goes on top. `Support\Mask` masks the
+  items.
+- **A list's condition and default filters, tab badges.**
+  `Resource::scopes()` — named conditions — and
+  `Layout::resourceIndex(X::class)->scope('pending')`: every request of the
+  list carries `scope`, which the user cannot lift (an unknown one is a 422);
+  `->defaultFilters([...])` — the filters a list opens with, which the user
+  may clear (`filter=none` keeps it cleared). `Resource::countIn($scope)`.
+  `Layout::tabs()->badges([key => number|closure|['value', 'tone']])` /
+  `->badge($key, $value, $tone)`.
+- **"+ Create".** `$admin->menu()->quickCreate([QuickCreate::resource(NewsResource::class), QuickCreate::make($key, $label, $url)->permission(…)])`
+  — a menu in the top bar filtered by permission (`.create` for a resource).
+- **`Layout::screen(ScreenClass::class, $params)`** — another screen in
+  place, a tab say, with its own state, command bar, methods and
+  permissions (a store of its own in the SPA).
+- **Dashboard periods.** `DashboardContext` takes `today`, `month`,
+  `quarter` and ranges `Y-m-d..Y-m-d` besides `Nd` and `all`, with
+  `label()`/`labelFor()`, `previous()`, `compare()`/`comparing()`,
+  `filterQuery($field)` and `listUrl($path, $field)`.
+  `DashboardScreen::customRange()` (a range picker) and `comparable()`
+  ("Compare with the previous period", `dashboard/widgets?compare=1`); the
+  manifest carries `periodLabels`. `Widget::link($url)` — a link on a widget;
+  `StatsOverviewWidget::url()` / `stat(..., url: …)` and `previous()` — a link
+  and the previous value of each number.
+- **Masked personal data.** `TableColumn::masked('phone'|'email'|'name'|'passport'|'full'|Closure, ?$permission)`
+  — the value leaves the server masked, in the export too; the cell's "Show"
+  calls `POST /{slug}/reveal` with the permission (`{base}.reveal` by
+  default), and the reveal is written to the audit log as `pii.revealed`
+  (actor, record, field). The list's `meta.revealable` names what the user may
+  reveal.
+- **Breadcrumbs.** `admin.navigation.breadcrumbs = 'compact'` —
+  Area › Screen › Tab › Record without the menu's groups; the open tabs kept
+  in the address are named after the screen; a crumb of a list or a screen
+  leads back with the query it was left with.
+
+### Changed
+
+- A list's address keeps a date range as `filter[x][from]` /
+  `filter[x][to]` (it used to be written as `[object Object]`) and reads it
+  back, so a widget can link "to the journal for the period".
+- `Layout::dashboard()` on an ordinary screen leaves out the widgets whose
+  `permission()` the user lacks, as a `DashboardScreen` does.
+- `dashboard/savePeriod` and `dashboard/widgets` take periods up to 32
+  characters.
+
+### Fixed
+
+- **Columns of a resource were read while the routes were being built.**
+  Deciding whether a resource needs the `reveal` endpoint called its
+  `columns()` from the route compiler — before the host's own routes exist, so
+  a column that builds a URL with `route()` broke the whole panel API. The
+  endpoint is now registered for every resource; the controller already
+  refuses a column that is not masked (`422 not_masked`).
+
 ## 1.72.0
 
 ### Added

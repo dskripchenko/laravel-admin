@@ -57,6 +57,7 @@ import { useThemeStore } from './stores/theme'
 import { useNotificationsStore } from './stores/notifications'
 import { useManifestStore } from './stores/manifest'
 import { useMenuStore } from './stores/menu'
+import { useUserNavStore } from './stores/userNav'
 import { useNavigationStore } from './stores/navigation'
 
 import { createAdminRouter, type AdminRouter, type AdminRouterOptions } from './router'
@@ -297,7 +298,14 @@ export function createAdminApp(
     const loadAndApply = async (): Promise<void> => {
       // The sidebar menu is fetched in parallel with the manifest, from the
       // backend's menu endpoint.
-      void menuStore.load().catch(() => undefined)
+      // Its computed counters are polled afterwards (admin.navigation.poll_interval)
+      // and on a return to the browser tab; the user's favourites, recent
+      // pages and folded groups come alongside.
+      const userNav = useUserNavStore()
+      void menuStore.load()
+        .then(() => menuStore.startPolling(userNav.config.pollInterval))
+        .catch(() => undefined)
+      void userNav.load(true)
 
       try {
         const manifest = await manifestStore.load()

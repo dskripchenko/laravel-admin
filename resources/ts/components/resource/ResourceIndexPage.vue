@@ -51,6 +51,7 @@ import { useNavigationStore } from '../../stores/navigation'
 import { useAuthStore } from '../../stores/auth'
 import type { CellMeta } from './cellFormat'
 import AdminTableCell from './AdminTableCell.vue'
+import MaskedCell from './MaskedCell.vue'
 import { markTableRows } from './tableTestIds'
 import { testIdOf } from '../../composables/testId'
 import { createTooltip, deleteConfirmText, deletedToast, emptyDescription, nounCase, nounParams } from './resourceNoun'
@@ -138,6 +139,10 @@ interface Props {
   drawerSize?: string | null
   /** After a save or an action in the drawer, move on to the next record. */
   nextAfterAction?: boolean
+  /** The list's named condition (Layout::resourceIndex()->scope()); never lifted. */
+  scope?: string | null
+  /** The filters it opens with when the address names none (->defaultFilters()). */
+  defaultFilters?: Record<string, unknown> | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -151,6 +156,8 @@ const props = withDefaults(defineProps<Props>(), {
   rowOpen: null,
   drawerSize: null,
   nextAfterAction: false,
+  scope: null,
+  defaultFilters: null,
 })
 
 const emit = defineEmits<{
@@ -648,9 +655,9 @@ function columnEditableMeta(key: string): EditableMeta {
   }
   return { as: 'text', options: {} }
 }
-const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta }>>(() => {
+const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta; masked?: boolean }>>(() => {
   const cols = resourceMeta.value?.columns ?? []
-  const result: Record<string, { preset?: string; meta: CellMeta }> = {}
+  const result: Record<string, { preset?: string; meta: CellMeta; masked?: boolean }> = {}
   for (const c of cols) {
     const col = c as Record<string, unknown>
     const key = String(col.key ?? col.name ?? '')
@@ -658,9 +665,16 @@ const columnMeta = computed<Record<string, { preset?: string; meta: CellMeta }>>
     result[key] = {
       preset: typeof col.preset === 'string' ? col.preset : undefined,
       meta: (col.meta as CellMeta) ?? {},
+      masked: col.masked !== null && col.masked !== undefined,
     }
   }
   return result
+})
+
+/** The masked columns whose «Show» this user may press — the list's meta.revealable. */
+const revealable = computed<string[]>(() => {
+  const list = (index.meta as unknown as { revealable?: unknown }).revealable
+  return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : []
 })
 
 function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
@@ -950,7 +964,8 @@ async function loadWithProgress(): Promise<void> {
  * push — the history is not a list of every keystroke in the search box.
  */
 function isListKey(k: string): boolean {
-  return k === `${qp}q` || k === `${qp}sort` || k === `${qp}page` || k === `${qp}view` || k.startsWith(`${qp}filter[`)
+  return k === `${qp}q` || k === `${qp}sort` || k === `${qp}page` || k === `${qp}view`
+    || k === `${qp}filter` || k.startsWith(`${qp}filter[`)
 }
 
 function syncQuery(): void {
@@ -980,6 +995,7 @@ watch(
  * rows and the selection stay, so a tab opened again shows its rows at once.
  */
 function readQuery(): void {
+  index.configureList({ scope: props.scope, defaultFilters: props.defaultFilters })
   if (props.stateKey !== null) index.resetQueryState()
   index.fromQuery(router.currentRoute.value.query as Record<string, unknown>, qp)
 }
@@ -1441,6 +1457,7 @@ async function retryLoad(): Promise<void> {
     :slug="slug"
     :title="title"
     :subtitle="subtitle"
+    :scope="scope"
   >
     <template v-if="availableViews.length > 1" #actions>
       <ResourceViewSwitcher :views="availableViews" :model-value="currentView" @update:model-value="setView" />
@@ -1876,6 +1893,14 @@ async function retryLoad(): Promise<void> {
                 :row="rowFromSlot(slotProps)"
               />
             </InlineEditCell>
+            <MaskedCell
+              v-else-if="columnMeta[col.key]?.masked"
+              :value="(rowFromSlot(slotProps) ?? {})[col.key]"
+              :resource-slug="slug"
+              :row-id="inlineRowId(slotProps)"
+              :column="col.key"
+              :revealable="revealable.includes(col.key)"
+            />
             <AdminTableCell
               v-else
               :value="(rowFromSlot(slotProps) ?? {})[col.key]"

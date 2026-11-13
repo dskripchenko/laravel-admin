@@ -30,18 +30,42 @@ class StatsOverviewWidget extends Widget
      * badge, a chart and a gauge take: success, warning, danger, info,
      * primary, neutral, or a colour word — green, amber, yellow, orange, red,
      * blue, gray/grey and the like. The icon is a Lucide name (`users`,
-     * `edit`, `shopping-cart`…).
+     * `edit`, `shopping-cart`…). `$url` makes the card a link — see url().
      */
-    public function stat(string $label, mixed $value, ?string $color = null, ?string $icon = null): static
+    public function stat(string $label, mixed $value, ?string $color = null, ?string $icon = null, ?string $url = null): static
     {
         $this->stats[] = [
             'label' => $label,
             'value' => $value,
             'color' => $color,
             'icon' => $icon,
+            ...($url !== null ? ['url' => $url] : []),
         ];
 
         return $this;
+    }
+
+    /**
+     * Makes the card added last a link — to the list behind its number, say,
+     * on the dashboard's period:
+     *
+     *   ->stat('Заявки', $count)->url($this->dashboardContext()->listUrl('/r/requests', 'created_at'))
+     *
+     * A panel path opens in place, an external address in a new tab.
+     */
+    public function url(?string $url): static
+    {
+        return $this->setOnLast('url', $url);
+    }
+
+    /**
+     * The value of the card added last for the previous period, when the
+     * dashboard compares (DashboardContext::comparing()): shown under the
+     * number, with the trend computed from the two when trend() is not set.
+     */
+    public function previous(mixed $value): static
+    {
+        return $this->setOnLast('previous', $value);
     }
 
     /**

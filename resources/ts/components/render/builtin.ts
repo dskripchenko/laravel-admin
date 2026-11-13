@@ -55,6 +55,7 @@ import SectionLayout from '../layouts/SectionLayout.vue'
 import TabsLayout from '../layouts/TabsLayout.vue'
 import EmbeddedResourceTable from '../layouts/EmbeddedResourceTable.vue'
 import ResourceIndexLayout from '../layouts/ResourceIndexLayout.vue'
+import EmbeddedScreenLayout from '../layouts/EmbeddedScreenLayout.vue'
 import DashboardLayout from '../layouts/DashboardLayout.vue'
 import AccordionLayout from '../layouts/AccordionLayout.vue'
 import WizardLayout from '../layouts/WizardLayout.vue'
@@ -250,6 +251,7 @@ export function registerBuiltinComponents(): void {
       'admin.resource-table': EmbeddedResourceTable,
       // `Layout::resourceIndex(Resource::class)` — the live list page of a resource on a screen.
       'admin.resource-index': ResourceIndexLayout,
+      'admin.screen': EmbeddedScreenLayout,
     },
   })
 }

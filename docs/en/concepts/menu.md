@@ -159,6 +159,7 @@ The frontend renders nodes recursively (`AdminSidebarNode.vue`):
 
 ## See also
 
+- [Navigation](navigation.md) — per-request counters, folded groups, sections, favourites, Ctrl+K, "+ Create"
 - [Resources](resources.md)
 - [Screens](screens.md)
 - [Permissions](permissions.md)

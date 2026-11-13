@@ -277,6 +277,10 @@ page.get_by_test_id(tid('field', 'first_name'))   # field-first-name
 | `two-factor-form`, `two-factor-code`, `two-factor-recovery-code`, `two-factor-submit`, `two-factor-switch`, `two-factor-error` | Второй фактор: форма, ячейки кода (контейнер), recovery-код, «Подтвердить», переключение на recovery-код, ошибка |
 | `menu-{key}` | Пункт меню по ключу (`MenuNode::make($key)`; у ресурса — его slug); и лист, и группа |
 | `topbar-search`, `search-input`, `search-item` | Глобальный поиск |
+| `search-group-{key}`, `search-hint` | Группа выдачи поиска (`favorites`, `recent`, `sections`, `actions`, slug ресурса, `provider-{key}`), подсказка (1.73) |
+| `menu-favorites`, `favorite-item`, `favorite-remove`, `favorite-toggle` | Избранное над меню (у пункта ещё `data-url`), крестик, звёздочка в верхней панели (1.73) |
+| `menu-badge-{key}` | Бейдж группы меню (своё число или сумма в свёрнутой) (1.73) |
+| `quick-create`, `quick-create-{key}` | «+ Создать» и его пункт (1.73) |
 | `user-menu`, `user-menu-profile`, `logout` | Меню пользователя, «Профиль», «Выйти» |
 | `toast-success`, `toast-error`, `toast-warning`, `toast-info` | Всплывающее сообщение по уровню |
 | `confirm-ok`, `confirm-cancel`, `confirm-message` | Общий диалог подтверждения (удаление, отмена изменений) |
@@ -330,6 +334,10 @@ page.get_by_test_id(tid('field', 'first_name'))   # field-first-name
 | `action-modal`, `action-form`, `action-modal-submit`, `action-modal-cancel` | Окно действия с формой |
 | `modal-{id}`, `drawer-{id}` | Содержимое `Layout::modal()` / `Layout::drawer()` по id |
 | `tab-{key}`, `tab-panel-{key}` | Вкладка `Layout::tabs()` по ключу (`->keys([...])`, без них — индекс) и её панель |
+| `tab-badge-{key}`, `embedded-screen` | Бейдж вкладки (`Tabs::badges()`), экран внутри экрана (`Layout::screen()`) (1.73) |
+| `masked-cell`, `masked-reveal`, `masked-hide` | Ячейка маскированной колонки, «Показать», «Скрыть» (1.73) |
+| `dash-period-{key}`, `dash-period-range`, `dash-range`, `dash-range-from`, `dash-range-to`, `dash-range-apply`, `dash-range-cancel`, `dash-compare` | Период рабочего стола, свой диапазон, сравнение (1.73) |
+| `widget-link`, `stat-link`, `stat-previous` | Ссылка виджета, ссылка цифры, значение прошлого периода (1.73) |
 | `reveal-value`, `reveal-copy`, `reveal-close` | Окно однократного показа секрета |
 
 Имя действия `{name}` без `withName()` выводится из подписи латиницей

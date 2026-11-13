@@ -346,6 +346,61 @@ abstract class Resource
     }
 
     /**
+     * Named conditions of the list — the queues of one journal: «not sent»,
+     * «new» — that a screen's embedded list applies by name
+     * (`Layout::resourceIndex(X::class)->scope('pending')`) instead of a
+     * resource subclass with its own slug and routes. Each one narrows
+     * indexQuery(); the user cannot lift it from the list.
+     *
+     *   public function scopes(): array
+     *   {
+     *       return [
+     *           'pending' => fn (Builder $q) => $q->whereNull('sent_at'),
+     *       ];
+     *   }
+     *
+     * @return array<string, \Closure(Builder): (Builder|void)>
+     */
+    public function scopes(): array
+    {
+        return [];
+    }
+
+    public function hasScope(string $name): bool
+    {
+        return array_key_exists($name, $this->scopes());
+    }
+
+    /**
+     * indexQuery() narrowed by one of scopes().
+     */
+    public function scopedQuery(?string $scope = null): Builder
+    {
+        $query = $this->indexQuery();
+        if ($scope === null) {
+            return $query;
+        }
+        $apply = $this->scopes()[$scope] ?? null;
+        if (! $apply instanceof \Closure) {
+            throw new \InvalidArgumentException(static::class." has no scope '{$scope}'");
+        }
+        $result = $apply($query);
+
+        return $result instanceof Builder ? $result : $query;
+    }
+
+    /**
+     * The number of records in the list, or in one of its scopes() — for a
+     * tab's or a menu item's badge:
+     *
+     *   Layout::tabs([...])->badges(['pending' => fn () => app(ClaimResource::class)->countIn('pending')]);
+     */
+    public function countIn(?string $scope = null): int
+    {
+        return $this->scopedQuery($scope)->count();
+    }
+
+    /**
      * The base query for read/update/delete.
      */
     public function modelQuery(): Builder
