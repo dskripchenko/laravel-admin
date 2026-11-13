@@ -38,6 +38,7 @@ import type { LayoutNode } from '../render/LayoutRenderer.vue'
 import { trSafe as tr } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
 import { confirmDialog, deleteWording } from '../../composables/useConfirm'
+import { useLeaveGuard } from '../../composables/useUnsavedChanges'
 
 interface Props {
   /** The resource slug: articles, users and so on. */
@@ -258,6 +259,14 @@ watch(
   },
 )
 
+// Leaving with unsaved changes asks first (features.warnOnUnsavedChanges,
+// on by default) — the menu, a link, the browser's back; closing the tab
+// gets the browser's own question.
+const leaveGuard = useLeaveGuard(() =>
+  form.isDirty && !form.saving
+    && (resourceMeta.value?.features as Record<string, unknown> | undefined)?.warnOnUnsavedChanges !== false,
+)
+
 async function onSave(): Promise<void> {
   // The mode is read BEFORE saving: `save()` switches the store to 'edit'
   // itself, so a check afterwards is always false — and the redirect written
@@ -301,6 +310,7 @@ async function onDelete(): Promise<void> {
   await form.destroy().catch(() => undefined)
   if (!form.hasError) {
     adminToast.success(deletedToast(resourceMeta.value, props.slug))
+    leaveGuard.skipNext()
     void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
   }
 }
@@ -309,6 +319,7 @@ async function onCancel(): Promise<void> {
   if (form.isDirty && !(await confirmDialog({ title: tr('Несохранённые изменения'), message: tr('Несохранённые изменения будут потеряны. Продолжить?'), confirmLabel: tr('Уйти без сохранения'), destructive: true }))) {
     return
   }
+  leaveGuard.skipNext()
   void router.push({ name: resolvedIndexRouteName.value }).catch(() => undefined)
 }
 </script>

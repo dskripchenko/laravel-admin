@@ -22,10 +22,10 @@
  *     `attributes.opens` opens the Modal/Drawer layout with that id instead of
  *     calling a method; the layouts dispatch their own actions through it
  */
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { testIdOf } from '../composables/testId'
 import { useRoute, useRouter } from 'vue-router'
-import { UidAlert, UidCard, UidSkeleton } from '@dskripchenko/ui'
+import { UidAlert, UidButton, UidCard, UidSkeleton } from '@dskripchenko/ui'
 import { useEmbeddedScreenStore, useScreenStore, type ScreenMethodResult } from '../stores/screen'
 import { getAdminClient } from '../stores/registry'
 import { apiErrorMessage } from '../api/errors'
@@ -40,7 +40,8 @@ import { provideListenerEndpoint } from './render/listenerContext'
 import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
 import AdminState from './states/AdminState.vue'
 import { ForbiddenError } from '../api/errors'
-import { trSafe as tr } from '../stores/i18n'
+import { trSafe as tr, tRaw } from '../stores/i18n'
+import { changedFields, namesOf, provideChangedFields, snapshot, useLeaveGuard, type ChangedField } from '../composables/useUnsavedChanges'
 
 interface Props {
   /** The screen's slug; when null it comes from route.params.slug. */
@@ -170,6 +171,46 @@ const layoutNodes = computed<LayoutNode[]>(() =>
     .map((n) => n as unknown as LayoutNode),
 )
 const isReady = computed(() => !screen.loading && resolvedSlug.value !== '')
+
+/*
+ * Unsaved changes (Screen::saveMethod()): measured against a deep copy of the
+ * state as it was loaded or last saved; the sticky bar names them, the
+ * fields are marked, leaving asks first.
+ */
+const baseline = ref<Record<string, unknown>>({})
+watch(() => screen.initial, (next) => { baseline.value = snapshot(next) }, { deep: true, immediate: true })
+const changes = computed<ChangedField[]>(() =>
+  screen.saveMethod && !screen.loading ? changedFields(layoutNodes.value, screen.state, baseline.value) : [],
+)
+provideChangedFields(namesOf(changes))
+useLeaveGuard(() => changes.value.length > 0)
+
+function changesText(n: number): string {
+  const form = new Intl.PluralRules('ru').select(n)
+  if (form === 'one') return tRaw(':n несохранённое изменение', { n })
+  if (form === 'few') return tRaw(':n несохранённых изменения', { n })
+  return tRaw(':n несохранённых изменений', { n })
+}
+const changesTrail = computed<string>(() => changes.value.slice(0, 3).map((c) => c.path.join(' › ')).join(', ')
+  + (changes.value.length > 3 ? ` ${tRaw('и ещё :n', { n: changes.value.length - 3 })}` : ''))
+
+function discardChanges(): void {
+  for (const c of changes.value) {
+    ctx.setField(c.name, snapshot({ v: baseline.value[c.name] ?? null }).v)
+  }
+}
+
+async function saveChanges(): Promise<void> {
+  const method = screen.saveMethod
+  if (!method) return
+  try {
+    await screen.runMethod(method)
+    // A save that sent no state back leaves the state as the new baseline.
+    if (!screen.hasError) baseline.value = snapshot(screen.state)
+  } catch {
+    // The page's alert shows the reason; the field errors are on the fields.
+  }
+}
 
 // An in-panel address goes through the router: a full page load would throw
 // away the screen's state and, on a slow stand, look like the panel restarting.
@@ -315,11 +356,47 @@ watch(
       />
     </UidCard>
 
+    <!-- Sticky savebar of a screen with Screen::saveMethod(). -->
+    <div v-if="changes.length > 0" class="admin-screen-page__savebar" role="status" data-testid="screen-savebar">
+      <span class="admin-screen-page__savebar-count" data-testid="screen-savebar-count">{{ changesText(changes.length) }}</span>
+      <span class="admin-screen-page__savebar-trail" data-testid="screen-savebar-fields">· {{ changesTrail }}</span>
+      <span class="admin-screen-page__savebar-spacer" />
+      <UidButton variant="ghost" size="sm" :disabled="screen.running" data-testid="screen-savebar-discard" @click="discardChanges">{{ tr('Отменить') }}</UidButton>
+      <UidButton variant="primary" size="sm" :loading="screen.running" :disabled="screen.running" data-testid="screen-savebar-save" @click="saveChanges">{{ tr('Сохранить') }}</UidButton>
+    </div>
+
     <AdminActionDialogs :runner="runner" />
   </section>
 </template>
 
 <style>
+.admin-screen-page__savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--uid-space-sm, 8px);
+  padding: var(--uid-space-sm, 8px) var(--uid-space-md, 12px);
+  border: 1px solid var(--uid-border-default, rgba(0, 0, 0, 0.1));
+  border-radius: var(--uid-radius-md, 8px);
+  background: var(--uid-surface-raised, #fff);
+  box-shadow: var(--uid-shadow-md, 0 4px 16px rgba(0, 0, 0, 0.08));
+  font-size: var(--uid-font-size-sm, 13px);
+}
+.admin-screen-page__savebar-count {
+  font-weight: var(--uid-font-weight-medium, 500);
+}
+.admin-screen-page__savebar-trail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--uid-text-secondary);
+}
+.admin-screen-page__savebar-spacer {
+  flex: 1;
+}
 .admin-screen-page__description {
   margin: 4px 0 0;
   font-size: var(--uid-font-size-sm);

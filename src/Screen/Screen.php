@@ -111,6 +111,18 @@ abstract class Screen
     }
 
     /**
+     * The command method that saves the screen's form — a settings screen's
+     * `save`. With it the page tracks the unsaved changes: a sticky bar
+     * «N несохранённых изменений · Группа › Поле · Отменить · Сохранить»,
+     * a mark on each changed field, and a question before the page is left
+     * with them. null (the default) — none of it.
+     */
+    public function saveMethod(): ?string
+    {
+        return null;
+    }
+
+    /**
      * The buttons and links in the screen's header; empty by default.
      *
      * @return list<Action>
@@ -206,6 +218,8 @@ abstract class Screen
             ),
             'permissions' => self::normalizePermissions($this->permission()),
             'permission_mode' => ScreenAccess::mode($this),
+            // The savebar and the question on leaving with unsaved changes.
+            'save_method' => $this->saveMethod(),
         ];
 
         $payload['etag'] = self::buildEtag([

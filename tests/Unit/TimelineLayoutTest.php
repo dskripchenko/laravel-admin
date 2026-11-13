@@ -47,3 +47,25 @@ it('Tabs::searchable() turns the field search on', function (): void {
     expect($arr['searchable'])->toBeTrue()
         ->and($arr['searchPlaceholder'])->toBe('Найти настройку');
 });
+
+it('Screen::saveMethod() reaches the screen state', function (): void {
+    $screen = new class extends Dskripchenko\LaravelAdmin\Screen\Screen
+    {
+        public function query(mixed ...$params): array
+        {
+            return ['a' => 1];
+        }
+
+        public function layout(): array
+        {
+            return [];
+        }
+
+        public function saveMethod(): ?string
+        {
+            return 'save';
+        }
+    };
+
+    expect($screen->compile()['save_method'])->toBe('save');
+});

@@ -55,6 +55,8 @@ export interface ScreenStateSnapshot {
   command_bar: ScreenAction[]
   permissions: string[]
   etag: string
+  /** The method that saves the screen's form (Screen::saveMethod()): the savebar's «Сохранить». */
+  save_method?: string | null
 }
 
 /** A link offered alongside a screen's message — see `lastMessageLink`. */
@@ -88,6 +90,8 @@ function screenStoreSetup() {
   const commandBar = ref<ScreenAction[]>([])
   const permissions = ref<string[]>([])
   const etag = ref<string | null>(null)
+  /** Screen::saveMethod(): with it the page tracks unsaved changes. */
+  const saveMethod = ref<string | null>(null)
 
   /** The form's working copy, exposed through provideFormState. */
   const state = ref<Record<string, unknown>>({})
@@ -161,6 +165,7 @@ function screenStoreSetup() {
     commandBar.value = []
     permissions.value = []
     etag.value = null
+    saveMethod.value = null
     replaceObject(state.value, {})
     replaceObject(initial.value, {})
     errors.value = {}
@@ -200,6 +205,7 @@ function screenStoreSetup() {
       commandBar.value = res.command_bar
       permissions.value = res.permissions
       etag.value = res.etag
+      saveMethod.value = typeof res.save_method === 'string' && res.save_method !== '' ? res.save_method : null
       replaceObject(state.value, res.state)
       replaceObject(initial.value, res.state)
     } catch (err) {
@@ -331,6 +337,7 @@ function screenStoreSetup() {
     // getters
     hasError,
     loadFailed,
+    saveMethod,
     // actions
     reset,
     load,
