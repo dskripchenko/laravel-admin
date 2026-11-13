@@ -135,7 +135,7 @@
     "Не задан src": "src is not set",
     "Не импортировать": "Do not import",
     "Не удалось войти": "Could not sign in",
-    "Не удалось выйти из режима импертонации.": "Could not leave impersonation mode.",
+    "Не удалось вернуться в свою учётную запись.": "Could not return to your own account.",
     "Не удалось выполнить действие": "Could not run the action",
     "Не удалось загрузить данные": "Failed to load data",
     "Не удалось загрузить запись": "Could not load the record",

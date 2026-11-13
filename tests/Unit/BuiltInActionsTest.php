@@ -39,6 +39,8 @@ it('ImpersonateAction default permission falls back to config', function (): voi
     $arr = ImpersonateAction::make()->toArray();
     expect($arr['permission'])->toBe('admin.impersonate');
     expect($arr['attributes']['method'])->toBe('startImpersonation');
+    expect($arr['attributes']['client'])->toBe('impersonate');
+    expect($arr['position'])->toBe(['row', 'header']);
     expect($arr['confirm'])->not->toBeNull();
 });
 
@@ -52,7 +54,6 @@ it('all built-in row actions are positioned for row', function (): void {
         RestoreAction::for('admin.x'),
         ForceDeleteAction::for('admin.x'),
         ReplicateAction::for('admin.x'),
-        ImpersonateAction::make(),
     ] as $action) {
         expect($action->toArray()['position'])->toBe(['row']);
     }

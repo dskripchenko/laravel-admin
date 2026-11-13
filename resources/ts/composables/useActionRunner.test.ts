@@ -328,6 +328,25 @@ describe('useActionRunner', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
+  it('Button::client("impersonate") starts the impersonation of its one record and reloads', async () => {
+    const execute = vi.fn()
+    const m = await mountRunner({ execute, ids: () => [] })
+    wrapper = m.wrapper
+    mock.onPost('/auth/startImpersonation').reply(200, { success: true, payload: { redirect_url: '/admin' } })
+    const assign = vi.fn()
+    vi.spyOn(window, 'location', 'get').mockReturnValue({ ...window.location, assign } as Location)
+    const action = act({ type: 'button', position: ['row'], attributes: { method: 'startImpersonation', client: 'impersonate' } })
+
+    expect(await m.runner().run(action, { ids: [7] })).toBe(true)
+    expect(JSON.parse(mock.history.post[0]!.data as string)).toEqual({ user_id: 7 })
+    expect(assign).toHaveBeenCalledWith('/admin')
+    expect(execute).not.toHaveBeenCalled()
+
+    // Not one record — nothing is sent
+    expect(await m.runner().run(action, { ids: [1, 2] })).toBe(false)
+    expect(mock.history.post).toHaveLength(1)
+  })
+
   it('fillRecordHref encodes the key and leaves other addresses alone', async () => {
     const { fillRecordHref } = await import('./useActionRunner')
     expect(fillRecordHref('/a/{id}/b?x={id}', ['a b'])).toBe('/a/a%20b/b?x=a%20b')

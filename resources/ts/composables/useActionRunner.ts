@@ -481,6 +481,32 @@ export function useActionRunner(executor: ActionExecutor) {
     return true
   }
 
+  /* ---------------- impersonation ---------------- */
+
+  /**
+   * Button::client('impersonate'): logs in as the one record's user and
+   * reloads the panel at the address the server gives.
+   */
+  async function impersonate(action: AdminAction, options?: ActionRunOptions): Promise<boolean> {
+    const ids = options?.ids ?? executor.ids?.() ?? []
+    if (ids.length !== 1) {
+      adminToast.warning(tRaw('Действие «:action» недоступно для выбранного числа записей.', { action: action.label }))
+      return false
+    }
+    running.value = true
+    try {
+      const { getAdminClient } = await import('../stores/registry')
+      const result = await getAdminClient().post<{ redirect_url?: string }>('/auth/startImpersonation', { user_id: Number(ids[0]) })
+      window.location.assign(typeof result?.redirect_url === 'string' && result.redirect_url !== '' ? result.redirect_url : window.location.pathname)
+      return true
+    } catch (err) {
+      reportError(action, err)
+      return false
+    } finally {
+      running.value = false
+    }
+  }
+
   /* ---------------- dispatch ---------------- */
 
   function reportError(action: AdminAction, err: unknown): void {
@@ -514,6 +540,9 @@ export function useActionRunner(executor: ActionExecutor) {
 
     if (action.type === 'link') {
       return openLink(action, options)
+    }
+    if (action.attributes.client === 'impersonate') {
+      return impersonate(action, options)
     }
     if (action.type === 'modal') {
       openModal(action, options)
