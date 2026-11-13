@@ -168,13 +168,10 @@ final class ResourceCompiler
             unset($actions['reorder']);
         }
 
-        $masked = false;
-        foreach ($resource->columns() as $column) {
-            $masked = $masked || $column->isMasked();
-        }
-        if (! $masked) {
-            unset($actions['reveal']);
-        }
+        // `reveal` stays registered for every resource: the controller refuses a
+        // column that is not masked (422 not_masked). Deciding it here would call
+        // columns() while the routes are being built — before the host's own
+        // routes exist, so a column that builds a URL with route() would fail.
 
         if (\Dskripchenko\LaravelAdmin\Layout\Listener::all([
             ...$resource->formLayout('create'),

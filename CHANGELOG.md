@@ -88,6 +88,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dashboard/savePeriod` and `dashboard/widgets` take periods up to 32
   characters.
 
+### Fixed
+
+- **Columns of a resource were read while the routes were being built.**
+  Deciding whether a resource needs the `reveal` endpoint called its
+  `columns()` from the route compiler — before the host's own routes exist, so
+  a column that builds a URL with `route()` broke the whole panel API. The
+  endpoint is now registered for every resource; the controller already
+  refuses a column that is not masked (`422 not_masked`).
+
 ## 1.72.0
 
 ### Added
