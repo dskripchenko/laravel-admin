@@ -118,7 +118,7 @@ describe('ResourceIndexPage', () => {
     })
     const wrapper = await mountPage()
     await flushPromises()
-    expect(wrapper.text()).toContain('Пока пусто')
+    expect(wrapper.text()).toContain('Записей нет')
   })
 
   it('shows ErrorState on API error', async () => {

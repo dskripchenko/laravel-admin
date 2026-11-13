@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Layout;
 
+use Dskripchenko\LaravelAdmin\Action\Action;
 use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
 use Dskripchenko\LaravelAdmin\Resource\Resource;
+use Dskripchenko\LaravelAdmin\Support\EmptyState;
 use InvalidArgumentException;
 
 /**
@@ -170,6 +172,23 @@ final class ResourceIndex extends Layout
             }
         }
         $this->props['scope'] = $name;
+
+        return $this;
+    }
+
+    /**
+     * What this list says when it is empty — the queue tab «Новых звонков нет»
+     * with a link to the next one — instead of the resource's
+     * (Resource::emptyState()). See Support\EmptyState for the action:
+     * null — «Создать», a string — its caption, an Action, false — none.
+     */
+    public function emptyState(
+        string|EmptyState|null $title = null,
+        ?string $description = null,
+        string|Action|false|null $action = null,
+    ): self {
+        $state = $title instanceof EmptyState ? $title : EmptyState::make($title, $description, $action);
+        $this->props['emptyState'] = $state->toArray();
 
         return $this;
     }

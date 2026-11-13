@@ -146,7 +146,7 @@ describe('ResourceIndexPage — row clicks', () => {
     await w.find('[data-testid="resource-reset-filters"]').trigger('click')
     await flushPromises()
     expect(index.search).toBe('')
-    expect(w.text()).toContain('Пока пусто')
+    expect(w.text()).toContain('Записей нет')
     w.unmount()
   })
 

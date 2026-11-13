@@ -112,6 +112,8 @@ function screenStoreSetup() {
   const pendingRedirect = ref<string | null>(null)
 
   const hasError = computed(() => error.value !== null)
+  /** The last `state` load failed: the page shows the error state in place of the screen. */
+  const loadFailed = ref(false)
 
   /** An in-place mutation: it keeps the identity of the provide/inject reactive proxy. */
   function replaceObject(target: Record<string, unknown>, next: Record<string, unknown>): void {
@@ -162,6 +164,7 @@ function screenStoreSetup() {
     replaceObject(state.value, {})
     replaceObject(initial.value, {})
     errors.value = {}
+    loadFailed.value = false
     loading.value = false
     running.value = false
     error.value = null
@@ -184,6 +187,7 @@ function screenStoreSetup() {
     loading.value = true
     error.value = null
     errors.value = {}
+    loadFailed.value = false
 
     try {
       const client = getAdminClient()
@@ -200,6 +204,7 @@ function screenStoreSetup() {
       replaceObject(initial.value, res.state)
     } catch (err) {
       error.value = err instanceof Error ? err : new Error(String(err))
+      loadFailed.value = true
       throw err
     } finally {
       loading.value = false
@@ -325,6 +330,7 @@ function screenStoreSetup() {
     pendingRedirect,
     // getters
     hasError,
+    loadFailed,
     // actions
     reset,
     load,

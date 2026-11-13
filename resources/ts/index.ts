@@ -42,6 +42,8 @@ export { default as NotFoundPage } from './components/NotFoundPage.vue'
 export { default as SettingsPage } from './components/SettingsPage.vue'
 export { default as UnknownScreenPage } from './components/UnknownScreenPage.vue'
 export { default as ScreenPage } from './components/ScreenPage.vue'
+// The one look of an empty list, a failed load and a closed section (1.74).
+export { default as AdminState } from './components/states/AdminState.vue'
 
 export { createAdminClient } from './api/client'
 export type { AdminClient, ClientOptions } from './api/client'
@@ -91,6 +93,8 @@ export {
   NetworkError,
   toApiError,
   apiErrorMessage,
+  errorTrace,
+  forbiddenPermission,
 } from './api/errors'
 
 export type {

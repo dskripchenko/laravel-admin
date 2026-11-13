@@ -38,6 +38,8 @@ import { provideRecord } from './infolist/recordContext'
 import { buttonParams, provideScreenContext } from './render/screenContext'
 import { provideListenerEndpoint } from './render/listenerContext'
 import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
+import AdminState from './states/AdminState.vue'
+import { ForbiddenError } from '../api/errors'
 import { trSafe as tr } from '../stores/i18n'
 
 interface Props {
@@ -243,8 +245,19 @@ watch(
       </div>
     </header>
 
+    <!-- The screen itself did not load: the error state in its place. -->
+    <AdminState
+      v-if="screen.loadFailed && !screen.loading"
+      :kind="screen.error instanceof ForbiddenError ? 'forbidden' : 'error'"
+      :section="screen.name || null"
+      :error="screen.error"
+      :home="!embedded"
+      data-testid="screen-load-error"
+      @retry="loadScreen(resolvedSlug).catch(() => undefined)"
+    />
+
     <UidAlert
-      v-if="screen.hasError"
+      v-else-if="screen.hasError"
       variant="danger"
       class="admin-screen-page__alert"
       role="alert"
@@ -286,7 +299,7 @@ watch(
       <UidSkeleton v-for="i in 4" :key="i" height="40px" />
     </div>
 
-    <div v-else-if="isReady && embedded" class="admin-screen-page__body admin-screen-page__body--embedded">
+    <div v-else-if="isReady && embedded && !screen.loadFailed" class="admin-screen-page__body admin-screen-page__body--embedded">
       <LayoutRenderer
         v-for="(node, idx) in layoutNodes"
         :key="idx"
@@ -294,7 +307,7 @@ watch(
       />
     </div>
 
-    <UidCard v-else-if="isReady" padding="md" class="admin-screen-page__body">
+    <UidCard v-else-if="isReady && !screen.loadFailed" padding="md" class="admin-screen-page__body">
       <LayoutRenderer
         v-for="(node, idx) in layoutNodes"
         :key="idx"

@@ -1,22 +1,26 @@
 <script setup lang="ts">
 /**
  * The 403 fallback; a host may override it through createAdminApp({ pages: { forbidden } }).
+ *
+ * The router guard sends the section's name and the missing key along
+ * (`?section=…&permission=…`): the page says which section is closed and
+ * which key opens it, with «Скопировать ключ» for the request to the
+ * administrator.
  */
-import { UidCard, UidButton } from '@dskripchenko/ui'
-import { useRouter } from 'vue-router'
-import { trSafe as tr } from './../stores/i18n'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { UidCard } from '@dskripchenko/ui'
+import AdminState from './states/AdminState.vue'
 
-const router = useRouter()
+const route = useRoute()
+const section = computed<string | null>(() => (typeof route.query.section === 'string' && route.query.section !== '' ? route.query.section : null))
+const permission = computed<string | null>(() => (typeof route.query.permission === 'string' && route.query.permission !== '' ? route.query.permission : null))
 </script>
 
 <template>
-  <div class="admin-status-page">
+  <div class="admin-status-page" data-testid="forbidden-page">
     <UidCard padding="lg" class="admin-status-page__card">
-      <h1 class="admin-status-page__code">403</h1>
-      <p class="admin-status-page__message">{{ tr('Доступ запрещён.') }}</p>
-      <UidButton variant="ghost" @click="router.replace({ name: 'admin.home' })">
-        {{ tr('На главную') }}
-      </UidButton>
+      <AdminState kind="forbidden" :section="section" :permission="permission" home />
     </UidCard>
   </div>
 </template>

@@ -18,12 +18,12 @@
  *  - delete a row, through the bin icon
  *  - delete in bulk, through the selection and the toolbar
  */
+import AdminState from '../states/AdminState.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { Plus, Trash2, Check, X } from 'lucide-vue-next'
 import {
   UidButton,
   UidEmptyState,
-  UidErrorState,
   UidFormField,
   UidInput,
   UidSelect,
@@ -301,15 +301,13 @@ function columnCellMeta(col: string): CellMeta {
     </div>
 
     <UidSkeleton v-if="loading && items.length === 0" />
-    <UidErrorState
+    <AdminState
       v-else-if="error"
-      :title="tr('Не удалось загрузить данные')"
-      :description="error.message"
-    >
-      <template #actions>
-        <UidButton variant="primary" @click="load">{{ tr('Обновить') }}</UidButton>
-      </template>
-    </UidErrorState>
+      kind="error"
+      compact
+      :error="error"
+      @retry="load"
+    />
     <UidEmptyState
       v-else-if="!loading && items.length === 0 && draft === null"
       :title="tr('Пока пусто')"

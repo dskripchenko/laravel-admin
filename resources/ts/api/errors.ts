@@ -11,6 +11,10 @@ export class ApiError extends Error {
   public readonly status: number
   public readonly errorKey: string
   public readonly payload: ErrorEnvelope['payload']
+  /** The request's X-Request-Id — the code the error state offers to copy. */
+  public requestId: string | null = null
+  /** When the request failed. */
+  public at: Date = new Date()
 
   constructor(status: number, payload: ErrorEnvelope['payload']) {
     super(payload.message ?? `API error ${status}`)
@@ -72,10 +76,37 @@ export class ValidationError extends ApiError {
  * so that the UI can say "No connection" rather than "500 Server Error".
  */
 export class NetworkError extends Error {
+  public requestId: string | null = null
+  public at: Date = new Date()
+
   constructor(message = 'Network error') {
     super(message)
     this.name = 'NetworkError'
   }
+}
+
+/** Puts the request's code on an error the client throws. */
+export function stampError<T extends ApiError | NetworkError>(err: T, requestId: string | null): T {
+  err.requestId = requestId
+  return err
+}
+
+/** The request code and the time of a failed request, when the error has them. */
+export function errorTrace(err: unknown): { requestId: string | null; at: Date | null } {
+  if (err instanceof ApiError || err instanceof NetworkError) return { requestId: err.requestId, at: err.at }
+  return { requestId: null, at: null }
+}
+
+/**
+ * The permission a 403 names: the server's `permission` (1.74), else the one
+ * in its message «Доступ запрещён: admin.x.view».
+ */
+export function forbiddenPermission(err: unknown): string | null {
+  if (!(err instanceof ForbiddenError)) return null
+  const p = err.payload?.permission
+  if (typeof p === 'string' && p !== '') return p
+  const m = typeof err.payload?.message === 'string' ? err.payload.message.match(/:\s*([\w.*|\- ]+)$/) : null
+  return m ? m[1].trim() : null
 }
 
 /**

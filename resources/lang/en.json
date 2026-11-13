@@ -763,5 +763,20 @@
     "Убрать из избранного": "Remove from favourites",
     "Недавнее": "Recent",
     "В избранном уже максимум страниц": "Favourites are full",
-    "Добавить в избранное": "Add to favourites"
+    "Добавить в избранное": "Add to favourites",
+    "Попробуйте повторить через минуту.": "Try again in a minute.",
+    "Раздел «:section» недоступен": "The section “:section” is not available",
+    "Нет доступа": "No access",
+    "Не удалось скопировать.": "Could not copy.",
+    "Код запроса скопирован.": "The request code is copied.",
+    "Ключ скопирован.": "The key is copied.",
+    "Скопировать код": "Copy the code",
+    "Нужен ключ": "It takes the key",
+    "Доступ выдаёт администратор панели.": "Access is granted by the panel's administrator.",
+    "Скопировать ключ": "Copy the key",
+    "На рабочий стол": "To the desktop",
+    "Записей нет": "No records",
+    "Не удалось загрузить: :plural": "Could not load :plural",
+    "Сбросить фильтры": "Reset the filters",
+    "Под условия не подходит ни одна запись: :filters.": "No record matches: :filters."
 }
