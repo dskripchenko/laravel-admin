@@ -130,10 +130,10 @@ flowchart TD
 ```php
 'middleware' => [AdminAccess::class.':admin.users.view'],
 'middleware' => [AdminAccess::class.':admin.users.view;admin.users.update'],  // AND
+'middleware' => [AdminAccess::class.':admin.orders.view;admin.quotes.view,any'],  // OR
 ```
 
-For OR semantics across permissions — check inside the action handler
-explicitly.
+The second parameter, `any`, makes one of the listed permissions enough.
 
 ## Screens
 
@@ -148,6 +148,20 @@ public function permission(): array|string|null
 
 The `state` (GET), `runMethod` and `listener` (POST) endpoints are
 auto-gated. `null` (the default) means authentication alone is enough.
+
+A screen for which **one** of the keys is enough (a product section open to
+whoever may reach at least one of its resources) declares the mode:
+
+```php
+public function permissionMode(): string
+{
+    return self::PERMISSION_ANY;   // OR; self::PERMISSION_ALL (AND) by default
+}
+```
+
+The mode is honoured by the endpoints' middleware, the SPA route, the menu
+(auto-filled and `MenuNode::screen()`) and `DashboardScreen`. In code the
+same rule is `ScreenAccess::allows($screen, $user)`.
 
 ## Settings
 

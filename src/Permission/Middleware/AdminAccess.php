@@ -19,12 +19,17 @@ use Symfony\Component\HttpFoundation\Response;
  *
  *     AdminAccess::class.':admin.users.view;admin.systems.audit.view'
  *
- * The semantics are AND — every one of them is required. An OR would call for
- * a separate AdminAccessAny middleware, if it is ever needed.
+ * The semantics are AND — every one of them is required. A second parameter,
+ * `any`, turns them into OR — one of them is enough:
+ *
+ *     AdminAccess::class.':admin.orders.view;admin.quotes.view,any'
  */
 final class AdminAccess
 {
-    public function handle(Request $request, Closure $next, string $permissions = ''): Response
+    /** The second parameter that makes one of the listed permissions enough. */
+    public const MODE_ANY = 'any';
+
+    public function handle(Request $request, Closure $next, string $permissions = '', string $mode = 'all'): Response
     {
         $required = array_filter(array_map('trim', explode(';', $permissions)));
 
@@ -48,6 +53,22 @@ final class AdminAccess
         // Both HasAdminAccess — our own model — and any object with a public
         // `hasAccess` method are supported, the latter for the host's User in
         // the shared strategy.
+        if (trim($mode) === self::MODE_ANY) {
+            foreach ($required as $permission) {
+                if (method_exists($user, 'hasAccess') && $user->hasAccess($permission)) {
+                    /** @var Response $response */
+                    $response = $next($request);
+
+                    return $response;
+                }
+            }
+
+            return ApiResponseHelper::sayError([
+                'errorKey' => 'forbidden',
+                'message' => __('Доступ запрещён: :permission', ['permission' => implode(' | ', $required)]),
+            ], Response::HTTP_FORBIDDEN);
+        }
+
         foreach ($required as $permission) {
             if (! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
                 return ApiResponseHelper::sayError([

@@ -61,8 +61,13 @@ final class ScreenController extends ApiController
      *   {
      *     "method": "send",
      *     "payload": {...form-state...},  // optional
-     *     "parameters": [..]              // optional, when the method takes positional arguments
+     *     "parameters": [..],             // optional, when the method takes positional arguments
+     *     "params": {...}                 // optional, the parameters of the button that was pressed
      *   }
+     *
+     * A button's `params` (Button::parameters()) reach the method as its second
+     * argument, after the state — `sync(array $state, array $parameters)`. A
+     * method that declares one argument gets the state alone, as before.
      *
      * The method must be public, must not be static and must not be one of
      * RESERVED_METHODS. What it returns is treated as follows:
@@ -73,6 +78,7 @@ final class ScreenController extends ApiController
      * @input string $method
      * @input object ?$payload
      * @input array ?$parameters
+     * @input object ?$params The parameters of the button that was pressed
      *
      * @output object $payload
      *
@@ -107,12 +113,34 @@ final class ScreenController extends ApiController
         // only for the users that button is shown to. A method no action
         // names stays callable as before: the screen's own permission and the
         // method's own checks guard it.
+        $buttonParams = self::resolveButtonParameters($request);
         $declared = ActionLocator::byMethod([...$screen->commandBar(), ...$screen->layout()], $method);
+        if ($buttonParams !== null) {
+            // Buttons in rows share a method and differ in their parameters,
+            // each with a permission of its own: the one whose parameters came
+            // decides. Parameters no button carries leave the method's general
+            // check — the method validates them as any input.
+            $same = array_values(array_filter(
+                $declared,
+                static fn (array $m): bool => is_array($m['action']->getAttribute('parameters'))
+                    && $m['action']->getAttribute('parameters') == $buttonParams,
+            ));
+            if ($same !== []) {
+                $declared = $same;
+            }
+        }
         if (! ActionLocator::permits($declared)) {
             return $this->error(ActionLocator::forbidden($declared), Response::HTTP_FORBIDDEN);
         }
 
         $args = self::resolveArguments($request);
+        $reflection = new \ReflectionMethod($screen, $method);
+        if ($buttonParams !== null && ! $request->has('parameters')
+            && ($reflection->getNumberOfParameters() >= 2 || $reflection->isVariadic())) {
+            // The button's parameters follow the state; a method that takes
+            // the state alone is called as before.
+            $args = [$args[0] ?? [], $buttonParams];
+        }
 
         // A screen method declares a parameter, usually `array $state`, while
         // the request may well arrive without a `payload` — from an
@@ -121,7 +149,7 @@ final class ScreenController extends ApiController
         // screen; now we either substitute an empty state (which is exactly
         // "the button was pressed on an empty form", and the method answers
         // with its own validation) or say plainly what is missing.
-        $required = (new \ReflectionMethod($screen, $method))->getNumberOfRequiredParameters();
+        $required = $reflection->getNumberOfRequiredParameters();
         if (count($args) < $required) {
             if ($required === 1 && $args === []) {
                 $args = [[]];
@@ -348,6 +376,21 @@ final class ScreenController extends ApiController
         }
 
         return [];
+    }
+
+    /**
+     * The `params` of the pressed button — an object; null when none came.
+     *
+     * @return array<array-key, mixed>|null
+     */
+    private static function resolveButtonParameters(Request $request): ?array
+    {
+        if (! $request->has('params')) {
+            return null;
+        }
+        $params = $request->input('params');
+
+        return is_array($params) ? $params : null;
     }
 
     /**

@@ -121,6 +121,7 @@ final class Manifest
                     'name' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->name()),
                     'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($screen->description()),
                     'permission' => $screen->permission(),
+                    'permission_mode' => \Dskripchenko\LaravelAdmin\Screen\ScreenAccess::mode($screen),
                 ];
             });
             if ($described !== null) {

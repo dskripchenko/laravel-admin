@@ -99,13 +99,14 @@ public function query(mixed ...$params): array
 | `name()` | Заголовок в шапке и пункте меню. |
 | `description()` | Опциональный подзаголовок. |
 | `permission()` | Permission-gate (string или list). null = только аутентификация. |
+| `permissionMode()` | Как сочетаются ключи `permission()`: `'all'` (по умолчанию, нужны все) или `'any'` (достаточно одного). |
 | `query(...$params)` | Возвращает initial state. Получает значения query-строки страницы позиционными аргументами (см. ниже). |
 | `layout()` | Возвращает `Renderable[]` (Rows/Columns/Tabs/Block/...). |
 | `commandBar()` | Возвращает `Action[]` для шапки страницы. |
 | Public-методы | Любой другой public-метод (не из reserved) вызывается как command через `Button::make('…')->method('xxx')`. |
 
 Reserved method names: `query`, `layout`, `name`, `description`,
-`permission`, `commandBar`, `compile`, `slug`, `reservedMethods`,
+`permission`, `permissionMode`, `commandBar`, `compile`, `slug`, `reservedMethods`,
 `isCallableMethod`.
 
 ## Command-методы
@@ -115,6 +116,59 @@ Reserved method names: `query`, `layout`, `name`, `description`,
 ```php
 public function send(array $state): array { ... }
 ```
+
+### Параметры кнопки
+
+У кнопки могут быть свои параметры — код справочника, id записи. Они
+уходят вместе со state (поле `params` тела `runMethod`) и приходят в метод
+вторым аргументом:
+
+```php
+Button::make('Обновить')->method('sync')->parameters(['dictionary' => 'vehicle_marks'])
+// ->params([...]) — то же самое
+
+public function sync(array $state, array $parameters): array
+{
+    $code = $parameters['dictionary'] ?? null;
+    abort_unless(in_array($code, self::DICTIONARIES, true), 422);
+    // ...
+}
+```
+
+Метод с одним аргументом (`send(array $state)`) вызывается как раньше —
+параметры до него не доходят. Параметры приходят из браузера: проверяйте
+их, как любой ввод. Если кнопок с одним методом несколько и у них разные
+`permission()`, сервер проверяет права той кнопки, чьи параметры пришли:
+подставить параметры чужой (недоступной) кнопки — `403 action_forbidden`.
+
+Кнопки работают в `commandBar()` и внутри layout'ов экрана — в
+`Layout::rows()`, ячейке `Layout::columns()`, блоке и т. п.: панель рисует
+`Button` из `layout()` как кнопку (вне экрана — в форме ресурса — такие
+узлы не рисуются). Отдельного табличного layout'а с действиями в строках
+у экрана нет; «таблица с кнопкой в каждой строке» собирается из строк,
+которые генерирует сервер:
+
+```php
+public function layout(): array
+{
+    $rows = [];
+    foreach (Dictionary::all() as $d) {
+        $rows[] = Layout::columns([
+            Layout::markdown("**{$d->title}** — обновлён {$d->synced_at}"),
+            Layout::rows([
+                Button::make('Обновить')->withName('sync-'.$d->code)
+                    ->method('sync')->parameters(['dictionary' => $d->code])
+                    ->permission('admin.dictionaries.'.$d->code),
+            ]),
+        ]);
+    }
+
+    return $rows;
+}
+```
+
+Для настоящей таблицы с фильтрами и действиями в строках используйте
+ресурс (`Layout::resourceIndex()`) и его row-actions.
 
 Возвращаемые значения:
 
@@ -260,9 +314,33 @@ public function permission(): array|string|null
 }
 ```
 
-`AdminAccess:admin.contact` авто-привязывается и к `state`, и к
-`runMethod`. Для разных gate-ов на разные методы — проверяй внутри
-самого метода.
+`AdminAccess:admin.contact` авто-привязывается к `state`, `runMethod` и
+`listener`. Для разных gate-ов на разные методы — `permission()` у кнопки
+или проверка внутри самого метода.
+
+Список ключей по умолчанию означает «нужны все». Экран раздела, который
+открыт тому, у кого есть право **хотя бы на один** ресурс раздела,
+объявляет `permissionMode()`:
+
+```php
+public function permission(): array|string|null
+{
+    return ['admin.orders.view', 'admin.quotes.view', 'admin.policies.view'];
+}
+
+public function permissionMode(): string
+{
+    return self::PERMISSION_ANY;   // 'any'; по умолчанию self::PERMISSION_ALL
+}
+```
+
+Правило действует везде, где решается доступ к экрану: middleware на
+`state`/`runMethod`/`listener` (`AdminAccess:…,any`), маршрут в SPA
+(манифест отдаёт `permission_mode`), пункты меню — и автоматический, и
+`MenuNode::screen()`; для `DashboardScreen` — эндпоинты дашборда, манифест
+и меню. Пользователь без единого ключа получает 403, пункта в меню у него
+нет. Чтобы экран не попадал в автоменю, — `Admin::menu()->hideAuto('slug')`
+(см. [Меню](menu.md)).
 
 ## Чем отличается от Resource
 

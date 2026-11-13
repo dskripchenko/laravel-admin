@@ -34,7 +34,7 @@ import AdminActionDialogs from './actions/AdminActionDialogs.vue'
 import { toastError } from '../stores/toast'
 import { provideFormState } from './render/formState'
 import { provideRecord } from './infolist/recordContext'
-import { provideScreenContext } from './render/screenContext'
+import { buttonParams, provideScreenContext } from './render/screenContext'
 import { provideListenerEndpoint } from './render/listenerContext'
 import LayoutRenderer, { type LayoutNode } from './render/LayoutRenderer.vue'
 import { trSafe as tr } from '../stores/i18n'
@@ -93,8 +93,12 @@ const runner = useActionRunner({
       return Promise.reject(new Error(`Action \`${action.name}\` has no method`))
     }
     // A modal's values join the screen's state: the command method still
-    // receives one payload.
-    return screen.runMethod(method, payload ? { ...screen.state, ...payload } : undefined)
+    // receives one payload. A button's own parameters go along as `params`.
+    return screen.runMethod(
+      method,
+      payload ? { ...screen.state, ...payload } : undefined,
+      buttonParams(action),
+    )
   },
   // A failed runMethod is already the page's alert; anything else — an action
   // with no method, say — gets a toast.
@@ -111,9 +115,9 @@ const runner = useActionRunner({
 // opens locally, anything else is handed to the action runner.
 const screenCtx = provideScreenContext({
   running: computed(() => screen.running),
-  async runMethod(method) {
+  async runMethod(method, params) {
     try {
-      await screen.runMethod(method)
+      await screen.runMethod(method, undefined, params)
       return true
     } catch {
       // The errors are in store.error and store.errors already; the UI follows reactively.

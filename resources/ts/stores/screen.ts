@@ -208,13 +208,15 @@ export const useScreenStore = defineStore('admin-screen', () => {
 
   /**
    * Dispatches one of the screen's command methods, passing the current state
-   * as `payload`. On success it updates the state from the answer and sets
+   * as `payload` and, for a button with parameters (Button::parameters()),
+   * those as `params` — the method's second argument. On success it updates the state from the answer and sets
    * lastMessage; on a ValidationError it fills in the errors; on anything else
    * it sets error and rethrows.
    */
   async function runMethod(
     method: string,
     overridePayload?: Record<string, unknown>,
+    params?: Record<string, unknown>,
   ): Promise<ScreenMethodResult> {
     if (!slug.value) {
       throw new Error('useScreenStore.runMethod() before slug set')
@@ -233,10 +235,9 @@ export const useScreenStore = defineStore('admin-screen', () => {
     try {
       const client = getAdminClient()
       const payload = overridePayload ?? state.value
-      const res = await client.post<ScreenMethodResult>(`/${slug.value}/runMethod`, {
-        method,
-        payload,
-      })
+      const body: Record<string, unknown> = { method, payload }
+      if (params) body.params = params
+      const res = await client.post<ScreenMethodResult>(`/${slug.value}/runMethod`, body)
 
       if (res.state && Object.keys(res.state).length > 0) {
         replaceObject(state.value, res.state)

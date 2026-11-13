@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Screen;
 
-use Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
 use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +21,7 @@ use Throwable;
  *
  * The permission gate is the AdminAccess middleware, applied when the screen
  * declares a `permission()` — a string, or a list joined with `;`, which means
- * AND.
+ * AND, or OR with `permissionMode()` 'any' (see ScreenAccess).
  *
  * Two kinds are left out of this generic pipeline:
  *   - the GeneratedScreen subclasses, served by ResourceController;
@@ -48,7 +47,7 @@ final class ScreenCompiler
             try {
                 /** @var Screen $instance */
                 $instance = app($class);
-                $middleware = self::buildPermissionMiddleware($instance->permission());
+                $middleware = ScreenAccess::middleware($instance);
             } catch (Throwable $e) {
                 Log::error("laravel-admin: no routes for the screen '{$slug}' ({$class}): {$e->getMessage()}", ['exception' => $e]);
 
@@ -90,23 +89,5 @@ final class ScreenCompiler
         }
 
         return false;
-    }
-
-    /**
-     * @param  list<string>|string|null  $permission
-     * @return list<string>
-     */
-    private static function buildPermissionMiddleware(array|string|null $permission): array
-    {
-        if ($permission === null) {
-            return [];
-        }
-        $perms = is_string($permission) ? [$permission] : $permission;
-        $perms = array_values(array_filter(array_map('trim', $perms)));
-        if ($perms === []) {
-            return [];
-        }
-
-        return [AdminAccess::class.':'.implode(';', $perms)];
     }
 }

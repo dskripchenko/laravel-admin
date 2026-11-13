@@ -15,7 +15,7 @@ share one normalized response shape.
 
 | Class | `type()` | Use |
 |---|---|---|
-| `Button` | `button` | Default. Single click → POST `{method, payload}`. |
+| `Button` | `button` | Default. Single click → POST `{method, payload}`; with `->parameters([...])` also `params`, the screen method's second argument (see [Screens](screens.md#button-parameters)). |
 | `Link` | `link` | External or internal href, no controller call. |
 | `BulkAction` | `bulk` | On selected rows; receives `ids[]`. |
 | `ModalAction` | `modal` | Opens a form-modal first, then POSTs. |

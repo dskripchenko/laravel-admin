@@ -41,10 +41,11 @@ export interface ScreenContext {
   /** Whether a screen method is running right now. */
   running: Readonly<Ref<boolean>>
   /**
-   * Calls a screen method with the current state. Resolves to true on
-   * success, false on a failure — the errors land in the screen store.
+   * Calls a screen method with the current state — and the button's own
+   * parameters, when it has any. Resolves to true on success, false on a
+   * failure — the errors land in the screen store.
    */
-  runMethod: (method: string) => Promise<boolean>
+  runMethod: (method: string, params?: Record<string, unknown>) => Promise<boolean>
   /**
    * Runs an action: the confirmation first, then either `attributes.opens`
    * (an overlay) or `attributes.method` (a screen method). Resolves to true
@@ -71,7 +72,7 @@ const ScreenContextKey: InjectionKey<ScreenContext> = Symbol('admin.screen-conte
 
 export interface ScreenContextOptions {
   running: Readonly<Ref<boolean>>
-  runMethod: (method: string) => Promise<boolean>
+  runMethod: (method: string, params?: Record<string, unknown>) => Promise<boolean>
   /** The confirmation prompt; the panel's confirmation dialog by default. */
   confirm?: (confirm: { message: string; title?: string }) => boolean | Promise<boolean>
   /**
@@ -115,7 +116,8 @@ export function createScreenContext(options: ScreenContextOptions): ScreenContex
 
       const method = action.attributes?.method
       if (typeof method === 'string' && method !== '') {
-        return options.runMethod(method)
+        const params = buttonParams(action)
+        return params ? options.runMethod(method, params) : options.runMethod(method)
       }
 
       return false
@@ -129,6 +131,18 @@ export function provideScreenContext(options: ScreenContextOptions): ScreenConte
   const ctx = createScreenContext(options)
   provide(ScreenContextKey, ctx)
   return ctx
+}
+
+/**
+ * The parameters a button carries (the backend's Button::parameters()), sent
+ * with the state as `params`; undefined for a button without any.
+ */
+export function buttonParams(action: { attributes?: Record<string, unknown> }): Record<string, unknown> | undefined {
+  const params = action.attributes?.parameters
+  if (!params || typeof params !== 'object') return undefined
+  // An empty PHP array arrives as [] — no parameters.
+  if (Array.isArray(params)) return params.length > 0 ? { ...params } : undefined
+  return params as Record<string, unknown>
 }
 
 /** The screen context, or null outside a screen. */

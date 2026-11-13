@@ -289,3 +289,72 @@ describe('ScreenPage links under a panel base', () => {
     wrapper.unmount()
   })
 })
+
+describe('ScreenPage button parameters', () => {
+  let mock: MockAdapter
+
+  const syncButton = (name: string, dictionary: string) => ({
+    kind: 'action',
+    name,
+    label: 'Обновить',
+    type: 'button',
+    position: ['command_bar'],
+    confirm: null,
+    attributes: { method: 'sync', parameters: { dictionary } },
+  })
+
+  beforeEach(async () => {
+    setActivePinia(createPinia())
+    const { clearRegistry } = await import('./render/registry')
+    const { registerBuiltinComponents } = await import('./render/builtin')
+    clearRegistry()
+    registerBuiltinComponents()
+    const c = createAdminClient({ baseURL: 'http://api.test' })
+    setAdminClient(c)
+    mock = new MockAdapter(c.raw)
+    mock.onGet('/stats/state').reply(200, {
+      success: true,
+      payload: {
+        state: { period: 'week' },
+        name: 'Справочники',
+        description: null,
+        layout: [
+          {
+            kind: 'layout',
+            type: 'rows',
+            props: [],
+            children: [syncButton('sync_marks', 'vehicle_marks'), syncButton('sync_models', 'vehicle_models')],
+          },
+        ],
+        command_bar: [syncButton('sync_all', 'all')],
+        permissions: [],
+        etag: 'e1',
+      },
+    })
+  })
+
+  afterEach(() => {
+    mock.reset()
+    clearAdminClient()
+  })
+
+  it('sends the parameters of the pressed button — in the command bar and in a layout — as params', async () => {
+    const calls: unknown[] = []
+    mock.onPost('/stats/runMethod').reply((config) => {
+      calls.push(JSON.parse(config.data))
+      return [200, { success: true, payload: {} }]
+    })
+    const { wrapper } = await mountScreen()
+
+    await wrapper.find('[data-testid="action-sync_all"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="action-sync_models"]').trigger('click')
+    await flushPromises()
+
+    expect(calls).toEqual([
+      { method: 'sync', payload: { period: 'week' }, params: { dictionary: 'all' } },
+      { method: 'sync', payload: { period: 'week' }, params: { dictionary: 'vehicle_models' } },
+    ])
+    wrapper.unmount()
+  })
+})
