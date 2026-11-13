@@ -104,13 +104,22 @@ child resource that is only shown embedded in its parent:
 
 ```php
 Admin::menu()->hideAuto('order-items');
+Admin::menu()->hideAuto('screen.product-section');   // a screen; its bare slug works too
 ```
+
+A screen is taken by its slug or as `screen.{slug}` — the latter never
+matches a resource of the same slug. A screen hidden from the auto menu is
+still open by its address and may stand in the explicit tree through
+`MenuNode::screen()`.
 
 ## Permissions
 
 A node is hidden if its `permissions` aren't satisfied by the current
 user. If `MenuNode::resource()` was used, the gate defaults to
-`admin.{slug}.view`.
+`admin.{slug}.view`. A node leading to a screen or a dashboard (auto-filled
+or `MenuNode::screen()`) also obeys the screen's own rule — `permission()`
+with `permissionMode()`: every key with `'all'` (the default), one with
+`'any'` — so a menu item never leads to a 403.
 
 Sub-trees are filtered too: a parent stays visible if at least one
 child passes; otherwise the whole branch is hidden.

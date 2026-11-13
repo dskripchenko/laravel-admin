@@ -119,3 +119,13 @@ it('keeps a table cell alignment and nothing else of its style', function (): vo
     expect($s->sanitize('<table><tr><td style="color: red; text-align: Right">1</td><th style="background: url(x)">2</th></tr></table>'))
         ->toBe('<table><tr><td style="text-align: right">1</td><th>2</th></tr></table>');
 });
+
+it('keeps &nbsp; as the entity editors write', function (): void {
+    expect((new HtmlSanitizer)->sanitize('<p>a&nbsp;b</p>'))->toBe('<p>a&nbsp;b</p>');
+});
+
+it('passes style and class through unnarrowed with constrain off', function (): void {
+    $s = new HtmlSanitizer(null, false);
+    expect($s->sanitize('<table><tbody><tr><td style="width: 50%; text-align: center">a</td></tr></tbody></table>'))
+        ->toContain('style="width: 50%; text-align: center"');
+});

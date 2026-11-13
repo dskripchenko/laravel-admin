@@ -119,6 +119,11 @@ export interface ManifestScreenMeta {
   name: string
   description: string | null
   permission: string[] | string | null
+  /**
+   * How the keys of `permission` combine — Screen::permissionMode(): 'all'
+   * (every one, the default) or 'any' (one is enough).
+   */
+  permission_mode?: 'all' | 'any'
 }
 
 export interface ManifestSettingsMeta {

@@ -152,6 +152,66 @@ import { QuillField } from '@dskripchenko/laravel-admin/quill'
 registerField('wysiwyg', QuillField)
 ```
 
+#### Движки: Quill и TinyMCE в готовой сборке
+
+`->driver()` переключает поле на другой редактор — в том числе в готовой
+сборке (`public/`, без своей сборки фронтенда у хоста). Это нужно, когда
+HTML поля исторически писал Quill или TinyMCE (например, Orchid) и должен
+сохраняться тем же редактором.
+
+```php
+// Quill 2 — HTML как в Orchid: innerHTML корня редактора.
+Wysiwyg::make('answer')->driver('quill'),
+Wysiwyg::make('answer')->driver('quill', [
+    'toolbar' => ['text', 'header', 'list'],   // группы Orchid или тулбар Quill
+    'modules' => ['clipboard' => ['matchVisual' => false]],
+    'formats' => ['bold', 'italic', 'link', 'list', 'header'],
+    'output'  => 'html',                       // 'html' | 'delta' (JSON)
+]),
+Wysiwyg::make('note')->output('delta'),          // то же, что driver('quill', ['output' => 'delta'])
+
+// TinyMCE — самохостинг, без облака и API-ключа.
+Wysiwyg::make('text')->driver('tinymce', [
+    'script'  => '/js/platform/tinymce/tinymce/tinymce.min.js',
+    'height'  => 400,
+    'plugins' => 'lists link code',
+    'toolbar' => 'bold italic underline strikethrough | numlist bullist | link | code',
+    'init'    => ['toolbar_mode' => 'wrap'],   // любые другие опции TinyMCE
+]),
+Wysiwyg::make('text')->driver('default'),        // вернуть редактор по умолчанию
+```
+
+- Оба движка — ленивые чанки: страница без такого поля их не загружает,
+  основной бандл не растёт.
+- **Quill** (BSD-3-Clause, 2.0.3 — та же версия, что в Orchid 14) входит в
+  сборку вместе с темой snow. Значение загружается как в Orchid
+  (`root.innerHTML`), без события изменения: пока пользователь не правит
+  поле, оно не меняется. Без `toolbar` — тулбар Orchid по умолчанию (те же
+  кнопки и палитра цветов). Разметку, для которой у Quill 2 нет блота
+  (`<ul>`/`<pre class="ql-syntax">` из Quill 1, `<div>`), поле читает через
+  буфер обмена Quill, а не теряет вместе с текстом.
+- **TinyMCE** в сборку не входит: версии 7+ распространяются под
+  GPL-2.0-or-later, пакет — MIT. Хост отдаёт свою копию (`tinymce.min.js` и
+  рядом skins, icons, models, themes, plugins) и указывает адрес скрипта в
+  поле или один раз в `config/admin.php` →
+  `wysiwyg.tinymce.script` (`ADMIN_TINYMCE_SCRIPT`). Поле запускает её с
+  `license_key: 'gpl'` и `base_url` = папка скрипта; значение — `getContent()`.
+  Без скрипта поле показывает HTML в обычном textarea, ничего не переписывая.
+- Санитайзер для такого поля расширяет белый список под разметку движка
+  (`data-list` и классы `ql-*` у Quill, inline-стили у TinyMCE); вывод
+  `delta` не санитизируется. `->sanitize(false)` — для доверенного HTML,
+  который должен остаться байт в байт (например, видео-iframe Quill).
+
+В своей сборке хост регистрирует нужные движки сам:
+
+```ts
+import { registerWysiwygDriver } from '@dskripchenko/laravel-admin'
+import 'quill/dist/quill.snow.css'
+
+registerWysiwygDriver('quill', () => import('@dskripchenko/laravel-admin/quill').then(m => m.QuillDriver))
+registerWysiwygDriver('tinymce', () => import('@dskripchenko/laravel-admin/tinymce').then(m => m.TinymceDriver))
+```
+
 ## Выбор
 
 ### Select

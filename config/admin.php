@@ -321,6 +321,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | WYSIWYG engines
+    |--------------------------------------------------------------------------
+    |
+    | Wysiwyg::make(...)->driver('tinymce') runs a self-hosted TinyMCE: the
+    | admin does not bundle it (TinyMCE 7 is GPL-2.0-or-later), so the host
+    | serves its own copy — tinymce.min.js with skins, icons, models, themes
+    | and plugins beside it — and names the script here (or per field, in
+    | ->driver('tinymce', ['script' => …])). Example:
+    | '/js/platform/tinymce/tinymce/tinymce.min.js'.
+    */
+    'wysiwyg' => [
+        'tinymce' => [
+            'script' => env('ADMIN_TINYMCE_SCRIPT'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Export
     |--------------------------------------------------------------------------
     */

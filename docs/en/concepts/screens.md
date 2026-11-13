@@ -99,13 +99,14 @@ The values come from the address bar, so validate them like any other input.
 | `name()` | Display title in the header and sidebar. |
 | `description()` | Optional subtitle under the title. |
 | `permission()` | Permission gate (string or list). null = any authenticated admin. |
+| `permissionMode()` | How the keys of `permission()` combine: `'all'` (the default, every key) or `'any'` (one is enough). |
 | `query(...$params)` | Returns initial state. Receives the values of the page's query string as positional arguments (see below). |
 | `layout()` | Returns `Renderable[]` (Rows/Columns/Tabs/Block/...). |
 | `commandBar()` | Returns `Action[]` rendered in the page header. |
 | Public methods | Any other public method (not in the reserved set) is callable as a command via `Button::make('…')->method('xxx')`. |
 
 Reserved method names: `query`, `layout`, `name`, `description`,
-`permission`, `commandBar`, `compile`, `slug`, `reservedMethods`,
+`permission`, `permissionMode`, `commandBar`, `compile`, `slug`, `reservedMethods`,
 `isCallableMethod`.
 
 ## Command methods
@@ -116,6 +117,58 @@ the frontend (`{form_field: value, ...}`):
 ```php
 public function send(array $state): array { ... }
 ```
+
+### Button parameters
+
+A button may carry parameters of its own — a dictionary code, a record id.
+They travel with the state (the `params` field of the `runMethod` body) and
+reach the method as its second argument:
+
+```php
+Button::make('Refresh')->method('sync')->parameters(['dictionary' => 'vehicle_marks'])
+// ->params([...]) is the same
+
+public function sync(array $state, array $parameters): array
+{
+    $code = $parameters['dictionary'] ?? null;
+    abort_unless(in_array($code, self::DICTIONARIES, true), 422);
+    // ...
+}
+```
+
+A one-argument method (`send(array $state)`) is called as before — the
+parameters do not reach it. They come from the browser: validate them as any
+input. When several buttons share a method and differ in `permission()`, the
+server checks the button whose parameters came: sending the parameters of a
+button the user may not press is a `403 action_forbidden`.
+
+Buttons work in `commandBar()` and inside the screen's layouts — in
+`Layout::rows()`, a `Layout::columns()` cell, a block: the panel draws a
+`Button` from `layout()` as a button (outside a screen — in a resource form —
+such nodes are not drawn). A screen has no table layout with row actions; a
+"table with a button in every row" is built from rows the server generates:
+
+```php
+public function layout(): array
+{
+    $rows = [];
+    foreach (Dictionary::all() as $d) {
+        $rows[] = Layout::columns([
+            Layout::markdown("**{$d->title}** — synced {$d->synced_at}"),
+            Layout::rows([
+                Button::make('Refresh')->withName('sync-'.$d->code)
+                    ->method('sync')->parameters(['dictionary' => $d->code])
+                    ->permission('admin.dictionaries.'.$d->code),
+            ]),
+        ]);
+    }
+
+    return $rows;
+}
+```
+
+For a real table with filters and row actions use a resource
+(`Layout::resourceIndex()`) and its row actions.
 
 Return values:
 
@@ -219,9 +272,33 @@ public function permission(): array|string|null
 }
 ```
 
-`AdminAccess:admin.contact` is auto-attached to both `state` and
-`runMethod` actions. For separate gates per method — guard inside the
-command method itself.
+`AdminAccess:admin.contact` is auto-attached to the `state`, `runMethod`
+and `listener` actions. For separate gates per method — a button's
+`permission()` or a check inside the command method itself.
+
+A list of keys means "every one" by default. A section screen open to
+whoever may work with **at least one** of the section's resources declares
+`permissionMode()`:
+
+```php
+public function permission(): array|string|null
+{
+    return ['admin.orders.view', 'admin.quotes.view', 'admin.policies.view'];
+}
+
+public function permissionMode(): string
+{
+    return self::PERMISSION_ANY;   // 'any'; self::PERMISSION_ALL by default
+}
+```
+
+The rule applies wherever access to the screen is decided: the middleware
+of `state`/`runMethod`/`listener` (`AdminAccess:…,any`), the SPA route (the
+manifest carries `permission_mode`), the menu items — the auto-filled ones
+and `MenuNode::screen()`; for a `DashboardScreen` — the dashboard endpoints,
+the manifest and the menu. A user with none of the keys gets a 403 and no
+menu item. To keep a screen out of the auto menu use
+`Admin::menu()->hideAuto('slug')` (see [Menu](menu.md)).
 
 ## How it differs from Resource
 

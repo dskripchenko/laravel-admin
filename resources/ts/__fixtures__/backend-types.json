@@ -51,6 +51,7 @@
         "audio",
         "audit_trail",
         "block",
+        "block_tree",
         "board",
         "bpmn",
         "calendar",

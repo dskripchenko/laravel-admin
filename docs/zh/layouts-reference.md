@@ -36,6 +36,7 @@ translated_at: 2026-10-02
 | `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI 参考：服务器、通道、操作、消息 |
 | `Kanban` | `Layout::kanban('board')` | 用标记写成的看板，可通过 Screen 方法编辑 |
 | `Calendar` | `Layout::calendar('schedule')` | 用标记写成、支持重复的事件日历，可通过 Screen 方法编辑 |
+| `BlockTree` | `Layout::blockTree('content')` | 页面构建器：带实时预览的块树，草稿与发布通过屏幕方法完成 |
 | `Board` | `Layout::board()->endpoint('/boards/42')` | 多人同时编辑的协作白板；存储由 `laravel-admin-board` 提供 |
 | `Video` | `Layout::video('/media/intro.mp4')` | 视频播放器：清晰度、HLS、字幕、章节、缩略图 |
 | `Audio` | `Layout::audio([...])` | 音频播放器：单曲或播放列表、波形、迷你样式 |
@@ -373,7 +374,9 @@ public function layout(): array
 }
 ```
 
-把资源的列表页本身——搜索、筛选、排序、行操作和批量操作、单元格内编辑、拖拽排序、回收站，或层级资源的树——嵌入到 Screen 中。点击行会像列表页一样打开记录。没有该资源 `view` 权限的用户看不到它。每个 Screen 只能放一个：列表状态是共享的。
+把资源的列表页本身——搜索、筛选、排序、行操作和批量操作、单元格内编辑、拖拽排序、回收站，或层级资源的树——嵌入到 Screen 中。点击行会像列表页一样打开记录。没有该资源 `view` 权限的用户看不到它。
+
+一个 Screen 上可以放多个列表，也可以放在 `Layout::tabs()` 中：每个列表有自己的状态（搜索、筛选、页码、排序、选择），未打开的标签页在打开前不加载数据。`queryKey('orders')` 为列表的 URL 参数加前缀（`?orders.q=…`）；不设置时沿用原来的普通参数。`rowOpen('drawer', 'lg')` 让行在列表上方的抽屉中打开（查看、表单、操作；‹ › 或 Alt+↑ / Alt+↓ 切换上一条和下一条），`nextAfterAction()` 在保存或执行操作后直接跳到下一条。`Resource::rowOpen()` 为资源本身设置该模式。标签页：`persistInQuery('tab')` 把当前标签保存在 URL 中，`keys([...])` 为标签命名，`vertical()` 把标签竖排在左侧。详见英文或俄文文档。
 
 `initialView('kanban')`（或 `'calendar'`、`'list'`）让它以资源的该视图打开——参见[看板视图与日历视图](concepts/resources.md#看板视图与日历视图)；视图切换器仍提供其他视图，URL 中的 `?view=` 优先。（自然的名字本应是 `view()`，但 `Layout::view()` 已是 Blade 视图布局的工厂方法。）
 
@@ -821,6 +824,17 @@ Layout::board()
 
 如果白板已超出服务器日志仍保存的范围，编辑器会重新加载它。仪表盘上的同一个白板是
 `Widget\BoardWidget`（[小部件](concepts/widgets-and-dashboards.md#board)）。
+
+### BlockTree（页面构建器）
+
+`Layout::blockTree('content')` 是带实时预览的块树编辑器，是页面构建器的基础：
+结构（在嵌套规则内拖放、按插入位置过滤的类型面板、连同子块复制、可撤销的删除、
+“新增 / 已修改 / 不显示”标记）、预览（为当前树以 POST 获取的页面 HTML 显示在
+iframe 中，点击块即选中其节点）和属性（用面板自带字段绘制的块表单）。草稿、
+发布和放弃通过屏幕方法（`draft()`、`publish()`、`discard()`）以整个 state 为参数
+调用；`BlockTree::saved()`、`::conflict()`、`::invalid()` 构造返回值，
+`TreeValidator` 按类型校验树。完整说明、屏幕示例和预览协议见
+[英文参考](../en/layouts-reference.md#blocktree-page-builder)。
 
 ### Video 与 Audio（媒体播放器）
 

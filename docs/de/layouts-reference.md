@@ -37,6 +37,7 @@ sich beliebig tief verschachteln.
 | `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI-Referenz: Server, Kanäle, Operationen, Nachrichten |
 | `Kanban` | `Layout::kanban('board')` | Kanban-Board als Markup, bearbeitbar über eine Screen-Methode |
 | `Calendar` | `Layout::calendar('schedule')` | Ereigniskalender mit Wiederholungen als Markup, bearbeitbar über eine Screen-Methode |
+| `BlockTree` | `Layout::blockTree('content')` | Seiten-Builder: Baum aus Blöcken mit Live-Vorschau, Entwurf und Veröffentlichen über Screen-Methoden |
 | `Board` | `Layout::board()->endpoint('/boards/42')` | Gemeinsames Board, das mehrere Personen gleichzeitig bearbeiten; Speicherung durch `laravel-admin-board` |
 | `Video` | `Layout::video('/media/intro.mp4')` | Videoplayer: Qualitäten, HLS, Untertitel, Kapitel, Vorschaubilder |
 | `Audio` | `Layout::audio([...])` | Audioplayer: ein Titel oder eine Playlist, Wellenform, Mini-Variante |
@@ -439,8 +440,20 @@ Die Listenseite der Resource selbst — Suche, Filter, Sortierung, Zeilen- und
 Massenaktionen, Inline-Bearbeitung, Sortierung per Drag-and-drop, Papierkorb
 oder der Baum einer hierarchischen Resource — eingebettet in einen Screen. Ein
 Klick auf eine Zeile öffnet den Datensatz wie auf der Listenseite. Für
-Benutzer ohne `view`-Berechtigung der Resource ausgeblendet. Eine pro Screen:
-der Zustand der Liste ist geteilt.
+Benutzer ohne `view`-Berechtigung der Resource ausgeblendet.
+
+Mehrere Listen pro Screen sind möglich, auch in `Layout::tabs()`: jede hat
+ihren eigenen Zustand (Suche, Filter, Seite, Sortierung, Auswahl), und eine
+Liste in einem geschlossenen Tab lädt erst, wenn der Tab geöffnet wird.
+`queryKey('orders')` gibt den URL-Schlüsseln der Liste ein Präfix
+(`?orders.q=…`); ohne ihn bleiben es die einfachen Schlüssel wie bisher.
+`rowOpen('drawer', 'lg')` öffnet eine Zeile in einem Drawer über der Liste
+(Ansicht, Formular, Aktionen; ‹ › bzw. Alt+↑ / Alt+↓ zum vorherigen und
+nächsten Datensatz), `nextAfterAction()` springt nach Speichern oder Aktion
+direkt zum nächsten Datensatz. `Resource::rowOpen()` setzt den Modus für die
+Resource selbst. Für Tabs: `persistInQuery('tab')` hält den offenen Tab in der
+URL, `keys([...])` benennt die Tabs, `vertical()` stellt sie als Spalte links
+dar. Details siehe die englische oder russische Fassung.
 
 `initialView('kanban')` (oder `'calendar'`, `'list'`) öffnet es in dieser
 Ansicht der Resource — siehe [Kanban- und Kalenderansicht](concepts/resources.md#kanban--und-kalenderansicht);
@@ -956,6 +969,21 @@ vom Server abgelehnte Änderung wird mit einer Meldung verworfen), teilt Cursor
 Ist das Board über das hinaus, was der Server noch im Log hat, lädt der Editor
 es neu. Dasselbe Board auf einem Dashboard ist `Widget\BoardWidget`
 ([Widgets](concepts/widgets-and-dashboards.md#board)).
+
+### BlockTree (Seiten-Builder)
+
+`Layout::blockTree('content')` ist ein Editor für einen Baum aus Blöcken mit
+Live-Vorschau — die Grundlage eines Seiten-Builders: Struktur (Drag & Drop
+innerhalb der Verschachtelungsregeln, Palette der an der Stelle erlaubten
+Typen, Duplizieren, Löschen mit Rückgängig, Markierungen *neu*, *geändert*,
+*nicht angezeigt*), Vorschau (das per POST geholte HTML der Seite in einem
+iframe; ein Klick auf einen Block wählt seinen Knoten) und Eigenschaften (das
+Formular des Blocks mit den Feldern des Panels). Entwurf, Veröffentlichen und
+Verwerfen laufen über Screen-Methoden (`draft()`, `publish()`, `discard()`)
+mit dem ganzen State als Argument; `BlockTree::saved()`, `::conflict()` und
+`::invalid()` formen die Antworten, `TreeValidator` prüft einen Baum gegen die
+Typen. Vollständige Beschreibung mit einem Screen-Beispiel und dem
+Vorschau-Protokoll: [englische Referenz](../en/layouts-reference.md#blocktree-page-builder).
 
 ### Video und Audio (Medienplayer)
 

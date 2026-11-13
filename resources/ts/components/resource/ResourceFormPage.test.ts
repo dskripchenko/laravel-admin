@@ -148,6 +148,33 @@ describe('ResourceFormPage', () => {
     expect(delBtn).toBeDefined()
   })
 
+  it('edit-mode: a record link of the resource opens with the record key', async () => {
+    useManifestStore().manifest!.resources[0]!.actions = [
+      { name: 'content', label: 'Редактировать контент', type: 'link', position: ['row', 'header'], attributes: { href: '/r/articles/{id}/edit?tab=content' } },
+      { name: 'list', label: 'Все статьи', type: 'link', position: ['header'], attributes: { href: '/r/articles' } },
+      { name: 'publish', label: 'Опубликовать', type: 'button', position: ['row', 'header'], attributes: {} },
+    ]
+    mock.onGet('/articles/read').reply(200, { success: true, payload: { record: { id: 7, title: 'Old', body: 'B' } } })
+    const { wrapper, router } = await mountPageWithRouter({ id: 7 })
+    await flushPromises()
+
+    // Only the link to this record: not a link without {id}, not a server action
+    const links = wrapper.findAll('[data-testid^="form-link-"]')
+    expect(links.map((b) => b.text())).toEqual(['Редактировать контент'])
+    await links[0]!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/r/articles/7/edit?tab=content')
+  })
+
+  it('create-mode: no record links', async () => {
+    useManifestStore().manifest!.resources[0]!.actions = [
+      { name: 'content', label: 'Редактировать контент', type: 'link', position: ['header'], attributes: { href: '/x/{id}' } },
+    ]
+    const wrapper = await mountPage()
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid^="form-link-"]')).toHaveLength(0)
+  })
+
   it('edit-mode: a record without a title is "<singular> #id"', async () => {
     useManifestStore().manifest!.resources[0]!.singular_label = 'статья'
     mock.onGet('/articles/read').reply(200, {

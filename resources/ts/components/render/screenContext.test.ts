@@ -20,6 +20,13 @@ describe('screen context', () => {
     expect(runMethod).toHaveBeenCalledWith('save')
   })
 
+  it('passes the parameters of a button to the method', async () => {
+    const runMethod = vi.fn(async () => true)
+    const ctx = createScreenContext({ running: ref(false), runMethod })
+    await ctx.dispatch({ attributes: { method: 'sync', parameters: { dictionary: 'vehicle_marks' } } })
+    expect(runMethod).toHaveBeenCalledWith('sync', { dictionary: 'vehicle_marks' })
+  })
+
   it('stops at a declined confirmation', async () => {
     const runMethod = vi.fn(async () => true)
     const ctx = createScreenContext({ running: ref(false), runMethod, confirm: () => false })

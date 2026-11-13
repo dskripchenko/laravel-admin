@@ -30,8 +30,11 @@ final class HtmlSanitizer
 
     /**
      * @param  array<string, list<string>>|null  $allowed  null means the default.
+     * @param  bool  $constrain  Narrow a code block's class and a table cell's
+     *                           style to the default editor's own (see constrain());
+     *                           off for the markup of Quill and TinyMCE.
      */
-    public function __construct(?array $allowed = null)
+    public function __construct(?array $allowed = null, private readonly bool $constrain = true)
     {
         $this->allowed = $allowed ?? self::defaultWhitelist();
     }
@@ -99,7 +102,10 @@ final class HtmlSanitizer
             $result .= $doc->saveHTML($child);
         }
 
-        return trim($result);
+        // DOMDocument writes a no-break space as the bare character; editors
+        // (and the browser's innerHTML) write &nbsp;. Keeping the entity
+        // leaves an editor's HTML byte for byte as it was.
+        return trim(str_replace("\u{00A0}", '&nbsp;', $result));
     }
 
     private function cleanNode(\DOMNode $node): void
@@ -154,6 +160,9 @@ final class HtmlSanitizer
                             $child->removeAttribute($name);
                         }
 
+                        continue;
+                    }
+                    if (! $this->constrain) {
                         continue;
                     }
                     $constrained = self::constrain($tag, $lower, (string) $child->getAttribute($name));

@@ -43,7 +43,9 @@ import {
   UidTable,
   type UidTableColumn,
 } from '@dskripchenko/ui'
-import { useResourceIndexStore } from '../../stores/resourceIndex'
+import { provideResourceIndexStore, resourceIndexStoreFor } from '../../stores/resourceIndex'
+import { patchRouteQuery } from '../../composables/useQueryPatch'
+import ResourceRecordDrawer from './ResourceRecordDrawer.vue'
 import { useManifestStore } from '../../stores/manifest'
 import { useNavigationStore } from '../../stores/navigation'
 import { useAuthStore } from '../../stores/auth'
@@ -113,6 +115,27 @@ interface Props {
    * resource does not offer.
    */
   initialView?: string | null
+  /**
+   * The list's own state among several on one screen: search, filters, page,
+   * sort and selection apart from every other list. Null — the resource
+   * pages' shared state, as before.
+   */
+  stateKey?: string | null
+  /**
+   * The namespace of the list's keys in the URL: `orders` makes them
+   * `orders.q`, `orders.page`, `orders.filter[status]`, so two lists on a
+   * screen do not overwrite each other's address. Null — the plain keys.
+   */
+  queryKey?: string | null
+  /**
+   * How a row opens: 'page' (the record's page) or 'drawer' (a panel over the
+   * list). Null — the resource's own choice (Resource::rowOpen()), else 'page'.
+   */
+  rowOpen?: string | null
+  /** The drawer's width: sm, md, lg, xl or a CSS length. */
+  drawerSize?: string | null
+  /** After a save or an action in the drawer, move on to the next record. */
+  nextAfterAction?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -121,6 +144,11 @@ const props = withDefaults(defineProps<Props>(), {
   createLabel: undefined,
   createRouteName: null,
   initialView: null,
+  stateKey: null,
+  queryKey: null,
+  rowOpen: null,
+  drawerSize: null,
+  nextAfterAction: false,
 })
 
 const emit = defineEmits<{
@@ -134,7 +162,10 @@ const emit = defineEmits<{
   'header-action': [action: string]
 }>()
 
-const index = useResourceIndexStore()
+const index = resourceIndexStoreFor(props.stateKey)
+provideResourceIndexStore(index)
+/** The URL keys' namespace: '' for the plain keys, 'orders.' for a named list. */
+const qp = props.queryKey ? `${props.queryKey}.` : ''
 const manifest = useManifestStore()
 const nav = useNavigationStore()
 const router = useRouter()
@@ -917,20 +948,21 @@ async function loadWithProgress(): Promise<void> {
  * push — the history is not a list of every keystroke in the search box.
  */
 function isListKey(k: string): boolean {
-  return k === 'q' || k === 'sort' || k === 'page' || k === 'view' || k.startsWith('filter[')
+  return k === `${qp}q` || k === `${qp}sort` || k === `${qp}page` || k === `${qp}view` || k.startsWith(`${qp}filter[`)
 }
 
 function syncQuery(): void {
-  const next = index.toQuery()
+  const next = index.toQuery(qp)
   const current = router.currentRoute.value
   const same = JSON.stringify(Object.entries(next).sort()) === JSON.stringify(
     Object.entries(current.query).filter(([k]) => isListKey(k)).sort(),
   )
   if (same) return
-  const kept = Object.fromEntries(
-    Object.entries(current.query).filter(([k]) => !isListKey(k)),
-  )
-  void router.replace({ query: { ...kept, ...next } }).catch(() => undefined)
+  // Only this list's keys change: the tabs' and the other lists' stay.
+  patchRouteQuery(router, (query) => {
+    for (const k of Object.keys(query)) if (isListKey(k)) delete query[k]
+    Object.assign(query, next)
+  })
 }
 
 watch(
@@ -940,14 +972,25 @@ watch(
   },
 )
 
+/**
+ * A list with a state of its own takes it from the address alone: what an
+ * earlier visit left in its store must not outlive a link without it. The
+ * rows and the selection stay, so a tab opened again shows its rows at once.
+ */
+function readQuery(): void {
+  if (props.stateKey !== null) index.resetQueryState()
+  index.fromQuery(router.currentRoute.value.query as Record<string, unknown>, qp)
+}
+
 onMounted(async () => {
   index.setSlug(props.slug)
-  index.fromQuery(router.currentRoute.value.query as Record<string, unknown>)
+  readQuery()
   if (manifest.manifest === null) {
     await manifest.load().catch(() => undefined)
   }
   applyInitialView()
   void loadSavedViews()
+  openDrawerFromQuery()
   if (index.listActive) await loadWithProgress()
 })
 
@@ -962,7 +1005,7 @@ function applyInitialView(): void {
     index.view = null
   }
   const query = router.currentRoute.value.query
-  if (query.view !== undefined || props.initialView === null) return
+  if (query[`${qp}view`] !== undefined || props.initialView === null) return
   if (props.initialView !== baseView.value && availableViews.value.includes(props.initialView)) {
     index.view = props.initialView
   }
@@ -973,7 +1016,7 @@ watch(
   async (next, prev) => {
     if (next === prev) return
     index.setSlug(next)
-    index.fromQuery(router.currentRoute.value.query as Record<string, unknown>)
+    readQuery()
     applyInitialView()
     activeViewId.value = null
     void loadSavedViews()
@@ -1046,28 +1089,163 @@ function onRowClick(row: Record<string, unknown>): void {
   const selection = typeof window !== 'undefined' ? window.getSelection() : null
   if (selection && !selection.isCollapsed && selection.toString().trim() !== '') return
   emit('row-click', row)
-  // By default a row click opens the record's view screen. A host can
-  // intercept it through @row-click and call preventDefault.
-  const id = rowId(row)
-  if (id !== null) {
-    void router.push({ name: `admin.resource.${props.slug}.view`, params: { id: String(id) } })
-  }
+  // By default a row click opens the record's view screen — or the drawer
+  // over the list. A host can intercept it through @row-click and call
+  // preventDefault.
+  onView(row)
 }
 
 function onView(row: Record<string, unknown>, e?: MouseEvent): void {
   e?.stopPropagation()
   const id = rowId(row)
-  if (id !== null) {
-    void router.push({ name: `admin.resource.${props.slug}.view`, params: { id: String(id) } })
+  if (id === null) return
+  if (opensInDrawer.value) {
+    openDrawer(id, 'view')
+    return
   }
+  void router.push({ name: `admin.resource.${props.slug}.view`, params: { id: String(id) } })
 }
 
 function onEdit(row: Record<string, unknown>, e?: MouseEvent): void {
   e?.stopPropagation()
   const id = rowId(row)
-  if (id !== null) {
-    void router.push({ name: `admin.resource.${props.slug}.edit`, params: { id: String(id) } })
+  if (id === null) return
+  if (opensInDrawer.value) {
+    openDrawer(id, 'edit')
+    return
   }
+  void router.push({ name: `admin.resource.${props.slug}.edit`, params: { id: String(id) } })
+}
+
+/* === The record drawer =====================================================
+ * Layout::resourceIndex()->rowOpen('drawer') or Resource::rowOpen(): a row
+ * opens in a panel over the list instead of on its page. The record's id
+ * travels in the address (`record`, or `orders.record` for a named list), so
+ * a link opens it too. ‹ and › — or Alt+↑ and Alt+↓ — walk the list, across
+ * its pages; a save or an action reloads the list, and with nextAfterAction
+ * moves straight on to the next record: a queue is worked through without
+ * leaving it.
+ */
+const opensInDrawer = computed<boolean>(() => {
+  const own = props.rowOpen ?? (resourceMeta.value?.features as Record<string, unknown> | undefined)?.rowOpen
+  return own === 'drawer'
+})
+
+const drawerId = ref<string | number | null>(null)
+const drawerMode = ref<'view' | 'edit'>('view')
+/** Where the open record stood in the rows: the place its successor takes once it leaves them. */
+let drawerPos = -1
+
+function rowIndexOf(id: string | number | null): number {
+  if (id === null) return -1
+  return index.items.findIndex((r) => String(index.rowId(r)) === String(id))
+}
+
+function setDrawerQuery(id: string | number | null): void {
+  patchRouteQuery(router, (query) => {
+    query[`${qp}record`] = id === null ? undefined : String(id)
+  })
+}
+
+function openDrawer(id: string | number, mode: 'view' | 'edit' = 'view'): void {
+  drawerId.value = id
+  drawerMode.value = mode === 'edit' && canUpdate.value ? 'edit' : 'view'
+  const i = rowIndexOf(id)
+  if (i >= 0) drawerPos = i
+  setDrawerQuery(id)
+}
+
+function closeDrawer(): void {
+  drawerId.value = null
+  drawerPos = -1
+  setDrawerQuery(null)
+}
+
+function openDrawerFromQuery(): void {
+  if (!opensInDrawer.value) return
+  const raw = router.currentRoute.value.query[`${qp}record`]
+  const id = Array.isArray(raw) ? raw[0] : raw
+  if (typeof id === 'string' && id !== '') {
+    drawerId.value = id
+    drawerMode.value = 'view'
+  }
+}
+
+/** The position the next record is at: right after the open one, or in its place once it has left the rows. */
+function nextPosition(): number {
+  const i = rowIndexOf(drawerId.value)
+  return i >= 0 ? i + 1 : Math.max(drawerPos, 0)
+}
+
+const drawerHasNext = computed<boolean>(() => {
+  if (drawerId.value === null) return false
+  return nextPosition() < index.items.length || index.meta.page < index.meta.last_page
+})
+const drawerHasPrev = computed<boolean>(() => {
+  if (drawerId.value === null) return false
+  const i = rowIndexOf(drawerId.value)
+  const prev = i >= 0 ? i - 1 : drawerPos - 1
+  return prev >= 0 || index.meta.page > 1
+})
+
+function openAt(pos: number): void {
+  const row = index.items[pos]
+  const id = row ? rowId(row) : null
+  if (id === null) {
+    closeDrawer()
+    return
+  }
+  drawerPos = pos
+  drawerId.value = id
+  setDrawerQuery(id)
+}
+
+async function drawerNext(): Promise<void> {
+  if (drawerId.value === null) return
+  const pos = nextPosition()
+  if (pos < index.items.length) {
+    openAt(pos)
+    return
+  }
+  if (index.meta.page < index.meta.last_page) {
+    await index.setPage(index.meta.page + 1).catch(() => undefined)
+    openAt(0)
+    return
+  }
+  // The last record has left the list: nothing more to work through.
+  if (rowIndexOf(drawerId.value) < 0) closeDrawer()
+}
+
+async function drawerPrev(): Promise<void> {
+  if (drawerId.value === null) return
+  const i = rowIndexOf(drawerId.value)
+  const pos = i >= 0 ? i - 1 : drawerPos - 1
+  if (pos >= 0) {
+    openAt(pos)
+    return
+  }
+  if (index.meta.page > 1) {
+    await index.setPage(index.meta.page - 1).catch(() => undefined)
+    openAt(index.items.length - 1)
+  }
+}
+
+/** A save, an action or a delete in the drawer: the list shows the outcome. */
+async function onDrawerChanged(): Promise<void> {
+  const i = rowIndexOf(drawerId.value)
+  if (i >= 0) drawerPos = i
+  await index.load().catch(() => undefined)
+}
+
+async function onDrawerDone(): Promise<void> {
+  await onDrawerChanged()
+  if (props.nextAfterAction) await drawerNext()
+}
+
+async function onDrawerRemoved(): Promise<void> {
+  await onDrawerChanged()
+  if (drawerHasNext.value) await drawerNext()
+  else closeDrawer()
 }
 
 async function onDelete(row: Record<string, unknown>, e?: MouseEvent): Promise<void> {
@@ -1698,6 +1876,23 @@ async function retryLoad(): Promise<void> {
         @update:model-value="onPageChange"
       />
     </footer>
+
+    <ResourceRecordDrawer
+      v-if="opensInDrawer"
+      :slug="slug"
+      :record-id="drawerId"
+      :mode="drawerMode"
+      :size="drawerSize"
+      :can-edit="canUpdate"
+      :has-next="drawerHasNext"
+      :has-prev="drawerHasPrev"
+      @update:mode="(m: 'view' | 'edit') => (drawerMode = m)"
+      @close="closeDrawer"
+      @next="drawerNext"
+      @prev="drawerPrev"
+      @done="onDrawerDone"
+      @removed="onDrawerRemoved"
+    />
 
     <AdminActionDialogs :runner="runner" />
   </section>

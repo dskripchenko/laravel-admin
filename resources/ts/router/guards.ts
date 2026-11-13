@@ -8,8 +8,9 @@
  *      redirects to /login, where the challenge form lives.
  *   3. A user who must enable 2FA (twoFactorRequired) and has not is kept on
  *      the profile's security section.
- *   4. When route.meta.permissions is set, hasAnyPermission() decides; none of
- *      them means /forbidden (or the route named 'admin.forbidden').
+ *   4. When route.meta.permissions is set, hasAnyPermission() decides —
+ *      hasAllPermissions() with meta.permissionMode 'all'; a miss
+ *      means /forbidden (or the route named 'admin.forbidden').
  *
  * The guards use useAuthStore but never touch the client directly: everything
  * goes through the permissions, isAuthenticated and pendingChallenge state.
@@ -92,10 +93,13 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
       return { name: profileRouteName, query: { section: 'security' } }
     }
 
-    // The permission check, with ANY semantics: one match is enough.
+    // The permission check: one match is enough, unless the route asks for
+    // every key (meta.permissionMode 'all' — a screen's or dashboard's rule).
     const permissionsMeta = to.meta?.permissions
     if (Array.isArray(permissionsMeta) && permissionsMeta.length > 0) {
-      const allowed = auth.hasAnyPermission(permissionsMeta as string[])
+      const allowed = to.meta?.permissionMode === 'all'
+        ? auth.hasAllPermissions(permissionsMeta as string[])
+        : auth.hasAnyPermission(permissionsMeta as string[])
       if (!allowed) {
         return { name: forbiddenRouteName }
       }

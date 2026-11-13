@@ -30,8 +30,16 @@ export type AdminRouteComponent = Component | (() => Promise<Component>)
 export interface RouteMeta {
   /** Requires a logged-in user. */
   requiresAuth?: boolean
-  /** The permissions required to enter, with ANY semantics: one match is enough. */
+  /**
+   * The permissions required to enter, with ANY semantics by default: one
+   * match is enough.
+   */
   permissions?: string[]
+  /**
+   * 'all' requires every key of `permissions` — a screen's default
+   * (Screen::permissionMode()); 'any', or no value, one of them.
+   */
+  permissionMode?: 'all' | 'any'
   /** The page's title, rendered into <title> by router.afterEach. */
   title?: string
   /** The admin route's kind, for the breadcrumbs and the active state in the UI. */
@@ -188,6 +196,7 @@ function buildScreenRoute(
       slug: screen.slug,
       title: screen.name,
       permissions: pickScreenPermission(screen),
+      permissionMode: screen.permission_mode === 'any' ? 'any' : 'all',
     },
   }
 }
@@ -214,6 +223,7 @@ interface DashboardMeta {
   slug?: string
   label?: string
   permission?: string | string[] | null
+  permission_mode?: 'all' | 'any'
 }
 
 function buildDashboardRoute(
@@ -237,6 +247,7 @@ function buildDashboardRoute(
       slug: dashboard.slug,
       title: dashboard.label ?? 'Dashboard',
       permissions,
+      permissionMode: dashboard.permission_mode === 'any' ? 'any' : 'all',
     },
   }
 }

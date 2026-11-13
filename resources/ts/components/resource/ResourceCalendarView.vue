@@ -22,7 +22,7 @@ import {
   type CalendarSlot,
 } from '@dskripchenko/ui'
 import { getAdminClient } from '../../stores/registry'
-import { useResourceIndexStore } from '../../stores/resourceIndex'
+import { injectResourceIndexStore } from '../../stores/resourceIndex'
 import { useI18nStore } from '../../stores/i18n'
 import { adminToast } from '../../stores/toast'
 import { apiErrorMessage } from '../../api/errors'
@@ -71,7 +71,7 @@ const TONES: Record<string, string> = {
 
 const i18n = useI18nStore()
 const tr = (s: string): string => i18n.tr(s)
-const index = useResourceIndexStore()
+const index = injectResourceIndexStore()
 const router = useRouter()
 
 const view = ref<CalendarViewName>(props.config.initial_view)

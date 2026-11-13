@@ -24,7 +24,7 @@ URL: `/api/admin/{screen_slug}/{action}`.
 ```
 
 - **Slug** — имя класса без суффикса `Screen` в kebab-case: `CustomersImportScreen` → `customers-import`.
-- **Права.** Если `Screen::permission()` возвращает строку или список, на все три action ставится `AdminAccess` с этими правами (список — нужны все). `null` — достаточно аутентификации. Нет права — `403`, `errorKey: forbidden`.
+- **Права.** Если `Screen::permission()` возвращает строку или список, на все три action ставится `AdminAccess` с этими правами (список — нужны все; с `permissionMode()` `'any'` — достаточно одного, `AdminAccess:a;b,any`). `null` — достаточно аутентификации. Нет права — `403`, `errorKey: forbidden`.
 - **Исключения.** Наследники `GeneratedScreen` обслуживает `ResourceController` (`listScreen`, `editScreen`, … — см. [resources.md](resources.md)), наследники `DashboardScreen` — контроллер `dashboard` (см. [dashboards.md](dashboards.md)). Для них отдельный ключ не регистрируется.
 - Экран, которого нет в реестре, — `404`, `errorKey: screen_not_registered`.
 
@@ -58,6 +58,7 @@ Query-параметры, кроме начинающихся с `_`, перед
 | `layout` | layout экрана; невидимые layout'ы (`canSee()`) и недоступные действия внутри них не сериализуются |
 | `command_bar` | `Screen::commandBar()` без действий, недоступных пользователю (`permission()` или `canSee()`) |
 | `permissions` | права экрана из `permission()`, списком |
+| `permission_mode` | `all` или `any` — `Screen::permissionMode()` |
 | `etag` | хеш `state`, `name`, `description` и `permissions` |
 
 `Layout\Listener` внутри layout'а получает первую отрисовку по стартовому состоянию прямо в этом ответе.
@@ -92,6 +93,7 @@ public function runMethod(Request $request): JsonResponse;
 | `method` | имя метода экрана (обязателен) |
 | `payload` | состояние формы; передаётся методу единственным аргументом |
 | `parameters` | массив позиционных аргументов; если передан, используется вместо `payload` |
+| `params` | объект — параметры нажатой кнопки (`Button::parameters()`); метод с двумя и более аргументами получает их вторым, после `payload`; метод с одним аргументом — нет. Если кнопок с этим методом несколько, права проверяются у той, чьи параметры пришли |
 
 Если методу нужен ровно один аргумент, а не пришло ни `payload`, ни `parameters`, ему передаётся пустой массив.
 

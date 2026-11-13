@@ -5,6 +5,135 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## 1.70.0
+
+### Added
+
+- **Several live lists on one screen.** Every `Layout::resourceIndex()` keeps
+  a state of its own — search, filters, page, sort, selection — so lists side
+  by side or in `Layout::tabs()` no longer share it. `->queryKey('orders')`
+  namespaces a list's URL keys (`?orders.q=…&orders.filter[status]=new`);
+  without it a list keeps the plain keys, so a screen with one list works and
+  links as before. A list in a closed tab loads nothing until it is opened.
+- **Tabs in the URL and in a column.** `Layout::tabs()->persistInQuery('tab')`
+  keeps the open tab in the address (`?tab=quotes`), so a link leads to a tab
+  and back/forward switch it; `->keys([...])` names the tabs (by default the
+  label made URL-safe); `->vertical()` lays the tabs out in a column on the
+  left. `defaultTab()` is now honoured by the SPA.
+- **Records in a drawer.** `Layout::resourceIndex()->rowOpen('drawer', $size)`
+  and `Resource::rowOpen()` (`'page'` by default) open a row in a panel over
+  the list — the record page's infolist, form, record actions and delete, under
+  the same permissions — instead of on its page. A save or an action reloads
+  the list; ‹ › and Alt+↑ / Alt+↓ walk to the neighbouring records across
+  pages, "Save and next" saves and opens the next one, and
+  `->nextAfterAction()` moves on by itself after every save or action — for
+  queues. The open record is kept in the URL (`?record=12`).
+- **`Layout::blockTree()`: a page builder in one window.** An editor of a
+  tree of blocks with a live preview: the structure (drag and drop within
+  the nesting rules, a palette of the types allowed at the place, duplicate,
+  delete with undo, folded nodes, marks *new* / *changed* / *not shown* /
+  *outside the rules*), the preview (the page's HTML POSTed for the current
+  tree into an iframe, reloaded after each change with the scroll kept;
+  desktop, tablet and phone widths; a click on a block selects its node, a
+  selected node is outlined and scrolled to) and the properties (the
+  block's form, drawn by the panel's own fields, with the path to it). The
+  tree is one value of the screen's state; the draft (autosave), publish
+  and discard are screen methods called through `runMethod` with the whole
+  state and guarded by their permissions. The types are
+  `BlockTree\BlockType` (root, accepted children, fields, caption source,
+  defaults, icon, thumbnail); `BlockTree::saved()`, `::conflict()` (a
+  changed fingerprint, with the differences) and `::invalid()` shape the
+  answers; `BlockTree\TreeValidator` checks a tree against the types (shape,
+  known types, nesting, depth, the fields' rules). The editor is a chunk of
+  its own in the prebuilt bundle. See
+  [Layouts Reference](docs/en/layouts-reference.md#blocktree-page-builder).
+- **Quill and TinyMCE in the prebuilt application.** `Wysiwyg::make(...)
+  ->driver('quill' | 'tinymce' | 'default', $options)` switches a field's
+  editor, now also in the prebuilt app (`public/`), so a host without a
+  frontend build can keep HTML written by Quill or TinyMCE (Orchid's fields,
+  say) in the same editor. Both engines are lazy chunks — the main bundle
+  stays the size it was.
+  - Quill 2.0.3 (BSD-3-Clause, the version Orchid 14 ships) is bundled with
+    its snow theme. It stores the editor root's innerHTML, as Orchid does,
+    loads a value without a change event, and reads markup Quill 2 has no
+    blot for (Quill 1 lists and code blocks) through its clipboard instead
+    of dropping the text. Options: `toolbar` (Orchid's group names or a Quill
+    toolbar), `modules`, `formats`, `theme`, `output` `'html'` | `'delta'`;
+    shortcuts `->output()` and `->modules()`.
+  - TinyMCE is not bundled (7.x is GPL-2.0-or-later): the field loads the
+    host's self-hosted copy by its script URL — per field (`script`) or
+    `admin.wysiwyg.tinymce.script` / `ADMIN_TINYMCE_SCRIPT` — with
+    `license_key: 'gpl'` and no API key. Options: `height`, `plugins`,
+    `toolbar`, `menubar`, `language`, `init`; shortcut `->plugins()`.
+  - The sanitizer widens its whitelist to the engine's markup (Quill's
+    `data-list` and `ql-*` classes, TinyMCE's inline styles), keeps `&nbsp;`
+    as the entity, and leaves Quill's Delta output alone.
+  - `registerWysiwygDriver()` for hosts with their own build;
+    `QuillDriver` / `TinymceDriver` from the `/quill` and `/tinymce` subpaths.
+- **A screen open with any one of its permissions.** `Screen::permissionMode()`
+  returns `'all'` (`Screen::PERMISSION_ALL`, the default — every key of
+  `permission()`) or `'any'` (`Screen::PERMISSION_ANY` — one is enough), for a
+  section screen open to whoever may reach one of its resources. The rule
+  holds everywhere the screen's access is decided: the `state`, `runMethod`
+  and `listener` middleware (`AdminAccess:a;b,any` — the middleware takes a
+  second parameter, `any`), the SPA route (the manifest and the state carry
+  `permission_mode`), the menu — auto-filled and `MenuNode::screen()` — and
+  `DashboardScreen` (its endpoints, manifest and menu). `ScreenAccess::allows()`
+  checks it in code.
+- **Button parameters.** `Button::parameters([...])` (alias `params()`) sends
+  the button's own parameters with the state as `params`; the screen method
+  gets them as its second argument — `sync(array $state, array $parameters)`.
+  A one-argument method is called as before. Among buttons sharing a method,
+  the permission of the one whose parameters came is checked.
+- **Buttons among a screen's layouts.** A `Button` in `Layout::rows()`, a
+  `Layout::columns()` cell or a block is drawn as a button and runs through
+  the screen (confirmation, overlay, method with its parameters) — rows with
+  a button each, generated by the server.
+
+- **A link to its record.** `{id}` in the address of a resource's `Link`
+  becomes the key of the record it is run on — from a row's menu, the
+  record's page or drawer (`/screens/builder?owner=page&id={id}`). A link with
+  the `header` position is also a button beside the record's edit form, the
+  way from the form to the record's other screens; server actions stay off the
+  form, where they would ignore its unsaved changes.
+
+### Fixed
+
+- **Panel routes only where they are needed.** A big panel registers about
+  fifteen named API routes per resource — on a host application they can be
+  the larger half of all its routes, built on every request of the site. An
+  HTTP request outside a panel's API prefix now skips them (the generic
+  `{version}/{controller}/{action}` route still answers); the console —
+  `route:cache`, `route:list`, tests — and requests to the panel build them
+  all as before.
+
+- **`hideAuto()` for screens.** `Admin::menu()->hideAuto()` took only
+  resources out of the auto-filled menu; it now takes a screen too, by its
+  slug or as `screen.{slug}`.
+- **A menu item led to a screen the user could not open.** The menu showed a
+  screen to a user with any one of its keys while the screen required all of
+  them; the screen's own rule now decides, on the server and in the SPA route.
+
+- **A tab given one node was blank.** `Layout::tabs(['Orders' =>
+  Layout::resourceIndex(...)])` — a live list, nested tabs or a block as the
+  tab's content — showed an empty tab: the node was replaced by its (empty)
+  list of children. Only the Rows wrapper built from a list is unwrapped now.
+- **The API under laravel-api 6.2.2.** 6.2.2 stopped putting the module
+  group on the named action routes. `AdminApiModule` puts its group —
+  request-independent, `CaptureApiRequest` + `RunVersionMiddleware` — back on
+  every named route: the panel routes had run with no session (no AdminAuth,
+  no locale), and in a long-lived process (Octane, a test suite) a host
+  version was served with the previous request's action. Nothing runs twice:
+  `RunActionMiddleware` skips what the route already carries.
+- **The audit journal needs the audit permission.** `audit/list` and
+  `audit/timeline` required only a session, so any panel user could read every
+  before/after value; they now take `admin.systems.audit.view`.
+- **A hidden tab took another tab's label.** A tab whose content the user may
+  not see was dropped, but the labels were paired by position, so the tabs
+  after it showed the wrong captions. The tab is now left out with its label.
+
 ## 1.69.2
 
 ### Changed

@@ -4,8 +4,8 @@
     "name": "index",
     "isDynamicEntry": true
   },
-  "_index-fALsZtvQ.js": {
-    "file": "assets/index-fALsZtvQ.js",
+  "_index-Wj4ERBNX.js": {
+    "file": "assets/index-Wj4ERBNX.js",
     "name": "index",
     "isDynamicEntry": true
   },
@@ -14,7 +14,7 @@
     "src": "node_modules/@dskripchenko/board/dist/style.css"
   },
   "node_modules/@dskripchenko/board/dist/vue.mjs": {
-    "file": "assets/vue-CZgQPRVp.js",
+    "file": "assets/vue-D4eCDqdb.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/board/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -27,7 +27,7 @@
     "src": "node_modules/@dskripchenko/bpmn/dist/style.css"
   },
   "node_modules/@dskripchenko/bpmn/dist/vue.mjs": {
-    "file": "assets/vue-BVOYBWrz.js",
+    "file": "assets/vue-vbtCCKw0.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -37,44 +37,44 @@
     ]
   },
   "node_modules/@dskripchenko/diagrams/dist/index.mjs": {
-    "file": "assets/index-DsaXhgpB.js",
-    "name": "index",
+    "file": "assets/dist-C9KSPnfn.js",
+    "name": "dist",
     "src": "node_modules/@dskripchenko/diagrams/dist/index.mjs",
     "isDynamicEntry": true
   },
   "node_modules/@dskripchenko/drawio/dist/index.mjs": {
-    "file": "assets/index-Dwkz28p4.js",
-    "name": "index",
+    "file": "assets/dist-Dwkz28p4.js",
+    "name": "dist",
     "src": "node_modules/@dskripchenko/drawio/dist/index.mjs",
     "isDynamicEntry": true
   },
   "node_modules/@dskripchenko/flow/dist/mermaid.mjs": {
-    "file": "assets/mermaid-CqP6TFs4.js",
+    "file": "assets/mermaid-DPSmtmlz.js",
     "name": "mermaid",
     "src": "node_modules/@dskripchenko/flow/dist/mermaid.mjs",
     "isDynamicEntry": true,
     "imports": [
-      "_index-fALsZtvQ.js",
+      "_index-Wj4ERBNX.js",
       "node_modules/@dskripchenko/diagrams/dist/index.mjs"
     ]
   },
   "node_modules/@dskripchenko/flow/dist/style.css": {
-    "file": "assets/style-DpMO58Fo.css",
+    "file": "assets/style-B5b75BTs.css",
     "src": "node_modules/@dskripchenko/flow/dist/style.css"
   },
   "node_modules/@dskripchenko/flow/dist/vue.mjs": {
-    "file": "assets/vue-D9Fdg36B.js",
+    "file": "assets/vue-Cn8yHKL4.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/flow/dist/vue.mjs",
     "isDynamicEntry": true,
     "imports": [
-      "_index-fALsZtvQ.js",
+      "_index-Wj4ERBNX.js",
       "resources/ts/app.ts"
     ]
   },
   "node_modules/@dskripchenko/markdown-editor/dist/index.mjs": {
-    "file": "assets/index-DzusCZYp.js",
-    "name": "index",
+    "file": "assets/dist-CZStaEw9.js",
+    "name": "dist",
     "src": "node_modules/@dskripchenko/markdown-editor/dist/index.mjs",
     "isDynamicEntry": true,
     "imports": [
@@ -86,11 +86,11 @@
     "src": "node_modules/@dskripchenko/markdown-editor/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/style.css": {
-    "file": "assets/style-CwI8sXEM.css",
+    "file": "assets/style-BDh8PKzT.css",
     "src": "node_modules/@dskripchenko/openapi/dist/style.css"
   },
   "node_modules/@dskripchenko/openapi/dist/vue.mjs": {
-    "file": "assets/vue-B3giQlpw.js",
+    "file": "assets/vue-CZuZTbCG.js",
     "name": "vue",
     "src": "node_modules/@dskripchenko/openapi/dist/vue.mjs",
     "isDynamicEntry": true,
@@ -99,25 +99,43 @@
     ]
   },
   "node_modules/@dskripchenko/realtime/dist/index.js": {
-    "file": "assets/index-BmdhCDbF.js",
-    "name": "index",
+    "file": "assets/dist-BmdhCDbF.js",
+    "name": "dist",
     "src": "node_modules/@dskripchenko/realtime/dist/index.js",
     "isDynamicEntry": true
   },
+  "node_modules/@dskripchenko/ui/dist/en-CrIyGvMY.js": {
+    "file": "assets/en-CrIyGvMY-Cl-eR93N.js",
+    "name": "en-CrIyGvMY",
+    "src": "node_modules/@dskripchenko/ui/dist/en-CrIyGvMY.js",
+    "isDynamicEntry": true
+  },
   "node_modules/@dskripchenko/ui/dist/hls/index.mjs": {
-    "file": "assets/index-DJj3gJE5.js",
-    "name": "index",
+    "file": "assets/hls-DJj3gJE5.js",
+    "name": "hls",
     "src": "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
     "isDynamicEntry": true
   },
+  "node_modules/@dskripchenko/ui/dist/ru-jZrEUuTu.js": {
+    "file": "assets/ru-jZrEUuTu-0bM-_aQk.js",
+    "name": "ru-jZrEUuTu",
+    "src": "node_modules/@dskripchenko/ui/dist/ru-jZrEUuTu.js",
+    "isDynamicEntry": true
+  },
+  "node_modules/quill/dist/quill.snow.css": {
+    "file": "assets/quill-Bf4bJ6eu.css",
+    "src": "node_modules/quill/dist/quill.snow.css"
+  },
   "resources/ts/app.ts": {
-    "file": "assets/app-BKTTlhK7.js",
+    "file": "assets/app-Bd3IVQqD.js",
     "name": "app",
     "src": "resources/ts/app.ts",
     "isEntry": true,
     "dynamicImports": [
       "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
       "node_modules/@dskripchenko/ui/dist/hls/index.mjs",
+      "node_modules/@dskripchenko/ui/dist/ru-jZrEUuTu.js",
+      "node_modules/@dskripchenko/ui/dist/en-CrIyGvMY.js",
       "node_modules/@dskripchenko/diagrams/dist/index.mjs",
       "_index-C9LqKgoY.js",
       "node_modules/@dskripchenko/bpmn/dist/vue.mjs",
@@ -127,11 +145,50 @@
       "node_modules/@dskripchenko/board/dist/vue.mjs",
       "node_modules/@dskripchenko/realtime/dist/index.js",
       "node_modules/@dskripchenko/flow/dist/vue.mjs",
-      "_index-fALsZtvQ.js",
-      "node_modules/@dskripchenko/flow/dist/mermaid.mjs"
+      "_index-Wj4ERBNX.js",
+      "node_modules/@dskripchenko/flow/dist/mermaid.mjs",
+      "resources/ts/components/blockTree/BlockTreeLayout.vue",
+      "resources/ts/components/fields/wysiwyg/quill/QuillDriver.vue",
+      "resources/ts/components/fields/wysiwyg/tinymce/TinymceDriver.vue"
     ],
     "css": [
-      "assets/app-g_E9KbD4.css"
+      "assets/app-Dn8hpDbv.css"
+    ]
+  },
+  "resources/ts/components/blockTree/BlockTreeLayout.vue": {
+    "file": "assets/BlockTreeLayout-kmR0-vhi.js",
+    "name": "BlockTreeLayout",
+    "src": "resources/ts/components/blockTree/BlockTreeLayout.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/ts/app.ts"
+    ],
+    "css": [
+      "assets/BlockTreeLayout-53SenDng.css"
+    ]
+  },
+  "resources/ts/components/fields/wysiwyg/quill/QuillDriver.vue": {
+    "file": "assets/QuillDriver-BL9QzLQg.js",
+    "name": "QuillDriver",
+    "src": "resources/ts/components/fields/wysiwyg/quill/QuillDriver.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/ts/app.ts"
+    ],
+    "css": [
+      "assets/QuillDriver-CirvG5YG.css"
+    ]
+  },
+  "resources/ts/components/fields/wysiwyg/tinymce/TinymceDriver.vue": {
+    "file": "assets/TinymceDriver-bl08zIpK.js",
+    "name": "TinymceDriver",
+    "src": "resources/ts/components/fields/wysiwyg/tinymce/TinymceDriver.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/ts/app.ts"
+    ],
+    "css": [
+      "assets/TinymceDriver-DGObQU6a.css"
     ]
   }
 }

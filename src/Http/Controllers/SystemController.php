@@ -12,6 +12,8 @@ use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelAdmin\Permission\RolePreview;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelAdmin\Resource\Screens\GeneratedScreen;
+use Dskripchenko\LaravelAdmin\Screen\Screen;
+use Dskripchenko\LaravelAdmin\Screen\ScreenAccess;
 use Dskripchenko\LaravelAdmin\Screen\ScreenRegistry;
 use Dskripchenko\LaravelAdmin\Support\Manifest;
 use Dskripchenko\LaravelAdmin\Widget\DashboardScreen;
@@ -179,7 +181,7 @@ final class SystemController extends ApiController
         $custom = [];
         $usedKeys = [];
         foreach ($this->menuRegistry->roots($panel) as $node) {
-            $serialized = $this->withoutForbiddenDashboards($node->toArray($this->resources, $this->screens), $panel);
+            $serialized = $this->withoutForbiddenScreens($node->toArray($this->resources, $this->screens), $panel);
             $serialized = $serialized === null ? null : self::prunedForUser($serialized);
             if ($serialized === null) {
                 continue;
@@ -194,7 +196,9 @@ final class SystemController extends ApiController
         $auto = [];
         if ($this->menuRegistry->autoFillEnabled($panel)) {
             $auto = array_values(array_filter(array_map(
-                self::prunedForUser(...),
+                fn (array $item): ?array => ($kept = $this->withoutForbiddenScreens($item, $panel)) === null
+                    ? null
+                    : self::prunedForUser($kept),
                 $this->buildAutoItems($usedKeys, $panel),
             )));
         }
@@ -203,15 +207,16 @@ final class SystemController extends ApiController
     }
 
     /**
-     * Drops, recursively, the nodes leading to a dashboard the user may not
-     * open. The SPA filters the menu by the `permissions` of each node too,
-     * but a dashboard's own rule — every permission of
-     * DashboardScreen::permission() — is applied here, where it is defined.
+     * Drops, recursively, the nodes leading to a dashboard or a screen the
+     * user may not open. The SPA filters the menu by the `permissions` of each
+     * node with ANY semantics, but a screen's own rule — every key of
+     * permission(), or one of them with permissionMode() 'any' — is applied
+     * here, where it is defined: an item never leads to a 403.
      *
      * @param  array<string, mixed>  $node
      * @return array<string, mixed>|null
      */
-    private function withoutForbiddenDashboards(array $node, string $panel): ?array
+    private function withoutForbiddenScreens(array $node, string $panel): ?array
     {
         $url = $node['url'] ?? null;
         if (is_string($url) && str_starts_with($url, '/dashboard/')) {
@@ -223,12 +228,25 @@ final class SystemController extends ApiController
                     return null;
                 }
             }
+        } elseif (is_string($url) && str_starts_with($url, '/screens/')) {
+            $slug = substr($url, strlen('/screens/'));
+            $class = $this->screens->all($panel)[$slug] ?? null;
+            if ($class !== null && ! is_subclass_of($class, GeneratedScreen::class)) {
+                try {
+                    $screen = app($class);
+                } catch (\Throwable) {
+                    $screen = null;
+                }
+                if ($screen instanceof Screen && ! ScreenAccess::allows($screen)) {
+                    return null;
+                }
+            }
         }
 
         if (is_array($node['children'] ?? null)) {
             $children = [];
             foreach ($node['children'] as $child) {
-                $kept = is_array($child) ? $this->withoutForbiddenDashboards($child, $panel) : $child;
+                $kept = is_array($child) ? $this->withoutForbiddenScreens($child, $panel) : $child;
                 if ($kept !== null) {
                     $children[] = $kept;
                 }
@@ -347,7 +365,8 @@ final class SystemController extends ApiController
         }
 
         foreach ($this->screens->all($panel) as $slug => $class) {
-            if (isset($used['screen.'.$slug])) {
+            // hideAuto() takes a screen by its slug or as `screen.{slug}`.
+            if (isset($used['screen.'.$slug]) || isset($hidden[$slug]) || isset($hidden['screen.'.$slug])) {
                 continue;
             }
             if (is_subclass_of($class, GeneratedScreen::class)) {
@@ -361,16 +380,11 @@ final class SystemController extends ApiController
                 if ($screen === null) {
                     continue;
                 }
-                $permission = $screen->permission();
+                $permissions = ScreenAccess::keys($screen);
                 $label = $screen->name();
             } catch (\Throwable) {
                 continue;
             }
-            $permissions = match (true) {
-                $permission === null => [],
-                is_string($permission) => [$permission],
-                default => $permission,
-            };
             $items[] = [
                 'key' => 'screen.'.$slug,
                 'label' => $label,

@@ -24,10 +24,16 @@ use Illuminate\Support\Str;
  *
  * Subclasses override the abstract `query()` and `layout()`. The reserved
  * names, which cannot serve as command methods, are: query, layout, name,
- * description, permission, commandBar, compile and slug.
+ * description, permission, permissionMode, commandBar, compile and slug.
  */
 abstract class Screen
 {
+    /** permissionMode(): every key of permission() is required. */
+    public const PERMISSION_ALL = 'all';
+
+    /** permissionMode(): one key of permission() is enough. */
+    public const PERMISSION_ANY = 'any';
+
     /** @var list<string> The method names that cannot be used as commands. */
     private const RESERVED_METHODS = [
         'query',
@@ -36,6 +42,7 @@ abstract class Screen
         'description',
         'translatesName',
         'permission',
+        'permissionMode',
         'commandBar',
         'compile',
         'slug',
@@ -79,14 +86,28 @@ abstract class Screen
     }
 
     /**
-     * The permission keys. null means authentication alone is enough; an
-     * array means every listed permission is required.
+     * The permission keys. null means authentication alone is enough; a list
+     * is read by permissionMode(): every key by default, or any one of them.
      *
      * @return list<string>|string|null
      */
     public function permission(): array|string|null
     {
         return null;
+    }
+
+    /**
+     * How the keys of permission() combine: Screen::PERMISSION_ALL ('all',
+     * the default) requires every one, Screen::PERMISSION_ANY ('any') lets in
+     * a user who holds at least one — a section screen open to whoever may
+     * work with any of its parts. The rule guards the state, runMethod and
+     * listener endpoints, the screen's route in the SPA and its menu items.
+     *
+     * @return 'all'|'any'
+     */
+    public function permissionMode(): string
+    {
+        return self::PERMISSION_ALL;
     }
 
     /**
@@ -154,6 +175,7 @@ abstract class Screen
      *     layout: list<array<string, mixed>>,
      *     command_bar: list<array<string, mixed>>,
      *     permissions: list<string>,
+     *     permission_mode: 'all'|'any',
      *     etag: string
      * }
      */
@@ -183,6 +205,7 @@ abstract class Screen
                 array_values(array_filter($this->commandBar(), static fn (Action $a): bool => $a->isVisible())),
             ),
             'permissions' => self::normalizePermissions($this->permission()),
+            'permission_mode' => ScreenAccess::mode($this),
         ];
 
         $payload['etag'] = self::buildEtag([

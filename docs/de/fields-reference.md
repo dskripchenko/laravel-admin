@@ -159,6 +159,33 @@ import { QuillField } from '@dskripchenko/laravel-admin/quill'
 registerField('wysiwyg', QuillField)
 ```
 
+#### Engines: Quill und TinyMCE im vorgefertigten Build
+
+`->driver('quill' | 'tinymce' | 'default', $options)` schaltet das Feld auf
+einen anderen Editor um — auch im vorgefertigten Build (`public/`). Beide
+Engines sind Lazy-Chunks; das Haupt-Bundle wächst nicht.
+
+```php
+Wysiwyg::make('answer')->driver('quill', ['toolbar' => ['text', 'list'], 'output' => 'html']),
+Wysiwyg::make('text')->driver('tinymce', [
+    'script' => '/js/tinymce/tinymce.min.js', 'height' => 400,
+    'plugins' => 'lists link code', 'toolbar' => 'bold italic | link | code',
+]),
+```
+
+- **Quill** 2.0.3 (BSD-3-Clause, dieselbe Version wie Orchid 14) ist
+  enthalten; das HTML ist das `innerHTML` der Editor-Wurzel wie bei Orchid,
+  ein Wert wird ohne Änderungsereignis geladen. Optionen: `toolbar`
+  (Orchid-Gruppen oder Quill-Toolbar), `modules`, `formats`, `theme`,
+  `output` `'html'` | `'delta'`.
+- **TinyMCE** ist nicht enthalten (7.x: GPL-2.0-or-later, das Paket ist MIT):
+  der Host liefert eine selbst gehostete Kopie und nennt das Skript im Feld
+  (`script`) oder in `admin.wysiwyg.tinymce.script`; gestartet mit
+  `license_key: 'gpl'`. Optionen: `height`, `plugins`, `toolbar`, `menubar`,
+  `language`, `init`.
+- Der Sanitizer erweitert seine Whitelist auf das Markup der Engine.
+- Eigener Build: `registerWysiwygDriver('quill', () => import('@dskripchenko/laravel-admin/quill').then(m => m.QuillDriver))`.
+
 ## Auswahl
 
 ### Select

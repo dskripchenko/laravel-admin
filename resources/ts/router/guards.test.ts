@@ -115,6 +115,17 @@ describe('createAuthGuard', () => {
     expect(result).toBe(true)
   })
 
+  it('requires every key with permissionMode all', () => {
+    const auth = useAuthStore()
+    auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['admin.users.view'] }))
+    const guard = createAuthGuard()
+    const meta = { requiresAuth: true, permissions: ['admin.users.view', 'admin.posts.view'] }
+    expect(guard(mkRoute({ meta: { ...meta, permissionMode: 'all' } }), mkRoute(), () => undefined))
+      .toEqual({ name: 'admin.forbidden' })
+    expect(guard(mkRoute({ meta: { ...meta, permissionMode: 'any' } }), mkRoute(), () => undefined))
+      .toBe(true)
+  })
+
   it('respects wildcard permissions', () => {
     const auth = useAuthStore()
     auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['*'] }))

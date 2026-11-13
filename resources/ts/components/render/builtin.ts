@@ -7,7 +7,7 @@
  *     registerBuiltinComponents()
  */
 
-import { defineComponent, h } from 'vue'
+import { defineAsyncComponent, defineComponent, h } from 'vue'
 import { hasField, hasLayout, registerField, registerLayout } from './registry'
 import TextField from '../fields/TextField.vue'
 import SlugField from '../fields/SlugField.vue'
@@ -239,6 +239,9 @@ export function registerBuiltinComponents(): void {
       // Markup the kit draws and edits — `Layout::kanban(...)`, `calendar`.
       kanban: KanbanLayout,
       calendar: CalendarLayout,
+      // `Layout::blockTree('content')` — the block tree editor with a live
+      // preview; a chunk of its own, loaded when a screen first draws one.
+      block_tree: defineAsyncComponent(() => import('../blockTree/BlockTreeLayout.vue')),
       // `Layout::listener([...])->listen([...])` — re-rendered by the server
       // as the watched fields change.
       listener: ListenerLayout,

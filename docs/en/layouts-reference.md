@@ -35,6 +35,7 @@ compose to arbitrary depth.
 | `AsyncApi` | `Layout::asyncapi('spec')` | AsyncAPI reference: servers, channels, operations, messages |
 | `Kanban` | `Layout::kanban('board')` | Kanban board written as markup, editable through a screen method |
 | `Calendar` | `Layout::calendar('schedule')` | Event calendar with repeats, written as markup, editable through a screen method |
+| `BlockTree` | `Layout::blockTree('content')` | Page builder: a tree of blocks with a live preview, drafts and publishing through screen methods |
 | `Board` | `Layout::board()->endpoint('/boards/42')` | Collaborative board edited by several people at once; storage from `laravel-admin-board` |
 | `Video` | `Layout::video('/media/intro.mp4')` | Video player: qualities, HLS, subtitles, chapters, thumbnails |
 | `Audio` | `Layout::audio([...])` | Audio player: one track or a playlist, waveform, mini variant |
@@ -93,8 +94,37 @@ Tabs::make([
 ]),
 ```
 
-Active-tab state is local to the page; switching doesn't lose form
-state.
+By default the active tab is local to the page; switching doesn't lose form
+state. A tab that is not open is not rendered, so what it holds — a live
+resource list, say — loads only when the tab is opened. A tab whose content
+the user may not see (a list without the `view` permission) is left out
+whole, label included.
+
+| Method | What it does |
+|---|---|
+| `defaultTab(1)` | The tab open at first (zero-based) |
+| `persistInQuery('tab')` | Keeps the open tab in the URL: `?tab=quotes` — a link leads to the tab, back and forward switch it |
+| `keys(['contracts', 'quotes'])` | The tabs' names in the URL, in order; without them the label made URL-safe (`Договоры` → `dogovory`), a repeat gets a `-2` suffix |
+| `vertical()` | Tabs in a column on the left, the open one beside it (a row again on a narrow screen) |
+
+```php
+// A product section: the tab in the URL, a live list in each tab.
+Layout::tabs([
+    'Contracts' => Layout::resourceIndex(ContractResource::class)->queryKey('contracts'),
+    'Quotes'    => Layout::resourceIndex(QuoteResource::class)->queryKey('quotes'),
+    'Programs'  => Layout::resourceIndex(ProgramResource::class)->queryKey('programs'),
+])->persistInQuery('tab')->keys(['contracts', 'quotes', 'programs']),
+
+// One screen for small dictionaries: the list on the left, the table on the right.
+Layout::tabs([
+    'Currencies' => Layout::resourceIndex(CurrencyResource::class)->queryKey('currencies'),
+    'Countries'  => Layout::resourceIndex(CountryResource::class)->queryKey('countries'),
+    'Banks'      => Layout::resourceIndex(BankResource::class)->queryKey('banks'),
+])->vertical()->persistInQuery('dict'),
+```
+
+The link `/admin/screens/product?tab=quotes&quotes.filter[status]=new` opens
+the Quotes tab with its list filtered by status.
 
 ### Wizard (multi-step form)
 
@@ -427,8 +457,47 @@ public function layout(): array
 The very list page of the resource — search, filters, sorting, row and bulk
 actions, inline edits, reordering, trash, or the tree of a hierarchical
 resource — embedded into a screen. A row click opens the record, as on the
-list page. Hidden from a user without the resource's `view` permission. One
-per screen: the list's state is shared.
+list page. Hidden from a user without the resource's `view` permission.
+
+**Several lists on a screen.** Each `resourceIndex` has a state of its own —
+search, filters, page, sort, selection — so lists side by side (`Columns`) or
+in `Tabs` do not disturb one another. To keep the URL apart as well, give each
+a `queryKey()`: its URL keys get a prefix
+(`?orders.q=…&orders.page=2&orders.filter[status]=new&orders.view=kanban`).
+Without `queryKey()` a list writes the plain keys (`?q=`, `?page=`,
+`?filter[…]=`) — exactly as before, when a screen had one list; two such lists
+on a screen would share the URL, so every list but one at most needs a key. A
+list in a closed tab loads nothing until the tab is opened, and back on its
+tab it shows its rows and selection at once.
+
+| Method | What it does |
+|---|---|
+| `title('…')` | The heading above the table instead of the resource's label |
+| `initialView('kanban')` | The view to open with: `list`, `kanban`, `calendar` |
+| `queryKey('orders')` | The namespace of the list's URL keys (letters, digits, `_`, `-`) |
+| `rowOpen('drawer', 'lg')` | A row opens in a drawer over the list (`'page'` — on the record's page). The second argument is the width: `sm`, `md`, `lg` (default), `xl` or a CSS length |
+| `nextAfterAction()` | After a save or an action in the drawer, go straight to the next record (implies `rowOpen('drawer')` when no mode is set) |
+
+**The record in a drawer.** With `rowOpen('drawer')` (or `Resource::rowOpen()`
+returning `'drawer'` — then on the resource's list page too) a row click, the
+eye and the pencil open the record in a panel on the right, without leaving
+the page. The panel is made of the record page's parts: the view (`infolist`),
+the form (`fields`), the resource's record actions, delete; the same
+endpoints and the same permissions (`view` to look, `update` to edit, checked
+on the server as well). A save, an action or a delete reloads the list. ‹ › in
+the panel's header and **Alt+↑ / Alt+↓** move to the previous and next record,
+across the list's pages; "Save and next" saves and opens the next one. When a
+record leaves a filtered list after an action (a moderation queue), the next
+record is the one that took its place. The open record is kept in the URL
+(`?record=12`, `?orders.record=12` for a named list), so it can be linked.
+
+```php
+// A review queue: approve — and on to the next one.
+Layout::resourceIndex(ReviewResource::class)
+    ->queryKey('reviews')
+    ->rowOpen('drawer', 'xl')
+    ->nextAfterAction(),
+```
 
 `initialView('kanban')` (or `'calendar'`, `'list'`) opens it on that view of
 the resource — see [Kanban and calendar views](concepts/resources.md#kanban-and-calendar-views);
@@ -928,6 +997,219 @@ server refuses is dropped with a message), shares cursors through
 When the board has moved past what the server still logs, the editor loads it
 afresh. The same board on a dashboard is `Widget\BoardWidget`
 ([Widgets](concepts/widgets-and-dashboards.md#board)).
+
+### BlockTree (page builder)
+
+`Layout::blockTree('content')` is an editor of a tree of blocks with a live
+preview — the base of a page builder, in one window. Three panes:
+
+- **structure** — the tree on its full depth: drag and drop within the
+  nesting rules (a drop is offered only where the dragged block may stand),
+  a palette of the types allowed at the place (with search, groups,
+  descriptions and thumbnails), duplicate with the children, delete with
+  undo, folded nodes, and marks: *new*, *changed*, *not shown* on the site,
+  *outside the rules*, *unknown type*, the number of errors;
+- **preview** — the page's HTML for the current tree in an iframe, reloaded
+  a while after each change with the scroll kept; desktop, tablet and phone
+  widths; a click on a block selects its node, a selected node is outlined
+  and scrolled to;
+- **properties** — the selected block's form, drawn by the panel's own
+  fields, and the path to it; a step of the path selects that parent.
+
+Below: the draft's state ("Draft saved 12:41 · changes: 3"), **Discard** and
+**Publish**. The draft is saved by a screen method a while after each change.
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Input;
+use Dskripchenko\LaravelAdmin\Field\Textarea;
+use Dskripchenko\LaravelAdmin\Layout\BlockTree;
+use Dskripchenko\LaravelAdmin\Layout\BlockTree\BlockType;
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Screen\Screen;
+
+final class PageContentScreen extends Screen
+{
+    public function name(): string
+    {
+        return 'Page content';
+    }
+
+    public function query(mixed ...$params): array
+    {
+        $page = Page::findOrFail($params[0] ?? request('page'));
+        $published = PageTree::load($page);           // [{ref, type, data, children, meta}, ...]
+        $draft = PageDraft::for($page);               // null when there is none
+
+        return ['content' => [
+            'nodes' => $draft?->nodes ?? $published,
+            'published' => $draft ? $published : null, // the marks count against it
+            'fingerprint' => PageTree::fingerprint($published),
+            'savedAt' => $draft?->updated_at?->toIso8601String(),
+            'previewUrl' => route('pages.preview', $page, false),
+            'page' => $page->getKey(),
+        ]];
+    }
+
+    public function layout(): array
+    {
+        return [$this->editor()];
+    }
+
+    public function saveDraft(array $state): array
+    {
+        $content = $state['content'];
+        $this->editor()->validator()->validate($content['nodes'], 'content.nodes', data: false);
+        PageDraft::store($content['page'], $content['nodes'], $content['fingerprint']);
+
+        return BlockTree::saved();
+    }
+
+    public function publish(array $state): array
+    {
+        $content = $state['content'];
+        $page = Page::findOrFail($content['page']);
+        $published = PageTree::load($page);
+        if (PageTree::fingerprint($published) !== $content['fingerprint']) {
+            return BlockTree::conflict(
+                'The page was changed after you began editing',
+                PageTree::differences($published, $content['nodes']),   // ['Hero: title', ...]
+            );
+        }
+        if ($errors = $this->editor()->validator()->errors($content['nodes'])) {
+            return BlockTree::invalid($errors);
+        }
+        PageTree::publish($page, $content['nodes']);
+        PageDraft::forget($page);
+
+        return BlockTree::saved($this->query($page->getKey())['content'], 'Published');
+    }
+
+    public function discardDraft(array $state): array
+    {
+        PageDraft::forget($state['content']['page']);
+
+        return BlockTree::saved($this->query($state['content']['page'])['content']);
+    }
+
+    private function editor(): BlockTree
+    {
+        return Layout::blockTree('content')
+            ->types([
+                BlockType::make('hero', 'Hero')->icon('image')->root()->titleFrom('title')->fields([
+                    Input::make('title')->title('Title')->required()->rules(['max:120']),
+                    Textarea::make('lead')->title('Lead'),
+                ]),
+                BlockType::make('columns', 'Columns')->icon('columns')->root()->accepts(['text', 'button']),
+                BlockType::make('text', 'Text')->root()->accepts(['button'])->titleFrom('body')->fields([
+                    Textarea::make('body')->title('Text'),
+                ]),
+                BlockType::make('button', 'Button')->titleFrom('caption')->defaults(['style' => 'primary'])->fields([
+                    Input::make('caption')->title('Caption'),
+                    Input::make('url')->title('Link'),
+                ]),
+            ])
+            ->preview('/admin-builder/preview')         // the value's previewUrl replaces it per page
+            ->draft('saveDraft', permission: 'pages.edit')
+            ->publish('publish', permission: 'pages.publish')
+            ->discard('discardDraft', permission: 'pages.edit')
+            ->maxDepth(4)
+            ->height('calc(100vh - 200px)');
+    }
+}
+```
+
+**The value** — one JSON structure in the screen's state, so the methods get
+it with the rest of the state, and a button of the screen sees it too:
+
+| Key | Meaning |
+|---|---|
+| `nodes` | The tree: `[{ref, type, data, children, meta?}]`. `ref` is the id of an existing block or a temporary `new-…` one the panel gives a new block (and each block of a duplicate); `data` holds the values of the type's fields; `meta` is the server's and is kept as is: `title` (the caption when the type has no `titleFrom`), `rendersOnSite: false` (the *not shown* mark) |
+| `fingerprint` | Of the published state the editing began from; the publish method compares it |
+| `published` | The published nodes when `nodes` is a draft: the *new* / *changed* marks and the number of changes count against them (else against the value as loaded) |
+| `savedAt` | When the draft was saved, for the bar |
+| `previewUrl` | Replaces `preview()` for this record |
+
+**The types** — `BlockType::make($type, $label)`, or an array of the same keys
+(`BlockType::fromArray`, `->types([...arrays])`) when a schema class of the
+host already describes them:
+
+| Method | Effect |
+|---|---|
+| `root(bool = true)` | May stand at the top level (or list them with the layout's `rootTypes([...])`) |
+| `accepts([...types])` | The types allowed inside; none — a leaf |
+| `fields([...])` | The form of the properties: the panel's ordinary fields. Their names are the keys of `data`; their rules are what the validator checks |
+| `titleFrom('key' \| [...])` | The node's caption: the first non-empty of these data keys, without tags |
+| `defaults([...])` | The data of a new block (the fields' `default()` fill the rest) |
+| `icon()`, `description()`, `group()`, `thumbnail($url)` | The palette |
+| `rendersOnSite(false)` | The site does not draw the type: marked *not shown* |
+
+**The layout**:
+
+| Method | Effect |
+|---|---|
+| `types([...])`, `rootTypes([...])` | The types, and the top-level ones instead of those marked `root()` |
+| `preview(string $url, array $params = [])` | The preview's address: a path of the panel's site or a URL of the same origin |
+| `markerAttribute('data-builder-ref')` | The attribute that marks a block in the preview's HTML |
+| `draft($method, ?$permission)` | Autosave through this screen method |
+| `publish($method, ?$permission)` | The **Publish** button |
+| `discard($method, ?$permission)` | The **Discard** button, after a confirmation; without it the tree returns to `published` in the panel |
+| `maxDepth(int)` | The deepest a block may stand; 1 — the top level only |
+| `autosave(int $ms)` | The pause before the draft is saved; 1500 by default, 0 — no autosave |
+| `previewDelay(int $ms)` | The pause before the preview reloads; 700 by default |
+| `title()`, `height()` | A caption; the height (`calc(100vh - 220px)` by default) |
+| `validator()` | A `TreeValidator` of these types, root types and depth |
+
+**The methods** are the screen's own, called through its `runMethod` with the
+whole state as the single argument (`array $state`), like a button. Each one
+the layout names is declared for the server: the layout's visibility and the
+method's permission guard it; without the draft and publish methods (or
+their permissions) the editor is read-only. A method answers with:
+
+- `BlockTree::saved(?array $value = null, ?string $message = null)` — saved;
+  with `$value` the editor goes on from it (after publish or discard);
+- `BlockTree::conflict($message, $differences, ?$fingerprint)` — the
+  published state changed since the editing began: nothing is published, the
+  editor shows the message and the differences (strings or
+  `['ref' => …, 'label' => …, 'change' => …]`);
+- `BlockTree::invalid($errors)` — the validator's errors: the nodes get an
+  error mark, the fields their messages. A `ValidationException` keyed by the
+  tree's path (`content.nodes.1.children.0.data.title`, as
+  `TreeValidator::validate($nodes, 'content.nodes')` throws it) is shown the
+  same way;
+- `ActionFailedException` — a refusal, shown in a toast.
+
+**The validator** — `TreeValidator::errors($nodes, bool $data = true)` checks
+the shape (a list of objects, a scalar `ref` unique in the tree, `data` an
+object, `children` a list), the types (known ones only), the nesting (root
+types at the top, accepted types inside, `maxDepth`) and, unless
+`$data: false`, the data by the fields' rules. Each problem is
+`['ref' => …, 'path' => '1.children.0', 'field' => 'title' | null, 'message' => …]`;
+`passes()` and `validate($nodes, $key)` (a `ValidationException`) wrap it.
+
+**The preview protocol**:
+
+1. *Request.* `POST {previewUrl}` with the JSON body
+   `{"nodes": [...], ...previewParams}`, the panel's session cookie and its
+   CSRF header (`X-XSRF-TOKEN` from the cookie, else `X-CSRF-TOKEN` from the
+   page's meta) — a route under the `web` middleware accepts it. Same origin
+   only.
+2. *Answer.* The page's HTML (`text/html`). The panel shows it from a `blob:`
+   address of its own origin with a `<base href>` of the site added, so the
+   page's scripts run and its relative addresses resolve. Answer with
+   `Cache-Control: no-store` and `X-Robots-Tag: noindex`.
+3. *Markers.* Wrap each block into an element carrying the node's ref:
+   `<div data-builder-ref="15" style="display: contents">…</div>`. The panel
+   reads the markers itself: a click inside one selects the node (the page's
+   own handler of that click does not run), the selected block is outlined
+   and scrolled to.
+4. *Messages* (optional, for a page with its own script): the page posts
+   `{type: 'builder:select', ref}` to `window.parent` (target origin — its
+   own `location.origin`) to select a node; the panel posts
+   `{type: 'builder:highlight', ref}` to the page when a node is selected
+   (`ref: null` — none).
+
+The editor is a chunk of its own in the prebuilt bundle, loaded the first
+time a screen draws one.
 
 ### Video and Audio (media players)
 

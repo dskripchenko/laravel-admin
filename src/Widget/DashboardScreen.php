@@ -146,11 +146,17 @@ abstract class DashboardScreen extends Screen
 
     /**
      * Tells whether the user — the current one by default — may open this
-     * dashboard. Every permission of permission() is required.
+     * dashboard: every permission of permission(), or one of them with
+     * permissionMode() 'any'.
      */
     public function canAccess(?Model $user = null): bool
     {
-        return self::allows($this->permission(), $user ?? $this->currentUser());
+        $user ??= $this->currentUser();
+        if (\Dskripchenko\LaravelAdmin\Screen\ScreenAccess::mode($this) === self::PERMISSION_ANY) {
+            return \Dskripchenko\LaravelAdmin\Permission\PermissionCheck::allowsAny($this->permission(), $user);
+        }
+
+        return self::allows($this->permission(), $user);
     }
 
     /**
@@ -232,6 +238,7 @@ abstract class DashboardScreen extends Screen
             'label' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->name() ?? $slug),
             'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->description()),
             'permission' => $this->permission(),
+            'permission_mode' => \Dskripchenko\LaravelAdmin\Screen\ScreenAccess::mode($this),
             'periods' => $this->effectivePeriods(),
             'period' => $this->defaultPeriod(),
             'widgets' => $widgets,

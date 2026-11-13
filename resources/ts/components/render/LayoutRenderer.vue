@@ -9,15 +9,19 @@
  * For compatibility with older JSON that carries no `kind`: a type found in
  * the field registry counts as a field, one found in the layout registry as a
  * layout, and anything else falls back to UnknownField.
+ *
+ * A node of `kind: 'action'` — a Button among a screen's layouts — is drawn by
+ * LayoutAction, which hands a click to the screen.
  */
 import { computed } from 'vue'
 import { getField, getLayout } from './registry'
 import FieldRenderer, { type FieldNode } from './FieldRenderer.vue'
 import UnknownField from '../fields/UnknownField.vue'
+import LayoutAction from './LayoutAction.vue'
 
 export interface LayoutNode extends Record<string, unknown> {
   type: string
-  kind?: 'field' | 'layout'
+  kind?: 'field' | 'layout' | 'action'
   items?: LayoutNode[]
 }
 
@@ -29,10 +33,14 @@ const props = defineProps<Props>()
 type Resolved =
   | { kind: 'field' }
   | { kind: 'layout'; component: ReturnType<typeof getLayout> }
+  | { kind: 'action' }
   | { kind: 'unknown' }
 
 const resolved = computed<Resolved>(() => {
   // An explicit `kind` always wins.
+  if (props.node.kind === 'action') {
+    return { kind: 'action' }
+  }
   if (props.node.kind === 'field') {
     return { kind: 'field' }
   }
@@ -84,5 +92,6 @@ const fieldNode = computed<FieldNode>(() => props.node as unknown as FieldNode)
     v-bind="layoutProps"
   />
   <FieldRenderer v-else-if="resolved.kind === 'field'" :node="fieldNode" />
+  <LayoutAction v-else-if="resolved.kind === 'action'" :node="node" />
   <UnknownField v-else :type="node.type" :name="(node.name as string | undefined)" />
 </template>

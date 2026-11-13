@@ -134,9 +134,10 @@ Middleware `AdminAccess` принимает одно или несколько �
 ```php
 'middleware' => [AdminAccess::class.':admin.users.view'],
 'middleware' => [AdminAccess::class.':admin.users.view;admin.users.update'],  // AND
+'middleware' => [AdminAccess::class.':admin.orders.view;admin.quotes.view,any'],  // OR
 ```
 
-Для семантики OR проверяйте права явно внутри обработчика.
+Второй параметр `any` делает достаточным одно из перечисленных прав.
 
 ## Screens
 
@@ -152,6 +153,20 @@ public function permission(): array|string|null
 Эндпоинты `state` (GET), `runMethod` и `listener` (POST) закрываются
 автоматически. `null` (по умолчанию) означает, что достаточно
 аутентификации.
+
+Экран, которому достаточно **одного** из ключей (раздел продукта, открытый
+тому, у кого есть доступ хотя бы к одному его ресурсу), объявляет режим:
+
+```php
+public function permissionMode(): string
+{
+    return self::PERMISSION_ANY;   // OR; по умолчанию self::PERMISSION_ALL — AND
+}
+```
+
+Режим соблюдается в middleware эндпоинтов, в маршруте SPA, в меню (авто и
+`MenuNode::screen()`) и у `DashboardScreen`. В коде то же правило
+проверяет `ScreenAccess::allows($screen, $user)`.
 
 ## Settings
 

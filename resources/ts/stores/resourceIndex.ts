@@ -13,10 +13,17 @@
  * One store instance is reused across the resource pages through
  * `useResourceIndexStore(slug)` with an explicit `setSlug`, which gives a
  * clean reset between resources.
+ *
+ * A list embedded into a screen (Layout::resourceIndex()) gets an instance of
+ * its own through `resourceIndexStoreFor(key)`, so several lists on one
+ * screen — side by side or in tabs — keep their search, filters, page, sort
+ * and selection apart. The page provides its instance to the kanban and
+ * calendar views below it (`provideResourceIndexStore` /
+ * `injectResourceIndexStore`).
  */
 
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, inject, provide, ref, type InjectionKey } from 'vue'
 import { getAdminClient } from './registry'
 
 export interface IndexMeta {
@@ -44,7 +51,7 @@ interface ListResponse {
 
 const DEFAULT_META: IndexMeta = { page: 1, per_page: 20, total: 0, last_page: 1 }
 
-export const useResourceIndexStore = defineStore('admin-resource-index', () => {
+function resourceIndexSetup() {
   /** The current resource slug: urls, users, posts and so on. */
   const slug = ref<string | null>(null)
 
@@ -130,6 +137,20 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     selection.value = new Set()
   }
 
+  /**
+   * Back to the plain list — no search, filters, sort, view, first page —
+   * keeping the rows and the selection. A list on a screen starts from this
+   * before reading its URL keys, so the address alone says what it shows.
+   */
+  function resetQueryState(): void {
+    search.value = ''
+    filters.value = {}
+    sortKey.value = null
+    sortDirection.value = null
+    view.value = null
+    meta.value = { ...meta.value, page: 1 }
+  }
+
   function buildParams(override: IndexParams = {}): Record<string, unknown> {
     const params: Record<string, unknown> = {
       page: override.page ?? meta.value.page,
@@ -174,57 +195,61 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
    * The list's state as a URL query — `q`, `sort` (`-column` for descending),
    * `page`, `filter[name]`, `view` — so a filtered list can be linked, bookmarked and
    * kept across a reload. Arrays become comma lists, as the request sends them.
+   *
+   * `prefix` namespaces the keys of one list among several on a screen
+   * (`orders.q`, `orders.filter[status]`); empty, they are the plain ones.
    */
-  function toQuery(): Record<string, string> {
+  function toQuery(prefix: string = ''): Record<string, string> {
     const query: Record<string, string> = {}
-    if (search.value) query.q = search.value
+    if (search.value) query[`${prefix}q`] = search.value
     if (sortKey.value && sortDirection.value !== null) {
-      query.sort = (sortDirection.value === 'desc' ? '-' : '') + sortKey.value
+      query[`${prefix}sort`] = (sortDirection.value === 'desc' ? '-' : '') + sortKey.value
     }
-    if (meta.value.page > 1) query.page = String(meta.value.page)
-    if (view.value !== null) query.view = view.value
+    if (meta.value.page > 1) query[`${prefix}page`] = String(meta.value.page)
+    if (view.value !== null) query[`${prefix}view`] = view.value
     for (const [k, v] of Object.entries(filters.value)) {
       if (v === null || v === undefined || v === '') continue
-      query[`filter[${k}]`] = Array.isArray(v) ? v.join(',') : String(v)
+      query[`${prefix}filter[${k}]`] = Array.isArray(v) ? v.join(',') : String(v)
     }
     return query
   }
 
   /**
-   * Takes the state from a URL query written by toQuery(); what it does not
-   * know is ignored. Returns whether anything was set.
+   * Takes the state from a URL query written by toQuery() with the same
+   * prefix; what it does not know is ignored. Returns whether anything was set.
    */
-  function fromQuery(query: Record<string, unknown>): boolean {
+  function fromQuery(query: Record<string, unknown>, prefix: string = ''): boolean {
     const first = (v: unknown): string | null => {
       const x = Array.isArray(v) ? v[0] : v
       return typeof x === 'string' && x !== '' ? x : null
     }
     let touched = false
-    const q = first(query.q)
+    const q = first(query[`${prefix}q`])
     if (q !== null) {
       search.value = q
       touched = true
     }
-    const sort = first(query.sort)
+    const sort = first(query[`${prefix}sort`])
     if (sort !== null) {
       const desc = sort.startsWith('-')
       sortKey.value = desc ? sort.slice(1) : sort
       sortDirection.value = desc ? 'desc' : 'asc'
       touched = true
     }
-    const v = first(query.view)
+    const v = first(query[`${prefix}view`])
     if (v !== null) {
       view.value = v
       touched = true
     }
-    const page = Number(first(query.page))
+    const page = Number(first(query[`${prefix}page`]))
     if (Number.isInteger(page) && page > 1) {
       meta.value = { ...meta.value, page }
       touched = true
     }
     const next: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(query)) {
-      const m = /^filter\[(.+)\]$/.exec(key)
+      if (!key.startsWith(`${prefix}filter[`)) continue
+      const m = /^filter\[(.+)\]$/.exec(key.slice(prefix.length))
       const v = first(value)
       if (m && v !== null) next[m[1]] = v
     }
@@ -374,6 +399,7 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     // actions
     setSlug,
     reset,
+    resetQueryState,
     load,
     queryParams,
     toQuery,
@@ -390,4 +416,37 @@ export const useResourceIndexStore = defineStore('admin-resource-index', () => {
     isSelected,
     rowId,
   }
-})
+}
+
+export const useResourceIndexStore = defineStore('admin-resource-index', resourceIndexSetup)
+
+export type ResourceIndexStore = ReturnType<typeof useResourceIndexStore>
+
+const keyedStores = new Map<string, () => ResourceIndexStore>()
+
+/**
+ * The index state of one list among several: an instance per `key`, apart
+ * from the resource pages' shared one. A null key is that shared one.
+ */
+export function resourceIndexStoreFor(key: string | null | undefined): ResourceIndexStore {
+  if (key === null || key === undefined || key === '') return useResourceIndexStore()
+  let use = keyedStores.get(key)
+  if (!use) {
+    use = defineStore(`admin-resource-index:${key}`, resourceIndexSetup) as unknown as () => ResourceIndexStore
+    keyedStores.set(key, use)
+  }
+  return use()
+}
+
+const RESOURCE_INDEX_STORE: InjectionKey<ResourceIndexStore> = Symbol('admin-resource-index-store')
+
+/** Hands the page's index state down to its kanban and calendar views. */
+export function provideResourceIndexStore(store: ResourceIndexStore): void {
+  provide(RESOURCE_INDEX_STORE, store)
+}
+
+/** The index state of the page above; the shared one outside a page. */
+export function injectResourceIndexStore(): ResourceIndexStore {
+  return inject(RESOURCE_INDEX_STORE, null) ?? useResourceIndexStore()
+}
+

@@ -15,8 +15,8 @@ share one normalized response shape.
 
 | Class | `type()` | Use |
 |---|---|---|
-| `Button` | `button` | Default. Single click → POST `{method, payload}`. |
-| `Link` | `link` | External or internal href, no controller call. |
+| `Button` | `button` | Default. Single click → POST `{method, payload}`; with `->parameters([...])` also `params`, the screen method's second argument (see [Screens](screens.md#button-parameters)). |
+| `Link` | `link` | External or internal href, no controller call. Among a resource's actions `{id}` in the href becomes the record's key (row, record page, drawer; with the `header` position — a button beside the edit form). |
 | `BulkAction` | `bulk` | On selected rows; receives `ids[]`. |
 | `ModalAction` | `modal` | Opens a form-modal first, then POSTs. |
 | `DropDown` | `dropdown` | Container for sub-actions. |

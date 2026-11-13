@@ -37,6 +37,7 @@ Layout — это контейнер для полей и других layout'о
 | `AsyncApi` | `Layout::asyncapi('spec')` | Справочник AsyncAPI: серверы, каналы, операции, сообщения |
 | `Kanban` | `Layout::kanban('board')` | Канбан-доска в разметке, редактируемая через метод экрана |
 | `Calendar` | `Layout::calendar('schedule')` | Календарь событий с повторами в разметке, редактируемый через метод экрана |
+| `BlockTree` | `Layout::blockTree('content')` | Конструктор страниц: дерево блоков с живым предпросмотром, черновиком и публикацией через методы экрана |
 | `Board` | `Layout::board()->endpoint('/boards/42')` | Совместная доска, которую правят несколько человек сразу; хранение — пакет `laravel-admin-board` |
 | `Video` | `Layout::video('/media/intro.mp4')` | Видеоплеер: качества, HLS, субтитры, главы, превью кадров |
 | `Audio` | `Layout::audio([...])` | Аудиоплеер: дорожка или плейлист, волновая форма, мини-вариант |
@@ -95,8 +96,37 @@ Tabs::make([
 ]),
 ```
 
-Активная вкладка хранится локально на странице; при переключении
-состояние формы не теряется.
+Активная вкладка по умолчанию хранится локально на странице; при
+переключении состояние формы не теряется. Неоткрытая вкладка не рисуется,
+поэтому то, что в ней лежит (например, живой список ресурса), загружается
+только при её открытии. Вкладка, содержимое которой пользователю не видно
+(список без права `view`), пропадает целиком — вместе с подписью.
+
+| Метод | Что делает |
+|---|---|
+| `defaultTab(1)` | Вкладка, открытая сначала (по номеру, с нуля) |
+| `persistInQuery('tab')` | Открытая вкладка хранится в адресе: `?tab=quotes` — ссылка ведёт на вкладку, «назад»/«вперёд» её переключают |
+| `keys(['contracts', 'quotes'])` | Имена вкладок в адресе по порядку; без них — подпись транслитом (`Договоры` → `dogovory`), повтор получает суффикс `-2` |
+| `vertical()` | Вкладки столбцом слева, открытая — справа (на узком экране — снова строкой) |
+
+```php
+// Раздел продукта: вкладки в адресе, в каждой — свой живой список.
+Layout::tabs([
+    'Договоры'    => Layout::resourceIndex(ContractResource::class)->queryKey('contracts'),
+    'Котировки'   => Layout::resourceIndex(QuoteResource::class)->queryKey('quotes'),
+    'Программы'   => Layout::resourceIndex(ProgramResource::class)->queryKey('programs'),
+])->persistInQuery('tab')->keys(['contracts', 'quotes', 'programs']),
+
+// Единый экран мелких справочников: список слева, таблица справа.
+Layout::tabs([
+    'Валюты'  => Layout::resourceIndex(CurrencyResource::class)->queryKey('currencies'),
+    'Страны'  => Layout::resourceIndex(CountryResource::class)->queryKey('countries'),
+    'Банки'   => Layout::resourceIndex(BankResource::class)->queryKey('banks'),
+])->vertical()->persistInQuery('dict'),
+```
+
+Ссылка `/admin/screens/product?tab=quotes&quotes.filter[status]=new` открывает
+вкладку «Котировки» со списком, отфильтрованным по статусу.
 
 ### Wizard (многошаговая форма)
 
@@ -434,7 +464,48 @@ public function layout(): array
 строками и выделением, правка в ячейках, порядок, корзина или дерево для
 иерархического ресурса — встроенная в экран. Щелчок по строке открывает
 запись, как на странице списка. Пользователю без права `view` на ресурс не
-показывается. Одна на экран: состояние списка общее.
+показывается.
+
+**Несколько списков на экране.** У каждого `resourceIndex` своё состояние:
+поиск, фильтры, страница, сортировка, выделение — списки рядом (`Columns`) или
+во вкладках (`Tabs`) друг другу не мешают. Чтобы адрес тоже не смешивался,
+дайте каждому `queryKey()`: его ключи в адресе получают префикс
+(`?orders.q=…&orders.page=2&orders.filter[status]=new&orders.view=kanban`).
+Без `queryKey()` список пишет простые ключи (`?q=`, `?page=`, `?filter[…]=`) —
+ровно как раньше, когда список на экране был один; два таких списка на одном
+экране делили бы адрес, поэтому ключ нужен каждому, кроме, может быть, одного.
+Список в неоткрытой вкладке ничего не грузит, пока её не откроют, а при
+возврате на вкладку показывает свои строки и выделение сразу.
+
+| Метод | Что делает |
+|---|---|
+| `title('…')` | Заголовок над таблицей вместо названия ресурса |
+| `initialView('kanban')` | Вид при открытии: `list`, `kanban`, `calendar` |
+| `queryKey('orders')` | Пространство имён ключей списка в адресе (буквы, цифры, `_`, `-`) |
+| `rowOpen('drawer', 'lg')` | Строка открывается в боковой панели поверх списка (`'page'` — на странице записи). Второй аргумент — ширина: `sm`, `md`, `lg` (по умолчанию), `xl` или CSS-длина |
+| `nextAfterAction()` | После сохранения или действия в панели — сразу следующая запись (включает `rowOpen('drawer')`, если режим не задан) |
+
+**Запись в боковой панели.** С `rowOpen('drawer')` (или `Resource::rowOpen()`
+= `'drawer'` — тогда и на странице списка ресурса) щелчок по строке, «глаз» и
+«карандаш» открывают запись в панели справа, не уходя со страницы. В панели —
+те же части, что на странице записи: просмотр (`infolist`), форма
+(`fields`), действия ресурса над записью, удаление; те же эндпоинты и те же
+права (`view` для просмотра, `update` для правки, проверяются и на сервере).
+После сохранения, действия или удаления список перезагружается. Кнопки ‹ › в
+шапке панели и **Alt+↑ / Alt+↓** переходят к предыдущей и следующей записи —
+через границу страницы списка; «Сохранить и дальше» сохраняет и открывает
+следующую. Если запись после действия ушла из отфильтрованного списка
+(очередь «на модерации»), «следующей» становится та, что заняла её место.
+Открытая запись хранится в адресе (`?record=12`, у именованного списка —
+`?orders.record=12`), так что на неё можно дать ссылку.
+
+```php
+// Очередь отзывов: одобрил — и сразу следующий.
+Layout::resourceIndex(ReviewResource::class)
+    ->queryKey('reviews')
+    ->rowOpen('drawer', 'xl')
+    ->nextAfterAction(),
+```
 
 `initialView('kanban')` (или `'calendar'`, `'list'`) открывает его в этом виде
 ресурса — см. [Виды «канбан» и «календарь»](concepts/resources.md#виды-канбан-и-календарь);
@@ -933,6 +1004,216 @@ Layout::board()
 Если доска ушла дальше, чем сервер ещё хранит в журнале, редактор загружает её
 заново. Та же доска на дашборде — `Widget\BoardWidget`
 ([Виджеты](concepts/widgets-and-dashboards.md#доска)).
+
+### BlockTree (конструктор страниц)
+
+`Layout::blockTree('content')` — редактор дерева блоков с живым предпросмотром,
+основа конструктора страниц «в одном окне». Три области:
+
+- **структура** — дерево на всю глубину: перетаскивание в пределах правил
+  вложенности (место сброса предлагается только там, где перетаскиваемый блок
+  допустим), палитра типов, разрешённых в выбранном месте (поиск, группы,
+  описания, миниатюры), дублирование вместе с вложенными, удаление с отменой,
+  свёрнутые узлы и отметки: *новый*, *изменён*, *не отображается* на сайте,
+  *вне правил*, *неизвестный тип*, число ошибок;
+- **предпросмотр** — HTML страницы для текущего дерева в iframe; перезагружается
+  с задержкой после каждого изменения, с сохранением прокрутки; ширина ПК,
+  планшет, телефон; клик по блоку выбирает узел, выбранный узел подсвечивается
+  и прокручивается в видимую область;
+- **свойства** — форма выбранного блока штатными полями панели и путь до него;
+  шаг пути выбирает этого родителя.
+
+Внизу — состояние черновика («Черновик сохранён 12:41 · изменений: 3»),
+**Отменить** и **Опубликовать**. Черновик сохраняется методом экрана с
+задержкой после каждого изменения.
+
+```php
+use Dskripchenko\LaravelAdmin\Field\Input;
+use Dskripchenko\LaravelAdmin\Field\Textarea;
+use Dskripchenko\LaravelAdmin\Layout\BlockTree;
+use Dskripchenko\LaravelAdmin\Layout\BlockTree\BlockType;
+use Dskripchenko\LaravelAdmin\Layout\Layout;
+use Dskripchenko\LaravelAdmin\Screen\Screen;
+
+final class PageContentScreen extends Screen
+{
+    public function name(): string
+    {
+        return 'Page content';
+    }
+
+    public function query(mixed ...$params): array
+    {
+        $page = Page::findOrFail($params[0] ?? request('page'));
+        $published = PageTree::load($page);           // [{ref, type, data, children, meta}, ...]
+        $draft = PageDraft::for($page);               // null when there is none
+
+        return ['content' => [
+            'nodes' => $draft?->nodes ?? $published,
+            'published' => $draft ? $published : null, // the marks count against it
+            'fingerprint' => PageTree::fingerprint($published),
+            'savedAt' => $draft?->updated_at?->toIso8601String(),
+            'previewUrl' => route('pages.preview', $page, false),
+            'page' => $page->getKey(),
+        ]];
+    }
+
+    public function layout(): array
+    {
+        return [$this->editor()];
+    }
+
+    public function saveDraft(array $state): array
+    {
+        $content = $state['content'];
+        $this->editor()->validator()->validate($content['nodes'], 'content.nodes', data: false);
+        PageDraft::store($content['page'], $content['nodes'], $content['fingerprint']);
+
+        return BlockTree::saved();
+    }
+
+    public function publish(array $state): array
+    {
+        $content = $state['content'];
+        $page = Page::findOrFail($content['page']);
+        $published = PageTree::load($page);
+        if (PageTree::fingerprint($published) !== $content['fingerprint']) {
+            return BlockTree::conflict(
+                'The page was changed after you began editing',
+                PageTree::differences($published, $content['nodes']),   // ['Hero: title', ...]
+            );
+        }
+        if ($errors = $this->editor()->validator()->errors($content['nodes'])) {
+            return BlockTree::invalid($errors);
+        }
+        PageTree::publish($page, $content['nodes']);
+        PageDraft::forget($page);
+
+        return BlockTree::saved($this->query($page->getKey())['content'], 'Published');
+    }
+
+    public function discardDraft(array $state): array
+    {
+        PageDraft::forget($state['content']['page']);
+
+        return BlockTree::saved($this->query($state['content']['page'])['content']);
+    }
+
+    private function editor(): BlockTree
+    {
+        return Layout::blockTree('content')
+            ->types([
+                BlockType::make('hero', 'Hero')->icon('image')->root()->titleFrom('title')->fields([
+                    Input::make('title')->title('Title')->required()->rules(['max:120']),
+                    Textarea::make('lead')->title('Lead'),
+                ]),
+                BlockType::make('columns', 'Columns')->icon('columns')->root()->accepts(['text', 'button']),
+                BlockType::make('text', 'Text')->root()->accepts(['button'])->titleFrom('body')->fields([
+                    Textarea::make('body')->title('Text'),
+                ]),
+                BlockType::make('button', 'Button')->titleFrom('caption')->defaults(['style' => 'primary'])->fields([
+                    Input::make('caption')->title('Caption'),
+                    Input::make('url')->title('Link'),
+                ]),
+            ])
+            ->preview('/admin-builder/preview')         // the value's previewUrl replaces it per page
+            ->draft('saveDraft', permission: 'pages.edit')
+            ->publish('publish', permission: 'pages.publish')
+            ->discard('discardDraft', permission: 'pages.edit')
+            ->maxDepth(4)
+            ->height('calc(100vh - 200px)');
+    }
+}
+```
+
+
+**Значение** — одна JSON-структура в state экрана: методы получают её вместе со
+всем state, кнопки экрана тоже её видят.
+
+| Ключ | Смысл |
+|---|---|
+| `nodes` | Дерево `[{ref, type, data, children, meta?}]`. `ref` — id существующего блока или временный `new-…`, который панель выдаёт новому блоку (и каждому блоку копии); `data` — значения полей типа; `meta` — серверное, панель хранит как есть: `title` (подпись, если у типа нет `titleFrom`), `rendersOnSite: false` (отметка «не отображается») |
+| `fingerprint` | Отпечаток опубликованного состояния на начало правки; его сверяет метод публикации |
+| `published` | Опубликованные узлы, когда `nodes` — черновик: отметки «новый»/«изменён» и число изменений считаются от них (иначе — от загруженного значения) |
+| `savedAt` | Когда сохранён черновик — для нижней панели |
+| `previewUrl` | Заменяет `preview()` для этой записи |
+
+**Типы** — `BlockType::make($type, $label)` или массив с теми же ключами
+(`BlockType::fromArray`, `->types([...массивы])`), если схемы типов в проекте
+уже описаны своими классами:
+
+| Метод | Что делает |
+|---|---|
+| `root(bool = true)` | Может стоять на верхнем уровне (или перечислить такие типы в `rootTypes([...])` раскладки) |
+| `accepts([...типы])` | Разрешённые дочерние типы; пусто — лист |
+| `fields([...])` | Форма свойств: обычные поля панели. Имена — ключи `data`, правила — то, что проверяет валидатор |
+| `titleFrom('key' \| [...])` | Подпись узла: первое непустое из этих ключей `data`, без тегов |
+| `defaults([...])` | Данные нового блока (остальное — `default()` полей) |
+| `icon()`, `description()`, `group()`, `thumbnail($url)` | Палитра |
+| `rendersOnSite(false)` | Сайт тип не рисует: отметка «не отображается» |
+
+**Раскладка**:
+
+| Метод | Что делает |
+|---|---|
+| `types([...])`, `rootTypes([...])` | Типы и типы верхнего уровня вместо помеченных `root()` |
+| `preview(string $url, array $params = [])` | Адрес предпросмотра: путь сайта панели или URL того же origin |
+| `markerAttribute('data-builder-ref')` | Атрибут маркера блока в HTML предпросмотра |
+| `draft($method, ?$permission)` | Автосохранение черновика этим методом экрана |
+| `publish($method, ?$permission)` | Кнопка **Опубликовать** |
+| `discard($method, ?$permission)` | Кнопка **Отменить** (после подтверждения); без метода дерево возвращается к `published` в панели |
+| `maxDepth(int)` | Максимальная глубина блока; 1 — только верхний уровень |
+| `autosave(int $ms)` | Задержка автосохранения; 1500 по умолчанию, 0 — без автосохранения |
+| `previewDelay(int $ms)` | Задержка перезагрузки предпросмотра; 700 по умолчанию |
+| `title()`, `height()` | Заголовок; высота (по умолчанию `calc(100vh - 220px)`) |
+| `validator()` | `TreeValidator` с этими типами, корневыми типами и глубиной |
+
+**Методы** — собственные методы экрана, вызываются через его `runMethod`
+со всем state единственным аргументом (`array $state`), как кнопка. Каждый
+названный метод объявлен для сервера: его охраняют видимость раскладки и
+право метода; без методов черновика и публикации (или прав на них) редактор
+только для чтения. Ответы метода:
+
+- `BlockTree::saved(?array $value = null, ?string $message = null)` —
+  сохранено; с `$value` редактор продолжает с него (после публикации или отмены);
+- `BlockTree::conflict($message, $differences, ?$fingerprint)` — опубликованное
+  состояние изменилось после начала правки: ничего не опубликовано, редактор
+  показывает сообщение и расхождения (строки или
+  `['ref' => …, 'label' => …, 'change' => …]`);
+- `BlockTree::invalid($errors)` — ошибки валидатора: узлы получают отметку,
+  поля — свои сообщения. `ValidationException` с ключами по пути в дереве
+  (`content.nodes.1.children.0.data.title`, как его бросает
+  `TreeValidator::validate($nodes, 'content.nodes')`) показывается так же;
+- `ActionFailedException` — отказ, текст во всплывающем сообщении.
+
+**Валидатор** — `TreeValidator::errors($nodes, bool $data = true)` проверяет
+форму (список объектов, скалярный `ref`, уникальный в дереве, `data` — объект,
+`children` — список), типы (только описанные), вложенность (корневые типы
+сверху, разрешённые внутри, `maxDepth`) и, если не `$data: false`, данные по
+правилам полей. Каждая ошибка —
+`['ref' => …, 'path' => '1.children.0', 'field' => 'title' | null, 'message' => …]`;
+`passes()` и `validate($nodes, $key)` (бросает `ValidationException`) — обёртки.
+
+**Протокол предпросмотра**:
+
+1. *Запрос.* `POST {previewUrl}` с JSON-телом `{"nodes": [...], ...previewParams}`,
+   cookie сессии панели и её CSRF-заголовком (`X-XSRF-TOKEN` из cookie, иначе
+   `X-CSRF-TOKEN` из meta страницы) — маршрут под middleware `web` его примет.
+   Только тот же origin.
+2. *Ответ.* HTML страницы (`text/html`). Панель показывает его с адреса `blob:`
+   своего origin, добавив `<base href>` сайта: скрипты страницы работают,
+   относительные адреса разрешаются. Отвечайте с `Cache-Control: no-store` и
+   `X-Robots-Tag: noindex`.
+3. *Маркеры.* Каждый блок обёрнут элементом с ref узла:
+   `<div data-builder-ref="15" style="display: contents">…</div>`. Панель
+   читает маркеры сама: клик внутри выбирает узел (собственный обработчик
+   страницы этот клик не получает), выбранный блок обводится и прокручивается.
+4. *Сообщения* (необязательно, для страницы со своим скриптом): страница
+   отправляет `{type: 'builder:select', ref}` в `window.parent` (целевой
+   origin — свой `location.origin`), чтобы выбрать узел; панель отправляет
+   странице `{type: 'builder:highlight', ref}` при выборе узла (`ref: null` — снять).
+
+Редактор — отдельный чанк готовой сборки, загружается, когда экран впервые его рисует.
 
 ### Video и Audio (медиаплееры)
 
