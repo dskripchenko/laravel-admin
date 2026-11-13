@@ -21,6 +21,7 @@ import { UidSidebarLayout } from '@dskripchenko/ui'
 import AdminTopBar from './AdminTopBar.vue'
 import AdminSidebar from './AdminSidebar.vue'
 import GlobalSearch from './GlobalSearch.vue'
+import AdminLinkDrawer from './AdminLinkDrawer.vue'
 import { useBreadcrumbs } from './breadcrumbs'
 import { useUserNavStore, type NavLink } from '../../stores/userNav'
 import { trSafe as tr } from '../../stores/i18n'
@@ -307,6 +308,8 @@ onBeforeUnmount(() => {
     </UidSidebarLayout>
 
     <GlobalSearch v-model="searchOpen" />
+    <!-- A list or a screen a link opened over the page (target: 'drawer'). -->
+    <AdminLinkDrawer />
   </div>
 </template>
 

@@ -9,7 +9,9 @@
  *   - filter bar with search and chips
  *   - bulk toolbar, which replaces the filter bar once something is selected
  *   - UidTable fed by manifest.columns
- *   - states: loading (UidSkeleton ×8) / empty (UidEmptyState) / error
+ *   - states: loading (UidSkeleton ×8) / empty / no results / error /
+ *     no access — AdminState; the empty one says what Resource::emptyState()
+ *     or Layout::resourceIndex()->emptyState() tells it to
  *   - UidPagination at the bottom
  *
  * The host renders the page through the router; the resource slug arrives in
@@ -33,8 +35,6 @@ import {
 } from 'lucide-vue-next'
 import {
   UidButton,
-  UidEmptyState,
-  UidErrorState,
   UidIcon,
   UidMenu,
   UidMenuItem,
@@ -56,6 +56,9 @@ import { markTableRows } from './tableTestIds'
 import { testIdOf } from '../../composables/testId'
 import { createTooltip, deleteConfirmText, deletedToast, emptyDescription, nounCase, nounParams } from './resourceNoun'
 import AdminFilterToolbar from './AdminFilterToolbar.vue'
+import AdminState from '../states/AdminState.vue'
+import { ForbiddenError } from '../../api/errors'
+import { filterSummary } from './filterSummary'
 import InlineEditCell from './InlineEditCell.vue'
 import ResourceTreePage from './ResourceTreePage.vue'
 import ResourceViewSwitcher from './ResourceViewSwitcher.vue'
@@ -69,6 +72,7 @@ import { formatLocale, useI18nStore } from '../../stores/i18n'
 import {
   needsSelection,
   actionErrorMessage,
+  normalizeAction,
   normalizeActions,
   selectionAllows,
   useActionRunner,
@@ -143,6 +147,27 @@ interface Props {
   scope?: string | null
   /** The filters it opens with when the address names none (->defaultFilters()). */
   defaultFilters?: Record<string, unknown> | null
+  /**
+   * What the empty list says (Layout::resourceIndex()->emptyState()); the
+   * resource's own (Resource::emptyState()) when null.
+   */
+  emptyState?: EmptyStateConfig | null
+  /**
+   * The list's query when it lives outside the address — in a side panel
+   * opened by a link (`target: 'drawer'`): its search, filters and page are
+   * read from here and never written to the address.
+   */
+  initialQuery?: Record<string, unknown> | null
+}
+
+/** Support\EmptyState::toArray(). */
+export interface EmptyStateConfig {
+  title?: string | null
+  description?: string | null
+  /** null — «Создать»; false — none; {create: caption}; an action of the panel. */
+  action?: false | { create: string } | Record<string, unknown> | null
+  noResultsTitle?: string | null
+  noResultsDescription?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -158,6 +183,8 @@ const props = withDefaults(defineProps<Props>(), {
   nextAfterAction: false,
   scope: null,
   defaultFilters: null,
+  emptyState: null,
+  initialQuery: null,
 })
 
 const emit = defineEmits<{
@@ -691,6 +718,34 @@ function rowFromSlot(slotProps: unknown): Record<string, unknown> | undefined {
 const hasActiveFilters = computed<boolean>(
   () => index.search !== '' || Object.keys(index.filters).length > 0,
 )
+/** What the empty list says: the layout's, else the resource's (Resource::emptyState()). */
+const emptyConfig = computed<EmptyStateConfig | null>(
+  () => props.emptyState ?? ((resourceMeta.value as { empty_state?: EmptyStateConfig | null } | null)?.empty_state ?? null),
+)
+/** The empty list's «Создать» — under its own caption — for a user who may create; null — none. */
+const emptyCreateLabel = computed<string | null>(() => {
+  const action = emptyConfig.value?.action
+  if (action === false || !(resolvedCreateRouteName.value && isCreatable.value)) return null
+  if (action && typeof action === 'object' && 'create' in action && typeof action.create === 'string') return action.create
+  if (action && typeof action === 'object') return null
+  return props.createLabel ?? tr('Создать')
+})
+/** The empty list's own action (a link to the next queue, say). */
+const emptyAction = computed<AdminAction | null>(() => {
+  const action = emptyConfig.value?.action
+  if (!action || typeof action !== 'object' || 'create' in action) return null
+  return normalizeAction(action)
+})
+const noResultsDescription = computed<string>(() => {
+  if (emptyConfig.value?.noResultsDescription) return emptyConfig.value.noResultsDescription
+  if (index.search !== '' && Object.keys(index.filters).length === 0) {
+    return tRaw('По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск и фильтры.', { query: index.search })
+  }
+  const summary = filterSummary(index.filters, manifestFilters.value, index.search)
+  return summary !== ''
+    ? tRaw('Под условия не подходит ни одна запись: :filters.', { filters: summary })
+    : tr('Ни одна запись не подходит под фильтры. Измените их или сбросьте.')
+})
 const showFilterBar = computed<boolean>(
   // The kanban and the calendar always offer search and filters: their
   // emptiness is not the list's.
@@ -968,7 +1023,11 @@ function isListKey(k: string): boolean {
     || k === `${qp}filter` || k.startsWith(`${qp}filter[`)
 }
 
+/** The list lives outside the address: a side panel opened by a link. */
+const addressless = props.initialQuery !== null
+
 function syncQuery(): void {
+  if (addressless) return
   const next = index.toQuery(qp)
   const current = router.currentRoute.value
   const same = JSON.stringify(Object.entries(next).sort()) === JSON.stringify(
@@ -996,8 +1055,8 @@ watch(
  */
 function readQuery(): void {
   index.configureList({ scope: props.scope, defaultFilters: props.defaultFilters })
-  if (props.stateKey !== null) index.resetQueryState()
-  index.fromQuery(router.currentRoute.value.query as Record<string, unknown>, qp)
+  if (props.stateKey !== null || addressless) index.resetQueryState()
+  index.fromQuery((props.initialQuery ?? router.currentRoute.value.query) as Record<string, unknown>, qp)
 }
 
 onMounted(async () => {
@@ -1022,7 +1081,7 @@ function applyInitialView(): void {
   if (index.view !== null && (index.view === baseView.value || !availableViews.value.includes(index.view))) {
     index.view = null
   }
-  const query = router.currentRoute.value.query
+  const query = props.initialQuery ?? router.currentRoute.value.query
   if (query[`${qp}view`] !== undefined || props.initialView === null) return
   if (props.initialView !== baseView.value && availableViews.value.includes(props.initialView)) {
     index.view = props.initialView
@@ -1173,6 +1232,7 @@ function rowIndexOf(id: string | number | null): number {
 }
 
 function setDrawerQuery(id: string | number | null): void {
+  if (addressless) return
   patchRouteQuery(router, (query) => {
     query[`${qp}record`] = id === null ? undefined : String(id)
   })
@@ -1193,7 +1253,7 @@ function closeDrawer(): void {
 }
 
 function openDrawerFromQuery(): void {
-  if (!opensInDrawer.value) return
+  if (!opensInDrawer.value || addressless) return
   const raw = router.currentRoute.value.query[`${qp}record`]
   const id = Array.isArray(raw) ? raw[0] : raw
   if (typeof id === 'string' && id !== '') {
@@ -1661,54 +1721,71 @@ async function retryLoad(): Promise<void> {
           <UidSkeleton v-for="i in 8" :key="i" height="40px" />
         </template>
       </div>
-      <UidErrorState
-        v-else-if="index.hasError"
-        :title="tr('Не удалось загрузить данные')"
-        :description="index.error?.message ?? tr('Попробуйте обновить страницу.')"
+      <!-- No access to the resource: its name and the missing key. -->
+      <AdminState
+        v-else-if="index.hasError && index.error instanceof ForbiddenError"
+        kind="forbidden"
+        :section="displayTitle"
+        :error="index.error"
         class="admin-resource-index__state"
-      >
-        <template #actions>
-          <UidButton variant="primary" @click="retryLoad">{{ tr('Обновить') }}</UidButton>
-        </template>
-      </UidErrorState>
-      <!-- Nothing matches the search or the filters: say so, name the query,
+        data-testid="resource-forbidden"
+      />
+      <!-- The data did not load: the reason, «Повторить», the request's code. -->
+      <AdminState
+        v-else-if="index.hasError"
+        kind="error"
+        :title="tRaw('Не удалось загрузить: :plural', nounParams(resourceMeta, slug))"
+        :error="index.error"
+        class="admin-resource-index__state"
+        data-testid="resource-error"
+        @retry="retryLoad"
+      />
+      <!-- Nothing matches the search or the filters: say so, name them,
            and offer the way back. -->
-      <UidEmptyState
+      <AdminState
         v-else-if="hasActiveFilters"
-        :title="tr('Ничего не найдено')"
-        :description="index.search !== ''
-          ? tRaw('По запросу «:query» ничего не найдено. Измените запрос или сбросьте поиск и фильтры.', { query: index.search })
-          : tr('Ни одна запись не подходит под фильтры. Измените их или сбросьте.')"
+        kind="no-results"
+        :title="emptyConfig?.noResultsTitle ?? tr('Ничего не найдено')"
+        :description="noResultsDescription"
         class="admin-resource-index__state"
         data-testid="resource-no-results"
       >
         <template #actions>
           <UidButton variant="secondary" data-testid="resource-reset-filters" @click="onResetFilters">
             <template #prepend><UidIcon :icon="RotateCcw" :size="14" /></template>
-            {{ tr('Сбросить поиск и фильтры') }}
+            {{ index.search !== '' ? tr('Сбросить поиск и фильтры') : tr('Сбросить фильтры') }}
           </UidButton>
         </template>
-      </UidEmptyState>
-      <!-- A truly empty resource: the create action only for who may create. -->
-      <UidEmptyState
+      </AdminState>
+      <!-- A truly empty resource: its own words (Resource::emptyState(),
+           ->emptyState() of the layout), the create action only for who may create. -->
+      <AdminState
         v-else
-        :title="tr('Пока пусто')"
-        :description="emptyDescription(resourceMeta, slug, Boolean(resolvedCreateRouteName && isCreatable))"
+        kind="empty"
+        :title="emptyConfig?.title ?? tr('Записей нет')"
+        :description="emptyConfig?.description ?? emptyDescription(resourceMeta, slug, Boolean(resolvedCreateRouteName && isCreatable))"
         class="admin-resource-index__state"
         data-testid="resource-empty"
       >
-        <template #actions>
+        <template v-if="emptyCreateLabel !== null || emptyAction !== null" #actions>
           <UidButton
-            v-if="resolvedCreateRouteName && isCreatable"
+            v-if="emptyCreateLabel !== null"
             variant="primary"
             data-testid="resource-empty-create"
-            @click="$router.push({ name: resolvedCreateRouteName })"
+            @click="$router.push({ name: resolvedCreateRouteName! })"
           >
             <template #prepend><UidIcon :icon="Plus" :size="14" /></template>
-            {{ createLabel ?? tr('Создать') }}
+            {{ emptyCreateLabel }}
           </UidButton>
+          <AdminActionButton
+            v-else-if="emptyAction !== null"
+            :action="emptyAction"
+            default-variant="secondary"
+            data-testid="resource-empty-action"
+            @run="onCustomAction"
+          />
         </template>
-      </UidEmptyState>
+      </AdminState>
     </div>
 
     <!-- Таблица — UidTable native selection (UidTable.selectable + selection prop). -->

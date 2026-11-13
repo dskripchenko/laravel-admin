@@ -101,7 +101,14 @@ export function createAuthGuard(opts: AuthGuardOptions = {}): SimpleGuard {
         ? auth.hasAllPermissions(permissionsMeta as string[])
         : auth.hasAnyPermission(permissionsMeta as string[])
       if (!allowed) {
-        return { name: forbiddenRouteName }
+        // The 403 page names the section and the key it lacks (1.74).
+        const keys = permissionsMeta as string[]
+        const missing = to.meta?.permissionMode === 'all'
+          ? keys.filter((k) => !auth.hasPermission(k))
+          : keys
+        const query: Record<string, string> = { permission: missing.join(' | ') }
+        if (typeof to.meta?.title === 'string' && to.meta.title !== '') query.section = to.meta.title
+        return { name: forbiddenRouteName, query }
       }
     }
 

@@ -98,7 +98,16 @@ describe('createAuthGuard', () => {
       mkRoute(),
       () => undefined,
     )
-    expect(result).toEqual({ name: 'admin.forbidden' })
+    expect(result).toEqual({ name: 'admin.forbidden', query: { permission: 'admin.users.view' } })
+  })
+
+  it('names the section and the missing keys on the 403 page', () => {
+    const auth = useAuthStore()
+    auth.hydrate(mkBootstrap({ user: mkUser(), permissions: ['admin.users.view'] }))
+    const guard = createAuthGuard()
+    const meta = { requiresAuth: true, title: 'Журнал аудита', permissionMode: 'all', permissions: ['admin.users.view', 'admin.audit.view'] }
+    expect(guard(mkRoute({ meta }), mkRoute(), () => undefined))
+      .toEqual({ name: 'admin.forbidden', query: { permission: 'admin.audit.view', section: 'Журнал аудита' } })
   })
 
   it('allows ANY-permission match', () => {
@@ -121,7 +130,7 @@ describe('createAuthGuard', () => {
     const guard = createAuthGuard()
     const meta = { requiresAuth: true, permissions: ['admin.users.view', 'admin.posts.view'] }
     expect(guard(mkRoute({ meta: { ...meta, permissionMode: 'all' } }), mkRoute(), () => undefined))
-      .toEqual({ name: 'admin.forbidden' })
+      .toEqual({ name: 'admin.forbidden', query: { permission: 'admin.posts.view' } })
     expect(guard(mkRoute({ meta: { ...meta, permissionMode: 'any' } }), mkRoute(), () => undefined))
       .toBe(true)
   })

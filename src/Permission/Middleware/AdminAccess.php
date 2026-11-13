@@ -66,6 +66,8 @@ final class AdminAccess
             return ApiResponseHelper::sayError([
                 'errorKey' => 'forbidden',
                 'message' => __('Доступ запрещён: :permission', ['permission' => implode(' | ', $required)]),
+                // The key the "no access" state names and offers to copy.
+                'permission' => implode(' | ', $required),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -74,6 +76,7 @@ final class AdminAccess
                 return ApiResponseHelper::sayError([
                     'errorKey' => 'forbidden',
                     'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+                    'permission' => $permission,
                 ], Response::HTTP_FORBIDDEN);
             }
         }

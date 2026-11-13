@@ -36,11 +36,38 @@ final class Link extends Action
     }
 
     /**
-     * @param  '_self'|'_blank'|'_parent'|'_top'  $target
+     * `drawer` (1.74) opens a panel address in the side panel over the page:
+     * a resource's list filtered by the link's query, or a screen. See inDrawer().
+     *
+     * @param  '_self'|'_blank'|'_parent'|'_top'|'drawer'  $target
      */
     public function target(string $target): self
     {
         $this->attributes['target'] = $target;
+
+        return $this;
+    }
+
+    /**
+     * Opens the address in the side panel over the current page instead of
+     * going there — «Связанное» of a record card:
+     *
+     *     Link::make('Обращения · 2')
+     *         ->href('/admin/r/claims?filter[phone]=79001234567&scope=open')
+     *         ->inDrawer();
+     *
+     * A resource's list opens with the query's search (`q`), filters
+     * (`filter[...]`), sort and scope (`scope`, one of Resource::scopes()); a
+     * screen (`/admin/screens/{slug}?…`) with its query; anything else as a
+     * page. The address of the page under it stays. `$size`: sm, md, lg, xl
+     * or a CSS length (wide by default).
+     */
+    public function inDrawer(?string $size = null): self
+    {
+        $this->attributes['target'] = 'drawer';
+        if ($size !== null) {
+            $this->attributes['drawerSize'] = $size;
+        }
 
         return $this;
     }

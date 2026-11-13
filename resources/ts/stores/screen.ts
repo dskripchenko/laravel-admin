@@ -55,6 +55,8 @@ export interface ScreenStateSnapshot {
   command_bar: ScreenAction[]
   permissions: string[]
   etag: string
+  /** The method that saves the screen's form (Screen::saveMethod()): the savebar's «Сохранить». */
+  save_method?: string | null
 }
 
 /** A link offered alongside a screen's message — see `lastMessageLink`. */
@@ -88,6 +90,8 @@ function screenStoreSetup() {
   const commandBar = ref<ScreenAction[]>([])
   const permissions = ref<string[]>([])
   const etag = ref<string | null>(null)
+  /** Screen::saveMethod(): with it the page tracks unsaved changes. */
+  const saveMethod = ref<string | null>(null)
 
   /** The form's working copy, exposed through provideFormState. */
   const state = ref<Record<string, unknown>>({})
@@ -112,6 +116,8 @@ function screenStoreSetup() {
   const pendingRedirect = ref<string | null>(null)
 
   const hasError = computed(() => error.value !== null)
+  /** The last `state` load failed: the page shows the error state in place of the screen. */
+  const loadFailed = ref(false)
 
   /** An in-place mutation: it keeps the identity of the provide/inject reactive proxy. */
   function replaceObject(target: Record<string, unknown>, next: Record<string, unknown>): void {
@@ -159,9 +165,11 @@ function screenStoreSetup() {
     commandBar.value = []
     permissions.value = []
     etag.value = null
+    saveMethod.value = null
     replaceObject(state.value, {})
     replaceObject(initial.value, {})
     errors.value = {}
+    loadFailed.value = false
     loading.value = false
     running.value = false
     error.value = null
@@ -184,6 +192,7 @@ function screenStoreSetup() {
     loading.value = true
     error.value = null
     errors.value = {}
+    loadFailed.value = false
 
     try {
       const client = getAdminClient()
@@ -196,10 +205,12 @@ function screenStoreSetup() {
       commandBar.value = res.command_bar
       permissions.value = res.permissions
       etag.value = res.etag
+      saveMethod.value = typeof res.save_method === 'string' && res.save_method !== '' ? res.save_method : null
       replaceObject(state.value, res.state)
       replaceObject(initial.value, res.state)
     } catch (err) {
       error.value = err instanceof Error ? err : new Error(String(err))
+      loadFailed.value = true
       throw err
     } finally {
       loading.value = false
@@ -325,6 +336,8 @@ function screenStoreSetup() {
     pendingRedirect,
     // getters
     hasError,
+    loadFailed,
+    saveMethod,
     // actions
     reset,
     load,

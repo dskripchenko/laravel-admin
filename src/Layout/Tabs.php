@@ -103,6 +103,23 @@ final class Tabs extends Layout
     }
 
     /**
+     * A search over the fields of every tab above them — a long settings
+     * screen: it finds a field by its label, hint, placeholder or key; each
+     * tab shows how many it finds, a tab without any is dimmed, the open tab
+     * hides the fields it does not find and the blocks left empty. Nested
+     * tab sets count their finds too.
+     */
+    public function searchable(?string $placeholder = null): self
+    {
+        $this->props['searchable'] = true;
+        if ($placeholder !== null) {
+            $this->props['searchPlaceholder'] = \Dskripchenko\LaravelAdmin\I18n\Localize::string($placeholder);
+        }
+
+        return $this;
+    }
+
+    /**
      * Badges on the tabs — a queue's count, say — by the tab's key (keys())
      * or index: a number, a text, a closure computed when the screen is sent
      * (and only for a tab the user sees), or `['value' => 81, 'tone' => 'danger']`.

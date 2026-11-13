@@ -19,7 +19,7 @@
  * nothing until the tab is opened.
  */
 import { computed } from 'vue'
-import ResourceIndexPage from '../resource/ResourceIndexPage.vue'
+import ResourceIndexPage, { type EmptyStateConfig } from '../resource/ResourceIndexPage.vue'
 import { useManifestStore } from '../../stores/manifest'
 
 interface Props {
@@ -39,6 +39,8 @@ interface Props {
   scope?: string | null
   /** The filters it opens with (ResourceIndex::defaultFilters()); the user may clear them. */
   defaultFilters?: Record<string, unknown> | null
+  /** What the empty list says (ResourceIndex::emptyState()). */
+  emptyState?: EmptyStateConfig | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,6 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
   nextAfterAction: false,
   scope: null,
   defaultFilters: null,
+  emptyState: null,
 })
 
 /** The list's own state: by its URL namespace, else by its resource. */
@@ -72,6 +75,7 @@ const known = computed(() => manifest.manifest === null || manifest.getResource(
       :next-after-action="nextAfterAction"
       :scope="scope"
       :default-filters="defaultFilters"
+      :empty-state="emptyState"
     />
   </div>
 </template>

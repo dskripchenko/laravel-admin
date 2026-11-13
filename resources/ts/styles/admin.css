@@ -977,3 +977,13 @@
 /* The wrapper of a field or an entry that names it for the tests
    (data-testid="field-…"): no box of its own, the layouts lay out the field. */
 .admin-field-slot { display: contents; }
+/* A field changed and not saved yet (Screen::saveMethod()). */
+.admin-field-slot--changed > * {
+  border-inline-start: 3px solid var(--uid-color-warning, #f59e0b);
+  padding-inline-start: 8px;
+}
+/* A field the form's search found (Tabs::searchable()). */
+.admin-field-slot--match > * {
+  border-radius: var(--uid-radius-sm, 4px);
+  box-shadow: 0 0 0 3px var(--uid-color-warning-subtle, rgba(250, 204, 21, 0.35));
+}

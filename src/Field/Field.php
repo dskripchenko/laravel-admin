@@ -106,6 +106,21 @@ abstract class Field implements Renderable
     }
 
     /**
+     * A character counter under a text field: «27 из 120 символов» — and, with
+     * `$max`, the most characters it takes (the input stops there; add the
+     * `max:` rule for the server).
+     */
+    public function counter(?int $max = null): static
+    {
+        $this->attributes['counter'] = true;
+        if ($max !== null) {
+            $this->attributes['maxlength'] = $max;
+        }
+
+        return $this;
+    }
+
+    /**
      * The field's width in RowsLayout's twelve-column grid.
      *
      * By default — when this is never called — the field takes the whole width

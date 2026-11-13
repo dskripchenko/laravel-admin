@@ -16,6 +16,8 @@
  */
 import { computed } from 'vue'
 import { testIdOf } from '../../composables/testId'
+import { fieldMatches, useFieldSearch } from './fieldSearch'
+import { useChangedFields } from '../../composables/useUnsavedChanges'
 import { getField } from './registry'
 import { tryUseFormState } from './formState'
 import UnknownField from '../fields/UnknownField.vue'
@@ -64,6 +66,18 @@ const isReactiveVisible = computed<boolean>(() => {
   return true
 })
 
+// The search over the form's fields (Tabs::searchable()): a field it does
+// not find hides, one it does is marked.
+const search = useFieldSearch()
+const searchHit = computed<boolean | null>(() => {
+  const q = search?.query.value ?? ''
+  return q === '' ? null : fieldMatches(props.node as unknown as Record<string, unknown>, q)
+})
+
+// A field changed since the form was loaded or saved (Screen::saveMethod()).
+const changedNames = useChangedFields()
+const isChanged = computed<boolean>(() => changedNames?.value.has(props.node.name) ?? false)
+
 const fieldProps = computed(() => {
   // The backend's Field::toArray() puts the type-specific options into
   // `attributes`: suggestions, options, multiple, currency and the rest. We
@@ -79,8 +93,10 @@ const fieldProps = computed(() => {
   <!-- The wrapper names the field for the tests (`field-{name}`); it draws no
        box of its own (display: contents), so the layouts lay out the field. -->
   <div
-    v-if="isContextVisible && isReactiveVisible"
+    v-if="isContextVisible && isReactiveVisible && searchHit !== false"
     class="admin-field-slot"
+    :class="{ 'admin-field-slot--match': searchHit === true, 'admin-field-slot--changed': isChanged }"
+    :data-changed="isChanged ? 'true' : undefined"
     :data-testid="testIdOf('field', node.name)"
     :data-field-name="node.name"
   >

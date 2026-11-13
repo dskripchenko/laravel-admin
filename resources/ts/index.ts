@@ -42,6 +42,11 @@ export { default as NotFoundPage } from './components/NotFoundPage.vue'
 export { default as SettingsPage } from './components/SettingsPage.vue'
 export { default as UnknownScreenPage } from './components/UnknownScreenPage.vue'
 export { default as ScreenPage } from './components/ScreenPage.vue'
+// The one look of an empty list, a failed load and a closed section (1.74).
+export { default as AdminState } from './components/states/AdminState.vue'
+export { default as AuditValueDiff } from './components/resource/AuditValueDiff.vue'
+export { useLinkDrawerStore, type LinkDrawerOptions } from './stores/linkDrawer'
+export { useLeaveGuard, changedFields, type ChangedField } from './composables/useUnsavedChanges'
 
 export { createAdminClient } from './api/client'
 export type { AdminClient, ClientOptions } from './api/client'
@@ -51,6 +56,7 @@ export { useBrand, BRAND_KEY } from './composables/useBrand'
 export { testIdOf, testIdPart } from './composables/testId'
 export {
   useActionRunner,
+  openInDrawer,
   actionErrorMessage,
   normalizeAction,
   normalizeActions,
@@ -91,6 +97,8 @@ export {
   NetworkError,
   toApiError,
   apiErrorMessage,
+  errorTrace,
+  forbiddenPermission,
 } from './api/errors'
 
 export type {

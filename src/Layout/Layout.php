@@ -294,6 +294,17 @@ abstract class Layout implements Renderable
     }
 
     /**
+     * A feed of events of different kinds with chips by kind and an
+     * errors-only one. See Timeline.
+     *
+     * @param  string|array<int, array<string, mixed>>|callable(): array<int, array<string, mixed>>  $events  A state key, the events, or a closure.
+     */
+    public static function timeline(string|array|callable $events): Timeline
+    {
+        return Timeline::make($events);
+    }
+
+    /**
      * Another screen shown in place — in a tab of this one, say: it loads its
      * own state, runs its own methods and «Save», and is shown only to the
      * users its own permissions let in. See EmbeddedScreen.

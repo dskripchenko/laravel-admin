@@ -14,6 +14,13 @@ Upgrades between major and minor versions. We follow [SemVer](https://semver.org
 There is no 2.0 yet, and none of these releases requires a rewrite, but a
 few change behaviour a host may rely on. Newest first:
 
+- **1.74.0** — an empty list reads "No records" (was "Nothing here yet");
+  the 403 route gets `?permission=…&section=…`; every request carries
+  `X-Request-Id` and the API answers with it; an API 403 carries
+  `payload.permission`; a screen's state carries `save_method`; leaving a
+  changed resource form asks first (`features.warnOnUnsavedChanges`);
+  `TabsLayout` renders inside a `div.admin-tabs-layout`; a single stat
+  without a link shows its previous-period value too.
 - **1.73.0** — a new package migration, `admin_navigation_states`
   (favourites, recent pages, folded menu groups): run `php artisan migrate`.
   `system/search` groups carry `recognized` and `priority`; a list's search

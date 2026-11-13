@@ -9,11 +9,14 @@
  *   - unwraps the envelope in a response interceptor and throws an ApiError.
  *   - calls the onUnauthenticated callback on a 401, leaving the redirect to
  *     the login to the consumer.
+ *   - marks every request with X-Request-Id; an error carries it (and the
+ *     time) as `requestId` / `at`, the code the error state shows and the
+ *     server writes into its log context.
  */
 
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { isSuccess, type ApiEnvelope, type ErrorEnvelope } from './envelope'
-import { NetworkError, toApiError, UnauthenticatedError } from './errors'
+import { NetworkError, stampError, toApiError, UnauthenticatedError } from './errors'
 
 export interface ClientOptions {
   baseURL: string
@@ -66,6 +69,7 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
   // stale token gives a 419 on setTheme, setLocale and any POST after a
   // client-side login without a reload.
   instance.interceptors.request.use((config) => {
+    if (!config.headers.has('X-Request-Id')) config.headers.set('X-Request-Id', newRequestId())
     const xsrf = readCookie('XSRF-TOKEN')
     if (xsrf) {
       config.headers.set('X-XSRF-TOKEN', decodeURIComponent(xsrf))
@@ -85,7 +89,7 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
           return response
         }
         // success: false is thrown as an ApiError
-        throw toApiError(response.status, env.payload)
+        throw stampError(toApiError(response.status, env.payload), requestIdOf(response.config?.headers))
       }
       // Not an envelope — a binary stream, say — so it passes through untouched.
       return response
@@ -101,14 +105,14 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
             // is axios's own "Request failed…", not the server's reason.
             transport: true,
           }
-        const apiError = toApiError(status, payload)
+        const apiError = stampError(toApiError(status, payload), requestIdOf(error.config?.headers))
         if (apiError instanceof UnauthenticatedError) {
           opts.onUnauthenticated?.()
         }
         return Promise.reject(apiError)
       }
       // network failure / timeout
-      return Promise.reject(new NetworkError(error.message))
+      return Promise.reject(stampError(new NetworkError(error.message), requestIdOf(error.config?.headers)))
     },
   )
 
@@ -139,6 +143,26 @@ export function createAdminClient(opts: ClientOptions): AdminClient {
       delete instance.defaults.headers.common['X-Admin-Locale']
     },
   }
+}
+
+/**
+ * A short code of one request: `7f3a-91c2`. Short enough to read out over the
+ * phone, random enough to find the request in the server's log.
+ */
+export function newRequestId(): string {
+  const hex = (n: number): string => {
+    let out = ''
+    for (let i = 0; i < n; i++) out += Math.floor(Math.random() * 16).toString(16)
+    return out
+  }
+  return `${hex(4)}-${hex(4)}`
+}
+
+function requestIdOf(headers: unknown): string | null {
+  if (!headers || typeof headers !== 'object') return null
+  const h = headers as { get?: (k: string) => unknown } & Record<string, unknown>
+  const v = typeof h.get === 'function' ? h.get('X-Request-Id') : h['X-Request-Id']
+  return typeof v === 'string' && v !== '' ? v : null
 }
 
 /** Reads a cookie from document.cookie, returning null when there is none. */

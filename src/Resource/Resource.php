@@ -592,6 +592,8 @@ abstract class Resource
             'kanban' => $this->kanban()?->toArray($this),
             'calendar' => $this->calendar()?->toArray($this),
             'hierarchy_parent_key' => $this->hierarchyParentKey(),
+            // What the empty list says (1.74); null — the panel's own words.
+            'empty_state' => $this->emptyState()?->toArray(),
             'parent_slug' => $this->parentSlug(),
             'features' => [
                 'softDeletes' => static::supportsSoftDeletes(),
@@ -730,6 +732,18 @@ abstract class Resource
     public function rowOpen(): string
     {
         return 'page';
+    }
+
+    /**
+     * What the empty list says: a title, a hint and an action
+     * (Support\EmptyState). null — «Записей нет» and «Создать» for a user who
+     * may create; «Ничего не найдено» and «Сбросить фильтры» when the search or
+     * the filters match nothing. Layout::resourceIndex()->emptyState()
+     * overrides it for one embedded list.
+     */
+    public function emptyState(): ?\Dskripchenko\LaravelAdmin\Support\EmptyState
+    {
+        return null;
     }
 
     /**

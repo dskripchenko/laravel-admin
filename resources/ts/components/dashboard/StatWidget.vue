@@ -44,6 +44,8 @@ interface StatItem {
   url?: string | null
   /** The value of the previous period, when the dashboard compares. */
   previous?: number | string | null
+  /** A line under the number (StatsOverviewWidget::stat(..., hint: …)). */
+  hint?: string | null
 }
 
 interface Props {
@@ -113,6 +115,8 @@ interface ResolvedStat {
   formatter: ((value: number | string) => string) | undefined
   url: string | null
   previous: string | null
+  /** A line under the number: «старейшее 26 ч» (stat(..., hint: …)). */
+  hint: string | null
 }
 
 /** A link's kind: inside the panel (the router) or outside it (a new tab). */
@@ -169,6 +173,7 @@ const items = computed<ResolvedStat[]>(() => {
       formatter: undefined,
       url: null,
       previous: null,
+      hint: null,
     }]
   }
   // A lone stat whose label is the widget's title (or that has none) is one
@@ -187,6 +192,7 @@ const items = computed<ResolvedStat[]>(() => {
     precision: typeof s.precision === 'number' ? s.precision : props.precision,
     formatter: moneyFormatter(s.format),
     url: typeof s.url === 'string' && s.url !== '' ? s.url : null,
+    hint: typeof s.hint === 'string' && s.hint !== '' ? s.hint : null,
     previous: s.previous === undefined || s.previous === null
       ? null
       : (moneyFormatter(s.format)?.(s.previous) ?? (typeof s.previous === 'number' ? formatNumber(s.previous) : String(s.previous))),
@@ -237,10 +243,32 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       trend-placement="below"
       :class="['admin-stats-widget__single', items[0]!.toneClass]"
     />
+    <span v-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
     <span v-if="items[0]!.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
       {{ tr('Прошлый период') }}: {{ items[0]!.previous }}
     </span>
   </component>
+  <div v-else-if="!sectioned && (items[0]!.hint !== null || items[0]!.previous !== null)" class="admin-stats-widget__link--single">
+    <UidStat
+      :title="items[0]!.title"
+      :value="items[0]!.value"
+      :prefix="items[0]!.prefix"
+      :suffix="items[0]!.suffix"
+      :trend="items[0]!.trend"
+      :precision="items[0]!.precision"
+      :formatter="items[0]!.formatter"
+      :locale="locale"
+      :tone="items[0]!.tone"
+      :icon="items[0]!.icon"
+      :loading="loading"
+      trend-placement="below"
+      :class="['admin-stats-widget__single', items[0]!.toneClass]"
+  />
+    <span v-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
+    <span v-if="items[0]!.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
+      {{ tr('Прошлый период') }}: {{ items[0]!.previous }}
+    </span>
+  </div>
   <UidStat
     v-else-if="!sectioned"
     :title="items[0]!.title"
@@ -285,6 +313,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
         :class="stat.toneClass"
         trend-placement="below"
       />
+      <span v-if="stat.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ stat.hint }}</span>
       <span v-if="stat.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
         {{ tr('Прошлый период') }}: {{ stat.previous }}
       </span>
@@ -314,6 +343,11 @@ a.admin-stats-widget__link--single > .uid-stat {
 }
 a.admin-stats-widget__link:hover > .uid-stat {
   box-shadow: 0 0 0 1px var(--uid-color-primary, #14b8a6);
+}
+.admin-stats-widget__hint {
+  display: block;
+  font-size: var(--uid-font-size-xs, 12px);
+  color: var(--uid-text-secondary);
 }
 .admin-stats-widget__previous {
   margin-top: 4px;
