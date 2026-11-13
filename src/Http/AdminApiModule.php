@@ -103,6 +103,38 @@ class AdminApiModule extends BaseModule
      *
      * @return array<int, mixed>
      */
+    /**
+     * Every named action route carries the module group.
+     *
+     * Since laravel-api 6.2.2 a named action route carries only its own
+     * cascade and the module group stays on the generic
+     * `{version}/{controller}/{action}` route — the group a plain BaseModule
+     * builds depends on the request it was registered in. This module's group
+     * does not (CaptureApiRequest + RunVersionMiddleware, see
+     * getApiMiddleware()), so putting it back is safe, and it is needed:
+     *   - the panel stack — the session, AdminAuth, the locale — reaches a
+     *     panel request only through RunVersionMiddleware;
+     *   - CaptureApiRequest re-reads the version, controller and action of
+     *     every request; without it a long-lived process (Octane, a test
+     *     suite) served a host version with the previous request's action.
+     * RunActionMiddleware skips the middleware the route already carries, so
+     * nothing runs twice.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getRouteDefinitions(): array
+    {
+        return array_map(static function (array $definition): array {
+            $middleware = (array) ($definition['middleware'] ?? []);
+            if (! in_array('api-middleware-group', $middleware, true)) {
+                array_unshift($middleware, 'api-middleware-group');
+            }
+            $definition['middleware'] = $middleware;
+
+            return $definition;
+        }, parent::getRouteDefinitions());
+    }
+
     public function getApiMiddleware(): array
     {
         return [

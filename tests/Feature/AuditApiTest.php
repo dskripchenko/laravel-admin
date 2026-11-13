@@ -6,6 +6,7 @@ use Dskripchenko\LaravelAdmin\Audit\AuditLog;
 use Dskripchenko\LaravelAdmin\Audit\AuditTimelineProjector;
 use Dskripchenko\LaravelAdmin\Layout\AuditTrail;
 use Dskripchenko\LaravelAdmin\Models\AdminUser;
+use Dskripchenko\LaravelAdmin\Permission\Models\Role;
 
 beforeEach(function (): void {
     $this->admin = AdminUser::create([
@@ -13,8 +14,25 @@ beforeEach(function (): void {
         'email' => 'a-'.uniqid().'@example.com',
         'password' => 'secret',
     ]);
+    $this->admin->assignRole(Role::create([
+        'name' => 'Auditor',
+        'slug' => 'auditor-'.uniqid(),
+        'permissions' => ['admin.systems.audit.view'],
+    ]));
     AuditLog::query()->delete();
-    $this->actingAs($this->admin, 'admin');
+    $this->actingAs($this->admin->refresh(), 'admin');
+});
+
+it('audit endpoints need the audit permission, not just a session', function (): void {
+    $plain = AdminUser::create([
+        'name' => 'Plain',
+        'email' => 'p-'.uniqid().'@example.com',
+        'password' => 'secret',
+    ]);
+    $this->actingAs($plain, 'admin');
+
+    $this->getJson('/api/admin/audit/list')->assertForbidden();
+    $this->getJson('/api/admin/audit/timeline?subject_type=User&subject_id=1')->assertForbidden();
 });
 
 it('audit.list returns paginated logs ordered desc', function (): void {

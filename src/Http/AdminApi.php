@@ -174,8 +174,10 @@ class AdminApi extends BaseApi
             'audit' => [
                 'controller' => \Dskripchenko\LaravelAdmin\Audit\AuditController::class,
                 'actions' => [
-                    'list' => ['method' => ['get']],
-                    'timeline' => ['method' => ['get']],
+                    // The journal holds the before/after values of every audited
+                    // record: reading it takes the audit permission, not just a session.
+                    'list' => ['method' => ['get'], 'middleware' => [\Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess::class.':admin.systems.audit.view']],
+                    'timeline' => ['method' => ['get'], 'middleware' => [\Dskripchenko\LaravelAdmin\Permission\Middleware\AdminAccess::class.':admin.systems.audit.view']],
                 ],
             ],
             'delayed' => [
