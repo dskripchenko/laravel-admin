@@ -254,8 +254,13 @@ export type {
 } from './components/dashboard'
 
 // Resource stores
-export { useResourceIndexStore } from './stores/resourceIndex'
-export type { IndexMeta, IndexParams } from './stores/resourceIndex'
+export {
+  useResourceIndexStore,
+  resourceIndexStoreFor,
+  provideResourceIndexStore,
+  injectResourceIndexStore,
+} from './stores/resourceIndex'
+export type { IndexMeta, IndexParams, ResourceIndexStore } from './stores/resourceIndex'
 export { useResourceFormStore } from './stores/resourceForm'
 export type { FormMode } from './stores/resourceForm'
 

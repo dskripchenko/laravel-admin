@@ -546,6 +546,8 @@ abstract class Resource
                 'importable' => $this->importable(),
                 'exportable' => $this->exportable(),
                 'savedViews' => $this->savedViews(),
+                // How a row of the list opens: its page or a drawer over the list.
+                'rowOpen' => $this->rowOpen(),
                 'polling' => $this->polling(),
                 'warnOnUnsavedChanges' => true,
                 'creatable' => $this->fields() !== [],
@@ -660,6 +662,19 @@ abstract class Resource
     public function savedViews(): bool
     {
         return false;
+    }
+
+    /**
+     * How a row of the list opens: `page` — the record's own page — or
+     * `drawer` — a panel over the list with the record's view and form, its
+     * actions and ‹ › to the neighbouring records, without leaving the list.
+     * Layout::resourceIndex()->rowOpen() overrides it for one embedded list.
+     *
+     * @return 'page'|'drawer'
+     */
+    public function rowOpen(): string
+    {
+        return 'page';
     }
 
     /**

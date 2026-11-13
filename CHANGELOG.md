@@ -5,6 +5,36 @@ All notable changes to `dskripchenko/laravel-admin` will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Several live lists on one screen.** Every `Layout::resourceIndex()` keeps
+  a state of its own — search, filters, page, sort, selection — so lists side
+  by side or in `Layout::tabs()` no longer share it. `->queryKey('orders')`
+  namespaces a list's URL keys (`?orders.q=…&orders.filter[status]=new`);
+  without it a list keeps the plain keys, so a screen with one list works and
+  links as before. A list in a closed tab loads nothing until it is opened.
+- **Tabs in the URL and in a column.** `Layout::tabs()->persistInQuery('tab')`
+  keeps the open tab in the address (`?tab=quotes`), so a link leads to a tab
+  and back/forward switch it; `->keys([...])` names the tabs (by default the
+  label made URL-safe); `->vertical()` lays the tabs out in a column on the
+  left. `defaultTab()` is now honoured by the SPA.
+- **Records in a drawer.** `Layout::resourceIndex()->rowOpen('drawer', $size)`
+  and `Resource::rowOpen()` (`'page'` by default) open a row in a panel over
+  the list — the record page's infolist, form, record actions and delete, under
+  the same permissions — instead of on its page. A save or an action reloads
+  the list; ‹ › and Alt+↑ / Alt+↓ walk to the neighbouring records across
+  pages, "Save and next" saves and opens the next one, and
+  `->nextAfterAction()` moves on by itself after every save or action — for
+  queues. The open record is kept in the URL (`?record=12`).
+
+### Fixed
+
+- **A hidden tab took another tab's label.** A tab whose content the user may
+  not see was dropped, but the labels were paired by position, so the tabs
+  after it showed the wrong captions. The tab is now left out with its label.
+
 ## 1.69.2
 
 ### Changed

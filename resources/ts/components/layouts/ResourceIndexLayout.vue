@@ -10,6 +10,13 @@
  * view (`view`, the initial one) — so a screen that explains
  * a table shows the table, not a link to it. The resource's own label heads
  * it as a section title rather than a page title.
+ *
+ * Each list on a screen has a state of its own — search, filters, page, sort,
+ * selection — so several of them, side by side or in tabs, do not disturb one
+ * another. `queryKey` (ResourceIndex::queryKey()) namespaces its keys in the
+ * address; without one it uses the plain keys, as the only list on a screen
+ * always did. A list in a tab that is not open is not mounted, so it loads
+ * nothing until the tab is opened.
  */
 import { computed } from 'vue'
 import ResourceIndexPage from '../resource/ResourceIndexPage.vue'
@@ -20,9 +27,27 @@ interface Props {
   title?: string | null
   /** The view to open with: 'list', 'kanban' or 'calendar' (Layout::resourceIndex()->initialView()). */
   view?: string | null
+  /** The namespace of the list's URL keys (ResourceIndex::queryKey()). */
+  queryKey?: string | null
+  /** 'page' or 'drawer' (ResourceIndex::rowOpen()); null — the resource's own. */
+  rowOpen?: string | null
+  /** The record drawer's width (ResourceIndex::rowOpen('drawer', size)). */
+  drawerSize?: string | null
+  /** Move on to the next record after a save or an action in the drawer. */
+  nextAfterAction?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), { title: null, view: null })
+const props = withDefaults(defineProps<Props>(), {
+  title: null,
+  view: null,
+  queryKey: null,
+  rowOpen: null,
+  drawerSize: null,
+  nextAfterAction: false,
+})
+
+/** The list's own state: by its URL namespace, else by its resource. */
+const stateKey = computed(() => `screen:${props.queryKey ?? `@${props.resource}`}`)
 
 const manifest = useManifestStore()
 const known = computed(() => manifest.manifest === null || manifest.getResource(props.resource) !== null)
@@ -30,7 +55,16 @@ const known = computed(() => manifest.manifest === null || manifest.getResource(
 
 <template>
   <div v-if="known" class="admin-resource-index-layout" data-testid="resource-index-layout">
-    <ResourceIndexPage :slug="resource" :title="title" :initial-view="view" />
+    <ResourceIndexPage
+      :slug="resource"
+      :title="title"
+      :initial-view="view"
+      :state-key="stateKey"
+      :query-key="queryKey"
+      :row-open="rowOpen"
+      :drawer-size="drawerSize"
+      :next-after-action="nextAfterAction"
+    />
   </div>
 </template>
 

@@ -232,6 +232,23 @@ public function reorderColumn(): string { return 'position'; }   // the default
 
 The list-screen gets a drag-handle column.
 
+## Opening a record in a drawer
+
+```php
+public function rowOpen(): string { return 'drawer'; }   // 'page' by default
+```
+
+A row of the list (a click, the eye, the pencil) opens the record in a panel
+on the right over the list instead of on its page: the view from
+`infolist()`, the form from `fields()`, the resource's record actions and
+delete — under the same permissions as the record's page (`view` / `update` /
+`delete`). A save or an action reloads the list; ‹ › and **Alt+↑ / Alt+↓** move
+to the neighbouring records, "Save and next" to the next one. The record's
+page stays reachable through "Open page" and a direct link. For one embedded
+list `Layout::resourceIndex()->rowOpen()` sets the mode, with
+`nextAfterAction()` for queues — see
+[ResourceIndex](../layouts-reference.md#resourceindex-live-list-of-a-resource-on-a-screen).
+
 ## Kanban and calendar views
 
 Next to the list (or the tree) the index page can show a resource's records

@@ -93,8 +93,37 @@ Tabs::make([
 ]),
 ```
 
-Active-tab state is local to the page; switching doesn't lose form
-state.
+By default the active tab is local to the page; switching doesn't lose form
+state. A tab that is not open is not rendered, so what it holds — a live
+resource list, say — loads only when the tab is opened. A tab whose content
+the user may not see (a list without the `view` permission) is left out
+whole, label included.
+
+| Method | What it does |
+|---|---|
+| `defaultTab(1)` | The tab open at first (zero-based) |
+| `persistInQuery('tab')` | Keeps the open tab in the URL: `?tab=quotes` — a link leads to the tab, back and forward switch it |
+| `keys(['contracts', 'quotes'])` | The tabs' names in the URL, in order; without them the label made URL-safe (`Договоры` → `dogovory`), a repeat gets a `-2` suffix |
+| `vertical()` | Tabs in a column on the left, the open one beside it (a row again on a narrow screen) |
+
+```php
+// A product section: the tab in the URL, a live list in each tab.
+Layout::tabs([
+    'Contracts' => Layout::resourceIndex(ContractResource::class)->queryKey('contracts'),
+    'Quotes'    => Layout::resourceIndex(QuoteResource::class)->queryKey('quotes'),
+    'Programs'  => Layout::resourceIndex(ProgramResource::class)->queryKey('programs'),
+])->persistInQuery('tab')->keys(['contracts', 'quotes', 'programs']),
+
+// One screen for small dictionaries: the list on the left, the table on the right.
+Layout::tabs([
+    'Currencies' => Layout::resourceIndex(CurrencyResource::class)->queryKey('currencies'),
+    'Countries'  => Layout::resourceIndex(CountryResource::class)->queryKey('countries'),
+    'Banks'      => Layout::resourceIndex(BankResource::class)->queryKey('banks'),
+])->vertical()->persistInQuery('dict'),
+```
+
+The link `/admin/screens/product?tab=quotes&quotes.filter[status]=new` opens
+the Quotes tab with its list filtered by status.
 
 ### Wizard (multi-step form)
 
@@ -427,8 +456,47 @@ public function layout(): array
 The very list page of the resource — search, filters, sorting, row and bulk
 actions, inline edits, reordering, trash, or the tree of a hierarchical
 resource — embedded into a screen. A row click opens the record, as on the
-list page. Hidden from a user without the resource's `view` permission. One
-per screen: the list's state is shared.
+list page. Hidden from a user without the resource's `view` permission.
+
+**Several lists on a screen.** Each `resourceIndex` has a state of its own —
+search, filters, page, sort, selection — so lists side by side (`Columns`) or
+in `Tabs` do not disturb one another. To keep the URL apart as well, give each
+a `queryKey()`: its URL keys get a prefix
+(`?orders.q=…&orders.page=2&orders.filter[status]=new&orders.view=kanban`).
+Without `queryKey()` a list writes the plain keys (`?q=`, `?page=`,
+`?filter[…]=`) — exactly as before, when a screen had one list; two such lists
+on a screen would share the URL, so every list but one at most needs a key. A
+list in a closed tab loads nothing until the tab is opened, and back on its
+tab it shows its rows and selection at once.
+
+| Method | What it does |
+|---|---|
+| `title('…')` | The heading above the table instead of the resource's label |
+| `initialView('kanban')` | The view to open with: `list`, `kanban`, `calendar` |
+| `queryKey('orders')` | The namespace of the list's URL keys (letters, digits, `_`, `-`) |
+| `rowOpen('drawer', 'lg')` | A row opens in a drawer over the list (`'page'` — on the record's page). The second argument is the width: `sm`, `md`, `lg` (default), `xl` or a CSS length |
+| `nextAfterAction()` | After a save or an action in the drawer, go straight to the next record (implies `rowOpen('drawer')` when no mode is set) |
+
+**The record in a drawer.** With `rowOpen('drawer')` (or `Resource::rowOpen()`
+returning `'drawer'` — then on the resource's list page too) a row click, the
+eye and the pencil open the record in a panel on the right, without leaving
+the page. The panel is made of the record page's parts: the view (`infolist`),
+the form (`fields`), the resource's record actions, delete; the same
+endpoints and the same permissions (`view` to look, `update` to edit, checked
+on the server as well). A save, an action or a delete reloads the list. ‹ › in
+the panel's header and **Alt+↑ / Alt+↓** move to the previous and next record,
+across the list's pages; "Save and next" saves and opens the next one. When a
+record leaves a filtered list after an action (a moderation queue), the next
+record is the one that took its place. The open record is kept in the URL
+(`?record=12`, `?orders.record=12` for a named list), so it can be linked.
+
+```php
+// A review queue: approve — and on to the next one.
+Layout::resourceIndex(ReviewResource::class)
+    ->queryKey('reviews')
+    ->rowOpen('drawer', 'xl')
+    ->nextAfterAction(),
+```
 
 `initialView('kanban')` (or `'calendar'`, `'list'`) opens it on that view of
 the resource — see [Kanban and calendar views](concepts/resources.md#kanban-and-calendar-views);

@@ -26,7 +26,16 @@ use InvalidArgumentException;
  *
  * Unlike ResourceTable, which shows the children of the record being edited,
  * it shows the whole resource and needs no parent. A row click opens the
- * record, as on the list page. One per screen: the list's state is shared.
+ * record, as on the list page — or, with `->rowOpen('drawer')`, a panel over
+ * the list.
+ *
+ * Every list on a screen keeps a state of its own: search, filters, page,
+ * sort, selection. Several of them — side by side or in Layout::tabs() — each
+ * get `->queryKey('orders')`, which namespaces their keys in the address
+ * (`?orders.q=…&orders.filter[status]=new`), so a link opens each list as it
+ * was. Without a key the list uses the plain keys (`?q=…`), as the only list
+ * on a screen always did. A list in a tab that is not open loads nothing
+ * until the tab is opened.
  *
  * It is left out for a user without the resource's view permission.
  */
@@ -76,6 +85,57 @@ final class ResourceIndex extends Layout
             throw new InvalidArgumentException("ResourceIndex::initialView() expects list, kanban or calendar, got '{$view}'");
         }
         $this->props['view'] = $view;
+
+        return $this;
+    }
+
+    /**
+     * The namespace of this list's keys in the address — for a screen with
+     * several lists. Letters, digits, `_` and `-`.
+     */
+    public function queryKey(string $key): self
+    {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $key) !== 1) {
+            throw new InvalidArgumentException("ResourceIndex::queryKey() expects letters, digits, _ or -, starting with a letter, got '{$key}'");
+        }
+        $this->props['queryKey'] = $key;
+
+        return $this;
+    }
+
+    /**
+     * How a row opens: `page` — the record's page, as on the list page — or
+     * `drawer` — a panel over the list with the record's view and form, its
+     * actions, and ‹ › (Alt+↑ / Alt+↓) to the previous and next record. The
+     * list stays where it was and reloads after a save or an action. Not set,
+     * the resource decides (Resource::rowOpen()).
+     *
+     * `$size` is the drawer's width: sm, md, lg (the default), xl or a CSS length.
+     */
+    public function rowOpen(string $mode, ?string $size = null): self
+    {
+        if (! in_array($mode, ['page', 'drawer'], true)) {
+            throw new InvalidArgumentException("ResourceIndex::rowOpen() expects page or drawer, got '{$mode}'");
+        }
+        $this->props['rowOpen'] = $mode;
+        if ($size !== null) {
+            $this->props['drawerSize'] = $size;
+        }
+
+        return $this;
+    }
+
+    /**
+     * After a save or an action in the drawer, move on to the next record at
+     * once — a queue (reviews, requests) is worked through record by record.
+     * Implies `rowOpen('drawer')` when no mode is set.
+     */
+    public function nextAfterAction(bool $next = true): self
+    {
+        $this->props['nextAfterAction'] = $next;
+        if ($next && ! isset($this->props['rowOpen'])) {
+            $this->props['rowOpen'] = 'drawer';
+        }
 
         return $this;
     }
