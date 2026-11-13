@@ -26,6 +26,7 @@ import {
 } from '@dskripchenko/ui'
 import { useResourceFormStore } from '../../stores/resourceForm'
 import { useManifestStore } from '../../stores/manifest'
+import { normalizeActions, useActionRunner, type AdminAction } from '../../composables/useActionRunner'
 import { provideFormState } from '../render/formState'
 import { provideListenerEndpoint } from '../render/listenerContext'
 import { ApiError } from '../../api/errors'
@@ -123,6 +124,25 @@ watch(
 )
 
 const resourceMeta = computed(() => manifest.getResource(props.slug))
+
+/**
+ * The resource's links to its record (`Link` with `{id}` in the address and
+ * the `header` position) beside the form's buttons, on an existing record:
+ * the way from the form to the record's other screens. Server actions stay on
+ * the record's page — run from a form they would ignore its unsaved changes.
+ */
+const recordLinks = computed<AdminAction[]>(() =>
+  form.isEdit
+    ? normalizeActions(resourceMeta.value?.actions).filter(
+        (a) => a.type === 'link' && a.position.includes('header') && String(a.attributes.href ?? '').includes('{id}'),
+      )
+    : [],
+)
+
+const linkRunner = useActionRunner({
+  ids: () => (props.id === null || props.id === undefined ? [] : [props.id]),
+  execute: () => Promise.reject(new Error('A form runs only links')),
+})
 
 /**
  * The record was not found (a 404 on read) in edit or view mode: show a plain
@@ -303,6 +323,16 @@ async function onCancel(): Promise<void> {
         </UidBadge>
       </div>
       <div class="admin-page__actions">
+        <UidButton
+          v-for="link in recordLinks"
+          :key="link.name"
+          variant="secondary"
+          :disabled="form.saving || form.deleting"
+          :data-testid="`form-link-${link.name}`"
+          @click="linkRunner.run(link)"
+        >
+          {{ link.label }}
+        </UidButton>
         <UidButton
           variant="ghost"
           :disabled="form.saving || form.deleting"

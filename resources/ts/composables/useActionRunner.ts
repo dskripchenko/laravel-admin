@@ -156,6 +156,18 @@ export function selectionAllows(action: AdminAction, count: number): boolean {
   return true
 }
 
+/**
+ * A link's address for the records it runs on: `{id}` becomes the key of the
+ * one record (a row's own menu, a record's page, drawer or form), URL-encoded.
+ * Null when the address needs a record and the run has not exactly one; an
+ * address without the placeholder is returned as is.
+ */
+export function fillRecordHref(href: string, ids: ReadonlyArray<string | number> | undefined): string | null {
+  if (!href.includes('{id}')) return href
+  if (!ids || ids.length !== 1) return null
+  return href.split('{id}').join(encodeURIComponent(String(ids[0])))
+}
+
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
 
 /** The UidModal sizes; the backend's modalSize() is a free-form string. */
@@ -435,9 +447,14 @@ export function useActionRunner(executor: ActionExecutor) {
 
   /* ---------------- link ---------------- */
 
-  function openLink(action: AdminAction): void {
-    const href = typeof action.attributes.href === 'string' ? action.attributes.href : ''
-    if (href === '') return
+  function openLink(action: AdminAction, options?: ActionRunOptions): boolean {
+    const template = typeof action.attributes.href === 'string' ? action.attributes.href : ''
+    if (template === '') return false
+    const href = fillRecordHref(template, options?.ids ?? executor.ids?.())
+    if (href === null) {
+      adminToast.warning(tRaw('Действие «:action» недоступно для выбранного числа записей.', { action: action.label }))
+      return false
+    }
     const target = typeof action.attributes.target === 'string' ? action.attributes.target : '_self'
     const download = action.attributes.download
 
@@ -449,18 +466,19 @@ export function useActionRunner(executor: ActionExecutor) {
       document.body.appendChild(a)
       a.click()
       a.remove()
-      return
+      return true
     }
     if (target !== '_self') {
       window.open(href, target, 'noopener')
-      return
+      return true
     }
     const path = toRouterPath(router, href)
     if (path !== null && router) {
       router.push(path).catch(() => undefined)
-      return
+      return true
     }
     window.location.assign(href)
+    return true
   }
 
   /* ---------------- dispatch ---------------- */
@@ -495,8 +513,7 @@ export function useActionRunner(executor: ActionExecutor) {
     }
 
     if (action.type === 'link') {
-      openLink(action)
-      return true
+      return openLink(action, options)
     }
     if (action.type === 'modal') {
       openModal(action, options)

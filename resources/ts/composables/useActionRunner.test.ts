@@ -312,6 +312,29 @@ describe('useActionRunner', () => {
     expect(open).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener')
   })
 
+  it('Link puts the key of its one record into {id}', async () => {
+    const m = await mountRunner({ execute: vi.fn(), ids: () => [] })
+    wrapper = m.wrapper
+    const push = vi.spyOn(m.router, 'push')
+    const link = act({ type: 'link', position: ['row', 'header'], attributes: { href: '/r/posts?owner=page&id={id}' } })
+
+    expect(await m.runner().run(link, { ids: [42] })).toBe(true)
+    expect(push).toHaveBeenCalledWith('/r/posts?owner=page&id=42')
+
+    // Without exactly one record the address cannot be built: nothing opens
+    push.mockClear()
+    expect(await m.runner().run(link, { ids: [1, 2] })).toBe(false)
+    expect(await m.runner().run(link)).toBe(false)
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('fillRecordHref encodes the key and leaves other addresses alone', async () => {
+    const { fillRecordHref } = await import('./useActionRunner')
+    expect(fillRecordHref('/a/{id}/b?x={id}', ['a b'])).toBe('/a/a%20b/b?x=a%20b')
+    expect(fillRecordHref('/plain', undefined)).toBe('/plain')
+    expect(fillRecordHref('/a/{id}', [])).toBeNull()
+  })
+
   it('a bulk action outside its selection bounds does not run', async () => {
     const execute = vi.fn()
     const m = await mountRunner({ execute, ids: () => [1] })
