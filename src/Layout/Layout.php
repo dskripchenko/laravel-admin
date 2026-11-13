@@ -294,8 +294,8 @@ abstract class Layout implements Renderable
     }
 
     /**
-     * A feed of events of different kinds with chips by kind and «Только
-     * ошибки». See Timeline.
+     * A feed of events of different kinds with chips by kind and an
+     * errors-only one. See Timeline.
      *
      * @param  string|array<int, array<string, mixed>>|callable(): array<int, array<string, mixed>>  $events  A state key, the events, or a closure.
      */

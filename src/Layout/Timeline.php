@@ -29,8 +29,8 @@ use InvalidArgumentException;
  *      'linkLabel' => 'Процесс #41', 'linkTarget' => 'drawer']
  *
  * `tone` (neutral, info, success, warning, danger) and `icon` fall back to
- * the type's; `error: true` (or the danger tone) puts it under «Только
- * ошибки»; `details` folds under «Подробнее» — a string, or a list of
+ * the type's; `error: true` (or the danger tone) puts it under the
+ * errors-only chip; `details` fold under a toggle — a string, or a list of
  * `['label' => …, 'value' => …]` lines. `time` is an ISO date, shown in the
  * panel's locale, or any text. The data is the screen's business: the source
  * is a state key, a list, or a closure resolved when the screen is

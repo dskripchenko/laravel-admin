@@ -77,7 +77,7 @@ const rows = computed<DiffRow[]>(() => diff.value.rows)
   gap: 8px;
   padding: 2px 8px;
   background: var(--uid-surface-sunken, rgba(0, 0, 0, 0.03));
-  font-family: var(--uid-font-mono, monospace);
+  font-family: var(--uid-font-family-mono, monospace);
 }
 .admin-value-diff__added { color: var(--uid-color-success, #15803d); }
 .admin-value-diff__removed { color: var(--uid-color-danger, #b91c1c); }
@@ -90,7 +90,7 @@ const rows = computed<DiffRow[]>(() => diff.value.rows)
   list-style: none;
   margin: 0;
   padding: 0;
-  font-family: var(--uid-font-mono, monospace);
+  font-family: var(--uid-font-family-mono, monospace);
 }
 .admin-value-diff__line {
   display: flex;
@@ -117,7 +117,7 @@ const rows = computed<DiffRow[]>(() => diff.value.rows)
   border: 0;
   background: none;
   font: inherit;
-  color: var(--uid-text-link, var(--uid-text-secondary));
+  color: var(--uid-color-primary, var(--uid-text-secondary));
   cursor: pointer;
 }
 </style>

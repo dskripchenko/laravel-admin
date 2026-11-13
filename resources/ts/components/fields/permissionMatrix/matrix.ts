@@ -8,7 +8,7 @@ export interface MatrixItem {
   key: string
   label: string
   hint?: string | null
-  /** The key of the second column for this row (ПДн без маски), when there is one. */
+  /** The key of the second column for this row (personal data unmasked, say), when there is one. */
   extra?: string | null
 }
 

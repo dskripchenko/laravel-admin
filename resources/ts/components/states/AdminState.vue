@@ -31,7 +31,7 @@ interface Props {
   description?: string | null
   /** The failure behind `error` / `forbidden`. */
   error?: unknown
-  /** The section's name for `forbidden`: «Раздел «Журнал аудита» недоступен». */
+  /** The section's name for `forbidden`, named in its title. */
   section?: string | null
   /** The missing permission key; taken from a 403 when not given. */
   permission?: string | null
@@ -184,13 +184,13 @@ function goHome(): void {
 }
 .admin-state__trace {
   margin-top: var(--uid-space-sm, 8px);
-  font-family: var(--uid-font-mono, monospace);
+  font-family: var(--uid-font-family-mono, monospace);
   font-size: var(--uid-font-size-xs, 12px);
   color: var(--uid-text-tertiary, var(--uid-text-secondary));
   text-align: center;
 }
 .admin-state__key {
-  font-family: var(--uid-font-mono, monospace);
+  font-family: var(--uid-font-family-mono, monospace);
   padding: 1px 4px;
   border-radius: var(--uid-radius-sm, 4px);
   background: var(--uid-surface-sunken, rgba(0, 0, 0, 0.05));

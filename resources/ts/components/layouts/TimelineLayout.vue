@@ -274,12 +274,12 @@ function follow(e: TimelineEvent, event: MouseEvent): void {
   cursor: pointer;
 }
 .admin-timeline__chip--active {
-  background: var(--uid-surface-selected, rgba(0, 0, 0, 0.06));
-  border-color: var(--uid-border-strong, rgba(0, 0, 0, 0.3));
+  background: var(--uid-color-primary-subtle, rgba(0, 0, 0, 0.06));
+  border-color: var(--uid-color-primary, rgba(0, 0, 0, 0.3));
   font-weight: var(--uid-font-weight-medium, 500);
 }
 .admin-timeline__chip--errors.admin-timeline__chip--active {
-  color: var(--uid-text-danger, #c62828);
+  color: var(--uid-color-danger-text, #c62828);
 }
 .admin-timeline__chip-count {
   color: var(--uid-text-secondary);
@@ -307,14 +307,14 @@ function follow(e: TimelineEvent, event: MouseEvent): void {
   font-size: var(--uid-font-size-sm, 13px);
 }
 .admin-timeline__link {
-  color: var(--uid-text-link, inherit);
+  color: var(--uid-color-primary, inherit);
 }
 .admin-timeline__more {
   align-self: flex-start;
   padding: 0;
   border: 0;
   background: none;
-  color: var(--uid-text-link, inherit);
+  color: var(--uid-color-primary, inherit);
   font: inherit;
   font-size: var(--uid-font-size-sm, 13px);
   cursor: pointer;

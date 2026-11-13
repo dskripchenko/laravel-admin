@@ -295,7 +295,7 @@ function onExtra(key: string, extra: string, on: boolean): void {
   color: var(--uid-text-secondary);
 }
 .admin-permission-matrix__key {
-  font-family: var(--uid-font-mono, monospace);
+  font-family: var(--uid-font-family-mono, monospace);
   font-size: var(--uid-font-size-xs, 12px);
   color: var(--uid-text-secondary);
 }
