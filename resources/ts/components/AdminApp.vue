@@ -66,7 +66,7 @@ async function exitImpersonation(): Promise<void> {
     await client.post('/auth/stopImpersonation')
     window.location.reload()
   } catch {
-    adminToast.error(tr('Не удалось выйти из режима импертонации.'))
+    adminToast.error(tr('Не удалось вернуться в свою учётную запись.'))
   }
 }
 

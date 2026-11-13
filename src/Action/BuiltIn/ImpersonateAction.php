@@ -9,8 +9,11 @@ use Dskripchenko\LaravelAdmin\Action\Button;
 /**
  * Logs in as another administrator, through `auth.startImpersonation`.
  *
- * It is used as a row action in the users resource. The permission defaults to
- * `admin.impersonate`; see config('admin.auth.impersonation.permission').
+ * A row (and record) action of a users resource: the SPA posts the record's
+ * key to `auth/startImpersonation` and reloads the panel as that user; the
+ * shell's banner leads back. The permission defaults to
+ * config('admin.auth.impersonation.permission'); the server checks it again,
+ * along with `block_higher_powered`.
  */
 final class ImpersonateAction
 {
@@ -20,7 +23,8 @@ final class ImpersonateAction
         $action = Button::make('Войти как пользователь')
             ->withName('impersonate')
             ->method('startImpersonation')
-            ->position(['row'])
+            ->client('impersonate')
+            ->position(['row', 'header'])
             ->permission($permission ?? (string) config('admin.auth.impersonation.permission', 'admin.impersonate'))
             ->confirm([
                 'title' => 'Подмена пользователя',

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.70.1
+
+### Fixed
+
+- **Logging in as a user from the users list.** `BuiltIn\ImpersonateAction`
+  was a button whose method nothing called. It is now handled by the SPA
+  (`Button::client('impersonate')`): the row's — or the record page's — key
+  goes to `auth/startImpersonation`, and the panel reloads as that user; the
+  shell's banner leads back. The server keeps its checks (permission,
+  `block_higher_powered`, no nesting).
+
 ## 1.70.0
 
 ### Added

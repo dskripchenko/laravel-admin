@@ -33,6 +33,20 @@ final class Button extends Action
     }
 
     /**
+     * A button the SPA runs itself instead of calling the server action:
+     * `impersonate` — logs in as the record's user (`auth.startImpersonation`
+     * with the row's key, then reloads the panel). See BuiltIn\ImpersonateAction.
+     *
+     * @param  'impersonate'  $handler
+     */
+    public function client(string $handler): self
+    {
+        $this->attributes['client'] = $handler;
+
+        return $this;
+    }
+
+    /**
      * The button's own parameters — a dictionary's code, a record's id — which
      * reach the screen method as its second argument. They come back from the
      * browser, so the method validates them as any input.
