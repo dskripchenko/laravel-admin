@@ -31,8 +31,9 @@ class StatsOverviewWidget extends Widget
      * primary, neutral, or a colour word — green, amber, yellow, orange, red,
      * blue, gray/grey and the like. The icon is a Lucide name (`users`,
      * `edit`, `shopping-cart`…). `$url` makes the card a link — see url().
+     * `$hint` is a line under the number: the age of the oldest item of a queue.
      */
-    public function stat(string $label, mixed $value, ?string $color = null, ?string $icon = null, ?string $url = null): static
+    public function stat(string $label, mixed $value, ?string $color = null, ?string $icon = null, ?string $url = null, ?string $hint = null): static
     {
         $this->stats[] = [
             'label' => $label,
@@ -40,6 +41,8 @@ class StatsOverviewWidget extends Widget
             'color' => $color,
             'icon' => $icon,
             ...($url !== null ? ['url' => $url] : []),
+            // A line under the number — «старейшее 26 ч» of a queue (1.74).
+            ...($hint !== null ? ['hint' => $hint] : []),
         ];
 
         return $this;
@@ -141,6 +144,9 @@ class StatsOverviewWidget extends Widget
         return ['stats' => array_map(static function (array $stat): array {
             if (is_string($stat['label'] ?? null)) {
                 $stat['label'] = Localize::string($stat['label']);
+            }
+            if (is_string($stat['hint'] ?? null)) {
+                $stat['hint'] = Localize::string($stat['hint']);
             }
 
             return $stat;

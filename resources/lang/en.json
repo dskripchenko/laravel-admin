@@ -802,5 +802,7 @@
     ":n несохранённое изменение": ":n unsaved change",
     ":n несохранённых изменения": ":n unsaved changes",
     ":n несохранённых изменений": ":n unsaved changes",
-    "и ещё :n": "and :n more"
+    "и ещё :n": "and :n more",
+    ":n из :max символов": ":n of :max characters",
+    "Символов: :n": "Characters: :n"
 }

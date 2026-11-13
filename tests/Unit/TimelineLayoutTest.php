@@ -69,3 +69,11 @@ it('Screen::saveMethod() reaches the screen state', function (): void {
 
     expect($screen->compile()['save_method'])->toBe('save');
 });
+
+it('Field::counter() and stat(..., hint:) reach the SPA', function (): void {
+    $field = Dskripchenko\LaravelAdmin\Field\Input::make('title')->counter(120)->toArray();
+    expect($field['attributes'])->toMatchArray(['counter' => true, 'maxlength' => 120]);
+
+    $widget = Dskripchenko\LaravelAdmin\Widget\StatsOverviewWidget::make('queues')->stat('Обращения', 12, hint: 'старейшее 26 ч');
+    expect($widget->data()['stats'][0]['hint'])->toBe('старейшее 26 ч');
+});
