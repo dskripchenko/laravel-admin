@@ -778,5 +778,13 @@
     "Записей нет": "No records",
     "Не удалось загрузить: :plural": "Could not load :plural",
     "Сбросить фильтры": "Reset the filters",
-    "Под условия не подходит ни одна запись: :filters.": "No record matches: :filters."
+    "Под условия не подходит ни одна запись: :filters.": "No record matches: :filters.",
+    "Найти право или ключ": "Find a permission or a key",
+    "Только выбранные": "Only selected",
+    "Выбрано :n из :m": "Selected :n of :m",
+    "Выбрать всё": "Select all",
+    "Раздел": "Section",
+    "Доступ": "Access",
+    ":n из :m": ":n of :m",
+    "Прав нет": "No permissions"
 }

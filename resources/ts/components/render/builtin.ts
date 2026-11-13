@@ -49,6 +49,7 @@ import DmnField from '../fields/DmnField.vue'
 import KanbanField from '../fields/KanbanField.vue'
 import CalendarField from '../fields/CalendarField.vue'
 import MarkdownEditorField from '../fields/MarkdownEditorField.vue'
+import PermissionMatrixField from '../fields/PermissionMatrixField.vue'
 import RowsLayout from '../layouts/RowsLayout.vue'
 import ColumnsLayout from '../layouts/ColumnsLayout.vue'
 import SectionLayout from '../layouts/SectionLayout.vue'
@@ -202,6 +203,8 @@ export function registerBuiltinComponents(): void {
       calendar: CalendarField,
       // Field\MarkdownEditor, @dskripchenko/markdown-editor loaded on first use.
       markdown_editor: MarkdownEditorField,
+      // The permissions of a role as a matrix (Field\PermissionMatrix).
+      permission_matrix: PermissionMatrixField,
     },
     layouts: {
       rows: RowsLayout,
