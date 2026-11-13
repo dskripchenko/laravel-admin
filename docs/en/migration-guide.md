@@ -14,6 +14,10 @@ Upgrades between major and minor versions. We follow [SemVer](https://semver.org
 There is no 2.0 yet, and none of these releases requires a rewrite, but a
 few change behaviour a host may rely on. Newest first:
 
+- **1.73.0** — a new package migration, `admin_navigation_states`
+  (favourites, recent pages, folded menu groups): run `php artisan migrate`.
+  `system/search` groups carry `recognized` and `priority`; a list's search
+  answer carries `meta.revealable`; a `TableColumn` serializes `masked`.
 - **1.36.0** — requires `dskripchenko/laravel-api` `^5.11`.
 - **1.34.0** — requires `@dskripchenko/ui` `^1.4.0` (matters only for a
   custom build). Menu items with equal `order` keep the order they were

@@ -88,6 +88,7 @@ including `admin:install --shared`, which lets your existing users sign in.
   [Screens](docs/en/concepts/screens.md) ·
   [Widgets & Dashboards](docs/en/concepts/widgets-and-dashboards.md) ·
   [Menu](docs/en/concepts/menu.md) ·
+  [Navigation](docs/en/concepts/navigation.md) ·
   [Actions](docs/en/concepts/actions.md) ·
   [Permissions](docs/en/concepts/permissions.md) ·
   [i18n](docs/en/concepts/i18n.md) ·

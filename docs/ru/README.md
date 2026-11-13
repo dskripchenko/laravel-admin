@@ -87,6 +87,7 @@ php artisan admin:install
   [Экраны](concepts/screens.md) ·
   [Виджеты и дашборды](concepts/widgets-and-dashboards.md) ·
   [Меню](concepts/menu.md) ·
+  [Навигация](concepts/navigation.md) ·
   [Действия](concepts/actions.md) ·
   [Права доступа](concepts/permissions.md) ·
   [i18n](concepts/i18n.md) ·

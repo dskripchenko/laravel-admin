@@ -264,6 +264,10 @@ it is, not in kebab-case: `action-send_invoice`.
 | `two-factor-form`, `two-factor-code`, `two-factor-recovery-code`, `two-factor-submit`, `two-factor-switch`, `two-factor-error` | The second factor: the form, the code's cells (their box), the recovery code, "Confirm", the switch to a recovery code, the error |
 | `menu-{key}` | A menu item by its key (`MenuNode::make($key)`; a resource's — its slug); a leaf or a group |
 | `topbar-search`, `search-input`, `search-item` | The global search |
+| `search-group-{key}`, `search-hint` | A search result group (`favorites`, `recent`, `sections`, `actions`, a resource slug, `provider-{key}`), the hint (1.73) |
+| `menu-favorites`, `favorite-item`, `favorite-remove`, `favorite-toggle` | The favourites above the menu (an item also has `data-url`), the cross, the top bar's star (1.73) |
+| `menu-badge-{key}` | A menu group's badge (its own or the sum when folded) (1.73) |
+| `quick-create`, `quick-create-{key}` | "+ Create" and its item (1.73) |
 | `user-menu`, `user-menu-profile`, `logout` | The user menu, "Profile", "Log out" |
 | `toast-success`, `toast-error`, `toast-warning`, `toast-info` | A toast by its level |
 | `confirm-ok`, `confirm-cancel`, `confirm-message` | The shared confirmation dialog (a delete, a discard) |
@@ -317,6 +321,10 @@ it is, not in kebab-case: `action-send_invoice`.
 | `action-modal`, `action-form`, `action-modal-submit`, `action-modal-cancel` | An action's form dialog |
 | `modal-{id}`, `drawer-{id}` | The content of `Layout::modal()` / `Layout::drawer()` by its id |
 | `tab-{key}`, `tab-panel-{key}` | A `Layout::tabs()` tab by its key (`->keys([...])`, else its index) and its panel |
+| `tab-badge-{key}`, `embedded-screen` | A tab's badge (`Tabs::badges()`), a screen inside a screen (`Layout::screen()`) (1.73) |
+| `masked-cell`, `masked-reveal`, `masked-hide` | A masked column's cell, "Show", "Hide" (1.73) |
+| `dash-period-{key}`, `dash-period-range`, `dash-range`, `dash-range-from`, `dash-range-to`, `dash-range-apply`, `dash-range-cancel`, `dash-compare` | The dashboard's period, a custom range, the comparison (1.73) |
+| `widget-link`, `stat-link`, `stat-previous` | A widget's link, a number's link, the previous period's value (1.73) |
 | `reveal-value`, `reveal-copy`, `reveal-close` | The show-once secret dialog |
 
 An action's `{name}` without `withName()` is derived from a Latin label
