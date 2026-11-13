@@ -725,5 +725,9 @@
     "Адрес страницы": "Page address",
     "Изменение на доске не принято.": "The change to the board was not accepted.",
     "Не удалось загрузить модуль доски": "Failed to load the board module",
-    "Доска — совместная работа": "Board — work together"
+    "Доска — совместная работа": "Board — work together",
+    "TinyMCE не подключён: укажите адрес tinymce.min.js в driverConfig.script или admin.wysiwyg.tinymce.script. Пока HTML правится как текст.": "TinyMCE is not connected: set the tinymce.min.js URL in driverConfig.script or admin.wysiwyg.tinymce.script. Meanwhile the HTML is edited as text.",
+    "Код цвета, например #c0ffee или rgba 255, 0, 0, 0.5": "Colour code, e.g. #c0ffee or rgba 255, 0, 0, 0.5",
+    "Не удалось загрузить редактор.": "Could not load the editor.",
+    "Загрузка редактора…": "Loading the editor…"
 }

@@ -285,6 +285,12 @@ export {
 } from './components/infolist'
 export type { InfolistNode } from './components/infolist'
 
+// The Wysiwyg field's engines (->driver('quill' | 'tinymce' | …)): a host with
+// its own build registers the ones it has installed, e.g.
+//   registerWysiwygDriver('quill', () => import('@dskripchenko/laravel-admin/quill').then(m => m.QuillDriver))
+export { registerWysiwygDriver, hasWysiwygDriver } from './components/fields/wysiwyg/drivers'
+export type { WysiwygDriverLoader } from './components/fields/wysiwyg/drivers'
+
 // JSON-driven rendering: registry, renderers, builtin fields/layouts, form-state
 export {
   FieldRenderer,

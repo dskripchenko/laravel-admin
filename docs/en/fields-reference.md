@@ -150,6 +150,66 @@ import { QuillField } from '@dskripchenko/laravel-admin/quill'
 registerField('wysiwyg', QuillField)
 ```
 
+#### Engines: Quill and TinyMCE in the prebuilt app
+
+`->driver()` switches the field to another editor — the prebuilt application
+(`public/`, for a host without a frontend build of its own) included. Use it
+when a field's HTML was historically written by Quill or TinyMCE (Orchid, for
+one) and must be saved by the same editor.
+
+```php
+// Quill 2 — HTML as Orchid stores it: the editor root's innerHTML.
+Wysiwyg::make('answer')->driver('quill'),
+Wysiwyg::make('answer')->driver('quill', [
+    'toolbar' => ['text', 'header', 'list'],   // Orchid's groups or a Quill toolbar
+    'modules' => ['clipboard' => ['matchVisual' => false]],
+    'formats' => ['bold', 'italic', 'link', 'list', 'header'],
+    'output'  => 'html',                       // 'html' | 'delta' (JSON)
+]),
+Wysiwyg::make('note')->output('delta'),          // same as driver('quill', ['output' => 'delta'])
+
+// TinyMCE — self-hosted, no cloud, no API key.
+Wysiwyg::make('text')->driver('tinymce', [
+    'script'  => '/js/platform/tinymce/tinymce/tinymce.min.js',
+    'height'  => 400,
+    'plugins' => 'lists link code',
+    'toolbar' => 'bold italic underline strikethrough | numlist bullist | link | code',
+    'init'    => ['toolbar_mode' => 'wrap'],   // any other TinyMCE option
+]),
+Wysiwyg::make('text')->driver('default'),        // back to the default editor
+```
+
+- Both engines are lazy chunks: a page without such a field never loads
+  them, and the main bundle does not grow.
+- **Quill** (BSD-3-Clause, 2.0.3 — the version Orchid 14 ships) is bundled
+  with its snow theme. A value loads the way Orchid loads it
+  (`root.innerHTML`) and without a change event, so the field stays as it was
+  until the user edits it. Without `toolbar` it gets Orchid's default toolbar
+  (the same buttons and colour palette). Markup Quill 2 has no blot for
+  (Quill 1's `<ul>` / `<pre class="ql-syntax">`, a `<div>`) is read through
+  Quill's clipboard instead of being dropped with its text.
+- **TinyMCE** is not bundled: 7.x and later are GPL-2.0-or-later, the package
+  is MIT. The host serves its own copy (`tinymce.min.js` with skins, icons,
+  models, themes and plugins beside it) and names the script per field or once
+  in `config/admin.php` → `wysiwyg.tinymce.script` (`ADMIN_TINYMCE_SCRIPT`).
+  The field runs it with `license_key: 'gpl'` and `base_url` at the script's
+  folder; the value is `getContent()`. Without a script the field shows the
+  HTML in a plain textarea and rewrites nothing.
+- The sanitizer widens its whitelist for such a field to the engine's markup
+  (Quill's `data-list` and `ql-*` classes, TinyMCE's inline styles); `delta`
+  output is not sanitized. Use `->sanitize(false)` for trusted HTML that must
+  stay byte for byte (Quill's video iframes, say).
+
+A host with its own build registers the engines it uses:
+
+```ts
+import { registerWysiwygDriver } from '@dskripchenko/laravel-admin'
+import 'quill/dist/quill.snow.css'
+
+registerWysiwygDriver('quill', () => import('@dskripchenko/laravel-admin/quill').then(m => m.QuillDriver))
+registerWysiwygDriver('tinymce', () => import('@dskripchenko/laravel-admin/tinymce').then(m => m.TinymceDriver))
+```
+
 ## Selection
 
 ### Select

@@ -128,6 +128,23 @@ import { QuillField } from '@dskripchenko/laravel-admin/quill'
 registerField('wysiwyg', QuillField)
 ```
 
+#### 编辑引擎：预构建应用中的 Quill 与 TinyMCE
+
+`->driver('quill' | 'tinymce' | 'default', $options)` 可将字段切换到其他编辑器——包括预构建应用（`public/`）。两个引擎都是懒加载的独立 chunk，主 bundle 不会变大。
+
+```php
+Wysiwyg::make('answer')->driver('quill', ['toolbar' => ['text', 'list'], 'output' => 'html']),
+Wysiwyg::make('text')->driver('tinymce', [
+    'script' => '/js/tinymce/tinymce.min.js', 'height' => 400,
+    'plugins' => 'lists link code', 'toolbar' => 'bold italic | link | code',
+]),
+```
+
+- **Quill** 2.0.3（BSD-3-Clause，与 Orchid 14 相同版本）随构建提供；保存的 HTML 与 Orchid 一样是编辑器根节点的 `innerHTML`，加载值时不触发修改事件。选项：`toolbar`（Orchid 分组名或 Quill 工具栏）、`modules`、`formats`、`theme`、`output`（`'html'` | `'delta'`）。
+- **TinyMCE** 不随构建提供（7.x 为 GPL-2.0-or-later，本包为 MIT）：宿主自行托管一份副本，并在字段的 `script` 或 `admin.wysiwyg.tinymce.script` 中指定脚本地址；以 `license_key: 'gpl'` 启动。选项：`height`、`plugins`、`toolbar`、`menubar`、`language`、`init`。
+- 清理器会针对引擎的标记扩展白名单。
+- 自有构建：`registerWysiwygDriver('quill', () => import('@dskripchenko/laravel-admin/quill').then(m => m.QuillDriver))`。
+
 ## 选择
 
 ### Select

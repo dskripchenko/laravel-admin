@@ -47,9 +47,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   known types, nesting, depth, the fields' rules). The editor is a chunk of
   its own in the prebuilt bundle. See
   [Layouts Reference](docs/en/layouts-reference.md#blocktree-page-builder).
+- **Quill and TinyMCE in the prebuilt application.** `Wysiwyg::make(...)
+  ->driver('quill' | 'tinymce' | 'default', $options)` switches a field's
+  editor, now also in the prebuilt app (`public/`), so a host without a
+  frontend build can keep HTML written by Quill or TinyMCE (Orchid's fields,
+  say) in the same editor. Both engines are lazy chunks — the main bundle
+  stays the size it was.
+  - Quill 2.0.3 (BSD-3-Clause, the version Orchid 14 ships) is bundled with
+    its snow theme. It stores the editor root's innerHTML, as Orchid does,
+    loads a value without a change event, and reads markup Quill 2 has no
+    blot for (Quill 1 lists and code blocks) through its clipboard instead
+    of dropping the text. Options: `toolbar` (Orchid's group names or a Quill
+    toolbar), `modules`, `formats`, `theme`, `output` `'html'` | `'delta'`;
+    shortcuts `->output()` and `->modules()`.
+  - TinyMCE is not bundled (7.x is GPL-2.0-or-later): the field loads the
+    host's self-hosted copy by its script URL — per field (`script`) or
+    `admin.wysiwyg.tinymce.script` / `ADMIN_TINYMCE_SCRIPT` — with
+    `license_key: 'gpl'` and no API key. Options: `height`, `plugins`,
+    `toolbar`, `menubar`, `language`, `init`; shortcut `->plugins()`.
+  - The sanitizer widens its whitelist to the engine's markup (Quill's
+    `data-list` and `ql-*` classes, TinyMCE's inline styles), keeps `&nbsp;`
+    as the entity, and leaves Quill's Delta output alone.
+  - `registerWysiwygDriver()` for hosts with their own build;
+    `QuillDriver` / `TinymceDriver` from the `/quill` and `/tinymce` subpaths.
 
 ### Fixed
 
+- **The API under laravel-api 6.2.2.** 6.2.2 stopped putting the module
+  group on the named action routes. `AdminApiModule` puts its group —
+  request-independent, `CaptureApiRequest` + `RunVersionMiddleware` — back on
+  every named route: the panel routes had run with no session (no AdminAuth,
+  no locale), and in a long-lived process (Octane, a test suite) a host
+  version was served with the previous request's action. Nothing runs twice:
+  `RunActionMiddleware` skips what the route already carries.
+- **The audit journal needs the audit permission.** `audit/list` and
+  `audit/timeline` required only a session, so any panel user could read every
+  before/after value; they now take `admin.systems.audit.view`.
 - **A hidden tab took another tab's label.** A tab whose content the user may
   not see was dropped, but the labels were paired by position, so the tabs
   after it showed the wrong captions. The tab is now left out with its label.

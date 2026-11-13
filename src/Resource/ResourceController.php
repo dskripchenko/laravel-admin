@@ -2011,7 +2011,6 @@ final class ResourceController extends ApiController
      */
     private function sanitizeWysiwyg(Resource $resource, array $data): array
     {
-        $sanitizer = null;
         foreach ($resource->fields() as $field) {
             if (! $field instanceof \Dskripchenko\LaravelAdmin\Field\Wysiwyg) {
                 continue;
@@ -2023,7 +2022,12 @@ final class ResourceController extends ApiController
             if (! array_key_exists($name, $data) || ! is_string($data[$name])) {
                 continue;
             }
-            $sanitizer ??= new \Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer;
+            // The whitelist follows the field's engine (Quill and TinyMCE keep
+            // their own markup).
+            $sanitizer = new \Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer(
+                $field->sanitizerWhitelist(),
+                $field->sanitizerConstrains(),
+            );
             $data[$name] = $sanitizer->sanitize($data[$name]);
         }
 

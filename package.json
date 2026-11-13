@@ -187,6 +187,7 @@
     "globals": "^17.5.0",
     "jsdom": "^25",
     "pinia": "^3.0.4",
+    "quill": "^2.0.3",
     "rollup-plugin-visualizer": "^7.0.1",
     "size-limit": "^12.1.0",
     "storybook": "^10.5.6",

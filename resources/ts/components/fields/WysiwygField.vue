@@ -27,8 +27,13 @@
  * slash menu inserts one with «API-запрос» (/api). ```video and ```audio
  * blocks are the kit's players; «Видео» (/video) and «Аудио» (/audio) insert
  * one with a template to fill in.
+ *
+ * Engines: `driver` (from `->driver('quill' | 'tinymce')`) switches the field
+ * to a registered engine (see wysiwyg/drivers.ts), loaded on first use and
+ * given `driverConfig`; an engine nobody registered falls back to the
+ * default editor with a console warning.
  */
-import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch, type Component } from 'vue'
 import { DskWysiwyg, type EditorController, type SlashCommand } from '@dskripchenko/wysiwyg'
 import { markdownBlockRenderersKey } from '@dskripchenko/ui'
 import { builtinMarkdownRenderers } from '../markdown/blockRenderers'
@@ -37,6 +42,7 @@ import { useFormState } from '../render/formState'
 import { getAdminClient } from '../../stores/registry'
 import { adminToast } from '../../stores/toast'
 import { trSafe as tr } from '../../stores/i18n'
+import { resolveWysiwygDriver } from './wysiwyg/drivers'
 
 interface Props {
   name: string
@@ -49,6 +55,10 @@ interface Props {
   minHeight?: string
   /** The maximum height; past it the area overflows. */
   maxHeight?: string
+  /** The engine: 'default' (or none) is @dskripchenko/wysiwyg; otherwise a registered driver. */
+  driver?: string | null
+  /** The engine's options, as the server's ->driver(name, options) gave them. */
+  driverConfig?: Record<string, unknown> | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -59,6 +69,24 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   minHeight: '200px',
   maxHeight: undefined,
+  driver: null,
+  driverConfig: null,
+})
+
+const warnedDrivers = new Set<string>()
+
+/** The component of a non-default engine, or null for the default editor. */
+const driverComponent = computed<Component | null>(() => {
+  const name = props.driver
+  if (!name || name === 'default') return null
+  const component = resolveWysiwygDriver(name)
+  if (!component && !warnedDrivers.has(name)) {
+    warnedDrivers.add(name)
+    if (typeof console !== 'undefined') {
+      console.warn(`[admin] Wysiwyg driver "${name}" is not registered; the default editor is used.`)
+    }
+  }
+  return component
 })
 
 const form = useFormState()
@@ -494,7 +522,17 @@ watch(value, () => {
       <span>{{ label }}</span>
       <span v-if="required" class="admin-field__required" aria-hidden="true">*</span>
     </label>
-    <div ref="containerRef" class="admin-field__control admin-wysiwyg-wrap">
+    <div v-if="driverComponent" class="admin-field__control admin-wysiwyg-driver" :data-driver="driver">
+      <component
+        :is="driverComponent"
+        :model-value="value"
+        :config="driverConfig ?? {}"
+        :placeholder="placeholder ?? undefined"
+        :disabled="disabled"
+        @update:model-value="onUpdate"
+      />
+    </div>
+    <div v-else ref="containerRef" class="admin-field__control admin-wysiwyg-wrap">
       <DskWysiwyg
         :model-value="value"
         :placeholder="placeholder ?? undefined"
