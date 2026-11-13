@@ -42,6 +42,9 @@ final class Admin
     /** @var class-string[] */
     private array $plugins = [];
 
+    /** @var array<string, list<Support\SearchProvider>> panel id => the palette's own searches */
+    private array $searchProviders = [];
+
     /**
      * The panel the registration methods write into. PluginRegistry sets it
      * before booting each panel's plugins; for a single-panel host it is always
@@ -215,6 +218,31 @@ final class Admin
         ]);
 
         return $this;
+    }
+
+    /**
+     * Registers the host's own searches of the ⌘K palette — see
+     * {@see Support\SearchProvider}: a policy by its number, a client by
+     * phone, each with a recognizer of the input and a priority.
+     *
+     * @param  list<Support\SearchProvider>  $providers
+     */
+    public function searchProviders(array $providers): self
+    {
+        $panel = $this->registrationPanel;
+        foreach ($providers as $provider) {
+            $this->searchProviders[$panel][] = $provider;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return list<Support\SearchProvider>
+     */
+    public function getSearchProviders(string $panel = 'admin'): array
+    {
+        return $this->searchProviders[$panel] ?? [];
     }
 
     /**

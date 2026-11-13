@@ -67,6 +67,28 @@ final class Dashboard extends Layout
     }
 
     /**
+     * A widget the user may not see — its canSee() or its permission() —
+     * is left out, as on a DashboardScreen: a dashboard placed on an ordinary
+     * screen does not compute or send it.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $all = $this->children;
+        $this->children = array_values(array_filter(
+            $all,
+            static fn (mixed $child): bool => ! $child instanceof Widget
+                || \Dskripchenko\LaravelAdmin\Permission\PermissionCheck::allows($child->getPermission()),
+        ));
+        try {
+            return parent::toArray();
+        } finally {
+            $this->children = $all;
+        }
+    }
+
+    /**
      * The dashboard's name, which doubles as the `persistKey` of the per-user customization.
      */
     public function key(string $key): self

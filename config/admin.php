@@ -221,6 +221,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Navigation
+    |--------------------------------------------------------------------------
+    | The sidebar, the favourites, the recent pages and the breadcrumbs.
+    |   poll_interval    — seconds between the polls of the menu's counters
+    |                      (MenuNode::badge(fn …)); also on a return to the
+    |                      browser tab. 0 — off.
+    |   groups_expanded  — the menu groups start unfolded (MenuNode::collapsed()
+    |                      wins; the user's own folding is remembered).
+    |   sum_badges       — a folded group shows its children's counters summed
+    |                      (MenuNode::sumBadges() wins).
+    |   favorites_limit, recent_limit — the star's and the recent list's sizes.
+    |   breadcrumbs      — 'full': every menu level; 'compact': the area, the
+    |                      screen, the tab and the record, without the groups.
+    */
+    'navigation' => [
+        'poll_interval' => (int) env('ADMIN_MENU_POLL_INTERVAL', 60),
+        'groups_expanded' => false,
+        'sum_badges' => false,
+        'favorites_limit' => 7,
+        'recent_limit' => 10,
+        'breadcrumbs' => 'full',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | OpenAPI reference
     |--------------------------------------------------------------------------
     | The panel's API reference on {api}/admin/doc — @dskripchenko/openapi's

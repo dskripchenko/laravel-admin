@@ -40,6 +40,9 @@ abstract class Widget implements Renderable
 
     protected ?int $refreshSeconds = null;
 
+    /** Where the widget's title leads — see link(). */
+    protected ?string $link = null;
+
     /** @var list<string>|string|null */
     protected array|string|null $permission = null;
 
@@ -178,6 +181,18 @@ abstract class Widget implements Renderable
         return $this;
     }
 
+    /**
+     * Makes the widget's title a link: a panel path (`/r/orders?filter[status]=new`),
+     * opened in place, or an external address. DashboardContext::listUrl()
+     * builds one that opens a list on the dashboard's period.
+     */
+    public function link(?string $url): static
+    {
+        $this->link = $url;
+
+        return $this;
+    }
+
     public function refresh(int $seconds): static
     {
         $this->refreshSeconds = $seconds;
@@ -273,6 +288,7 @@ abstract class Widget implements Renderable
             'size' => $this->size,
             'rowSpan' => $this->rowSpan,
             'refresh' => $this->refreshSeconds,
+            'link' => $this->link,
             'permission' => $this->permission,
             'data' => $this->data(),
         ];

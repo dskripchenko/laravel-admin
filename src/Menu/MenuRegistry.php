@@ -30,6 +30,9 @@ final class MenuRegistry
     /** @var array<string, list<string>> */
     private array $autoHidden = [];
 
+    /** @var array<string, list<QuickCreate>> panel id => the "+ Create" items */
+    private array $quickCreate = [];
+
     /**
      * The panel the registration methods write into; Admin and PluginRegistry
      * set it while booting that panel's plugins. The read methods without an
@@ -117,6 +120,33 @@ final class MenuRegistry
         return $this->autoHidden[$panel ?? $this->activePanel] ?? [];
     }
 
+    /**
+     * The top bar's "+ Create" menu — and the ⌘K palette's actions: links to
+     * the create pages, each shown to the users who may use it. Adds to what
+     * is registered already; without any the button is not shown.
+     *
+     *   $admin->menu()->quickCreate([
+     *       QuickCreate::resource(NewsResource::class),
+     *       QuickCreate::make('upload', 'Загрузить прайс', '/screens/prices')->permission('admin.prices.upload'),
+     *   ]);
+     *
+     * @param  list<QuickCreate>  $items
+     */
+    public function quickCreate(array $items): self
+    {
+        foreach ($items as $item) {
+            $this->quickCreate[$this->activePanel][] = $item;
+        }
+
+        return $this;
+    }
+
+    /** @return list<QuickCreate> */
+    public function quickCreateItems(?string $panel = null): array
+    {
+        return $this->quickCreate[$panel ?? $this->activePanel] ?? [];
+    }
+
     /** @return list<MenuNode> */
     public function roots(?string $panel = null): array
     {
@@ -133,6 +163,7 @@ final class MenuRegistry
         $this->roots = [];
         $this->autoFill = [];
         $this->autoHidden = [];
+        $this->quickCreate = [];
         $this->activePanel = 'admin';
 
         return $this;

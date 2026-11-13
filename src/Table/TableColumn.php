@@ -49,6 +49,11 @@ final class TableColumn
     /** @var (callable(mixed, array<string, mixed>): mixed)|null */
     private $formatter = null;
 
+    /** @var string|\Closure(mixed): mixed|null The mask — see masked(). */
+    private string|\Closure|null $mask = null;
+
+    private ?string $revealPermission = null;
+
     public static function make(string $name): self
     {
         $instance = new self;
@@ -333,7 +338,92 @@ final class TableColumn
 
     public function hasFormatter(): bool
     {
-        return $this->formatter !== null;
+        return $this->formatter !== null || $this->mask !== null;
+    }
+
+    /**
+     * Personal data shown masked: the value leaves the server already masked
+     * — in the list, the tree, a table widget and the export — and «Show» in
+     * the cell asks for the open value with a separate call, which is allowed
+     * only with `$permission` (the resource's `{base}.reveal` by default) and
+     * is written to the audit log (who, which record, which field).
+     *
+     *   TableColumn::make('phone')->masked('phone'),
+     *   TableColumn::make('holder')->masked('name', 'admin.contracts.pii'),
+     *   TableColumn::make('inn')->masked(fn ($v) => '*****'.substr($v, -4)),
+     *
+     * The kinds: phone, email, name, passport, full (Support\Mask), or a
+     * closure over the value. The record's card and form are not masked: give
+     * them to the users who may see the data.
+     *
+     * @param  string|\Closure(mixed): mixed  $kind
+     */
+    public function masked(string|\Closure $kind = 'full', ?string $permission = null): self
+    {
+        if (is_string($kind) && ! in_array($kind, \Dskripchenko\LaravelAdmin\Support\Mask::KINDS, true)) {
+            throw new \InvalidArgumentException('TableColumn::masked() expects one of '.implode(', ', \Dskripchenko\LaravelAdmin\Support\Mask::KINDS).", got '{$kind}'");
+        }
+        $this->mask = $kind;
+        $this->revealPermission = $permission;
+
+        return $this;
+    }
+
+    public function isMasked(): bool
+    {
+        return $this->mask !== null;
+    }
+
+    /** The permission «Show» takes; null — the resource's `{base}.reveal`. */
+    public function revealPermission(): ?string
+    {
+        return $this->revealPermission;
+    }
+
+    /** The value as the mask shows it. */
+    public function maskValue(mixed $value): mixed
+    {
+        if ($this->mask === null) {
+            return $value;
+        }
+        if ($this->mask instanceof \Closure) {
+            return $value === null || $value === '' ? $value : ($this->mask)($value);
+        }
+
+        return \Dskripchenko\LaravelAdmin\Support\Mask::apply($this->mask, $value);
+    }
+
+    /**
+     * Masks the masked columns of serialized rows, nothing else — for an
+     * export of raw values.
+     *
+     * @param  iterable<TableColumn>  $columns
+     * @param  array<int|string, array<string, mixed>>  $rows
+     * @return array<int|string, array<string, mixed>>
+     */
+    public static function maskRows(iterable $columns, array $rows): array
+    {
+        $masked = [];
+        foreach ($columns as $column) {
+            if ($column->isMasked()) {
+                $masked[] = $column;
+            }
+        }
+        if ($masked === []) {
+            return $rows;
+        }
+        foreach ($rows as $i => $row) {
+            foreach ($masked as $column) {
+                $name = $column->name();
+                if (array_key_exists($name, $row)) {
+                    $rows[$i][$name] = $column->maskValue($row[$name]);
+                } elseif (str_contains($name, '.') && \Illuminate\Support\Arr::has($row, $name)) {
+                    \Illuminate\Support\Arr::set($rows[$i], $name, $column->maskValue(\Illuminate\Support\Arr::get($row, $name)));
+                }
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -343,6 +433,11 @@ final class TableColumn
      */
     public function applyFormatter(mixed $value, array $row): mixed
     {
+        // A masked column masks the raw value: a formatter must not get to
+        // turn the open value into something the mask does not recognise.
+        if ($this->mask !== null) {
+            return $this->maskValue($value);
+        }
         if ($this->formatter === null) {
             return $value;
         }
@@ -432,6 +527,9 @@ final class TableColumn
             'summary' => $this->summary === [] ? null : $this->summary,
             'preset' => $this->preset,
             'meta' => $meta,
+            // Masked personal data: the cell offers «Show» to the users the
+            // list's `meta.revealable` names.
+            'masked' => $this->mask === null ? null : ['kind' => is_string($this->mask) ? $this->mask : 'custom'],
         ];
     }
 

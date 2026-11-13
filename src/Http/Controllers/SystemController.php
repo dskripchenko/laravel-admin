@@ -160,10 +160,12 @@ final class SystemController extends ApiController
     }
 
     /**
-     * The sidebar menu tree.
+     * The sidebar menu tree, the user's folded groups and the "+ Create" items.
      *
      * @output object $payload
      * @output array  $payload.items
+     * @output object $payload.groups
+     * @output array  $payload.create
      *
      * @security AdminSession
      * @security AdminBearer
@@ -172,12 +174,133 @@ final class SystemController extends ApiController
      */
     public function menu(Request $request): JsonResponse
     {
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        $user = Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+
+        $create = [];
+        foreach ($this->menuRegistry->quickCreateItems($panel) as $item) {
+            try {
+                $serialized = $item->toArray($this->resources, $panel);
+            } catch (\Throwable $e) {
+                report($e);
+
+                continue;
+            }
+            if ($serialized !== null) {
+                $create[] = $serialized;
+            }
+        }
+
+        return $this->success([
+            'items' => $this->menuItems($panel),
+            // The user's own folding of the groups (NavigationController::group).
+            'groups' => (object) \Dskripchenko\LaravelAdmin\Navigation\NavigationState::menuGroupsOf($user instanceof Model ? $user : null, $panel),
+            // The top bar's "+ Create" menu (MenuRegistry::quickCreate()).
+            'create' => $create,
+        ]);
+    }
+
+    /**
+     * The menu's computed counters — the badges set through a closure
+     * (MenuNode::badge(fn …)) — keyed by the node's key, for the panel's
+     * polling: the tree, the labels and the permissions stay as they were
+     * loaded, only the numbers are asked again. A node the user may not see
+     * is not computed.
+     *
+     * @output object $payload
+     * @output object $payload.badges
+     *
+     * @security AdminSession
+     * @security AdminBearer
+     *
+     * @response 200 {MenuCountersResponse}
+     */
+    public function menuCounters(Request $request): JsonResponse
+    {
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        $badges = [];
+        foreach ($this->menuRegistry->roots($panel) as $node) {
+            $badges += $node->lazyBadges($this->resources, $this->screens);
+        }
+
+        return $this->success(['badges' => (object) $badges]);
+    }
+
+    /**
+     * The tabs of the screens the user's menu leads to — what the ⌘K palette
+     * finds besides the menu's own items: «Заявки › CRM» opens
+     * `/screens/applications?tab=crm`. Only the tabs kept in the address
+     * (Tabs::persistInQuery()) and visible to the user; nested ones carry
+     * their parents' keys too.
+     *
+     * @output object $payload
+     * @output array  $payload.items
+     *
+     * @security AdminSession
+     * @security AdminBearer
+     *
+     * @response 200 {MenuTabsResponse}
+     */
+    public function menuTabs(Request $request): JsonResponse
+    {
+        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
+        $screens = [];
+        $collect = static function (array $node, array $parents) use (&$collect, &$screens): void {
+            $url = $node['url'] ?? null;
+            if (is_string($url) && preg_match('~^/screens/([^/?#]+)$~', $url, $m) === 1) {
+                $screens[$m[1]] = ['label' => (string) ($node['label'] ?? $m[1]), 'parents' => $parents];
+            }
+            foreach (is_array($node['children'] ?? null) ? $node['children'] : [] as $child) {
+                if (is_array($child)) {
+                    $collect($child, ($node['kind'] ?? null) === 'section' ? $parents : [...$parents, (string) ($node['label'] ?? '')]);
+                }
+            }
+        };
+        foreach ($this->menuItems($panel) as $item) {
+            $collect($item, []);
+        }
+
+        $items = [];
+        foreach ($screens as $slug => $info) {
+            $class = $this->screens->all($panel)[$slug] ?? null;
+            if ($class === null) {
+                continue;
+            }
+            try {
+                $screen = app($class);
+                if (! $screen instanceof Screen) {
+                    continue;
+                }
+                foreach (\Dskripchenko\LaravelAdmin\Navigation\ScreenTabs::of($screen) as $tab) {
+                    $items[] = [
+                        'key' => 'screen.'.$slug.'.'.implode('.', array_values($tab['query'])),
+                        'label' => $tab['label'],
+                        'screen' => $info['label'],
+                        'path' => [...$info['parents'], $info['label'], ...$tab['trail']],
+                        'url' => '/screens/'.$slug.'?'.http_build_query($tab['query']),
+                        'keywords' => array_values($tab['query']),
+                    ];
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $this->success(['items' => $items]);
+    }
+
+    /**
+     * The user's menu: the host's tree and the auto-filled items, each pruned
+     * to what the user may open.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function menuItems(string $panel): array
+    {
         // The custom hierarchical menu, if the host registered one through
         // Admin::menu()->add(...). Nodes may nest arbitrarily and may hold
         // MenuNode::resource()/screen(), which auto-resolve the label, the url
         // and the permissions.
-        $panel = \Dskripchenko\LaravelAdmin\Panel\Panels::current()->id;
-
         $custom = [];
         $usedKeys = [];
         foreach ($this->menuRegistry->roots($panel) as $node) {
@@ -203,7 +326,7 @@ final class SystemController extends ApiController
             )));
         }
 
-        return $this->success(['items' => array_merge($custom, $auto)]);
+        return array_merge($custom, $auto);
     }
 
     /**

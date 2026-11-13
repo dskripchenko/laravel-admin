@@ -140,6 +140,40 @@ final class ResourceIndex extends Layout
         return $this;
     }
 
+    /**
+     * The filters the list opens with when the address names none:
+     * `['status' => 'new', 'created_at' => ['from' => '2026-01-01']]` — by
+     * the resource's filter names. Unlike scope(), the user may change or
+     * clear them; a cleared list stays cleared in the address.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function defaultFilters(array $filters): self
+    {
+        $this->props['defaultFilters'] = $filters;
+
+        return $this;
+    }
+
+    /**
+     * Narrows the list by one of the resource's named conditions
+     * (Resource::scopes()) — the queue tab «Not sent» of a journal, without a
+     * resource subclass. The user cannot lift it; search, filters, export and
+     * the counts work inside it.
+     */
+    public function scope(string $name): self
+    {
+        if (! (new \ReflectionClass($this->resourceClass))->isAbstract()) {
+            $resource = app($this->resourceClass);
+            if ($resource instanceof Resource && ! $resource->hasScope($name)) {
+                throw new InvalidArgumentException("ResourceIndex::scope(): {$this->resourceClass} declares no scope '{$name}' in scopes()");
+            }
+        }
+        $this->props['scope'] = $name;
+
+        return $this;
+    }
+
     public function type(): string
     {
         return 'admin.resource-index';

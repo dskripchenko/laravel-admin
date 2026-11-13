@@ -92,7 +92,7 @@ class DashboardController extends ApiController
     {
         $data = $request->validate([
             'key' => ['required', 'string'],
-            'period' => ['required', 'string', 'max:16'],
+            'period' => ['required', 'string', 'max:32'],
         ]);
 
         $screen = $this->resolveDashboard($data['key'], $screens);
@@ -208,7 +208,8 @@ class DashboardController extends ApiController
      * the widgets are recomputed without reloading the whole manifest.
      *
      * @input string $key
-     * @input string ?$period `all` or a number of days such as 7d; the dashboard's default otherwise
+     * @input string ?$period `all`, `today`, `month`, `quarter`, a number of days such as 7d, or a range `2026-01-01..2026-03-31`; the dashboard's default otherwise
+     * @input boolean ?$compare Compare with the previous period, when the dashboard is comparable()
      *
      * @output object $payload
      *
@@ -222,7 +223,8 @@ class DashboardController extends ApiController
     {
         $data = $request->validate([
             'key' => ['required', 'string'],
-            'period' => ['nullable', 'string', 'max:16'],
+            'period' => ['nullable', 'string', 'max:32'],
+            'compare' => ['nullable', 'boolean'],
         ]);
 
         $screen = $this->resolveDashboard($data['key'], $screens);
@@ -236,11 +238,13 @@ class DashboardController extends ApiController
         // The period reaches the widgets through their DashboardContext, and
         // the screen itself through period()/periodDays() in widgets(). An
         // unknown period falls back to the dashboard's default.
-        $screen->withPeriod($data['period'] ?? $screen->defaultPeriod());
+        $screen->withPeriod($data['period'] ?? $screen->defaultPeriod(), (bool) ($data['compare'] ?? false));
 
         return $this->success([
             'widgets' => $screen->compileWidgets(),
-            'period' => $screen->period(),
+            'period' => $period = $screen->period(),
+            'periodLabel' => DashboardContext::labelFor($period),
+            'compare' => $screen->comparing(),
         ]);
     }
 

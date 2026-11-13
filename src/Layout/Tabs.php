@@ -27,6 +27,9 @@ final class Tabs extends Layout
     /** @var list<string> The tabs' names in the address, set by keys(). */
     private array $tabKeys = [];
 
+    /** @var array<string, mixed> tab key (or index) => a badge, a closure or ['value' =>, 'tone' =>] */
+    private array $badges = [];
+
     /**
      * @param  array<string, Renderable|list<Renderable>>  $tabs
      */
@@ -100,6 +103,96 @@ final class Tabs extends Layout
     }
 
     /**
+     * Badges on the tabs — a queue's count, say — by the tab's key (keys())
+     * or index: a number, a text, a closure computed when the screen is sent
+     * (and only for a tab the user sees), or `['value' => 81, 'tone' => 'danger']`.
+     * A closure may return the same shapes, or null for no badge.
+     *
+     *   Layout::tabs([...])->keys(['pending', 'all'])->badges([
+     *       'pending' => fn () => ['value' => ClaimResource::make()->countIn('pending'), 'tone' => 'danger'],
+     *   ]);
+     *
+     * @param  array<int|string, mixed>  $badges
+     */
+    public function badges(array $badges): self
+    {
+        foreach ($badges as $key => $badge) {
+            $this->badges[(string) $key] = $badge;
+        }
+
+        return $this;
+    }
+
+    /** One tab's badge — see badges(). */
+    public function badge(string|int $tab, mixed $badge, ?string $tone = null): self
+    {
+        $this->badges[(string) $tab] = $tone === null ? $badge : ['value' => $badge, 'tone' => $tone];
+
+        return $this;
+    }
+
+    /** The address key of the open tab (persistInQuery()); null when it is kept locally. */
+    public function queryParameter(): ?string
+    {
+        $key = $this->props['queryKey'] ?? null;
+
+        return is_string($key) ? $key : null;
+    }
+
+    /**
+     * The tabs the user sees, with their address names and labels — for the
+     * palette's search of the screens' tabs.
+     *
+     * @return list<array{key: string, label: string, content: Renderable}>
+     */
+    public function visibleTabs(): array
+    {
+        $labels = array_map('strval', (array) ($this->props['labels'] ?? []));
+        $keys = $this->resolveKeys($labels, count($this->children));
+        $out = [];
+        foreach ($this->children as $position => $child) {
+            if (! $child->isVisible()) {
+                continue;
+            }
+            $out[] = [
+                'key' => $keys[$position],
+                'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string($labels[$position] ?? ('Tab '.($position + 1))),
+                'content' => $child,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * A badge's value and tone, a closure computed. One that throws shows nothing.
+     *
+     * @return array{0: string|int|null, 1: string|null}
+     */
+    private function resolveBadge(mixed $badge): array
+    {
+        if ($badge instanceof \Closure) {
+            try {
+                $badge = $badge();
+            } catch (\Throwable $e) {
+                report($e);
+
+                return [null, null];
+            }
+        }
+        $tone = null;
+        if (is_array($badge)) {
+            $tone = isset($badge['tone']) && is_string($badge['tone']) ? $badge['tone'] : null;
+            $badge = $badge['value'] ?? null;
+        }
+        if (is_float($badge)) {
+            $badge = (int) $badge;
+        }
+
+        return is_int($badge) || is_string($badge) ? [$badge, $tone] : [null, null];
+    }
+
+    /**
      * Each tab's name in the address: keys() first, then the label made
      * URL-safe, then `tab-N`; repeats get a suffix.
      *
@@ -156,11 +249,22 @@ final class Tabs extends Layout
             ? $this->resolveKeys(array_map('strval', $labels), count($this->children))
             : null;
 
+        $badgeKeys = $this->badges === [] ? null : $this->resolveKeys(array_map('strval', $labels), count($this->children));
+
         $tabs = [];
         foreach ($childArrays as $idx => $child) {
             $position = $positions[$idx] ?? $idx;
+            $badge = null;
+            $tone = null;
+            if ($badgeKeys !== null) {
+                $declared = $this->badges[$badgeKeys[$position]] ?? $this->badges[(string) $position] ?? null;
+                if ($declared !== null) {
+                    [$badge, $tone] = $this->resolveBadge($declared);
+                }
+            }
             $tabs[] = [
                 ...($keys !== null ? ['key' => $keys[$position]] : []),
+                ...($badge !== null ? ['badge' => $badge, 'badgeTone' => $tone] : []),
                 // Layout::toArray has already translated the labels in the
                 // props, but we take them from the raw props, so we localize
                 // them here.

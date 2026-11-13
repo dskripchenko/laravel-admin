@@ -133,6 +133,9 @@ final class ResourceCompiler
             // The form's reactive parts. The create/update permission is
             // checked by the action itself, which knows the form's context.
             'listener' => ['method' => ['post'], 'middleware' => [$view]],
+            // «Show» of a masked column; the column's reveal permission is
+            // checked by the action itself.
+            'reveal' => ['method' => ['post'], 'middleware' => [$view]],
         ];
 
         if ($resource->hierarchyParentKey() === null) {
@@ -163,6 +166,14 @@ final class ResourceCompiler
 
         if (! $resource->reorderable()) {
             unset($actions['reorder']);
+        }
+
+        $masked = false;
+        foreach ($resource->columns() as $column) {
+            $masked = $masked || $column->isMasked();
+        }
+        if (! $masked) {
+            unset($actions['reveal']);
         }
 
         if (\Dskripchenko\LaravelAdmin\Layout\Listener::all([

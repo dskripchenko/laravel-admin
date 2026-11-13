@@ -200,6 +200,53 @@ trait AdminApiSystemSchemas
                 'widgets' => '@WidgetLayoutItem[]',
             ],
 
+            'MenuCountersResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@MenuCountersPayload',
+            ],
+            'MenuCountersPayload' => [
+                'badges' => 'object! The computed badges by the menu node\'s key: {badge, tone}',
+            ],
+            'MenuTabsResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@MenuTabsPayload',
+            ],
+            'MenuTabsPayload' => [
+                'items' => '@MenuTabItem[]!',
+            ],
+            'MenuTabItem' => [
+                'key' => 'string!',
+                'label' => 'string! The tab\'s label',
+                'screen' => 'string! The screen\'s menu label',
+                'path' => 'string[]! The menu path down to the tab',
+                'url' => 'string! The screen\'s address with the tab in its query',
+                'keywords' => 'string[] The tab keys, for the search',
+            ],
+            'NavigationStateResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@NavigationStatePayload',
+            ],
+            'NavigationStatePayload' => [
+                'favorites' => '@NavigationLink[]! In the user\'s order; only the pages the user may open now',
+                'recent' => '@NavigationLink[]! Newest first; only the pages the user may open now',
+                'groups' => 'object! The menu groups the user folded (false) or unfolded (true), by key',
+                'favoritesLimit' => 'integer!',
+            ],
+            'NavigationLink' => [
+                'url' => 'string! The page\'s path inside the panel, with its query',
+                'label' => 'string!',
+                'subtitle' => 'string',
+                'icon' => 'string',
+                'kind' => 'string screen|record|page — for a recent entry',
+            ],
+            'RevealResponse' => [
+                'success' => 'boolean!',
+                'payload' => '@RevealPayload',
+            ],
+            'RevealPayload' => [
+                'value' => 'string The open value; null when the record has none',
+            ],
+
             'GlobalSearchResponse' => [
                 'success' => 'boolean!',
                 'payload' => '@GlobalSearchPayload',
@@ -209,12 +256,14 @@ trait AdminApiSystemSchemas
                 'groups' => '@GlobalSearchGroup[]!',
             ],
             'GlobalSearchGroup' => [
-                'slug' => 'string! The resource',
+                'slug' => 'string! The resource, or `provider.{key}` for a host\'s SearchProvider',
                 'label' => 'string!',
                 'icon' => 'string',
                 'items' => '@GlobalSearchItem[]!',
                 'hasMore' => 'boolean!',
-                'moreUrl' => 'string!',
+                'moreUrl' => 'string The full list; null for a provider',
+                'recognized' => 'boolean! The provider recognized the query — the group goes on top',
+                'priority' => 'integer!',
             ],
             'GlobalSearchItem' => [
                 'id' => 'string! The primary key; a number for integer keys',
@@ -300,6 +349,14 @@ trait AdminApiSystemSchemas
             ],
             'MenuPayload' => [
                 'items' => '@MenuItem[]',
+                'groups' => 'object The menu groups the user folded (false) or unfolded (true), by key',
+                'create' => '@QuickCreateItem[] The top bar\'s «+ Create» menu',
+            ],
+            'QuickCreateItem' => [
+                'key' => 'string!',
+                'label' => 'string!',
+                'url' => 'string!',
+                'icon' => 'string',
             ],
 
             'LocalesResponse' => [

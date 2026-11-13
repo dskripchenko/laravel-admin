@@ -156,6 +156,14 @@ final class ResourceOperationSchema
                     : 'Free-text search over: '.implode(', ', $resource->searchableFields()),
             ],
         ];
+        $scopes = array_keys($resource->scopes());
+        if ($scopes !== []) {
+            $properties['scope'] = [
+                'type' => 'string',
+                'enum' => array_map('strval', $scopes),
+                'description' => 'One of the resource\'s named conditions (Resource::scopes())',
+            ];
+        }
 
         if ($withOrder) {
             $column = ['type' => 'string'];

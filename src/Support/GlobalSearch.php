@@ -18,10 +18,13 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class GlobalSearch
 {
-    public function __construct(private readonly ResourceRegistry $resources) {}
+    public function __construct(
+        private readonly ResourceRegistry $resources,
+        private readonly ?\Dskripchenko\LaravelAdmin\Admin $admin = null,
+    ) {}
 
     /**
-     * @return list<array{slug: string, label: string, icon: string|null, items: list<array{id: mixed, title: string, subtitle: string|null, url: string}>, hasMore: bool, moreUrl: string}>
+     * @return list<array{slug: string, label: string, icon: string|null, items: list<array{id: mixed, title: string, subtitle: string|null, url: string}>, hasMore: bool, moreUrl: string|null, recognized: bool, priority: int}>
      */
     public function search(
         string $query,
@@ -37,6 +40,22 @@ final class GlobalSearch
 
         $needle = '%'.$query.'%';
         $groups = [];
+
+        // The host's own searches (Admin::searchProviders()): a recognized one
+        // goes on top, then by priority; the resources' groups stand at 0.
+        $provided = [];
+        foreach ($this->admin?->getSearchProviders($panel) ?? [] as $provider) {
+            try {
+                $group = $provider->search($query, $user);
+            } catch (\Throwable $e) {
+                report($e);
+
+                continue;
+            }
+            if ($group !== null) {
+                $provided[] = $group;
+            }
+        }
 
         foreach (array_keys($this->resources->all($panel)) as $slug) {
             if (count($groups) >= $maxGroups) {
@@ -54,11 +73,21 @@ final class GlobalSearch
                 continue;
             }
             if ($group !== null) {
-                $groups[] = $group;
+                $groups[] = $group + ['recognized' => false, 'priority' => 0];
             }
         }
 
-        return $groups;
+        if ($provided === []) {
+            return $groups;
+        }
+
+        $all = [...$provided, ...$groups];
+        $order = array_keys($all);
+        // A stable sort: recognized first, then the priority, then as registered.
+        usort($order, static fn (int $a, int $b): int => [! $all[$a]['recognized'], -$all[$a]['priority'], $a]
+            <=> [! $all[$b]['recognized'], -$all[$b]['priority'], $b]);
+
+        return array_map(static fn (int $i): array => $all[$i], $order);
     }
 
     /**

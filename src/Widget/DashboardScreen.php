@@ -46,6 +46,9 @@ abstract class DashboardScreen extends Screen
     /** Whether withPeriod() chose the period; until then defaultPeriod() holds. */
     private bool $periodChosen = false;
 
+    /** Whether the user asked to compare with the previous period (comparable()). */
+    private bool $compare = false;
+
     /** @var list<Widget>|null The declared and plugin widgets, built once per period. */
     private ?array $declared = null;
 
@@ -82,21 +85,43 @@ abstract class DashboardScreen extends Screen
     }
 
     /**
+     * Whether the switcher offers an arbitrary range of dates (`Y-m-d..Y-m-d`)
+     * besides periods(). On by default when periods() is automatic (null).
+     */
+    public function customRange(): bool
+    {
+        return $this->periods() === null;
+    }
+
+    /**
+     * Whether the switcher offers «Compare with the previous period»; the
+     * widgets read it through DashboardContext::compare() / comparing().
+     */
+    public function comparable(): bool
+    {
+        return false;
+    }
+
+    /**
      * Tells whether a period may be selected on this dashboard.
      */
     public function acceptsPeriod(string $period): bool
     {
         $periods = $this->periods();
+        if ($periods !== null && DashboardContext::isRange($period)) {
+            return $this->customRange() && DashboardContext::isValidPeriod($period);
+        }
 
         return $periods === null
             ? DashboardContext::isValidPeriod($period)
             : in_array($period, $periods, true);
     }
 
-    public function withPeriod(string $period): static
+    public function withPeriod(string $period, bool $compare = false): static
     {
         $this->period = $this->acceptsPeriod($period) ? $period : $this->defaultPeriod();
         $this->periodChosen = true;
+        $this->compare = $compare && $this->comparable();
         // widgets() may depend on the period, so they are built anew.
         $this->declared = null;
         $this->computedWidgets = null;
@@ -128,7 +153,13 @@ abstract class DashboardScreen extends Screen
     {
         $this->periodRead = true;
 
-        return new DashboardContext($this->currentPeriod());
+        return new DashboardContext($this->currentPeriod(), compare: $this->compare);
+    }
+
+    /** Whether the widgets are computed with the comparison on. */
+    public function comparing(): bool
+    {
+        return $this->compare;
     }
 
     /**
@@ -239,8 +270,12 @@ abstract class DashboardScreen extends Screen
             'description' => \Dskripchenko\LaravelAdmin\I18n\Localize::string($this->description()),
             'permission' => $this->permission(),
             'permission_mode' => \Dskripchenko\LaravelAdmin\Screen\ScreenAccess::mode($this),
-            'periods' => $this->effectivePeriods(),
+            'periods' => $periods = $this->effectivePeriods(),
             'period' => $this->defaultPeriod(),
+            // The switcher's captions, the server's — «За 7 дней», «Этот квартал».
+            'periodLabels' => (object) array_combine($periods, array_map(DashboardContext::labelFor(...), $periods)),
+            'customRange' => $periods !== [] && $this->customRange(),
+            'comparable' => $periods !== [] && $this->comparable(),
             'widgets' => $widgets,
         ];
     }
@@ -287,7 +322,7 @@ abstract class DashboardScreen extends Screen
      */
     private function contextForWidgets(): DashboardContext
     {
-        return new DashboardContext($this->currentPeriod());
+        return new DashboardContext($this->currentPeriod(), compare: $this->compare);
     }
 
     private function currentPeriod(): string

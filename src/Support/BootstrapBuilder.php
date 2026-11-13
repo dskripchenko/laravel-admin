@@ -73,6 +73,13 @@ final class BootstrapBuilder
                 'manifest' => ['etag' => (bool) config('admin.manifest.etag', true)],
                 'bootstrap' => ['strategy' => (string) config('admin.bootstrap.strategy', 'inline')],
                 'twoFactor' => ['enabled' => \Dskripchenko\LaravelAdmin\Auth\TwoFactor\TwoFactorPolicy::enabled()],
+                'navigation' => [
+                    'pollInterval' => max(0, (int) config('admin.navigation.poll_interval', 60)),
+                    'groupsExpanded' => (bool) config('admin.navigation.groups_expanded', false),
+                    'sumBadges' => (bool) config('admin.navigation.sum_badges', false),
+                    'favoritesLimit' => max(1, (int) config('admin.navigation.favorites_limit', 7)),
+                    'breadcrumbs' => config('admin.navigation.breadcrumbs', 'full') === 'compact' ? 'compact' : 'full',
+                ],
             ],
             // Demo mode (admin.demo): the login page's demo accounts and the
             // read-only flag; null when it is off.
