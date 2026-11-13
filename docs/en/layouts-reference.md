@@ -1058,10 +1058,12 @@ final class PageContentScreen extends Screen
     public function saveDraft(array $state): array
     {
         $content = $state['content'];
-        $this->editor()->validator()->validate($content['nodes'], 'content.nodes', data: false);
-        PageDraft::store($content['page'], $content['nodes'], $content['fingerprint']);
+        $stored = PageDraft::for($content['page'])?->nodes ?? PageTree::load(Page::findOrFail($content['page']));
+        $this->editor()->validator()->validate($content['nodes'], 'content.nodes', data: false, original: $stored);
+        $draft = PageDraft::store($content['page'], $content['nodes'], $content['fingerprint']);
 
-        return BlockTree::saved();
+        // the new blocks' ids: ['new-1a2b' => 51, ...]; the tree in the panel stays as it is
+        return BlockTree::draftSaved($draft->refs, $draft->fingerprint);
     }
 
     public function publish(array $state): array
@@ -1165,17 +1167,25 @@ the layout names is declared for the server: the layout's visibility and the
 method's permission guard it; without the draft and publish methods (or
 their permissions) the editor is read-only. A method answers with:
 
+- `BlockTree::draftSaved(array $refs, string $fingerprint, ?string $savedAt = null)`
+  — the draft is saved (since 1.71): the editor keeps its tree as it is now,
+  with whatever was typed while the request was out, renames the new blocks'
+  temporary refs by `$refs` (`['new-1a2b' => 51]`; the selection, the folded
+  nodes and the undo follow) and takes the new fingerprint into the value;
 - `BlockTree::saved(?array $value = null, ?string $message = null)` — saved;
-  with `$value` the editor goes on from it (after publish or discard);
+  with `$value` the editor goes on from it (after publish or discard; for a
+  draft it replaces the whole tree, as before 1.71);
 - `BlockTree::conflict($message, $differences, ?$fingerprint)` — the
   published state changed since the editing began: nothing is published, the
   editor shows the message and the differences (strings or
-  `['ref' => …, 'label' => …, 'change' => …]`);
+  `['ref' => …, 'label' => …, 'change' => …]`). In the draft's answer the
+  autosave pauses: nothing is lost, and **Save over** in the bar takes
+  `$fingerprint` into the value and saves the draft again;
 - `BlockTree::invalid($errors)` — the validator's errors: the nodes get an
   error mark, the fields their messages. A `ValidationException` keyed by the
   tree's path (`content.nodes.1.children.0.data.title`, as
   `TreeValidator::validate($nodes, 'content.nodes')` throws it) is shown the
-  same way;
+  same way. In the draft's answer the autosave waits for the next change;
 - `ActionFailedException` — a refusal, shown in a toast.
 
 **The validator** — `TreeValidator::errors($nodes, bool $data = true)` checks
@@ -1185,6 +1195,31 @@ types at the top, accepted types inside, `maxDepth`) and, unless
 `$data: false`, the data by the fields' rules. Each problem is
 `['ref' => …, 'path' => '1.children.0', 'field' => 'title' | null, 'message' => …]`;
 `passes()` and `validate($nodes, $key)` (a `ValidationException`) wrap it.
+The node rules count too: a node's `meta.accepts` instead of its type's
+`accepts`, and — with the stored tree given as `original:` — a node locked
+there (`meta.locked`) must keep its type, data, parent and children (it may
+go away only with an unlocked ancestor removed as a whole). With `original:`
+the meta is read from the stored tree, so the request cannot widen the rules.
+
+**Inherited blocks and node rules** (since 1.71) — for a tree whose blocks
+inherit from shared base blocks (an instance takes the base's fields and may
+override some), the server puts into a node's `meta`:
+
+| Key | Effect |
+|---|---|
+| `fields` | `{name: {inherited: bool, base: mixed}}`. The field is marked **Inherited** (the value is the base's) or **Overridden** with **Return the base value**, which puts `base` into the node's data and sets `inherited` back to true (the node counts as changed, like after an edit). An edit of an inherited field turns the mark to *Overridden* at once (the value against `base`). What is saved is the server's decision |
+| `accepts` | `list<string>`: the types allowed inside this node instead of its type's; `[]` — none. The palette, the drag and the validator follow it |
+| `locked` | `true`: the node is read-only — its form, its children (none added, removed or reordered), its place, its removal; it can be selected and viewed. Marked with a lock |
+
+```php
+['ref' => 51, 'type' => 'banner', 'data' => ['title' => 'Spring sale', 'image' => 12], 'children' => [], 'meta' => [
+    'fields' => [
+        'title' => ['inherited' => false, 'base' => 'Sale'],   // overridden here
+        'image' => ['inherited' => true, 'base' => 12],
+    ],
+    'accepts' => ['button'],
+]]
+```
 
 **The preview protocol**:
 

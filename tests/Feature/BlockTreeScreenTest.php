@@ -65,7 +65,11 @@ it('saves the draft with the whole state and refuses a tree out of the rules', f
     $saved = $this->postJson('/api/admin/test-block-tree/runMethod', ['method' => 'saveDraft', 'parameters' => [$state]])
         ->assertOk();
     expect($saved->json('payload.extra.blockTree.savedAt'))->toBeString()
-        ->and(TestBlockTreeScreen::$draft)->toHaveCount(3);
+        ->and($saved->json('payload.extra.blockTree.refs'))->toBe(['new-1' => 100, 'new-2' => 101])
+        ->and($saved->json('payload.extra.blockTree.fingerprint'))->toBe(TestBlockTreeScreen::fingerprint(TestBlockTreeScreen::$draft))
+        ->and($saved->json('payload.extra.blockTree'))->not->toHaveKey('value')
+        ->and(TestBlockTreeScreen::$draft)->toHaveCount(3)
+        ->and(TestBlockTreeScreen::$draft[2]['children'][0]['ref'])->toBe(101);
 
     // A hero inside the columns: the validator's ValidationException, keyed by the path.
     $state['content']['nodes'][2]['children'][0]['type'] = 'hero';
@@ -134,4 +138,35 @@ it('lets an editor save drafts but not publish', function (): void {
 
     expect(TestBlockTreeScreen::$calls)->toBe(['saveDraft', 'discardDraft'])
         ->and($discarded->json('payload.extra.blockTree.value.nodes'))->toHaveCount(2);
+});
+
+it('keeps a locked block and the node rules of the stored tree on a draft', function (): void {
+    blockTreeActingWith(['*']);
+    TestBlockTreeScreen::$published[0]['meta'] = ['locked' => true];
+    TestBlockTreeScreen::$published[] = ['ref' => 3, 'type' => 'columns', 'data' => [], 'children' => [], 'meta' => ['accepts' => []]];
+    $state = blockTreeState()['state'];
+    $run = fn (array $state) => $this->postJson('/api/admin/test-block-tree/runMethod', ['method' => 'saveDraft', 'parameters' => [$state]]);
+
+    // The locked hero changed; a text inside the columns whose meta.accepts is [].
+    $changed = $state;
+    $changed['content']['nodes'][0]['data']['title'] = 'Mine';
+    $changed['content']['nodes'][2]['children'][] = ['ref' => 'new-1', 'type' => 'text', 'data' => [], 'children' => []];
+    $refused = $run($changed)->assertStatus(422);
+    expect(json_encode($refused->json('payload')))->toContain('content.nodes.0')
+        ->and(json_encode($refused->json('payload')))->toContain('content.nodes.2.children.0');
+
+    // A widened meta.accepts from the request does not count: the stored meta does.
+    $widened = $state;
+    $widened['content']['nodes'][2]['meta'] = ['accepts' => ['text']];
+    $widened['content']['nodes'][2]['children'][] = ['ref' => 'new-1', 'type' => 'text', 'data' => [], 'children' => []];
+    $run($widened)->assertStatus(422);
+
+    // Removing the locked hero is refused; changing the rest is fine.
+    $removed = $state;
+    array_shift($removed['content']['nodes']);
+    $run($removed)->assertStatus(422);
+
+    $state['content']['nodes'][1]['data']['body'] = 'Changed';
+    $run($state)->assertOk();
+    expect(TestBlockTreeScreen::$draft[1]['data']['body'])->toBe('Changed');
 });

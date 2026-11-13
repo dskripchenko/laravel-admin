@@ -6,14 +6,17 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  acceptedTypes,
   allowedTypes,
   canMove,
   canPlace,
+  canRemove,
   cloneWithNewRefs,
   countNodes,
   createNode,
   diffTrees,
   duplicateNode,
+  fieldInheritance,
   findNode,
   insertNode,
   isPlacedByRules,
@@ -22,6 +25,7 @@ import {
   nodeTitle,
   pathTo,
   removeNode,
+  renameRefs,
   restoreNode,
   type BlockNode,
   type BlockTypeDef,
@@ -193,5 +197,70 @@ describe('captions, path and marks', () => {
     expect(diffTrees(nodes, base).changes).toBe(0)
     moveNode(nodes, rules, 1, null, 2)
     expect(diffTrees(nodes, base).status.get('1')).toBe('changed')
+  })
+})
+
+describe('the rules of a node: meta.accepts and meta.locked', () => {
+  it('takes the types allowed inside from the node, over its type', () => {
+    const column: BlockNode = { ref: 3, type: 'column', data: {}, children: [], meta: { accepts: ['button'] } }
+    expect(acceptedTypes(rules, column)).toEqual(['button'])
+    expect(allowedTypes(rules, column, 3).map((t) => t.type)).toEqual(['button'])
+    expect(canPlace(rules, column, 'text', 3)).toBe(false)
+    // [] — nothing inside.
+    expect(allowedTypes(rules, { ...column, meta: { accepts: [] } }, 3)).toEqual([])
+    // Without meta.accepts — the type's rule, as before.
+    expect(allowedTypes(rules, { ...column, meta: null }, 3).map((t) => t.type)).toEqual(['text', 'button'])
+  })
+
+  it('refuses an insert or a drop into a node whose meta.accepts leaves the type out', () => {
+    const nodes = tree()
+    nodes[1].children[1].meta = { accepts: ['button'] }
+    expect(insertNode(nodes, rules, 5, 0, { ref: 'x', type: 'text', data: {}, children: [] })).toBe(false)
+    expect(canMove(nodes, rules, 4, 5)).toBe(false)
+    expect(insertNode(nodes, rules, 5, 0, { ref: 'b', type: 'button', data: {}, children: [] })).toBe(true)
+  })
+
+  it('keeps a locked node as it stands: no children added, no move, no removal', () => {
+    const nodes = tree()
+    nodes[1].children[0].meta = { locked: true } // the first column, with the text in it
+    expect(allowedTypes(rules, nodes[1].children[0], 3)).toEqual([])
+    expect(insertNode(nodes, rules, 3, 0, { ref: 'b', type: 'button', data: {}, children: [] })).toBe(false)
+    expect(canMove(nodes, rules, 3, 2)).toBe(false) // the locked node itself
+    expect(canMove(nodes, rules, 4, 5)).toBe(false) // its child, out of it
+    expect(canMove(nodes, rules, 4, 3)).toBe(false) // nor reordered in it
+    expect(canRemove(nodes, 3)).toBe(false)
+    expect(canRemove(nodes, 4)).toBe(false)
+    expect(duplicateNode(nodes, 4)).toBeNull()
+    // The unlocked parent goes as a whole; the locked node is still placed by the rules.
+    expect(canRemove(nodes, 2)).toBe(true)
+    expect(isPlacedByRules(rules, nodes, 4)).toBe(true)
+  })
+})
+
+describe('inherited fields and renamed refs', () => {
+  const node = (title: unknown, inherited: boolean): BlockNode => ({
+    ref: 1,
+    type: 'hero',
+    data: { title },
+    children: [],
+    meta: { fields: { title: { inherited, base: 'Base title' } } },
+  })
+
+  it('tells an inherited field from an overridden one by the value against the base', () => {
+    expect(fieldInheritance(node('Base title', true), 'title')).toBe('inherited')
+    expect(fieldInheritance(node('Mine', true), 'title')).toBe('overridden')
+    expect(fieldInheritance(node('Base title', false), 'title')).toBe('overridden')
+    expect(fieldInheritance(node('Base title', true), 'other')).toBeNull()
+    expect(fieldInheritance({ ref: 1, type: 'hero', data: {}, children: [] }, 'title')).toBeNull()
+  })
+
+  it('renames the refs in place, at any depth', () => {
+    const nodes = tree()
+    nodes[1].children[1].ref = 'new-a'
+    nodes[1].children[1].children.push({ ref: 'new-b', type: 'text', data: {}, children: [] })
+    const n = renameRefs(nodes, new Map<string, string | number>([['new-a', 50], ['new-b', 51], ['missing', 52]]))
+    expect(n).toBe(2)
+    expect(refs(nodes[1].children)).toEqual([3, 50])
+    expect(refs(nodes[1].children[1].children)).toEqual([51])
   })
 })

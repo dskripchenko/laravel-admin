@@ -7,11 +7,11 @@
  */
 import { computed, ref } from 'vue'
 import { UidIcon } from '@dskripchenko/ui'
-import { Box, ChevronDown, ChevronRight, Copy, GripVertical, Plus, Trash2 } from 'lucide-vue-next'
+import { Box, ChevronDown, ChevronRight, Copy, GripVertical, Lock, Plus, Trash2 } from 'lucide-vue-next'
 import { resolveIcon } from '../shell/iconRegistry'
 import { trSafe as tr } from '../../stores/i18n'
 import { useBlockTree } from './context'
-import { allowedTypes, canMove, canPlace, nodeTitle, sameRef, type BlockNode, type BlockRef } from './tree'
+import { allowedTypes, canMove, canPlace, isLocked, locate, nodeTitle, sameRef, type BlockNode, type BlockRef } from './tree'
 
 defineOptions({ name: 'BlockTreeNode' })
 
@@ -42,14 +42,24 @@ const hidden = computed(
   () => props.node.meta?.rendersOnSite === false || (props.node.meta?.rendersOnSite === undefined && def.value?.rendersOnSite === false),
 )
 const unknown = computed(() => !def.value)
-const outsideRules = computed(() => !unknown.value && !canPlace(rules(), props.parentType, props.node.type, props.depth))
-const canAddInside = computed(() => editor.canEdit.value && allowedTypes(rules(), props.node.type, props.depth + 1).length > 0)
+const parentNode = computed(() => (props.parentRef === null ? null : locate(editor.nodes.value, props.parentRef)?.node ?? null))
+const outsideRules = computed(
+  () => !unknown.value && !canPlace(rules(), parentNode.value ?? props.parentType, props.node.type, props.depth),
+)
+const locked = computed(() => isLocked(props.node))
+/** In a locked parent the block keeps its place: no drag, duplicate or removal. */
+const pinned = computed(() => locked.value || isLocked(parentNode.value))
+const canDrag = computed(() => editor.canEdit.value && !pinned.value)
+const canAddInside = computed(() => editor.canEdit.value && allowedTypes(rules(), props.node, props.depth + 1).length > 0)
 
 type Zone = 'before' | 'inside' | 'after'
 const zone = ref<Zone | null>(null)
 
 function onDragStart(event: DragEvent): void {
-  if (!editor.canEdit.value) return
+  if (!canDrag.value) {
+    event.preventDefault()
+    return
+  }
   dragging.value = props.node.ref
   event.dataTransfer?.setData('text/plain', key.value)
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
@@ -101,7 +111,7 @@ function onKey(event: KeyboardEvent): void {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
     editor.select(props.node.ref)
-  } else if ((event.key === 'Delete' || event.key === 'Backspace') && editor.canEdit.value) {
+  } else if ((event.key === 'Delete' || event.key === 'Backspace') && editor.canEdit.value && !pinned.value) {
     event.preventDefault()
     editor.remove(props.node.ref)
   } else if (event.key === 'ArrowLeft' && hasChildren.value && !isCollapsed.value) {
@@ -128,7 +138,7 @@ function onKey(event: KeyboardEvent): void {
       :data-ref="key"
       :style="{ paddingLeft: `${(depth - 1) * 16 + 4}px` }"
       tabindex="0"
-      :draggable="editor.canEdit.value"
+      :draggable="canDrag"
       @click="editor.select(node.ref)"
       @keydown="onKey"
       @dragstart="onDragStart"
@@ -137,7 +147,7 @@ function onKey(event: KeyboardEvent): void {
       @dragleave="zone = null"
       @drop="onDrop"
     >
-      <span v-if="editor.canEdit.value" class="admin-block-tree-node__grip" aria-hidden="true">
+      <span v-if="canDrag" class="admin-block-tree-node__grip" aria-hidden="true">
         <UidIcon :icon="GripVertical" :size="14" />
       </span>
       <button
@@ -163,6 +173,9 @@ function onKey(event: KeyboardEvent): void {
         <span v-if="unknown" class="admin-block-tree-mark is-warning">{{ tr('неизвестный тип') }}</span>
         <span v-else-if="outsideRules" class="admin-block-tree-mark is-warning">{{ tr('вне правил') }}</span>
         <span v-if="hidden" class="admin-block-tree-mark is-muted">{{ tr('не отображается') }}</span>
+        <span v-if="locked" class="admin-block-tree-mark is-locked" :title="tr('Блок закреплён: только просмотр')">
+          <UidIcon :icon="Lock" :size="11" />
+        </span>
       </span>
       <span v-if="editor.canEdit.value" class="admin-block-tree-node__actions">
         <button
@@ -176,6 +189,7 @@ function onKey(event: KeyboardEvent): void {
           <UidIcon :icon="Plus" :size="14" />
         </button>
         <button
+          v-if="!isLocked(parentNode)"
           type="button"
           :title="tr('Дублировать')"
           :aria-label="tr('Дублировать')"
@@ -185,6 +199,7 @@ function onKey(event: KeyboardEvent): void {
           <UidIcon :icon="Copy" :size="14" />
         </button>
         <button
+          v-if="!pinned"
           type="button"
           :title="tr('Удалить')"
           :aria-label="tr('Удалить')"

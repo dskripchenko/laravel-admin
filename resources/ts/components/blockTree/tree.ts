@@ -6,6 +6,13 @@
  * the screen state's reactive array — and refuse a placement the types do
  * not allow: a top-level node must be a root type, a child one its parent
  * accepts, and no block may stand deeper than `maxDepth`.
+ *
+ * A node's `meta` (the server's) may tighten the rules for that node:
+ * `meta.accepts` — the types allowed inside it, instead of its type's
+ * (`[]` — none); `meta.locked` — the node is read-only: its fields, its
+ * children (none added, removed or reordered), its place and its removal.
+ * `meta.fields` — `{name: {inherited, base}}` — tells a field inherited from
+ * a base block from one overridden here (see fieldInheritance).
  */
 
 export type BlockRef = string | number
@@ -46,6 +53,12 @@ export interface BlockTreeValue {
   savedAt?: string | null
   previewUrl?: string | null
   [key: string]: unknown
+}
+
+/** The server's word on one field of a node: inherited from a base block, or overridden here. */
+export interface FieldMeta {
+  inherited?: boolean
+  base?: unknown
 }
 
 /** Where a node stands. */
@@ -130,37 +143,67 @@ function contains(node: BlockNode, ref: BlockRef): boolean {
   return sameRef(node.ref, ref) || (node.children ?? []).some((c) => contains(c, ref))
 }
 
+/** Whether the node is read-only: `meta.locked`. */
+export function isLocked(node: BlockNode | null | undefined): boolean {
+  return node?.meta?.locked === true
+}
+
+/** The parent of a place: a node, a type's name, or null — the top level. */
+export type PlaceParent = BlockNode | string | null
+
 /**
- * May a block of `childType` stand under `parentType` (null — the top level)
- * at `depth`, with `levels` levels of its own?
+ * The types allowed under `parent`: the root types at the top level, the
+ * node's own `meta.accepts` when it has them, else its type's.
+ */
+export function acceptedTypes(rules: TreeRules, parent: PlaceParent): string[] {
+  if (parent === null) return rules.rootTypes
+  if (typeof parent === 'string') return rules.types[parent]?.accepts ?? []
+  const own = parent.meta?.accepts
+  if (Array.isArray(own)) return own.map(String)
+  return rules.types[parent.type]?.accepts ?? []
+}
+
+/**
+ * May a block of `childType` stand under `parent` (null — the top level; a
+ * node, whose `meta.accepts` counts; or a type's name) at `depth`, with
+ * `levels` levels of its own? The lock is not checked here — see canInsert.
  */
 export function canPlace(
   rules: TreeRules,
-  parentType: string | null,
+  parent: PlaceParent,
   childType: string,
   depth: number,
   levels = 1,
 ): boolean {
   if (!rules.types[childType]) return false
-  if (parentType === null) {
-    if (!rules.rootTypes.includes(childType)) return false
-  } else {
-    const parent = rules.types[parentType]
-    if (!parent || !parent.accepts.includes(childType)) return false
-  }
+  if (typeof parent === 'string' && !rules.types[parent]) return false
+  if (typeof parent === 'object' && parent !== null && !rules.types[parent.type]) return false
+  if (!acceptedTypes(rules, parent).includes(childType)) return false
   return rules.maxDepth === null || depth + levels - 1 <= rules.maxDepth
 }
 
-/** The types a new block may have under `parentType` at `depth`, in the declared order. */
-export function allowedTypes(rules: TreeRules, parentType: string | null, depth: number): BlockTypeDef[] {
-  return Object.values(rules.types).filter((t) => canPlace(rules, parentType, t.type, depth))
+/** May a new block go under `parent` now: within the rules, into a node that is not locked. */
+export function canInsert(rules: TreeRules, parent: PlaceParent, childType: string, depth: number, levels = 1): boolean {
+  if (typeof parent === 'object' && isLocked(parent)) return false
+  return canPlace(rules, parent, childType, depth, levels)
+}
+
+/** The types a new block may have under `parent` at `depth`, in the declared order. */
+export function allowedTypes(rules: TreeRules, parent: PlaceParent, depth: number): BlockTypeDef[] {
+  return Object.values(rules.types).filter((t) => canInsert(rules, parent, t.type, depth))
 }
 
 /** Whether the node stands where the rules allow (data from elsewhere may break them). */
 export function isPlacedByRules(rules: TreeRules, nodes: BlockNode[], ref: BlockRef): boolean {
   const at = locate(nodes, ref)
   if (!at) return false
-  return canPlace(rules, at.parent?.type ?? null, at.node.type, at.depth)
+  return canPlace(rules, at.parent, at.node.type, at.depth)
+}
+
+/** Whether the node may be removed: neither it nor its parent is locked. */
+export function canRemove(nodes: BlockNode[], ref: BlockRef): boolean {
+  const at = locate(nodes, ref)
+  return !!at && !isLocked(at.node) && !isLocked(at.parent)
 }
 
 function childrenOf(nodes: BlockNode[], parentRef: BlockRef | null): { list: BlockNode[]; parent: BlockNode | null; depth: number } | null {
@@ -181,23 +224,27 @@ export function insertNode(
 ): boolean {
   const target = childrenOf(nodes, parentRef)
   if (!target) return false
-  if (!canPlace(rules, target.parent?.type ?? null, node.type, target.depth, height(node))) return false
+  if (!canInsert(rules, target.parent, node.type, target.depth, height(node))) return false
   const at = Math.max(0, Math.min(index, target.list.length))
   target.list.splice(at, 0, node)
   return true
 }
 
-/** Whether `ref` may move under `parentRef` — not into itself, within the rules. */
+/**
+ * Whether `ref` may move under `parentRef` — not into itself, within the
+ * rules, neither a locked node nor out of or into a locked one.
+ */
 export function canMove(nodes: BlockNode[], rules: TreeRules, ref: BlockRef, parentRef: BlockRef | null): boolean {
   const from = locate(nodes, ref)
   if (!from) return false
+  if (isLocked(from.node) || isLocked(from.parent)) return false
   if (parentRef !== null && contains(from.node, parentRef)) return false
   const target = parentRef === null ? { parent: null, depth: 1 } : (() => {
     const at = locate(nodes, parentRef)
     return at ? { parent: at.node, depth: at.depth + 1 } : null
   })()
   if (!target) return false
-  return canPlace(rules, target.parent?.type ?? null, from.node.type, target.depth, height(from.node))
+  return canInsert(rules, target.parent, from.node.type, target.depth, height(from.node))
 }
 
 /**
@@ -232,15 +279,16 @@ export function cloneWithNewRefs(node: BlockNode, makeRef: () => BlockRef = newR
   }
 }
 
-/** Duplicates `ref` with its children, right after it; returns the copy. */
+/** Duplicates `ref` with its children, right after it; returns the copy. Not inside a locked node. */
 export function duplicateNode(nodes: BlockNode[], ref: BlockRef, makeRef: () => BlockRef = newRef): BlockNode | null {
   const at = locate(nodes, ref)
-  if (!at) return null
+  if (!at || isLocked(at.parent)) return null
   const copy = cloneWithNewRefs(at.node, makeRef)
   at.siblings.splice(at.index + 1, 0, copy)
   return copy
 }
 
+/** Removes the node — the caller checks canRemove first, undo puts it back as it was. */
 export function removeNode(nodes: BlockNode[], ref: BlockRef): RemovedNode | null {
   const at = locate(nodes, ref)
   if (!at) return null
@@ -350,6 +398,47 @@ export function diffTrees(nodes: BlockNode[], base: BlockNode[]): TreeDiff {
   let removed = 0
   for (const ref of before.keys()) if (!now.has(ref)) removed++
   return { status, removed, changes: status.size + removed }
+}
+
+export type FieldState = 'inherited' | 'overridden'
+
+/**
+ * Whether a field of the node is inherited from its base block or overridden
+ * here, by `meta.fields[name]`: null — the server said nothing of it.
+ * Inherited while the server said so and the value is still the base's; an
+ * edit makes it overridden at once, a return of the base's value — inherited
+ * again (the panel sets `inherited` back to true then, see BlockProperties).
+ */
+export function fieldInheritance(node: BlockNode, name: string): FieldState | null {
+  const meta = fieldMetaOf(node, name)
+  if (!meta) return null
+  const same = stableJson(node.data?.[name] ?? null) === stableJson(meta.base ?? null)
+  return meta.inherited === true && same ? 'inherited' : 'overridden'
+}
+
+/** The node's `meta.fields[name]`, when the server sent it. */
+export function fieldMetaOf(node: BlockNode, name: string): FieldMeta | null {
+  const fields = node.meta?.fields
+  if (!fields || typeof fields !== 'object' || Array.isArray(fields)) return null
+  const meta = (fields as Record<string, unknown>)[name]
+  return meta && typeof meta === 'object' && !Array.isArray(meta) ? (meta as FieldMeta) : null
+}
+
+/**
+ * Renames the refs of the nodes as `map` says (`{'new-a1b2': 51}`), in place;
+ * a ref not in the map stays. Returns how many were renamed.
+ */
+export function renameRefs(nodes: BlockNode[], map: Map<string, BlockRef>): number {
+  let n = 0
+  for (const node of nodes) {
+    const next = map.get(String(node.ref))
+    if (next !== undefined) {
+      node.ref = next
+      n++
+    }
+    n += renameRefs(node.children ?? [], map)
+  }
+  return n
 }
 
 export function cloneNodes(nodes: BlockNode[]): BlockNode[] {

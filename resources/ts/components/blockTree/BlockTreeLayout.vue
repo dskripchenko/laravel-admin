@@ -17,7 +17,7 @@ import BlockPreview from './BlockPreview.vue'
 import BlockProperties from './BlockProperties.vue'
 import { provideBlockTree, type PaletteTarget } from './context'
 import { useBlockTreeEditor } from './useBlockTreeEditor'
-import { allowedTypes, findNode, locate, makeRules, nodeTitle, type BlockRef, type BlockTypeDef } from './tree'
+import { allowedTypes, findNode, isLocked, locate, makeRules, nodeTitle, type BlockRef, type BlockTypeDef } from './tree'
 
 defineOptions({ inheritAttrs: false })
 
@@ -82,6 +82,15 @@ function openPalette(target: PaletteTarget): void {
 
 provideBlockTree({ editor, rules: () => rules.value, collapsed, toggle, dragging, openPalette })
 
+defineExpose({ editor })
+
+// A saved draft gives the new blocks their ids: the folded ones stay folded.
+editor.onRefsRenamed((map) => {
+  for (const [from, to] of map) {
+    if (collapsed.delete(from)) collapsed.add(String(to))
+  }
+})
+
 const paletteParent = computed(() => {
   const target = palette.value
   if (!target || target.parentRef === null) return null
@@ -90,7 +99,7 @@ const paletteParent = computed(() => {
 const paletteTypes = computed<BlockTypeDef[]>(() => {
   if (!palette.value) return []
   const parent = paletteParent.value
-  return allowedTypes(rules.value, parent?.node.type ?? null, parent ? parent.depth + 1 : 1)
+  return allowedTypes(rules.value, parent?.node ?? null, parent ? parent.depth + 1 : 1)
 })
 const palettePlace = computed(() => {
   const parent = paletteParent.value?.node
@@ -105,11 +114,14 @@ function pick(def: BlockTypeDef): void {
   editor.add(def, target.parentRef, target.index)
 }
 
-/** "Add after": the palette for the selected block's level, right after it. */
+/**
+ * "Add after": the palette for the selected block's level, right after it;
+ * at the end of the top level when the block stands in a locked one.
+ */
 function addAfterSelected(): void {
   const ref = editor.selectedRef.value
   const at = ref === null ? null : locate(editor.nodes.value, ref)
-  if (!at) openPalette({ parentRef: null, index: editor.nodes.value.length })
+  if (!at || isLocked(at.parent)) openPalette({ parentRef: null, index: editor.nodes.value.length })
   else openPalette({ parentRef: at.parent?.ref ?? null, index: at.index + 1 })
 }
 
@@ -132,15 +144,22 @@ function selectFromPreview(ref: string): void {
   row?.scrollIntoView?.({ block: 'nearest' })
 }
 
-/** The properties' form is remounted when the node's data object is replaced (undo, reload). */
+/**
+ * The properties' form is remounted when another node is selected or the
+ * node's data object is replaced (undo, reload) — not when a saved draft
+ * renames the node's ref: the input being typed in keeps its focus.
+ */
 const ids = new WeakMap<object, number>()
 let nextId = 0
+function idOf(o: object): number {
+  if (!ids.has(o)) ids.set(o, ++nextId)
+  return ids.get(o)!
+}
 const propertiesKey = computed(() => {
   const node = editor.selected.value
   if (!node) return ''
   const data = node.data as object | null
-  if (data && !ids.has(data)) ids.set(data, ++nextId)
-  return `${String(node.ref)}:${data ? ids.get(data) : 0}`
+  return `${idOf(node)}:${data ? idOf(data) : 0}`
 })
 
 const previewUrl = computed(() => {
@@ -157,6 +176,8 @@ const statusText = computed(() => {
     case 'publishing':
       return tr('Публикация…')
     case 'error':
+      if (editor.paused.value === 'conflict') return tr('Черновик не сохранён: версия изменилась, автосохранение приостановлено') + count
+      if (editor.paused.value === 'invalid') return tr('Черновик не сохранён: исправьте ошибки в блоках') + count
       return tr('Черновик не сохранён') + count
     case 'dirty':
       return (props.draftMethod ? tr('Есть несохранённые изменения') : tr('Изменения не опубликованы')) + count
@@ -197,9 +218,9 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
       v-if="editor.conflict.value"
       class="admin-block-tree__conflict"
       variant="warning"
-      :title="tr('Публикация остановлена')"
+      :title="editor.conflict.value.kind === 'draft' ? tr('Черновик не сохранён') : tr('Публикация остановлена')"
       dismissible
-      @dismiss="editor.conflict.value = null"
+      @dismiss="editor.dismissConflict()"
     >
       <p>{{ editor.conflict.value.message }}</p>
       <ul v-if="editor.conflict.value.differences.length > 0">
@@ -281,7 +302,9 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
             :node="editor.selected.value"
             :def="rules.types[editor.selected.value.type]"
             :errors="editor.errors.value.get(String(editor.selected.value.ref)) ?? null"
-            :read-only="!editor.canEdit.value"
+            :read-only="!editor.canEdit.value || isLocked(editor.selected.value)"
+            :locked="isLocked(editor.selected.value)"
+            @revert="(name: string) => editor.selected.value && editor.revertField(editor.selected.value.ref, name)"
           />
         </template>
         <p v-else class="admin-block-tree__empty">{{ tr('Выберите блок в структуре или в предпросмотре') }}</p>
@@ -290,6 +313,16 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
     <footer class="admin-block-tree__bar">
       <span class="admin-block-tree__status" :data-status="editor.status.value" role="status">{{ statusText }}</span>
       <span class="admin-block-tree__bar-actions">
+        <UidButton
+          v-if="editor.canEdit.value && editor.paused.value === 'conflict'"
+          size="sm"
+          variant="secondary"
+          data-action="save-over"
+          :title="tr('Сохранить черновик поверх изменившейся версии')"
+          @click="editor.saveOver()"
+        >
+          {{ tr('Сохранить поверх') }}
+        </UidButton>
         <UidButton
           v-if="editor.canEdit.value"
           size="sm"
@@ -428,6 +461,14 @@ const boxStyle = computed(() => ({ height: props.height ?? 'calc(100vh - 220px)'
 .admin-block-tree-properties__fields { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .admin-block-tree-properties__errors { margin: 0 0 12px; padding: 8px 12px 8px 28px; color: var(--uid-danger, #b42318); background: var(--uid-danger-subtle, #fde7e7); border-radius: 6px; }
 .admin-block-tree-properties__empty { color: var(--uid-text-secondary); }
+.admin-block-tree-properties__locked { margin: 0 0 12px; color: var(--uid-text-secondary); display: flex; align-items: center; gap: 6px; }
+.admin-block-tree-properties__inheritance { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; }
+.admin-block-tree-properties__revert {
+  border: 0; background: none; padding: 0; color: var(--uid-accent-text, #1f5fbf); cursor: pointer; font-size: 12px;
+}
+.admin-block-tree-properties__revert:hover { text-decoration: underline; }
+.admin-block-tree-mark.is-inherited { background: var(--uid-color-bg-subtle, rgba(0, 0, 0, 0.06)); color: var(--uid-text-secondary); }
+.admin-block-tree-mark.is-overridden { background: var(--uid-info-subtle, #e5efff); color: var(--uid-info, #1f5fbf); }
 .admin-block-tree__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .admin-block-tree__status { color: var(--uid-text-secondary); }
 .admin-block-tree__status[data-status='error'] { color: var(--uid-danger, #b42318); }

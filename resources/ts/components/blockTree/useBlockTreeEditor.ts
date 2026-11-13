@@ -9,9 +9,16 @@
  * ::conflict, ::invalid):
  *
  *   - `value`    — the value to go on from (the published tree, a reloaded draft);
+ *   - `refs`, `fingerprint` — the draft is saved (BlockTree::draftSaved): the
+ *     new blocks' temporary refs → their ids, and the new fingerprint; the
+ *     tree is kept as it is, with what was typed while the request was out;
  *   - `savedAt`  — when the draft was saved;
- *   - `conflict` — `{message, differences, fingerprint}`: nothing was published;
+ *   - `conflict` — `{message, differences, fingerprint}`: nothing was saved;
  *   - `errors`   — `[{ref, path, field, message}]`: the nodes to fix.
+ *
+ * A conflict or errors in the draft's answer pause the autosave: after errors
+ * — until the next change; after a conflict — until the person saves over it
+ * (saveOver) or the editing starts over (publish, discard, a reload).
  *
  * A ValidationError keyed by the tree's path (`content.nodes.0.children.1.data.title`)
  * is mapped onto the nodes the same way.
@@ -31,11 +38,15 @@ import {
   duplicateNode,
   findNode,
   insertNode,
+  canRemove,
+  fieldMetaOf,
+  isLocked,
   locate,
   moveNode,
   normalizeValue,
   pathTo,
   removeNode,
+  renameRefs,
   sameRef,
   stableJson,
   type BlockNode,
@@ -59,6 +70,8 @@ export interface BlockTreeEditorOptions {
 export type DraftStatus = 'clean' | 'dirty' | 'saving' | 'saved' | 'error' | 'publishing'
 
 export interface BlockTreeConflict {
+  /** What was stopped: the publish (the default) or the draft's save. */
+  kind?: 'publish' | 'draft'
   message: string
   differences: Array<string | { ref?: BlockRef | null; label?: string; change?: string }>
   fingerprint?: string | null
@@ -82,7 +95,13 @@ interface BlockTreeAnswer {
   conflict?: BlockTreeConflict | null
   errors?: BlockTreeError[] | null
   message?: string | null
+  /** BlockTree::draftSaved: temporary ref → the block's id. */
+  refs?: Record<string, BlockRef> | BlockRef[] | null
+  fingerprint?: string | null
 }
+
+/** Why the autosave waits: a conflict (until saveOver) or errors (until the next change). */
+export type DraftPause = 'conflict' | 'invalid' | null
 
 interface UndoEntry {
   nodes: string
@@ -106,13 +125,22 @@ export interface BlockTreeEditor {
   undoLabel: ComputedRef<string | null>
   canEdit: ComputedRef<boolean>
   canPublish: ComputedRef<boolean>
+  paused: Ref<DraftPause>
   select: (ref: BlockRef | null) => boolean
   add: (def: BlockTypeDef, parentRef: BlockRef | null, index?: number) => BlockNode | null
   move: (ref: BlockRef, parentRef: BlockRef | null, index: number) => boolean
   duplicate: (ref: BlockRef) => BlockNode | null
   remove: (ref: BlockRef) => boolean
   undo: () => boolean
+  /** Puts the base block's value back into a field (`meta.fields[name].base`). */
+  revertField: (ref: BlockRef, name: string) => boolean
   saveDraft: () => Promise<void>
+  /** Saves the draft over a conflict: takes the conflict's fingerprint and saves. */
+  saveOver: () => Promise<void>
+  /** Hides the conflict's message; a paused autosave stays paused. */
+  dismissConflict: () => void
+  /** Called with the renamed refs (old → new) after a draft is saved. */
+  onRefsRenamed: (listener: (map: Map<string, BlockRef>) => void) => void
   publish: () => Promise<boolean>
   discard: () => Promise<boolean>
   /** Replaces the value — from a method's answer, or a reload. */
@@ -166,6 +194,12 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
   const errors = ref<Map<string, NodeErrors>>(new Map())
   const selectedRef = ref<BlockRef | null>(null)
   const undoStack = ref<UndoEntry[]>([])
+  const paused = ref<DraftPause>(null)
+  /** Whose errors are shown: a draft's are cleared by the next saved draft. */
+  let errorsFrom: 'draft' | 'publish' | null = null
+  /** The fingerprint a draft conflict offered, kept when its message is dismissed. */
+  let overFingerprint: string | null = null
+  const renameListeners: Array<(map: Map<string, BlockRef>) => void> = []
 
   const canEdit = computed(() => !options.readOnly())
   const canPublish = computed(() => canEdit.value && !!options.publishMethod() && !!call)
@@ -177,6 +211,9 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     undoStack.value = []
     conflict.value = null
     errors.value = new Map()
+    errorsFrom = null
+    overFingerprint = null
+    paused.value = null
     status.value = Array.isArray(v.published) && stableJson(v.published) !== savedJson.value ? 'saved' : 'clean'
     if (selectedRef.value !== null && !findNode(v.nodes, selectedRef.value)) selectedRef.value = null
   }
@@ -222,7 +259,8 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
         if (status.value === 'dirty') status.value = savedAt.value ? 'saved' : 'clean'
         return
       }
-      if (status.value !== 'saving' && status.value !== 'publishing') status.value = 'dirty'
+      if (paused.value === 'invalid') paused.value = null
+      if (status.value !== 'saving' && status.value !== 'publishing' && paused.value === null) status.value = 'dirty'
       scheduleDraft()
     },
   )
@@ -230,6 +268,7 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
   function scheduleDraft(): void {
     cancelTimer()
     const delay = options.autosaveDelay()
+    if (paused.value !== null) return
     if (!options.draftMethod() || !call || !canEdit.value || delay <= 0) return
     timer = setTimeout(() => {
       timer = null
@@ -247,11 +286,12 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     const extra = res.extra?.blockTree
     const answer: BlockTreeAnswer = extra && typeof extra === 'object' ? { ...(extra as BlockTreeAnswer) } : {}
     const fromState = res.state?.[options.source]
-    if (!answer.value && fromState && typeof fromState === 'object') answer.value = fromState as BlockTreeValue
+    if (!answer.value && answer.refs === undefined && fromState && typeof fromState === 'object') answer.value = fromState as BlockTreeValue
     return answer
   }
 
-  function applyErrors(list: BlockTreeError[]): void {
+  function applyErrors(list: BlockTreeError[], from: 'draft' | 'publish' = 'publish'): void {
+    errorsFrom = from
     const map = new Map<string, NodeErrors>()
     for (const e of list) {
       const ref = e.ref ?? (e.path ? locateErrorKey(nodes.value, e.path)?.ref : null)
@@ -265,7 +305,7 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     errors.value = map
   }
 
-  function applyValidation(err: ValidationError): boolean {
+  function applyValidation(err: ValidationError, from: 'draft' | 'publish' = 'publish'): boolean {
     const list: BlockTreeError[] = []
     for (const [key, messages] of Object.entries(err.fields)) {
       const at = locateErrorKey(nodes.value, key)
@@ -273,8 +313,64 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
       for (const message of messages) list.push({ ref: at.ref, path: key, field: at.field, message })
     }
     if (list.length === 0) return false
-    applyErrors(list)
+    applyErrors(list, from)
     return true
+  }
+
+  function conflictOf(c: BlockTreeConflict, kind: 'publish' | 'draft'): BlockTreeConflict {
+    return {
+      kind,
+      message:
+        c.message ||
+        (kind === 'draft' ? tr('Черновик изменился после начала правки') : tr('Опубликованная версия изменилась после начала правки')),
+      differences: Array.isArray(c.differences) ? c.differences : [],
+      fingerprint: c.fingerprint ?? null,
+    }
+  }
+
+  function refMapOf(refs: BlockTreeAnswer['refs']): Map<string, BlockRef> {
+    const map = new Map<string, BlockRef>()
+    if (!refs || typeof refs !== 'object' || Array.isArray(refs)) return map
+    for (const [from, to] of Object.entries(refs)) {
+      if ((typeof to === 'string' && to !== '') || typeof to === 'number') map.set(from, to)
+    }
+    return map
+  }
+
+  /**
+   * A draft saved with BlockTree::draftSaved: the refs of the new blocks are
+   * renamed in the tree as it is now — with whatever was typed meanwhile —
+   * and in the snapshot that was sent, which becomes the saved one.
+   */
+  function adoptDraft(sentJson: string, answer: BlockTreeAnswer): void {
+    const map = refMapOf(answer.refs)
+    const sent = JSON.parse(sentJson) as BlockNode[]
+    if (map.size > 0) {
+      renameRefs(sent, map)
+      renameRefs(nodes.value, map)
+      const renamed = (r: BlockRef | null): BlockRef | null => (r === null ? null : map.get(String(r)) ?? r)
+      selectedRef.value = renamed(selectedRef.value)
+      if (errors.value.size > 0) {
+        const next = new Map<string, NodeErrors>()
+        for (const [key, entry] of errors.value) next.set(String(map.get(key) ?? key), entry)
+        errors.value = next
+      }
+      // An undo must not bring back a temporary ref: the block would be saved twice.
+      for (const entry of undoStack.value) {
+        const list = JSON.parse(entry.nodes) as BlockNode[]
+        if (renameRefs(list, map) > 0) entry.nodes = JSON.stringify(list)
+        entry.selected = renamed(entry.selected)
+      }
+      for (const listener of renameListeners) listener(map)
+    }
+    savedJson.value = stableJson(sent)
+    if (typeof answer.fingerprint === 'string' && answer.fingerprint !== '') value.value.fingerprint = answer.fingerprint
+  }
+
+  function stopDraft(why: Exclude<DraftPause, null>): void {
+    paused.value = why
+    status.value = 'error'
+    cancelTimer()
   }
 
   async function saveDraft(): Promise<void> {
@@ -284,19 +380,44 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     const json = stableJson(nodes.value)
     if (json === savedJson.value) return
     cancelTimer()
+    paused.value = null
     status.value = 'saving'
     const run = (async () => {
       try {
         const answer = answerOf(await call(method, [payload()]))
+        if (answer.conflict) {
+          conflict.value = conflictOf(answer.conflict, 'draft')
+          overFingerprint = conflict.value.fingerprint ?? null
+          stopDraft('conflict')
+          return
+        }
+        if (answer.errors && answer.errors.length > 0) {
+          applyErrors(answer.errors, 'draft')
+          adminToast.error(answer.message || tr('Черновик не сохранён: исправьте ошибки в блоках'))
+          stopDraft('invalid')
+          return
+        }
         if (answer.value) {
           reset(answer.value)
+        } else if (answer.refs !== undefined || typeof answer.fingerprint === 'string') {
+          adoptDraft(json, answer)
         } else {
           savedJson.value = json
         }
+        if (errorsFrom === 'draft') {
+          errors.value = new Map()
+          errorsFrom = null
+        }
+        if (conflict.value?.kind === 'draft') conflict.value = null
         savedAt.value = answer.savedAt ?? answer.value?.savedAt ?? new Date().toISOString()
         status.value = stableJson(nodes.value) === savedJson.value ? 'saved' : 'dirty'
         if (status.value === 'dirty') scheduleDraft()
       } catch (err) {
+        if (err instanceof ValidationError && applyValidation(err, 'draft')) {
+          adminToast.error(err.message || tr('Черновик не сохранён: исправьте ошибки в блоках'))
+          stopDraft('invalid')
+          return
+        }
         status.value = 'error'
         toastError(err, tr('Не удалось сохранить черновик'))
       }
@@ -304,6 +425,19 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     inflight = run
     await run
     inflight = null
+  }
+
+  async function saveOver(): Promise<void> {
+    const fingerprint = conflict.value?.kind === 'draft' ? conflict.value.fingerprint : overFingerprint
+    if (typeof fingerprint === 'string' && fingerprint !== '') value.value.fingerprint = fingerprint
+    overFingerprint = null
+    conflict.value = null
+    paused.value = null
+    await saveDraft()
+  }
+
+  function dismissConflict(): void {
+    conflict.value = null
   }
 
   async function publish(): Promise<boolean> {
@@ -317,11 +451,7 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
       const res = await call(method, [payload()])
       const answer = answerOf(res)
       if (answer.conflict) {
-        conflict.value = {
-          message: answer.conflict.message || tr('Опубликованная версия изменилась после начала правки'),
-          differences: Array.isArray(answer.conflict.differences) ? answer.conflict.differences : [],
-          fingerprint: answer.conflict.fingerprint ?? null,
-        }
+        conflict.value = conflictOf(answer.conflict, 'publish')
         status.value = before === 'publishing' ? 'dirty' : before
         return false
       }
@@ -338,7 +468,9 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
         savedJson.value = stableJson(nodes.value)
         undoStack.value = []
         errors.value = new Map()
+        errorsFrom = null
         conflict.value = null
+        paused.value = null
       }
       status.value = 'clean'
       savedAt.value = null
@@ -385,7 +517,9 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     nodes.value.splice(0, nodes.value.length, ...cloneNodes(base.value))
     if (method) savedJson.value = stableJson(nodes.value)
     errors.value = new Map()
+    errorsFrom = null
     conflict.value = null
+    paused.value = null
     return true
   }
 
@@ -451,7 +585,7 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
   function remove(ref: BlockRef): boolean {
     if (!canEdit.value) return false
     const at = locate(nodes.value, ref)
-    if (!at) return false
+    if (!at || !canRemove(nodes.value, ref)) return false
     pushUndo(`${tr('Удалён блок')} «${labelOf(at.node)}»`)
     removeNode(nodes.value, ref)
     if (selectedRef.value !== null && (sameRef(selectedRef.value, ref) || !findNode(nodes.value, selectedRef.value))) {
@@ -465,6 +599,22 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     if (!entry) return false
     nodes.value.splice(0, nodes.value.length, ...(JSON.parse(entry.nodes) as BlockNode[]))
     selectedRef.value = entry.selected !== null && findNode(nodes.value, entry.selected) ? entry.selected : null
+    return true
+  }
+
+  function revertField(ref: BlockRef, name: string): boolean {
+    if (!canEdit.value) return false
+    const node = findNode(nodes.value, ref)
+    if (!node || isLocked(node)) return false
+    const meta = fieldMetaOf(node, name)
+    if (!meta) return false
+    pushUndo(tr('Возврат значения основы'))
+    if (!node.data || typeof node.data !== 'object' || Array.isArray(node.data)) node.data = {}
+    if (meta.base === undefined) delete node.data[name]
+    else node.data[name] = JSON.parse(JSON.stringify(meta.base)) as unknown
+    // The server may read it: the field goes back to the base, even when the
+    // override happened to equal it.
+    meta.inherited = true
     return true
   }
 
@@ -490,13 +640,20 @@ export function useBlockTreeEditor(options: BlockTreeEditorOptions): BlockTreeEd
     undoLabel,
     canEdit,
     canPublish,
+    paused,
     select,
     add,
     move,
     duplicate,
     remove,
     undo,
+    revertField,
     saveDraft,
+    saveOver,
+    dismissConflict,
+    onRefsRenamed: (listener) => {
+      renameListeners.push(listener)
+    },
     publish,
     discard,
     reset,

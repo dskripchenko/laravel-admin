@@ -45,14 +45,30 @@ use InvalidArgumentException;
  * A node's `ref` is the id of an existing block or a temporary one the panel
  * makes for a new block (`new-…`). `meta` is the server's: `title` (the
  * caption, when the type has no titleFrom), `rendersOnSite` (false — marked
- * "not shown"); the panel keeps it as it is.
+ * "not shown"); the panel keeps it as it is. For a tree whose blocks inherit
+ * from shared base blocks, and for nodes the rules of their type do not fit:
+ *
+ *   - `accepts` — list<string>: the types allowed inside this node, instead of
+ *     its type's (`[]` — none); the palette, the drag and TreeValidator use it;
+ *   - `locked` — true: the node is read-only — its fields, its children (none
+ *     added, removed or reordered), its place; it can be selected and viewed.
+ *     It goes away only with an unlocked ancestor removed as a whole;
+ *   - `fields` — `{name: {inherited: bool, base: mixed}}`: the field is
+ *     inherited from the base block (its value is `base`) or overridden here.
+ *     The form marks it so, an edit makes it overridden at once, and "Return
+ *     the base value" puts `base` back and sets `inherited` to true. What is
+ *     saved is the server's decision.
  *
  * The methods are the screen's own, called through its runMethod with the
  * whole state as the single argument (`array $state`), like a button. Each
  * one this layout names is declared for the server, so the layout's
  * visibility and the permission guard it:
  *
- *   - draft: autosave, a while after each change;
+ *   - draft: autosave, a while after each change. Return
+ *     BlockTree::draftSaved() — the editor keeps its tree, with whatever was
+ *     typed while the request was out, and only renames the new blocks' refs
+ *     — or BlockTree::saved($value) to replace the tree. BlockTree::conflict()
+ *     and BlockTree::invalid() stop the autosave until the person acts;
  *   - publish: the publish button. Return BlockTree::conflict() when the
  *     published state changed since the editing began, BlockTree::invalid()
  *     with the validator's errors, or BlockTree::saved() with the new value;
@@ -288,8 +304,34 @@ final class BlockTree extends Layout
     }
 
     /**
-     * The published state changed since the editing began: nothing is
-     * published, the editor shows the message and the differences.
+     * The draft is saved, and the editor keeps its tree as it is now — what
+     * was typed while the request was out is not lost: the new blocks'
+     * temporary refs are renamed to their ids (`['new-1a2b' => 51]`), the
+     * selection and the folded nodes follow, and the fingerprint is the new
+     * one. Unlike saved($value), nothing else of the tree is replaced.
+     *
+     * @param  array<array-key, int|string>  $refs  temporary ref => the block's ref (id)
+     * @return array<string, mixed>
+     */
+    public static function draftSaved(array $refs, string $fingerprint, ?string $savedAt = null): array
+    {
+        $map = [];
+        foreach ($refs as $from => $to) {
+            $map[(string) $from] = $to;
+        }
+
+        return ['blockTree' => [
+            'refs' => (object) $map,
+            'fingerprint' => $fingerprint,
+            'savedAt' => $savedAt ?? now()->toIso8601String(),
+        ]];
+    }
+
+    /**
+     * The published state (or the draft) changed since the editing began:
+     * nothing is published or saved, the editor shows the message and the
+     * differences. In the draft's answer the autosave waits until the person
+     * saves over it ("Save over" takes `$fingerprint`) or starts over.
      *
      * @param  array<array-key, string|array{ref?: int|string|null, label?: string, change?: string}>  $differences
      * @param  string|null  $fingerprint  The current fingerprint, to publish over the change on purpose.
@@ -305,7 +347,8 @@ final class BlockTree extends Layout
     }
 
     /**
-     * The tree did not pass the checks: the editor marks the nodes.
+     * The tree did not pass the checks: the editor marks the nodes. In the
+     * draft's answer the autosave waits for the next change.
      *
      * @param  array<array-key, array{ref: int|string|null, path: string, field: string|null, message: string}>  $errors  TreeValidator::errors()
      * @return array<string, mixed>
