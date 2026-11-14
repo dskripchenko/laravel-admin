@@ -72,8 +72,8 @@ Base prefix: `/api/admin/`.
 | POST | `auth/resetPassword` | |
 | POST | `auth/verifyEmail` | |
 | POST | `auth/resendEmailVerification` | |
-| POST | `auth/startImpersonation` | Admin impersonates another user. |
-| POST | `auth/stopImpersonation` | |
+| POST | `auth/startImpersonation` | Admin impersonates another user; written to the audit log as `impersonation.started`. A target who cannot use the panel is refused (422 `target_cannot_sign_in`). |
+| POST | `auth/stopImpersonation` | Back to the admin (`impersonation.stopped`); works even if the target has lost the panel meanwhile. |
 | GET | `auth/previewRoles` | Roles the panel may be viewed as. |
 | POST | `auth/startRolePreview` | View the panel as a role. |
 | POST | `auth/stopRolePreview` | Back to one's own roles. |
@@ -181,10 +181,10 @@ Prefix `settings_{slug}/`:
 
 | Method | Path | |
 |---|---|---|
-| POST | `import/upload` | Stage CSV/XLSX. |
+| POST | `import/upload` | Stage CSV/XLSX in the user's own folder of `admin.imports.disk`. Every import step needs `importable()` on the resource and `{permission}.create`. |
 | POST | `import/preview` | Headers + sample + auto-mapping. |
-| POST | `import/start` | Run import. |
-| GET | `import/status?id={id}` | Progress of the import process. |
+| POST | `import/start` | Run import: columns map onto the create form's fields only, rows go through validation and `fillModel()`. |
+| GET | `import/status?id={id}` | Progress of the import process — to its owner or a holder of `{permission}.create`. |
 
 ### uploads
 
@@ -192,14 +192,14 @@ Prefix `settings_{slug}/`:
 |---|---|---|
 | POST | `uploads/upload` | Generic file upload. |
 | POST | `uploads/image` | Image-specific (used by Wysiwyg). |
-| GET | `uploads/serve?disk=&path=` | Serve a stored file. |
+| GET | `uploads/serve?disk=&path=` | Serve a stored file from `admin.uploads.servable_disks`: a disk listed by name serves `admin.uploads.directory` only, a keyed disk the folders it lists (`'*'` — all). |
 
 ### delayed (long-running tasks)
 
 | Method | Path | |
 |---|---|---|
 | POST | `delayed/run` | Start a queued process. Allowlisted handlers only. |
-| GET | `delayed/status?uuid={u}` | Poll progress. |
+| GET | `delayed/status?uuid={u}` | Poll progress — for the user who started it, holders of the handler's allowlisted permissions or of `admin.delayed.status_permission`. |
 
 ## Caching
 
@@ -222,9 +222,20 @@ Default `240/min` on all admin endpoints (`config('admin.api.throttle')`,
 ## OpenAPI spec
 
 ```
-GET /api/admin/doc            # API reference (interactive)
-GET /api/doc/admin            # Raw JSON spec (laravel-api's per-version source)
+GET /api/admin/doc                    # API reference (interactive)
+GET /api/admin/doc/specs/admin.json   # JSON spec the page reads
+GET /api/doc/admin                    # JSON spec through laravel-api
 ```
+
+Only a user signed in to the panel and holding `admin.api_docs.permission`
+(`admin.systems.api-docs` by default) may read them, and in `production` they
+are off unless `admin.api_docs.enabled` (env `ADMIN_API_DOCS_ENABLED`) says
+otherwise. Anyone else gets a 404, and laravel-api's `/api/doc` index hides
+the panel versions from them; the host's own versions are not affected.
+laravel-api's doc routes carry no session by default — add `'web'` to
+`laravel-api.doc_middleware` to read a panel's spec there. The specs are
+cached on the default disk under `admin.api_docs.cache_path`
+(`admin/openapi`), not in public storage.
 
 The page is on by default; `config('admin.openapi.ui')` (env
 `ADMIN_OPENAPI_UI`) set to anything but `reference` (or `scalar`, the value

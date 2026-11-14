@@ -217,6 +217,19 @@ class AdminApiModule extends BaseModule
         return app()->runningInConsole();
     }
 
+    /**
+     * laravel-api's documentation routes (`/{prefix}/doc`, `/{prefix}/doc/{version}`)
+     * carry ApiDocsAccess: a panel's spec is served only to that panel's
+     * users with `admin.api_docs.permission`, and hidden from the index for
+     * everyone else. The host's own versions are not affected.
+     *
+     * @return array<int, mixed>
+     */
+    public function getDocMiddleware(): array
+    {
+        return [...parent::getDocMiddleware(), Middleware\ApiDocsAccess::class];
+    }
+
     public function getApiMiddleware(): array
     {
         return [

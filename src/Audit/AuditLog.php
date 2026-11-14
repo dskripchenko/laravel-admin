@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $id
  * @property string|null $actor_type
  * @property int|null $actor_id
+ * @property string|null $impersonator_type The administrator signed in as the actor, during an impersonation.
+ * @property int|null $impersonator_id
  * @property string|null $subject_type
  * @property int|null $subject_id
  * @property string $event
@@ -37,6 +39,8 @@ final class AuditLog extends Model
     protected $fillable = [
         'actor_type',
         'actor_id',
+        'impersonator_type',
+        'impersonator_id',
         'subject_type',
         'subject_id',
         'event',
@@ -54,6 +58,59 @@ final class AuditLog extends Model
      * @var list<string>
      */
     protected $appends = ['actor_label', 'subject_label'];
+
+    /** Whether the table has the impersonator columns; memoized once true. */
+    private static ?bool $hasImpersonatorColumns = null;
+
+    /**
+     * An entry written while an administrator is signed in as someone else
+     * names that administrator too, whoever wrote it — the panel's own
+     * listeners or a host's code. Until the migration adding the columns has
+     * run, nothing is added.
+     */
+    protected static function booted(): void
+    {
+        self::creating(static function (self $log): void {
+            if ($log->getAttribute('impersonator_id') !== null) {
+                return;
+            }
+            $impersonator = \Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager::currentImpersonator();
+            if ($impersonator !== null && self::supportsImpersonator()) {
+                $log->setAttribute('impersonator_type', $impersonator['type']);
+                $log->setAttribute('impersonator_id', $impersonator['id']);
+            }
+        });
+    }
+
+    /**
+     * Whether the impersonator columns exist (the 2026_11_14 migration).
+     */
+    public static function supportsImpersonator(): bool
+    {
+        // Only a positive answer is kept: a worker started before the
+        // migration picks the columns up once they exist.
+        if (self::$hasImpersonatorColumns === true) {
+            return true;
+        }
+        try {
+            $model = new self;
+            $has = \Illuminate\Support\Facades\Schema::connection($model->getConnectionName())
+                ->hasColumn($model->getTable(), 'impersonator_id');
+        } catch (\Throwable) {
+            return false;
+        }
+        if ($has) {
+            self::$hasImpersonatorColumns = true;
+        }
+
+        return $has;
+    }
+
+    /** Forgets the memoized schema check — for tests and migrations. */
+    public static function flushSchemaCache(): void
+    {
+        self::$hasImpersonatorColumns = null;
+    }
 
     /**
      * @return array<string, string>
@@ -107,6 +164,17 @@ final class AuditLog extends Model
      * @return MorphTo<Model, $this>
      */
     public function actor(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * The administrator who was signed in as the actor; null outside an
+     * impersonation.
+     *
+     * @return MorphTo<Model, $this>
+     */
+    public function impersonator(): MorphTo
     {
         return $this->morphTo();
     }

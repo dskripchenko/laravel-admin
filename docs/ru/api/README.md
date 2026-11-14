@@ -45,12 +45,17 @@ OpenAPI-документ генерируется laravel-api из docblock'ов
 
 | URL | Что отдаёт | Кто регистрирует |
 |---|---|---|
-| `GET /api/admin/doc` | страница [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) со спецификациями **всех** версий модуля (основная панель, дополнительные панели, версии хост-модуля) | ядро, `ApiReferenceController`, маршрут `admin.api-doc` |
+| `GET /api/admin/doc` | страница [@dskripchenko/openapi](https://github.com/dskripchenko/openapi) со спецификациями версий модуля (основная панель, дополнительные панели — если читателю они доступны, версии хост-модуля) | ядро, `ApiReferenceController`, маршрут `admin.api-doc` |
+| `GET /api/admin/doc/specs/{version}.json` | JSON-спецификация одной версии для этой страницы | ядро, маршрут `admin.api-doc-source` |
 | `GET /api/doc` | страница документации laravel-api; версии из `laravel-api.hidden_versions` в её список не попадают | laravel-api |
 | `GET /api/doc/{version}` | JSON-спецификация одной версии, например `/api/doc/admin` | laravel-api |
 
-- `/api/admin/doc` регистрируется, только если `admin.openapi.ui` = `'reference'` (по умолчанию; `'scalar'` — прежнее значение — означает то же). Скрипт берётся из `admin.openapi.script`, иначе из `laravel-api.documentation.script` (по умолчанию закреплённая версия на CDN jsdelivr; локальную копию публикует `php artisan api:doc-assets`); локаль — `admin.openapi.locale` или локаль панели, тема — `admin.openapi.theme` или `laravel-api.documentation.theme`; try-it, прокси и языки примеров — из `laravel-api.documentation`. Спецификации пишутся в storage, в каталог `laravel-api.openapi_path` (по умолчанию `public/openapi`), файлами `{version}.json` и пересобираются при отсутствии файла или в debug-режиме.
-- **Доступ к документации не проверяется правами панели.** `/api/admin/doc` работает на стеке `admin.middleware.shell` (`web`, `AdminLocale`, `AdminCspNonce`) без `AdminAuth`; маршруты laravel-api `/api/doc*` — на `getDocMiddleware()` модуля — с laravel-api 6 это `laravel-api.doc_middleware` (по умолчанию пусто). Если карта API не должна быть публичной, закройте эти пути на уровне приложения или веб-сервера.
+- `/api/admin/doc` регистрируется, только если `admin.openapi.ui` = `'reference'` (по умолчанию; `'scalar'` — прежнее значение — означает то же). Скрипт берётся из `admin.openapi.script`, иначе из `laravel-api.documentation.script` (по умолчанию закреплённая версия на CDN jsdelivr; локальную копию публикует `php artisan api:doc-assets`); локаль — `admin.openapi.locale` или локаль панели, тема — `admin.openapi.theme` или `laravel-api.documentation.theme`; try-it, прокси и языки примеров — из `laravel-api.documentation`. Страница берёт спецификации с маршрута `admin.api-doc-source`; кеш — на диске по умолчанию в каталоге `admin.api_docs.cache_path` (по умолчанию `admin/openapi`, не в публичном storage), пересобирается при отсутствии файла или в debug-режиме.
+- **Доступ (с 1.75.1)** — middleware `ApiDocsAccess`, настройка `admin.api_docs`:
+  - `enabled` (env `ADMIN_API_DOCS_ENABLED`): `null` (по умолчанию) — включено везде, кроме `production`; `true`/`false` — явно;
+  - `permission` (env `ADMIN_API_DOCS_PERMISSION`, по умолчанию `admin.systems.api-docs`): право, которое нужно читателю; `null` или `''` — достаточно входа в панель.
+
+  `/api/admin/doc` и `/api/admin/doc/specs/*` отвечают `404`, если документация выключена, читатель не вошёл в панель, не может в ней работать (`PanelAccess`, `AccountState`) или не имеет права. На маршрутах laravel-api `AdminApiModule::getDocMiddleware()` добавляет тот же middleware: `/api/doc/{panel}` — `404` по тем же правилам, а со страницы `/api/doc` недоступные читателю версии панелей скрываются (добавляются в `laravel-api.hidden_versions` на время запроса); версии хост-модуля не затрагиваются. Маршруты laravel-api по умолчанию без сессии — чтобы читать там спецификации панели, добавьте `'web'` в `laravel-api.doc_middleware`.
 
 Artisan-команды для работы со спецификацией поставляет laravel-api:
 

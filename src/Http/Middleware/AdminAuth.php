@@ -52,10 +52,24 @@ final class AdminAuth
 
         $user = Auth::guard($guard)->user();
 
+        // Leaving an impersonation always works: the user entered may have
+        // lost the panel or their account since, and refusing them would
+        // leave the administrator stuck in someone else's session.
+        if ($this->isLeavingImpersonation($request)) {
+            /** @var SymfonyResponse $response */
+            $response = $next($request);
+
+            return $response;
+        }
+
         // A switched-off account goes out on the very next request, not only
         // at the login; what counts as switched off is AccountState's business.
         if ($user !== null && \Dskripchenko\LaravelAdmin\Auth\AccountState::isDisabled($user)) {
-            Auth::guard($guard)->logout();
+            // During an impersonation the session is the administrator's: it
+            // stays, so that they can still leave (auth/stopImpersonation).
+            if (! $this->isImpersonating($request)) {
+                Auth::guard($guard)->logout();
+            }
 
             return response()->json([
                 'success' => false,
@@ -112,6 +126,19 @@ final class AdminAuth
         $response = $next($request);
 
         return $response;
+    }
+
+    private function isLeavingImpersonation(Request $request): bool
+    {
+        return ApiRequest::getApiControllerKey() === 'auth'
+            && ApiRequest::getApiActionKey() === 'stopImpersonation'
+            && $this->isImpersonating($request);
+    }
+
+    private function isImpersonating(Request $request): bool
+    {
+        return $request->hasSession()
+            && $request->session()->has(\Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager::SESSION_KEY);
     }
 
     /**

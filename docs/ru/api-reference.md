@@ -77,8 +77,8 @@ HTTP-коды: 200 / 304 / 401 / 403 / 404 / 422 / 429 / 500.
 | POST | `auth/resetPassword` | |
 | POST | `auth/verifyEmail` | |
 | POST | `auth/resendEmailVerification` | |
-| POST | `auth/startImpersonation` | Администратор входит от имени другого пользователя. |
-| POST | `auth/stopImpersonation` | |
+| POST | `auth/startImpersonation` | Администратор входит от имени другого пользователя; в журнал аудита — `impersonation.started`. Цель, которая не может работать в панели, — 422 `target_cannot_sign_in`. |
+| POST | `auth/stopImpersonation` | Возврат к администратору (`impersonation.stopped`); работает, даже если цель потеряла доступ к панели. |
 | GET | `auth/previewRoles` | Роли, как которые можно посмотреть панель. |
 | POST | `auth/startRolePreview` | Смотреть панель как роль. |
 | POST | `auth/stopRolePreview` | Вернуться к своим ролям. |
@@ -187,10 +187,10 @@ Action, которую ресурс не поддерживает, не реги
 
 | Метод | Путь | |
 |---|---|---|
-| POST | `import/upload` | Загрузить CSV/XLSX во временное хранилище. |
+| POST | `import/upload` | Загрузить CSV/XLSX в папку пользователя на `admin.imports.disk`. Все шаги импорта требуют `importable()` у ресурса и права `{permission}.create`. |
 | POST | `import/preview` | Заголовки, пример строк и автоматическое сопоставление колонок. |
-| POST | `import/start` | Запустить импорт. |
-| GET | `import/status?id={id}` | Ход процесса импорта. |
+| POST | `import/start` | Запустить импорт: колонки — только на поля формы создания, строки — через валидацию и `fillModel()`. |
+| GET | `import/status?id={id}` | Ход процесса импорта — владельцу или обладателю `{permission}.create`. |
 
 ### uploads
 
@@ -198,14 +198,14 @@ Action, которую ресурс не поддерживает, не реги
 |---|---|---|
 | POST | `uploads/upload` | Загрузка произвольного файла. |
 | POST | `uploads/image` | Загрузка изображения (её использует Wysiwyg). |
-| GET | `uploads/serve?disk=&path=` | Отдать сохранённый файл. |
+| GET | `uploads/serve?disk=&path=` | Отдать сохранённый файл из `admin.uploads.servable_disks`: диск по имени — только `admin.uploads.directory`, диск ключом — перечисленные каталоги (`'*'` — весь). |
 
 ### delayed (долгие задачи)
 
 | Метод | Путь | |
 |---|---|---|
 | POST | `delayed/run` | Запустить процесс в очереди. Только разрешённые обработчики. |
-| GET | `delayed/status?uuid={u}` | Опрос прогресса. |
+| GET | `delayed/status?uuid={u}` | Опрос прогресса — тому, кто запустил, обладателям прав обработчика из белого списка или `admin.delayed.status_permission`. |
 
 ## Кеширование
 
@@ -228,9 +228,16 @@ Action, которую ресурс не поддерживает, не реги
 ## Спецификация OpenAPI
 
 ```
-GET /api/admin/doc            # API reference (interactive)
-GET /api/doc/admin            # Raw JSON spec (laravel-api's per-version source)
+GET /api/admin/doc                    # API reference (interactive)
+GET /api/admin/doc/specs/admin.json   # JSON-спецификация для этой страницы
+GET /api/doc/admin                    # JSON-спецификация через laravel-api
 ```
+
+Читать документацию может только вошедший в панель пользователь с правом
+`admin.api_docs.permission` (по умолчанию `admin.systems.api-docs`); в
+`production` она по умолчанию выключена (`admin.api_docs.enabled`, env
+`ADMIN_API_DOCS_ENABLED`). Остальным — `404`, а на странице `/api/doc`
+laravel-api версии панелей скрыты. Подробно — [api/README.md](api/README.md).
 
 Страница включена по умолчанию; если `config('admin.openapi.ui')`
 (env `ADMIN_OPENAPI_UI`) задан чем-то кроме `reference` (или `scalar` —

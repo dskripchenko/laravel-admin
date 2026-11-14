@@ -144,3 +144,50 @@ it('uploads.serve answers range requests for a file on a local disk', function (
     $response->sendContent();
     expect(ob_get_clean())->toBe('2345');
 });
+
+it('uploads.serve streams nothing outside the panel\'s upload folder of a disk listed by name', function (): void {
+    config(['admin.uploads.servable_disks' => ['local']]);
+    Storage::disk('local')->put('private/2026/claim.pdf', 'client data');
+    Storage::disk('local')->put('imports/abc/users.csv', 'name');
+    Storage::disk('local')->put('uploads/ok.txt', 'ok');
+
+    foreach (['private/2026/claim.pdf', 'imports/abc/users.csv', 'uploadsX/ok.txt'] as $path) {
+        $this->get('/api/admin/uploads/serve?disk=local&path='.urlencode($path))
+            ->assertStatus(422)->assertJsonPath('payload.errorKey', 'forbidden_disk');
+    }
+    $this->get('/api/admin/uploads/serve?disk=local&path=uploads/ok.txt')->assertOk();
+});
+
+it('uploads.serve refuses paths that step out of the served folder', function (): void {
+    config(['admin.uploads.servable_disks' => ['local']]);
+    Storage::disk('local')->put('private/claim.pdf', 'client data');
+
+    $paths = [
+        'uploads/../private/claim.pdf',
+        'uploads/./../private/claim.pdf',
+        'uploads\\..\\private\\claim.pdf',
+        'uploads/..\\private/claim.pdf',
+        '/uploads/../private/claim.pdf',
+        "uploads/\0/../private/claim.pdf",
+        'uploads//../private/claim.pdf',
+    ];
+    foreach ($paths as $path) {
+        $this->get('/api/admin/uploads/serve?disk=local&path='.urlencode($path))
+            ->assertStatus(422);
+    }
+});
+
+it('uploads.serve serves the folders a disk lists, or all of it for *', function (): void {
+    Storage::fake('recordings');
+    Storage::disk('recordings')->put('calls/1.ogg', 'ogg');
+    Storage::disk('recordings')->put('other/2.ogg', 'ogg');
+    Storage::disk('local')->put('private/claim.pdf', 'client data');
+
+    config(['admin.uploads.servable_disks' => ['recordings' => ['calls']]]);
+    $this->get('/api/admin/uploads/serve?disk=recordings&path=calls/1.ogg')->assertOk();
+    $this->get('/api/admin/uploads/serve?disk=recordings&path=other/2.ogg')->assertStatus(422);
+    $this->get('/api/admin/uploads/serve?disk=local&path=private/claim.pdf')->assertStatus(422);
+
+    config(['admin.uploads.servable_disks' => ['recordings' => '*']]);
+    $this->get('/api/admin/uploads/serve?disk=recordings&path=other/2.ogg')->assertOk();
+});

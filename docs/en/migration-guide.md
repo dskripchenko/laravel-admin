@@ -14,6 +14,47 @@ Upgrades between major and minor versions. We follow [SemVer](https://semver.org
 There is no 2.0 yet, and none of these releases requires a rewrite, but a
 few change behaviour a host may rely on. Newest first:
 
+- **1.75.1** — security fixes that change behaviour:
+  - **Import.** Every `import/*` step requires `Resource::importable() = true`
+    (else `403 import_disabled`) and the resource's `{permission}.create`.
+    Columns map onto the create form's fields only (`422 invalid_mapping`),
+    rows are written through validation and `fillModel()` rather than a
+    `forceFill` of anything. The disk is `admin.imports.disk` only (a
+    different `disk` in the request — `422 forbidden_disk`); the file must
+    come from the user's own upload folder, so files uploaded before the
+    upgrade (`imports/<name>`) have to be uploaded again. `import/status` —
+    to the owner or a holder of `{permission}.create`. A resource that needs
+    the import returns `true` from `importable()`.
+  - **`uploads/serve`.** A disk listed by name in
+    `admin.uploads.servable_disks` serves `admin.uploads.directory` only. If
+    `serve` streamed other folders (media for `AudioEntry`, `VideoEntry`,
+    `MediaUrl`), list them:
+    `'servable_disks' => ['local', 'recordings' => ['calls'], 'media' => '*']`.
+    Paths with `..`, `.`, `\` or a leading `/` are refused.
+  - **Impersonation.** A new migration,
+    `add_impersonator_to_admin_audit_logs` (`impersonator_type`,
+    `impersonator_id`): run `php artisan migrate`. The start and the end are
+    logged as `impersonation.started` / `.stopped` (two `login` entries
+    before); give them captions if your audit list maps events.
+    `block_higher_powered` compares through `hasAccess()` and refuses a
+    target whose model has no `getAllPermissions()`. A target who cannot use
+    the panel or is switched off — `422 target_cannot_sign_in`. Leaving does
+    not bring back an administrator switched off or with a password changed
+    meanwhile.
+  - **`delayed/status`** answers only the user who started the process
+    through `delayed/run`, holders of the handler's allowlisted permissions
+    or of `admin.delayed.status_permission`; anyone else gets a 404. Mark a
+    process your own code starts: `ProcessOwnership::remember($uuid, $user)`.
+  - **`auth/resetPassword`** no longer signs in a user with 2FA on
+    (`payload.user` is `null`): they sign in through the login form and code.
+  - **API docs** (`/api/admin/doc`, `/api/doc/{panel}`) — only for users
+    signed in to the panel with `admin.api_docs.permission`
+    (`admin.systems.api-docs` by default), and off by default in
+    `production` (`ADMIN_API_DOCS_ENABLED=true` turns them on). Grant the key
+    to the roles that need it, or set `ADMIN_API_DOCS_PERMISSION=` (empty —
+    a sign-in is enough). The page reads its specs from
+    `/api/admin/doc/specs/{version}.json` and no longer writes them to
+    `public/openapi`; old files there can go.
 - **1.74.0** — an empty list reads "No records" (was "Nothing here yet");
   the 403 route gets `?permission=…&section=…`; every request carries
   `X-Request-Id` and the API answers with it; an API 403 carries

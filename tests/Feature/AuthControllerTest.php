@@ -280,3 +280,25 @@ it('вход и bootstrap описывают пользователя одина
         expect($login[$key])->toBe($bootstrap[$key], "поле {$key} расходится между входом и bootstrap");
     }
 });
+
+it('resetPassword does not sign in a user with 2FA: the mail link is not the second factor', function (): void {
+    $admin = AdminUser::create([
+        'name' => 'Two',
+        'email' => 'two-factor-reset@example.com',
+        'password' => 'old-password',
+    ]);
+    $admin->forceFill(['two_factor_secret' => 'SECRET', 'two_factor_confirmed_at' => now()])->save();
+    $token = Illuminate\Support\Facades\Password::broker('admin_users')->createToken($admin);
+
+    $response = $this->postJson('/api/admin/auth/resetPassword', [
+        'email' => 'two-factor-reset@example.com',
+        'token' => $token,
+        'password' => 'new-password',
+        'password_confirmation' => 'new-password',
+    ]);
+
+    $response->assertOk();
+    expect($response->json('payload.user'))->toBeNull();
+    expect($this->app['auth']->guard('admin')->check())->toBeFalse();
+    expect(Hash::check('new-password', $admin->fresh()->password))->toBeTrue();
+});

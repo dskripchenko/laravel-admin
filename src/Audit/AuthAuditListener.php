@@ -31,6 +31,11 @@ final class AuthAuditListener
 
     public function onLogin(Login $event): void
     {
+        // An impersonation switching users is not a login: it writes its own
+        // impersonation.started / impersonation.stopped entries.
+        if (\Dskripchenko\LaravelAdmin\Impersonation\ImpersonationManager::isSwitching()) {
+            return;
+        }
         if (! $this->shouldLog($event->guard)) {
             return;
         }

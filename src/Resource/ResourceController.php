@@ -763,22 +763,11 @@ final class ResourceController extends ApiController
     {
         $resource = $this->currentResource();
         $data = $request->validate($this->flattenRules($resource->validationRules('create')));
-        $data = $this->sanitizeWysiwyg($resource, $data);
-        $translations = \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::extract(
-            $resource->fields(),
-            $data,
-        );
-
-        $modelClass = $resource::$model;
-        /** @var \Illuminate\Database\Eloquent\Model $record */
-        $record = new $modelClass;
         try {
-            $resource->fillModel($record, $data);
-            $record->save();
+            $record = RecordWriter::create($resource, $data);
         } catch (QueryException $e) {
             return $this->error($this->dbExceptionToValidation($e), 422);
         }
-        \Dskripchenko\LaravelAdmin\Theme\TranslatableFieldBridge::saveAll($record, $translations);
 
         return $this->created([
             'record' => $resource->transformRecord($record),
@@ -2130,26 +2119,6 @@ final class ResourceController extends ApiController
      */
     private function sanitizeWysiwyg(Resource $resource, array $data): array
     {
-        foreach ($resource->fields() as $field) {
-            if (! $field instanceof \Dskripchenko\LaravelAdmin\Field\Wysiwyg) {
-                continue;
-            }
-            if (! $field->shouldSanitize()) {
-                continue;
-            }
-            $name = $field->name();
-            if (! array_key_exists($name, $data) || ! is_string($data[$name])) {
-                continue;
-            }
-            // The whitelist follows the field's engine (Quill and TinyMCE keep
-            // their own markup).
-            $sanitizer = new \Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer(
-                $field->sanitizerWhitelist(),
-                $field->sanitizerConstrains(),
-            );
-            $data[$name] = $sanitizer->sanitize($data[$name]);
-        }
-
-        return $data;
+        return RecordWriter::sanitizeWysiwyg($resource, $data);
     }
 }

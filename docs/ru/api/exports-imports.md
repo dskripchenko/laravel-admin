@@ -80,11 +80,16 @@ public function export(Request $request): StreamedResponse|JsonResponse;
 ],
 ```
 
-Отдельного права у этих actions нет — достаточно аутентификации в панели. `Resource::importable()` попадает в `features.importable` метаданных и определяет, показывает ли SPA мастер импорта для ресурса.
+Доступ (с 1.75.1). Каждый шаг — `upload`, `preview`, `start` — проверяет:
+
+- ресурс разрешает импорт: `Resource::importable()` возвращает `true` (по умолчанию `false`), иначе `403`, `errorKey: import_disabled`;
+- у пользователя есть право на создание записей ресурса — `<base>.create` (`admin.{slug}.create`), то же, что требует `{slug}/create`; проверка идёт через `hasAccess()` модели пользователя, поэтому мост прав проекта (разделы «только чтение», запрещённые действия) действует и здесь. Нет права — `403`, `errorKey: forbidden`, `payload.permission`.
+
+`Resource::importable()` также попадает в `features.importable` метаданных и определяет, показывает ли SPA мастер импорта для ресурса.
 
 Поддерживаемые файлы: `csv`, `tsv`, `txt` (разделитель определяется автоматически по первой строке, BOM пропускается) и `xlsx` (только первый лист; нужен `openspout/openspout`). Первая строка файла — заголовки.
 
-Диск для файлов — `admin.imports.disk` (по умолчанию `local`).
+Диск для файлов — только `admin.imports.disk` (по умолчанию `local`), каталог — `admin.imports.directory` (по умолчанию `imports`). Каждый пользователь загружает в свою папку `{directory}/{хеш пользователя}`; `preview` и `start` читают файл только из папки текущего пользователя — чужую загрузку или любой другой файл диска по пути не прочитать. Пути с `..`, `.`, обратными слэшами или ведущим `/` отклоняются.
 
 ### `import.upload` (POST, multipart)
 
@@ -95,7 +100,7 @@ public function export(Request $request): StreamedResponse|JsonResponse;
 | `file` | файл, не больше `admin.uploads.max_kilobytes` (по умолчанию 51200 КБ) |
 | `resource` | slug ресурса, в который идёт импорт |
 
-Файл сохраняется в каталог `imports` диска. Ответ `200 {ImportUploadResponse}`: `{disk, path}`. Незарегистрированный ресурс — `422`, `errorKey: unknown_resource`.
+Файл сохраняется в папку пользователя (см. выше). Ответ `200 {ImportUploadResponse}`: `{disk, path}` — `path` передаётся в `preview` и `start` как есть. Незарегистрированный ресурс — `422`, `errorKey: unknown_resource`.
 
 ### `import.preview` (POST)
 
@@ -105,7 +110,7 @@ public function export(Request $request): StreamedResponse|JsonResponse;
 |---|---|
 | `resource` | slug ресурса |
 | `path` | путь из `upload` |
-| `disk` | диск; по умолчанию `admin.imports.disk` |
+| `disk` | необязателен; если передан, должен совпадать с `admin.imports.disk`, иначе `422`, `errorKey: forbidden_disk` |
 
 Ответ `200 {ImportPreviewResponse}`:
 
@@ -124,7 +129,7 @@ public function export(Request $request): StreamedResponse|JsonResponse;
 
 - `sample` — первые 20 строк.
 - `total` — число строк данных (без заголовков); для пустого XLSX — `null`.
-- `auto_mapping` — `{заголовок файла: имя поля}` по полям ресурса: точное совпадение, без учёта регистра, по подписи поля, по snake_case заголовка. Несопоставленные заголовки в карту не попадают и при импорте пропускаются.
+- `auto_mapping` — `{заголовок файла: имя поля}` по полям формы создания ресурса: точное совпадение, без учёта регистра, по подписи поля, по snake_case заголовка. Несопоставленные заголовки в карту не попадают и при импорте пропускаются.
 
 ### `import.start` (POST)
 
@@ -134,17 +139,21 @@ public function export(Request $request): StreamedResponse|JsonResponse;
 |---|---|
 | `resource` | slug ресурса |
 | `path` | путь из `upload` |
-| `mapping` | `{заголовок файла: имя поля}` |
-| `disk` | диск, на котором проверяется наличие файла; по умолчанию `admin.imports.disk` |
+| `mapping` | `{заголовок файла: имя поля}`; имя поля — только поле формы создания ресурса (`fields()` с `appliesTo('create')`), пустое значение пропускает колонку |
+| `disk` | необязателен; как у `preview` |
 
-Создаёт запись `ImportProcess` (таблица `admin_import_processes`) и сразу выполняет импорт синхронно: каждая строка проходит `validationRules('create')` ресурса и сохраняется новой записью модели в своей транзакции. Строка с ошибкой не прерывает импорт — она попадает в `errors`.
+Создаёт запись `ImportProcess` (таблица `admin_import_processes`) и сразу выполняет импорт синхронно. Каждая строка проходит `validationRules('create')` ресурса, и в запись попадают только проверенные поля — тем же путём, что у `{slug}/create`: очистка HTML у `Wysiwyg`, переводимые поля, `fillModel()` ресурса (`RecordWriter::create()`), каждая строка в своей транзакции. Колонки модели вне формы создания не записываются. Строка с ошибкой не прерывает импорт — она попадает в `errors`.
 
 Ответ `200 {ImportStartResponse}`: `{process}` — состояние после завершения (формат — как у `status`).
 
 | HTTP | `errorKey` | Когда |
 |---|---|---|
+| 403 | `import_disabled` | `importable()` ресурса — `false` |
+| 403 | `forbidden` | нет права `<base>.create` |
 | 422 | `unknown_resource` | ресурс не зарегистрирован |
-| 422 | `file_missing` | файла по `path` нет на диске |
+| 422 | `forbidden_disk` | `disk` отличается от `admin.imports.disk` |
+| 422 | `file_missing` | файла нет, или путь не из папки загрузок текущего пользователя |
+| 422 | `invalid_mapping` | колонка сопоставлена не с полем формы создания; `payload.fields` — такие имена |
 
 ### `import.status` (GET)
 
@@ -170,6 +179,6 @@ public function export(Request $request): StreamedResponse|JsonResponse;
 }
 ```
 
-`status` — `pending`, `running`, `completed` или `failed`. `row` в `errors` — номер строки файла с учётом строки заголовков; ошибка всего импорта записывается с `row: 0` и статусом `failed`. Нет процесса — `404`, `errorKey: not_found`.
+`status` — `pending`, `running`, `completed` или `failed`. `row` в `errors` — номер строки файла с учётом строки заголовков; ошибка всего импорта записывается с `row: 0` и статусом `failed`. Процесс виден тому, кто его запустил, и пользователям с правом `<base>.create` его ресурса; остальным, как и для несуществующего процесса, — `404`, `errorKey: not_found`.
 
 Импорт выполняется синхронно в запросе `start`. Для фонового выполнения зарегистрируйте свой обработчик в `AllowlistRegistrar` и запускайте его через `delayed/run` — см. [actions.md](actions.md#асинхронные-действия-asyncaction).
