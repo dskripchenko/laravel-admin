@@ -14,6 +14,16 @@ Upgrades between major and minor versions. We follow [SemVer](https://semver.org
 There is no 2.0 yet, and none of these releases requires a rewrite, but a
 few change behaviour a host may rely on. Newest first:
 
+- **1.77.0** — additions and refinements:
+  - **Access refusals** ("Нет права …", "Доступ запрещён: …") name the
+    permission by its label from the permission registry, not by its key. Code
+    that parsed the key out of `message` should read the `permission` field of
+    the 403 answer (or rely on `errorKey`).
+  - **`HtmlSanitizer`** drops `on*` handlers even when a custom whitelist
+    names them, and checks every address attribute (`srcset`, `poster`,
+    `formaction` and the rest) for `javascript:`, not only `href` and `src`.
+  - New: `Action::keepsRecord()` / `keep_record` in an action's answer,
+    `Wysiwyg::sanitizerAllow()`, `PermissionRegistry::label()`.
 - **1.76.0** — fixes:
   - **Audit log.** A new migration, `make_admin_audit_logs_morph_ids_strings`,
     turns `actor_id`, `subject_id` and `impersonator_id` from `bigint` into

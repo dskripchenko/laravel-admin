@@ -1,6 +1,6 @@
 {
   "name": "@dskripchenko/laravel-admin",
-  "version": "1.76.0",
+  "version": "1.77.0",
   "publishConfig": {
     "access": "public"
   },
@@ -87,7 +87,7 @@
     {
       "name": "ESM bundle (gzipped)",
       "path": "dist/index.mjs",
-      "limit": "260 KB",
+      "limit": "265 KB",
       "ignore": [
         "vue",
         "vue-router",
@@ -108,7 +108,7 @@
     {
       "name": "CJS bundle (gzipped)",
       "path": "dist/index.cjs",
-      "limit": "260 KB",
+      "limit": "265 KB",
       "ignore": [
         "vue",
         "vue-router",
