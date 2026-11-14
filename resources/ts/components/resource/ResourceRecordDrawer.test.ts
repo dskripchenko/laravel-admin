@@ -49,6 +49,7 @@ function seedManifest(features: Record<string, unknown> = {}): void {
         filters: [],
         actions: [
           { name: 'approve', label: 'Одобрить', type: 'button', position: ['row', 'bulk'], attributes: { requiresSelection: true } },
+          { name: 'note', label: 'Заметка', type: 'button', position: ['row'], attributes: { keepsRecord: true } },
         ],
         searchable: ['title'],
         with: [],
@@ -215,6 +216,38 @@ describe('ResourceIndexPage — rows open in a drawer', () => {
     expect(handled).toMatchObject({ key: 'approve', ids: [2] })
     expect(reads.at(-1)).toBe('3')
     expect(router.currentRoute.value.query.record).toBe('3')
+  })
+
+  it('with nextAfterAction an action that keeps its record (keepsRecord) leaves it open', async () => {
+    mock.onPost('/reviews/action').reply(() => [200, { success: true, payload: { affected: 1 } }])
+    mountPage({ nextAfterAction: true })
+    await flushPromises()
+    await clickRow(1)
+    const before = searches.length
+    byTestId('action-note')!.click()
+    await flushPromises()
+    // The list still reloads, the record stays.
+    expect(searches.length).toBe(before + 1)
+    expect(reads.at(-1)).toBe('2')
+    expect(router.currentRoute.value.query.record).toBe('2')
+  })
+
+  it('keep_record in the answer decides over the action\'s own flag, both ways', async () => {
+    let keep = true
+    mock.onPost('/reviews/action').reply(() => [200, { success: true, payload: { affected: 1, keep_record: keep } }])
+    mountPage({ nextAfterAction: true })
+    await flushPromises()
+    await clickRow(0)
+    // approve moves on by default; its answer keeps the record.
+    byTestId('action-approve')!.click()
+    await flushPromises()
+    expect(router.currentRoute.value.query.record).toBe('1')
+
+    // note keeps the record by default; its answer moves on.
+    keep = false
+    byTestId('action-note')!.click()
+    await flushPromises()
+    expect(router.currentRoute.value.query.record).toBe('2')
   })
 
   it('a link with the record opens the drawer; closing it drops the key', async () => {

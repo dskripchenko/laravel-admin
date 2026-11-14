@@ -37,7 +37,7 @@
 |---|---|---|
 | `SuccessResponse` | `success: boolean!, payload: object` | `dashboard/savePeriod` (200), `auth/logout` (200), `profile/changePassword` (200), `profile/twoFactorDisable` (200), `profile/tokenRevoke` (200), `{slug}_views/delete` (200), `notifications/destroy` (200) |
 | `AffectedResponse` | `success: boolean!, payload: @AffectedPayload` | `{slug}/action` (200) |
-| `AffectedPayload` | `affected: integer!, message: string!` | вложенный |
+| `AffectedPayload` | `affected: integer!, message: string!, keep_record: boolean` | вложенный |
 | `GenericMessageResponse` | `success: boolean!, payload: @GenericMessagePayload` | `auth/forgotPassword` (200), `auth/verifyEmail` (200), `auth/resendEmailVerification` (200) |
 | `GenericMessagePayload` | `message: string!` | вложенный |
 | `DelayedResponse` | `success: boolean!, payload: @DelayedPayload` | **не используется** |

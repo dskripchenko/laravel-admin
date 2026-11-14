@@ -253,3 +253,27 @@ it('action endpoint falls back to the generic message', function (): void {
         ->assertOk()
         ->assertJsonPath('payload.message', 'Action `archive` applied');
 });
+
+it('Action::keepsRecord() reaches the client among the attributes', function (): void {
+    $actions = collect((new TestActionResource)->actions())->keyBy(fn ($a) => $a->name());
+
+    expect($actions['comment']->toArray()['attributes']['keepsRecord'])->toBeTrue();
+    expect($actions['stamp']->toArray()['attributes'])->not->toHaveKey('keepsRecord');
+    expect(Dskripchenko\LaravelAdmin\Action\Button::make('X')->keepsRecord(false)->toArray()['attributes']['keepsRecord'])->toBeFalse();
+});
+
+it('action endpoint passes keep_record of the method\'s answer', function (): void {
+    $a = TestResourceUserModel::create(['name' => 'A']);
+    $b = TestResourceUserModel::create(['name' => 'B']);
+
+    $this->postJson('/api/admin/test-actions/action', ['key' => 'hold', 'ids' => [$a->id]])
+        ->assertOk()
+        ->assertJsonPath('payload.keep_record', true);
+    $this->postJson('/api/admin/test-actions/action', ['key' => 'hold', 'ids' => [$a->id, $b->id]])
+        ->assertOk()
+        ->assertJsonPath('payload.keep_record', false);
+    // Not set by the method: absent, the client follows the action's flag.
+    $this->postJson('/api/admin/test-actions/action', ['key' => 'comment', 'ids' => [$a->id]])
+        ->assertOk()
+        ->assertJsonMissingPath('payload.keep_record');
+});

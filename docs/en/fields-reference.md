@@ -199,6 +199,12 @@ Wysiwyg::make('text')->driver('default'),        // back to the default editor
   (Quill's `data-list` and `ql-*` classes, TinyMCE's inline styles); `delta`
   output is not sanitized. Use `->sanitize(false)` for trusted HTML that must
   stay byte for byte (Quill's video iframes, say).
+- `->sanitizerAllow(['a' => ['style'], 'figure' => []])` widens the
+  sanitizer's whitelist for one field: the attributes are added to those
+  already allowed, a new tag becomes allowed. `on*` handlers, `srcdoc` and the
+  tags the sanitizer removes whole (`script`, `style`, `iframe`, `object`,
+  `form` and the like) are refused with an `InvalidArgumentException`;
+  `javascript:` addresses are still removed.
 
 A host with its own build registers the engines it uses:
 

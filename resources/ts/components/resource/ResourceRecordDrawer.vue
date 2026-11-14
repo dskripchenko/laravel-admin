@@ -9,8 +9,9 @@
  * the same endpoints and server-side permissions (`/{slug}/read`, `/update`,
  * `/action`, `/delete`). The list stays under it: a save, an action or a
  * delete is announced (`done`, `removed`) for the list to reload and, when
- * asked, to move on to the next record. ‹ › in the header and Alt+↑ / Alt+↓
- * walk the list.
+ * asked, to move on to the next record — unless the action keeps the record
+ * (Action::keepsRecord(), or `keep_record` in its answer). ‹ › in the header
+ * and Alt+↑ / Alt+↓ walk the list.
  */
 import { computed, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -40,6 +41,7 @@ import {
 } from '../../composables/useActionRunner'
 import AdminActionButton from '../actions/AdminActionButton.vue'
 import AdminActionDialogs from '../actions/AdminActionDialogs.vue'
+import { actionKeepsRecord, type DrawerOutcome } from './drawerOutcome'
 
 interface Props {
   slug: string
@@ -67,8 +69,11 @@ const emit = defineEmits<{
   next: []
   prev: []
   'update:mode': [mode: 'view' | 'edit']
-  /** A save or an action went through: the list reloads, maybe moves on. */
-  done: []
+  /**
+   * A save or an action went through: the list reloads, maybe moves on;
+   * `keep` — the action asked for the record to stay open.
+   */
+  done: [outcome?: DrawerOutcome]
   /** The record was deleted. */
   removed: []
 }>()
@@ -194,9 +199,13 @@ const recordActions = computed<AdminAction[]>(
   () => normalizeActions(resourceMeta.value?.actions).filter((a) => needsSelection(a)),
 )
 
+/** The action that ran last: an async one reports its end without it. */
+let lastAction: AdminAction | null = null
+
 const runner = useActionRunner({
   ids: () => (props.recordId === null ? [] : [props.recordId]),
   async execute(action, payload) {
+    lastAction = action
     const { getAdminClient } = await import('../../stores/registry')
     return getAdminClient().post<{ affected?: number; message?: string }>(
       `/${props.slug}/action`,
@@ -210,7 +219,7 @@ const runner = useActionRunner({
     if (reveal) void revealOnce({ ...reveal, title: action.label, message })
     else adminToast.success(message)
     await load()
-    emit('done')
+    emit('done', { keep: actionKeepsRecord(action, raw) })
   },
   onError(action, err) {
     if (typeof console !== 'undefined') console.error('[admin] action failed:', err)
@@ -218,7 +227,7 @@ const runner = useActionRunner({
   },
   async refresh() {
     await load()
-    emit('done')
+    emit('done', { keep: actionKeepsRecord(lastAction, null) })
   },
 })
 

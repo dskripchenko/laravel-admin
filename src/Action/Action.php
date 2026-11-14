@@ -183,6 +183,21 @@ abstract class Action implements Renderable
     }
 
     /**
+     * Keeps the record open in the list's drawer after the action has run,
+     * even when the list moves on to the next record after an action
+     * (`Layout::resourceIndex()->nextAfterAction()`): a comment, a reminder,
+     * a "take into work" that leaves the record in the queue. The action's
+     * method may decide per run instead — `['keep_record' => true|false]` in
+     * its answer wins over this flag.
+     */
+    public function keepsRecord(bool $keep = true): static
+    {
+        $this->attributes['keepsRecord'] = $keep;
+
+        return $this;
+    }
+
+    /**
      * @param  bool|callable(): bool  $cond
      */
     public function canSee(bool|callable $cond): static
