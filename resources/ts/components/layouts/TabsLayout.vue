@@ -301,7 +301,19 @@ watch(
 }
 .uid-tabs--vertical > .uid-tabs__list {
   flex: 0 0 auto;
+  width: max-content;
   max-width: 240px;
+  /* The kit leaves the list scrollable sideways: a long name then ran past the
+     column and the active marker (the tab's right edge) scrolled away with the
+     text. The column never scrolls sideways; long names wrap instead. */
+  overflow: visible;
+}
+.uid-tabs--vertical > .uid-tabs__list > .uid-tab {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+  line-height: 1.3;
 }
 @media (max-width: 720px) {
   .uid-tabs--vertical {
