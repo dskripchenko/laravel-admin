@@ -14,6 +14,25 @@ Upgrades between major and minor versions. We follow [SemVer](https://semver.org
 There is no 2.0 yet, and none of these releases requires a rewrite, but a
 few change behaviour a host may rely on. Newest first:
 
+- **1.75.2** — fixes:
+  - **Audit log.** A new migration, `make_admin_audit_logs_morph_ids_strings`,
+    turns `actor_id`, `subject_id` and `impersonator_id` from `bigint` into
+    `varchar(64)`, keeping the data and the indexes: run `php artisan migrate`.
+    Until it runs, an entry about a model with a uuid or string key (a
+    `{slug}/reveal`, say) still fails on PostgreSQL. The migration rolls back
+    as long as the log holds no non-numeric key. An integer key still reads
+    back from the model as an int. On PostgreSQL compare your own queries on
+    the log with a string (`where('subject_id', (string) $id)`), or use
+    `AuditLog::forSubject()` / `forActor()` / `auditLogs`. A
+    `morphMany(AuditLog::class, 'subject')` declared on an integer-keyed model
+    of your own should become the `Loggable` trait (or its `auditLogs()`):
+    after the migration it fails on PostgreSQL.
+  - **Import from the SPA.** The list's Import button works again: its
+    requests follow the `import/*` contract (`path`, `auto_mapping`,
+    `process.id`, status `completed`). The OpenAPI schemas
+    `ImportUploadPayload` and `ImportPreviewPayload` describe the actual
+    response; the unused `ImportTargetField`, `ImportPreviewRow` and
+    `ImportPreviewSummary` are gone.
 - **1.75.1** — security fixes that change behaviour:
   - **Import.** Every `import/*` step requires `Resource::importable() = true`
     (else `403 import_disabled`) and the resource's `{permission}.create`.
