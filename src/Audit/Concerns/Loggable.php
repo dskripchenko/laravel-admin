@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Audit\Concerns;
 
 use Dskripchenko\LaravelAdmin\Audit\AuditLog;
+use Dskripchenko\LaravelAdmin\Audit\SubjectAuditLogs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Auth;
@@ -58,9 +59,21 @@ trait Loggable
         }
     }
 
+    /**
+     * The model's entries in the audit log. The relation compares the key as
+     * text, the way the log stores it — see SubjectAuditLogs.
+     */
     public function auditLogs(): MorphMany
     {
-        return $this->morphMany(AuditLog::class, 'subject');
+        $log = $this->newRelatedInstance(AuditLog::class);
+
+        return new SubjectAuditLogs(
+            $log->newQuery(),
+            $this,
+            $log->qualifyColumn('subject_type'),
+            $log->qualifyColumn('subject_id'),
+            $this->getKeyName(),
+        );
     }
 
     /**

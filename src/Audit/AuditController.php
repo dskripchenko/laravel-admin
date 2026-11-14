@@ -17,9 +17,9 @@ final class AuditController extends ApiController
      * The list of recent events, with filters.
      *
      * @input string ?$subject_type
-     * @input integer ?$subject_id
+     * @input string ?$subject_id
      * @input string ?$actor_type
-     * @input integer ?$actor_id
+     * @input string ?$actor_id
      * @input string ?$event
      * @input string ?$from
      * @input string ?$to
@@ -81,7 +81,7 @@ final class AuditController extends ApiController
      * The full timeline of a particular subject — a model and an id.
      *
      * @input string $subject_type
-     * @input integer $subject_id
+     * @input string $subject_id
      *
      * @output object $payload
      *
