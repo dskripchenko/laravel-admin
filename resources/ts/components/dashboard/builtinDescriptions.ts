@@ -15,6 +15,7 @@ import {
   Hash,
   LayoutGrid,
   List,
+  MousePointerClick,
   Network,
   SquareKanban,
   Table2,
@@ -369,5 +370,8 @@ export function builtinWidgetDescriptions(): Record<string, WidgetTypeDescriptio
     calendar,
     // A board the package creates: built on the server, not offered to add.
     board: { label: () => tr('Доска — совместная работа'), icon: SquareKanban, addable: false },
+    // Rows and buttons computed on the server (ListWidget, ActionsWidget, 1.75).
+    list: { label: () => tr('Список'), icon: List, addable: false, defaultRowSpan: 2 },
+    actions: { label: () => tr('Кнопки действий'), icon: MousePointerClick, addable: false, defaultRowSpan: 1 },
   }
 }

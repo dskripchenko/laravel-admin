@@ -64,6 +64,8 @@ Register: `Admin::screen([ContentDashboardScreen::class])`. URL:
 | `BpmnWidget` | `bpmn` | A BPMN process or a DMN decision model, read-only. |
 | `KanbanWidget` | `kanban` | A resource's kanban view, or a board written as markup. |
 | `CalendarWidget` | `calendar` | A resource's calendar view, or a calendar written as markup. |
+| `ListWidget` | `list` | A list without a table header: a caption, a secondary text, a toned badge, a link (1.75). |
+| `ActionsWidget` | `actions` | A row of link buttons shown by permission — «+ Create» items (1.75). |
 
 ## Formatting values
 
@@ -85,6 +87,114 @@ RecentListWidget::make()
 `TableWidget::columns()` takes the same `TableColumn`s. A chart shows its values
 (tooltips, the data table, the axis) as money with `ChartWidget::money('USD')`,
 or with fixed decimals with `precision(2)`; the datasets keep the raw numbers.
+
+## The desktop: shares, lists, tiles, buttons (1.75)
+
+**A share in percentage points.** `share()` marks the card added last as a
+share in per cent: its change against the previous period (`previous()`) is
+shown in percentage points — «▼ 0.2 pp» for 0.8 % → 0.6 %, not «▼ 25 %». A
+`trend()` on such a card is in percentage points too; explicitly —
+`trend(0.2, 'down', 'pp')`.
+
+```php
+StatsOverviewWidget::make()->title('Period totals')
+    ->stat('Failed checkouts', 0.6, 'danger', 'triangle-alert', $url, '12 of 2,000 processes')
+    ->precision(1)->suffix('%')->share()->previous(0.8);
+```
+
+**Compact numbers and a list in one card.** `compact()` puts the numbers in one
+row inside one card — the caption above, the number below, no minimum width:
+three numbers fit a 4/12 column. A number is tinted by its card's colour when
+that is success, warning or danger. Rows added with `item()` follow as a list
+under the numbers in the same card (rows without `compact()` make the card
+compact as well). Give such a card its height with `rowSpan()`.
+
+```php
+StatsOverviewWidget::make()->title('Delayed processes')->size(4)->rowSpan(2)->compact()
+    ->stat('Queued', 142, null, null, '/r/processes?status=new')
+    ->stat('Failed today', 3, 'danger')
+    ->stat('Stuck > 15 min', 1, 'warning')
+    ->item('Issue a travel policy', '14:12', 'KIAS error', 'danger', '/r/processes/15')
+    ->item('Sync the dictionaries', null, '23 min', 'warning')
+    ->emptyText('No failures')
+    ->headerLink('Process summary', '/dashboard/process-summary', 'summary');
+```
+
+**Tiles.** `tiles()` draws the numbers as small bordered tiles: a caption, the
+number large and the hint (`stat(..., hint: …)`) next to it. `hintTone()`
+draws the hint as a toned badge — the age of a queue's oldest item in red.
+A tile with a `url()` is a link.
+
+```php
+StatsOverviewWidget::make()->title('Queues')->size(12)->tiles()
+    ->stat('Claims', 12, 'danger', null, '/screens/queue?tab=claims', 'oldest 26 h')->hintTone('danger')
+    ->stat('Requests', 31, null, null, '/screens/queue?tab=requests', '3 h')->hintTone('neutral');
+```
+
+`hintTone()` works on the default cards too.
+
+**A list.** `ListWidget` — rows without a table header: a caption, a secondary
+text, a badge with its tone (neutral, info, success, warning, danger and the
+other names of the tone vocabulary) and a link per row; the empty state is
+`emptyText()` («No data» by default). The rows may be computed in a subclass's
+`data()`: `item()`/`items()`, then `return parent::data()`.
+
+```php
+ListWidget::make()->title('Queues')->size(4)->rowSpan(2)
+    ->item('Claims', 'oldest 26 h', 12, 'danger', '/screens/queue?tab=claims', 'claims')
+    ->items([['label' => 'Requests', 'secondary' => '3 h', 'badge' => 31, 'tone' => 'neutral', 'url' => '/screens/queue?tab=requests']])
+    ->emptyText('The queues are empty');
+```
+
+**A share bar in a table.** `TableColumn::asProgress($max = 100, $decimals = 0, $tone = null)`
+draws a 0..max value as a bar captioned «42 %»; for 0..1 shares —
+`asProgress(1)`. The preset belongs to the shared cell renderer: it works in a
+`TableWidget`, a `RecentListWidget`, a resource list and an embedded table.
+
+**A cell's tone.** `TableColumn::tone()` — a tone computed per row: a string
+(one tone for the column) or a function `($value, $row) => ?string`. The tone
+colours the cell's text, its badge (`asBadge()`) or its bar (`asProgress()`).
+The tones travel beside the row under `__tones`, the value stays as it was
+(sorting, inline editing, export). A formatter may also return
+`['value' => …, 'tone' => …]` for one cell.
+
+```php
+TableWidget::make()->title('Sales by product')->size(8)->columns([
+    TableColumn::make('product')->label('Product')->asLink('{url}'),
+    TableColumn::make('change')->label('Vs previous')->align('right')
+        ->format(fn ($v) => ($v > 0 ? '+' : '').$v.'%')
+        ->tone(fn ($v) => $v > 0 ? 'success' : ($v < 0 ? 'danger' : null)),
+    TableColumn::make('share')->label('Premium share')->asProgress(),
+])->headerLink('Full report', '/screens/sales', 'report');
+```
+
+**Links in a widget's header.** `Widget::headerLink($label, $url, $key = null, $permission = null)`
+and `headerLinks(['Journal' => '/r/log', …])` — links right of the title on any
+widget. A panel path opens in place, an external address in a new tab; a link
+with `$permission` shows only to the users holding it. A widget without a
+header of its own (a single stat card, say) shows them in its top right
+corner.
+
+**Action buttons.** `ActionsWidget` — a row of buttons, the first one primary.
+The items are the same `QuickCreate`s as the top bar's «+ Create», shown by the
+same rules: a resource by its `.create` permission, an arbitrary link by its
+own `permission()`. `fromQuickCreate()` puts the panel's «+ Create» items
+first. The resources are resolved only when the widget's data is computed,
+never while the routes are built.
+
+```php
+ActionsWidget::make()->title('Create')->size(12)->actions([
+    QuickCreate::resource(NewsResource::class),
+    QuickCreate::resource(PostResource::class, 'Blog post'),
+    QuickCreate::make('import', 'Import a price list', '/screens/price-import')->permission('admin.prices.import'),
+]);
+```
+
+`data-testid`: `widget-header-link-{key}` (without a key — `widget-header-link`),
+`widget-list`, `list-item-{key}` (without a key — `list-item`), `widget-list-empty`,
+`widget-stats-compact`, `widget-stats-tiles`, `stat-item`, `stat-tile`,
+`stat-trend`, `stat-hint`, `widget-actions`, `widget-action-{key}`,
+`widget-actions-empty`, `cell-progress`.
 
 ## Heatmap
 

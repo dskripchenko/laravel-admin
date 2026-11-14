@@ -13,14 +13,19 @@
  *             plays at a time
  *   - video → a poster or a tile with a play button; the player opens in a
  *             modal (TableColumn::asVideo)
+ *   - progress → a bar with its per cent (TableColumn::asProgress, 1.75)
  *   - the rest goes through formatCell: dates, money, booleans, sizes, text
  *
  * `value` is the raw value; `row` is the raw row the link template reads.
+ * A cell's tone (TableColumn::tone(), or a `{value, tone}` cell, 1.75)
+ * colours its text, its badge or its bar; `column` names the column whose
+ * tone the row carries.
  */
 import { openInDrawer } from '../../composables/useActionRunner'
 import { computed } from 'vue'
 import { UidAudio, UidBadge, UidImage, UidLink } from '@dskripchenko/ui'
-import { badgeTone, formatCell, resolveLinkHref, type CellMeta } from './cellFormat'
+import { badgeTone, cellTone, cellValue, formatCell, progressPercent, resolveLinkHref, type CellMeta } from './cellFormat'
+import { badgeVariant, resolveTone, toneToken } from '../tones'
 import VideoCell from '../media/VideoCell.vue'
 import { toAudioTracks, type MediaDisk } from '../media/mediaSource'
 import { trSafe as tr } from '../../stores/i18n'
@@ -30,6 +35,8 @@ interface Props {
   preset?: string | null
   meta?: CellMeta | null
   row?: Record<string, unknown> | null
+  /** The column's name: the key of its tone in the row's `__tones`. */
+  column?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,14 +44,30 @@ const props = withDefaults(defineProps<Props>(), {
   preset: null,
   meta: null,
   row: null,
+  column: null,
 })
 
 const meta = computed<CellMeta>(() => props.meta ?? {})
-const text = computed<string>(() => formatCell(props.value, props.preset ?? undefined, meta.value))
+/** The value without a `{value, tone}` envelope. */
+const raw = computed<unknown>(() => cellValue(props.value))
+const tone = computed(() => cellTone(props.value, props.row, props.column))
+const text = computed<string>(() => formatCell(raw.value, props.preset ?? undefined, meta.value))
+
+/** The bar of a progress cell: its width, 0..100 %, and its colour. */
+const progress = computed<{ width: number, color: string } | null>(() => {
+  if (props.preset !== 'progress') return null
+  const percent = progressPercent(raw.value, meta.value)
+  if (percent === null) return null
+  const own = tone.value ?? resolveTone(typeof meta.value.tone === 'string' ? meta.value.tone : null)
+  return {
+    width: Math.max(0, Math.min(100, percent)),
+    color: own ? toneToken(own) : 'var(--uid-accent)',
+  }
+})
 
 const imageSrc = computed<string>(() => {
   if (props.preset !== 'image') return ''
-  const v = props.value
+  const v = raw.value
   if (typeof v === 'string') return v
   // A media attachment may arrive as an object carrying its URL.
   if (v && typeof v === 'object') {
@@ -64,12 +87,12 @@ const imageHeight = computed<number>(() => size(meta.value.height, imageWidth.va
 
 const mediaDisk = computed<MediaDisk | null>(() => (meta.value.disk as MediaDisk | undefined) ?? null)
 const audioTrack = computed(() =>
-  props.preset === 'audio' ? toAudioTracks(props.value, mediaDisk.value)[0] ?? null : null,
+  props.preset === 'audio' ? toAudioTracks(raw.value, mediaDisk.value)[0] ?? null : null,
 )
 
 const href = computed<string>(() =>
   props.preset === 'link'
-    ? resolveLinkHref(meta.value.template as string | undefined, props.row ?? {}, props.value)
+    ? resolveLinkHref(meta.value.template as string | undefined, props.row ?? {}, raw.value)
     : '',
 )
 const target = computed<string | undefined>(() => (meta.value.target as string | undefined) || undefined)
@@ -106,16 +129,31 @@ function onLinkClick(event: MouseEvent): void {
   </span>
   <VideoCell
     v-else-if="preset === 'video'"
-    :value="value"
+    :value="raw"
     :row="row"
     :disk="mediaDisk"
     :poster="(meta.poster as string | undefined) ?? null"
     :width="imageWidth"
     :height="size(meta.height, Math.round(imageWidth * 9 / 16))"
   />
+  <span
+    v-else-if="progress"
+    class="admin-cell-progress"
+    role="progressbar"
+    :aria-valuenow="progress.width"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    :aria-label="text"
+    data-testid="cell-progress"
+  >
+    <span class="admin-cell-progress__track">
+      <span class="admin-cell-progress__fill" :style="{ width: `${progress.width}%`, background: progress.color }" />
+    </span>
+    <span class="admin-cell-progress__label">{{ text }}</span>
+  </span>
   <UidBadge
     v-else-if="preset === 'badge' && text !== ''"
-    :variant="badgeTone(value, meta)"
+    :variant="tone ? badgeVariant(tone) : badgeTone(raw, meta)"
   >{{ text }}</UidBadge>
   <UidLink
     v-else-if="preset === 'link' && href"
@@ -134,6 +172,8 @@ function onLinkClick(event: MouseEvent): void {
   <span
     v-else
     class="admin-cell-truncate"
+    :class="tone ? `admin-cell--tone-${tone}` : undefined"
+    :data-tone="tone ?? undefined"
     :title="text"
   >{{ text }}</span>
 </template>
@@ -170,5 +210,42 @@ function onLinkClick(event: MouseEvent): void {
 .admin-cell-image {
   display: inline-flex;
   vertical-align: middle;
+}
+/* A cell's tone (TableColumn::tone(), 1.75): the text in the tone's colour. */
+.admin-cell--tone-success { color: var(--uid-color-success-text, var(--uid-color-success)); }
+.admin-cell--tone-danger { color: var(--uid-color-danger-text, var(--uid-color-danger)); }
+.admin-cell--tone-warning { color: var(--uid-color-warning-text, var(--uid-color-warning)); }
+.admin-cell--tone-info { color: var(--uid-color-info-text, var(--uid-color-info)); }
+.admin-cell--tone-primary { color: var(--uid-accent); }
+.admin-cell--tone-neutral { color: var(--uid-text-secondary); }
+/* A share as a bar with its caption (TableColumn::asProgress, 1.75). */
+.admin-cell-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--uid-space-xs, 6px);
+  width: 100%;
+  min-width: 96px;
+  vertical-align: middle;
+}
+.admin-cell-progress__track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--uid-color-zinc-100, rgba(0, 0, 0, 0.06));
+  overflow: hidden;
+}
+.admin-cell-progress__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+}
+.admin-cell-progress__label {
+  flex: 0 0 auto;
+  min-width: 3.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--uid-font-size-xs, 12px);
+  color: var(--uid-text-secondary);
 }
 </style>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WidgetHeader from './WidgetHeader.vue'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { UidCard, UidTable, type UidTableColumn } from '@dskripchenko/ui'
@@ -84,9 +85,7 @@ function slotRow(slotProps: unknown): Record<string, unknown> {
 
 <template>
   <UidCard padding="md" class="admin-widget">
-    <header v-if="title" class="admin-widget__hd">
-      <h3 class="admin-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" />
     <UidTable
       :columns="normalizedColumns"
       :data="rows"
@@ -100,6 +99,7 @@ function slotRow(slotProps: unknown): Record<string, unknown> {
           :preset="col.preset"
           :meta="col.meta"
           :row="slotRow(slotProps)"
+          :column="col.key"
         />
       </template>
     </UidTable>

@@ -9,6 +9,7 @@
  * larger than that scrolls. Outside a dashboard grid — a Layout::dashboard()
  * on a screen, where nothing fixes the height — the viewport keeps a minimum.
  */
+import WidgetHeader from './WidgetHeader.vue'
 import { UidCard } from '@dskripchenko/ui'
 
 withDefaults(defineProps<{ title?: string | null; kind: string }>(), { title: null })
@@ -16,9 +17,7 @@ withDefaults(defineProps<{ title?: string | null; kind: string }>(), { title: nu
 
 <template>
   <UidCard padding="md" class="admin-widget admin-widget-frame" :class="`admin-widget-frame--${kind}`">
-    <header v-if="title" class="admin-widget__hd">
-      <h3 class="admin-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" />
     <div class="admin-widget__body admin-widget-frame__body">
       <div class="admin-widget-frame__viewport" :data-testid="`widget-${kind}`">
         <slot />

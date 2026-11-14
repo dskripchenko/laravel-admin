@@ -6,6 +6,7 @@
  * largest value. Hovering anywhere picks the nearest spoke and shows each
  * series' value on it.
  */
+import WidgetHeader from './WidgetHeader.vue'
 import { computed, ref } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
 import { trSafe as tr } from '../../stores/i18n'
@@ -140,10 +141,7 @@ const legend = computed(() => props.series.map((s) => ({ label: s.label, color: 
 
 <template>
   <UidCard padding="md" class="admin-widget admin-chart admin-chart--radar">
-    <header v-if="title || description" class="admin-widget__hd">
-      <h3 v-if="title" class="admin-widget__title">{{ title }}</h3>
-      <p v-if="description" class="admin-widget__desc">{{ description }}</p>
-    </header>
+    <WidgetHeader :title="title" :description="description" />
     <div v-if="isEmpty" class="admin-widget__empty">{{ tr('Нет данных') }}</div>
     <template v-else>
       <div ref="box" class="admin-chart__box" :style="{ minHeight: `${height}px` }">

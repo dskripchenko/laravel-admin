@@ -16,6 +16,9 @@ namespace Dskripchenko\LaravelAdmin\Table;
  */
 final class TableColumn
 {
+    /** The key of a serialized row that carries its cells' tones (tone()). */
+    public const TONES_KEY = '__tones';
+
     private string $name;
 
     private ?string $label = null;
@@ -48,6 +51,9 @@ final class TableColumn
 
     /** @var (callable(mixed, array<string, mixed>): mixed)|null */
     private $formatter = null;
+
+    /** @var (callable(mixed, array<string, mixed>): ?string)|null The cell's tone — see tone(). */
+    private $toneResolver = null;
 
     /** @var string|\Closure(mixed): mixed|null The mask — see masked(). */
     private string|\Closure|null $mask = null;
@@ -287,6 +293,68 @@ final class TableColumn
     }
 
     /**
+     * A share drawn as a bar with its caption: the value is 0..$max — 0..100
+     * by default, 0..1 with `asProgress(1)` — and the caption is the per cent
+     * of $max with $decimals digits («42 %»). `$tone` colours the bar (the
+     * panel's tone vocabulary; the accent when null), and tone() colours one
+     * row's bar.
+     *
+     *     TableColumn::make('share')->label('Доля премий')->asProgress()
+     *     TableColumn::make('ratio')->asProgress(1, 1, 'success')
+     */
+    public function asProgress(float|int $max = 100, int $decimals = 0, ?string $tone = null): self
+    {
+        return $this->as('progress', [
+            'max' => $max > 0 ? $max : 100,
+            'decimals' => max(0, $decimals),
+            'tone' => $tone,
+        ]);
+    }
+
+    /**
+     * The tone of a cell, computed per row: the text, a badge (asBadge())
+     * or a bar (asProgress()) is coloured by it — «К прошлому» green when it
+     * grew and red when it fell. A string is one tone for the whole column;
+     * a callable gets the raw value and the raw row and returns a tone
+     * name (success, danger, warning, info, neutral, primary or a colour
+     * word) or null for none:
+     *
+     *     TableColumn::make('change')->tone(fn ($v) => $v > 0 ? 'success' : ($v < 0 ? 'danger' : null))
+     *
+     * The tones travel next to the row, under `__tones`, so the value stays
+     * what it was for sorting, editing and export. A formatter may as well
+     * return `['value' => …, 'tone' => …]` for one cell.
+     *
+     * @param  string|(callable(mixed, array<string, mixed>): ?string)|null  $tone
+     */
+    public function tone(string|callable|null $tone): self
+    {
+        $this->toneResolver = is_string($tone) ? static fn (): string => $tone : $tone;
+
+        return $this;
+    }
+
+    public function hasTone(): bool
+    {
+        return $this->toneResolver !== null;
+    }
+
+    /**
+     * The tone of one cell, from tone(); null without one.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    public function toneOf(mixed $value, array $row): ?string
+    {
+        if ($this->toneResolver === null) {
+            return null;
+        }
+        $tone = ($this->toneResolver)($value, $row);
+
+        return is_string($tone) && $tone !== '' ? $tone : null;
+    }
+
+    /**
      * An image at a URL; width and height fix the preview's size.
      */
     public function asImage(?int $width = null, ?int $height = null): self
@@ -463,12 +531,16 @@ final class TableColumn
     public static function formatRows(iterable $columns, array $rows): array
     {
         $formatted = [];
+        $toned = [];
         foreach ($columns as $column) {
             if ($column->hasFormatter()) {
                 $formatted[] = $column;
             }
+            if ($column->hasTone()) {
+                $toned[] = $column;
+            }
         }
-        if ($formatted === []) {
+        if ($formatted === [] && $toned === []) {
             return $rows;
         }
 
@@ -481,6 +553,19 @@ final class TableColumn
                 } elseif (str_contains($name, '.') && \Illuminate\Support\Arr::has($row, $name)) {
                     \Illuminate\Support\Arr::set($out, $name, $column->applyFormatter(\Illuminate\Support\Arr::get($row, $name), $row));
                 }
+            }
+            // The tones of the cells (tone()) beside the values, from the raw row.
+            $tones = [];
+            foreach ($toned as $column) {
+                $name = $column->name();
+                $raw = array_key_exists($name, $row) ? $row[$name] : \Illuminate\Support\Arr::get($row, $name);
+                $tone = $column->toneOf($raw, $row);
+                if ($tone !== null) {
+                    $tones[$name] = $tone;
+                }
+            }
+            if ($tones !== []) {
+                $out[self::TONES_KEY] = $tones;
             }
             $rows[$i] = $out;
         }

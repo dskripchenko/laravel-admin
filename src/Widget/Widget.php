@@ -43,6 +43,13 @@ abstract class Widget implements Renderable
     /** Where the widget's title leads — see link(). */
     protected ?string $link = null;
 
+    /**
+     * Links in the widget's header, right of the title — see headerLink().
+     *
+     * @var list<array{label: string, url: string, key: string|null, permission: list<string>|string|null}>
+     */
+    protected array $headerLinks = [];
+
     /** @var list<string>|string|null */
     protected array|string|null $permission = null;
 
@@ -193,6 +200,68 @@ abstract class Widget implements Renderable
         return $this;
     }
 
+    /**
+     * Adds a link to the widget's header, right of the title — a whole
+     * report, a journal. A panel path opens in place, an external address
+     * in a new tab. `$key` names the link for autotests
+     * (`widget-header-link-{key}`); `$permission` shows it only to the users
+     * holding every listed key:
+     *
+     *     TableWidget::make()->title('Продажи по продуктам')
+     *         ->headerLink('Отчёт целиком', '/screens/sales', 'report')
+     *         ->headerLink('Журнал', '/r/contracts', 'journal', 'admin.contracts.view');
+     *
+     * @param  list<string>|string|null  $permission
+     */
+    public function headerLink(string $label, string $url, ?string $key = null, array|string|null $permission = null): static
+    {
+        $this->headerLinks[] = ['label' => $label, 'url' => $url, 'key' => $key, 'permission' => $permission];
+
+        return $this;
+    }
+
+    /**
+     * Adds several header links: `label => url`, or a list of
+     * `['label' => …, 'url' => …, 'key' => …, 'permission' => …]`; see
+     * headerLink().
+     *
+     * @param  array<int|string, string|array{label: string, url: string, key?: string|null, permission?: list<string>|string|null}>  $links
+     */
+    public function headerLinks(array $links): static
+    {
+        foreach ($links as $label => $link) {
+            if (is_string($link)) {
+                $this->headerLink((string) $label, $link);
+            } else {
+                $this->headerLink($link['label'], $link['url'], $link['key'] ?? null, $link['permission'] ?? null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * The header links the signed-in user may see, captions translated.
+     *
+     * @return list<array{label: string, url: string, key: string|null}>
+     */
+    public function resolvedHeaderLinks(): array
+    {
+        $links = [];
+        foreach ($this->headerLinks as $link) {
+            if (! \Dskripchenko\LaravelAdmin\Permission\PermissionCheck::allows($link['permission'])) {
+                continue;
+            }
+            $links[] = [
+                'label' => (string) \Dskripchenko\LaravelAdmin\I18n\Localize::string($link['label']),
+                'url' => $link['url'],
+                'key' => $link['key'],
+            ];
+        }
+
+        return $links;
+    }
+
     public function refresh(int $seconds): static
     {
         $this->refreshSeconds = $seconds;
@@ -289,6 +358,8 @@ abstract class Widget implements Renderable
             'rowSpan' => $this->rowSpan,
             'refresh' => $this->refreshSeconds,
             'link' => $this->link,
+            // Links in the header, right of the title (1.75); only when there are some.
+            ...($this->headerLinks !== [] ? ['headerLinks' => $this->resolvedHeaderLinks()] : []),
             'permission' => $this->permission,
             'data' => $this->data(),
         ];

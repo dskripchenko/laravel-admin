@@ -19,6 +19,8 @@ import BpmnWidget from './BpmnWidget.vue'
 import BoardWidget from './BoardWidget.vue'
 import KanbanWidget from './KanbanWidget.vue'
 import CalendarWidget from './CalendarWidget.vue'
+import ListWidget from './ListWidget.vue'
+import ActionsWidget from './ActionsWidget.vue'
 
 /**
  * Registers the built-in widget components and the backend's aliases. The
@@ -60,6 +62,9 @@ export function registerBuiltinWidgets(): void {
     board: BoardWidget,
     kanban: KanbanWidget,
     calendar: CalendarWidget,
+    // A list without a table header and a row of buttons (1.75)
+    list: ListWidget,
+    actions: ActionsWidget,
   })
   // The add / configure dialog descriptions, likewise without replacing the host's.
   for (const [type, description] of Object.entries(builtinWidgetDescriptions())) {

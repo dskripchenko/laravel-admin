@@ -325,6 +325,7 @@ it is, not in kebab-case: `action-send_invoice`.
 | `masked-cell`, `masked-reveal`, `masked-hide` | A masked column's cell, "Show", "Hide" (1.73) |
 | `dash-period-{key}`, `dash-period-range`, `dash-range`, `dash-range-from`, `dash-range-to`, `dash-range-apply`, `dash-range-cancel`, `dash-compare` | The dashboard's period, a custom range, the comparison (1.73) |
 | `widget-link`, `stat-link`, `stat-previous` | A widget's link, a number's link, the previous period's value (1.73) |
+| `widget-header-link-{key}`, `widget-list`, `list-item-{key}`, `widget-list-empty`, `widget-stats-compact`, `widget-stats-tiles`, `stat-item`, `stat-tile`, `stat-trend`, `stat-hint`, `widget-actions`, `widget-action-{key}`, `widget-actions-empty`, `cell-progress` | A widget's header link, a list and its row, an empty list, compact numbers and tiles, a number, its trend and hint, the action buttons and a button, a share bar in a cell (1.75); without a key — the name without `-{key}` |
 | `reveal-value`, `reveal-copy`, `reveal-close` | The show-once secret dialog |
 | `state-empty`, `state-no-results`, `state-error`, `state-forbidden` | The states (1.74); in a list — `resource-empty`, `resource-no-results`, `resource-error`, `resource-forbidden` |
 | `state-retry`, `state-copy-code`, `state-code`, `state-permission`, `state-copy-key`, `state-home` | Retry, Copy the code, the request code, the permission key, Copy the key, To the desktop (1.74) |

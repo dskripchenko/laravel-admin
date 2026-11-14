@@ -6,6 +6,7 @@
  *   { type: 'donut-chart', title: 'Status',
  *     data: [{ label: 'Published', value: 156, color: '...' }, ...] }
  */
+import WidgetHeader from './WidgetHeader.vue'
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
 import { formatNumber, trSafe as tr } from '../../stores/i18n'
@@ -80,9 +81,7 @@ const slices = computed(() => {
 
 <template>
   <UidCard padding="md" class="admin-widget admin-donut-widget">
-    <header v-if="title" class="admin-widget__hd">
-      <h3 class="admin-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" />
     <div v-if="isEmpty" class="admin-widget__empty">{{ tr('Нет данных') }}</div>
     <div v-else class="admin-donut-widget__row">
       <svg viewBox="0 0 120 120" class="admin-donut-widget__svg" role="img" :aria-label="title">

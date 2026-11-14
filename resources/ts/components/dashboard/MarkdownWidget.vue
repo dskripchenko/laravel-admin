@@ -5,6 +5,7 @@
  * links; ```mermaid blocks become diagrams. A host that needs the full
  * CommonMark grammar registers its own through registerWidget('markdown', ...).
  */
+import WidgetHeader from './WidgetHeader.vue'
 import { UidCard, UidMarkdown } from '@dskripchenko/ui'
 import { useCalloutTitles } from '../markdown/calloutTitles'
 
@@ -20,9 +21,7 @@ const calloutTitles = useCalloutTitles()
 
 <template>
   <UidCard padding="md" class="admin-widget">
-    <header v-if="title" class="admin-widget__hd">
-      <h3 class="admin-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" />
     <UidMarkdown
       class="admin-markdown admin-markdown-widget"
       :source="content ?? ''"

@@ -71,6 +71,7 @@ const uidColumns = computed<UidTableColumn[]>(() =>
             :preset="col.preset"
             :meta="col.meta"
             :row="slotRow(slotProps)"
+            :column="col.name"
           />
         </template>
       </UidTable>

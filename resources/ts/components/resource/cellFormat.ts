@@ -14,6 +14,8 @@
  *   - link       → the caption; AdminTableCell draws the link.
  *   - audio      → AdminTableCell draws the mini player.
  *   - video      → AdminTableCell draws the poster and the modal player.
+ *   - progress   → the per cent of meta.max («42 %»); AdminTableCell draws
+ *                  the bar beside it (TableColumn::asProgress, 1.75).
  *   - text       → the fallback.
  *
  * Columns with no explicit preset are formatted automatically: a value that
@@ -22,9 +24,62 @@
  */
 
 import { currentLocale, formatNumber, trSafe as tr } from '../../stores/i18n'
-import { badgeVariant, type BadgeVariant } from '../tones'
+import { badgeVariant, resolveTone, type BadgeVariant, type PanelTone } from '../tones'
 
-export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes' | 'image' | 'link' | 'audio' | 'video'
+export type CellPreset = 'text' | 'date' | 'datetime' | 'money' | 'boolean' | 'badge' | 'bytes' | 'image' | 'link' | 'audio' | 'video' | 'progress'
+
+/** The key of a row that carries its cells' tones (TableColumn::tone(), 1.75). */
+export const ROW_TONES_KEY = '__tones'
+
+/** A cell sent as `{value, tone}` (a formatter's return, 1.75). */
+interface TonedCell {
+  value: unknown
+  tone: string | null
+}
+
+/**
+ * A cell given as `{value, tone}` — an object with a tone and no other key
+ * but `value` — rather than a plain value.
+ */
+export function isTonedCell(value: unknown): value is TonedCell {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const keys = Object.keys(value)
+  return keys.includes('tone')
+    && keys.every((k) => k === 'tone' || k === 'value')
+    && ((value as { tone: unknown }).tone === null || typeof (value as { tone: unknown }).tone === 'string')
+}
+
+/** The value of a cell, without the `{value, tone}` envelope. */
+export function cellValue(value: unknown): unknown {
+  return isTonedCell(value) ? value.value : value
+}
+
+/**
+ * The tone of a cell: its own `{value, tone}` first, then the row's
+ * `__tones[column]` (TableColumn::tone()). Null when there is none or the
+ * name is not a tone.
+ */
+export function cellTone(value: unknown, row: Record<string, unknown> | null | undefined, column: string | null | undefined): PanelTone | null {
+  if (isTonedCell(value)) return resolveTone(value.tone)
+  if (!row || !column) return null
+  const tones = row[ROW_TONES_KEY]
+  if (tones === null || typeof tones !== 'object' || Array.isArray(tones)) return null
+  const tone = (tones as Record<string, unknown>)[column]
+  return typeof tone === 'string' ? resolveTone(tone) : null
+}
+
+/**
+ * The share of a progress cell (TableColumn::asProgress) as a per cent,
+ * 0..100: the value against meta.max (100 by default). Null for a value that
+ * is not a number.
+ */
+export function progressPercent(value: unknown, meta: CellMeta = {}): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const n = typeof value === 'number' ? value : Number(String(value).replace(',', '.'))
+  if (!Number.isFinite(n)) return null
+  const max = typeof meta.max === 'number' && meta.max > 0 ? meta.max : Number(meta.max) > 0 ? Number(meta.max) : 100
+  return (n / max) * 100
+}
 
 export interface CellMeta {
   format?: string
@@ -45,6 +100,8 @@ export function formatCell(
   preset: string | undefined,
   meta: CellMeta = {},
 ): string {
+  // A `{value, tone}` cell is formatted by its value.
+  value = cellValue(value)
   if (value === null || value === undefined) return ''
 
   // The automatic detection of an ISO datetime, for the columns with no preset.
@@ -67,6 +124,12 @@ export function formatCell(
       return badgeLabel(value, meta)
     case 'json':
       return safeJson(value)
+    case 'progress': {
+      const percent = progressPercent(value, meta)
+      if (percent === null) return String(value)
+      const digits = typeof meta.decimals === 'number' ? Math.max(0, meta.decimals) : 0
+      return `${formatNumber(percent, { minimumFractionDigits: digits, maximumFractionDigits: digits })} %`
+    }
     default:
       if (Array.isArray(value) || (value !== null && typeof value === 'object')) {
         return safeJson(value)

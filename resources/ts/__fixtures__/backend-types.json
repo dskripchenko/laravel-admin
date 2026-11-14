@@ -80,6 +80,7 @@
         "wrapper"
     ],
     "widgets": [
+        "actions",
         "board",
         "bpmn",
         "calendar",
@@ -89,6 +90,7 @@
         "heatmap",
         "iframe",
         "kanban",
+        "list",
         "markdown",
         "recent_list",
         "stats",

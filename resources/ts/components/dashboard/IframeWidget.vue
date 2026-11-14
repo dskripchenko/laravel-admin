@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WidgetHeader from './WidgetHeader.vue'
 import { computed } from 'vue'
 import { UidCard } from '@dskripchenko/ui'
 import { trSafe as tr } from '../../stores/i18n'
@@ -32,9 +33,7 @@ const frameStyle = computed(() => ({
 
 <template>
   <UidCard padding="md" class="admin-widget admin-widget--iframe">
-    <header v-if="title" class="admin-widget__hd">
-      <h3 class="admin-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" />
     <iframe
       v-if="src"
       :src="src"
