@@ -92,10 +92,36 @@ abstract class TestCase extends Orchestra
         $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
         $app['config']->set('app.debug', true);
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
+        $app['config']->set('database.connections.testing', self::databaseConnection());
+    }
+
+    /**
+     * SQLite in memory by default. ADMIN_TEST_DB_DRIVER=pgsql|mysql|mariadb
+     * (with ADMIN_TEST_DB_HOST, _PORT, _DATABASE, _USERNAME, _PASSWORD) runs
+     * the tests on a real server instead — for what SQLite lets through, such
+     * as column types and lengths. The database is wiped by the tests.
+     *
+     * @return array<string, mixed>
+     */
+    private static function databaseConnection(): array
+    {
+        $driver = getenv('ADMIN_TEST_DB_DRIVER');
+        if (! is_string($driver) || $driver === '' || $driver === 'sqlite') {
+            return ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => ''];
+        }
+        $env = static fn (string $name, string $default): string => is_string($v = getenv('ADMIN_TEST_DB_'.$name)) && $v !== '' ? $v : $default;
+
+        return [
+            'driver' => $driver,
+            'host' => $env('HOST', '127.0.0.1'),
+            'port' => $env('PORT', $driver === 'pgsql' ? '5432' : '3306'),
+            'database' => $env('DATABASE', 'laravel_admin_test'),
+            'username' => $env('USERNAME', 'root'),
+            'password' => $env('PASSWORD', ''),
+            'charset' => $driver === 'pgsql' ? 'utf8' : 'utf8mb4',
+            'collation' => $driver === 'pgsql' ? null : 'utf8mb4_unicode_ci',
             'prefix' => '',
-        ]);
+            'search_path' => 'public',
+        ];
     }
 }

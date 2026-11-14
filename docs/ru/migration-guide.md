@@ -18,6 +18,24 @@ translated_at: 2026-10-02
 но некоторые меняют поведение, на которое мог опираться ваш проект. От
 новых к старым:
 
+- **1.76.0** — исправления:
+  - **Журнал аудита.** Новая миграция `make_admin_audit_logs_morph_ids_strings`
+    переводит `actor_id`, `subject_id` и `impersonator_id` из `bigint` в
+    `varchar(64)` с сохранением данных и индексов: выполните
+    `php artisan migrate`. До неё запись о модели с uuid- или строковым
+    ключом (например, `{slug}/reveal`) по-прежнему падает на PostgreSQL.
+    Миграция обратима, пока в журнале нет нечисловых ключей. Целочисленный
+    ключ читается из модели числом, как раньше. Свои запросы к журналу на
+    PostgreSQL сравнивайте со строкой (`where('subject_id', (string) $id)`)
+    или используйте `AuditLog::forSubject()` / `forActor()` / `auditLogs`.
+    Если связь `morphMany(AuditLog::class, 'subject')` объявлена в своей
+    модели с целочисленным ключом, замените её на трейт `Loggable` (или его
+    `auditLogs()`), иначе на PostgreSQL она упадёт после миграции.
+  - **Импорт из SPA.** Кнопка «Импорт» списка снова работает: запросы
+    приведены к контракту `import/*` (`path`, `auto_mapping`, `process.id`,
+    статус `completed`). Схемы OpenAPI `ImportUploadPayload` и
+    `ImportPreviewPayload` описывают фактический ответ; неиспользуемые
+    `ImportTargetField`, `ImportPreviewRow`, `ImportPreviewSummary` удалены.
 - **1.75.1** — исправления безопасности, поведение меняется:
   - **Импорт.** Все шаги `import/*` требуют `Resource::importable() = true`
     (иначе `403 import_disabled`) и права `{permission}.create` ресурса.

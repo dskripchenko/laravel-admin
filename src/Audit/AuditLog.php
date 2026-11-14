@@ -19,11 +19,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  *
  * @property int $id
  * @property string|null $actor_type
- * @property int|null $actor_id
+ * @property int|string|null $actor_id Stored as a string (see MorphKey): an integer key reads back as an int.
  * @property string|null $impersonator_type The administrator signed in as the actor, during an impersonation.
- * @property int|null $impersonator_id
+ * @property int|string|null $impersonator_id
  * @property string|null $subject_type
- * @property int|null $subject_id
+ * @property int|string|null $subject_id An integer, a uuid or any other key — see MorphKey.
  * @property string $event
  * @property array<string, mixed>|null $changes
  * @property string|null $ip
@@ -118,6 +118,9 @@ final class AuditLog extends Model
     protected function casts(): array
     {
         return [
+            'actor_id' => MorphKey::class,
+            'impersonator_id' => MorphKey::class,
+            'subject_id' => MorphKey::class,
             'changes' => 'array',
         ];
     }
@@ -197,7 +200,7 @@ final class AuditLog extends Model
     {
         return $query
             ->where('subject_type', $subject->getMorphClass())
-            ->where('subject_id', $subject->getKey());
+            ->where('subject_id', MorphKey::toString($subject->getKey()));
     }
 
     /**
@@ -208,7 +211,7 @@ final class AuditLog extends Model
     {
         return $query
             ->where('actor_type', $actor->getMorphClass())
-            ->where('actor_id', $actor->getKey());
+            ->where('actor_id', MorphKey::toString($actor->getKey()));
     }
 
     /**

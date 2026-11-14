@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.76.0
+
+A minor release rather than a patch: the audit log's morph ids become strings
+(see the migration guide) — a raw query comparing `subject_id`/`actor_id` with
+an integer on PostgreSQL has to compare with a string or use
+`forSubject()`/`forActor()`.
+
+### Fixed
+
+- **Auditing a record with a uuid or string key failed with a 500.** The
+  audit log's morph ids were `bigint` (`nullableMorphs`), so on PostgreSQL any
+  entry about such a record — `{slug}/reveal` of a masked column, a
+  `Loggable` change, an impersonation of a uuid-keyed user — failed with
+  `invalid input syntax for type bigint`, and the request with it (MySQL refused
+  or truncated it, depending on its SQL mode). A new migration,
+  `make_admin_audit_logs_morph_ids_strings`, makes `actor_id`, `subject_id`
+  and `impersonator_id` `varchar(64)`, keeping the data and the indexes; it
+  rolls back while every stored id is numeric. The ids are written as strings
+  (the `MorphKey` cast) and an integer key reads back as an int, as before.
+  `AuditLog::forSubject()` / `forActor()` and `Loggable::auditLogs()` compare
+  the key as a string, eager loading included (PostgreSQL has no
+  `varchar = integer`). `audit/list` and `audit/timeline` document
+  `subject_id` / `actor_id` as strings.
+- **The SPA's import did nothing but fail.** The list's Import button sent
+  `upload_id`, read `mapping` and `process_id` and waited for status `done`,
+  while `import/*` takes and returns `path`, `auto_mapping`, `process.id` and
+  `completed`: every import ended with the error toast. The flow now follows
+  the documented contract (`composables/importFlow.ts`), counts created and
+  updated rows, reports a failed import's own error and stops polling when
+  `start` already returns a finished process.
+- **The import's OpenAPI schemas described a different API.**
+  `ImportUploadPayload` and `ImportPreviewPayload` now describe what
+  `import/upload` and `import/preview` return; `ImportProcessPayload.process`
+  references a new `ImportProcess` schema. The unused `ImportTargetField`,
+  `ImportPreviewRow` and `ImportPreviewSummary` were removed.
+
+### Added
+
+- The package's tests run on PostgreSQL or MySQL/MariaDB as well:
+  `ADMIN_TEST_DB_DRIVER=pgsql|mysql|mariadb` with `ADMIN_TEST_DB_HOST`,
+  `_PORT`, `_DATABASE`, `_USERNAME`, `_PASSWORD`.
+
 ## 1.75.1
 
 ### Security

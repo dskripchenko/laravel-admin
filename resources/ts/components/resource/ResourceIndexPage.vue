@@ -68,6 +68,7 @@ import { applyPositions, buildReorderPayload, canDragReorder, type ReorderRespon
 import { adminToast } from '../../stores/toast'
 import { actionReveal, revealOnce } from '../../composables/useReveal'
 import { deleteWording, forceDeleteWording } from '../../composables/useConfirm'
+import { importedCount, runImport } from '../../composables/importFlow'
 import { formatLocale, useI18nStore } from '../../stores/i18n'
 import {
   needsSelection,
@@ -377,8 +378,8 @@ async function onExport(format: string = 'csv'): Promise<void> {
 }
 
 /**
- * Import — a file picker, then a multipart POST to /{slug}/import. On success
- * the list is reloaded; when the backend does not support it, an alert.
+ * Import — a file picker, then the import flow below. On success the list is
+ * reloaded; on a failure, an error toast.
  */
 const importInput = ref<HTMLInputElement | null>(null)
 function onImportClick(): void {
@@ -386,15 +387,12 @@ function onImportClick(): void {
   importInput.value?.click()
 }
 /**
- * The default import flow over Dskripchenko\LaravelAdmin\Import\ImportController:
- *   1. POST /import/upload (file + resource=slug) → uploadId
- *   2. POST /import/preview → auto-mapping (headers ↔ fields)
- *   3. POST /import/start (uploadId + mapping) → processId
- *   4. poll /import/status?processId=… until status is 'done' or 'failed'
+ * The default import flow — upload, preview, start, status — over
+ * Dskripchenko\LaravelAdmin\Import\ImportController; see importFlow.ts.
  *
- * The auto-mapping matches CSV/JSON column names against the resource's own
- * fields. A host may intercept @import before this flow and open a wizard of
- * its own.
+ * The auto-mapping matches the file's column names against the resource's
+ * create fields. A host may intercept @import before this flow and open a
+ * wizard of its own.
  */
 async function onImportFileChange(e: Event): Promise<void> {
   const input = e.target as HTMLInputElement
@@ -403,37 +401,9 @@ async function onImportFileChange(e: Event): Promise<void> {
   try {
     nav.start()
     const { getAdminClient } = await import('../../stores/registry')
-    const client = getAdminClient()
-
-    // 1. Upload
-    const uploadForm = new FormData()
-    uploadForm.append('file', file)
-    uploadForm.append('resource', props.slug)
-    const uploaded = await client.post<{ upload_id: string }>(
-      '/import/upload',
-      uploadForm,
-    )
-
-    // 2. Preview — this is where the auto-mapping happens
-    const preview = await client.post<{ mapping: Record<string, string> }>(
-      '/import/preview',
-      { resource: props.slug, upload_id: uploaded.upload_id },
-    )
-
-    // 3. Start
-    const started = await client.post<{ process_id: string }>(
-      '/import/start',
-      {
-        resource: props.slug,
-        upload_id: uploaded.upload_id,
-        mapping: preview.mapping,
-      },
-    )
-
-    // 4. Poll status
-    const finalStatus = await pollImportStatus(client, started.process_id)
-    const imported = finalStatus.imported ?? 0
-    const failed = finalStatus.failed ?? 0
+    const finished = await runImport(getAdminClient(), props.slug, file)
+    const imported = importedCount(finished)
+    const failed = finished.error_count ?? 0
     if (failed > 0) {
       adminToast.warning(tRaw('Импорт завершён с ошибками: :imported записей, :failed ошибок.', { imported, failed }))
     } else {
@@ -449,28 +419,6 @@ async function onImportFileChange(e: Event): Promise<void> {
     input.value = ''
     nav.end()
   }
-}
-
-interface ImportStatus {
-  status: 'pending' | 'running' | 'done' | 'failed'
-  imported?: number
-  failed?: number
-}
-async function pollImportStatus(
-  client: { get<T>(url: string): Promise<T> },
-  processId: string,
-): Promise<ImportStatus> {
-  // Poll every 800 ms, but no longer than 90 seconds — a crude guard against
-  // looping forever.
-  const deadline = Date.now() + 90_000
-  while (Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    const status = await client.get<ImportStatus>(
-      `/import/status?process_id=${encodeURIComponent(processId)}`,
-    )
-    if (status.status === 'done' || status.status === 'failed') return status
-  }
-  return { status: 'failed', failed: 1 }
 }
 
 const ACTIONS_KEY = '__row_actions__'

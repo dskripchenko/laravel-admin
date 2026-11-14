@@ -128,7 +128,19 @@ trait AdminApiSystemSchemas
                 'payload' => '@ImportProcessPayload',
             ],
             'ImportProcessPayload' => [
-                'process' => 'object! The import process as ImportController::serialize() renders it',
+                'process' => '@ImportProcess',
+            ],
+            'ImportProcess' => [
+                'id' => 'integer! Passed to import/status as `id`',
+                'resource_slug' => 'string!',
+                'status' => 'string! pending, running, completed or failed',
+                'processed_count' => 'integer!',
+                'created_count' => 'integer!',
+                'updated_count' => 'integer!',
+                'error_count' => 'integer!',
+                'errors' => 'array {row, error}; row 0 is an error of the whole import', // object[]
+                'started_at' => 'string(date-time)',
+                'completed_at' => 'string(date-time)',
             ],
 
             'NotificationListResponse' => [

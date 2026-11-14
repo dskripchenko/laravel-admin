@@ -71,6 +71,21 @@ AuditLog::create([
 ]);
 ```
 
+## Записи с uuid и строковыми ключами
+
+С 1.76.0 `actor_id`, `subject_id` и `impersonator_id` журнала — строки
+(`varchar(64)`, миграция `make_admin_audit_logs_morph_ids_strings`), поэтому
+в журнал попадают и модели с ключом `uuid`, `ulid` или любой другой строкой:
+изменения `Loggable`, показ скрытой колонки (`{slug}/reveal`), вход под
+пользователем. Целочисленный ключ хранится текстом, а читается из модели
+по-прежнему числом (`AuditLog::$subject_id === $article->id`).
+
+Искать записи модели — через `AuditLog::forSubject($model)`,
+`forActor($user)` или связь `$model->auditLogs` из `Loggable`: они передают
+ключ строкой. Свой запрос сравнивайте со строкой —
+`->where('subject_id', (string) $article->id)`: PostgreSQL не сравнивает
+`varchar` с числом.
+
 ## Конфигурация
 
 ```php

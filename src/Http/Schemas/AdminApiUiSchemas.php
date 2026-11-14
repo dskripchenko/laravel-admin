@@ -281,17 +281,8 @@ trait AdminApiUiSchemas
                 'payload' => '@ImportUploadPayload',
             ],
             'ImportUploadPayload' => [
-                'upload_id' => 'string(uuid)!',
-                'columns_detected' => 'array!',                       // string[]
-                'sample_rows' => 'array!',                       // object[]
-                'total_rows_estimate' => 'integer!',
-                'target_fields' => '@ImportTargetField[]',
-                'auto_mapping' => 'object!',                      // file_column => resource_field|null
-            ],
-            'ImportTargetField' => [
-                'name' => 'string!',
-                'label' => 'string!',
-                'required' => 'boolean!',
+                'disk' => 'string! The import disk, admin.imports.disk',
+                'path' => 'string! The file on that disk — passed to import/preview and import/start as is',
             ],
 
             'ImportPreviewResponse' => [
@@ -299,21 +290,11 @@ trait AdminApiUiSchemas
                 'payload' => '@ImportPreviewPayload',
             ],
             'ImportPreviewPayload' => [
-                'preview' => '@ImportPreviewRow[]',
-                'summary' => '@ImportPreviewSummary',
-            ],
-            'ImportPreviewRow' => [
-                'row_number' => 'integer!',
-                'status' => 'string!',                                // create|update|skip|fail
-                'data' => 'object!',
-                'errors' => 'object',                                 // field => string[]
-            ],
-            'ImportPreviewSummary' => [
-                'total' => 'integer!',
-                'will_create' => 'integer!',
-                'will_update' => 'integer!',
-                'will_skip' => 'integer!',
-                'will_fail' => 'integer!',
+                'headers' => 'array! The file\'s header row',      // string[]
+                'sample' => 'array! The first rows, header => value', // object[]
+                'total' => 'integer The number of data rows; null for an empty XLSX',
+                'format' => 'string! csv, tsv, txt or xlsx',
+                'auto_mapping' => 'object! file header => create field; unmatched headers are left out',
             ],
         ];
     }
