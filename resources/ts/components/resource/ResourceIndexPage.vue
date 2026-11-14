@@ -1968,6 +1968,7 @@ async function retryLoad(): Promise<void> {
                 :preset="columnMeta[col.key]?.preset"
                 :meta="columnMeta[col.key]?.meta"
                 :row="rowFromSlot(slotProps)"
+                :column="col.key"
               />
             </InlineEditCell>
             <MaskedCell
@@ -1984,6 +1985,7 @@ async function retryLoad(): Promise<void> {
               :preset="columnMeta[col.key]?.preset"
               :meta="columnMeta[col.key]?.meta"
               :row="rowFromSlot(slotProps)"
+              :column="col.key"
             />
           </slot>
         </template>

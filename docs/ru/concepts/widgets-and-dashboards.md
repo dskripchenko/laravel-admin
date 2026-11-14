@@ -66,6 +66,8 @@ final class ContentDashboardScreen extends DashboardScreen
 | `BpmnWidget` | `bpmn` | Модель процесса BPMN или решений DMN, только просмотр. |
 | `KanbanWidget` | `kanban` | Канбан-вид ресурса или доска, записанная разметкой. |
 | `CalendarWidget` | `calendar` | Вид «календарь» ресурса или календарь, записанный разметкой. |
+| `ListWidget` | `list` | Список без шапки таблицы: подпись, вторичный текст, бейдж с тоном, ссылка (1.75). |
+| `ActionsWidget` | `actions` | Ряд кнопок-ссылок по правам — пункты «+ Создать» (1.75). |
 
 ## Форматирование значений
 
@@ -88,6 +90,112 @@ RecentListWidget::make()
 значения (тултипы, таблица данных, ось) деньгами через
 `ChartWidget::money('RUB')` или с фиксированным числом знаков через
 `precision(2)`; сами наборы данных остаются числами.
+
+## Рабочий стол: доли, списки, плитки, кнопки (1.75)
+
+**Доля в процентных пунктах.** `share()` помечает последнюю карточку как долю
+в процентах: изменение к прошлому периоду (`previous()`) показывается в п. п. —
+«▼ 0,2 п.п.» для 0,8 % → 0,6 %, а не «▼ 25 %». `trend()` у такой карточки тоже
+в п. п.; явно — `trend(0.2, 'down', 'pp')`.
+
+```php
+StatsOverviewWidget::make()->title('Итоги периода')
+    ->stat('Сбои оформления', 0.6, 'danger', 'triangle-alert', $url, '12 из 2 000 процессов')
+    ->precision(1)->suffix('%')->share()->previous(0.8);
+```
+
+**Компактные цифры и список в одной карточке.** `compact()` ставит цифры в
+одну строку внутри одной карточки — подпись сверху, число под ней, без
+минимальной ширины: три цифры помещаются в колонку 4/12. Число окрашено
+тоном карточки, если это success, warning или danger. Строки `item()` идут
+списком под цифрами в той же карточке (строки без `compact()` тоже делают
+карточку компактной). Высоту такой карточки задайте `rowSpan()`.
+
+```php
+StatsOverviewWidget::make()->title('Отложенные процессы')->size(4)->rowSpan(2)->compact()
+    ->stat('В очереди', 142, null, null, '/r/processes?status=new')
+    ->stat('Сбои за сутки', 3, 'danger')
+    ->stat('Зависли > 15 мин', 1, 'warning')
+    ->item('Выпуск полиса ВЗР', '14:12', 'ошибка КИАС', 'danger', '/r/processes/15')
+    ->item('Синхронизация справочников', null, '23 мин', 'warning')
+    ->emptyText('Сбоев нет')
+    ->headerLink('Сводка процессов', '/dashboard/process-summary', 'summary');
+```
+
+**Плитки.** `tiles()` рисует цифры маленькими плитками с рамкой: подпись,
+крупное число и подпись под числом (`stat(..., hint: …)`) рядом с ним.
+`hintTone()` делает подпись бейджем с тоном — возраст старейшей записи
+очереди красным. Плитка с `url()` — ссылка.
+
+```php
+StatsOverviewWidget::make()->title('Очереди')->size(12)->tiles()
+    ->stat('Обращения и претензии', 12, 'danger', null, '/screens/queue?tab=claims', 'старейшее 26 ч')->hintTone('danger')
+    ->stat('Заявки', 31, null, null, '/screens/queue?tab=requests', '3 ч')->hintTone('neutral');
+```
+
+`hintTone()` работает и в карточках по умолчанию.
+
+**Список.** `ListWidget` — строки без шапки таблицы: подпись, вторичный текст,
+бейдж с тоном (neutral, info, success, warning, danger и другие имена словаря
+тонов), ссылка у строки; пустое состояние — `emptyText()` («Нет данных» по
+умолчанию). Строки можно посчитать в `data()` наследника: `item()`/`items()` и
+`return parent::data()`.
+
+```php
+ListWidget::make()->title('Очереди')->size(4)->rowSpan(2)
+    ->item('Обращения и претензии', 'старейшее 26 ч', 12, 'danger', '/screens/queue?tab=claims', 'claims')
+    ->items([['label' => 'Заявки', 'secondary' => '3 ч', 'badge' => 31, 'tone' => 'neutral', 'url' => '/screens/queue?tab=requests']])
+    ->emptyText('Очереди пусты');
+```
+
+**Полоса доли в таблице.** `TableColumn::asProgress($max = 100, $decimals = 0, $tone = null)`
+рисует значение 0..max полосой с подписью «42 %»; для долей 0..1 —
+`asProgress(1)`. Пресет общий для ячеек: работает в `TableWidget`,
+`RecentListWidget`, списке ресурса и встроенной таблице.
+
+**Тон ячейки.** `TableColumn::tone()` — тон, посчитанный по строке: строка
+(один тон на колонку) или функция `($value, $row) => ?string`. Тон красит
+текст ячейки, бейдж (`asBadge()`) или полосу (`asProgress()`). Тона едут рядом
+со строкой в `__tones`, значение не меняется (сортировка, правка в строке,
+экспорт). Форматтер может вернуть и `['value' => …, 'tone' => …]` для одной
+ячейки.
+
+```php
+TableWidget::make()->title('Продажи по продуктам')->size(8)->columns([
+    TableColumn::make('product')->label('Продукт')->asLink('{url}'),
+    TableColumn::make('change')->label('К прошлому')->align('right')
+        ->format(fn ($v) => ($v > 0 ? '+' : '').$v.'%')
+        ->tone(fn ($v) => $v > 0 ? 'success' : ($v < 0 ? 'danger' : null)),
+    TableColumn::make('share')->label('Доля премий')->asProgress(),
+])->headerLink('Отчёт целиком', '/screens/sales', 'report');
+```
+
+**Ссылки в шапке виджета.** `Widget::headerLink($label, $url, $key = null, $permission = null)`
+и `headerLinks(['Журнал' => '/r/log', …])` — ссылки справа от заголовка у
+любого виджета. Путь панели открывается на месте, внешний адрес — в новой
+вкладке; ссылка с `$permission` видна только с этими правами. Виджет без
+своей шапки (одна карточка цифры, например) показывает их в правом верхнем
+углу.
+
+**Кнопки действий.** `ActionsWidget` — ряд кнопок, первая основная. Пункты —
+те же `QuickCreate`, что у «+ Создать» в шапке, и по тем же правилам: ресурс —
+по праву `.create`, произвольная ссылка — по своим `permission()`.
+`fromQuickCreate()` ставит первыми пункты «+ Создать» панели. Ресурсы
+разрешаются только при расчёте данных виджета, не при сборке маршрутов.
+
+```php
+ActionsWidget::make()->title('Создать')->size(12)->actions([
+    QuickCreate::resource(NewsResource::class),
+    QuickCreate::resource(PostResource::class, 'Статья блога'),
+    QuickCreate::make('import', 'Импорт прайса', '/screens/price-import')->permission('admin.prices.import'),
+]);
+```
+
+`data-testid`: `widget-header-link-{key}` (без ключа — `widget-header-link`),
+`widget-list`, `list-item-{key}` (без ключа — `list-item`), `widget-list-empty`,
+`widget-stats-compact`, `widget-stats-tiles`, `stat-item`, `stat-tile`,
+`stat-trend`, `stat-hint`, `widget-actions`, `widget-action-{key}`,
+`widget-actions-empty`, `cell-progress`.
 
 ## Тепловая карта
 

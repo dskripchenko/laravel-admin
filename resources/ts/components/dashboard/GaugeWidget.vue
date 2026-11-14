@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WidgetHeader from './WidgetHeader.vue'
 import { computed } from 'vue'
 import { UidCard, UidGauge } from '@dskripchenko/ui'
 import type { GaugeTone, GaugeRange } from '@dskripchenko/ui'
@@ -84,9 +85,7 @@ const resolvedSuffix = computed<string>(
 
 <template>
   <UidCard padding="md" class="admin-widget">
-    <header v-if="title" class="admin-widget__hd">
-      <h3 class="admin-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" />
     <div class="admin-gauge-widget__body">
       <UidGauge
         :value="value"

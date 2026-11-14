@@ -11,10 +11,12 @@
  * directly; a non-empty `stats` array wins.
  */
 import { computed, type Component } from 'vue'
-import { UidStat } from '@dskripchenko/ui'
+import { UidBadge, UidCard, UidStat } from '@dskripchenko/ui'
 import type { StatTone } from '@dskripchenko/ui'
 import { resolveIcon } from '../shell/iconRegistry'
-import { resolveTone, type PanelTone } from '../tones'
+import { badgeVariant, resolveTone, type BadgeVariant, type PanelTone } from '../tones'
+import WidgetHeader from './WidgetHeader.vue'
+import ListRows, { type ListRowItem } from './ListRows.vue'
 import { currentLocale, formatNumber, intlLocale } from '../../stores/i18n'
 import { useLocaleStore } from '../../stores/locale'
 import { trSafe as tr } from '../../stores/i18n'
@@ -22,6 +24,8 @@ import { trSafe as tr } from '../../stores/i18n'
 interface StatChange {
   delta?: number
   direction?: 'up' | 'down' | 'flat'
+  /** 'pp' — percentage points (StatsOverviewWidget::share(), 1.75). */
+  unit?: string | null
 }
 interface StatFormat {
   style?: 'currency'
@@ -46,6 +50,12 @@ interface StatItem {
   previous?: number | string | null
   /** A line under the number (StatsOverviewWidget::stat(..., hint: …)). */
   hint?: string | null
+  /** The hint as a badge of this tone (StatsOverviewWidget::hintTone(), 1.75). */
+  hintTone?: string | null
+  /** A share in per cent: the change is in percentage points (share(), 1.75). */
+  share?: boolean
+  /** A fall is good: StatsOverviewWidget::lowerIsBetter(). */
+  lowerIsBetter?: boolean
 }
 
 interface Props {
@@ -61,9 +71,17 @@ interface Props {
   /** A name from the panel's tone vocabulary (../tones.ts); primary when unset. */
   tone?: string
   loading?: boolean
+  /** null — cards; compact — numbers in a row in one card; tiles (1.75). */
+  layout?: 'compact' | 'tiles' | null
+  /** Rows under the numbers (StatsOverviewWidget::item(), 1.75). */
+  items?: ListRowItem[] | null
+  emptyText?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  layout: null,
+  items: null,
+  emptyText: null,
   title: '',
   stats: () => [],
   value: 0,
@@ -117,6 +135,14 @@ interface ResolvedStat {
   previous: string | null
   /** A line under the number: «старейшее 26 ч» (stat(..., hint: …)). */
   hint: string | null
+  /** The hint as a badge of this variant (hintTone()); null — plain text. */
+  hintBadge: BadgeVariant | null
+  /** A fall is good (StatsOverviewWidget::lowerIsBetter()): the trend's colours swap. */
+  lowerIsBetter: boolean
+  /** The suffix after the trend number: per cent, or percentage points for a share. */
+  trendSuffix: string
+  /** The panel tone of the stat, for the compact and tile views. */
+  panelTone: PanelTone
 }
 
 /** A link's kind: inside the panel (the router) or outside it (a new tab). */
@@ -128,11 +154,20 @@ function isExternal(url: string): boolean {
  * The trend from the previous period's value when the card has none of its
  * own: the change in per cent.
  */
-function trendFrom(value: unknown, previous: unknown): number | undefined {
+function trendFrom(value: unknown, previous: unknown, share = false): number | undefined {
   const a = typeof value === 'number' ? value : Number(value)
   const b = typeof previous === 'number' ? previous : Number(previous)
-  if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return undefined
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return undefined
+  // A share changes by percentage points: 0.8 % → 0.6 % is −0.2 p.p.
+  if (share) return Math.round((a - b) * 100) / 100
+  if (b === 0) return undefined
   return Math.round(((a - b) / Math.abs(b)) * 1000) / 10
+}
+
+/** The suffix of a trend's number: per cent, or percentage points. */
+function trendSuffixOf(s: StatItem): string {
+  const pp = s.change?.unit === 'pp' || (s.share === true && !(s.change && s.change.unit))
+  return pp ? ` ${tr('п.п.')}` : '%'
 }
 
 /**
@@ -174,6 +209,10 @@ const items = computed<ResolvedStat[]>(() => {
       url: null,
       previous: null,
       hint: null,
+      hintBadge: null,
+      trendSuffix: '%',
+      lowerIsBetter: false,
+      panelTone: panelToneOf(null),
     }]
   }
   // A lone stat whose label is the widget's title (or that has none) is one
@@ -185,7 +224,11 @@ const items = computed<ResolvedStat[]>(() => {
     value: s.value ?? '',
     prefix: s.prefix ?? '',
     suffix: s.suffix ?? '',
-    trend: trendOf(s.change) ?? (s.previous !== undefined && s.previous !== null ? trendFrom(s.value, s.previous) : undefined),
+    trend: trendOf(s.change) ?? (s.previous !== undefined && s.previous !== null ? trendFrom(s.value, s.previous, s.share === true) : undefined),
+    trendSuffix: trendSuffixOf(s),
+    lowerIsBetter: s.lowerIsBetter === true,
+    panelTone: panelToneOf(s.color),
+    hintBadge: typeof s.hintTone === 'string' && s.hintTone !== '' ? badgeVariant(s.hintTone) : null,
     tone: toneOf(s.color),
     toneClass: toneClass(s.color),
     icon: resolveIcon(s.icon) ?? undefined,
@@ -200,6 +243,52 @@ const items = computed<ResolvedStat[]>(() => {
 })
 
 const multiple = computed(() => items.value.length > 1)
+
+/**
+ * The compact and tile views (1.75): compact() — or rows under the numbers —
+ * puts the numbers in a row inside one card; tiles() draws small tiles.
+ */
+const view = computed<'compact' | 'tiles' | null>(() => {
+  if (props.layout === 'compact' || props.layout === 'tiles') return props.layout
+  return Array.isArray(props.items) ? 'compact' : null
+})
+const listItems = computed<ListRowItem[] | null>(() => (Array.isArray(props.items) ? props.items : null))
+
+/** The value as the compact and tile views show it, formatted in the panel's locale. */
+function displayValue(stat: ResolvedStat): string {
+  let text: string
+  if (stat.formatter) {
+    text = stat.formatter(stat.value)
+  } else if (typeof stat.value === 'number') {
+    text = formatNumber(stat.value, { minimumFractionDigits: stat.precision, maximumFractionDigits: stat.precision })
+  } else {
+    text = String(stat.value)
+  }
+  return `${stat.prefix}${text}${stat.suffix}`
+}
+
+/** The trend of the compact and tile views: an arrow, the number and its suffix. */
+function trendText(stat: ResolvedStat): string {
+  if (stat.trend === undefined) return ''
+  const arrow = stat.trend > 0 ? '▲' : stat.trend < 0 ? '▼' : '–'
+  return `${arrow} ${formatNumber(Math.abs(stat.trend), { maximumFractionDigits: 2 })}${stat.trendSuffix}`
+}
+
+function trendClass(stat: ResolvedStat): string {
+  if (stat.trend === undefined || stat.trend === 0) return 'admin-stats-trend--flat'
+  const good = stat.lowerIsBetter ? stat.trend < 0 : stat.trend > 0
+  return good ? 'admin-stats-trend--up' : 'admin-stats-trend--down'
+}
+
+/** The number is tinted only by an alerting tone: success, warning, danger. */
+function valueClass(stat: ResolvedStat): string | undefined {
+  return ['success', 'warning', 'danger'].includes(stat.panelTone) ? `admin-stats-value--${stat.panelTone}` : undefined
+}
+
+function linkAttrs(url: string | null): Record<string, string> {
+  if (!url) return {}
+  return isExternal(url) ? { href: url, target: '_blank', rel: 'noopener' } : { to: url }
+}
 /** A single stat labelled differently from the widget's title. */
 const hasOwnLabel = computed(() => {
   if (props.stats.length !== 1 || !props.title) return false
@@ -221,9 +310,60 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
 </script>
 
 <template>
+  <!-- compact(): the numbers in a row inside one card, rows under them (1.75). -->
+  <UidCard v-if="view === 'compact'" padding="md" class="admin-widget admin-stats-compact" data-testid="widget-stats-compact">
+    <WidgetHeader :title="title" />
+    <div class="admin-widget__body admin-stats-compact__body">
+      <div v-if="stats.length > 0" class="admin-stats-compact__row" :style="{ '--admin-stats-count': items.length }">
+        <component
+          :is="stat.url ? (isExternal(stat.url) ? 'a' : 'router-link') : 'div'"
+          v-for="(stat, idx) in items"
+          :key="idx"
+          class="admin-stats-compact__item"
+          :class="{ 'admin-stats-compact__item--link': !!stat.url }"
+          :data-testid="stat.url ? 'stat-link' : 'stat-item'"
+          v-bind="linkAttrs(stat.url)"
+        >
+          <span class="admin-stats-compact__label" :title="stat.title">{{ stat.title }}</span>
+          <b class="admin-stats-compact__value" :class="valueClass(stat)">{{ displayValue(stat) }}</b>
+          <span v-if="stat.trend !== undefined" class="admin-stats-trend" :class="trendClass(stat)" data-testid="stat-trend">{{ trendText(stat) }}</span>
+          <UidBadge v-if="stat.hint !== null && stat.hintBadge" :variant="stat.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ stat.hint }}</UidBadge>
+          <span v-else-if="stat.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ stat.hint }}</span>
+          <span v-if="stat.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
+            {{ tr('Прошлый период') }}: {{ stat.previous }}
+          </span>
+        </component>
+      </div>
+      <ListRows v-if="listItems !== null" :items="listItems" :empty-text="emptyText" class="admin-stats-compact__list" />
+    </div>
+  </UidCard>
+  <!-- tiles(): small bordered tiles — a caption, the number, the hint (1.75). -->
+  <section v-else-if="view === 'tiles'" class="admin-stats-widget admin-stats-tiles" data-testid="widget-stats-tiles">
+    <WidgetHeader :title="title" title-class="admin-stats-widget__title" />
+    <div class="admin-stats-tiles__grid">
+      <component
+        :is="stat.url ? (isExternal(stat.url) ? 'a' : 'router-link') : 'div'"
+        v-for="(stat, idx) in items"
+        :key="idx"
+        class="admin-stats-tile"
+        :class="{ 'admin-stats-tile--link': !!stat.url }"
+        :data-testid="stat.url ? 'stat-link' : 'stat-tile'"
+        v-bind="linkAttrs(stat.url)"
+      >
+        <span class="admin-stats-tile__label" :title="stat.title">{{ stat.title }}</span>
+        <span class="admin-stats-tile__row">
+          <b class="admin-stats-tile__value" :class="valueClass(stat)">{{ displayValue(stat) }}</b>
+          <UidBadge v-if="stat.hint !== null && stat.hintBadge" :variant="stat.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ stat.hint }}</UidBadge>
+          <span v-else-if="stat.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ stat.hint }}</span>
+        </span>
+        <span v-if="stat.trend !== undefined" class="admin-stats-trend" :class="trendClass(stat)" data-testid="stat-trend">{{ trendText(stat) }}</span>
+      </component>
+    </div>
+    <ListRows v-if="listItems !== null" :items="listItems" :empty-text="emptyText" />
+  </section>
   <component
     :is="items[0]!.url ? (isExternal(items[0]!.url) ? 'a' : 'router-link') : 'div'"
-    v-if="!sectioned && items[0]!.url"
+    v-else-if="!sectioned && items[0]!.url"
     class="admin-stats-widget__link admin-stats-widget__link--single"
     data-testid="stat-link"
     v-bind="isExternal(items[0]!.url) ? { href: items[0]!.url, target: '_blank', rel: 'noopener' } : { to: items[0]!.url }"
@@ -234,6 +374,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       :prefix="items[0]!.prefix"
       :suffix="items[0]!.suffix"
       :trend="items[0]!.trend"
+      :trend-suffix="items[0]!.trendSuffix"
       :precision="items[0]!.precision"
       :formatter="items[0]!.formatter"
       :locale="locale"
@@ -241,9 +382,10 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       :icon="items[0]!.icon"
       :loading="loading"
       trend-placement="below"
-      :class="['admin-stats-widget__single', items[0]!.toneClass]"
+      :class="['admin-stats-widget__single', items[0]!.toneClass, { 'admin-stat--lower-better': items[0]!.lowerIsBetter }]"
     />
-    <span v-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
+    <UidBadge v-if="items[0]!.hint !== null && items[0]!.hintBadge" :variant="items[0]!.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ items[0]!.hint }}</UidBadge>
+    <span v-else-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
     <span v-if="items[0]!.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
       {{ tr('Прошлый период') }}: {{ items[0]!.previous }}
     </span>
@@ -255,6 +397,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       :prefix="items[0]!.prefix"
       :suffix="items[0]!.suffix"
       :trend="items[0]!.trend"
+      :trend-suffix="items[0]!.trendSuffix"
       :precision="items[0]!.precision"
       :formatter="items[0]!.formatter"
       :locale="locale"
@@ -262,9 +405,10 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       :icon="items[0]!.icon"
       :loading="loading"
       trend-placement="below"
-      :class="['admin-stats-widget__single', items[0]!.toneClass]"
+      :class="['admin-stats-widget__single', items[0]!.toneClass, { 'admin-stat--lower-better': items[0]!.lowerIsBetter }]"
   />
-    <span v-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
+    <UidBadge v-if="items[0]!.hint !== null && items[0]!.hintBadge" :variant="items[0]!.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ items[0]!.hint }}</UidBadge>
+    <span v-else-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
     <span v-if="items[0]!.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
       {{ tr('Прошлый период') }}: {{ items[0]!.previous }}
     </span>
@@ -276,6 +420,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
     :prefix="items[0]!.prefix"
     :suffix="items[0]!.suffix"
     :trend="items[0]!.trend"
+    :trend-suffix="items[0]!.trendSuffix"
     :precision="items[0]!.precision"
     :formatter="items[0]!.formatter"
     :locale="locale"
@@ -283,12 +428,10 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
     :icon="items[0]!.icon"
     :loading="loading"
     trend-placement="below"
-    :class="['admin-stats-widget__single', items[0]!.toneClass]"
+    :class="['admin-stats-widget__single', items[0]!.toneClass, { 'admin-stat--lower-better': items[0]!.lowerIsBetter }]"
   />
   <section v-else class="admin-stats-widget">
-    <header v-if="title" class="admin-stats-widget__hd">
-      <h3 class="admin-stats-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" title-class="admin-stats-widget__title" />
     <div class="admin-stats-widget__grid">
       <component
         :is="stat.url ? (isExternal(stat.url) ? 'a' : 'router-link') : 'div'"
@@ -304,16 +447,18 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
         :prefix="stat.prefix"
         :suffix="stat.suffix"
         :trend="stat.trend"
+        :trend-suffix="stat.trendSuffix"
         :precision="stat.precision"
         :formatter="stat.formatter"
         :locale="locale"
         :tone="stat.tone"
         :icon="stat.icon"
         :loading="loading"
-        :class="stat.toneClass"
+        :class="[stat.toneClass, { 'admin-stat--lower-better': stat.lowerIsBetter }]"
         trend-placement="below"
       />
-      <span v-if="stat.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ stat.hint }}</span>
+      <UidBadge v-if="stat.hint !== null && stat.hintBadge" :variant="stat.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ stat.hint }}</UidBadge>
+      <span v-else-if="stat.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ stat.hint }}</span>
       <span v-if="stat.previous !== null" class="admin-stats-widget__previous" data-testid="stat-previous">
         {{ tr('Прошлый период') }}: {{ stat.previous }}
       </span>
@@ -323,6 +468,111 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
 </template>
 
 <style>
+/* compact() (1.75): the numbers in a row inside one card, no minimum width. */
+.admin-stats-compact__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--uid-space-sm, 12px);
+  min-width: 0;
+}
+.admin-stats-compact__row {
+  display: grid;
+  grid-template-columns: repeat(var(--admin-stats-count, 3), minmax(0, 1fr));
+  gap: var(--uid-space-sm, 8px);
+}
+.admin-stats-compact__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.admin-stats-compact__item--link:hover .admin-stats-compact__value {
+  text-decoration: underline;
+}
+.admin-stats-compact__label,
+.admin-stats-tile__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--uid-font-size-xs, 12px);
+  color: var(--uid-text-secondary);
+}
+.admin-stats-compact__value {
+  font-size: 20px;
+  font-weight: var(--uid-font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  color: var(--uid-text-primary);
+  overflow-wrap: anywhere;
+}
+.admin-stats-value--success { color: var(--uid-color-success-text, var(--uid-color-success)); }
+.admin-stats-value--warning { color: var(--uid-color-warning-text, var(--uid-color-warning)); }
+.admin-stats-value--danger { color: var(--uid-color-danger-text, var(--uid-color-danger)); }
+.admin-stats-trend {
+  font-size: var(--uid-font-size-xs, 12px);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.admin-stat--lower-better .uid-stat__trend--up {
+  background: var(--uid-color-danger-subtle);
+  color: var(--uid-color-danger-text);
+}
+.admin-stat--lower-better .uid-stat__trend--down {
+  background: var(--uid-color-success-subtle);
+  color: var(--uid-color-success-text);
+}
+.admin-stats-trend--up { color: var(--uid-color-success-text, var(--uid-color-success)); }
+.admin-stats-trend--down { color: var(--uid-color-danger-text, var(--uid-color-danger)); }
+.admin-stats-trend--flat { color: var(--uid-text-tertiary); }
+.admin-stats-compact__list {
+  border-top: 1px solid var(--uid-border-subtle, var(--uid-color-zinc-100, #f4f4f5));
+}
+/* tiles() (1.75): small bordered tiles, a caption over the number and its hint. */
+.admin-stats-tiles__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--uid-space-sm, 12px);
+}
+.admin-stats-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--uid-border-default, var(--uid-color-zinc-200, #e4e4e7));
+  border-radius: var(--uid-radius-lg, 10px);
+  background: var(--uid-surface-raised, #fff);
+  color: var(--uid-text-primary);
+  text-decoration: none;
+}
+.admin-stats-tile--link:hover {
+  border-color: var(--uid-color-zinc-400, #a1a1aa);
+}
+.admin-stats-tile__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--uid-space-xs, 8px);
+  min-width: 0;
+}
+.admin-stats-tile__value {
+  font-size: 24px;
+  font-weight: var(--uid-font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.admin-stats-widget__hint-badge {
+  align-self: flex-start;
+  white-space: nowrap;
+}
+.admin-stats-widget > .admin-widget__hd {
+  margin-bottom: 0;
+}
 /* A card that leads to its list (StatsOverviewWidget::url()). */
 .admin-stats-widget__link {
   display: flex;

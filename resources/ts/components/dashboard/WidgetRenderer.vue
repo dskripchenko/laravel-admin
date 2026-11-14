@@ -3,12 +3,14 @@
  * Resolves the widget component by `node.type` and forwards the rest of the
  * props.
  */
-import { computed } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { ArrowUpRight } from 'lucide-vue-next'
 import { UidIcon } from '@dskripchenko/ui'
 import { getWidget } from './registry'
 import { trSafe as tr } from '../../stores/i18n'
 import UnknownWidget from './UnknownWidget.vue'
+import WidgetHeaderLinks from './WidgetHeaderLinks.vue'
+import { normalizeHeaderLinks, WIDGET_HEADER_KEY } from './widgetHeader'
 
 export interface WidgetNode extends Record<string, unknown> {
   type: string
@@ -25,6 +27,15 @@ const component = computed(() => getWidget(props.node.type))
 /** Where the widget leads (Widget::link()): a panel path, or an external address. */
 const link = computed<string | null>(() => (typeof props.node.link === 'string' && props.node.link !== '' ? props.node.link : null))
 const external = computed<boolean>(() => link.value !== null && /^[a-z]+:\/\//i.test(link.value))
+/**
+ * The header links (Widget::headerLink(), 1.75): the widget's WidgetHeader
+ * shows them and claims them; a widget without one gets them in its top
+ * corner from here.
+ */
+const headerLinks = computed(() => normalizeHeaderLinks(props.node.headerLinks))
+const headerClaimed = ref(false)
+provide(WIDGET_HEADER_KEY, { links: headerLinks, claimed: headerClaimed })
+const cornerLinks = computed(() => (headerClaimed.value ? [] : headerLinks.value))
 const widgetProps = computed(() => {
   // The dashboard's meta fields are dropped. `size` especially: here it is a
   // grid-column span of 1..12, while in the widget components `size` often
@@ -41,6 +52,7 @@ const widgetProps = computed(() => {
     permission: _p,
     slug: _slug,
     link: _link,
+    headerLinks: _hl,
     data,
     ...rest
   } = props.node as Record<string, unknown> & { data?: Record<string, unknown> }
@@ -58,10 +70,11 @@ const widgetProps = computed(() => {
 </script>
 
 <template>
-  <div v-if="component && link" class="admin-widget-linked">
+  <div v-if="component && (link || headerLinks.length > 0)" class="admin-widget-linked" :class="{ 'admin-widget-linked--arrow': !!link }">
     <component :is="component" v-bind="widgetProps" />
+    <WidgetHeaderLinks v-if="cornerLinks.length > 0" :links="cornerLinks" class="admin-widget-linked__links" />
     <router-link
-      v-if="!external"
+      v-if="link && !external"
       :to="link"
       class="admin-widget-linked__go"
       data-testid="widget-link"
@@ -71,7 +84,7 @@ const widgetProps = computed(() => {
       <UidIcon :icon="ArrowUpRight" :size="14" />
     </router-link>
     <a
-      v-else
+      v-else-if="link"
       :href="link"
       target="_blank"
       rel="noopener"
@@ -88,6 +101,16 @@ const widgetProps = computed(() => {
 </template>
 
 <style>
+/* Header links of a widget that draws no header of its own: the top corner. */
+.admin-widget-linked__links {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+}
+.admin-widget-linked--arrow > .admin-widget-linked__links {
+  right: 40px;
+}
 /* A widget with a link (Widget::link()): an arrow in its top corner. */
 .admin-widget-linked {
   position: relative;

@@ -355,6 +355,7 @@ function columnCellMeta(col: string): CellMeta {
             :preset="columnPreset(col.key)"
             :meta="columnCellMeta(col.key)"
             :row="rowFromSlot(slotProps)"
+            :column="col.key"
           />
         </InlineEditCell>
         <AdminTableCell
@@ -363,6 +364,7 @@ function columnCellMeta(col: string): CellMeta {
           :preset="columnPreset(col.key)"
           :meta="columnCellMeta(col.key)"
           :row="rowFromSlot(slotProps)"
+          :column="col.key"
         />
       </template>
     </UidTable>

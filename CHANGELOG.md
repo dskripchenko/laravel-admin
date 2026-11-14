@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.75.0
+
+- **A fall that is good.** `StatsOverviewWidget::lowerIsBetter()` swaps the
+  trend's colours of the card added last — for failures or waiting time a fall
+  is green and a rise red; the arrow keeps its direction.
+
+### Added
+
+- **A share in percentage points.** `StatsOverviewWidget::share()` marks the
+  card added last as a share in per cent: its change against the previous
+  period is shown as «▼ 0,2 п.п.» rather than per cent of the value;
+  `trend($delta, $direction, 'pp')` sets such a trend explicitly.
+- **`ListWidget`** (`list`) — rows without a table header: a caption, a
+  secondary text, a badge with its tone, a link per row, and an empty state
+  (`item()`, `items()`, `emptyText()`).
+- **A progress column.** `TableColumn::asProgress($max = 100, $decimals = 0, $tone = null)`
+  draws a 0..max value as a bar captioned «42 %» — in a table widget, a recent
+  list, a resource list and an embedded table.
+- **A cell's tone.** `TableColumn::tone()` — a tone for the whole column or a
+  function of the value and the row; it colours the cell's text, badge or
+  bar. The tones travel beside the row under `__tones`, the value is
+  untouched. A formatter may also return `['value' => …, 'tone' => …]`.
+- **Links in a widget's header.** `Widget::headerLink($label, $url, $key, $permission)`
+  and `headerLinks([...])` — «Full report», «Journal» right of the title, by
+  permission; a widget without a header shows them in its corner.
+- **Compact numbers and a list in one card.** `StatsOverviewWidget::compact()`
+  puts the numbers in one row inside one card, without the 180 px minimum
+  width of a stat card; rows added with `item()` follow under them in the same
+  card.
+- **Tiles.** `StatsOverviewWidget::tiles()` — small bordered tiles: a caption,
+  the number large and its hint; `hintTone()` draws the hint as a toned badge
+  (in the default cards too).
+- **`ActionsWidget`** (`actions`) — a row of buttons, the first one primary,
+  from `QuickCreate` items shown by the same permission rules as the top bar's
+  «+ Create»; `fromQuickCreate()` takes the panel's own items.
+
 ## 1.74.2
 
 ### Fixed

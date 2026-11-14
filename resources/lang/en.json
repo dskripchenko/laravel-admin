@@ -805,5 +805,8 @@
     "и ещё :n": "and :n more",
     ":n из :max символов": ":n of :max characters",
     "длиннее рекомендуемого": "longer than recommended",
-    "Символов: :n": "Characters: :n"
+    "Символов: :n": "Characters: :n",
+    "п.п.": "pp",
+    "Кнопки действий": "Action buttons",
+    "Нет доступных действий": "No actions available"
 }

@@ -184,6 +184,11 @@ class RecentListWidget extends Widget
             // TableColumn::format(): the same ($value, $row) call as a
             // resource list makes, with the whole serialized record.
             $row[$name] = $column->applyFormatter($value, $serialized);
+            // TableColumn::tone(): the cell's tone from the raw value.
+            $tone = $column->toneOf($value, $serialized);
+            if ($tone !== null) {
+                $row[TableColumn::TONES_KEY][$name] = $tone;
+            }
         }
 
         return $row;

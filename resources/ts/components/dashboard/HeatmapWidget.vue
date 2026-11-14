@@ -8,6 +8,7 @@
  * 0). It is drawn by the kit's UidHeatmapMatrix: every column labelled, the
  * colour scale, a "row × column: value" tooltip and a min → max legend.
  */
+import WidgetHeader from './WidgetHeader.vue'
 import { computed } from 'vue'
 import { UidCard, UidHeatmapMatrix } from '@dskripchenko/ui'
 import { trSafe as tr } from '../../stores/i18n'
@@ -68,9 +69,7 @@ const hasData = computed(() => props.rows.length > 0 && props.cols.length > 0 &&
 
 <template>
   <UidCard padding="md" class="admin-widget admin-heatmap-widget">
-    <header v-if="title" class="admin-widget__hd">
-      <h3 class="admin-widget__title">{{ title }}</h3>
-    </header>
+    <WidgetHeader :title="title" />
     <UidHeatmapMatrix
       v-if="hasData"
       class="admin-heatmap"

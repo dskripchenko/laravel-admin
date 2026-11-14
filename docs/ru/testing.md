@@ -338,6 +338,7 @@ page.get_by_test_id(tid('field', 'first_name'))   # field-first-name
 | `masked-cell`, `masked-reveal`, `masked-hide` | Ячейка маскированной колонки, «Показать», «Скрыть» (1.73) |
 | `dash-period-{key}`, `dash-period-range`, `dash-range`, `dash-range-from`, `dash-range-to`, `dash-range-apply`, `dash-range-cancel`, `dash-compare` | Период рабочего стола, свой диапазон, сравнение (1.73) |
 | `widget-link`, `stat-link`, `stat-previous` | Ссылка виджета, ссылка цифры, значение прошлого периода (1.73) |
+| `widget-header-link-{key}`, `widget-list`, `list-item-{key}`, `widget-list-empty`, `widget-stats-compact`, `widget-stats-tiles`, `stat-item`, `stat-tile`, `stat-trend`, `stat-hint`, `widget-actions`, `widget-action-{key}`, `widget-actions-empty`, `cell-progress` | Ссылка в шапке виджета, список и его строка, пустой список, компактные цифры и плитки, цифра, тренд и подпись, кнопки действий и кнопка, полоса доли в ячейке (1.75); без ключа — имя без `-{key}` |
 | `reveal-value`, `reveal-copy`, `reveal-close` | Окно однократного показа секрета |
 | `state-empty`, `state-no-results`, `state-error`, `state-forbidden` | Единые состояния (1.74); у списка — `resource-empty`, `resource-no-results`, `resource-error`, `resource-forbidden` |
 | `state-retry`, `state-copy-code`, `state-code`, `state-permission`, `state-copy-key`, `state-home` | «Повторить», «Скопировать код», код запроса, ключ права, «Скопировать ключ», «На рабочий стол» (1.74) |
