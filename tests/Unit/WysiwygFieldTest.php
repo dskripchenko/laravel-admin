@@ -188,3 +188,53 @@ it('Wysiwyg with Quill delta output is not sanitized as HTML', function (): void
     expect(Wysiwyg::make('b')->driver('quill')->shouldSanitize())->toBeTrue();
     expect(Wysiwyg::make('b')->driver('quill')->sanitize(false)->shouldSanitize())->toBeFalse();
 });
+
+it('Wysiwyg::sanitizerAllow() widens the whitelist of the field', function (): void {
+    $field = Wysiwyg::make('body')->driver('quill')
+        ->sanitizerAllow(['a' => ['style'], 'figure' => []])
+        ->sanitizerAllow(['a' => ['data-id'], 'p' => 'style']);
+    $whitelist = $field->sanitizerWhitelist();
+
+    // Added to what the engine already keeps, not instead of it.
+    expect($whitelist['a'])->toContain('href', 'target', 'rel', 'style', 'data-id');
+    expect($whitelist['p'])->toContain('class', 'style');
+    expect($whitelist['figure'])->toBe([]);
+
+    $sanitizer = new Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer($whitelist, $field->sanitizerConstrains());
+    $html = '<p style="margin: 0;"><a href="https://example.com" style="color: red;" data-id="7">l</a></p><figure>f</figure>';
+    expect($sanitizer->sanitize($html))->toBe($html);
+
+    // Another field keeps the plain whitelist: the widening is per field.
+    expect(Wysiwyg::make('other')->driver('quill')->sanitizerWhitelist()['a'])->not->toContain('style');
+    // Nothing of it reaches the client.
+    expect(json_encode($field->toArray()))->not->toContain('data-id');
+});
+
+it('Wysiwyg::sanitizerAllow() keeps the protections', function (): void {
+    expect(fn () => Wysiwyg::make('b')->sanitizerAllow(['a' => ['onclick']]))->toThrow(InvalidArgumentException::class);
+    expect(fn () => Wysiwyg::make('b')->sanitizerAllow(['img' => ['ONERROR']]))->toThrow(InvalidArgumentException::class);
+    expect(fn () => Wysiwyg::make('b')->sanitizerAllow(['div' => ['srcdoc']]))->toThrow(InvalidArgumentException::class);
+    expect(fn () => Wysiwyg::make('b')->sanitizerAllow(['script' => []]))->toThrow(InvalidArgumentException::class);
+    expect(fn () => Wysiwyg::make('b')->sanitizerAllow(['iframe' => ['src']]))->toThrow(InvalidArgumentException::class);
+    expect(fn () => Wysiwyg::make('b')->sanitizerAllow(['a' => ['style="x"']]))->toThrow(InvalidArgumentException::class);
+    expect(fn () => Wysiwyg::make('b')->sanitizerAllow(['<a>' => []]))->toThrow(InvalidArgumentException::class);
+
+    $field = Wysiwyg::make('body')->sanitizerAllow(['a' => ['style', 'ping'], 'img' => ['srcset']]);
+    $sanitizer = new Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer($field->sanitizerWhitelist(), $field->sanitizerConstrains());
+
+    expect($sanitizer->sanitize('<p><a href="javascript:alert(1)" style="color: red;">x</a></p>'))
+        ->toBe('<p><a style="color: red;">x</a></p>');
+    expect($sanitizer->sanitize('<p><a href="java&#09;script:alert(1)" ping="javascript:x">x</a></p>'))
+        ->toBe('<p><a>x</a></p>');
+    expect($sanitizer->sanitize('<p><img src="/a.png" srcset="/a.png 1x, javascript:alert(1) 2x"></p>'))
+        ->toBe('<p><img src="/a.png"></p>');
+    expect($sanitizer->sanitize('<p><img src="/a.png" srcset="/a.png 1x, /b.png 2x"></p>'))
+        ->toBe('<p><img src="/a.png" srcset="/a.png 1x, /b.png 2x"></p>');
+    expect($sanitizer->sanitize('<p>a</p><script>alert(1)</script>'))->toBe('<p>a</p>');
+});
+
+it('HtmlSanitizer drops an on* handler even when a whitelist names it', function (): void {
+    $sanitizer = new Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer(['p' => ['onclick', 'class']]);
+
+    expect($sanitizer->sanitize('<p class="a" onclick="x()">t</p>'))->toBe('<p class="a">t</p>');
+});

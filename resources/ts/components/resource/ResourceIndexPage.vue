@@ -46,6 +46,7 @@ import {
 import { provideResourceIndexStore, resourceIndexStoreFor } from '../../stores/resourceIndex'
 import { patchRouteQuery } from '../../composables/useQueryPatch'
 import ResourceRecordDrawer from './ResourceRecordDrawer.vue'
+import type { DrawerOutcome } from './drawerOutcome'
 import { useManifestStore } from '../../stores/manifest'
 import { useNavigationStore } from '../../stores/navigation'
 import { useAuthStore } from '../../stores/auth'
@@ -1162,7 +1163,8 @@ function onEdit(row: Record<string, unknown>, e?: MouseEvent): void {
  * a link opens it too. ‹ and › — or Alt+↑ and Alt+↓ — walk the list, across
  * its pages; a save or an action reloads the list, and with nextAfterAction
  * moves straight on to the next record: a queue is worked through without
- * leaving it.
+ * leaving it. An action that keeps its record (Action::keepsRecord(),
+ * `keep_record` in its answer) leaves it open.
  */
 const opensInDrawer = computed<boolean>(() => {
   const own = props.rowOpen ?? (resourceMeta.value?.features as Record<string, unknown> | undefined)?.rowOpen
@@ -1276,9 +1278,9 @@ async function onDrawerChanged(): Promise<void> {
   await index.load().catch(() => undefined)
 }
 
-async function onDrawerDone(): Promise<void> {
+async function onDrawerDone(outcome?: DrawerOutcome): Promise<void> {
   await onDrawerChanged()
-  if (props.nextAfterAction) await drawerNext()
+  if (props.nextAfterAction && outcome?.keep !== true) await drawerNext()
 }
 
 async function onDrawerRemoved(): Promise<void> {

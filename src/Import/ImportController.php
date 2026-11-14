@@ -247,7 +247,7 @@ final class ImportController extends ApiController
         if (! PermissionCheck::allows($permission)) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+                'message' => __('Доступ запрещён: :permission', ['permission' => \Dskripchenko\LaravelAdmin\Permission\PermissionRegistry::labelOf($permission)]),
                 'permission' => $permission,
             ], 403);
         }

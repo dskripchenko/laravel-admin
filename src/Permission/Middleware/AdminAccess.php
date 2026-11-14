@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Permission\Middleware;
 
 use Closure;
+use Dskripchenko\LaravelAdmin\Permission\PermissionRegistry;
 use Dskripchenko\LaravelApi\Services\ApiResponseHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,7 +66,7 @@ final class AdminAccess
 
             return ApiResponseHelper::sayError([
                 'errorKey' => 'forbidden',
-                'message' => __('Доступ запрещён: :permission', ['permission' => implode(' | ', $required)]),
+                'message' => __('Доступ запрещён: :permission', ['permission' => implode(' | ', array_map(PermissionRegistry::labelOf(...), $required))]),
                 // The key the "no access" state names and offers to copy.
                 'permission' => implode(' | ', $required),
             ], Response::HTTP_FORBIDDEN);
@@ -75,7 +76,7 @@ final class AdminAccess
             if (! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
                 return ApiResponseHelper::sayError([
                     'errorKey' => 'forbidden',
-                    'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+                    'message' => __('Доступ запрещён: :permission', ['permission' => PermissionRegistry::labelOf($permission)]),
                     'permission' => $permission,
                 ], Response::HTTP_FORBIDDEN);
             }

@@ -29,6 +29,14 @@ final class HtmlSanitizer
     private const DROP_WITH_CONTENT = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'option', 'meta', 'link'];
 
     /**
+     * The attributes whose value is an address: a `javascript:` one is
+     * removed whatever the whitelist says.
+     *
+     * @var list<string>
+     */
+    private const URL_ATTRIBUTES = ['href', 'src', 'srcset', 'action', 'formaction', 'poster', 'background', 'cite', 'data', 'longdesc', 'usemap', 'xlink:href', 'ping'];
+
+    /**
      * @param  array<string, list<string>>|null  $allowed  null means the default.
      * @param  bool  $constrain  Narrow a code block's class and a table cell's
      *                           style to the default editor's own (see constrain());
@@ -72,6 +80,26 @@ final class HtmlSanitizer
             'span' => ['class', 'style'],
             'mark' => [], 'sub' => [], 'sup' => [],
         ];
+    }
+
+    /**
+     * Whether the tag is one the sanitizer removes along with its content
+     * when it is not whitelisted — the tags a field never whitelists.
+     */
+    public static function isDroppedTag(string $tag): bool
+    {
+        return in_array(strtolower($tag), self::DROP_WITH_CONTENT, true);
+    }
+
+    /**
+     * Whether the attribute may never be kept: an event handler (`on*`),
+     * or `srcdoc`, a whole document in an attribute.
+     */
+    public static function isForbiddenAttribute(string $attribute): bool
+    {
+        $attribute = strtolower($attribute);
+
+        return str_starts_with($attribute, 'on') || $attribute === 'srcdoc';
     }
 
     public function sanitize(string $html): string
@@ -149,14 +177,18 @@ final class HtmlSanitizer
                 }
                 foreach ($existingAttrs as $name) {
                     $lower = strtolower($name);
-                    if (! in_array($lower, $allowedAttrs, true)) {
+                    // A handler goes even when a whitelist names it.
+                    if (! in_array($lower, $allowedAttrs, true) || self::isForbiddenAttribute($lower)) {
                         $child->removeAttribute($name);
 
                         continue;
                     }
-                    if ($lower === 'href' || $lower === 'src') {
+                    if (in_array($lower, self::URL_ATTRIBUTES, true)) {
                         $value = (string) $child->getAttribute($name);
-                        if (self::isDangerousUrl($value)) {
+                        $dangerous = $lower === 'srcset'
+                            ? self::hasDangerousCandidate($value)
+                            : self::isDangerousUrl($value);
+                        if ($dangerous) {
                             $child->removeAttribute($name);
                         }
 
@@ -205,10 +237,24 @@ final class HtmlSanitizer
         return $value;
     }
 
+    /** Whether any address of a srcset list is a dangerous one. */
+    private static function hasDangerousCandidate(string $srcset): bool
+    {
+        foreach (explode(',', $srcset) as $candidate) {
+            $url = preg_split('/\s+/', trim($candidate))[0] ?? '';
+            if (self::isDangerousUrl($url)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function isDangerousUrl(string $url): bool
     {
-        $trimmed = ltrim($url);
-        $lower = strtolower($trimmed);
+        // Browsers skip whitespace and control characters inside a scheme:
+        // `java\tscript:` runs as `javascript:`.
+        $lower = strtolower((string) preg_replace('/[\x00-\x20\x7F]+/', '', $url));
 
         return str_starts_with($lower, 'javascript:')
             || str_starts_with($lower, 'data:text/html')

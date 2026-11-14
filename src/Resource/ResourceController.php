@@ -379,7 +379,7 @@ final class ResourceController extends ApiController
         if ($user === null || ! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+                'message' => __('Доступ запрещён: :permission', ['permission' => \Dskripchenko\LaravelAdmin\Permission\PermissionRegistry::labelOf($permission)]),
             ], 403);
         }
 
@@ -1067,10 +1067,13 @@ final class ResourceController extends ApiController
         // message, or an array carrying either (`['message' => ..., 'affected' => ...]`).
         // The array may also carry `reveal` — a value shown once, such as a
         // new token: the panel shows it in a dialog with a copy button, not in
-        // a toast that is gone before it is copied.
+        // a toast that is gone before it is copied — and `keep_record`: true
+        // keeps the record open in the list's drawer, false moves on to the
+        // next one, over the action's own keepsRecord().
         $affected = count($ids);
         $message = null;
         $reveal = is_array($result) ? self::normalizeReveal($result['reveal'] ?? null) : null;
+        $keepRecord = is_array($result) && is_bool($result['keep_record'] ?? null) ? $result['keep_record'] : null;
         if (is_int($result)) {
             $affected = $result;
         } elseif (is_string($result) && $result !== '') {
@@ -1087,7 +1090,8 @@ final class ResourceController extends ApiController
         $response = $this->success([
             'affected' => $affected,
             'message' => $message ?? 'Action `'.$actionKey.'` applied',
-        ] + ($reveal !== null ? ['reveal' => $reveal] : []));
+        ] + ($reveal !== null ? ['reveal' => $reveal] : [])
+          + ($keepRecord !== null ? ['keep_record' => $keepRecord] : []));
 
         // A value shown once is no business of any cache on the way.
         return $reveal !== null ? $response->header('Cache-Control', 'no-store') : $response;

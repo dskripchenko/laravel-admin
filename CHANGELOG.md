@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.77.0
+
+### Added
+
+- **`Action::keepsRecord()`: an action that leaves its record open.** With
+  `Layout::resourceIndex()->nextAfterAction()` every action run in the record
+  drawer moved on to the next record — a comment or a reminder too. An action
+  marked `->keepsRecord()` leaves the record open (the list still reloads).
+  The action's method may decide per run: `['keep_record' => true|false]` in
+  its array answer is passed in the `{slug}/action` response
+  (`AffectedPayload.keep_record`) and wins over the flag. Unmarked actions
+  move on as before.
+- **`Wysiwyg::sanitizerAllow()`: a field's own sanitizer whitelist.** The
+  whitelist was fixed inside the package (the default one plus the engine's
+  markup) and the field class is final. `->sanitizerAllow(['a' => ['style']])`
+  merges tag => attributes over it per field; a tag not on the list yet
+  becomes allowed. `on*` handlers, `srcdoc`, malformed names and the tags the
+  sanitizer removes with their content (`script`, `style`, `iframe`,
+  `object`, `form`…) are refused with an `InvalidArgumentException`.
+- `PermissionRegistry::label($key)` and the static
+  `PermissionRegistry::labelOf($key)`: a permission's label in the current
+  locale, the key when no group declares it.
+
+### Changed
+
+- **Refusals name the missing permission by its label.** «Нет права
+  :permission» and «Доступ запрещён: :permission» (AdminAccess, impersonation,
+  role preview, actions, the form listener, import, delayed processes) put the
+  raw key into the message; they now use the label from the permission
+  registry, falling back to the key. The `permission` field of the 403
+  answers keeps the key.
+- **The bundle size budget is raised** to 265 KB per bundle (from 260): the
+  ESM bundle stood at 259.9 KB after 1.76.0, and the record drawer's
+  `keepsRecord` handling took it a few hundred bytes over.
+
+### Security
+
+- **`HtmlSanitizer` hardening.** An `on*` handler is dropped even when a
+  whitelist names it; every address attribute (`srcset`, `ping`, `poster`,
+  `formaction`, `action`, `background`, `cite`, `data`, `longdesc`,
+  `usemap`, `xlink:href`, besides `href` and `src`) is checked for
+  `javascript:`, `vbscript:` and `data:text/html`; whitespace and control
+  characters inside a scheme (`java&#09;script:`), which browsers skip, no
+  longer hide it.
+
 ## 1.76.0
 
 A minor release rather than a patch: the audit log's morph ids become strings

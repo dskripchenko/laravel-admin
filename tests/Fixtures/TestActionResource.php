@@ -93,6 +93,17 @@ final class TestActionResource extends Resource
                 ->method('stamp')
                 ->withName('stamp')
                 ->position(['row']),
+            // A row button that leaves its record open in the drawer.
+            Button::make('Comment')
+                ->method('stamp')
+                ->withName('comment')
+                ->position(['row'])
+                ->keepsRecord(),
+            // A row button whose method decides whether the record stays open.
+            Button::make('Hold')
+                ->method('hold')
+                ->withName('hold')
+                ->position(['row']),
             // A header button marked standalone explicitly.
             Button::make('Sync')
                 ->method('recalculate')
@@ -165,6 +176,12 @@ final class TestActionResource extends Resource
     public function issueKey(array $ids, array $payload = []): array
     {
         return ['message' => 'Copy the key now', 'reveal' => ['value' => 'k-'.$ids[0], 'label' => 'Key']];
+    }
+
+    /** Keeps the record open for one id, moves on for several. */
+    public function hold(array $ids, array $payload = []): array
+    {
+        return ['message' => 'Held', 'keep_record' => count($ids) === 1];
     }
 
     /** A standalone action: no ids, it touches every record. */

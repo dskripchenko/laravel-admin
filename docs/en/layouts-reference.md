@@ -476,7 +476,7 @@ tab it shows its rows and selection at once.
 | `initialView('kanban')` | The view to open with: `list`, `kanban`, `calendar` |
 | `queryKey('orders')` | The namespace of the list's URL keys (letters, digits, `_`, `-`) |
 | `rowOpen('drawer', 'lg')` | A row opens in a drawer over the list (`'page'` — on the record's page). The second argument is the width: `sm`, `md`, `lg` (default), `xl` or a CSS length |
-| `nextAfterAction()` | After a save or an action in the drawer, go straight to the next record (implies `rowOpen('drawer')` when no mode is set) |
+| `nextAfterAction()` | After a save or an action in the drawer, go straight to the next record (implies `rowOpen('drawer')` when no mode is set); an action with `->keepsRecord()` or a `keep_record: true` answer leaves the record open |
 
 **The record in a drawer.** With `rowOpen('drawer')` (or `Resource::rowOpen()`
 returning `'drawer'` — then on the resource's list page too) a row click, the

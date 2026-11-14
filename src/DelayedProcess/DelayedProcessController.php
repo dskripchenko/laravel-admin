@@ -82,7 +82,7 @@ final class DelayedProcessController extends ApiController
         if ($missing !== null) {
             return $this->error([
                 'errorKey' => 'action_forbidden',
-                'message' => __('Доступ запрещён: :permission', ['permission' => $missing]),
+                'message' => __('Доступ запрещён: :permission', ['permission' => \Dskripchenko\LaravelAdmin\Permission\PermissionRegistry::labelOf($missing)]),
             ], 403);
         }
         $declared = ActionLocator::byAsyncHandler(self::declaredActions(), $data['entity'], $data['method']);

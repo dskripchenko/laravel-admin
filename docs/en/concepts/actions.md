@@ -120,6 +120,17 @@ A value shown once (a new token, a password) goes in `reveal`:
 a toast but in a dialog with a «Copy» button that closes only by hand; the
 answer goes with `Cache-Control: no-store`.
 
+In a queue with `Layout::resourceIndex()->nextAfterAction()` the record drawer
+moves on to the next record after an action. An action after which the record
+should stay open (a comment, a reminder, "take into work") is marked
+`->keepsRecord()`; the method may also decide per run —
+`['keep_record' => true]` keeps the record, `false` moves on, and the answer
+wins over the action's flag.
+
+```php
+Button::make('Comment')->method('comment')->position(['row'])->keepsRecord(),
+```
+
 ## Screen commandBar
 
 ```php

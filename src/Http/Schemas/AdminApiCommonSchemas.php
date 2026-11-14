@@ -38,6 +38,7 @@ trait AdminApiCommonSchemas
                 'affected' => 'integer!',
                 'message' => 'string! What was applied, in words',
                 'reveal' => '@ActionReveal',                        // optional
+                'keep_record' => 'boolean Whether the record stays open in the list\'s drawer after the action; absent — as the action declares',
             ],
             // A value an action shows once (a new token): the panel shows it in a dialog with a copy button.
             'ActionReveal' => [
