@@ -102,7 +102,8 @@
 | `UploadPayload` | `disk: string, path: string, url: string, name: string, size: integer!, mime: string` | вложенный |
 | `ImportStartResponse` | `success: boolean!, payload: @ImportProcessPayload` | `import/start` (200) |
 | `ImportStatusResponse` | `success: boolean!, payload: @ImportProcessPayload` | `import/status` (200) |
-| `ImportProcessPayload` | `process: object!` | вложенный |
+| `ImportProcessPayload` | `process: @ImportProcess` | вложенный |
+| `ImportProcess` | `id: integer!, resource_slug: string!, status: string!, processed_count: integer!, created_count: integer!, updated_count: integer!, error_count: integer!, errors: array, started_at: string(date-time), completed_at: string(date-time)` | вложенный |
 | `NotificationListResponse` | `success: boolean!, payload: @NotificationListPayload` | `notifications/list` (200) |
 | `NotificationListPayload` | `data: @AdminNotification[], meta: @PaginationMeta` | вложенный |
 | `NotificationUnreadResponse` | `success: boolean!, payload: @NotificationUnreadPayload` | `notifications/unread` (200) |
@@ -303,12 +304,9 @@
 | `MissingExportDriverPayload` | `errorKey: string!, message: string!, command: string` | **не используется** |
 | `InvalidImportFileResponse` | `success: boolean!, payload: @SimpleErrorPayload` | **не используется** |
 | `ImportUploadResponse` | `success: boolean!, payload: @ImportUploadPayload` | `import/upload` (200) |
-| `ImportUploadPayload` | `upload_id: string(uuid)!, columns_detected: array!, sample_rows: array!, total_rows_estimate: integer!, target_fields: @ImportTargetField[], auto_mapping: object!` | вложенный |
-| `ImportTargetField` | `name: string!, label: string!, required: boolean!` | вложенный |
+| `ImportUploadPayload` | `disk: string!, path: string!` | вложенный |
 | `ImportPreviewResponse` | `success: boolean!, payload: @ImportPreviewPayload` | `import/preview` (200) |
-| `ImportPreviewPayload` | `preview: @ImportPreviewRow[], summary: @ImportPreviewSummary` | вложенный |
-| `ImportPreviewRow` | `row_number: integer!, status: string!, data: object!, errors: object` | вложенный |
-| `ImportPreviewSummary` | `total: integer!, will_create: integer!, will_update: integer!, will_skip: integer!, will_fail: integer!` | вложенный |
+| `ImportPreviewPayload` | `headers: array!, sample: array!, total: integer, format: string!, auto_mapping: object!` | вложенный |
 
 ## AdminApiSisterPackSchemas (16)
 
