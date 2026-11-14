@@ -379,7 +379,7 @@ final class ResourceController extends ApiController
         if ($user === null || ! method_exists($user, 'hasAccess') || ! $user->hasAccess($permission)) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+                'message' => __('Доступ запрещён: :permission', ['permission' => \Dskripchenko\LaravelAdmin\Permission\PermissionRegistry::labelOf($permission)]),
             ], 403);
         }
 

@@ -113,7 +113,7 @@ final class ActionLocator
             if (! $match['allowed'] && $match['deniedBy'] !== null) {
                 return [
                     'errorKey' => 'action_forbidden',
-                    'message' => __('Доступ запрещён: :permission', ['permission' => $match['deniedBy']]),
+                    'message' => __('Доступ запрещён: :permission', ['permission' => \Dskripchenko\LaravelAdmin\Permission\PermissionRegistry::labelOf($match['deniedBy'])]),
                 ];
             }
         }

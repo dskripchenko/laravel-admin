@@ -610,7 +610,7 @@ final class AuthController extends ApiController
             || ! $current->hasAccess($manager->requiredPermission())) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => __('Нет права :permission', ['permission' => $manager->requiredPermission()]),
+                'message' => __('Нет права :permission', ['permission' => \Dskripchenko\LaravelAdmin\Permission\PermissionRegistry::labelOf($manager->requiredPermission())]),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -815,7 +815,7 @@ final class AuthController extends ApiController
     {
         return $this->error([
             'errorKey' => 'forbidden',
-            'message' => __('Нет права :permission', ['permission' => $preview->requiredPermission()]),
+            'message' => __('Нет права :permission', ['permission' => \Dskripchenko\LaravelAdmin\Permission\PermissionRegistry::labelOf($preview->requiredPermission())]),
         ], Response::HTTP_FORBIDDEN);
     }
 }

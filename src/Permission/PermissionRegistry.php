@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Permission;
 
+use Dskripchenko\LaravelAdmin\I18n\Localize;
+
 /**
  * The registry of every registered permission group.
  *
@@ -89,6 +91,40 @@ final class PermissionRegistry
     public function knows(string $key): bool
     {
         return in_array($key, $this->flat(), true);
+    }
+
+    /**
+     * The human label of a permission key in the current locale, for messages
+     * such as "no permission"; the key itself when no group declares it.
+     */
+    public function label(string $key): string
+    {
+        $label = null;
+        foreach ($this->groups as $group) {
+            // The last label wins, as it does when the groups are merged.
+            $label = $group->items()[$key] ?? $label;
+        }
+        if (! is_string($label) || trim($label) === '') {
+            return $key;
+        }
+
+        return (string) Localize::string($label);
+    }
+
+    /**
+     * The label of a permission key through the registry bound in the
+     * container; the key when there is none.
+     */
+    public static function labelOf(string $key): string
+    {
+        if ($key === '' || ! app()->bound(self::class)) {
+            return $key;
+        }
+
+        /** @var self $registry */
+        $registry = app(self::class);
+
+        return $registry->label($key);
     }
 
     /**
