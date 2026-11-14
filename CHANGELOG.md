@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.74.1
+
+### Added
+
+- **A recommended length.** `->counter(60, soft: true)` counts against 60
+  without capping the input; past it the hint says «— длиннее рекомендуемого».
+  For SEO titles and descriptions whose existing values are often longer.
+
+### Fixed
+
+- **The confirmation opened behind a record drawer.** «Unsaved changes —
+  leave?» and the other questions of `useConfirm()` showed under the drawer
+  they were asked from, so nothing could be answered. The kit gives modals and
+  drawers one layer and teleports each where it was mounted; the panel-wide
+  dialog, mounted first, came out behind. It is now raised above drawers and
+  other modals.
+
 ## 1.74.0
 
 ### Added

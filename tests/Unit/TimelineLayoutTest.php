@@ -74,6 +74,10 @@ it('Field::counter() and stat(..., hint:) reach the SPA', function (): void {
     $field = Dskripchenko\LaravelAdmin\Field\Input::make('title')->counter(120)->toArray();
     expect($field['attributes'])->toMatchArray(['counter' => true, 'maxlength' => 120]);
 
+    $soft = Dskripchenko\LaravelAdmin\Field\Input::make('meta_title')->counter(60, soft: true)->toArray();
+    expect($soft['attributes'])->toMatchArray(['counter' => true, 'counterLimit' => 60])
+        ->and($soft['attributes'])->not->toHaveKey('maxlength');
+
     $widget = Dskripchenko\LaravelAdmin\Widget\StatsOverviewWidget::make('queues')->stat('Обращения', 12, hint: 'старейшее 26 ч');
     expect($widget->data()['stats'][0]['hint'])->toBe('старейшее 26 ч');
 });

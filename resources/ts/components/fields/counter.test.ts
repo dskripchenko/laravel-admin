@@ -30,6 +30,15 @@ describe('character counter', () => {
     expect(w.text()).toContain('Символов: 3')
   })
 
+  it('a soft limit warns past the recommended length and caps nothing', async () => {
+    const w = wrap(TextField, 'Короткий заголовок', { counter: true, counterLimit: 20 })
+    expect(w.text()).toContain('18 из 20 символов')
+    expect(w.text()).not.toContain('длиннее рекомендуемого')
+    expect(w.get('input').attributes('maxlength')).toBeUndefined()
+    await w.get('input').setValue('Заголовок длиннее двадцати символов')
+    expect(w.text()).toContain('35 из 20 символов — длиннее рекомендуемого')
+  })
+
   it('stays out of the way without counter()', () => {
     expect(wrap(TextField, 'abc', {}).text()).not.toContain('символ')
   })

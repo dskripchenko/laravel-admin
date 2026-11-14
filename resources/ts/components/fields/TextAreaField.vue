@@ -17,6 +17,8 @@ interface Props {
   counter?: boolean
   /** The most characters it takes (Field::counter($max), ->maxlength()). */
   maxlength?: number | null
+  /** A recommended length that caps nothing (Field::counter($max, soft: true)). */
+  counterLimit?: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,12 +31,13 @@ const props = withDefaults(defineProps<Props>(), {
   readonly: false,
   counter: false,
   maxlength: null,
+  counterLimit: null,
 })
 
 const form = useFormState()
 const value = computed<string>(() => (form.getField(props.name) as string | null | undefined) ?? '')
 const errorMsg = computed<string | undefined>(() => form.errors[props.name]?.[0])
-const hint = computed<string | undefined>(() => counterHint(props.help, value.value, props.counter, props.maxlength))
+const hint = computed<string | undefined>(() => counterHint(props.help, value.value, props.counter, props.maxlength, props.counterLimit))
 
 function onUpdate(next: string): void {
   form.setField(props.name, next)
