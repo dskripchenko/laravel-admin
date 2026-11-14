@@ -228,3 +228,13 @@ it('resolves the actions only in data(), skipping a resource the panel does not 
     widgets175ActingAs(['*']);
     expect($widget->data()['items'])->toBe([]);
 });
+
+it('marks a stat whose fall is good', function (): void {
+    $stats = StatsOverviewWidget::make()
+        ->stat('Сбои оформления', 0.6)->share()->lowerIsBetter()
+        ->stat('Договоров', 10)
+        ->data()['stats'];
+
+    expect($stats[0]['lowerIsBetter'])->toBeTrue()
+        ->and($stats[1])->not->toHaveKey('lowerIsBetter');
+});

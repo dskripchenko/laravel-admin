@@ -105,6 +105,15 @@ class StatsOverviewWidget extends Widget
     }
 
     /**
+     * The card added last is better when it goes down (failures, waiting time):
+     * a fall is coloured as good, a rise as bad. The arrow keeps its direction.
+     */
+    public function lowerIsBetter(): static
+    {
+        return $this->setOnLast('lowerIsBetter', true);
+    }
+
+    /**
      * Marks the value of the card added last as a share in per cent: its
      * change against the previous period (previous()) is shown in
      * percentage points — «▼ 0,2 п.п.» for 0.8 % → 0.6 % — instead of per

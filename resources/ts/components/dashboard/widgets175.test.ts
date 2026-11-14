@@ -303,3 +303,19 @@ describe('Table cells: progress and tone (1.75)', () => {
     expect(badge.find('.uid-badge').classes().join(' ')).toContain('success')
   })
 })
+
+describe('lowerIsBetter', () => {
+  it('colours a fall as good and a rise as bad, in cards and in the compact view', () => {
+    const fall = { label: 'Сбои', value: 0.6, change: { delta: 0.2, direction: 'down' as const }, lowerIsBetter: true }
+    const rise = { label: 'Сбои', value: 0.9, change: { delta: 0.3, direction: 'up' as const }, lowerIsBetter: true }
+
+    const cards = mount(StatWidget, { props: { title: 'Сбои', stats: [fall, rise] } })
+    expect(cards.findAll('.admin-stat--lower-better')).toHaveLength(2)
+
+    const compact = mount(StatWidget, { props: { title: 'Сбои', layout: 'compact', stats: [fall, rise] } })
+    const trends = compact.findAll('[data-testid="stat-trend"]')
+    expect(trends[0]!.classes()).toContain('admin-stats-trend--up')
+    expect(trends[1]!.classes()).toContain('admin-stats-trend--down')
+  })
+})
+

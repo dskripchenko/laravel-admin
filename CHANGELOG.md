@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.75.0
 
+- **A fall that is good.** `StatsOverviewWidget::lowerIsBetter()` swaps the
+  trend's colours of the card added last — for failures or waiting time a fall
+  is green and a rise red; the arrow keeps its direction.
+
 ### Added
 
 - **A share in percentage points.** `StatsOverviewWidget::share()` marks the

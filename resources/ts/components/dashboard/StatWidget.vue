@@ -54,6 +54,8 @@ interface StatItem {
   hintTone?: string | null
   /** A share in per cent: the change is in percentage points (share(), 1.75). */
   share?: boolean
+  /** A fall is good: StatsOverviewWidget::lowerIsBetter(). */
+  lowerIsBetter?: boolean
 }
 
 interface Props {
@@ -135,6 +137,8 @@ interface ResolvedStat {
   hint: string | null
   /** The hint as a badge of this variant (hintTone()); null — plain text. */
   hintBadge: BadgeVariant | null
+  /** A fall is good (StatsOverviewWidget::lowerIsBetter()): the trend's colours swap. */
+  lowerIsBetter: boolean
   /** The suffix after the trend number: per cent, or percentage points for a share. */
   trendSuffix: string
   /** The panel tone of the stat, for the compact and tile views. */
@@ -207,6 +211,7 @@ const items = computed<ResolvedStat[]>(() => {
       hint: null,
       hintBadge: null,
       trendSuffix: '%',
+      lowerIsBetter: false,
       panelTone: panelToneOf(null),
     }]
   }
@@ -221,6 +226,7 @@ const items = computed<ResolvedStat[]>(() => {
     suffix: s.suffix ?? '',
     trend: trendOf(s.change) ?? (s.previous !== undefined && s.previous !== null ? trendFrom(s.value, s.previous, s.share === true) : undefined),
     trendSuffix: trendSuffixOf(s),
+    lowerIsBetter: s.lowerIsBetter === true,
     panelTone: panelToneOf(s.color),
     hintBadge: typeof s.hintTone === 'string' && s.hintTone !== '' ? badgeVariant(s.hintTone) : null,
     tone: toneOf(s.color),
@@ -270,7 +276,8 @@ function trendText(stat: ResolvedStat): string {
 
 function trendClass(stat: ResolvedStat): string {
   if (stat.trend === undefined || stat.trend === 0) return 'admin-stats-trend--flat'
-  return stat.trend > 0 ? 'admin-stats-trend--up' : 'admin-stats-trend--down'
+  const good = stat.lowerIsBetter ? stat.trend < 0 : stat.trend > 0
+  return good ? 'admin-stats-trend--up' : 'admin-stats-trend--down'
 }
 
 /** The number is tinted only by an alerting tone: success, warning, danger. */
@@ -375,7 +382,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       :icon="items[0]!.icon"
       :loading="loading"
       trend-placement="below"
-      :class="['admin-stats-widget__single', items[0]!.toneClass]"
+      :class="['admin-stats-widget__single', items[0]!.toneClass, { 'admin-stat--lower-better': items[0]!.lowerIsBetter }]"
     />
     <UidBadge v-if="items[0]!.hint !== null && items[0]!.hintBadge" :variant="items[0]!.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ items[0]!.hint }}</UidBadge>
     <span v-else-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
@@ -398,7 +405,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
       :icon="items[0]!.icon"
       :loading="loading"
       trend-placement="below"
-      :class="['admin-stats-widget__single', items[0]!.toneClass]"
+      :class="['admin-stats-widget__single', items[0]!.toneClass, { 'admin-stat--lower-better': items[0]!.lowerIsBetter }]"
   />
     <UidBadge v-if="items[0]!.hint !== null && items[0]!.hintBadge" :variant="items[0]!.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ items[0]!.hint }}</UidBadge>
     <span v-else-if="items[0]!.hint !== null" class="admin-stats-widget__hint" data-testid="stat-hint">{{ items[0]!.hint }}</span>
@@ -421,7 +428,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
     :icon="items[0]!.icon"
     :loading="loading"
     trend-placement="below"
-    :class="['admin-stats-widget__single', items[0]!.toneClass]"
+    :class="['admin-stats-widget__single', items[0]!.toneClass, { 'admin-stat--lower-better': items[0]!.lowerIsBetter }]"
   />
   <section v-else class="admin-stats-widget">
     <WidgetHeader :title="title" title-class="admin-stats-widget__title" />
@@ -447,7 +454,7 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
         :tone="stat.tone"
         :icon="stat.icon"
         :loading="loading"
-        :class="stat.toneClass"
+        :class="[stat.toneClass, { 'admin-stat--lower-better': stat.lowerIsBetter }]"
         trend-placement="below"
       />
       <UidBadge v-if="stat.hint !== null && stat.hintBadge" :variant="stat.hintBadge" size="sm" class="admin-stats-widget__hint-badge" data-testid="stat-hint">{{ stat.hint }}</UidBadge>
@@ -509,6 +516,14 @@ const locale = computed(() => intlLocale(localeStore?.current ?? currentLocale()
   font-size: var(--uid-font-size-xs, 12px);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+.admin-stat--lower-better .uid-stat__trend--up {
+  background: var(--uid-color-danger-subtle);
+  color: var(--uid-color-danger-text);
+}
+.admin-stat--lower-better .uid-stat__trend--down {
+  background: var(--uid-color-success-subtle);
+  color: var(--uid-color-success-text);
 }
 .admin-stats-trend--up { color: var(--uid-color-success-text, var(--uid-color-success)); }
 .admin-stats-trend--down { color: var(--uid-color-danger-text, var(--uid-color-danger)); }
