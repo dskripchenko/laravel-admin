@@ -110,10 +110,13 @@ abstract class Field implements Renderable
      * `$max`, the most characters it takes (the input stops there; add the
      * `max:` rule for the server).
      */
-    public function counter(?int $max = null): static
+    public function counter(?int $max = null, bool $soft = false): static
     {
         $this->attributes['counter'] = true;
-        if ($max !== null) {
+        if ($max !== null && $soft) {
+            // A recommended length: the hint warns past it, the input is not capped.
+            $this->attributes['counterLimit'] = $max;
+        } elseif ($max !== null) {
             $this->attributes['maxlength'] = $max;
         }
 

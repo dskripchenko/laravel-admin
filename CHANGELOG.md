@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.74.1
 
+### Added
+
+- **A recommended length.** `->counter(60, soft: true)` counts against 60
+  without capping the input; past it the hint says «— длиннее рекомендуемого».
+  For SEO titles and descriptions whose existing values are often longer.
+
 ### Fixed
 
 - **The confirmation opened behind a record drawer.** «Unsaved changes —
