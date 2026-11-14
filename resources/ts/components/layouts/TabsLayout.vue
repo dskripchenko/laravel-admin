@@ -275,6 +275,9 @@ watch(
 
 /* A tab's counter: a queue's size beside its name. */
 .admin-tab-badge {
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow-wrap: normal;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -301,7 +304,24 @@ watch(
 }
 .uid-tabs--vertical > .uid-tabs__list {
   flex: 0 0 auto;
+  width: max-content;
   max-width: 240px;
+  /* The kit leaves the list scrollable sideways: a long name then ran past the
+     column and the active marker (the tab's right edge) scrolled away with the
+     text. The column never scrolls sideways; long names wrap instead. */
+  overflow: visible;
+}
+.uid-tabs--vertical > .uid-tabs__list > .uid-tab {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+  line-height: 1.3;
+  gap: 8px;
+}
+/* Counters of a vertical column stand in one line at its right edge. */
+.uid-tabs--vertical > .uid-tabs__list > .uid-tab > .admin-tab-badge {
+  margin-inline-start: auto;
 }
 @media (max-width: 720px) {
   .uid-tabs--vertical {

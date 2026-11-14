@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.74.2
+
+### Fixed
+
+- **Vertical tabs: the active marker scrolled away with a long name.** The
+  kit leaves a tab list scrollable sideways; in a vertical column a name longer
+  than the column scrolled, and the marker on the tab's right edge moved with
+  the text. The column no longer scrolls sideways and long names wrap onto a
+  second line; a tab's counter never breaks and the counters stand at the
+  column's right edge.
+
 ## 1.74.1
 
 ### Added
