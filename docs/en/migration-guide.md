@@ -14,7 +14,7 @@ Upgrades between major and minor versions. We follow [SemVer](https://semver.org
 There is no 2.0 yet, and none of these releases requires a rewrite, but a
 few change behaviour a host may rely on. Newest first:
 
-- **1.75.2** — fixes:
+- **1.76.0** — fixes:
   - **Audit log.** A new migration, `make_admin_audit_logs_morph_ids_strings`,
     turns `actor_id`, `subject_id` and `impersonator_id` from `bigint` into
     `varchar(64)`, keeping the data and the indexes: run `php artisan migrate`.

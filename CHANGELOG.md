@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## 1.75.2
+## 1.76.0
+
+A minor release rather than a patch: the audit log's morph ids become strings
+(see the migration guide) — a raw query comparing `subject_id`/`actor_id` with
+an integer on PostgreSQL has to compare with a string or use
+`forSubject()`/`forActor()`.
 
 ### Fixed
 
