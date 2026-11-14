@@ -31,7 +31,8 @@ use Dskripchenko\LaravelAdmin\Uploads\HtmlSanitizer;
  *     config admin.wysiwyg.tinymce.script), height, plugins, toolbar,
  *     menubar, language, init (any other TinyMCE option).
  * Quill and TinyMCE keep the HTML in their own dialect, so the sanitizer's
- * whitelist widens to it for such a field (see sanitizerWhitelist()).
+ * whitelist widens to it for such a field (see sanitizerWhitelist()); a field
+ * widens it further with sanitizerAllow().
  */
 final class Wysiwyg extends Field
 {
@@ -43,6 +44,9 @@ final class Wysiwyg extends Field
 
     /** @var list<string> Quill's output formats */
     private const QUILL_OUTPUTS = ['html', 'delta'];
+
+    /** @var array<string, list<string>> tag => attributes added by sanitizerAllow() */
+    private array $sanitizerAllow = [];
 
     public function fieldType(): string
     {
@@ -292,11 +296,56 @@ final class Wysiwyg extends Field
             ],
             default => [],
         };
-        foreach ($extra as $tag => $attributes) {
-            $whitelist[$tag] = array_values(array_unique(array_merge($whitelist[$tag] ?? [], $attributes)));
+        foreach ([$extra, $this->sanitizerAllow] as $widening) {
+            foreach ($widening as $tag => $attributes) {
+                $whitelist[$tag] = array_values(array_unique(array_merge($whitelist[$tag] ?? [], $attributes)));
+            }
         }
 
         return $whitelist;
+    }
+
+    /**
+     * Widens the sanitizer's whitelist for this field: tag => attributes,
+     * merged over the default one and the engine's. A tag that is not on the
+     * list yet becomes allowed (`['figure' => []]` keeps `<figure>` without
+     * attributes). Calls add up.
+     *
+     *     Wysiwyg::make('body')->driver('quill')->sanitizerAllow(['a' => ['style'], 'p' => ['style']])
+     *
+     * The protections stay: an `on*` handler, an attribute that is not a
+     * plain name, or a tag the sanitizer removes with its content (script,
+     * style, iframe, object, embed, form and the like) is refused with an
+     * exception; URLs in href, src and the other address attributes are still
+     * cleared of `javascript:`, `vbscript:` and `data:text/html`.
+     *
+     * @param  array<string, list<string>|string>  $allow
+     */
+    public function sanitizerAllow(array $allow): static
+    {
+        foreach ($allow as $tag => $attributes) {
+            $tag = strtolower(trim((string) $tag));
+            if (preg_match('/^[a-z][a-z0-9-]*$/', $tag) !== 1) {
+                throw new \InvalidArgumentException("Wysiwyg::sanitizerAllow(): `{$tag}` is not a tag name");
+            }
+            if (HtmlSanitizer::isDroppedTag($tag)) {
+                throw new \InvalidArgumentException("Wysiwyg::sanitizerAllow(): <{$tag}> is never allowed");
+            }
+            $names = [];
+            foreach ((array) $attributes as $attribute) {
+                $attribute = strtolower(trim((string) $attribute));
+                if (preg_match('/^[a-z][a-z0-9_:.-]*$/', $attribute) !== 1) {
+                    throw new \InvalidArgumentException("Wysiwyg::sanitizerAllow(): `{$attribute}` is not an attribute name");
+                }
+                if (HtmlSanitizer::isForbiddenAttribute($attribute)) {
+                    throw new \InvalidArgumentException("Wysiwyg::sanitizerAllow(): the `{$attribute}` attribute is never allowed");
+                }
+                $names[] = $attribute;
+            }
+            $this->sanitizerAllow[$tag] = array_values(array_unique(array_merge($this->sanitizerAllow[$tag] ?? [], $names)));
+        }
+
+        return $this;
     }
 
     /**
