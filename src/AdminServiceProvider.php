@@ -198,6 +198,7 @@ final class AdminServiceProvider extends ServiceProvider
      * `config('admin.openapi.ui')`: 'reference' (default) serves it; 'scalar',
      * the value before 1.56, means the same; anything else (null, 'none')
      * leaves the route out — laravel-api's own /api/doc stays either way.
+     * Who may read it: `admin.api_docs` (ApiDocsAccess).
      */
     private function registerApiReference(): void
     {
@@ -209,9 +210,19 @@ final class AdminServiceProvider extends ServiceProvider
         $prefix = Panel\Panel::apiPathFor('admin');
         $routePath = $prefix === '' ? 'doc' : "{$prefix}/doc";
 
+        // The page and the specs it reads are the panel's users' alone (see
+        // ApiDocsAccess): the specs go out through a route of their own,
+        // under the same session, rather than as files in public storage.
+        $middleware = [...(array) config('admin.middleware.shell', ['web']), Http\Middleware\ApiDocsAccess::class];
+
         Route::get($routePath, Http\Controllers\ApiReferenceController::class)
             ->name('admin.api-doc')
-            ->middleware(config('admin.middleware.shell', ['web']));
+            ->middleware($middleware);
+
+        Route::get($routePath.'/specs/{version}.json', [Http\Controllers\ApiReferenceController::class, 'spec'])
+            ->name('admin.api-doc-source')
+            ->where('version', '[A-Za-z0-9_.-]+')
+            ->middleware($middleware);
     }
 
     /**

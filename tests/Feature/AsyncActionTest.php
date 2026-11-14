@@ -175,3 +175,38 @@ it('delayed.status returns 404 for unknown uuid', function (): void {
     $response = $this->getJson('/api/admin/delayed/status?uuid=nonexistent');
     $response->assertStatus(404);
 });
+
+it('delayed.status answers only the user who started the process, or one holding its permissions', function (): void {
+    app(AllowlistRegistrar::class)->allow(TestAsyncHandler::class, 'process');
+    $created = $this->postJson('/api/admin/delayed/run', [
+        'entity' => TestAsyncHandler::class,
+        'method' => 'process',
+        'params' => ['message' => 'client data'],
+    ])->json('payload');
+
+    // Another panel user, with no permission tied to the process.
+    $other = AdminUser::create(['name' => 'B', 'email' => 'b-'.uniqid().'@example.com', 'password' => 'secret']);
+    $other->assignRole(Role::create(['name' => 'V', 'slug' => 'v-'.uniqid(), 'permissions' => ['admin.posts.view']]));
+    $this->flushSession();
+    $this->actingAs($other->refresh(), 'admin');
+    $this->getJson('/api/admin/delayed/status?uuid='.$created['uuid'])->assertStatus(404);
+
+    // A process created outside the panel (by the site, say) is nobody's here.
+    $foreign = DelayedProcess::query()->create([
+        'uuid' => 'site-'.uniqid(),
+        'entity' => TestAsyncHandler::class,
+        'method' => 'process',
+        'parameters' => [],
+    ]);
+    $this->getJson('/api/admin/delayed/status?uuid='.$foreign->uuid)->assertStatus(404);
+
+    // admin.delayed.status_permission opens every process.
+    config()->set('admin.delayed.status_permission', 'admin.posts.view');
+    $this->getJson('/api/admin/delayed/status?uuid='.$created['uuid'])->assertOk();
+    config()->set('admin.delayed.status_permission', null);
+
+    // So do the permissions the handler was allowlisted with.
+    app(AllowlistRegistrar::class)->clear();
+    app(AllowlistRegistrar::class)->allow(TestAsyncHandler::class, 'process', 'admin.posts.view');
+    $this->getJson('/api/admin/delayed/status?uuid='.$foreign->uuid)->assertOk();
+});

@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.75.1
+
+### Security
+
+- **Import wrote into any resource, without permission checks (critical).**
+  `import/upload`, `import/preview` and `import/start` checked only that the
+  resource was registered: any user signed in to the panel could create
+  records in any resource — read-only and create-denied ones included — and
+  the mapping could target any column of the model, written with `forceFill`
+  past the resource's `fillModel()`. `preview` and `start` also took the disk
+  from the request, so the first rows of any CSV/XLSX file on any disk could
+  be read by its path. Now every step requires `Resource::importable()` (still
+  `false` by default) and the resource's `{permission}.create`, checked
+  through the user model's `hasAccess()` like the create action; columns map
+  onto the create form's fields only (`422 invalid_mapping`); a row is
+  validated and written through the same path as `{slug}/create`
+  (`RecordWriter::create()`: WYSIWYG sanitizing, translatable fields,
+  `fillModel()`), and the runner drops any stored mapping outside the form.
+  The disk is `admin.imports.disk` only (a different one — `422
+  forbidden_disk`); files go to a per-user folder under
+  `admin.imports.directory` and `preview`/`start` read only from the caller's
+  own folder (`ImportUploads`). `import/status` answers the owner of the
+  process or a holder of `{permission}.create`, anyone else a 404.
+- **`uploads/serve` streamed any file of a servable disk (high).** With the
+  default `servable_disks` — the uploads disk — every panel user could read
+  every file on that disk by its path: private attachments, other users'
+  import files. A disk listed by name now serves `admin.uploads.directory`
+  only; a disk given as a key serves the folders it lists, or all of it for
+  `'*'`. Paths with `..` or `.` segments, backslashes, a leading slash, a NUL
+  byte or a scheme are refused.
+- **Impersonation left no trace and could lock the administrator in (high).**
+  The start and the end were logged as two `login` entries — of the target,
+  then of the administrator — and changes made meanwhile named only the
+  target. Now `impersonation.started` / `impersonation.stopped` are written
+  (actor — the administrator, subject — the target), the switch is no longer
+  logged as a login, and every audit entry written during an impersonation —
+  by any code — carries `impersonator_type` / `impersonator_id` (new
+  migration). `block_higher_powered` let any target through whose model had
+  no `getAllPermissions()` — which switched the check off for such hosts —
+  and compared wildcard keys literally; it now refuses a target it cannot
+  compare and asks the impersonator's `hasAccess()` for each of the target's
+  keys. A target who cannot use the panel or is switched off is refused
+  (`422 target_cannot_sign_in`); if the target loses access meanwhile, the
+  session is kept and `auth/stopImpersonation` still works. Coming back does
+  not restore an administrator switched off or with a password changed since
+  the start.
+- **`delayed/status` showed any process's result to any panel user
+  (medium).** It now answers the user who started the process through
+  `delayed/run` (remembered by uuid, `admin.delayed.owner_ttl`), holders of
+  the permissions the handler was allowlisted with, and holders of
+  `admin.delayed.status_permission`; anyone else gets a 404.
+  `ProcessOwnership::remember()` marks a process started by the host's code.
+- **The panels' API documentation was public (medium).** `/api/admin/doc`
+  and laravel-api's `/api/doc/{panel}` served the full map of the back office
+  to anyone. Both now need a user signed in to the panel with
+  `admin.api_docs.permission` (`admin.systems.api-docs` by default) and are
+  off by default in production (`admin.api_docs.enabled`); laravel-api's
+  `/api/doc` index hides the panel versions from other readers
+  (`AdminApiModule::getDocMiddleware()` adds `ApiDocsAccess`). The page reads
+  its specs from the guarded `/api/admin/doc/specs/{version}.json` instead of
+  files written into `public/openapi`.
+- **A password reset skipped 2FA (medium).** `auth/resetPassword` signed the
+  user in right away, so access to the mailbox was enough for an account with
+  2FA. Such a user is no longer signed in (`payload.user` is `null`) and goes
+  through the login form and its code.
+
+### Changed
+
+- Impersonation messages are in Russian, with English translations.
+- See the migration guide for what a host has to check.
+
 ## 1.75.0
 
 - **A fall that is good.** `StatsOverviewWidget::lowerIsBetter()` swaps the

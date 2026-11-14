@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Dskripchenko\LaravelAdmin\Import;
 
 use Dskripchenko\DelayedProcess\Contracts\ProcessProgressInterface;
+use Dskripchenko\LaravelAdmin\Resource\RecordWriter;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -64,12 +65,19 @@ final class ImportRunner
             throw new \RuntimeException("Resource `{$process->resource_slug}` is not registered");
         }
 
-        $modelClass = $resource::$model;
         $rules = $resource->validationRules('create');
-        $mapping = (array) $process->mapping;
+        // Only the fields of the create form are written, whatever the stored
+        // mapping says: the rest of the model's columns stay out of reach.
+        $allowed = RecordWriter::createFieldNames($resource);
+        $mapping = array_filter(
+            (array) $process->mapping,
+            static fn (mixed $field): bool => in_array($field, $allowed, true),
+        );
 
-        $diskName = (string) config('admin.imports.disk', 'local');
-        $localPath = Storage::disk($diskName)->path($process->source_path);
+        if (! ImportUploads::isSafeRelativePath($process->source_path)) {
+            throw new \RuntimeException('The import source path is not allowed');
+        }
+        $localPath = Storage::disk(ImportUploads::disk())->path($process->source_path);
 
         $extension = strtolower((string) pathinfo($process->source_path, PATHINFO_EXTENSION));
         $read = fn (): iterable => match ($extension) {
@@ -104,11 +112,11 @@ final class ImportRunner
                     continue;
                 }
 
-                DB::transaction(function () use ($modelClass, $payload, $process): void {
-                    /** @var \Illuminate\Database\Eloquent\Model $model */
-                    $model = new $modelClass;
-                    $model->forceFill($payload);
-                    $model->save();
+                // The validated keys only, written the way the create action
+                // writes them: sanitizers, translations, fillModel().
+                $data = $validator->validated();
+                DB::transaction(function () use ($resource, $data, $process): void {
+                    RecordWriter::create($resource, $data);
                     $process->increment('created_count');
                 });
             } catch (Throwable $e) {

@@ -409,18 +409,21 @@ final class AuthController extends ApiController
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Log the user in after a successful reset.
+        // Log the user in after a successful reset — unless they have 2FA:
+        // the link in the mail proves the mailbox, not the second factor, so
+        // they sign in through the login form and its code.
         $provider = Auth::createUserProvider(
             \Dskripchenko\LaravelAdmin\Panel\Panels::currentProvider(),
         );
         $user = $provider?->retrieveByCredentials(['email' => $data['email']]);
-        if ($user instanceof Authenticatable && $user instanceof Model
+        $twoFactor = $user !== null && method_exists($user, 'hasTwoFactorEnabled') && $user->hasTwoFactorEnabled() === true;
+        if ($user instanceof Authenticatable && $user instanceof Model && ! $twoFactor
             && ! AccountState::isDisabled($user) && PanelAccess::allows($user)) {
             Auth::guard($guard)->login($user);
         }
 
         return $this->success([
-            'user' => $user instanceof Authenticatable && $user instanceof Model
+            'user' => $user instanceof Authenticatable && $user instanceof Model && ! $twoFactor
                 ? $this->serializeUser($user)
                 : null,
             'redirect_url' => '/'.trim((string) config('admin.path', 'admin'), '/'),
@@ -577,13 +580,14 @@ final class AuthController extends ApiController
      * @response 200 {ImpersonationResponse}
      * @response 403 {ForbiddenErrorResponse}
      * @response 404 {NotFoundErrorResponse}
+     * @response 422 {ValidationErrorResponse} The target may not use the panel, or their account is off
      */
     public function startImpersonation(Request $request, ImpersonationManager $manager): JsonResponse
     {
         if (! $manager->enabled()) {
             return $this->error([
                 'errorKey' => 'impersonation_disabled',
-                'message' => __('Impersonation отключена в конфиге'),
+                'message' => __('Вход под пользователем отключён'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -614,7 +618,7 @@ final class AuthController extends ApiController
         if ($manager->isActive()) {
             return $this->error([
                 'errorKey' => 'already_impersonating',
-                'message' => __('Сначала остановите текущую impersonation'),
+                'message' => __('Сначала выйдите из-под текущего пользователя'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -631,14 +635,23 @@ final class AuthController extends ApiController
         if ($target->getKey() === $current->getKey()) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => __('Нельзя impersonate самого себя'),
+                'message' => __('Нельзя войти под своей учётной записью'),
             ], Response::HTTP_FORBIDDEN);
+        }
+
+        // A user who may not use the panel, or whose account is off, would
+        // lock the administrator in: every request would be refused.
+        if (! $manager->canBeImpersonated($target)) {
+            return $this->error([
+                'errorKey' => 'target_cannot_sign_in',
+                'message' => __('Пользователь не может войти в панель: вход под ним невозможен'),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if ($manager->isHigherPowered($current, $target)) {
             return $this->error([
                 'errorKey' => 'forbidden',
-                'message' => __('Цель имеет больше прав, чем вы — impersonation запрещена'),
+                'message' => __('У пользователя больше прав, чем у вас: вход под ним запрещён'),
             ], Response::HTTP_FORBIDDEN);
         }
 
@@ -669,7 +682,7 @@ final class AuthController extends ApiController
         if (! $manager->isActive()) {
             return $this->error([
                 'errorKey' => 'no_active_impersonation',
-                'message' => __('Нет активной impersonation'),
+                'message' => __('Вход под пользователем не активен'),
             ], Response::HTTP_BAD_REQUEST);
         }
 
@@ -678,7 +691,7 @@ final class AuthController extends ApiController
         if (! $original instanceof Authenticatable || ! $original instanceof Model) {
             return $this->error([
                 'errorKey' => 'impersonator_not_found',
-                'message' => __('Оригинальный пользователь не найден'),
+                'message' => __('Исходная учётная запись недоступна — войдите заново'),
             ], Response::HTTP_BAD_REQUEST);
         }
 

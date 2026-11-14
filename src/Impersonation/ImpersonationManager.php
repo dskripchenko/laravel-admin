@@ -25,6 +25,59 @@ final class ImpersonationManager
 {
     public const SESSION_KEY = 'admin_impersonator_id';
 
+    /** The impersonator's morph type, beside the id. */
+    public const SESSION_TYPE_KEY = 'admin_impersonator_type';
+
+    /**
+     * The impersonator's password hash at the start, so that coming back
+     * honours a password changed meanwhile as a fresh login would.
+     */
+    public const SESSION_HASH_KEY = 'admin_impersonator_password_hash';
+
+    /** The audit events of an impersonation's start and end. */
+    public const EVENT_STARTED = 'impersonation.started';
+
+    public const EVENT_STOPPED = 'impersonation.stopped';
+
+    /**
+     * True while start() and stop() switch the signed-in user: the Login
+     * event that switch fires is not a login, and AuthAuditListener leaves it
+     * out — the impersonation's own entries tell who signed in as whom.
+     */
+    private static bool $switching = false;
+
+    public static function isSwitching(): bool
+    {
+        return self::$switching;
+    }
+
+    /**
+     * The administrator signed in as someone else in the current request, as
+     * `{type, id}`; null outside an impersonation, and outside a request with
+     * a session (a queued job, the console).
+     *
+     * @return array{type: string, id: int|string}|null
+     */
+    public static function currentImpersonator(): ?array
+    {
+        try {
+            if (! app()->bound('session') || ! Session::isStarted() || ! Session::has(self::SESSION_KEY)) {
+                return null;
+            }
+            /** @var int|string $id */
+            $id = Session::get(self::SESSION_KEY);
+            $type = Session::get(self::SESSION_TYPE_KEY);
+            if (! is_string($type) || $type === '') {
+                $modelClass = \Dskripchenko\LaravelAdmin\Panel\Panels::currentAuthModel();
+                $type = (new $modelClass)->getMorphClass();
+            }
+
+            return ['type' => $type, 'id' => $id];
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * Tells whether impersonation is enabled in the config.
      */
@@ -93,26 +146,29 @@ final class ImpersonationManager
         $guard = $this->guard();
 
         Session::put(self::SESSION_KEY, $impersonator->getKey());
+        Session::put(self::SESSION_TYPE_KEY, $impersonator->getMorphClass());
+        Session::put(self::SESSION_HASH_KEY, SessionPasswordHash::make($guard, (string) $impersonator->getAuthPassword()));
         // A role preview belongs to the impersonator and ends here.
         Session::forget(\Dskripchenko\LaravelAdmin\Permission\RolePreview::SESSION_KEY);
-        Auth::guard($guard)->login($target);
-        // The session changed its user legitimately, so we refresh the hash
-        // for AdminAuth — otherwise the session invalidation would consider it
-        // stale.
-        Session::put(SessionPasswordHash::key($guard), SessionPasswordHash::make($guard, (string) $target->getAuthPassword()));
+        $this->switchTo($guard, $target);
+
+        $this->audit(self::EVENT_STARTED, $impersonator, $target);
     }
 
     /**
      * Stops the impersonation and brings the original user back.
      *
      * Returns the original's Authenticatable, or null when the original is
-     * gone — deleted since. In that case the session is cleared too, but
-     * nobody is logged in.
+     * gone — deleted, switched off, or with a password changed since. In that
+     * case the session is cleared too, and nobody is logged in.
      */
     public function stop(): ?Authenticatable
     {
         $impersonatorId = $this->impersonatorId();
-        Session::forget(self::SESSION_KEY);
+        $impersonatorType = Session::get(self::SESSION_TYPE_KEY);
+        $impersonatorHash = Session::get(self::SESSION_HASH_KEY);
+        $target = Auth::guard($this->guard())->user();
+        Session::forget([self::SESSION_KEY, self::SESSION_TYPE_KEY, self::SESSION_HASH_KEY]);
 
         if ($impersonatorId === null) {
             return null;
@@ -123,21 +179,104 @@ final class ImpersonationManager
         );
         $user = $provider?->retrieveById($impersonatorId);
 
+        // The way back is a login of its own: an account switched off, or a
+        // password changed since the start, does not get the session back.
+        if ($user instanceof Authenticatable && (
+            \Dskripchenko\LaravelAdmin\Auth\AccountState::isDisabled($user)
+            || (is_string($impersonatorHash) && ! SessionPasswordHash::matches($this->guard(), (string) $user->getAuthPassword(), $impersonatorHash))
+        )) {
+            $user = null;
+        }
+
         if ($user instanceof Authenticatable) {
-            Auth::guard($this->guard())->login($user);
-            Session::put(SessionPasswordHash::key($this->guard()), SessionPasswordHash::make($this->guard(), (string) $user->getAuthPassword()));
+            $this->switchTo($this->guard(), $user);
+        } else {
+            // Nobody to return to: the impersonated session does not outlive it.
+            Auth::guard($this->guard())->logout();
+        }
+
+        if ($user instanceof Model && $target instanceof Model) {
+            $this->audit(self::EVENT_STOPPED, $user, $target);
+        } elseif ($target instanceof Model) {
+            $this->audit(self::EVENT_STOPPED, null, $target, [
+                'type' => is_string($impersonatorType) ? $impersonatorType : null,
+                'id' => $impersonatorId,
+            ]);
         }
 
         return $user;
     }
 
     /**
+     * Whether the user can be entered at all: one who may not use the panel,
+     * or whose account is switched off, would lock the administrator out —
+     * every request, «Exit» included, would be refused.
+     */
+    public function canBeImpersonated(Authenticatable&Model $target): bool
+    {
+        return \Dskripchenko\LaravelAdmin\Auth\PanelAccess::allows($target)
+            && ! \Dskripchenko\LaravelAdmin\Auth\AccountState::isDisabled($target);
+    }
+
+    private function switchTo(string $guard, Authenticatable $user): void
+    {
+        self::$switching = true;
+        try {
+            Auth::guard($guard)->login($user);
+        } finally {
+            self::$switching = false;
+        }
+        // The session changed its user legitimately, so we refresh the hash
+        // for AdminAuth — otherwise the session invalidation would consider it
+        // stale.
+        Session::put(SessionPasswordHash::key($guard), SessionPasswordHash::make($guard, (string) $user->getAuthPassword()));
+    }
+
+    /**
+     * An entry of the audit log: the administrator is the actor and the
+     * impersonator, the impersonated user the subject.
+     *
+     * @param  array{type: string|null, id: int|string}|null  $goneImpersonator  For an administrator deleted since.
+     */
+    private function audit(string $event, ?Model $impersonator, Model $target, ?array $goneImpersonator = null): void
+    {
+        if (! (bool) config('admin.audit.enabled', true)) {
+            return;
+        }
+
+        $type = $impersonator?->getMorphClass() ?? ($goneImpersonator['type'] ?? null);
+        $id = $impersonator?->getKey() ?? ($goneImpersonator['id'] ?? null);
+
+        $attributes = [
+            'actor_type' => $type,
+            'actor_id' => $id,
+            'subject_type' => $target->getMorphClass(),
+            'subject_id' => $target->getKey(),
+            'event' => $event,
+            'changes' => ['payload' => [
+                'guard' => $this->guard(),
+                'impersonator_id' => $id,
+                'impersonator_name' => $impersonator?->getAttribute('name'),
+                'target_id' => $target->getKey(),
+                'target_name' => $target->getAttribute('name'),
+            ]],
+            ...\Dskripchenko\LaravelAdmin\Audit\AuditLog::requestContext(),
+        ];
+        if (\Dskripchenko\LaravelAdmin\Audit\AuditLog::supportsImpersonator()) {
+            $attributes['impersonator_type'] = $type;
+            $attributes['impersonator_id'] = $id;
+        }
+
+        \Dskripchenko\LaravelAdmin\Audit\AuditLog::create($attributes);
+    }
+
+    /**
      * Blocks impersonating a target who holds more rights than the
      * impersonator, when `block_higher_powered` is on.
      *
-     * The comparison counts permissions: a proxy measure, but one that keeps
-     * RBAC from being walked around. Wildcards (*, admin.users.*) are taken
-     * literally — whoever holds them counts as "higher".
+     * Every permission the target holds must be the impersonator's too —
+     * literally or through hasAccess(). A target whose permissions cannot be
+     * listed counts as higher, unless the impersonator holds `*`.
      */
     public function isHigherPowered(Authenticatable&Model $impersonator, Authenticatable&Model $target): bool
     {
@@ -145,21 +284,39 @@ final class ImpersonationManager
             return false;
         }
 
-        if (! method_exists($impersonator, 'getAllPermissions')
-            || ! method_exists($target, 'getAllPermissions')) {
-            return false;
-        }
-
-        $imp = (array) $impersonator->getAllPermissions();
-        $tgt = (array) $target->getAllPermissions();
+        $imp = method_exists($impersonator, 'getAllPermissions')
+            ? array_values(array_filter((array) $impersonator->getAllPermissions(), 'is_string'))
+            : [];
 
         // An impersonator holding `*` is always higher or equal.
         if (in_array('*', $imp, true)) {
             return false;
         }
 
-        // Does the target hold permissions the impersonator does not?
-        return count(array_diff($tgt, $imp)) > 0;
+        // A target whose rights cannot be listed cannot be compared — and a
+        // check that cannot answer refuses. It used to let such a target
+        // through, which on a host whose user model has no
+        // getAllPermissions() switched the protection off altogether.
+        if (! method_exists($target, 'getAllPermissions')) {
+            return true;
+        }
+
+        // Does the target hold a permission the impersonator does not? A key
+        // the impersonator holds through a wildcard of their own, or through
+        // the host's permission bridge, is theirs — asked through hasAccess(),
+        // the same check every action makes.
+        foreach ((array) $target->getAllPermissions() as $permission) {
+            if (! is_string($permission) || $permission === '' || in_array($permission, $imp, true)) {
+                continue;
+            }
+            if (method_exists($impersonator, 'hasAccess') && $impersonator->hasAccess($permission) === true) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private function guard(): string

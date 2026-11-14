@@ -62,6 +62,14 @@ public function importable(): bool
 }
 ```
 
+Без `importable() = true` все шаги импорта отвечают `403 import_disabled`
+(по умолчанию — `false`). Импортировать может только пользователь с правом
+на создание записей ресурса (`admin.{slug}.create`), колонки сопоставляются
+только с полями формы создания, а строка записывается так же, как форма
+«Создать»: валидация, `fillModel()` ресурса. Файл читается только с диска
+`admin.imports.disk` и только из папки загрузок самого пользователя —
+подробнее в [api/exports-imports.md](../api/exports-imports.md#import).
+
 Использовать готовую разметку wizard'а на custom-screen:
 
 ```php
@@ -84,7 +92,7 @@ Wizard:
 3. **Preview** — sample rows визуализируются с применённым mapping'ом.
 4. **Run** — `POST /api/admin/import/start` создаёт `ImportProcess`, валидирует каждую строку через Resource'овые rules, копит errors[].
 
-Status: `GET /api/admin/import/status?id=N` возвращает progress (processed/created/error counts).
+Status: `GET /api/admin/import/status?id=N` возвращает progress (processed/created/error counts) — тому, кто запустил импорт, и пользователям с правом `admin.{slug}.create`.
 
 ## Custom валидация при импорте
 

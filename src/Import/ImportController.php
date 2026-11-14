@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Dskripchenko\LaravelAdmin\Import;
 
+use Dskripchenko\LaravelAdmin\Panel\Panels;
+use Dskripchenko\LaravelAdmin\Permission\PermissionCheck;
+use Dskripchenko\LaravelAdmin\Resource\RecordWriter;
+use Dskripchenko\LaravelAdmin\Resource\Resource;
 use Dskripchenko\LaravelAdmin\Resource\ResourceRegistry;
 use Dskripchenko\LaravelApi\Controllers\ApiController;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +22,12 @@ use Illuminate\Support\Facades\Storage;
  *   2. preview   — the headers, a sample and the suggested mapping.
  *   3. start     — creates an ImportProcess and runs it, synchronously or not.
  *   4. status    — the ImportProcess's current state.
+ *
+ * Every step requires a resource that opts in through importable() and the
+ * user's `{permission}.create` on it. The file is read from
+ * `admin.imports.disk` only, and only from the user's own upload folder
+ * (ImportUploads); a process's status is shown to its owner, or to whoever
+ * may import into its resource.
  */
 final class ImportController extends ApiController
 {
@@ -48,16 +58,17 @@ final class ImportController extends ApiController
             'resource' => ['required', 'string'],
         ]);
 
-        $resourceSlug = (string) $request->input('resource');
-        if (! $this->resources->has($resourceSlug)) {
-            return $this->error([
-                'errorKey' => 'unknown_resource',
-                'message' => "Resource `{$resourceSlug}` is not registered",
-            ], 422);
+        $resource = $this->authorizeImport((string) $request->input('resource'));
+        if ($resource instanceof JsonResponse) {
+            return $resource;
+        }
+        $user = $this->user();
+        if ($user === null) {
+            return $this->unauthenticated();
         }
 
-        $disk = (string) config('admin.imports.disk', 'local');
-        $path = $request->file('file')->store('imports', $disk);
+        $disk = ImportUploads::disk();
+        $path = $request->file('file')->store(ImportUploads::directoryFor($user), $disk);
 
         return $this->success([
             'disk' => $disk,
@@ -86,17 +97,17 @@ final class ImportController extends ApiController
             'disk' => ['nullable', 'string'],
         ]);
 
-        $resource = $this->resources->resolve($data['resource']);
-        if ($resource === null) {
-            return $this->error([
-                'errorKey' => 'unknown_resource',
-                'message' => "Resource `{$data['resource']}` not registered",
-            ], 422);
+        $resource = $this->authorizeImport($data['resource']);
+        if ($resource instanceof JsonResponse) {
+            return $resource;
+        }
+        $source = $this->ownedSource($data);
+        if ($source instanceof JsonResponse) {
+            return $source;
         }
 
-        $disk = (string) ($data['disk'] ?? config('admin.imports.disk', 'local'));
-        $preview = $this->previewService->preview($disk, $data['path']);
-        $autoMapping = ColumnMapper::autoMap($preview['headers'], $resource->fields());
+        $preview = $this->previewService->preview(ImportUploads::disk(), $data['path']);
+        $autoMapping = ColumnMapper::autoMap($preview['headers'], self::createFields($resource));
 
         return $this->success([
             'headers' => $preview['headers'],
@@ -127,31 +138,49 @@ final class ImportController extends ApiController
             'resource' => ['required', 'string'],
             'path' => ['required', 'string'],
             'mapping' => ['required', 'array'],
+            'mapping.*' => ['nullable', 'string'],
             'disk' => ['nullable', 'string'],
         ]);
 
-        if (! $this->resources->has($data['resource'])) {
+        $resource = $this->authorizeImport($data['resource']);
+        if ($resource instanceof JsonResponse) {
+            return $resource;
+        }
+        $owner = $this->ownedSource($data);
+        if ($owner instanceof JsonResponse) {
+            return $owner;
+        }
+
+        // A column may go only into a field of the resource's create form: the
+        // import writes what the form would, never an arbitrary column.
+        $allowed = RecordWriter::createFieldNames($resource);
+        $mapping = [];
+        $unknown = [];
+        foreach ($data['mapping'] as $header => $field) {
+            if ($field === null || $field === '') {
+                continue;
+            }
+            if (! in_array($field, $allowed, true)) {
+                $unknown[] = $field;
+
+                continue;
+            }
+            $mapping[(string) $header] = $field;
+        }
+        if ($unknown !== []) {
             return $this->error([
-                'errorKey' => 'unknown_resource',
-                'message' => "Resource `{$data['resource']}` not registered",
+                'errorKey' => 'invalid_mapping',
+                'message' => __('Колонки можно сопоставить только с полями формы создания: :fields', ['fields' => implode(', ', array_unique($unknown))]),
+                'fields' => array_values(array_unique($unknown)),
             ], 422);
         }
 
-        $disk = Storage::disk((string) ($data['disk'] ?? config('admin.imports.disk', 'local')));
-        if (! $disk->exists($data['path'])) {
-            return $this->error([
-                'errorKey' => 'file_missing',
-                'message' => "Source file `{$data['path']}` not found",
-            ], 422);
-        }
-
-        $owner = $this->user();
         $process = ImportProcess::create([
-            'resource_slug' => $data['resource'],
+            'resource_slug' => $resource::slug(),
             'source_path' => $data['path'],
-            'mapping' => $data['mapping'],
-            'owner_type' => $owner?->getMorphClass(),
-            'owner_id' => $owner?->getKey(),
+            'mapping' => $mapping,
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => $owner->getKey(),
         ]);
 
         $this->runner->run($process->id);
@@ -177,7 +206,10 @@ final class ImportController extends ApiController
     {
         $data = $request->validate(['id' => ['required', 'integer']]);
         $process = ImportProcess::query()->find($data['id']);
-        if ($process === null) {
+
+        // Another user's process answers exactly as a missing one: its
+        // errors quote the imported rows.
+        if ($process === null || ! $this->maySeeProcess($process)) {
             return $this->error([
                 'errorKey' => 'not_found',
                 'message' => 'ImportProcess not found',
@@ -187,9 +219,117 @@ final class ImportController extends ApiController
         return $this->success(['process' => $this->serialize($process)]);
     }
 
+    /**
+     * The resource, when the signed-in user may import into it: it is
+     * registered in the current panel, it opts in through importable(), and
+     * the user may create its records — the same `{permission}.create` key the
+     * resource's own create action requires, so a host's permission bridge
+     * (read-only resources, denied actions) answers here too.
+     */
+    private function authorizeImport(string $slug): Resource|JsonResponse
+    {
+        $resource = $this->resources->resolve($slug, Panels::current()->id);
+        if ($resource === null) {
+            return $this->error([
+                'errorKey' => 'unknown_resource',
+                'message' => "Resource `{$slug}` is not registered",
+            ], 422);
+        }
+
+        if (! $resource->importable()) {
+            return $this->error([
+                'errorKey' => 'import_disabled',
+                'message' => __('Импорт в этот раздел не предусмотрен'),
+            ], 403);
+        }
+
+        $permission = $resource::permission().'.create';
+        if (! PermissionCheck::allows($permission)) {
+            return $this->error([
+                'errorKey' => 'forbidden',
+                'message' => __('Доступ запрещён: :permission', ['permission' => $permission]),
+                'permission' => $permission,
+            ], 403);
+        }
+
+        return $resource;
+    }
+
+    /**
+     * The signed-in user, when the request names a file of their own on the
+     * import disk; an error response otherwise.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function ownedSource(array $data): Model|JsonResponse
+    {
+        $user = $this->user();
+        if ($user === null) {
+            return $this->unauthenticated();
+        }
+
+        $disk = ImportUploads::disk();
+        if (isset($data['disk']) && $data['disk'] !== '' && $data['disk'] !== $disk) {
+            return $this->error([
+                'errorKey' => 'forbidden_disk',
+                'message' => __('Импорт читает файлы только с диска :disk', ['disk' => $disk]),
+            ], 422);
+        }
+
+        $path = (string) $data['path'];
+        if (! ImportUploads::ownedBy($path, $user) || ! Storage::disk($disk)->exists($path)) {
+            return $this->error([
+                'errorKey' => 'file_missing',
+                'message' => "Source file `{$path}` not found",
+            ], 422);
+        }
+
+        return $user;
+    }
+
+    private function maySeeProcess(ImportProcess $process): bool
+    {
+        $user = $this->user();
+        if ($user === null) {
+            return false;
+        }
+
+        if ($process->owner_id !== null
+            && (string) $process->owner_type === $user->getMorphClass()
+            && (string) $process->owner_id === (string) $user->getKey()) {
+            return true;
+        }
+
+        // Whoever may import into the resource may follow its imports.
+        $resource = $this->resources->resolve($process->resource_slug, Panels::current()->id);
+
+        return $resource !== null && PermissionCheck::allows($resource::permission().'.create');
+    }
+
+    /**
+     * The fields of the create form, which the automatic mapping offers.
+     *
+     * @return list<\Dskripchenko\LaravelAdmin\Field\Field>
+     */
+    private static function createFields(Resource $resource): array
+    {
+        return array_values(array_filter(
+            $resource->fields(),
+            static fn ($field): bool => $field->appliesTo('create'),
+        ));
+    }
+
+    private function unauthenticated(): JsonResponse
+    {
+        return $this->error([
+            'errorKey' => 'unauthenticated',
+            'message' => 'Unauthenticated',
+        ], 401);
+    }
+
     private function user(): ?Model
     {
-        $guard = \Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard();
+        $guard = Panels::currentGuard();
         $user = Auth::guard($guard)->user();
 
         return $user instanceof Model ? $user : null;

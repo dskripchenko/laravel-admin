@@ -167,3 +167,100 @@ it('system.me has impersonator=null when not impersonating', function (): void {
     expect($response->json('payload.id'))->toBe($this->impersonator->id);
     expect($response->json('payload.impersonator'))->toBeNull();
 });
+
+it('writes the start and the end of an impersonation to the audit log, not as logins', function (): void {
+    Dskripchenko\LaravelAdmin\Audit\AuditLog::query()->delete();
+
+    $this->postJson('/api/admin/auth/startImpersonation', ['user_id' => $this->target->id])->assertOk();
+    $this->postJson('/api/admin/auth/stopImpersonation')->assertOk();
+
+    $logs = Dskripchenko\LaravelAdmin\Audit\AuditLog::query()->orderBy('id')->get();
+    expect($logs->pluck('event')->all())->toBe(['impersonation.started', 'impersonation.stopped']);
+    foreach ($logs as $log) {
+        expect((int) $log->actor_id)->toBe($this->impersonator->id)
+            ->and((int) $log->subject_id)->toBe($this->target->id)
+            ->and((int) $log->impersonator_id)->toBe($this->impersonator->id)
+            ->and($log->impersonator_type)->toBe($this->impersonator->getMorphClass());
+    }
+});
+
+it('names the real administrator on every change made while impersonating', function (): void {
+    $this->postJson('/api/admin/auth/startImpersonation', ['user_id' => $this->target->id])->assertOk();
+    Dskripchenko\LaravelAdmin\Audit\AuditLog::query()->delete();
+
+    $this->postJson('/api/admin/profile/update', ['name' => 'Renamed'])->assertOk();
+
+    $log = Dskripchenko\LaravelAdmin\Audit\AuditLog::query()->where('event', 'updated')->firstOrFail();
+    expect((int) $log->actor_id)->toBe($this->target->id)
+        ->and((int) $log->impersonator_id)->toBe($this->impersonator->id);
+
+    // After the way back, the administrator's own changes carry no impersonator.
+    $this->postJson('/api/admin/auth/stopImpersonation')->assertOk();
+    Dskripchenko\LaravelAdmin\Audit\AuditLog::query()->delete();
+    $this->postJson('/api/admin/profile/update', ['name' => 'Self'])->assertOk();
+    expect(Dskripchenko\LaravelAdmin\Audit\AuditLog::query()->where('event', 'updated')->firstOrFail()->impersonator_id)->toBeNull();
+});
+
+it('blocks a target whose permissions the impersonator cannot list or match', function (): void {
+    config()->set('admin.auth.impersonation.block_higher_powered', true);
+    $manager = app(ImpersonationManager::class);
+
+    // A target model without getAllPermissions(): it cannot be compared, so it is refused.
+    $bare = new class extends Illuminate\Foundation\Auth\User
+    {
+        protected $table = 'admin_users';
+
+        public function hasAccess(string $permission): bool
+        {
+            return true;
+        }
+    };
+    $bare->forceFill(['id' => $this->target->id]);
+    expect($manager->isHigherPowered($this->impersonator, $bare))->toBeTrue();
+
+    // A wildcard of the impersonator's own covers the target's keys.
+    $wide = Role::create(['name' => 'W', 'slug' => 'w-'.uniqid(), 'permissions' => ['admin.users.*']]);
+    $this->impersonator->assignRole($wide);
+    $narrow = Role::create(['name' => 'N', 'slug' => 'n-'.uniqid(), 'permissions' => ['admin.users.view']]);
+    $this->target->assignRole($narrow);
+    expect($manager->isHigherPowered($this->impersonator->refresh(), $this->target->refresh()))->toBeFalse();
+
+    // A wildcard the impersonator does not hold is higher.
+    $broad = Role::create(['name' => 'B', 'slug' => 'b-'.uniqid(), 'permissions' => ['admin.*']]);
+    $this->target->assignRole($broad);
+    expect($manager->isHigherPowered($this->impersonator->refresh(), $this->target->refresh()))->toBeTrue();
+});
+
+it('refuses to enter a user who cannot use the panel', function (): void {
+    $this->target->forceFill(['is_active' => false])->save();
+
+    $response = $this->postJson('/api/admin/auth/startImpersonation', ['user_id' => $this->target->id]);
+
+    $response->assertStatus(422);
+    expect($response->json('payload.errorKey'))->toBe('target_cannot_sign_in');
+    expect($this->app['auth']->guard('admin')->id())->toBe($this->impersonator->id);
+});
+
+it('lets the administrator leave even when the user entered has lost the panel', function (): void {
+    $this->postJson('/api/admin/auth/startImpersonation', ['user_id' => $this->target->id])->assertOk();
+
+    // The account is switched off meanwhile: every other request is refused…
+    $this->target->forceFill(['is_active' => false])->save();
+    // The next request reads the user afresh, as a real one would.
+    $this->app['auth']->forgetGuards();
+    $this->getJson('/api/admin/system/me')->assertStatus(403);
+    $this->app['auth']->forgetGuards();
+    $this->postJson('/api/admin/auth/stopImpersonation')->assertOk()
+        ->assertJsonPath('payload.user.id', $this->impersonator->id);
+    expect($this->app['auth']->guard('admin')->id())->toBe($this->impersonator->id);
+});
+
+it('does not bring back an administrator whose password changed meanwhile', function (): void {
+    $this->postJson('/api/admin/auth/startImpersonation', ['user_id' => $this->target->id])->assertOk();
+
+    AdminUser::query()->whereKey($this->impersonator->id)->update(['password' => bcrypt('changed')]);
+
+    $this->postJson('/api/admin/auth/stopImpersonation')->assertStatus(400)
+        ->assertJsonPath('payload.errorKey', 'impersonator_not_found');
+    expect($this->app['auth']->guard('admin')->check())->toBeFalse();
+});

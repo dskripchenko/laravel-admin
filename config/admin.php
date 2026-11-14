@@ -264,6 +264,28 @@ return [
         'theme' => null,
     ],
 
+    // Who may read the panels' API documentation: the reference page above,
+    // its spec files, and a panel's version on laravel-api's /{prefix}/doc.
+    // `enabled`: null — on everywhere but production; true / false. The
+    // reader must be signed in to the panel and hold `permission` (null or ''
+    // — signed in is enough). laravel-api's doc routes see the session only
+    // when laravel-api.doc_middleware includes one (e.g. ['web']).
+    'api_docs' => [
+        'enabled' => env('ADMIN_API_DOCS_ENABLED'),
+        'permission' => env('ADMIN_API_DOCS_PERMISSION', 'admin.systems.api-docs'),
+        // Where the specs are cached on the default disk, outside public storage.
+        'cache_path' => 'admin/openapi',
+    ],
+
+    // Async actions (delayed/run, delayed/status). The status of a process
+    // goes to the user who started it, to holders of the permissions its
+    // handler was allowlisted with, and to holders of `status_permission`.
+    'delayed' => [
+        'status_permission' => null,
+        // How long the starter of a process is remembered, in seconds.
+        'owner_ttl' => 86400,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Audit
@@ -337,11 +359,22 @@ return [
         'directory' => 'uploads',
         'max_kilobytes' => 51200,
         'max_kilobytes_image' => 10240,
-        // The whitelist of disks the admin may stream through
-        // /api/admin/uploads/serve. It solves previewing files on private
-        // disks, where there is no storage:link. A host adds its own disks
-        // here explicitly.
+        // What /api/admin/uploads/serve may stream — it solves previewing
+        // files on private disks, where there is no storage:link. A disk
+        // listed by name serves only the panel's upload folder (`directory`
+        // above); a disk given as a key names its folders, and '*' opens the
+        // whole disk:
+        //     'servable_disks' => ['local', 'recordings' => ['calls'], 'media' => '*'],
+        // Paths with `..`, `.`, backslashes or a leading slash are refused.
         'servable_disks' => [env('ADMIN_UPLOADS_DISK', 'local'), 'public'],
+    ],
+
+    // The import wizard (import/*). The file goes to `disk`, into a folder of
+    // the uploading user's own under `directory`; preview and start read only
+    // from there. A request cannot name another disk.
+    'imports' => [
+        'disk' => env('ADMIN_IMPORTS_DISK', 'local'),
+        'directory' => 'imports',
     ],
 
     /*

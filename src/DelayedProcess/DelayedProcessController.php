@@ -27,7 +27,9 @@ use Illuminate\Validation\ValidationException;
  *     against AllowlistRegistrar and against the permissions of the async
  *     actions that start the handler.
  *   - status(uuid) returns the process's current state: status, progress, data
- *     and error.
+ *     and error — to the user who started it (ProcessOwnership), or to one
+ *     holding `admin.delayed.status_permission` or the permissions the
+ *     handler was allowlisted with. Anyone else gets a 404.
  */
 final class DelayedProcessController extends ApiController
 {
@@ -100,6 +102,11 @@ final class DelayedProcessController extends ApiController
             ], 500);
         }
 
+        $user = self::currentUser();
+        if ($user !== null) {
+            ProcessOwnership::remember((string) $process->uuid, $user);
+        }
+
         if (! empty($data['callback'])) {
             $process->callback_url = (string) $data['callback'];
             $process->save();
@@ -109,6 +116,39 @@ final class DelayedProcessController extends ApiController
             'uuid' => $process->uuid,
             'status' => $process->status->value,
         ]);
+    }
+
+    /**
+     * Whether the signed-in user may follow the process: they started it from
+     * the panel, or they hold `admin.delayed.status_permission`, or the
+     * handler was allowlisted with permissions and they hold every one.
+     */
+    private function maySee(DelayedProcess $process): bool
+    {
+        $user = self::currentUser();
+        if ($user === null) {
+            return false;
+        }
+
+        if (ProcessOwnership::owns((string) $process->uuid, $user)) {
+            return true;
+        }
+
+        $permission = config('admin.delayed.status_permission');
+        if (is_string($permission) && $permission !== '' && PermissionCheck::allows($permission, $user)) {
+            return true;
+        }
+
+        $required = $this->allowlist->permissionsFor((string) $process->entity, (string) $process->method);
+
+        return PermissionCheck::normalize($required) !== [] && PermissionCheck::allows($required, $user);
+    }
+
+    private static function currentUser(): ?\Illuminate\Database\Eloquent\Model
+    {
+        $user = \Illuminate\Support\Facades\Auth::guard(\Dskripchenko\LaravelAdmin\Panel\Panels::currentGuard())->user();
+
+        return $user instanceof \Illuminate\Database\Eloquent\Model ? $user : null;
     }
 
     /**
@@ -195,7 +235,9 @@ final class DelayedProcessController extends ApiController
         /** @var DelayedProcess|null $process */
         $process = DelayedProcess::query()->where('uuid', $data['uuid'])->first();
 
-        if ($process === null) {
+        // Another user's process answers as a missing one: its data is the
+        // handler's result — records, documents, whatever it returned.
+        if ($process === null || ! $this->maySee($process)) {
             return $this->error([
                 'errorKey' => 'not_found',
                 'message' => 'Process not found',

@@ -110,8 +110,9 @@ final class UploadController extends ApiController
      * Serves a file from the given disk.
      *
      * Private disks work too; the access is checked exactly as it is on the
-     * panel's other actions. The disk has to be allowed in
-     * `admin.uploads.servable_disks`.
+     * panel's other actions. The disk and the folder have to be allowed in
+     * `admin.uploads.servable_disks` — by default the panel's own upload
+     * folder only — see isServable().
      *
      * @input string $disk
      * @input string $path
@@ -134,13 +135,12 @@ final class UploadController extends ApiController
             ], 422);
         }
 
-        $servable = (array) config('admin.uploads.servable_disks', [
-            (string) config('admin.uploads.disk', 'local'),
-        ]);
-        if (! in_array($diskName, $servable, true)) {
+        if (! self::isServable($diskName, $path)) {
+            // One answer for a disk that is not served and a path outside the
+            // served folders: neither says whether the file exists.
             return $this->error([
                 'errorKey' => 'forbidden_disk',
-                'message' => "Disk `{$diskName}` is not in admin.uploads.servable_disks whitelist",
+                'message' => __('Файл не может быть отдан: диск или папка не разрешены в admin.uploads.servable_disks'),
             ], 422);
         }
 
@@ -165,6 +165,75 @@ final class UploadController extends ApiController
         }
 
         return $disk->response($path);
+    }
+
+    /**
+     * Whether `admin.uploads.servable_disks` lets the path be served from the
+     * disk. A disk listed by name serves `admin.uploads.directory` only; a
+     * disk given as a key serves the folders it lists, or everything for '*'.
+     * The path must be a plain relative one: no `..` or `.` segments, no
+     * backslashes, no leading slash, no NUL byte, no scheme.
+     */
+    public static function isServable(string $disk, string $path): bool
+    {
+        if (! \Dskripchenko\LaravelAdmin\Import\ImportUploads::isSafeRelativePath($path)) {
+            return false;
+        }
+
+        $directories = self::servableDirectories($disk);
+        if ($directories === null) {
+            return false;
+        }
+
+        foreach ($directories as $directory) {
+            if ($directory === '*') {
+                return true;
+            }
+            if (str_starts_with($path, $directory.'/')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The folders served from a disk, `['*']` for all of it; null when the
+     * disk is not served at all.
+     *
+     * @return list<string>|null
+     */
+    private static function servableDirectories(string $disk): ?array
+    {
+        $config = (array) config('admin.uploads.servable_disks', [
+            (string) config('admin.uploads.disk', 'local'),
+        ]);
+        $uploads = trim((string) config('admin.uploads.directory', 'uploads'), '/');
+
+        foreach ($config as $key => $value) {
+            if (is_int($key)) {
+                if ($value === $disk) {
+                    return [$uploads];
+                }
+
+                continue;
+            }
+            if ($key !== $disk) {
+                continue;
+            }
+
+            $directories = [];
+            foreach ((array) $value as $directory) {
+                $directory = trim((string) $directory, '/');
+                if ($directory !== '') {
+                    $directories[] = $directory;
+                }
+            }
+
+            return $directories;
+        }
+
+        return null;
     }
 
     /** An ASCII stand-in for a file name, for the old `filename` parameter. */
